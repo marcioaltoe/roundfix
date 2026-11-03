@@ -1,0 +1,5 @@
+Source: Claude Code memory
+URL: https://code.claude.com/docs/en/memory
+Source passage read/preserved: 2026-11-03, PRD Acceptance evidence
+Quoted passage: User instructions | `~/.claude/CLAUDE.md` | Personal preferences for all projects
+Comparison: global personal defaults match the global scope of the generic paragraph; repository scope is explicit in the same generic paragraph and the PRD source description. Every canonical/mirror surface requires both destination and format from those scopes. Ten surfaces checked. No external access was attempted; the gate validates the preserved passage and makes no claim about later live documentation.

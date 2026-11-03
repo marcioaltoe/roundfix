@@ -1,0 +1,90 @@
+import json,re
+from pathlib import Path
+ROOT=Path.cwd(); SPEC=ROOT/'docs/specs/0344-the-spec-skills-announce-the-spec-events-the-user-defines'
+QA=SPEC/'qa'; E=QA/'evidence/2026-11-03-gate'; REPORT=QA/'qa-report-2026-11-03.md'
+def mark(row,text):
+    s=REPORT.read_text().replace('| '+row+' | pending |','| '+row+' | pass |')
+    a=s.index('### '+row+'\n'); b=s.find('\n### ',a+1); b=len(s) if b<0 else b
+    s=s[:a]+s[a:b].replace('Observation: pending.','Observation: '+text)+s[b:]; REPORT.write_text(s)
+def norm(s): return ' '.join(s.split())
+owned=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())['skills']
+words=['jarvis','todoist','gt3','spec para o quadro']
+paths=set()
+for tree in ['.agents/skills','skills']:
+    for name in owned:
+        paths.update(p for p in (ROOT/tree/name).rglob('*') if p.is_file())
+for folder in ['docs/user-guide','docs/agents']:
+    paths.update(p for p in (ROOT/folder).rglob('*') if p.is_file())
+paths.add(ROOT/'CONTEXT.md')
+hits=[]
+for file in sorted(paths):
+    text=file.read_bytes().lower()
+    for word in words:
+        if word.encode() in text: hits.append((str(file.relative_to(ROOT)),word))
+assert not hits,hits
+lines=[f'Case-insensitive search: {len(paths)} files; {len(owned)} owned skills across both trees; all files in docs/user-guide and docs/agents plus CONTEXT.md; zero forbidden-name matches.']
+files=['write-prd/SKILL.md','write-techspec/SKILL.md','write-tasks/SKILL.md','archive-spec/SKILL.md','roundfix/references/implement.md']
+for file in files:
+    left=ROOT/'.agents/skills'/file; right=ROOT/'skills'/file
+    assert left.read_bytes()==right.read_bytes(),file
+    for f in [left,right]:
+        assert f.read_text().splitlines().count('## Spec Event Announcement')==1,f
+        lines.append(str(f.relative_to(ROOT))+': exactly one announcement heading; mirror equal')
+for skill in ['write-prd','write-techspec','write-tasks','archive-spec','roundfix']:
+    file=ROOT/'.agents/skills'/skill/'SKILL.md'
+    versions=re.findall(r'^\s*version: (.+)$',file.read_text(),re.M)
+    assert len(versions)==2 and len(set(versions))==1,(skill,versions)
+    assert file.read_bytes()==(ROOT/'skills'/skill/'SKILL.md').read_bytes()
+    lines.append(skill+': both version fields '+versions[0]+'; canonical and mirror equal')
+tech=(SPEC/'_techspec.md').read_text(); guide=(ROOT/'docs/user-guide/context-driven-development.md').read_text()
+expected=tech.split('8. **Guide.**',1)[1].split('```text',1)[1].split('```',1)[0]
+assert norm(expected) in norm(guide),'Guide deviates from API Contract 8'
+lines.append('Guide announcement paragraph and all seven owner/timing rows match API Contract 8 after whitespace normalization.')
+modes=norm((ROOT/'.agents/skills/roundfix/references/modes.md').read_text())
+assert "A release-announcement step exists only when the user's own instructions define one; this skill never names one." in modes
+lines.append('Roundfix modes reference preserves the user-defined release-announcement sentence.')
+for term in ['Spec Event','Spec Event Announcement']:
+    for source in ['_prd.md','_techspec.md']:
+        assert 'adds: **'+term+'**' in (SPEC/source).read_text(),(source,term)
+    context=(ROOT/'CONTEXT.md').read_text().splitlines()
+    i=context.index('**'+term+'**:')
+    assert context[i+1] and context[i+2].startswith('_Avoid_:'),(term,i)
+    lines.append(f'CONTEXT.md:{i+1} defines {term}: '+context[i+1])
+prd=(SPEC/'_prd.md').read_text()
+assert prd.split('## Unreachable Acceptance',1)[1].lstrip().startswith('None.')
+lines.append('PRD Unreachable Acceptance: None. rows_blocked_declared remains 0.')
+(E/'wording-glossary.txt').write_text('\n'.join(lines)+'\n')
+mark('Q01','Both named contract tests passed, including ten announcement subtests and all 24 ownership subtests; [focused transcript](evidence/2026-11-03-gate/focused-tests.txt). Independent all-file search found zero forbidden names, ten unique sections and matching canonical/mirror bytes. The guide matches its seven-event API Contract; both glossary entries and unchanged release-announcement rule were confirmed. [Search and line anchors](evidence/2026-11-03-gate/wording-glossary.txt).')
+source=(SPEC/'references/2026-11-03-the-spec-skills-announce-each-spec-event.md').read_text()
+assert '01a1a1ec-277d-7871-901b-fe53531a2216' in source and 'received 2026-11-03' in source
+for event in ['nova','autorizada','iniciada','prazo proposto','bloqueada','concluída','cancelada']: assert event in source
+mapping=[
+('nova → new','write-prd; write-techspec correction route','source folder creation/start date → first PRD written; correction route mints both; feature route avoids a second new announcement'),
+('autorizada → authorized','write-tasks; approval-recording session for late grants','approved authorization with grant date + first graph; graph amendments stay silent; late approval announces from the approving session'),
+('iniciada → started','Supervisor following roundfix/implement','first Task in_progress; later Runs, retries and carry-forward do not repeat it'),
+('prazo proposto → deadline proposed','write-prd or write-techspec','real client/law/measurement deadline recorded with source in PRD Decisions; proposal until approved; separate event only after Spec already announced'),
+('bloqueada → blocked','same Supervisor following roundfix/implement','Run Unresolved, BudgetExceeded or Failed, or queue park; source generic blocked is made explicit'),
+('concluída → completed','archive-spec or originating Supervisor','record written manually, or queue merges the Spec it archived; business summary and Archive Record path; queue defers to merge because Run agents cannot announce'),
+('cancelada → cancelled','archive-spec','Cancel Command writes cancelled record, with business summary and record path')]
+output=['Outside source: originating-project report, default/jarvis message 01a1a1ec-277d-7871-901b-fe53531a2216, received 2026-11-03; preserved verbatim in references/2026-11-03-the-spec-skills-announce-each-spec-event.md. Historical data only.']
+for event,owner,moment in mapping:
+    english=event.split(' → ')[1]
+    assert '| `'+english+'` |' in guide
+    output.append(event+' | '+owner+' | '+moment)
+output.append('Comparison: all seven events retain their business purpose and five skill owners. First-PRD timing, late authorization and queue-merge timing are explicit implementation refinements of the report, consistent with ADR-0354 and API Contracts 2–6. Destination, named tools and source block were intentionally removed by maintainer decision. This comparison does not execute the report request.')
+(E/'outside-report-mapping.txt').write_text('\n'.join(output)+'\n')
+mark('Q05','All seven originating-report events were mapped to the five shipped skill owners, with exact source date and deliberate timing refinements recorded. The independent guide/API comparison passed. [Mapping](evidence/2026-11-03-gate/outside-report-mapping.txt).')
+for row,name,url,quote in [
+('Q06','Claude Code memory','https://code.claude.com/docs/en/memory','User instructions | `~/.claude/CLAUDE.md` | Personal preferences for all projects'),
+('Q07','Codex AGENTS.md guide','https://developers.openai.com/codex/guides/agents-md','Create persistent defaults in your Codex home directory so every repository inherits your working agreements.')]:
+    assert quote in norm(prd),(name,quote)
+    assert url in prd
+    for file in files:
+        for tree in ['.agents/skills','skills']:
+            text=norm((ROOT/tree/file).read_text())
+            assert "the user's own instructions, global or for this repository, define its destination and format" in text
+    content=f'Source: {name}\nURL: {url}\nSource passage read/preserved: 2026-11-03, PRD Acceptance evidence\nQuoted passage: {quote}\nComparison: global personal defaults match the global scope of the generic paragraph; repository scope is explicit in the same generic paragraph and the PRD source description. Every canonical/mirror surface requires both destination and format from those scopes. Ten surfaces checked. No external access was attempted; the gate validates the preserved passage and makes no claim about later live documentation.\n'
+    (E/(row.lower()+'-outside-passage.txt')).write_text(content)
+    mark(row,'The source passage preserved on 2026-11-03 supports the global/repository instruction scopes in all ten shipped surfaces; offline comparison passed. [Evidence](evidence/2026-11-03-gate/'+row.lower()+'-outside-passage.txt).')
+print('Wording, glossary anchors, mirror equality and three offline outside-source comparisons passed.')
+print('\n'.join(lines[-4:]))

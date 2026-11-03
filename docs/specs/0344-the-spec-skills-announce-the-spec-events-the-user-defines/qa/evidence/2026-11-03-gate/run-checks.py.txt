@@ -1,0 +1,78 @@
+import io, json, os, re, shutil, subprocess, sys, tarfile, tempfile
+from pathlib import Path
+ROOT=Path.cwd()
+SPEC=ROOT/'docs/specs/0344-the-spec-skills-announce-the-spec-events-the-user-defines'
+QA=SPEC/'qa'; E=QA/'evidence/2026-11-03-gate'; REPORT=QA/'qa-report-2026-11-03.md'
+HEAD='1c96d7c31560da31bcc5006574b71cc0a87ed261'
+CHILD=os.environ.copy()
+CHILD.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local')
+for key in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']:
+    CHILD.pop(key,None)
+FOCUS=['go','test','-count=1','-timeout','20m','-v','-run','^(TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines|TestNoOwnedSkillNamesAPersonalAssistant)$','./skills']
+ANN='TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines'
+GUARD='TestNoOwnedSkillNamesAPersonalAssistant'
+def mark(row,status,observation):
+    text=REPORT.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+    a=text.index('### '+row+'\n'); b=text.find('\n### ',a+1); b=len(text) if b<0 else b
+    text=text[:a]+text[a:b].replace('Observation: pending.','Observation: '+observation)+text[b:]
+    REPORT.write_text(text)
+def run(args,name,cwd=ROOT):
+    p=subprocess.run(args,cwd=cwd,env=CHILD,text=True,capture_output=True)
+    text='command: '+str(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+    (E/name).write_text(text)
+    print(name+': exit '+str(p.returncode),flush=True)
+    return p
+phase=sys.argv[1]
+if phase=='focus':
+    p=run(FOCUS,'focused-tests.txt')
+    passed=re.findall(r'--- PASS: '+ANN+r'/([^ ]+)',p.stdout)
+    assert p.returncode==0 and len(passed)==10,(p.returncode,passed)
+    assert '--- PASS: '+GUARD+' (' in p.stdout
+    print('Both named tests and ten announcement subtests passed',flush=True)
+elif phase=='tasks':
+    for number in range(1,5):
+        task=(SPEC/f'task_{number:02}.md').read_text()
+        section=task.split('## Verification\n',1)[1].split('\n## ',1)[0]
+        command=re.search(r'^- `(.*)` — expected:',section,re.M).group(1)
+        p=run(['sh','-c',command],f'task-{number:02}-verification.txt')
+        if p.returncode:
+            mark('Q02','fail',f'Task {number:02} Verification exited {p.returncode}; see [transcript](evidence/2026-11-03-gate/task-{number:02}-verification.txt).')
+            print(p.stdout[-6000:]+p.stderr[-3000:],flush=True)
+            raise SystemExit(1)
+    mark('Q02','pass','All four authored Task Verification commands exited 0, including fresh ./skills suites, docscontract suites, mirror comparisons and named test pass assertions. See [Task 01](evidence/2026-11-03-gate/task-01-verification.txt), [Task 02](evidence/2026-11-03-gate/task-02-verification.txt), [Task 03](evidence/2026-11-03-gate/task-03-verification.txt) and [Task 04](evidence/2026-11-03-gate/task-04-verification.txt).')
+elif phase=='sabotage':
+    number=int(sys.argv[2]); row='Q03'+chr(96+number)
+    with tempfile.TemporaryDirectory(prefix=f'qa0344-sabotage{number}-') as temp:
+        copy=Path(temp)
+        archive=subprocess.run(['git','archive',HEAD],capture_output=True,check=True).stdout
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tar: tar.extractall(copy,filter='data')
+        if number==1:
+            path='.agents/skills/archive-spec/SKILL.md'; file=copy/path; text=file.read_text()
+            # The sentence wraps after "Run" in this surface; remove exactly its normalized words.
+            text,count=re.subn(r'An Agent inside a Daemon-assigned Run\s+never announces\.','',text)
+            assert count==1,count
+            file.write_text(text)
+            fail=ANN; other=GUARD; expected=[path,'is missing sentence','An Agent inside a Daemon-assigned Run never announces.']
+        elif number==2:
+            path='.agents/skills/write-prd/references/prd-template.md'; file=copy/path
+            file.write_text(file.read_text()+'\nSend it to Jarvis.\n')
+            fail=GUARD; other=ANN; expected=[path,'contains forbidden word "jarvis"']
+        elif number==3:
+            path='skills/qa-gate/SKILL.md'; file=copy/path
+            file.write_text(file.read_text()+'\nTrack it in Todoist.\n')
+            fail=GUARD; other=ANN; expected=[path,'contains forbidden word "todoist"']
+        else:
+            path='skills/roundfix/references/implement.md'; file=copy/path
+            file.write_text(file.read_text()+'\n## Spec Event Announcement\n')
+            fail=ANN; other=GUARD; expected=[path,'has 2 Spec Event Announcement headings, want 1']
+        # Initialize metadata required by repository-reading skill contracts in git-archive fixtures.
+        for args in [['git','init','-q'],['git','add','.']]:
+            subprocess.run(args,cwd=copy,env=CHILD,check=True,capture_output=True)
+        p=run(FOCUS,f'sabotage-{number}.txt',copy)
+        output=p.stdout+p.stderr
+        assert p.returncode==1,(number,p.returncode)
+        assert '--- FAIL: '+fail+' (' in output,output[-4000:]
+        assert '--- PASS: '+other+' (' in output,output[-4000:]
+        for fragment in expected: assert fragment in output,(fragment,output[-4000:])
+        mark(row,'pass',f'Sabotage {number} independently made `{fail}` fail, exit 1, while `{other}` passed. The failing transcript names `{path}` and the required diagnostic. [Evidence](evidence/2026-11-03-gate/sabotage-{number}.txt). The temporary copy was removed after observation.')
+        print('Verified expected failing transcript: '+path,flush=True)

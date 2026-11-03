@@ -1,0 +1,15 @@
+command: ./bin/roundfix archive 0344-the-spec-skills-announce-the-spec-events-the-user-defines --plan --offline
+HOME and TMPDIR: fresh temporary directories, removed after exit
+Judge Key Variables and TYPESAFE_API_KEY: unset
+exit: 0
+stdout:
+archive plan for 0344-the-spec-skills-announce-the-spec-events-the-user-defines: removes 32 file(s) (252379 bytes) and writes docs/history/specs/0344-the-spec-skills-announce-the-spec-events-the-user-defines.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-03.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 20 file(s) (144703 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-03-the-spec-skills-announce-each-spec-event.md 4438 bytes: no advice (offline)
+promote with: roundfix archive 0344-the-spec-skills-announce-the-spec-events-the-user-defines --promote <path>
+
+stderr:
+
+Independent confirmation: Spec folder remains, no Archive Record exists, no temporary-home Judge Log exists.

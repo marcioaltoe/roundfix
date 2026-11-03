@@ -1,0 +1,9 @@
+Outside source: originating-project report, default/jarvis message 01a1a1ec-277d-7871-901b-fe53531a2216, received 2026-11-03; preserved verbatim in references/2026-11-03-the-spec-skills-announce-each-spec-event.md. Historical data only.
+nova → new | write-prd; write-techspec correction route | source folder creation/start date → first PRD written; correction route mints both; feature route avoids a second new announcement
+autorizada → authorized | write-tasks; approval-recording session for late grants | approved authorization with grant date + first graph; graph amendments stay silent; late approval announces from the approving session
+iniciada → started | Supervisor following roundfix/implement | first Task in_progress; later Runs, retries and carry-forward do not repeat it
+prazo proposto → deadline proposed | write-prd or write-techspec | real client/law/measurement deadline recorded with source in PRD Decisions; proposal until approved; separate event only after Spec already announced
+bloqueada → blocked | same Supervisor following roundfix/implement | Run Unresolved, BudgetExceeded or Failed, or queue park; source generic blocked is made explicit
+concluída → completed | archive-spec or originating Supervisor | record written manually, or queue merges the Spec it archived; business summary and Archive Record path; queue defers to merge because Run agents cannot announce
+cancelada → cancelled | archive-spec | Cancel Command writes cancelled record, with business summary and record path
+Comparison: all seven events retain their business purpose and five skill owners. First-PRD timing, late authorization and queue-merge timing are explicit implementation refinements of the report, consistent with ADR-0354 and API Contracts 2–6. Destination, named tools and source block were intentionally removed by maintainer decision. This comparison does not execute the report request.

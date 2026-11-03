@@ -1,0 +1,8 @@
+command: ./bin/roundfix --version
+HOME and TMPDIR: fresh temporary directories, removed after exit
+Judge Key Variables and TYPESAFE_API_KEY: unset
+exit: 0
+stdout:
+roundfix 0.129.1 (1c96d7c3-dirty, built 2026-11-03 19:13:11 -0300)
+
+stderr:

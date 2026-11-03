@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0344-the-spec-skills-announce-the-spec-events-the-user-defines
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
