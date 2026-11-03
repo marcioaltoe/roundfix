@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0344-the-spec-skills-announce-the-spec-events-the-user-defines
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -64,3 +64,58 @@ reported by jarvis.
 - `_prd.md` → Goals; User Story 3; Core Feature 3; Success Metric 1; Success Metric 2
 - `_techspec.md` → Interfaces; API Contract 9; Invariant 3; Testing Approach; Build Order 4
 - ADR-0354
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Added `skills/spec_event_announcement_test.go` in `skills_test`, with the
+three interface variables and both named tests from API Contract 9. The
+announcement test lists all eight generic sentences and every surface's event
+sentences from API Contracts 1–6, requires exactly one heading in each of the
+ten canonical/mirror files, and limits sentence matching to that section.
+The guard reads the ownership record's `skills` keys and walks every file of
+all twelve owned skills in both trees, checking all four forbidden strings
+without regard to case. Every top-level test and subtest starts with
+`t.Parallel()`. Repository reads use `os.OpenRoot("..")` to prevent escaping
+the checkout, and the tests start no process. Failures name repository-relative
+paths. No skill file or `skills/roundfix_modes_test.go` was edited.
+
+Focused evidence for the acceptance criteria:
+
+- Both tests pass with the five sections: after `gofmt -w
+  skills/spec_event_announcement_test.go`, ran `go test -count=1 -timeout 2m
+  -v skills/spec_event_announcement_test.go` from the repository root; exit 0,
+  both named top-level tests passed, with ten announcement subtests and
+  twenty-four owned-skill subtests. The test file was absent before this
+  Task's edit.
+- Characterization and sabotage checks ran with `python3
+  /private/tmp/roundfix-0344-task04-arur85w7/probe.py`; the harness exited 0
+  after checking each expected result and saving every full transcript.
+  Each case extracted its own `git archive HEAD` copy of audited revision
+  `762e8938face672457cd98ed9d76f375595de10d`, then copied in the new test
+  file. The harness ran `go test -count=1 -timeout 2m -v
+  spec_event_announcement_test.go` from that copy's `skills/` directory.
+  The unchanged positive copy passed both tests. A separate characterization
+  copy with the sections removed failed the announcement test for all ten
+  paths with `has 0 Spec Event Announcement headings, want 1`; the guard
+  passed. All mutations stayed in temporary copies.
+
+Each required sabotage independently exited 1, with the other top-level test
+passing:
+
+| Sabotage | Failing test/subtest | Observed diagnostic |
+| --- | --- | --- |
+| Remove the Run prohibition from canonical archive skill | `TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md` | `.agents/skills/archive-spec/SKILL.md is missing sentence "An Agent inside a Daemon-assigned Run never announces."` |
+| Append `Send it to Jarvis.` to canonical PRD template | `TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd` | `.agents/skills/write-prd/references/prd-template.md contains forbidden word "jarvis"` |
+| Append `Track it in Todoist.` to mirror QA skill | `TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate` | `skills/qa-gate/SKILL.md contains forbidden word "todoist"` |
+| Append a second heading to mirror implement reference | `TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md` | `skills/roundfix/references/implement.md has 2 Spec Event Announcement headings, want 1` |
+
+Local transcripts: `/private/tmp/roundfix-0344-task04-arur85w7/positive.log`,
+`no-sections.log`, `missing-sentence.log`, `canonical-template-word.log`,
+`mirror-other-skill-word.log`, and `duplicate-heading.log` in that directory.
+The audited test file's SHA-256 was
+`6caa9300324e843e64a2d9379801045f6894a4ce0ef0ea76a6a59356fe534f80`.
+
+The declared Verification and repository Verification were not run; the
+Daemon owns them and Task settlement. No follow-up scope was discovered.
