@@ -1,0 +1,26 @@
+Archive source: e4682fbbdd6d8745ac2186b36f36d34373858643
+Mutation path: internal/config/config.go
+Replace:
+fmt.Errorf("worktree.location must not be inside the repository tree: %q is inside the Git root %q (found %q)", resolved, gitRoot, filepath.Join(gitRoot, ".git"))
+With:
+fmt.Errorf("worktree.location must not be inside the repository tree: %q", resolved)
+Independent archive copy initialized and staged for suiteguard; only this mutation applied.
+$ go test -count=1 -timeout 20m -v -run '^TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit$/^git_directory$' ./internal/config
+stdout:
+=== RUN   TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== PAUSE TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== CONT  TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== RUN   TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_directory
+=== PAUSE TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_directory
+=== CONT  TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_directory
+    worktree_location_test.go:47: refusal = "worktree.location must not be inside the repository tree: \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGitgit_direc760183231/002/.roundfix/worktrees\"", want "worktree.location must not be inside the repository tree: \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGitgit_direc760183231/002/.roundfix/worktrees\" is inside the Git root \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGitgit_direc760183231/002\" (found \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGitgit_direc760183231/002/.git\")"
+--- FAIL: TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit (0.00s)
+    --- FAIL: TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_directory (0.00s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 148.444708ms before and 134.021208ms after
+FAIL	roundfix/internal/config	0.694s
+FAIL
+stderr:
+exit: 1
+
+Named case failed with expected behavioral diagnostic: True

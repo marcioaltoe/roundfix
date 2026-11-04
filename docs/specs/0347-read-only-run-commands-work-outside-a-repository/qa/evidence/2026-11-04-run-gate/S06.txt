@@ -1,0 +1,35 @@
+Archive source: e4682fbbdd6d8745ac2186b36f36d34373858643
+Mutation path: internal/cli/cli.go
+Replace:
+func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	return roundconfig.Load(options)
+With:
+func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	options.WorktreeLocationOptional = true
+	return roundconfig.Load(options)
+Independent archive copy initialized and staged for suiteguard; only this mutation applied.
+$ go test -count=1 -timeout 20m -v -run '^TestStrayGitDirectoryTranscripts$/^Surface_Transcript_3$' ./internal/cli
+stdout:
+=== RUN   TestStrayGitDirectoryTranscripts
+=== PAUSE TestStrayGitDirectoryTranscripts
+=== CONT  TestStrayGitDirectoryTranscripts
+=== RUN   TestStrayGitDirectoryTranscripts/Surface_Transcript_3
+    read_only_run_commands_test.go:194: transcript: exit=1 stdout="Repository: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStrayGitDirectoryTranscriptsSurface_Transcript_32826444120/001\nMode: dry-run\nPreserved candidate: kind=itemBranch Run=\n  item-branch: -\n  head: -\n  worktree: -\n  action: preserve\n  refusal-reason: list item branches: git for-each-ref --format=%(refname) refs/heads/roundfix/deliver-* failed: fatal: not a git repository (or any of the parent directories): .git\nSummary: total=0 safe=0 superseded=0 unintegrated=0 dirty=0 unknown=0 released=0 applied=0 preserved=0 operational-failures=2\nDebris summary: process-candidates=0 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=1 processes-applied=0 run-owner-records-released=0 run-branches-applied=0 item-branch-candidates=0 item-branches-applied=0\nApply with: roundfix reconcile --apply\n" stderr="roundfix: reconcile failed: 2 reconciliation operation(s) failed\nNext safe action: roundfix reconcile\n"; want exit=2 stdout="" stderr="roundfix: reconcile failed: worktree.location must not be inside the repository tree: \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStrayGitDirectoryTranscriptsSurface_Transcript_32826444120/001/.roundfix/worktrees\" is inside the Git root \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStrayGitDirectoryTranscriptsSurface_Transcript_32826444120/001\" (found \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStrayGitDirectoryTranscriptsSurface_Transcript_32826444120/001/.git\")\nRun 'roundfix reconcile --help' for usage.\n"
+--- FAIL: TestStrayGitDirectoryTranscripts (0.01s)
+    --- FAIL: TestStrayGitDirectoryTranscripts/Surface_Transcript_3 (0.01s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 149.738ms before and 136.365875ms after
+FAIL	roundfix/internal/cli	0.755s
+FAIL
+stderr:
+exit: 1
+
+Named case failed with expected behavioral diagnostic: True

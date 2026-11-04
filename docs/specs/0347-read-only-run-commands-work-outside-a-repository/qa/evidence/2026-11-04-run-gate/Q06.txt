@@ -1,0 +1,13 @@
+$ ./bin/roundfix runs list
+stdout:
+No Runs found.
+stderr:
+exit: 0
+Exact independent stdout/stderr/exit comparison: True
+$ ./bin/roundfix runs list
+stdout:
+No Runs found.
+stderr:
+exit: 0
+Fresh process replay identical: True
+Independent filesystem observation: no Roundfix Home or database created.

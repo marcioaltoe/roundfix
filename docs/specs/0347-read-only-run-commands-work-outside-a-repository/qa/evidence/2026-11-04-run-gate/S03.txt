@@ -1,0 +1,26 @@
+Archive source: e4682fbbdd6d8745ac2186b36f36d34373858643
+Mutation path: internal/config/config.go
+Replace:
+if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+With:
+if info, err := os.Stat(filepath.Join(current, ".git")); err == nil && info.IsDir() {
+Independent archive copy initialized and staged for suiteguard; only this mutation applied.
+$ go test -count=1 -timeout 20m -v -run '^TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit$/^git_file$' ./internal/config
+stdout:
+=== RUN   TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== PAUSE TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== CONT  TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit
+=== RUN   TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_file
+=== PAUSE TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_file
+=== CONT  TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_file
+    worktree_location_test.go:42: expected in-repository worktree.location to fail
+--- FAIL: TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit (0.00s)
+    --- FAIL: TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit/git_file (0.00s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 147.470916ms before and 134.993875ms after
+FAIL	roundfix/internal/config	0.554s
+FAIL
+stderr:
+exit: 1
+
+Named case failed with expected behavioral diagnostic: True

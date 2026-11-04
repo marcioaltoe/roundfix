@@ -1,0 +1,8 @@
+Pull Request row: blocked (environment: no open Pull Request).
+Source: Daemon QA prompt; no lookup performed against the never-pushed Run branch.
+Approval: maintainer cycle AX decision recorded in _authorization.md, approved 2026-11-04 and in candidate ancestry.
+Checks/status: Daemon make verify-changed pass (exit 0) at e4682fbbdd6d8745ac2186b36f36d34373858643; named and package checks also passed.
+Unresolved threads: none because no Pull Request exists.
+Merge-Ready acceptance: none exists yet; no equivalent acceptance claimed.
+Review-artifact ancestry: claimed candidate is audited head e4682fbbdd6d8745ac2186b36f36d34373858643; no Review Source artifact or approved PR head exists yet.
+Environment proof and unblock: prompt confirms no open Pull Request on the Spec target branch; later delivery opens a PR and obtains current-head review/acceptance.

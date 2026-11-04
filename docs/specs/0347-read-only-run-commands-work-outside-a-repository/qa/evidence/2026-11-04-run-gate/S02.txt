@@ -1,0 +1,37 @@
+Archive source: e4682fbbdd6d8745ac2186b36f36d34373858643
+Mutation path: internal/config/config.go
+Replace:
+if !opts.WorktreeLocationOptional {
+With:
+if true {
+Independent archive copy initialized and staged for suiteguard; only this mutation applied.
+$ go test -count=1 -timeout 20m -v -run '^TestLoadWithOptionalWorktreeLocationReturnsTheRefusal$' ./internal/config
+stdout:
+=== RUN   TestLoadWithOptionalWorktreeLocationReturnsTheRefusal
+=== PAUSE TestLoadWithOptionalWorktreeLocationReturnsTheRefusal
+=== CONT  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal
+=== RUN   TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_directory
+=== PAUSE TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_directory
+=== RUN   TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_file
+=== PAUSE TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_file
+=== RUN   TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/repository
+=== PAUSE TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/repository
+=== CONT  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_directory
+=== CONT  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/repository
+=== CONT  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_file
+=== NAME  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_directory
+    worktree_location_test.go:89: optional Load: worktree.location must not be inside the repository tree: "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_2918349595/001/.roundfix/worktrees" is inside the Git root "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_2918349595/001" (found "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_2918349595/001/.git")
+=== NAME  TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_file
+    worktree_location_test.go:89: optional Load: worktree.location must not be inside the repository tree: "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_778466336/001/.roundfix/worktrees" is inside the Git root "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_778466336/001" (found "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestLoadWithOptionalWorktreeLocationReturnsTheRefusalstray_git_778466336/001/.git")
+--- FAIL: TestLoadWithOptionalWorktreeLocationReturnsTheRefusal (0.00s)
+    --- PASS: TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/repository (0.00s)
+    --- FAIL: TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_directory (0.00s)
+    --- FAIL: TestLoadWithOptionalWorktreeLocationReturnsTheRefusal/stray_git_file (0.00s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 164.652167ms before and 133.982542ms after
+FAIL	roundfix/internal/config	0.576s
+FAIL
+stderr:
+exit: 1
+
+Named case failed with expected behavioral diagnostic: True

@@ -1,0 +1,15 @@
+$ ./bin/roundfix reconcile
+stdout:
+stderr:
+roundfix: reconcile failed: worktree.location must not be inside the repository tree: "<home>/.roundfix/worktrees" is inside the Git root "<home>" (found "<home>/.git")
+Run 'roundfix reconcile --help' for usage.
+exit: 2
+Exact independent stdout/stderr/exit comparison: True
+$ ./bin/roundfix reconcile
+stdout:
+stderr:
+roundfix: reconcile failed: worktree.location must not be inside the repository tree: "<home>/.roundfix/worktrees" is inside the Git root "<home>" (found "<home>/.git")
+Run 'roundfix reconcile --help' for usage.
+exit: 2
+Fresh process replay identical: True
+Independent filesystem observation: no Roundfix Home or database created.

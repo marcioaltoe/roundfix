@@ -1,0 +1,5 @@
+$ ./bin/roundfix --version
+stdout:
+roundfix 0.130.1 (e4682fbb-dirty, built 2026-11-04 10:33:45 -0300)
+stderr:
+exit: 0

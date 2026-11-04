@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0347-read-only-run-commands-work-outside-a-repository
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
