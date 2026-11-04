@@ -1,5 +1,5 @@
 // Suite: ai-memory setup and core dispatch contracts
-// Invariant: every setup follows the ai-memory revision and core dispatch is conditional on MCP availability.
+// Invariant: every setup and upstream skill follows the catalog lock revision and core dispatch is conditional on MCP availability.
 // Boundary IN: embedded setup snapshots and module declarations.
 // Boundary OUT: network, host skill checkouts, MCP calls and skill installation.
 package baseline
@@ -13,6 +13,7 @@ import (
 
 func TestEveryUpstreamSetupFollowsTheAiMemoryRevision(t *testing.T) {
 	t.Parallel()
+	revision := upstreamSetupRevision(t)
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)
@@ -31,14 +32,14 @@ func TestEveryUpstreamSetupFollowsTheAiMemoryRevision(t *testing.T) {
 			if err := json.Unmarshal(entry.Data, &snapshot); err != nil {
 				t.Fatalf("setup %s: %v", id, err)
 			}
-			if snapshot.Source.Type == "github" && snapshot.Source.Ref != upstreamSetupRevision {
-				t.Errorf("setup %s revision = %q, want %s", id, snapshot.Source.Ref, upstreamSetupRevision)
+			if snapshot.Source.Type == "github" && snapshot.Source.Ref != revision {
+				t.Errorf("setup %s revision = %q, want %s", id, snapshot.Source.Ref, revision)
 			}
 			names := make([]string, 0, len(snapshot.Skills))
 			for _, skill := range snapshot.Skills {
 				names = append(names, skill.Name)
-				if skill.Source.Type == "github" && skill.Source.Ref != upstreamSetupRevision {
-					t.Errorf("setup %s skill %s revision = %q, want %s", id, skill.Name, skill.Source.Ref, upstreamSetupRevision)
+				if skill.Source.Type == "github" && skill.Source.Ref != revision {
+					t.Errorf("setup %s skill %s revision = %q, want %s", id, skill.Name, skill.Source.Ref, revision)
 				}
 				if skill.Name == "handoff" || skill.Name == "brand-guidelines" || strings.HasPrefix(skill.Name, "gws-") {
 					t.Errorf("setup %s retains retired skill %s", id, skill.Name)
