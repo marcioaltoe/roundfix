@@ -2,6 +2,30 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.130.0] - 2026-11-03
+
+### The Claude review segments a large candidate and omits declared paths
+
+- **A Claude round-1 pre-PR review above its prompt budget is reviewed in up to four Review Segments**, as the Codex review already was, with each segment prompt estimated within the budget. Each segment records `estimatedPromptTokens`, and a segmented record sums them. A single commit that does not fit keeps the existing refusal, and a fifth segment refuses with `review prompt too large: … a review allows at most 4`. Round 2 and Correction Review keep their refusals unchanged (reported by vortex).
+- **`pre_pr_review.omit_paths` in the Project Config keeps files out of the review** without declaring them as `delivery.derived_paths`. Entries use the `derived_paths` grammar, and a directory entry ending in `/` omits everything beneath it. The key is read from the candidate's base commit only. Omitted files appear in `omittedPaths` with reason `omit-path`, and the summary adds `, <n> of pre_pr_review.omit_paths` when any were omitted. The `roundfix init` templates are unchanged (ADR-0352).
+- **Every review size refusal names the three largest files in the diff** with their byte counts and points to `pre_pr_review.omit_paths`.
+- **A `review-blocked` park carries the first line of the reason** as `review-blocked: <reason>`, so `roundfix deliver status` says why the review stopped. The Park Class stays `review`.
+
+### The follow-up names what waits on someone else and where each item went
+
+- **An open Backlog Entry or a pending or partial Finding may declare `waiting_on` and `since` (`YYYY-MM-DD`) in its frontmatter.** A valid declaration makes it a Waiting Item in the `waiting` class, outside the four ranked classes. `roundfix follow-up` holds Waiting Items back by default and counts them on the `backlog` and `findings` lines. `--all` lists them after every ranked item, oldest `since` first, with ` — waiting on <who> since <date>`. A Waiting Item is never sent to the judge (reported by fluxus; ADR-0353).
+- **A malformed declaration keeps the item in its ordinary class** and reports `waiting_error` in JSON and ` — invalid waiting declaration: <reason>` in text. JSON gains `waiting`, `waiting_on`, `since` and `waiting_error`, omitted when empty. `--all` with `--status` exits 2.
+- **The repository inbox skips files and folders whose name starts with a dot**, such as `.gitkeep`.
+- **The `--follow-up` Skill Mode takes `all`**, writes a Waiting Declaration when the plan keeps an item waiting, and reports where each consumed message, Finding and Backlog Entry went.
+
+### The Spec skills announce the Spec Events the user defines
+
+- **`write-prd`, `write-techspec`, `write-tasks`, `archive-spec` and the Roundfix `implement` reference gain a Spec Event Announcement step** for `new`, `authorized`, `started`, `deadline proposed`, `blocked`, `completed` and `cancelled`. The step exists only when the user's own instructions define its destination and format; otherwise it is skipped silently. It never waits for a reply or fails the step it follows, and an Agent inside a Daemon-assigned Run never announces. The Supervisor that started the Run or queued the item announces `started`, `blocked` and `completed` (reported by jarvis; ADR-0354).
+
+### Tests
+
+- The Roundfix skill is at version 0.1.179.
+
 ## [0.129.1] - 2026-11-02
 
 ### A glossary definition written as a list item counts
