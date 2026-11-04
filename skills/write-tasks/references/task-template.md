@@ -108,6 +108,7 @@ complexity: medium # low | medium | high
      - interface: `internal/package/file.go`
      - creates: <path>
      - deletes: <path>
+     A file the Task removes is listed only as deletes:, never as interface: or instruction:.
      A deletes path must be absent before the Daemon runs Verification;
      otherwise the attempt fails with deletes: <path> still exists.
      Deletions count in scope, Governed Path and Wave collision audits.

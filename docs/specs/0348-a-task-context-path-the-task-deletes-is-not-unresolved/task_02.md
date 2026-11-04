@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0348-a-task-context-path-the-task-deletes-is-not-unresolved
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -114,3 +114,40 @@ report of 2026-11-04 (ai-memory message `01a1a5c5`, adopted as
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 5; Glossary
 - `_techspec.md` → Current behavior 5; API Contract 3; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, coding-guidelines, golang-testing, testing-boss, tech-writer, knowledge-workspace, no-workarounds, evidence-gate
+
+Implementation:
+
+- Updated the canonical `write-tasks` skill and Task template, then ran
+  `make skills-sync` to regenerate their mirrors.
+- Updated the canonical and mirrored Roundfix `spec` reference, the spec
+  command guide and the **Delivery Base** glossary entry with the base rule.
+- Added `skills/task_context_deletion_test.go` and recorded the
+  `roundfix` and `write-tasks` owned-skill versions through the sanctioned
+  recorder. It recorded `roundfix` 0.1.180 and `write-tasks` 0.0.30.
+
+Focused checks:
+
+- `go test -count=1 ./skills -run '^TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes$'`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed and
+  re-recorded `docs/references/behavior-surfaces.json` after the Daemon
+  reported its fingerprint as stale.
+- `git diff --check`: passed.
+- Read-only assertions found the removed-file rule in both copies of the
+  `write-tasks` skill and Task template, and the base rule in both
+  Roundfix reference copies, the spec command guide and `CONTEXT.md`.
+
+Acceptance evidence:
+
+- Removed-file declarations: implemented and covered by the focused contract
+  test in both canonical and mirrored skill trees.
+- Missing Task Context base rule: implemented in both guides and the
+  **Delivery Base** glossary entry.
+- Owned-skill versions: recorded by the required command.
+- Behavior Surface Record: the stale fingerprint reported by the Daemon was
+  re-recorded through the required sanctioned command; the recorder passed.

@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.29
+  version: 0.0.30
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.29
+version: 0.0.30
 ---
 
 # Write Tasks
@@ -101,7 +101,9 @@ Code for another operating system is verified by building its non-test code for 
   before filling the 200-path Spec Context Bundle with prior changed files.
 - **Declared edits and governed paths are explicit.** Every path a Task edits
   is declared under `interface:` or `creates:`; every path it removes is
-  declared under `deletes:`, never `instruction:`. A deletion is skipped by
+  declared only under `deletes:`, never `interface:` and never `instruction:`.
+  A Task that reads a file before removing it still lists it once, under
+  `deletes:`. A deletion is skipped by
   unresolved-reference checks and counts in scope, Governed Path and Wave
   collision audits. The Daemon refuses settlement before Verification when
   a declared deletion still exists, with `deletes: <path> still exists`. An
