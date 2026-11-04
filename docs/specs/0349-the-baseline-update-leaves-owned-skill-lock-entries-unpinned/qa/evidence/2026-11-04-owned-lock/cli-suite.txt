@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 40m ./internal/cli
+stdout:
+roundfix: Delivery Queue item widget: implement runs the item binary /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0349-n7ukgfkw/t-dzcbdidi/TestRunSpecReturnsARunSlotRefusalWithItsHolders1013347099/002/artifacts/delivery/widget/item-binary/9356343e7a29ff2c/roundfix
+--- FAIL: TestGuidanceCompositionJourney (11.96s)
+    --- FAIL: TestGuidanceCompositionJourney/rust-cli (1.40s)
+        baseline_release_gate_test.go:44: run external /Users/marcio/.cargo/bin/rustfmt src/main.rs: exit status 1
+            error: rustup could not choose a version of rustfmt to run, because one wasn't specified explicitly, and no default is configured.
+            help: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.
+suiteguard: guard cost: measured 2917 paths; fingerprint took 256.65025ms before and 274.447291ms after
+suiteguard: guard cost: measured 2917 paths; fingerprint took 254.501167ms before and 353.032583ms after
+FAIL
+suiteguard: guard cost: measured 2917 paths; fingerprint took 150.706959ms before and 134.563875ms after
+FAIL	roundfix/internal/cli	186.963s
+FAIL
+stderr:
+exit: 1

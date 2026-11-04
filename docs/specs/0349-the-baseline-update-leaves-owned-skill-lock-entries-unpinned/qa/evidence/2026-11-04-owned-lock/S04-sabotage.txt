@@ -1,0 +1,33 @@
+source: git archive 91af1d7ba53c4f8e89a00cb285afa949c13dbf25
+mutation:
+diff --git a/internal/baseline/owned_skills_lock.go b/internal/baseline/owned_skills_lock.go
+index 2f9c36d..93eeb99 100644
+--- a/internal/baseline/owned_skills_lock.go
++++ b/internal/baseline/owned_skills_lock.go
+@@ -190,7 +190,7 @@ func StaleOwnedLockEntries(ctx context.Context, root string, names []string) ([]
+ 		}
+ 		ref, pinned := entry["ref"]
+ 		hash := stringMapValue(entry, "computedHash") != externalSkillsLockDigest(files)
+-		if !pinned && !hash {
++		if !pinned {
+ 			continue
+ 		}
+ 		item := StaleOwnedLockEntry{Skill: name, Hash: hash}
+
+command: go test -count=1 -timeout 20m -v -run '^TestDoctorNamesAStaleOwnedSkillLockEntry$/^pinned_after_a_bundle_install$' ./internal/cli
+stdout:
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry
+=== PAUSE TestDoctorNamesAStaleOwnedSkillLockEntry
+=== CONT  TestDoctorNamesAStaleOwnedSkillLockEntry
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install
+    doctor_skills_lock_test.go:42: skills line = "skills: warn (12 required: 12 Roundfix-owned, 0 external; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: archive-spec, roundfix; next: roundfix skills install --target project)\n", want "skills: warn (12 required: 12 Roundfix-owned, 0 external; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: archive-spec, roundfix, write-prd; next: roundfix skills install --target project)\n"
+--- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry (0.01s)
+    --- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install (0.01s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 152.941625ms before and 137.775791ms after
+FAIL	roundfix/internal/cli	0.767s
+FAIL
+stderr:
+exit: 1
+expected failure: --- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install
+semantic kill: True

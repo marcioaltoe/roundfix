@@ -1,0 +1,26 @@
+import os, pathlib, subprocess, tempfile, shlex, re, json, hashlib, shutil, difflib
+ROOT=pathlib.Path("/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned-f6d01f349b05e078-d8b43b04-f7858438/run_20261104T183354Z_6fb3237eae19e727")
+BASE=pathlib.Path(__file__).parent
+SPEC=ROOT/"docs/specs/0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned"
+REPORT=SPEC/"qa/qa-report-2026-11-04.md"
+EVIDENCE=SPEC/"qa/evidence/2026-11-04-owned-lock"
+SLUG=SPEC.name
+HEAD="91af1d7ba53c4f8e89a00cb285afa949c13dbf25"
+def mark(row,status,detail):
+ s=REPORT.read_text()
+ s=re.sub(r"(?m)^\| "+re.escape(row)+r" \| [^|]+ \|", "| "+row+" | "+status+" |",s)
+ start=s.index("### "+row+"\n")
+ end=s.find("\n### ",start+5)
+ if end<0: end=len(s)
+ block=s[start:end]
+ if "Pending execution." in block: block=block.replace("Pending execution.",detail)
+ else: block=block.rstrip()+"\n\n"+detail+"\n"
+ REPORT.write_text(s[:start]+block+s[end:])
+def save(name,text):
+ p=EVIDENCE/(name+".txt");p.write_text(text);return "["+name+"](evidence/2026-11-04-owned-lock/"+name+".txt)"
+def cleanenv(h,t):
+ e=os.environ.copy()
+ for k in list(e):
+  if k.endswith("API_KEY"):e.pop(k)
+ e.update(HOME=str(h),TMPDIR=str(t),GOMODCACHE=(BASE/"GOMODCACHE").read_text(),GOCACHE=(BASE/"GOCACHE").read_text(),GOPROXY="off",GOSUMDB="off")
+ return e

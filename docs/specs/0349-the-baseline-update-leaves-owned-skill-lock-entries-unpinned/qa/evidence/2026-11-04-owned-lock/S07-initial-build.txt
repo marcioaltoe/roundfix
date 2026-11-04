@@ -1,0 +1,26 @@
+source: git archive 91af1d7ba53c4f8e89a00cb285afa949c13dbf25
+mutation:
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index 5d7e7fe..d4ef31c 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -222,7 +222,7 @@ func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies,
+ 					if result.Status == CheckStatusOK {
+ 						result.Status = CheckStatusWarn
+ 					}
+-					if !slices.Contains(strings.Split(result.NextAction, " && "), ownedSkillsNextAction) {
++					if true {
+ 						if result.NextAction != "" {
+ 							result.NextAction += " && "
+ 						}
+
+command: go test -count=1 -timeout 20m -v -run '^TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry$' ./internal/cli
+stdout:
+FAIL	roundfix/internal/cli [build failed]
+FAIL
+stderr:
+# roundfix/internal/cli [roundfix/internal/cli.test]
+internal/cli/doctor.go:13:2: "slices" imported and not used
+exit: 1
+expected failure: --- FAIL: TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry
+semantic kill: False

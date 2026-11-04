@@ -1,0 +1,34 @@
+source: git archive 91af1d7ba53c4f8e89a00cb285afa949c13dbf25
+mutation:
+diff --git a/internal/baseline/owned_skills_lock.go b/internal/baseline/owned_skills_lock.go
+index 2f9c36d..9b9ce90 100644
+--- a/internal/baseline/owned_skills_lock.go
++++ b/internal/baseline/owned_skills_lock.go
+@@ -241,7 +241,7 @@ func ownedLockObjectFields(data []byte) (map[string]ownedLockField, error) {
+ 			removeStart = keyStart
+ 		} else if len(fields) == 1 {
+ 			first := fields[firstName]
+-			first.removeEnd = keyStart
++			first.removeEnd = first.end
+ 			fields[firstName] = first
+ 		}
+ 		fields[name] = ownedLockField{start: end - len(raw), end: end, removeStart: removeStart, removeEnd: end}
+
+command: go test -count=1 -timeout 20m -v -run '^TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill$/^ref_first$' ./internal/baseline
+stdout:
+=== RUN   TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill
+=== PAUSE TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill
+=== CONT  TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill
+=== RUN   TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill/ref_first
+    owned_skills_lock_unpin_test.go:88: lock={"version":1,"skills":{"roundfix":{  , "computedHash":"5b96bb2d3caafb3d40d50671f32befe14ab3ec9638768003a25fe8cd2f21d5d2"}}}
+        want={"version":1,"skills":{"roundfix":{ "computedHash":"5b96bb2d3caafb3d40d50671f32befe14ab3ec9638768003a25fe8cd2f21d5d2"}}}
+--- FAIL: TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill (0.00s)
+    --- FAIL: TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill/ref_first (0.00s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 163.215333ms before and 135.89825ms after
+FAIL	roundfix/internal/baseline	0.627s
+FAIL
+stderr:
+exit: 1
+expected failure: --- FAIL: TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill/ref_first
+semantic kill: True

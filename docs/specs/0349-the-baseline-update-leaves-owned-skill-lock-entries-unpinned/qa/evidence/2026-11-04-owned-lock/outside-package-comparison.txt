@@ -1,0 +1,5 @@
+Source: published skills@1.7.6 package/dist/cli.mjs, offline measurement dated 2026-11-04. Tarball SHA-256: 7ab1d2a52f1e0058d2f7d4f425821e6346ce90526304594f2275f008b816563e. PRD Acceptance evidence quotes updateProjectSkills, cloneRepo and projectLockEntry; adopted external report Measurement section preserves the detailed passages.
+
+Compared to the observed Requirement 3 lock: archive-spec, roundfix and write-prd have no ref, so the quoted entry.ref clone call takes the default branch path (depth 1 with no ref). The computedHash now matches each installed folder. The external testing-boss entry keeps its catalog commit and therefore still requests that pin. Missing ref is the published default-branch JSON form, since projectLockEntry omits undefined parsed.ref.
+
+No skills CLI or network call ran. This verifies compatibility with the quoted package version, not a guarantee that default branch has already synced the current bundle; the guides retain that sync-window limitation.

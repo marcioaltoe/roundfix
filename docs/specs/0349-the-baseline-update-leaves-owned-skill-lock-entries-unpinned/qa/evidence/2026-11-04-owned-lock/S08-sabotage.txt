@@ -1,0 +1,64 @@
+source: git archive 91af1d7ba53c4f8e89a00cb285afa949c13dbf25
+mutation:
+diff --git a/.agents/skills/roundfix/references/setup.md b/.agents/skills/roundfix/references/setup.md
+index 96c8cb0..4849479 100644
+--- a/.agents/skills/roundfix/references/setup.md
++++ b/.agents/skills/roundfix/references/setup.md
+@@ -157,12 +157,7 @@ names are reported as `Updated skills-lock.json computedHash: <name>` followed
+ by `Removed skills-lock.json ref: <name>` for each entry whose `ref` was
+ removed.
+ 
+-With a Setup Manifest, Doctor appends
+-`DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills
+-with the copy their skills-lock.json entry pins: <names>` when an installed
+-owned skill has a `ref` or a mismatched `computedHash`. It changes `ok` to
+-`warn`, keeps `failed` and `unversioned`, never changes Doctor's exit code, and
+-adds `roundfix skills install --target project` as the next action. A bundle
++A bundle
+ install rewrites the installed owned entries with the installed hash and no
+ `ref`, clearing the warning.
+ 
+diff --git a/skills/roundfix/references/setup.md b/skills/roundfix/references/setup.md
+index 96c8cb0..4849479 100644
+--- a/skills/roundfix/references/setup.md
++++ b/skills/roundfix/references/setup.md
+@@ -157,12 +157,7 @@ names are reported as `Updated skills-lock.json computedHash: <name>` followed
+ by `Removed skills-lock.json ref: <name>` for each entry whose `ref` was
+ removed.
+ 
+-With a Setup Manifest, Doctor appends
+-`DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills
+-with the copy their skills-lock.json entry pins: <names>` when an installed
+-owned skill has a `ref` or a mismatched `computedHash`. It changes `ok` to
+-`warn`, keeps `failed` and `unversioned`, never changes Doctor's exit code, and
+-adds `roundfix skills install --target project` as the next action. A bundle
++A bundle
+ install rewrites the installed owned entries with the installed hash and no
+ `ref`, clearing the warning.
+ 
+
+command: go test -count=1 -timeout 20m -v -run '^TestTheGuidesStateTheUnpinnedOwnedLockEntry$' ./skills
+stdout:
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+    owned_lock_guidance_test.go:47: .agents/skills/roundfix/references/setup.md is missing "DR-SKILL-LOCK-STALE"
+    owned_lock_guidance_test.go:47: .agents/skills/roundfix/references/setup.md is missing "roundfix skills install --target project"
+    owned_lock_guidance_test.go:47: skills/roundfix/references/setup.md is missing "DR-SKILL-LOCK-STALE"
+    owned_lock_guidance_test.go:47: skills/roundfix/references/setup.md is missing "roundfix skills install --target project"
+--- FAIL: TestTheGuidesStateTheUnpinnedOwnedLockEntry (0.00s)
+    --- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline (0.00s)
+    --- FAIL: TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup (0.00s)
+FAIL
+FAIL	roundfix/skills	0.329s
+FAIL
+stderr:
+exit: 1
+expected failure: --- FAIL: TestTheGuidesStateTheUnpinnedOwnedLockEntry
+semantic kill: True

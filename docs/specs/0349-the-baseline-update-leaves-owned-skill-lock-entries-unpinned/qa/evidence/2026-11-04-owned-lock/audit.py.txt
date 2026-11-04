@@ -1,0 +1,83 @@
+from helper import *
+base='c8a0d243fb0c8d4e3f29a0d87ce703a550cd3423'
+def git(*args):return subprocess.check_output(['git','-c','core.fsmonitor=false',*args],cwd=ROOT,text=True)
+def section(s,heading):
+ at=s.index(heading);end=s.find('\n## ',at+len(heading));return s[at:end if end>=0 else len(s)]
+log='Task history audit\n'
+classifier=(ROOT/'internal/speccheck/governed.go').read_text()
+patterns=[re.compile(x) for x in re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',classifier)]
+exact=set(re.findall(r'"([^"]+)"',classifier[classifier.index('paths: exactGovernedPaths('):classifier.index('// GovernedPath reports')]))
+auth=(SPEC/'_authorization.md').read_text();authpaths=set(re.findall(r'^  - (\S+)$',auth.split('operations:')[0],re.M))
+assert 'status: approved' in auth
+allpaths=set()
+commits=git('rev-list','--reverse',base+'..'+HEAD).splitlines()
+assert len(commits)==3,commits
+for i,commit in enumerate(commits,1):
+ name='task_'+str(i).zfill(2);task=(SPEC/(name+'.md')).read_text()
+ declarations=set(re.findall(r'^- (?:interface|creates|deletes): `([^`]+)`',task,re.M))
+ if '## Recorded paths' in task:declarations.update(re.findall(r'`([^`]+)`',section(task,'## Recorded paths')))
+ declarations.add(str((SPEC/(name+'.md')).relative_to(ROOT)))
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ log+='command: git diff-tree --no-commit-id --name-only -r '+commit+'\n'+'\n'.join(paths)+'\n'
+ assert set(paths)<=declarations, (name,set(paths)-declarations)
+ governed=[p for p in paths if p in exact or any(rx.search(p) for rx in patterns)]
+ assert set(governed)<=authpaths,(name,governed,authpaths)
+ log+='All changed files declared in Context or Recorded paths (plus assigned Task file). Governed: '+', '.join(governed)+'\n'
+ allpaths.update(paths)
+# Keep the seeded mechanical authorization audit unchanged; this row measures only the authored changed-scope contract.
+for p in allpaths:
+ assert p not in {'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/user-guide/release-runbook.md'}
+ assert not p.startswith(('.github/workflows/','internal/baseline/assets/','docs/agents/','.agents/skills/domain-modeling/','skills/domain-modeling/'))
+ if p.startswith('.agents/skills/'):assert p.startswith('.agents/skills/roundfix/')
+ if p.startswith('skills/') and '/' in p[len('skills/'):]:assert p.startswith(('skills/roundfix/','skills/testdata/'))
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ old=git('show',base+':'+path);new=(ROOT/path).read_text()
+ assert section(old,'### QA settlement')==section(new,'### QA settlement')
+ log+=path+': QA settlement section unchanged\n'
+context_before=git('show',base+':CONTEXT.md');context_now=(ROOT/'CONTEXT.md').read_text()
+assert context_before==re.sub(r'\*\*Stale Owned Lock Entry\*\*:\n.*?\n\n','',context_now,count=1,flags=re.S)
+log+='Only the Stale Owned Lock Entry definition was added to CONTEXT.md; all existing glossary bytes unchanged.\n'
+log+=git('diff',base,HEAD,'--','CONTEXT.md')
+assert git('diff','--name-only').strip()==''
+log+='Current tracked delta: empty; only QA evidence/report files are untracked. Root lock and all prohibited paths unchanged.\n'
+link=save('history-scope',log)
+mark('Q10','pass','Audited all three actual Task commits against each Task Context and Recorded paths using `git diff-tree --no-commit-id --name-only -r <commit>`. Every path is declared (no Recorded paths additions needed); all four changed Governed Paths are in the approved authorization. Preserved the seeded authorization audit rather than duplicating its mechanical shape checks. Verified every prohibited path/class, other skill, and QA settlement section is unchanged. CONTEXT range diff adds only the declared term; current tracked delta is empty. '+link+'.')
+print('Q10 PASS',len(allpaths),'changed paths')
+files=['docs/user-guide/commands/doctor.md','docs/user-guide/commands/baseline.md','docs/user-guide/commands/skills.md','CONTEXT.md']+[prefix+'/roundfix/references/'+f for prefix in ['.agents/skills','skills'] for f in ['baseline.md','setup.md']]
+log='Whitespace-normalized wording assertions and source snippets\n'
+for path in files:
+ text=(ROOT/path).read_text();flat=' '.join(text.split())
+ assert '`ref`' in flat and any(w in flat for w in ['remov','loses','no `ref`']),path
+ if path.endswith('baseline.md'):
+  assert 'skills.lockUnpinned' in flat and '- lock ref removed <name>' in flat,path
+ if path.endswith(('skills.md','setup.md')):assert 'Removed skills-lock.json ref: <name>' in flat,path
+ if path.endswith(('doctor.md','setup.md')):assert 'DR-SKILL-LOCK-STALE' in flat,path
+ assert not re.search(r'(?:keeps|preserves) every (?:other )?(?:field|member|byte) (?:but|except) `computedHash`',flat),path
+ log+='\n'+path+'\n'+'\n'.join(l for l in text.splitlines() if any(w in l for w in ['ref','lockUnpinned','LOCK-STALE','Stale Owned Lock Entry']))+'\n'
+for f in ['_prd.md','_techspec.md']:
+ assert '- adds: **Stale Owned Lock Entry**' in (SPEC/f).read_text()
+assert re.search(r'^\*\*Stale Owned Lock Entry\*\*:',context_now,re.M)
+for f in ['baseline.md','setup.md']:
+ assert (ROOT/'.agents/skills/roundfix/references'/f).read_bytes()==(ROOT/'skills/roundfix/references'/f).read_bytes()
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ assert (ROOT/path).read_text().count('version: 0.1.183')==2
+ assert git('show',base+':'+path).count('version: 0.1.182')==2
+log+='\nPASS: all eight texts state removed ref; baseline lines/JSON field, skills/setup install line, doctor/setup warning, glossary declaration and definition, mirror equality, version 0.1.182 -> 0.1.183 in both fields of both copies. Q10 history independently limits glossary change to the declared term. Full skills and docscontract suites validate the sanctioned records.\n'
+link=save('guidance-glossary',log)
+mark('Q09','pass','Searched all three command guides, CONTEXT.md and both baseline/setup reference copies on normalized text: removed ref wording present everywhere, required text/JSON reports and warning present, obsolete preserves-all-but-hash wording absent. PRD and TechSpec declare adds: Stale Owned Lock Entry and CONTEXT defines it as `**Stale Owned Lock Entry**:` beside Setup Snapshot Difference. Mirrors are byte-identical and both Roundfix version fields rose 0.1.182 to 0.1.183; required version and behavior records passed their full suites. '+link+'.')
+print('Q09 PASS')
+report=(SPEC/'references/2026-11-04-the-baseline-update-keeps-a-stale-ref-in-owned-skill-lock-entries.md').read_text()
+assert '742877d' in report and '12 entradas' in report and '8d71fade68c54693bedbd917371f0514311af157' in report
+observed=(EVIDENCE/'public-install.txt').read_text()
+assert observed.count('Removed skills-lock.json ref: ')==3
+log='Source: adopter report from marcioaltoe-skills, ai-memory message 01a1a5f7-7406-76d3-b98e-659e265b27db, 2026-11-04 06:50 BRT; Quaestor commit 742877d (2026-11-04 06:17 BRT). Quoted in the adopted reference, Report and Characterization sections. External origin predates this Spec.\n\nThe report names twelve owned entries pinned to the same catalog commit and a downgrade after only computedHash changed. Requirement 3 used the same source/ref/sourceType/skillPath/computedHash shape and same catalog commit for three representative owned entries and external testing-boss. The captured git diff removes exactly the three owned refs and changes their hashes; external entry retains the pin. This is offline comparison to the quoted external observation, not a new Quaestor measurement or catalog-sync proof.\n'
+link=save('outside-adopter-comparison',log)
+mark('X01','pass','Compared the dated external adopter report (2026-11-04, marcioaltoe-skills message 01a1a5f7, Quaestor commit 742877d) against the live temporary-repository fixture and its observed diff: the same lock shape and catalog pin, now removed for installed owned entries instead of retaining the reported downgrade trigger. Twelve reported owned entries are represented by three in the fixture; no other repository was read. '+link+'. External source locator: [adopted report](../references/2026-11-04-the-baseline-update-keeps-a-stale-ref-in-owned-skill-lock-entries.md).')
+prd=(SPEC/'_prd.md').read_text()
+for snippet in ['cloneRepo(cloneSource, skillsForSource[0].entry.ref)','computedHash === skill.entry.computedHash && onDisk.has(skill.name)','ref: parsed.ref']:
+ assert snippet in prd,snippet
+log='Source: published skills@1.7.6 package/dist/cli.mjs, offline measurement dated 2026-11-04. Tarball SHA-256: 7ab1d2a52f1e0058d2f7d4f425821e6346ce90526304594f2275f008b816563e. PRD Acceptance evidence quotes updateProjectSkills, cloneRepo and projectLockEntry; adopted external report Measurement section preserves the detailed passages.\n\nCompared to the observed Requirement 3 lock: archive-spec, roundfix and write-prd have no ref, so the quoted entry.ref clone call takes the default branch path (depth 1 with no ref). The computedHash now matches each installed folder. The external testing-boss entry keeps its catalog commit and therefore still requests that pin. Missing ref is the published default-branch JSON form, since projectLockEntry omits undefined parsed.ref.\n\nNo skills CLI or network call ran. This verifies compatibility with the quoted package version, not a guarantee that default branch has already synced the current bundle; the guides retain that sync-window limitation.\n'
+link=save('outside-package-comparison',log)
+mark('X02','pass','Compared the published skills@1.7.6 passages (package/dist/cli.mjs, offline 2026-11-04 measurement; precise tarball digest in evidence) with the observed persisted lock: missing owned ref gives the quoted default-branch clone, installed hash matches, external entry still pins its prior commit. The quoted projectLockEntry serialization permits absent ref. '+link+'. Source locator: [PRD Acceptance evidence](../_prd.md#acceptance-evidence). The package was not executed and the catalog was not contacted.')
+mark('PR01','blocked (environment: no open Pull Request)','Prompt explicitly reports no open Pull Request on the Spec target branch. Approval: recorded delivery authority in [authorization](../_authorization.md) grants the intended change and delivery operations. Checks/status: Daemon supplied make verify-changed pass at audited head. Unresolved threads: none exists because no Pull Request is open. Merge-Ready acceptance: none yet; no current-candidate Review Source review is claimed. Review-artifact ancestry: claimed candidate is '+HEAD+'; no review artifact exists yet. Exact unblocking action: Supervisor runs configured pre-PR review/delivery, opens the target-branch Pull Request, and verifies current-head acceptance/checks. Missing Merge-Ready evidence keeps this row blocked; this pre-PR row alone permits qualifying partial, never a synthetic pass.')
+print('Outside rows PASS; PR row recorded blocked without acceptance.')

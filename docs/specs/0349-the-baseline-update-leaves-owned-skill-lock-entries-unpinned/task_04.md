@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

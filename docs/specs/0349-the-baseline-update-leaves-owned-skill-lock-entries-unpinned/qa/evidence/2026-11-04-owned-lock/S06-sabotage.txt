@@ -1,0 +1,33 @@
+source: git archive 91af1d7ba53c4f8e89a00cb285afa949c13dbf25
+mutation:
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index 5d7e7fe..d164342 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -220,7 +220,7 @@ func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies,
+ 					}
+ 					result.Detail += "; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: " + strings.Join(names, ", ")
+ 					if result.Status == CheckStatusOK {
+-						result.Status = CheckStatusWarn
++						result.Status = CheckStatusOK
+ 					}
+ 					if !slices.Contains(strings.Split(result.NextAction, " && "), ownedSkillsNextAction) {
+ 						if result.NextAction != "" {
+
+command: go test -count=1 -timeout 20m -v -run '^TestDoctorNamesAStaleOwnedSkillLockEntry$/^pinned_after_a_bundle_install$' ./internal/cli
+stdout:
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry
+=== PAUSE TestDoctorNamesAStaleOwnedSkillLockEntry
+=== CONT  TestDoctorNamesAStaleOwnedSkillLockEntry
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install
+    doctor_skills_lock_test.go:42: skills line = "skills: ok (12 required: 12 Roundfix-owned, 0 external; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: archive-spec, roundfix, write-prd)\n", want "skills: warn (12 required: 12 Roundfix-owned, 0 external; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: archive-spec, roundfix, write-prd; next: roundfix skills install --target project)\n"
+--- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry (0.01s)
+    --- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install (0.01s)
+FAIL
+suiteguard: guard cost: measured 2909 paths; fingerprint took 153.159958ms before and 139.643417ms after
+FAIL	roundfix/internal/cli	0.765s
+FAIL
+stderr:
+exit: 1
+expected failure: --- FAIL: TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install
+semantic kill: True
