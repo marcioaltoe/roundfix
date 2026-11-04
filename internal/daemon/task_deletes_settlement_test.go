@@ -136,3 +136,81 @@ func TestSettlementRefusesAnUnauthorizedGovernedDeletion(t *testing.T) {
 		t.Fatalf("unauthorized deletion finding = %+v", findings[0])
 	}
 }
+
+func TestAGatedTaskWhoseInterfacePathItDeletesSettles(t *testing.T) {
+	t.Parallel()
+	for _, mode := range []string{"disk-only", "staged"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Parallel()
+			fixture, plan, runner, verifier, committer := retiredHistoryDeletionFixture(t)
+			taskPath := taskPathFor(fixture.gitRoot, taskCycleSlug, "task_01")
+			content, err := os.ReadFile(taskPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mustWriteForTest(t, taskPath, strings.Replace(string(content), "- deletes:", "- interface:", 1))
+			commitTaskFixtureSource(t, fixture.gitRoot, "test: declare interface before deletion")
+			fixture.reloadGraph()
+			plan.Tasks = fixture.graph.Tasks
+			for i := range plan.Tasks {
+				if plan.Tasks[i].Type == spec.TaskTypeQA {
+					plan.Tasks[i].Status = spec.StatusCompleted
+				}
+			}
+			plan.HeadSHA = strings.TrimSpace(gittest.Run(t, fixture.gitRoot, "rev-parse", "HEAD"))
+			plan.Authorization = spec.ReadSpecAuthorization(t.Context(), plan.WorkDir, plan.SpecsRoot, plan.Spec.Slug, plan.HeadSHA)
+			runner.afterTask = func(string) {
+				if mode == "staged" {
+					gittest.Run(t, fixture.gitRoot, "rm", "-q", "--ignore-unmatch", "--", settlementDeletedSource)
+					return
+				}
+				if err := os.Remove(filepath.Join(fixture.gitRoot, filepath.FromSlash(settlementDeletedSource))); err != nil && !errors.Is(err, os.ErrNotExist) {
+					t.Fatal(err)
+				}
+			}
+			result, err := fixture.engine(t, runner, verifier, committer, fixture.worktree).TaskCycle(t.Context(), plan)
+			if err != nil || result.Completed != 1 || result.Failed != 0 {
+				t.Fatalf("TaskCycle = %+v, %v", result, err)
+			}
+		})
+	}
+}
+
+func TestSettlementStillRefusesAContextPathNoRevisionTracks(t *testing.T) {
+	t.Parallel()
+	const path = "packages/backend/test/never.test.ts"
+	fixture, plan, runner, verifier, committer := retiredHistoryDeletionFixture(t)
+	taskPath := taskPathFor(fixture.gitRoot, taskCycleSlug, "task_01")
+	runner.afterTask = func(string) {
+		content, err := os.ReadFile(taskPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entry := "- interface: `" + path + "`"
+		if !strings.Contains(string(content), entry) {
+			mustWriteForTest(t, taskPath, strings.Replace(string(content), "## Context\n", "## Context\n\n"+entry+"\n", 1))
+		}
+		if err := os.Remove(filepath.Join(fixture.gitRoot, filepath.FromSlash(settlementDeletedSource))); err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Fatal(err)
+		}
+	}
+	fixture.worktree.snapshots = [][]string{nil, {settlementDeletedSource, "docs/specs/" + taskCycleSlug + "/task_01.md"}}
+	result, err := fixture.engine(t, runner, verifier, committer, fixture.worktree).TaskCycle(t.Context(), plan)
+	if err != nil || result.Failed != 1 || result.Completed != 0 || len(committer.messages) != 0 {
+		t.Fatalf("TaskCycle = %+v, %v, commits = %v", result, err, committer.messages)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != "failed" {
+		t.Fatalf("status = %q, want failed", got)
+	}
+	diagnostic, err := os.ReadFile(filepath.Join(plan.ArtifactDir, "runs", plan.RunID, "verification", "batch-001-attempt-2-settlement-spec-consistency.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	task := "docs/specs/" + taskCycleSlug + "/task_01.md"
+	fix := "Remove the Task Context entry for " + path + " from " + task + ", or declare it under deletes: when the Task removes it; replace it only with a path the Task itself reads or changes."
+	for _, want := range []string{speccheck.CodeReferenceUnresolved, path, "Fix: " + fix} {
+		if !strings.Contains(string(diagnostic), want) {
+			t.Errorf("diagnostic missing %q: %s", want, diagnostic)
+		}
+	}
+}

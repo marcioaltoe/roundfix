@@ -1817,6 +1817,9 @@ func detectTaskContextReferences(result *Result, repoRoot, specsRoot, taskPath s
 				}
 			}
 		}
+		if taskContextTrackedAtBase(repoRoot, ref.Path) {
+			continue
+		}
 		line := sectionLineContaining(content, "Context", ref.Path)
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeReferenceUnresolved,
@@ -1826,7 +1829,7 @@ func detectTaskContextReferences(result *Result, repoRoot, specsRoot, taskPath s
 				{Path: taskDisplayPath, Line: line},
 				{Path: ref.Path, Line: 1},
 			},
-			Fix: "Create " + ref.Path + " or update the Task Context entry in " + taskDisplayPath + ".",
+			Fix: taskContextUnresolvedFix(ref.Path, taskDisplayPath),
 		})
 	}
 }

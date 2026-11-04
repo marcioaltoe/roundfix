@@ -63,7 +63,10 @@ func TestTaskContextResolvesThroughTheArchiveRecord(t *testing.T) {
 					gittest.Run(t, root, "add", ".")
 					gittest.Run(t, root, "commit", "-m", "docs: historical context")
 					revision := strings.TrimSpace(gittest.Run(t, root, "rev-parse", "HEAD"))
-					if err := os.RemoveAll(filepath.Join(root, source)); err != nil {
+					if spelling == "active" {
+						gittest.Run(t, root, "rm", "-r", source)
+						gittest.Run(t, root, "commit", "-m", "docs: archive historical context")
+					} else if err := os.RemoveAll(filepath.Join(root, source)); err != nil {
 						t.Fatal(err)
 					}
 					writeCheckArchiveRecord(t, root, archiveRoot, source, slug, revision)

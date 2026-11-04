@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0348-a-task-context-path-the-task-deletes-is-not-unresolved
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,27 @@ cycle. It answers the Fiscus report of 2026-11-04 (ai-memory message
 
 - `_prd.md` → Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-2; Invariants 1-5; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, golang-context, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Pre-change characterization: `go test -count=1 -timeout 5m -v -run '^TestTaskContextPathTrackedAtTheBaseResolves$' ./internal/speccheck` exited 0 with all twelve rows on the unchanged production check. Counts were 0 for `present` and 1 for every other row; reporting rows pinned the existing code, severity, summary, both locations, and old fix. An initial fixture-only failure (missing PRD frontmatter) was corrected before this run.
+
+Pre-change settlement reproduction: `go test -count=1 -timeout 5m -v -run '^TestAGatedTaskWhoseInterfacePathItDeletesSettles$' ./internal/daemon` exited 1. Both `disk-only` and `staged` produced `Completed:0 Failed:1` with `settlement check: spec consistency: SC-REF-UNRESOLVED` naming `packages/backend/test/gone.test.ts`.
+
+Implemented the two unexported helpers and invoked the base reader only after all three existing Task Context resolutions fail. The reader verifies the symlink-resolved Git top level, checks `HEAD`, then the Delivery Base from `preflight.ResolveDefaultBranchHead` and `git merge-base`. All Git calls use `preflight.ExecGitRunner`, which disables fsmonitor; reads are local, synchronous, and write no refs. Unavailable revisions leave the finding standing. Only the Task Context finding's fix changes; its code, severity, summary, locations, and other reference findings retain their existing construction.
+
+Focused acceptance evidence:
+
+- Missing tracked `interface:` and `instruction:` paths: the twelve-row table now passes with the five specified removal rows changed from 1 to 0. The six unresolved rows retain count 1 and assert the complete finding, including both locations and the exact API Contract 2 fix. Temporary fixtures use `gittest`, local `update-ref` calls, and an outer-root tracked source for the nested-root refusal.
+- Existing archive resolution: the active-spelling archive-record fixture commits its source-folder removal; all original assertions and the archived-spelling fixture retain their expectations.
+- Settlement: both `disk-only` and `staged` interface deletions now complete one Task through `TaskCycle`. The never-tracked Context entry still fails settlement without a commit, and its spec-consistency diagnostic log contains `SC-REF-UNRESOLVED`, the path, and the complete new fix. Existing declared-deletion settlement, undeleted-source refusal, broken-link refusal, and unauthorized governed-deletion checks also pass.
+
+Post-change focused commands:
+
+- `go test -count=1 -timeout 5m -v -run '^(TestTaskContextPathTrackedAtTheBaseResolves|TestTaskContextResolvesThroughTheArchiveRecord|TestTaskContextResolvesThroughTheArchive)$' ./internal/speccheck` — exit 0; all twelve table rows and both archive routes passed.
+- `go test -count=1 -timeout 5m -v -run '^(TestAGatedTaskWhoseInterfacePathItDeletesSettles|TestSettlementStillRefusesAContextPathNoRevisionTracks|TestAGatedTaskWhoseDeclaredDeletionIsOnlyOnDiskSettles|TestSettlementStillReportsALinkToADeletedFile|TestSettlementRefusesAnUnauthorizedGovernedDeletion|TestATaskThatLeavesItsDeletesPathDoesNotSettle|TestATaskThatRemovesItsDeletesPathSettles)$' ./internal/daemon` — exit 0; seven top-level tests passed, including both deletion modes.
+- `git diff --check` — exit 0. Changed-path review found only the five declared implementation/test paths and this Task file; the Task file was already modified at entry for Daemon-owned `status: in_progress`, which was preserved.
+
+Every new top-level test starts with `t.Parallel()`; the new subtests are parallel too. The focused runs' suite guard reported no repository mutation or helper residue. No skill, guide, tooling configuration, Task Graph, or other Task was edited. Declared Verification and repository Verification were not run; the Daemon owns them and terminal settlement. No commits, pushes, or pull requests were made.
