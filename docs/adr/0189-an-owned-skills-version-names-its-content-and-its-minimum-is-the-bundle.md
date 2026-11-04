@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-10-27T15:00:00Z
+updated_at: 2026-11-04T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -69,3 +69,10 @@ the lock format names a provider (`github`, `node_modules`, `local`) that can
 fetch the skill again, Roundfix is none of them, and the Setup Snapshot
 already marks owned skills `type: repo`; the hash is the field the format
 defines as the folder's content on disk.
+
+## Addendum — 2026-11-04
+
+The kept `ref` named the catalog commit the upstream tool installed, so the
+skills CLI reinstalled that older copy over the bundle. The bundle install
+now removes `ref` from the entries it rewrites, and Doctor names an owned
+entry that still pins another copy ([ADR-0359](0359-an-installed-owned-skill-keeps-an-unpinned-lock-entry-and-doctor-names-a-stale-one.md)).
