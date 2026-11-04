@@ -1379,6 +1379,10 @@ _Avoid_: Forked skill, local skill copy, edited upstream skill
 A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
 _Avoid_: Trailing skill, outdated skill, stale skill
 
+**Stale Owned Lock Entry**:
+A `skills-lock.json` entry of an installed Roundfix-owned skill that carries a `ref` or a `computedHash` other than the installed copy's, so `skills update` would replace the installed copy with the one the entry pins. `roundfix doctor` warns `DR-SKILL-LOCK-STALE`, and the bundle install of `roundfix baseline update` or `roundfix skills install` rewrites the entry with the installed hash and no `ref` ([ADR-0359](docs/adr/0359-an-installed-owned-skill-keeps-an-unpinned-lock-entry-and-doctor-names-a-stale-one.md)).
+_Avoid_: Stale skill, Setup Snapshot Difference, unpinned external lock entry
+
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.
 _Avoid_: Wizard, form, setup screen

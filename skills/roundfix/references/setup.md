@@ -151,9 +151,20 @@ The binary ships twelve Roundfix-owned skills: the operational `roundfix`
 skill and eleven authorial workflow skills.
 
 After the bundle install, an existing `skills-lock.json` entry naming an owned
-skill receives the installed folder's `computedHash`; every other field is
-kept. No entry or lock is created when none exists, and the names are reported
-as `Updated skills-lock.json computedHash: <name>`.
+skill receives the installed folder's `computedHash` and loses its `ref`; every
+other field is kept. No entry or lock is created when none exists, and the
+names are reported as `Updated skills-lock.json computedHash: <name>` followed
+by `Removed skills-lock.json ref: <name>` for each entry whose `ref` was
+removed.
+
+With a Setup Manifest, Doctor appends
+`DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills
+with the copy their skills-lock.json entry pins: <names>` when an installed
+owned skill has a `ref` or a mismatched `computedHash`. It changes `ok` to
+`warn`, keeps `failed` and `unversioned`, never changes Doctor's exit code, and
+adds `roundfix skills install --target project` as the next action. A bundle
+install rewrites the installed owned entries with the installed hash and no
+`ref`, clearing the warning.
 
 ## Migration check
 

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -93,3 +93,30 @@ skill's version and re-records the derived records. It closes the marcioaltoe-sk
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 5; Glossary
 - `_techspec.md` → API Contract 5; Testing Approach; Risks & Considerations; Glossary; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, testing-boss, coding-guidelines, evidence-gate.
+
+Implemented the Task slice for Daemon Verification:
+
+- Updated the canonical Roundfix `baseline` and `setup` references with the unpinned owned-lock rule, the `skills.lockUnpinned` and removed-`ref` reports, the `DR-SKILL-LOCK-STALE` warning, and its `roundfix skills install --target project` next action.
+- Ran `make skills-sync`; the Roundfix reference mirrors match their canonical copies. The owned-skill recorder raised both Roundfix `SKILL.md` version fields from `0.1.182` to `0.1.183` and appended the sanctioned digest record.
+- Added `TestTheGuidesStateTheUnpinnedOwnedLockEntry`, with `t.Parallel()` as its first statement, covering both copies of each reference on whitespace-normalized text.
+- Added **Stale Owned Lock Entry** beside **Setup Snapshot Difference** in `CONTEXT.md`, linked to ADR-0359.
+- Re-recorded `docs/references/behavior-surfaces.json` with the required sanctioned command as the final regeneration step.
+
+Acceptance evidence:
+
+- Both canonical references contain the removed-`ref` wording and their required report or warning text; the two mirrors are byte-identical to their canonical sources. Static checks passed.
+- `CONTEXT.md` contains the required `**Stale Owned Lock Entry**:` glossary definition and ADR-0359 link.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed; both Roundfix version fields are `0.1.183` and the version record contains its generated digest. The final Behavior Surface recorder also passed.
+
+Focused checks:
+
+- `gofmt -d skills/owned_lock_guidance_test.go` — no formatting changes.
+- `git diff --check` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'` — passed.
+- `go test ./skills -run '^$'` — compiled the skills package; no tests were selected.
+
+The declared Verification commands and repository gates remain Daemon-owned and were not run. Task status remains Daemon-owned `in_progress`; no commit, push, PR, Task Graph edit, or other Task file was changed.

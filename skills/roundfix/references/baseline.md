@@ -75,10 +75,11 @@ writes nothing. A declared decision also answers a new decision without
 
 `--no-skills` skips the Repository Skill Set refresh.
 After the bundle install, an existing `skills-lock.json` entry naming an owned
-skill receives the installed folder's `computedHash`; every other field is
-kept. No entry or lock is created when none exists. The result reports
-`skills.lockUpdated` and prints `Skills lock updated: <count>` followed by one
-`- lock updated <name>` line for each name.
+skill receives the installed folder's `computedHash` and loses its `ref`; every
+other field is kept. No entry or lock is created when none exists. The result
+reports `skills.lockUpdated` and `skills.lockUnpinned` and prints `Skills lock
+updated: <count>` followed by one `- lock updated <name>` line for each name,
+then one `- lock ref removed <name>` line for each name whose `ref` was removed.
 `--skills-source-dir <path>` selects an offline Git checkout or bare object store for external skill restoration. `--repo`
 defaults to the current directory, and `--format` accepts `text` or `json`.
 
