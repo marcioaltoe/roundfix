@@ -1393,8 +1393,11 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight
 		}
-		for _, name := range updated {
+		for _, name := range updated.Hashed {
 			fmt.Fprintf(stdout, "Updated skills-lock.json computedHash: %s\n", name)
+		}
+		for _, name := range updated.Unpinned {
+			fmt.Fprintf(stdout, "Removed skills-lock.json ref: %s\n", name)
 		}
 		if err := maybeCreateProjectClaudeSkillSymlink(ctx, projectRoot, stdout, stderr); err != nil {
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)

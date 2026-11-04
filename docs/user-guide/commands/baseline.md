@@ -163,10 +163,13 @@ is a Baseline defect to report, not a skill to keep restoring by hand.
 adds nothing to it; `roundfix doctor` reports that state.
 
 After the bundle install, an existing `skills-lock.json` entry naming an owned
-skill receives the installed folder's `computedHash`; every other field is
-kept. No entry or lock is created when none exists. The result reports
-`skills.lockUpdated` and prints `Skills lock updated: <count>` followed by one
-`- lock updated <name>` line for each name.
+skill receives the installed folder's `computedHash` and loses its `ref`;
+every other field is kept. No entry or lock is created when none exists. The
+result reports all changed entries in `skills.lockUpdated` and prints
+`Skills lock updated: <count>` followed by one `- lock updated <name>` line for
+each name. Entries whose `ref` was removed also appear in
+`skills.lockUnpinned`, with one `- lock ref removed <name>` line after the
+lock-updated lines.
 
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal

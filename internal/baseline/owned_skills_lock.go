@@ -7,45 +7,60 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 )
 
-// RecordInstalledOwnedSkills records installed folder hashes only for existing
-// lock entries named by the owned bundle, preserving all other document bytes.
-func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string) ([]string, error) {
+// OwnedSkillsLockUpdate names the installed entries changed by the lock writer.
+type OwnedSkillsLockUpdate struct {
+	Hashed   []string
+	Unpinned []string
+}
+
+// Names returns the sorted union of entries whose hash or ref changed.
+func (update OwnedSkillsLockUpdate) Names() []string {
+	names := append([]string(nil), update.Hashed...)
+	names = append(names, update.Unpinned...)
+	sort.Strings(names)
+	return slices.Compact(names)
+}
+
+// RecordInstalledOwnedSkills records installed hashes and removes refs only for
+// existing lock entries named by the owned bundle, preserving all other bytes.
+func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string) (OwnedSkillsLockUpdate, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return OwnedSkillsLockUpdate{}, err
 	}
 	filename := filepath.Join(root, "skills-lock.json")
 	document, err := loadSkillsLock(filename)
 	if err != nil {
-		return nil, err
+		return OwnedSkillsLockUpdate{}, err
 	}
 	if document.before == nil {
-		return nil, nil
+		return OwnedSkillsLockUpdate{}, nil
 	}
 	fields, err := ownedLockObjectFields(document.before)
 	if err != nil {
-		return nil, fmt.Errorf("read skills-lock.json fields: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("read skills-lock.json fields: %w", err)
 	}
 	skillsField := fields["skills"]
 	entries, err := ownedLockObjectFields(document.before[skillsField.start:skillsField.end])
 	if err != nil {
-		return nil, fmt.Errorf("read skills-lock.json skills: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("read skills-lock.json skills: %w", err)
 	}
 	sorted := append([]string(nil), names...)
 	sort.Strings(sorted)
-	var updated []string
+	var update OwnedSkillsLockUpdate
 	type replacement struct {
 		start, end int
 		data       []byte
 	}
 	var edits []replacement
-	for _, name := range sorted {
+	for i, name := range sorted {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return OwnedSkillsLockUpdate{}, err
 		}
-		if len(updated) > 0 && updated[len(updated)-1] == name {
+		if i > 0 && sorted[i-1] == name {
 			continue
 		}
 		if _, ok := document.objectEntry("skills", name); !ok {
@@ -53,7 +68,7 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 		}
 		files, exists, err := inspectRestoreTarget(root, ".agents/skills/"+name)
 		if err != nil {
-			return nil, fmt.Errorf("inspect installed skill %q for skills-lock.json: %w", name, err)
+			return OwnedSkillsLockUpdate{}, fmt.Errorf("inspect installed skill %q for skills-lock.json: %w", name, err)
 		}
 		if !exists {
 			continue
@@ -64,11 +79,15 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 		raw := document.before[offset : skillsField.start+entry.end]
 		values, err := ownedLockObjectFields(raw)
 		if err != nil {
-			return nil, fmt.Errorf("read skills-lock.json entry %q: %w", name, err)
+			return OwnedSkillsLockUpdate{}, fmt.Errorf("read skills-lock.json entry %q: %w", name, err)
+		}
+		if ref, ok := values["ref"]; ok {
+			edits = append(edits, replacement{offset + ref.removeStart, offset + ref.removeEnd, nil})
+			update.Unpinned = append(update.Unpinned, name)
 		}
 		encoded, err := json.Marshal(digest)
 		if err != nil {
-			return nil, fmt.Errorf("encode skills-lock.json hash: %w", err)
+			return OwnedSkillsLockUpdate{}, fmt.Errorf("encode skills-lock.json hash: %w", err)
 		}
 		if hash, ok := values["computedHash"]; ok {
 			var previous string
@@ -78,17 +97,21 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 			edits = append(edits, replacement{offset + hash.start, offset + hash.end, encoded})
 		} else {
 			insertion := []byte(`"computedHash":`)
-			if len(values) > 0 {
+			remaining := len(values)
+			if _, ok := values["ref"]; ok {
+				remaining--
+			}
+			if remaining > 0 {
 				insertion = append([]byte(","), insertion...)
 			}
 			insertion = append(insertion, encoded...)
 			end := offset + len(raw) - 1
 			edits = append(edits, replacement{end, end, insertion})
 		}
-		updated = append(updated, name)
+		update.Hashed = append(update.Hashed, name)
 	}
-	if len(updated) == 0 {
-		return nil, nil
+	if len(edits) == 0 {
+		return OwnedSkillsLockUpdate{}, nil
 	}
 	sort.Slice(edits, func(i, j int) bool { return edits[i].start > edits[j].start })
 	data := append([]byte(nil), document.before...)
@@ -97,44 +120,108 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 	}
 	info, err := os.Lstat(filename)
 	if err != nil {
-		return nil, fmt.Errorf("stat skills-lock.json: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("stat skills-lock.json: %w", err)
 	}
 	file, err := os.CreateTemp(root, ".skills-lock-*")
 	if err != nil {
-		return nil, fmt.Errorf("create skills-lock.json temporary file: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("create skills-lock.json temporary file: %w", err)
 	}
 	defer os.Remove(file.Name())
 	if err := file.Chmod(info.Mode()); err != nil {
 		file.Close()
-		return nil, fmt.Errorf("preserve skills-lock.json mode: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("preserve skills-lock.json mode: %w", err)
 	}
 	if _, err := file.Write(data); err != nil {
 		file.Close()
-		return nil, fmt.Errorf("write skills-lock.json: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("write skills-lock.json: %w", err)
 	}
 	if err := file.Close(); err != nil {
-		return nil, fmt.Errorf("close skills-lock.json: %w", err)
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("close skills-lock.json: %w", err)
 	}
+	if err := ctx.Err(); err != nil {
+		return OwnedSkillsLockUpdate{}, err
+	}
+	if err := os.Rename(file.Name(), filename); err != nil {
+		return OwnedSkillsLockUpdate{}, fmt.Errorf("replace skills-lock.json: %w", err)
+	}
+	return update, nil
+}
+
+// StaleOwnedLockEntry describes an installed owned skill whose lock pins another copy.
+type StaleOwnedLockEntry struct {
+	Skill string
+	Ref   string // The ref member's value as text; empty when absent.
+	Hash  bool   // computedHash is absent or differs from the installed tree.
+}
+
+// StaleOwnedLockEntries compares only named, installed skills with existing lock
+// entries. It never writes the lock or follows an unsafe installed tree.
+func StaleOwnedLockEntries(ctx context.Context, root string, names []string) ([]StaleOwnedLockEntry, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if err := os.Rename(file.Name(), filename); err != nil {
-		return nil, fmt.Errorf("replace skills-lock.json: %w", err)
+	document, err := loadSkillsLock(filepath.Join(root, "skills-lock.json"))
+	if err != nil {
+		return nil, err
 	}
-	return updated, nil
+	if document.before == nil {
+		return nil, nil
+	}
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	var stale []StaleOwnedLockEntry
+	for i, name := range sorted {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if i > 0 && sorted[i-1] == name {
+			continue
+		}
+		entry, ok := document.objectEntry("skills", name)
+		if !ok {
+			continue
+		}
+		files, exists, err := inspectRestoreTarget(root, ".agents/skills/"+name)
+		if err != nil {
+			return nil, fmt.Errorf("inspect installed skill %q for skills-lock.json: %w", name, err)
+		}
+		if !exists {
+			continue
+		}
+		ref, pinned := entry["ref"]
+		hash := stringMapValue(entry, "computedHash") != externalSkillsLockDigest(files)
+		if !pinned && !hash {
+			continue
+		}
+		item := StaleOwnedLockEntry{Skill: name, Hash: hash}
+		if pinned {
+			item.Ref = fmt.Sprint(ref)
+		}
+		stale = append(stale, item)
+	}
+	return stale, nil
 }
 
-type ownedLockField struct{ start, end int }
+type ownedLockField struct {
+	start, end             int
+	removeStart, removeEnd int
+}
 
 // The validated ordered document supplies semantics; offsets let the writer
-// replace just the selected JSON value without normalizing unrelated bytes.
+// replace a value or remove a member without normalizing unrelated bytes.
 func ownedLockObjectFields(data []byte) (map[string]ownedLockField, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if _, err := decoder.Token(); err != nil {
 		return nil, err
 	}
 	fields := make(map[string]ownedLockField)
+	previousEnd := 0
+	var firstName string
 	for decoder.More() {
+		keyStart := int(decoder.InputOffset())
+		for data[keyStart] != '"' {
+			keyStart++
+		}
 		token, err := decoder.Token()
 		if err != nil {
 			return nil, err
@@ -148,7 +235,17 @@ func ownedLockObjectFields(data []byte) (map[string]ownedLockField, error) {
 			return nil, err
 		}
 		end := int(decoder.InputOffset())
-		fields[name] = ownedLockField{end - len(raw), end}
+		removeStart := previousEnd
+		if len(fields) == 0 {
+			firstName = name
+			removeStart = keyStart
+		} else if len(fields) == 1 {
+			first := fields[firstName]
+			first.removeEnd = keyStart
+			fields[firstName] = first
+		}
+		fields[name] = ownedLockField{start: end - len(raw), end: end, removeStart: removeStart, removeEnd: end}
+		previousEnd = end
 	}
 	return fields, nil
 }
