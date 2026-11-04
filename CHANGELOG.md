@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.130.1] - 2026-11-03
+
+### Republication of 0.130.0
+
+- **0.130.1 ships the 0.130.0 changes below unchanged.** The 0.130.0 npm publication stopped after `@roundfix/cli-darwin-arm64`, when the transparency log answered `409` for `@roundfix/cli-darwin-x64`. npm never received the `roundfix` package at 0.130.0, and that version has no GitHub Release. Install 0.130.1.
+
 ## [0.130.0] - 2026-11-03
 
 ### The Claude review segments a large candidate and omits declared paths
