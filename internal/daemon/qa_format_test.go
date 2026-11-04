@@ -303,3 +303,53 @@ func TestQAFormatBoundsDiagnostics(t *testing.T) {
 		t.Fatalf("diagnostics length=%d tail=%q", len(diagnostics), diagnostics)
 	}
 }
+
+func TestQAFormatFormatsAPreconditionRefusalReport(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		body    string
+		outcome string
+		suffix  string
+	}{
+		{name: "formatter runs", body: `printf '\nformatted refusal\n' >> "$path"`, outcome: "formatted", suffix: "\nformatted refusal\n"},
+		{name: "formatter fails", body: `printf 'broken refusal' > "$path"; exit 1`, outcome: "failed"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			f, p, _ := priorFixture(t)
+			original := filepath.Join(t.TempDir(), "original-report.md")
+			p.FormatCommand = qaFormatterScript(t, "for path do cat \"$path\" > '"+strings.ReplaceAll(original, "'", "'\\''")+"'; "+test.body+"; done\n")
+			p.RepositoryVerification = "exit 3"
+			runner := &taskFakeRunner{calls: f.calls, gitRoot: f.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+			e := f.engine(t, runner, ExecVerifier{}, GitCommitter{}, GitWorktreeSnapshotter{})
+			result, err := e.TaskCycle(context.Background(), p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.QAVerdict != spec.VerdictFail || result.QAAccepted || len(runner.qaPrompts) != 0 {
+				t.Fatalf("refused cycle = %+v; Agent prompts = %d", result, len(runner.qaPrompts))
+			}
+			report, err := spec.ReadQAReport(p.Spec.Dir)
+			if err != nil || report.RowsBlockedPrecondition != 1 || report.Precondition.CheckName != p.RepositoryVerification {
+				t.Fatalf("newest refusal report = %+v %v", report, err)
+			}
+			committed := qaCommittedBytes(t, p, result.QAReportPath)
+			if test.suffix != "" && !strings.HasSuffix(committed, test.suffix) {
+				t.Fatalf("committed refusal lacks the formatter's bytes: %q", committed)
+			}
+			before, err := os.ReadFile(original)
+			if err != nil {
+				t.Fatalf("formatter did not capture the Daemon's report: %v", err)
+			}
+			if committed != string(before)+test.suffix {
+				t.Fatalf("committed refusal = %q, want Daemon bytes plus %q", committed, test.suffix)
+			}
+			current, err := os.ReadFile(filepath.Join(p.WorkDir, result.QAReportPath))
+			if err != nil || string(current) != committed {
+				t.Fatalf("committed newest report differs from parsed report: %v", err)
+			}
+			assertQAFormatOutcome(t, f, "commit", test.outcome, 1)
+		})
+	}
+}

@@ -391,3 +391,109 @@ func TestPriorQAPassGitErrorIsInfrastructure(t *testing.T) {
 		t.Fatal("Git error reported as a refusal or none")
 	}
 }
+
+func TestPriorQAPassRefusesAPreconditionRefusal(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		check string
+		mixed bool
+	}{
+		{name: "repository Verification refusal", check: "make verify"},
+		{name: "strict Spec check refusal", check: speccheck.GatePreconditionCheck},
+		{name: "older refusal beside a matrix report", check: "make verify", mixed: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			f, p, e := priorFixture(t)
+			var refusal strings.Builder
+			if err := spec.WritePreconditionRefusalReport(&refusal, spec.PreconditionRefusal{CheckName: test.check, Reason: "precondition failed"}, spec.AuditorEvidence{}); err != nil {
+				t.Fatal(err)
+			}
+			refusalPath := filepath.ToSlash(filepath.Join("docs", "specs", p.Spec.Slug, "qa", priorReportName(1)))
+			if test.mixed {
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(p.WorkDir, refusalPath)), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				mustWriteForTest(t, filepath.Join(p.WorkDir, refusalPath), refusal.String())
+				// Include the older refusal in the same recorded commit as the matrix.
+				runGitForTest(t, p.WorkDir, "add", refusalPath)
+				recordPriorCommit(t, f, p, priorReportName(2), priorReportContent("pass"), QACommitMessage(p.Spec.Slug, "fail"), true)
+			} else {
+				recordPriorCommit(t, f, p, priorReportName(1), refusal.String(), QACommitMessage(p.Spec.Slug, "fail"), true)
+			}
+			_, imported, err := e.importPriorQAPass(context.Background(), p, 1)
+			if err != nil || imported {
+				t.Fatalf("refusal import = %v %v", imported, err)
+			}
+			assertPriorOutcome(t, f, "refused", "precondition refusal: "+refusalPath)
+			events := taskEventsOfKind(f.sink, runevent.KindDaemonQA)
+			if payload := eventPayloadMap(t, events[len(events)-1]); payload["files"] != nil {
+				t.Fatalf("refused import lists files: %v", payload)
+			}
+			if _, err := os.Stat(filepath.Join(p.Spec.Dir, "qa")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("refused QA directory remains: %v", err)
+			}
+		})
+	}
+}
+
+func TestARetryAfterAPreconditionRefusalRunsTheWholeGate(t *testing.T) {
+	t.Parallel()
+	f, p, _ := priorFixture(t)
+	var refusal strings.Builder
+	if err := spec.WritePreconditionRefusalReport(&refusal, spec.PreconditionRefusal{CheckName: "make verify", Reason: "precondition failed"}, spec.AuditorEvidence{}); err != nil {
+		t.Fatal(err)
+	}
+	prior := recordPriorCommit(t, f, p, priorReportName(1), refusal.String(), QACommitMessage(p.Spec.Slug, "fail"), true)
+	p.RepositoryVerification = `! grep -rqF -- '| - | --- |' docs/specs/` + p.Spec.Slug + `/qa`
+	runner := &taskFakeRunner{calls: f.calls, gitRoot: f.gitRoot, qaReport: qaReportForTest(spec.VerdictPass)}
+	e := f.engine(t, runner, ExecVerifier{}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := e.TaskCycle(context.Background(), p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var priorEvent map[string]any
+	for _, event := range taskEventsOfKind(f.sink, runevent.KindDaemonQA) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == "prior_report" {
+			priorEvent = payload
+		}
+	}
+	if priorEvent["outcome"] != "refused" || priorEvent["reason"] != "precondition refusal: "+prior.Report || priorEvent["files"] != nil {
+		t.Errorf("prior_report event = %v", priorEvent)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("Agent prompts = %d, want 1; verdict = %s; progress:\n%s", len(runner.qaPrompts), result.QAVerdict, f.progress)
+	}
+	if result.QAVerdict != spec.VerdictPass || !result.QAAccepted {
+		t.Fatalf("retry result = %+v", result)
+	}
+	if got := taskStatusOnDisk(t, p.WorkDir, f.graph.QATaskID); got != string(spec.StatusCompleted) {
+		t.Fatalf("QA Task status = %s, want completed", got)
+	}
+	var repositoryPassed bool
+	for _, event := range taskEventsOfKind(f.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["verdict"] == string(runevent.VerificationVerdictPassed) {
+			repositoryPassed = true
+		}
+	}
+	if !repositoryPassed {
+		t.Fatal("repository Verification did not publish a pass")
+	}
+	if subject := strings.TrimSpace(runGitForTest(t, p.WorkDir, "show", "-s", "--format=%s", "HEAD")); subject != strings.Split(QACommitMessage(p.Spec.Slug, spec.VerdictPass), "\n")[0] {
+		t.Fatalf("HEAD is not the passing QA Report commit: %s", subject)
+	}
+	files := strings.Fields(runGitForTest(t, p.WorkDir, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"))
+	for _, path := range prior.Files {
+		for _, committed := range files {
+			if committed == path {
+				t.Errorf("retry committed refusal file %s", path)
+			}
+		}
+		if _, err := os.Stat(filepath.Join(p.WorkDir, path)); !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("refusal file remains: %s %v", path, err)
+		}
+	}
+}
