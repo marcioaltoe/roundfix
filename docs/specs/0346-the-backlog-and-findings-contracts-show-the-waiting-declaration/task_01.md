@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0346-the-backlog-and-findings-contracts-show-the-waiting-declaration
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -161,3 +161,71 @@ whose Shape section asks for exactly this.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1-5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Glossary; Skills
 - `_techspec.md` → API Contracts 1-3; Interfaces; Testing Approach; Build Order 1
 - ADR-0353
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, domain-modeling, tech-writer, setup-context-driven, roundfix, evidence-gate.
+
+Implemented the assigned contract and documentation slice. Task status and
+checkboxes remain for Daemon settlement; no Task Graph, other Task, existing
+Go test, skill, ADR or Go production file was edited.
+
+### Acceptance evidence
+
+- Embedded and rendered contracts: the two guidance values contain exactly
+  the TechSpec's two commented lines and their respective sentence. A
+  comparison against the committed module confirmed that every other value
+  remains unchanged apart from the docs-layout rule version (18 to 19) and
+  the recorded module version (29 to 30). The new clause test checks each
+  sentence once and both comment lines at the end of each frontmatter, plus
+  two standalone occurrences of each comment line and one of each sentence
+  in both rendered guides.
+- Copied and uncommented YAML: the new test decodes each frontmatter with
+  `gopkg.in/yaml.v3`, proves both keys absent as copied, then proves scalar
+  values `ERP vendor support answer` and `2026-10-25` after uncommenting.
+- Retention and repeat refresh: the new adoption test proves one mandatory
+  retained evidence row per clause with its own identity as its sole target.
+  Managed Refresh 1 exited 0 with exactly two file changes and zero retention
+  evidence rows; Managed Refresh 2 exited 0 with `File changes: 0` and
+  `Idempotence: verified`. Both used a disposable HOME, the original
+  `go env` GOMODCACHE and GOCACHE, and disabled network module resolution;
+  the temporary HOME was removed afterwards.
+- Package evidence: focused Baseline and glossary checks passed, as did the
+  required recorders and digest generation. The complete Baseline and
+  docscontract acceptance checks remain for the Daemon's declared
+  Verification; this turn makes no whole-package verdict.
+
+### Focused checks and regeneration
+
+- Before the module edit,
+  `go test ./internal/baseline -run '^(TestTheOperationalContractsShowTheWaitingDeclarationCommented|TestAnAdopterKeepsTheWaitingContractClauses)$' -count=1`
+  exited 1: the contract test reported the missing comments and sentences
+  in both embedded clauses and both rendered copies. The same focused
+  command after regeneration exited 0.
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  exited 0; `make baseline-digests` then exited 0 and changed only its nine
+  declared derived artifacts.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  ran twice, in the required order after digest generation, with the
+  isolated environment described above. Both exited 0. The existing nested
+  carrier warnings left those carriers unchanged; skills were skipped.
+- `gofmt -w internal/baseline/waiting_declaration_clause_test.go` succeeded.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary' -count=1`
+  exited 0.
+- Focused inspection confirmed byte equality between the published Findings
+  fence and the generated fence, the Waiting Items link target, only the
+  requested glossary extension, and only this guide's Coverage Review
+  change. `git diff --check` exited 0. All changed paths are declared.
+- After the last user-guide, glossary and Coverage Review edit, the final
+  implementation step was
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`;
+  it exited 0 and regenerated the Behavior Surface Record. This Result is
+  the evidence report written after that step.
+
+No follow-up work was identified. Declared Verification was not run, and no
+commit, push or pull request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261104T164635Z_031ad1ff10467b8f`
+- Source commit: `1dc550e4f8da4a777660459a0449fbc5e99cb50d`
