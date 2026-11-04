@@ -2,6 +2,48 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.131.0] - 2026-11-04
+
+### A retry after a QA precondition refusal runs the whole QA gate
+
+- **A later Run never imports a Precondition Refusal as its previous QA report.** Before a QA pass builds its matrix, the QA Report Import refuses a candidate commit when any QA Report it adds or modifies records `rows_blocked_precondition` above zero. The import event says `refused` with `precondition refusal: <report path>`, nothing is copied into the Run Worktree, and the pass runs the repository Verification precondition and then the Agent session. The refusal does not search an older candidate. Before, a retry re-committed the earlier refusal without an Agent session and refused again at the same precondition (reported by pantheon; ADR-0355).
+- **A failed or passing QA pass that built its matrix is still imported byte for byte**, as ADR-0194 requires, and the refusing Run still writes and commits its refusal report.
+- **The Precondition Refusal report goes through `verification.format` before its commit**, as every QA Report does, and a failing formatter restores its bytes. This was already the behavior and is now pinned by a test. Without `verification.format` the Daemon commits its reports as written, so a repository whose Verification checks the formatting of `qa/` files configures it.
+- **The Roundfix skill's `implement` reference and the configuration guide state what the import brings in, what it never brings in, and how to start a pass with no previous report**: remove the earlier Run's Run Worktree and Run Branch after its Tasks are carried forward, a destructive Git operation that a refusal never needs.
+
+### The Backlog and Findings contracts show the Waiting Declaration
+
+- **The Baseline's copyable Backlog Entry and Finding frontmatter end with `# waiting_on: …` and `# since: YYYY-MM-DD` as commented lines**, and each contract adds one sentence: an `open` Backlog Entry, or a `pending` or `partial` Finding, that waits on someone or something outside the repository may uncomment them. A copy made unchanged declares no wait. Validation stays with `roundfix follow-up` (ADR-0353).
+- **`roundfix baseline update` brings the change as a Managed Refresh** of `docs/agents/docs-layout.md` and `docs/agents/setup-context.json`. Both clauses keep their identity and `mandatory` force, and every other Baseline clause keeps its bytes.
+
+### Read-only Run commands work outside a repository
+
+- **`roundfix runs list` outside a Git repository lists every repository**, as `runs list --all` does, with the repository column, and exits `0`. Before, it exited `2` naming `--all`. Inside a repository, a stray one included, the scope is unchanged (reported by the maintainer; ADR-0357).
+- **Bare `runs`, `runs list`, `runs show`, `attach` and `events` are Read-Only Run Commands**: they run from any directory and print a `worktree.location` refusal once on stderr as `roundfix: warning: <refusal>; commands that create a Run Worktree refuse it`, then keep their output. Before, a stray `.git` in a parent such as the home directory made each of them exit `2`. Inside a Git repository their output is unchanged.
+- **The `worktree.location` refusal names the Git root and the `.git` it found**: `worktree.location must not be inside the repository tree: "<location>" is inside the Git root "<root>" (found "<root>/.git")`. The old text stays as its prefix, and `stop`, `reconcile`, `implement`, `deliver`, `gc` and `doctor` keep refusing.
+
+### A Task Context path the Task deletes is not unresolved
+
+- **An `interface:` or `instruction:` Task Context path missing from the checked tree reports no `SC-REF-UNRESOLVED` when `HEAD` or the Delivery Base tracks it** and the checked root is the top level of its Git work tree. A Task that removes a file its own Context lists now settles, and the QA gate, the Delivery Queue and `roundfix spec check` accept the committed removal. A path no such revision tracks, a mistyped one included, still reports the finding with the same summary (reported by fiscus).
+- **That finding's fix no longer says "Create"**: `Remove the Task Context entry for <path> from <task>, or declare it under deletes: when the Task removes it; replace it only with a path the Task itself reads or changes.`
+- **`write-tasks` and its Task template list a file the Task removes only under `deletes:`**, never `interface:` and never `instruction:`, and the Roundfix `spec` reference and the spec command guide state the rule.
+
+### The Baseline update leaves owned skill lock entries unpinned
+
+- **`roundfix baseline update` and `roundfix skills install --target project` remove the `ref` of each existing `skills-lock.json` entry naming an installed Roundfix-owned skill**, beside the `computedHash` they already rewrite; every other member, its order and every external entry keep their bytes. An entry without `ref` is the skills CLI's own default-branch form, so `bunx skills update -p` no longer reinstalls the older catalog copy the stale `ref` pointed to. A second run changes nothing (reported by marcioaltoe-skills, seen in quaestor; ADR-0359).
+- **Both commands report the removal.** `skills install` prints `Removed skills-lock.json ref: <name>` after the `Updated skills-lock.json computedHash:` lines; `baseline update` prints `- lock ref removed <name>` after the `- lock updated` lines and adds `skills.lockUnpinned` to its JSON.
+- **`roundfix doctor` warns on a Stale Owned Lock Entry** with `; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: <names>` on the `skills:` line, for an installed owned entry with a `ref` or a `computedHash` other than its tree's. An `ok` line becomes `warn` and gains `next: roundfix skills install --target project`; `failed` and `unversioned` keep their status, external entries are never named, and Doctor's exit code does not change. The release plan's `skills` check reads the same line.
+
+### The vendored catalog skills and the Setup Snapshots follow catalog commit `c8b2e85`
+
+- **This repository's maintainers only: `make skills-third-party-bump` pins the 33 vendored catalog skills, their `skills-lock.json` entries and the five upstream Setup Snapshots to one full commit of the catalog's `main`** (or `SKILLS_REF`, from `SKILLS_CATALOG`), through the asset sync, the confirmed `roundfix baseline skills restore`, `make baseline-digests` and the managed refresh. It reads `SKILLS_REF` and `SKILLS_CATALOG` from the environment, so neither becomes shell source, and before any writer runs it refuses a Roundfix-owned skill in the lock, a ref that is not a full 40-character commit, a catalog value starting with `-`, a commit the catalog does not serve, a vendored folder without a lock entry and a lock entry without a single `skills/*/<name>` tree at that commit. It also succeeds when the vendored skills already match the requested commit: the restore preview's no-changes exit `0` is accepted, and any other zero exit is refused. `make skills-update` is retired (ADR-0360).
+- **The bump ran at `c8b2e85`.** All 33 catalog entries name that commit, every vendored folder equals the catalog's tree, and `systematic-debugging` lost five obsolete files. A new documentation contract fails on any vendored folder that differs from the tree its Catalog Revision publishes.
+- **The Setup Snapshots the Baseline ships follow catalog commit `c8b2e85`.** `systematic-debugging` moved in every profile, `ui-ux-pro-max` in the two TypeScript snapshots and `developing-with-streamlit` in `python`; no skill joined or left a snapshot. An adopter's next `roundfix baseline update` rewrites the Setup Manifest's `catalogDigest` and lists each moved skill it holds under `skills.differing`, and `roundfix doctor` names it with `DR-SKILL-DIFFERS-FROM-SNAPSHOT`; restore it with `roundfix baseline skills restore --profile <id> --skill <name>`.
+
+### Tests
+
+- The Roundfix skill is at version 0.1.183.
+
 ## [0.130.1] - 2026-11-03
 
 ### Republication of 0.130.0
