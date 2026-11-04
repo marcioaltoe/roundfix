@@ -45,6 +45,12 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
   adapted locally; every other skill is upstream-managed and **MUST NOT** be
   modified here.
+- **HARD RULE — Catalog Skill Bump ownership**: the Catalog Skill Bump is the
+  only writer of the Vendored Skills under `.agents/skills`, their
+  `skills-lock.json` entries and every upstream Setup Snapshot; they change
+  only through `make skills-third-party-bump`, which pins them to one Catalog
+  Revision. A correction to a Vendored Skill goes to `marcioaltoe/skills` and
+  arrives with the next bump (ADR-0360).
 - An owned skill's content changes only together with its version. Run
   `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`;
   the record command raises both version fields one patch above the highest

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -53,6 +53,23 @@ Agent that wants to correct a vendored skill is sent upstream
 - [ ] `CONTEXT.md` defines **Catalog Revision** and **Catalog Skill Bump** next to **Vendored Skill**.
 - [ ] `docs/agents/specific-repository.md` names the bump as the only writer and sends corrections upstream.
 
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+- Added **Catalog Revision** and **Catalog Skill Bump** immediately after
+  **Vendored Skill** in `CONTEXT.md`; both definitions include an `_Avoid_:`
+  line and link to ADR-0360. No other `CONTEXT.md` content was changed.
+- Added the repository hard rule immediately after the skill-ownership rule;
+  it names the Catalog Skill Bump as the only writer through
+  `make skills-third-party-bump` for Vendored Skills, lock entries and upstream
+  Setup Snapshots, and routes corrections to `marcioaltoe/skills` for the next
+  bump.
+- Focused checks: `git diff --check` passed; the diff inspection confirmed the
+  glossary additions are adjacent to **Vendored Skill**, the ownership rule is
+  adjacent to the existing skill-ownership rule. The Task's pre-existing
+  `status: in_progress` change remains untouched.
+
 ## Context
 
 - instruction: `.agents/skills/domain-modeling/SKILL.md`
@@ -76,3 +93,8 @@ None. The Task adds glossary entries and a repository rule; no code, test or rec
 - `_prd.md` → Core Feature 4; Glossary
 - `_techspec.md` → Coverage Map; Glossary; Build Order 3
 - ADR-0360
+
+## Carry-forward provenance
+
+- Source Run: `run_20261104T202718Z_36f747a05c5e57d3`
+- Source commit: `f71340b1a772c03b18c9518af679e6e8f2a8507a`
