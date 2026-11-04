@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-11-03
-spec: null
+spec: 0346-the-backlog-and-findings-contracts-show-the-waiting-declaration
 reason: null
 ---
 
