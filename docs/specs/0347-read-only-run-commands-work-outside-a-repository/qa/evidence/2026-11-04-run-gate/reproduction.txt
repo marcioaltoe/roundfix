@@ -1,7 +1,0 @@
-Audited source: e4682fbbdd6d8745ac2186b36f36d34373858643
-Build: make build
-Every public command uses the Run-built ./bin/roundfix; with a different working directory invoke that binary by its absolute path.
-Create fresh temporary HOME and TMPDIR for each transcript. On macOS use physical paths consistently for both HOME and working directory. Keep GOMODCACHE/GOCACHE at go env selections; use cached dependencies offline. Remove every temporary fixture afterwards.
-Required transcript and named-test commands, exact stdout/stderr/exit and mutations are retained in Q02-Q10 and S01-S08 logs. Each sabotage log states the source replacement; git archive the audited head separately for each mutation, initialize/stage Git metadata for suiteguard, then execute its named Go command with the recorded explicit timeout. A pass for a sabotage means the named test failed with the intended behavioral diagnostic, not a compile failure.
-Documentation checks assert wording and byte equality, backed by public CLI journeys. History audit uses git diff-tree on all four Task commits and calls the actual GovernedPath classifier through a temporary Go overlay. The overlay source does not exist in the checkout.
-No Agent session, real Roundfix Home, outside repository, provider, judge, reviewer or network request is part of these observations.
