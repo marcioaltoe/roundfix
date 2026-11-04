@@ -1,3 +1,0 @@
-Native QA reader: valid fail report; blocked environment=1, finding=0, declared=0
-Text files scanned: 34; Secret Matches: 0
-exit: 0

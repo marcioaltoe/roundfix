@@ -1,4 +1,0 @@
-$ go run -overlay <temporary-map> ./cmd/roundfix <seeded-report>
-Native QA reader: verdict=partial; environment=1; pre-PR=1; finding=0; declared=0; skipped=0; eligibility accepted
-QA files scanned: 64; Secret Matches: 0
-exit: 0

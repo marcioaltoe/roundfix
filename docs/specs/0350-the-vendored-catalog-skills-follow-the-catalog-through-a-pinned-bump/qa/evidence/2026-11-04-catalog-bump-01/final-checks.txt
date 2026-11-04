@@ -1,7 +1,0 @@
-Final report checks: 19 rows; 18 pass; one blocked (environment: no open Pull Request).
-All declared coverage sources are exact and covered; every row has typed inputs and every historical row declares commit_range.
-Daemon auditor identity and materialized mechanical rows/skips are preserved.
-All report links resolve, every QA artifact is text and unignored, and no evidence_snapshots were written.
-Tracked and staged source deltas are empty; untracked files are restricted to this Spec qa/.
-No Task status, commit, push or Pull Request mutation occurred.
-All started foreground commands have exited.

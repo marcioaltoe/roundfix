@@ -1,7 +1,0 @@
-Audited head: 78af33207493114026e870800d7b99c8a8f47345
-go-cli-typescript-bun.json: source composed; all github refs match c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
-go.json: source github; all github refs match c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
-python.json: source github; all github refs match c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
-rust.json: source github; all github refs match c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
-typescript.json: source github; all github refs match c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
-33 catalog lock entries; 0 owned entries; 279 github skill records agree.

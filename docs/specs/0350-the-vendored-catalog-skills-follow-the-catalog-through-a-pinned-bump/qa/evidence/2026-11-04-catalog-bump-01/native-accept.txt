@@ -1,2 +1,0 @@
-$ ./bin/roundfix qa-report accept /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/qa-report-2026-11-04-01.md
-exit: 0

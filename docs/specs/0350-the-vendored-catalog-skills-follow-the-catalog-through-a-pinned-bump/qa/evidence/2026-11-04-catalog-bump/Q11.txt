@@ -1,8 +1,0 @@
-Audited head: f71340b1a772c03b18c9518af679e6e8f2a8507a
-**Catalog Revision**:
-The one full commit of `marcioaltoe/skills` that every catalog entry of `skills-lock.json` and every upstream Setup Snapshot names, never a branch name ([ADR-0360](docs/adr/0360-the-vendored-catalog-skills-follow-the-catalog-through-one-pinned-commit.md)).
-_Avoid_: Catalog branch, floating ref, partial catalog revision
-**Catalog Skill Bump**:
-`make skills-third-party-bump`, which moves the Vendored Skills, their `skills-lock.json` entries and every upstream Setup Snapshot to one Catalog Revision, by default the catalog's current `main`; it refuses a Roundfix-owned skill and a tree the catalog does not publish; a second run at the same commit changes nothing ([ADR-0360](docs/adr/0360-the-vendored-catalog-skills-follow-the-catalog-through-one-pinned-commit.md)).
-_Avoid_: `skills-update`, manual vendoring, floating catalog sync
-Normalized only-writer phrase matches; corrections go upstream.

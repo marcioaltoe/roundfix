@@ -1,3 +1,0 @@
-Audited head: 78af33207493114026e870800d7b99c8a8f47345
-Prompt fact: no open Pull Request for target branch roundfix/deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0. The Run branch has none by design.
-Approval: recorded maintainer Cycle AX authority in _authorization.md; no separate current-head review acceptance obtained. Checks/status: Daemon make verify-changed pass exit 0 at 78af33207493114026e870800d7b99c8a8f47345. No remote required-check evidence exists. Unresolved threads: none, since no Pull Request exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: no Review Source artifact yet; claimed candidate is exactly 78af33207493114026e870800d7b99c8a8f47345.
