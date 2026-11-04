@@ -85,6 +85,10 @@ func TestTheSkillsBumpRefusesWhatItMustNotPin(t *testing.T) {
 		{name: "branch ref", want: "full 40-character", beforeBuild: true},
 		{name: "unserved commit", want: "does not serve commit ", beforeBuild: true},
 		{name: "folder without lock", want: "differ: untracked-skill", beforeBuild: true},
+		{name: "crafted ref", want: "full 40-character", beforeBuild: true},
+		{name: "crafted catalog", want: "full 40-character", beforeBuild: true},
+		{name: "option catalog", want: "must not start with -", beforeBuild: true},
+		{name: "skill missing from catalog", want: "has no single skills/*/ghost tree", beforeBuild: true},
 		{name: "differing folder", want: ".agents/skills/alpha differs from the catalog at "},
 		{name: "entry at another ref", want: "not pinned to "},
 	} {
@@ -99,6 +103,16 @@ func TestTheSkillsBumpRefusesWhatItMustNotPin(t *testing.T) {
 				command.Args = append(command.Args, "SKILLS_REF=main")
 			case "unserved commit":
 				command.Args = append(command.Args, "SKILLS_REF="+strings.Repeat("0", 40))
+			case "crafted ref":
+				command.Args = append(command.Args, "SKILLS_REF='; : > injected; '")
+			case "crafted catalog":
+				command.Args = append(command.Args, `SKILLS_CATALOG=x"; : > injected; "`)
+			case "option catalog":
+				command.Args = append(command.Args, "SKILLS_CATALOG=--upload-pack=sh")
+			case "skill missing from catalog":
+				command.Args = append(command.Args, "SKILLS_REF="+revision)
+				writeFile(t, root, "repo/skills-lock.json", `{"skills":{"zeta":{"source":"marcioaltoe/skills","ref":"old"},"alpha":{"source":"marcioaltoe/skills","ref":"old"},"ghost":{"source":"marcioaltoe/skills","ref":"old"}}}`)
+				writeFile(t, root, "repo/.agents/skills/ghost/SKILL.md", "ghost\n")
 			case "folder without lock":
 				writeFile(t, root, "repo/.agents/skills/untracked-skill/SKILL.md", "extra\n")
 			case "differing folder":
@@ -109,6 +123,9 @@ func TestTheSkillsBumpRefusesWhatItMustNotPin(t *testing.T) {
 			output, err := command.CombinedOutput()
 			if err == nil {
 				t.Fatalf("bump accepted %s:\n%s", scenario.name, output)
+			}
+			if _, statErr := os.Stat(filepath.Join(root, "repo", "injected")); !os.IsNotExist(statErr) {
+				t.Fatalf("%s ran shell source from a make variable: %v", scenario.name, statErr)
 			}
 			want := scenario.want
 			if scenario.name == "unserved commit" {

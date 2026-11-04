@@ -256,6 +256,8 @@ clean: ## Remove build artifacts
 SKILLS_CATALOG ?= https://github.com/marcioaltoe/skills.git
 SKILLS_CATALOG_ORIGIN := https://github.com/marcioaltoe/skills.git
 SKILLS_REF ?=
+# Recipes read both values from the environment, so neither becomes shell source.
+export SKILLS_CATALOG SKILLS_REF
 
 skills-third-party-bump: ## Pin the vendored catalog skills and Setup Snapshots to one catalog commit (default: its main)
 	@set -eu; export LC_ALL=C GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local; \
@@ -269,14 +271,19 @@ skills-third-party-bump: ## Pin the vendored catalog skills and Setup Snapshots 
 	difference=$$(comm -3 "$$tmp/names" "$$tmp/folders" | awk '{print $$1}' | sort); \
 	[ -z "$$difference" ] || refuse "catalog lock and vendored folders differ: $$difference"; \
 	profile=$$(jq -er '.profile | select(type == "string" and length > 0)' docs/agents/setup-context.json) || refuse 'Setup Manifest must name a profile'; \
-	ref='$(SKILLS_REF)'; \
-	if [ -z "$$ref" ]; then ref=$$(git ls-remote "$(SKILLS_CATALOG)" refs/heads/main | awk '{print $$1}'); fi; \
+	source=$${SKILLS_CATALOG-}; ref=$${SKILLS_REF-}; \
+	case "$$source" in ''|-*) refuse 'SKILLS_CATALOG must name a repository and must not start with -' ;; esac; \
+	if [ -z "$$ref" ]; then ref=$$(git ls-remote "$$source" refs/heads/main | awk '{print $$1}'); fi; \
 	printf '%s\n' "$$ref" | LC_ALL=C awk 'NR == 1 && length($$0) == 40 && $$0 !~ /[^0-9a-f]/ { valid = 1 } END { exit !(valid && NR == 1) }' || refuse 'SKILLS_REF must be a full 40-character lowercase commit'; \
 	catalog="$$tmp/catalog"; \
 	git init -q "$$catalog"; \
-	git -C "$$catalog" fetch --depth=1 "$(SKILLS_CATALOG)" "$$ref" >&2 || refuse "catalog does not serve commit $$ref"; \
+	git -C "$$catalog" fetch --depth=1 "$$source" "$$ref" >&2 || refuse "catalog does not serve commit $$ref"; \
 	git -C "$$catalog" checkout -q --detach FETCH_HEAD; \
 	[ "$$(git -C "$$catalog" rev-parse HEAD)" = "$$ref" ] || refuse "catalog does not serve commit $$ref"; \
+	for name in $$names; do \
+		set -- "$$catalog"/skills/*/"$$name"; \
+		[ "$$#" -eq 1 ] && [ -d "$$1" ] || refuse "catalog commit $$ref has no single skills/*/$$name tree"; \
+	done; \
 	git -C "$$catalog" remote add origin "$(SKILLS_CATALOG_ORIGIN)"; \
 	mkdir "$$tmp/home"; \
 	roundfix() { HOME="$$tmp/home" "$$tmp/roundfix" "$$@"; }; \
