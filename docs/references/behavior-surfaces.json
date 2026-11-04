@@ -98,7 +98,7 @@
     "guide docs/user-guide/commands/upgrade.md": "sha256:03745dd97843513014b79fb4193a1e9883ecf41d56a04500f22516568d9abad7",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
-    "guide docs/user-guide/configuration.md": "sha256:5bd1451f48ace4528e2f711f4878ab5a6b843a8a58a0765aef20dec69df8fb3a",
+    "guide docs/user-guide/configuration.md": "sha256:da6a78c02a837a966c39779272b5d66e98a31ed9123daefbf19bb0be696bfada",
     "guide docs/user-guide/context-driven-development.md": "sha256:9771c9c424df4b098f40223e1a793b8cc4f88890156fefb7a2421870d974a0a1",
     "guide docs/user-guide/release-runbook.md": "sha256:41151ace89cb57f1e76e3c8875d4dd188afa6f257b1b309dfdb8718d6fd8ac2d",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",

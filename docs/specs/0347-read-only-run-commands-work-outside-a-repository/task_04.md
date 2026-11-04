@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0347-read-only-run-commands-work-outside-a-repository
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -110,3 +110,20 @@ maintainer report of 2026-11-03, adopted as
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → Current behavior 5; API Contract 5; Glossary; Testing Approach; Build Order 4
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, roundfix, evidence-gate
+
+- Rewrote the canonical `runs`, `events`, and `review-runs` references with the Read-Only Run Command contract, the outside-repository `runs list` behavior, stderr warning boundary, and Git-root/`.git` refusal details.
+- Added the same refusal and warning contract beside the `worktree` configuration block and defined **Read-Only Run Command** in `CONTEXT.md` with ADR-0357 and a plain `_Avoid_` line.
+- `make skills-sync`: passed; copied the canonical Roundfix references to the maintained mirrors.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed (ok roundfix/skills 0.583s); raised both Roundfix skill version fields to 0.1.181 and recorded `skills/testdata/owned-skill-versions.json`.
+- `git diff --check`: passed with no whitespace errors.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed (ok roundfix/internal/docscontract 0.653s); re-recorded `docs/references/behavior-surfaces.json` after the configuration-guide edit.
+
+Acceptance evidence:
+
+- Both canonical reference copies and their generated mirrors carry the contract after `make skills-sync`; the prior outside-repository exit-2 wording is removed from the canonical `runs` reference.
+- The configuration guide names the Git root and .git path in the refusal, and `CONTEXT.md` defines **Read-Only Run Command**.
+- The owned-skill version record and Behavior Surface Record were regenerated only through their sanctioned commands; the Behavior Surface command will be repeated as the final no-edit confirmation.

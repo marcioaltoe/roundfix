@@ -1385,6 +1385,10 @@ _Avoid_: Dashboard, report, log file
 The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
 _Avoid_: Run picker, run manager, dashboard
 
+**Read-Only Run Command**:
+A command that only reads the Run Database (bare `runs`, `runs list`, `runs show`, `attach`, `events`) and never creates a Run Worktree, so it runs from any directory; outside a Git repository `runs list` lists every repository, and a `worktree.location` refusal becomes one stderr warning; `runs causes` is not one ([ADR-0357](docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md)).
+_Avoid_: Run Browser, read-only command, support command
+
 **Cockpit**:
 The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
 _Avoid_: Dashboard, reduced pane

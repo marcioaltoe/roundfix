@@ -90,8 +90,16 @@ No Runs found.
 `runs list` exits `0` for matching and empty results. Invalid flags,
 unexpected arguments, repository-resolution failures, and Run Database
 open/list failures exit `2` with diagnostics on stderr. Outside a Git
-repository, `runs list` without `--all` exits `2` and names `--all` as the
-alternative.
+repository, `runs list` lists every repository as `runs list --all` does and
+exits `0`.
+
+The Read-Only Run Commands are bare `runs`, `runs list`, `runs show`, `attach`,
+and `events`. They only read the Run Database and never create a Run Worktree.
+When `worktree.location` is refused, they print one warning on stderr shaped as
+`roundfix: warning: <refusal>; commands that create a Run Worktree refuse it`
+and continue with the location unset. Commands that create a Run Worktree
+refuse that configuration. `runs causes` is not a Read-Only Run Command and
+still requires a repository.
 
 `runs list`, the Run Browser, and Attach refuse a Run Database whose schema
 version differs from the binary's without writing it. Upgrade an older Run
@@ -112,8 +120,8 @@ running anywhere: `No active Runs — press a to include terminal Runs.` In a
 non-interactive context, bare `runs` exits `2` and names
 `roundfix runs list`; `attach` without a Run ID, including `--no-input`,
 exits `2` and names `roundfix runs list` as the discovery command. The Run
-Browser is the human surface — agents use the bounded `runs list`, which
-stays repository-scoped with `--all` for every repository.
+Browser is the human surface — agents use the bounded `runs list`, which is
+repository-scoped inside a repository and lists every repository outside one.
 
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,
