@@ -193,6 +193,31 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification precondition. Failed, timed-out, or verdict-changing runs
    restore the original bytes and record the format outcome.
 
+   The Format Command covers every QA Report the Daemon commits, the
+   Precondition Refusal report included; without `verification.format`, the
+   Daemon commits its reports as written, and a repository whose Verification
+   checks the formatting of `qa/` files configures it.
+
+   The QA Report Import runs before a pass builds its matrix. The Daemon copies
+   byte for byte the newest Daemon QA Report commit of the Spec that a recorded
+   Run Branch holds and the Run's history lacks, failed passes included, as the
+   pass's previous report. A pass always runs the whole gate, and an imported
+   report only lets rows whose Evidence Snapshot proves their inputs unmoved
+   carry.
+
+   The import never imports a Precondition Refusal and refuses with
+   `precondition refusal: <path>`. It never brings in a commit already in the
+   Run's history, one no recorded Run Branch holds, a Task commit or another
+   Spec's commit, a report not newer than the newest one in the worktree, one
+   dated after today, one the shape detector refuses, or a path that differs
+   from an existing file. Compiled-source evidence files are skipped one by
+   one. A refusal does not search an older candidate.
+
+   To start a pass with no previous report, after the earlier Run's Tasks are
+   carried forward, remove that Run's Run Worktree and Run Branch. This
+   discards its unintegrated commits, so it is a destructive Git operation that
+   needs the maintainer's authority; a refusal never needs it.
+
    Before each Task settles, the Secret Scan reads the lines each Task commit
    adds relative to `HEAD`. A Secret Match settles the Task `failed` with
    `Task commit carries a secret: <path>:<line>: <kind>` and creates no Task

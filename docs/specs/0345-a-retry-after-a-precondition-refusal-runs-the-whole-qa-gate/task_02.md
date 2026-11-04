@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -99,3 +99,46 @@ pantheon on 2026-11-03
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → Current behavior 6; API Contract 4; API Contract 5; API Contract 6; ADR-0355; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+- Added the Format Command coverage sentence, QA Report Import rules, refusal
+  exclusion, complete non-import list, and destructive no-previous-report path
+  to the canonical implement reference; `make skills-sync` copied the same
+  content to the mirror.
+- Added the required configuration-guide sentence, the `QA Report Import`
+  glossary entry and its `_Avoid_` line, the later-Run Precondition Refusal
+  rule, and accepted ADR-0355 with the lifecycle overlay.
+- Focused checks:
+  - `rtk proxy git diff --check`: passed.
+  - `rtk proxy make skills-sync`: passed.
+  - `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed; both Roundfix skill versions and the owned-skill record were raised by the recorder.
+  - SHA-256 inspection of both canonical/mirror `SKILL.md` files and both
+    implement references: matching pairs.
+  - `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed; the Behavior Surface Record was re-recorded last.
+
+Acceptance evidence:
+
+- Both implement-reference copies contain the Format Command rule, the
+  `QA Report Import` behavior, `never imports a Precondition Refusal`, the
+  complete exclusion list, `precondition refusal: <path>`, and the destructive
+  no-previous-report procedure.
+- `docs/user-guide/configuration.md`, `CONTEXT.md`, and ADR-0355 state the
+  import and refusal rules; generated skill versions, mirror hashes, and the
+  Behavior Surface Record were updated by their sanctioned commands.
+- Verification feedback root cause: the glossary contract rejected the
+  compound phrase `Daemon QA Report` because `CONTEXT.md` defines `Daemon`
+  and `QA Report` separately and the contract does not split a one-word term
+  from a multiword term. The glossary now says `QA Report commit the Daemon
+  produced`, preserving the API rule without adding an out-of-scope term.
+- Focused feedback repair check:
+  - `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossaryPhrasesAreDefinedTerms$'`: passed.
+  - `rtk proxy git diff --check`: passed; canonical and mirror hashes still
+    match for both the implement reference and `SKILL.md`.
+
+Not run:
+
+- The commands in this Task's `## Verification` section and the repository
+  Verification remain for Daemon settlement, per the assigned execution mode.
