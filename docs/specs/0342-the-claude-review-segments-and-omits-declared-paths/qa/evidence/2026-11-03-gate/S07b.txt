@@ -1,0 +1,88 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review_size_refusal.go
+Before: return files[i].Bytes > files[j].Bytes
+After: return files[i].Bytes < files[j].Bytes
+Input: largest files ranked ascending
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewSizeRefusalNamesTheLargestFiles$'
+exit: 1
+stdout:
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1651059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1651059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1651059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+    review_size_refusal_test.go:125: exit=2 reason="review prompt too large: 826881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 826881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review prompt too large: 826881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+    review_size_refusal_test.go:125: exit=2 reason="review prompt too large: 827020 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 827020 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review prompt too large: 827020 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: aaa.txt (200147 bytes), zzz.txt (300146 bytes), tie-a.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1650843 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (450244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/two_files
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1100390 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: zzz.txt (500146 bytes), dados gerados/ação.json (600244 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1100390 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: zzz.txt (500146 bytes), dados gerados/ação.json (600244 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1100390 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (600244 bytes), zzz.txt (500146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 1801059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 1801059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 1801059 bytes after omitting 1 path(s) exceeds the review bound of 917504 bytes; largest files in the diff: dados gerados/ação.json (600244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+    review_size_refusal_test.go:125: exit=2 reason="review prompt too large: 901881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 901881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: review.txt (216 bytes), aaa.txt (200147 bytes), zzz.txt (300146 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review prompt too large: 901881 estimated tokens after omitting 1 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: dados gerados/ação.json (600244 bytes), tie-a.txt (350153 bytes), tie-b.txt (350153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+    review_size_refusal_test.go:125: exit=2 reason="review diff too large: 3351059 bytes after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: review.txt (216 bytes), zzz.txt (650146 bytes), aaa.txt (660147 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review diff too large: 3351059 bytes after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: review.txt (216 bytes), zzz.txt (650146 bytes), aaa.txt (660147 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review diff too large: 3351059 bytes after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: dados gerados/ação.json (700244 bytes), tie-a.txt (670153 bytes), tie-b.txt (670153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+=== NAME  TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+    review_size_refusal_test.go:125: exit=2 reason="review prompt too large: 1676881 estimated tokens after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: review.txt (216 bytes), zzz.txt (650146 bytes), aaa.txt (660147 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 1676881 estimated tokens after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: review.txt (216 bytes), zzz.txt (650146 bytes), aaa.txt (660147 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"; want "review prompt too large: 1676881 estimated tokens after omitting 1 path(s) needs 5 review segments; a review allows at most 4; largest files in the diff: dados gerados/ação.json (700244 bytes), tie-a.txt (670153 bytes), tie-b.txt (670153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review"
+--- FAIL: TestReviewSizeRefusalNamesTheLargestFiles (0.00s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit (0.75s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget (0.80s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound (0.97s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget (1.00s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound (1.26s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound (1.26s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/two_files (0.52s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range (1.38s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range (1.40s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit (1.46s)
+    --- FAIL: TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit (1.47s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 148.0985ms before and 134.315625ms after
+FAIL	roundfix/internal/cli	2.208s
+FAIL
+
+stderr:
+

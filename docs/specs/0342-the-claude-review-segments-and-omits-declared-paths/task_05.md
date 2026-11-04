@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0342-the-claude-review-segments-and-omits-declared-paths
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,46 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review.go
+Before: if plan.Lineage.Round != 1 || plan.Lineage.Correction {
+After: if plan.Lineage.Round != 1 || plan.Lineage.Correction || config.PrePRReview.Provider == "claude" {
+Input: Claude admission refuses instead of segmenting
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewSegmentsAClaudeCandidateOverItsBudget$'
+exit: 1
+stdout:
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+    review_claude_segment_test.go:44: exit=2 segments=[] reason="review prompt too large: 511482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (475153 bytes), part2.txt (475153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 511482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (475153 bytes), part2.txt (475153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+    review_claude_segment_test.go:44: exit=2 segments=[] reason="review prompt too large: 576482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part2.txt (980153 bytes), part1.txt (100153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 576482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part2.txt (980153 bytes), part1.txt (100153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+    review_claude_segment_test.go:44: exit=2 segments=[] reason="review prompt too large: 771559 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (490153 bytes), part2.txt (490153 bytes), part3.txt (490153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 771559 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (490153 bytes), part2.txt (490153 bytes), part3.txt (490153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+    review_claude_segment_test.go:44: exit=2 segments=[] reason="review prompt too large: 715157 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (475153 bytes), part2.txt (475153 bytes), part3.txt (475153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 715157 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part1.txt (475153 bytes), part2.txt (475153 bytes), part3.txt (475153 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"
+--- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget (0.00s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context (0.28s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation (0.28s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes (0.31s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary (0.31s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 140.648167ms before and 137.792458ms after
+FAIL	roundfix/internal/cli	1.018s
+FAIL
+
+stderr:
+

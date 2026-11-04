@@ -1,0 +1,32 @@
+$ rg -n -i 'never segmented|not segmented' docs/user-guide .agents/skills/roundfix skills/roundfix CONTEXT.md docs/adr
+exit: 0
+stdout:
+skills/roundfix/references/review.md:84:Round 2 and the Correction Review are never segmented. A Correction Review
+.agents/skills/roundfix/references/review.md:84:Round 2 and the Correction Review are never segmented. A Correction Review
+docs/user-guide/commands/review.md:94:Round 2 and the Correction Review are never segmented. A Correction Review
+docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md:40:the commit that fixed each one. Like round 2, it is never segmented, a delta
+
+stderr:
+
+
+docs/user-guide/commands/review.md omit-path True
+docs/user-guide/commands/review.md A Claude round-1 prompt above its budget is reviewed in at most four Review Segments True
+docs/user-guide/commands/review.md largest files in the diff True
+docs/user-guide/commands/review.md pre_pr_review.omit_paths True
+.agents/skills/roundfix/references/review.md omit-path True
+.agents/skills/roundfix/references/review.md A Claude round-1 prompt above its budget is reviewed in at most four Review Segments True
+.agents/skills/roundfix/references/review.md largest files in the diff True
+.agents/skills/roundfix/references/review.md pre_pr_review.omit_paths True
+skills/roundfix/references/review.md omit-path True
+skills/roundfix/references/review.md A Claude round-1 prompt above its budget is reviewed in at most four Review Segments True
+skills/roundfix/references/review.md largest files in the diff True
+skills/roundfix/references/review.md pre_pr_review.omit_paths True
+docs/user-guide/commands/deliver.md park reason True
+.agents/skills/roundfix/references/deliver.md park reason True
+skills/roundfix/references/deliver.md park reason True
+0227-a-review-through-claude-keeps-its-verdict-and-fits-its-window.md (0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).** The budget bounds each Claude Review Segment's prompt as sent.
+0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md (0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).** Claude round 1 is segmented too and `pre_pr_review.omit_paths` joins the base-commit omissions.
+mirror SKILL.md: identical
+mirror references/review.md: identical
+mirror references/deliver.md: identical
+Errors: []

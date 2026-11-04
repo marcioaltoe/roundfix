@@ -1,0 +1,46 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review.go
+Before: if reason == "" && declarations.PrePRReview.Omits(path) {
+After: if false && reason == "" && declarations.PrePRReview.Omits(path) {
+Input: snapshot retained when omission match is removed
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewOmitsConfiguredPathsFromTheBaseCommit$'
+exit: 1
+stdout:
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== NAME  TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+    review_omit_paths_test.go:65: round one omissions=[], want [{Path:gen/a_snapshot.json Reason:omit-path}]
+=== NAME  TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+    review_omit_paths_test.go:65: round one omissions=[], want [{Path:gen/a_snapshot.json Reason:omit-path}]
+--- FAIL: TestReviewOmitsConfiguredPathsFromTheBaseCommit (0.00s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key (0.24s)
+    --- FAIL: TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob (0.24s)
+    --- FAIL: TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base (0.24s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins (0.25s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key (0.37s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 146.127958ms before and 134.430291ms after
+FAIL	roundfix/internal/cli	1.391s
+FAIL
+
+stderr:
+

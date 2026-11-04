@@ -1,0 +1,23 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review_segments.go
+Before: if len(segments) > reviewSegmentLimit {
+After: if len(segments) > reviewSegmentLimit && scope.estimatedPromptTokens == 0 {
+Input: five 700000-byte commits incorrectly reach provider readiness
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments$'
+exit: 1
+stdout:
+=== RUN   TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+=== PAUSE TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+=== CONT  TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+    review_claude_segment_test.go:101: refusal estimate=1757696, whole unsegmented prompt estimate=1751791
+--- FAIL: TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments (0.63s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 143.035542ms before and 135.618791ms after
+FAIL	roundfix/internal/cli	1.380s
+FAIL
+
+stderr:
+

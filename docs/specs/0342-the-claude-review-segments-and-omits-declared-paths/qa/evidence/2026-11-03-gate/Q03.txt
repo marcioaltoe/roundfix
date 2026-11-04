@@ -1,0 +1,213 @@
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^(TestReviewOmitsConfiguredPathsFromTheBaseCommit|TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths|TestReviewOmitsRetiredHistoryAndGeneratedFiles|TestReviewReadsDerivedPathsFromTheBaseCommit|TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence|TestReviewScopesRoundTwoDelta|TestReviewOmitsQAEvidenceAndUpstreamSkills|TestReviewSegmentsAClaudeCandidateOverItsBudget|TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments|TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented|TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates|TestReviewSegmentsACandidateAboveTheBound|TestReviewBlocksACandidateNeedingMoreThanFourSegments|TestReviewSegmentsStopAtTheFirstBlockedAnswer|TestReviewGreedilyPacksFourSegments|TestReviewBlocksAnOversizedCommitHiddenByItsRange|TestReviewCommandRefusesAClaudePromptOverHalfItsWindow|TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound|TestReviewCommandKeepsTheCodexDiffByteBound|TestReviewSizeRefusalNamesTheLargestFiles|TestReviewBlocksAboveTheBoundWithoutAProviderCall|TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer)$'
+exit: 0
+stdout:
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== RUN   TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+=== PAUSE TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+=== RUN   TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented
+=== PAUSE TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented
+=== RUN   TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates
+=== PAUSE TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates
+=== RUN   TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer
+=== PAUSE TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== RUN   TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+=== PAUSE TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+=== RUN   TestReviewCommandRefusesAClaudePromptOverHalfItsWindow
+=== PAUSE TestReviewCommandRefusesAClaudePromptOverHalfItsWindow
+=== RUN   TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound
+=== PAUSE TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound
+=== RUN   TestReviewCommandKeepsTheCodexDiffByteBound
+=== PAUSE TestReviewCommandKeepsTheCodexDiffByteBound
+=== RUN   TestReviewOmitsQAEvidenceAndUpstreamSkills
+=== PAUSE TestReviewOmitsQAEvidenceAndUpstreamSkills
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall
+=== PAUSE TestReviewBlocksAboveTheBoundWithoutAProviderCall
+=== RUN   TestReviewScopesRoundTwoDelta
+=== PAUSE TestReviewScopesRoundTwoDelta
+=== RUN   TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== PAUSE TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit
+=== PAUSE TestReviewReadsDerivedPathsFromTheBaseCommit
+=== RUN   TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence
+=== PAUSE TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence
+=== RUN   TestReviewSegmentsACandidateAboveTheBound
+=== PAUSE TestReviewSegmentsACandidateAboveTheBound
+=== RUN   TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== PAUSE TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== RUN   TestReviewSegmentsStopAtTheFirstBlockedAnswer
+=== PAUSE TestReviewSegmentsStopAtTheFirstBlockedAnswer
+=== RUN   TestReviewGreedilyPacksFourSegments
+=== PAUSE TestReviewGreedilyPacksFourSegments
+=== RUN   TestReviewBlocksAnOversizedCommitHiddenByItsRange
+=== PAUSE TestReviewBlocksAnOversizedCommitHiddenByItsRange
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== CONT  TestReviewBlocksAboveTheBoundWithoutAProviderCall
+=== CONT  TestReviewReadsDerivedPathsFromTheBaseCommit
+=== CONT  TestReviewBlocksACandidateNeedingMoreThanFourSegments
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles
+=== CONT  TestReviewBlocksAnOversizedCommitHiddenByItsRange
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== CONT  TestReviewGreedilyPacksFourSegments
+=== CONT  TestReviewSegmentsStopAtTheFirstBlockedAnswer
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall/1
+=== CONT  TestReviewScopesRoundTwoDelta
+=== CONT  TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit/false
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== NAME  TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+    review_omit_paths_test.go:132: prompt SHA-256: 825ac238f6467063b26ed28c9f2fcfeaea0e2dbde74cbc3f99991e674184f2f4
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== RUN   TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}___unclassifiable_answer_[]___false}_<nil>}
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+=== CONT  TestReviewOmitsQAEvidenceAndUpstreamSkills
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== RUN   TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== PAUSE TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== CONT  TestReviewCommandKeepsTheCodexDiffByteBound
+--- PASS: TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths (0.36s)
+=== CONT  TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound
+=== RUN   TestReviewReadsDerivedPathsFromTheBaseCommit/true
+=== RUN   TestReviewBlocksAboveTheBoundWithoutAProviderCall/2
+--- PASS: TestReviewOmitsQAEvidenceAndUpstreamSkills (0.57s)
+=== CONT  TestReviewCommandRefusesAClaudePromptOverHalfItsWindow
+=== RUN   TestReviewCommandRefusesAClaudePromptOverHalfItsWindow/1
+--- PASS: TestReviewCommandKeepsTheCodexDiffByteBound (0.64s)
+=== CONT  TestReviewSegmentsACandidateAboveTheBound
+--- PASS: TestReviewBlocksAnOversizedCommitHiddenByItsRange (0.70s)
+=== CONT  TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence
+--- PASS: TestReviewScopesRoundTwoDelta (0.76s)
+=== CONT  TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates
+--- PASS: TestReviewReadsDerivedPathsFromTheBaseCommit (0.78s)
+    --- PASS: TestReviewReadsDerivedPathsFromTheBaseCommit/false (0.39s)
+    --- PASS: TestReviewReadsDerivedPathsFromTheBaseCommit/true (0.39s)
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== RUN   TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== PAUSE TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== CONT  TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer
+=== RUN   TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer/codex
+--- PASS: TestReviewCommandSendsAClaudePromptBeyondTheCodexByteBound (0.48s)
+=== CONT  TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented
+=== RUN   TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/round_two
+=== PAUSE TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/round_two
+=== RUN   TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit
+=== PAUSE TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit
+=== RUN   TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit_hidden_by_range
+=== PAUSE TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit_hidden_by_range
+=== CONT  TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments
+=== RUN   TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}____[]___false}_0x4432ce804010}
+=== RUN   TestReviewCommandRefusesAClaudePromptOverHalfItsWindow/2
+--- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall (1.16s)
+    --- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall/1 (0.53s)
+    --- PASS: TestReviewBlocksAboveTheBoundWithoutAProviderCall/2 (0.63s)
+=== CONT  TestReviewOmitsRetiredHistoryAndGeneratedFiles
+=== RUN   TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer/claude
+--- PASS: TestReviewKeepsDeletedArchiveRecordsAndOmissionPrecedence (0.63s)
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+--- PASS: TestReviewBlocksACandidateNeedingMoreThanFourSegments (1.42s)
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+--- PASS: TestReviewOmitsRetiredHistoryAndGeneratedFiles (0.48s)
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+--- PASS: TestReviewCommandRefusesAClaudePromptOverHalfItsWindow (1.08s)
+    --- PASS: TestReviewCommandRefusesAClaudePromptOverHalfItsWindow/1 (0.51s)
+    --- PASS: TestReviewCommandRefusesAClaudePromptOverHalfItsWindow/2 (0.57s)
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+--- PASS: TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates (0.99s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit
+--- PASS: TestReviewGreedilyPacksFourSegments (1.79s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget
+--- PASS: TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer (1.03s)
+    --- PASS: TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer/codex (0.52s)
+    --- PASS: TestCorrectionReviewBlocksAnOversizedDeltaBeforeTheReviewer/claude (0.51s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound
+=== RUN   TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}___Findings:_-_missing_anchor_[]___false}_<nil>}
+--- PASS: TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments (1.36s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound
+--- PASS: TestReviewSegmentsACandidateAboveTheBound (1.58s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget
+--- PASS: TestReviewSegmentsStopAtTheFirstBlockedAnswer (2.71s)
+    --- PASS: TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}___unclassifiable_answer_[]___false}_<nil>} (0.88s)
+    --- PASS: TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}____[]___false}_0x4432ce804010} (0.95s)
+    --- PASS: TestReviewSegmentsStopAtTheFirstBlockedAnswer/{{[]__{_0_<nil>_<nil>_<nil>_<nil>_<nil>_0_<nil>}___Findings:_-_missing_anchor_[]___false}_<nil>} (0.87s)
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/two_files
+=== CONT  TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound
+--- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget (0.00s)
+    --- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation (1.09s)
+    --- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes (1.31s)
+    --- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context (1.14s)
+    --- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary (1.36s)
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins
+=== CONT  TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key
+=== CONT  TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/round_two
+=== CONT  TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit_hidden_by_range
+=== CONT  TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit
+--- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit (0.00s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob (0.39s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/derived_reason_wins (0.39s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key (0.38s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_ignores_head-only_key (0.69s)
+    --- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/round_two_keeps_declaration_base (0.76s)
+--- PASS: TestReviewSizeRefusalNamesTheLargestFiles (0.00s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Codex_single_commit (0.78s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Claude_round_two_budget (1.00s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Codex_Correction_Review_byte_bound (1.41s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Codex_round_two_byte_bound (1.09s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Claude_single_commit_and_round_one_budget (0.83s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/two_files (0.61s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Claude_segment_limit (1.79s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Claude_Correction_Review_byte_bound (1.34s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Codex_segment_limit (1.71s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Claude_oversized_commit_hidden_by_range (1.51s)
+    --- PASS: TestReviewSizeRefusalNamesTheLargestFiles/Codex_oversized_commit_hidden_by_range (1.54s)
+--- PASS: TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented (0.00s)
+    --- PASS: TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/round_two (0.65s)
+    --- PASS: TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit (0.40s)
+    --- PASS: TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented/oversized_commit_hidden_by_range (0.53s)
+PASS
+suiteguard: guard cost: measured 2907 paths; fingerprint took 137.666458ms before and 130.444542ms after
+ok  	roundfix/internal/cli	5.002s
+
+stderr:
+

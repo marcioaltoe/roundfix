@@ -1,0 +1,285 @@
+Fixture: initialized temporary repository with glob config committed at base; ./bin/roundfix symlinks to the Run-built artifact. Fresh HOME and TMPDIR for every invocation; fixture removed.
+
+base glob
+$ ./bin/roundfix profiles show
+exit: 0
+stdout:
+Category: general
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: backend
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: frontend
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: claude / opus / high
+Fallback Chain:
+  1. codex / gpt-6.1-sol / xhigh
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred claude / opus / high
+     rationale: Design judgment; opus resolves to Opus 5.5.
+  2. fallback codex / gpt-6.1-sol / xhigh
+     rationale: Changes runtime; the provider places connected visual work at extra-high effort.
+
+Category: data
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: infra
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: docs
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback claude / sonnet / high
+     rationale: Changes runtime; Sonnet 5.5 is the efficient Claude model.
+
+Category: test
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: chore
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback claude / sonnet / high
+     rationale: Changes runtime; Sonnet 5.5 is the efficient Claude model.
+
+Category: qa
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: review
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-5.6-luna / max
+Fallback Chain:
+  1. codex / gpt-6.1-sol / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback codex / gpt-6.1-sol / high
+     rationale: Stays on Codex, because every review selection must use the pre-PR review provider's runtime.
+
+stderr:
+
+
+unsafe entry
+$ ./bin/roundfix profiles show
+exit: 2
+stdout:
+
+stderr:
+roundfix: profiles failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0342-config-9_ae42ve/.roundfixrc.yml": pre_pr_review.omit_paths has unsafe path "../outside.json"
+Run 'roundfix profiles --help' for usage.
+
+
+fresh restored base
+$ ./bin/roundfix profiles show
+exit: 0
+stdout:
+Category: general
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: backend
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: frontend
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: claude / opus / high
+Fallback Chain:
+  1. codex / gpt-6.1-sol / xhigh
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred claude / opus / high
+     rationale: Design judgment; opus resolves to Opus 5.5.
+  2. fallback codex / gpt-6.1-sol / xhigh
+     rationale: Changes runtime; the provider places connected visual work at extra-high effort.
+
+Category: data
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: infra
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: docs
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback claude / sonnet / high
+     rationale: Changes runtime; Sonnet 5.5 is the efficient Claude model.
+
+Category: test
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: chore
+Profile source: built-in
+Profile inherited from: general
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: inherited
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback claude / sonnet / high
+     rationale: Changes runtime; Sonnet 5.5 is the efficient Claude model.
+
+Category: qa
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-6.1-sol / high
+Fallback Chain:
+  1. claude / opus / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-6.1-sol / high
+     rationale: The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.
+  2. fallback claude / opus / high
+     rationale: Changes runtime; opus resolves to Opus 5.5.
+
+Category: review
+Profile source: built-in
+Profile inherited from: —
+Preferred Selection: codex / gpt-5.6-luna / max
+Fallback Chain:
+  1. codex / gpt-6.1-sol / high
+Recommendation status: current
+Recommended profile (snapshot 2026-09-30):
+  1. preferred codex / gpt-5.6-luna / max
+     rationale: Bounded work that blocks no other Task; about five minutes per session at a fraction of the price.
+  2. fallback codex / gpt-6.1-sol / high
+     rationale: Stays on Codex, because every review selection must use the pre-PR review provider's runtime.
+
+stderr:
+

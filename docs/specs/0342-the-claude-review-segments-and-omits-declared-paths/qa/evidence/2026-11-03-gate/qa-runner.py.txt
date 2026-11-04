@@ -1,0 +1,233 @@
+import os,sys,subprocess,tempfile,pathlib,re,json,shlex,hashlib,tarfile,io
+ROOT=pathlib.Path(__file__).resolve().parent if False else pathlib.Path.cwd()
+SPEC=ROOT/'docs/specs/0342-the-claude-review-segments-and-omits-declared-paths'
+REPORT=SPEC/'qa/qa-report-2026-11-03.md'
+EV=SPEC/'qa/evidence/2026-11-03-gate'
+HEAD=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+BASE='e1e01f7e7cde93cb323f88c193d126ff1312bf90'
+def env():
+ e=os.environ.copy()
+ for n in list(e):
+  if n.endswith('_API_KEY') or n in ['CLAUDE_CODE_OAUTH_TOKEN','ANTHROPIC_AUTH_TOKEN']: e.pop(n,None)
+ e.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL=os.devnull)
+ return e
+def run(args,cwd=ROOT,e=None):
+ p=subprocess.run(args,cwd=cwd,env=e or env(),text=True,capture_output=True)
+ return p, '$ '+shlex.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\n'
+def done(row,status,body,log=None):
+ if log is not None: (EV/(row+'.txt')).write_text(log)
+ s=REPORT.read_text(); s=s.replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+ marker='\n### '+row+'\n'; start=s.index(marker)+len(marker); end=s.find('\n### ',start)
+ if end<0: end=len(s)
+ s=s[:end]+'\nObserved: '+body+(' Evidence: ['+row+'.txt](evidence/2026-11-03-gate/'+row+'.txt).' if log is not None else '')+'\n'+s[end:]
+ REPORT.write_text(s); print(row,status,body,flush=True)
+def tests():
+ done('Q01','pass','Daemon-supplied make verify-changed exited 0 at the audited head; diagnostics removed on success; not rerun.')
+ commands={}
+ for i in range(1,5):
+  text=(SPEC/f'task_0{i}.md').read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+  for m in re.finditer(r'go test ([^`]*?)(?= &&|`|$)',text):
+   args=shlex.split('go test '+m.group(1))
+   if '-v' not in args: args.insert(2,'-v')
+   pkg=next(a for a in args if a.startswith('./'))
+   commands.setdefault(pkg,[]).append(args)
+ # Run union once per package, retaining explicit fresh execution and timeout.
+ for pkg,row in [('./internal/config','Q02'),('./internal/cli','Q03'),('./internal/delivery','Q04')]:
+  names=[]
+  for args in commands[pkg]:
+   pat=args[args.index('-run')+1]; names.extend(pat.removeprefix('^(').removesuffix(')$').split('|'))
+  if pkg=='./internal/cli': names+=['TestReviewKeepsCodexSegmentRecordsWithoutTokenEstimates']
+  args=['go','test','-count=1','-timeout','30m','-v',pkg,'-run','^('+'|'.join(dict.fromkeys(names))+')$']
+  p,log=run(args); passed=re.findall(r'^--- PASS: (\S+)',p.stdout,re.M)
+  done(row,'pass' if p.returncode==0 and len(passed)==len(set(names)) else 'fail',f'{len(passed)} named top-level tests passed; exit {p.returncode}. Exact command and every subtest are retained.',log)
+ logs=[]; ok=True
+ for args in commands['./skills']+commands['./internal/docscontract']:
+  if '-run' in args and args[args.index('-run')+1]=='^TestTheSkillCoverageMapIsCurrent$': continue # full docscontract below includes this test
+  p,log=run(args); logs.append(log); ok=ok and p.returncode==0
+ done('Q05','pass' if ok else 'fail','The task_04 skills and full tagged documentation contract suites completed; the latter includes the current Behavior Surface check from task_01. See every named test and any detector skip in the transcript.','\n'.join(logs))
+def config():
+ e=env(); e.update({n:subprocess.check_output(['go','env',n],text=True).strip() for n in ['GOMODCACHE','GOCACHE']})
+ logs=[]
+ with tempfile.TemporaryDirectory(prefix='qa0342-config-') as d:
+  repo=pathlib.Path(d); (repo/'bin').mkdir(); (repo/'bin/roundfix').symlink_to(ROOT/'bin/roundfix')
+  for args in [['git','init','-q'],['git','config','user.name','QA Fixture'],['git','config','user.email','qa@example.invalid']]:
+   p,l=run(args,repo,e); assert p.returncode==0,l
+  config=repo/'.roundfixrc.yml'; config.write_text('pre_pr_review:\n  omit_paths:\n    - packages/backend/drizzle/migrations/meta/*_snapshot.json\n')
+  for args in [['git','add','.roundfixrc.yml'],['git','commit','-q','-m','fixture base config']]:
+   p,l=run(args,repo,e); assert p.returncode==0,l
+  good=config.read_text(); results=[]
+  for label,text,expected in [('base glob',good,0),('unsafe entry',good.replace('packages/backend/drizzle/migrations/meta/*_snapshot.json','../outside.json'),2),('fresh restored base',good,0)]:
+   config.write_text(text)
+   with tempfile.TemporaryDirectory(prefix='qa0342-home-') as h,tempfile.TemporaryDirectory(prefix='qa0342-tmp-') as t:
+    e.update(HOME=h,TMPDIR=t); p,l=run(['./bin/roundfix','profiles','show'],repo,e)
+   logs.append(label+'\n'+l); results.append(p.returncode==expected and (expected==0 or ('pre_pr_review.omit_paths' in p.stderr and '../outside.json' in p.stderr)))
+  logs.insert(0,'Fixture: initialized temporary repository with glob config committed at base; ./bin/roundfix symlinks to the Run-built artifact. Fresh HOME and TMPDIR for every invocation; fixture removed.\n')
+ done('Q06','pass' if all(results) else 'fail','Public config loader accepted the Vortex snapshot glob (exit 0), refused ../outside.json with key and entry on stderr (exit 2), and accepted restored config in a fresh invocation (exit 0).','\n'.join(logs))
+
+def sabotage():
+ cases=[
+ ('S01','internal/cli/review.go','if reason == "" && declarations.PrePRReview.Omits(path) {','if false && reason == "" && declarations.PrePRReview.Omits(path) {','TestReviewOmitsConfiguredPathsFromTheBaseCommit','base_glob','snapshot retained when omission match is removed'),
+ ('S02','internal/cli/review.go','declarations, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, "", declarationBase)','_ = declarationBase\n\tdeclarations, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, gitRoot, "", headCommit)','TestReviewOmitsConfiguredPathsFromTheBaseCommit','head-only_key','head-only snapshot key incorrectly omits'),
+ ('S03','internal/cli/review.go','if counts["omit-path"] > 0 {','if true {','TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths','','zero omission count changes the literal summary'),
+ ('S04','internal/cli/review.go','if plan.Lineage.Round != 1 || plan.Lineage.Correction {','if plan.Lineage.Round != 1 || plan.Lineage.Correction || config.PrePRReview.Provider == "claude" {','TestReviewSegmentsAClaudeCandidateOverItsBudget','packs_by_tokens_rather_than_bytes','Claude admission refuses instead of segmenting'),
+ ('S05','internal/cli/review.go','fit := func(index int, prompt string, _ string) bool {','fit := func(index int, prompt string, diff string) bool {','TestReviewSegmentsAClaudeCandidateOverItsBudget','packs_by_tokens_rather_than_bytes','three 475000-byte commits split into three segments instead of two'),
+ ('S06','internal/cli/review_segments.go','if len(segments) > reviewSegmentLimit {','if len(segments) > reviewSegmentLimit && scope.estimatedPromptTokens == 0 {','TestReviewBlocksAClaudeCandidateNeedingMoreThanFourSegments','','five 700000-byte commits incorrectly reach provider readiness'),
+ ('S07a','internal/cli/review_size_refusal.go','return files[i].Bytes > files[j].Bytes','return files[i].Path < files[j].Path','TestReviewSizeRefusalNamesTheLargestFiles','Codex_single_commit','out-of-order unequal files ranked by path'),
+ ('S07b','internal/cli/review_size_refusal.go','return files[i].Bytes > files[j].Bytes','return files[i].Bytes < files[j].Bytes','TestReviewSizeRefusalNamesTheLargestFiles','Codex_single_commit','largest files ranked ascending'),
+ ('S08','internal/cli/review_size_refusal.go','if strings.HasPrefix(line, "diff --git ") {','if strings.HasPrefix(line, "diff --git ") {\n\t\t\tpaths[len(sizes)] = strings.TrimPrefix(strings.Fields(line)[3], "b/")','TestReviewSizeRefusalNamesTheLargestFiles','Codex_single_commit','space and non-ASCII path parsed from quoted header'),
+ ('S09','internal/delivery/engine.go','blocker += ": " + reason','blocker = BlockerReviewBlocked','TestReviewBlockedParkCarriesTheReviewReason','two_lines','two-line review reason loses its first line')]
+ for row,file,old,new,test,subcase,why in cases:
+  with tempfile.TemporaryDirectory(prefix='qa0342-'+row+'-') as d:
+   dst=pathlib.Path(d)
+   archive=subprocess.run(['git','archive',HEAD],cwd=ROOT,check=True,capture_output=True).stdout
+   with tarfile.open(fileobj=io.BytesIO(archive)) as tf: tf.extractall(dst,filter='data')
+   e=env()
+   for args in [['git','init','-q'],['git','config','user.name','QA Fixture'],['git','config','user.email','qa@example.invalid'],['git','add','-f','.'],['git','commit','-q','-m','archived QA baseline']]:
+    p,l=run(args,dst,e); assert p.returncode==0,l
+   path=dst/file; source=path.read_text(); assert source.count(old)==1,(row,source.count(old))
+   source=source.replace(old,new)
+   if row=='S05':
+    oldfit='return estimateReviewPromptTokens(prompt) <= claudeReviewPromptBudget'
+    assert source.count(oldfit)==1
+    source=source.replace(oldfit,'return len(diff) <= reviewDiffBound')
+   path.write_text(source)
+   pkg='./internal/delivery' if row=='S09' else './internal/cli'
+   args=['go','test','-count=1','-timeout','30m','-v',pkg,'-run','^'+test+'$']
+   p,log=run(args,dst,e)
+   log='Audited head: '+HEAD+'\nCopy: git archive '+HEAD+'; initialized and committed disposable baseline before mutation.\nMutation: '+file+'\nBefore: '+old+'\nAfter: '+new+(' plus Claude fit return len(diff) <= reviewDiffBound' if row=='S05' else '')+'\nInput: '+why+'\nTemporary copy removed after foreground command exit.\n\n'+log
+   named='--- FAIL: '+test in p.stdout
+   specific=not subcase or re.search(r'--- FAIL: '+re.escape(test)+'/'+re.escape(subcase),p.stdout) is not None
+   # Delivery subcase is named by the test source; require a reason assertion even if its label differs.
+   if row=='S09': specific='review-blocked' in p.stdout and '--- FAIL:' in p.stdout
+   killed=p.returncode!=0 and named and specific and '[build failed]' not in p.stdout and 'undefined:' not in p.stderr
+  done(row,'pass' if killed else 'fail',('Mutation rejected by its named behavioral assertion: ' if killed else 'Probe did not demonstrate the required behavioral failure: ')+why+'. Test exit '+str(p.returncode)+'.',log)
+
+
+def audit():
+ logs=[]; errors=[]
+ def git(*args):
+  p,l=run(['git',*args]); logs.append(l); assert p.returncode==0,l; return p.stdout
+ commits=git('rev-list','--reverse',BASE+'..'+HEAD).splitlines()
+ auth=(SPEC/'_authorization.md').read_text(); granted=re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M)
+ allpaths=set(); changed_by={}
+ for n,c in enumerate(commits,1):
+  paths=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines(); allpaths.update(paths)
+  task=SPEC/f'task_0{n}.md';text=task.read_text()
+  declared=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',text,re.M)); declared.add(str(task.relative_to(ROOT)))
+  recorded=[]
+  if '## Recorded paths' in text:
+   recorded=re.findall(r'^- `([^`]+)`',text.split('## Recorded paths',1)[1],re.M);declared.update(recorded)
+  outside=sorted(set(paths)-declared)
+  if outside: errors.append(f'task_0{n} undeclared {outside}')
+  logs.append(f'task_0{n} declarations verified; Recorded paths: {recorded}; outside: {outside}\n')
+  changed_by[c]=paths
+ # Execute the production classifier source on already-clean Git paths, outside the checkout.
+ with tempfile.TemporaryDirectory(prefix='qa0342-governed-') as d:
+  d=pathlib.Path(d)
+  (d/'governed.go').write_text((ROOT/'internal/speccheck/governed.go').read_text().replace('package speccheck','package main',1))
+  (d/'main.go').write_text('package main\nimport("fmt";"os")\nfunc cleanMechanicalPath(s string)string{return s}\nfunc main(){for _,s:=range os.Args[1:]{if GovernedPath(s){fmt.Println(s)}}}\n')
+  args=['go','run',str(d/'governed.go'),str(d/'main.go'),*sorted(allpaths)]
+  p,l=run(args); logs.append('Production GovernedPath source, with cleanMechanicalPath identity only for clean Git names.\n'+l); assert p.returncode==0,l
+  governed=p.stdout.splitlines()
+ if set(governed)!=set(granted): errors.append(f'governed {governed} versus grant {granted}')
+ for c,paths in changed_by.items():
+  if set(paths)&set(governed):
+   # Seeded authorization audit already covers this commit; confirm traceable ancestor without duplicating its mechanical verdict.
+   parent=git('rev-parse',c+'^').strip(); previous=git('show',parent+':'+str((SPEC/'_authorization.md').relative_to(ROOT)))
+   if previous!=auth: errors.append('grant differs before consuming Task '+c)
+   git('merge-base','--is-ancestor',BASE,c)
+ logs.append('Seeded mechanical audit covers task_04 at '+commits[-1]+'. No uncovered governed Task commit remains.\n')
+ exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','docs/references/skill-coverage.json'}
+ allowedskills={'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/review.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/SKILL.md','skills/roundfix/references/review.md','skills/roundfix/references/deliver.md','skills/testdata/owned-skill-versions.json'}
+ prohibited=[p for p in allpaths if p in exact or p.startswith(('.github/workflows/','dist/','docs/history/','internal/baseline/assets/','docs/agents/')) or (p.startswith(('.agents/skills/','skills/')) and p not in allowedskills)]
+ if prohibited: errors.append('prohibited changed paths '+repr(prohibited))
+ def section(s,title):
+  if title not in s:return ''
+  x=s.split(title,1)[1];return re.split(r'\n#{1,3} ',x,1)[0]
+ for p in sorted(allpaths & allowedskills):
+  if not p.endswith('SKILL.md'):continue
+  before=git('show',BASE+':'+p);after=(ROOT/p).read_text()
+  if section(before,'### QA settlement')!=section(after,'### QA settlement'):errors.append('QA settlement changed '+p)
+ # Glossary: compare entries, not only changed line grep.
+ before=git('show',BASE+':CONTEXT.md'); after=(ROOT/'CONTEXT.md').read_text()
+ def entries(s):
+  ms=list(re.finditer(r'(?m)^(?:[-*+] )?\*\*([^*]+)\*\*\s*(?:—|:)',s));return {m[1]:s[m.start():ms[i+1].start() if i+1<len(ms) else len(s)].strip() for i,m in enumerate(ms)}
+ b,a=entries(before),entries(after); changed=sorted(k for k in b.keys()|a.keys() if b.get(k)!=a.get(k))
+ if changed!=['Review Omit Path','Review Segment']:errors.append('unexpected glossary changes '+repr(changed))
+ for term in ['Review Omit Path','Review Segment']:
+  if term not in a:errors.append('missing glossary '+term)
+ prd=(SPEC/'_prd.md').read_text(); unreachable=prd.split('## Unreachable Acceptance',1)[1].split('\n## ',1)[0].strip()
+ if not unreachable.startswith('None.'):errors.append('unexpected unreachable declaration')
+ if 'adds: **Review Omit Path**' not in prd or 'changes: **Review Segment**' not in prd:errors.append('missing glossary declaration')
+ logs.append('Glossary changed entries: '+repr(changed)+'\n'+ '\n'.join(a[t] for t in ['Review Segment','Review Omit Path'])+'\nUnreachable Acceptance: '+unreachable+'\n')
+ p,l=run(['git','diff','--name-only','HEAD']);logs.append(l)
+ if p.stdout.strip():errors.append('tracked current delta '+p.stdout)
+ p,l=run(['git','status','--short']);logs.append(l)
+ if any(line[3:] and not line[3:].startswith(str((SPEC/'qa').relative_to(ROOT))+'/') for line in p.stdout.splitlines()):errors.append('current delta outside QA')
+ logs.append('Errors: '+repr(errors)+'\n')
+ done('Q08','pass' if not errors else 'fail','Four actual Task commits match their declarations, including task_03 Recorded Path review_validation.go. All four Governed Paths have the unchanged ancestor grant. Excluded surfaces and QA settlement are unchanged; only Review Segment and Review Omit Path change in the glossary; Unreachable Acceptance is None. Current delta is QA only.','\n'.join(logs))
+def wording():
+ logs=[]; errors=[]
+ dirs=['docs/user-guide','.agents/skills/roundfix','skills/roundfix','CONTEXT.md','docs/adr']
+ p,l=run(['rg','-n','-i','never segmented|not segmented',*dirs]);logs.append(l)
+ for line in p.stdout.splitlines():
+  if not ('Round 2 and the Correction Review' in line or '0286-' in line):errors.append('stale live text '+line)
+ for p in ['docs/user-guide/commands/review.md','.agents/skills/roundfix/references/review.md','skills/roundfix/references/review.md']:
+  text=' '.join((ROOT/p).read_text().split())
+  for phrase in ['omit-path','A Claude round-1 prompt above its budget is reviewed in at most four Review Segments','largest files in the diff','pre_pr_review.omit_paths']:
+   ok=phrase in text;logs.append(p+' '+phrase+' '+str(ok))
+   if not ok: errors.append(p+' missing '+phrase)
+ for p in ['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md']:
+  text=' '.join((ROOT/p).read_text().split());ok='carries the first line of the reason in the Pre-PR Review Record' in text
+  logs.append(p+' park reason '+str(ok))
+  if not ok:errors.append(p+' missing park reason')
+ text=(ROOT/'docs/user-guide/configuration.md').read_text()
+ if not re.search(r'^\| `pre_pr_review.omit_paths`',text,re.M):errors.append('missing config row')
+ for prefix in ['0227-','0282-']:
+  p=next((ROOT/'docs/adr').glob(prefix+'*.md'));text=p.read_text()
+  amendment='**Amended by [ADR-0352](0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).**'
+  if amendment not in text:errors.append('missing amendment '+p.name)
+  logs.append(p.name+' '+text.split('**Amended by [ADR-0352]',1)[-1].strip())
+ for name in ['SKILL.md','references/review.md','references/deliver.md']:
+  a=ROOT/'.agents/skills/roundfix'/name;b=ROOT/'skills/roundfix'/name
+  if a.read_bytes()!=b.read_bytes():errors.append('mirror mismatch '+name)
+  logs.append('mirror '+name+': identical')
+ logs.append('Errors: '+repr(errors))
+ done('Q07','pass' if not errors else 'fail','All required guide phrases, config table row, ADR-0352 amendment lines and canonical/mirror equality hold. Broad search finds only intentionally unsegmented round 2 / Correction Review text. No stale Claude round-1 prohibition remains.','\n'.join(logs))
+
+
+def external():
+ prd=(SPEC/'_prd.md').read_text(); adopted=(SPEC/'references/2026-11-03-the-claude-pre-pr-review-blocks-on-size-instead-of-segmenting.md').read_text()
+ observations={n:(EV/(n+'.txt')).read_text() for n in ['Q02','Q03','Q06']}
+ # Compare offline source content with observed command/subtest results, never with matrix statuses.
+ passage=adopted.split('## Report (verbatim)',1)[1]
+ checks=['541455 estimated tokens','1.049.480 bytes','669 KB','packages/backend/drizzle/migrations/meta/0092_snapshot.json','regenerate','sai com 1']
+ observed=['--- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit','--- PASS: TestReviewSizeRefusalNamesTheLargestFiles']
+ ok=all(x in passage for x in checks) and all(x in observations['Q03'] for x in observed) and 'base glob\n' in observations['Q06'] and 'exit: 0' in observations['Q06']
+ log='Origin: default/vortex (gesttione-solutions/vortex), received 2026-11-03; ai-memory message 01a1a0ea-ec31-7512-a83c-d329647cad29. Offline adopted original report, not a new Vortex repository read.\n\n'+passage+'\n\nComparison: the exact Drizzle snapshot glob is accepted through the built config loader. Fake-runner command evidence leaves a base-declared snapshot out as omit-path, keeps authored source, preserves generated precedence, and adds ranked filenames plus the key to over-budget refusals. This addresses the reported need for a regeneration command that exits 1 without changing derived-path conflict regeneration. No production Vortex delivery or real Claude runtime was exercised.\n'
+ done('E01','pass' if ok else 'fail','The independent Vortex report dated 2026-11-03 records the 541455-token, 1049480-byte refusal and 669 KB snapshot with failing regeneration workaround. Its snapshot shape maps to observed glob acceptance, omit-path scoping and ranked actionable refusals; no Vortex checkout was read.',log)
+ # Quote already supplied with the PRD; no lookup is necessary or authorized.
+ github=prd.split('- GitHub\'s documentation',1)[1].split('- Anthropic',1)[0]
+ ok='To keep certain files from displaying in' in github and '2026-11-03' in github and '--- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/base_glob' in observations['Q03'] and '--- PASS: TestReviewOmitsConfiguredPathsFromTheBaseCommit/head-only_key' in observations['Q03']
+ log='Origin: GitHub documentation, Customizing how changed files appear on GitHub; passage retrieved during authoring on 2026-11-03. Offline quotation supplied in PRD Acceptance evidence.\n'+github+'\nComparison: GitHub describes a repository author deciding which files appear in diffs. The observed base-glob omission and head-only-key rejection implement that explicit repository decision while using the review-specific config key, not reading .gitattributes. The published passage supports the practice, not a claim that GitHub implements Roundfix\'s base-commit rule.\n'
+ done('E02','pass' if ok else 'fail','GitHub documentation passage, dated 2026-11-03 in the committed quotation, supports explicit repository-selected diff exclusions. Observed base-glob and head-only-key cases confirm that the new omission follows repository authority instead of candidate choice.',log)
+ sdk=prd.split('- Anthropic\'s Claude Agent SDK documentation',1)[1].split('## Unreachable Acceptance',1)[0]
+ ok='When the context window approaches its limit' in sdk and '2026-11-03' in sdk and '--- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes' in observations['Q03']
+ test=(ROOT/'internal/cli/review_claude_segment_test.go').read_text()
+ ok=ok and 'runner.prepareCalls != 1' in test and 'request.Session != runner.prepared[0].Session' in test
+ log='Origin: Anthropic Claude Agent SDK, How the agent loop works; passage retrieved during authoring on 2026-11-03. Offline quotation supplied in PRD Acceptance evidence.\n'+sdk+'\nComparison: published compaction behavior explains why consecutive turns can share one session. The observed three-commit fixture sends two token-budgeted segments with one preparation and one session, first-segment-only Spec contexts, matching persisted estimates and totals. This proves Roundfix\'s side of the boundary; actual SDK compaction and provider context behavior remain an explicitly unmeasured parity limit, as the Spec requires fake runners and forbids provider calls.\n'
+ done('E03','pass' if ok else 'fail','The dated 2026-11-03 SDK quotation supports the one-session compaction premise. Observed fake-runner segment execution verifies one prepared session and bounded prompts; actual provider compaction remains outside this offline gate.',log)
+ auth=(SPEC/'_authorization.md').read_text();assert 'status: approved' in auth and '  - pull_request' in auth
+ done('PR01','blocked (environment: no open Pull Request)','Prompt-provided absence applies to the Spec target branch. Approval: recorded maintainer cycle AW authority grants delivery operations, without a PR review acceptance. Checks/status: Daemon make verify-changed passed at '+HEAD+'. Threads: none, because no Pull Request exists. Merge-Ready acceptance: none yet. Candidate ancestry: claimed head '+HEAD+'; the authorization is present at ancestor '+BASE+'. Unblock by opening and reviewing a PR for the target branch after this gate; the Run branch has no PR. No remote lookup performed.')
+ # Clarify the actual first failing assertion of the fifth-segment sabotage.
+ text=REPORT.read_text().replace('five 700000-byte commits incorrectly reach provider readiness. Test exit 1.','five 700000-byte commits bypass the planner limit. The named test fails at its estimate assertion: 1757696 (sum after segmentation) versus 1751791 (whole unsegmented refusal estimate). Test exit 1.')
+ REPORT.write_text(text)
+def outcome():
+ e=env();e.update({n:subprocess.check_output(['go','env',n],text=True).strip() for n in ['GOMODCACHE','GOCACHE']})
+ with tempfile.TemporaryDirectory(prefix='qa0342-home-') as h,tempfile.TemporaryDirectory(prefix='qa0342-tmp-') as t:
+  e.update(HOME=h,TMPDIR=t)
+  p,log=run(['./bin/roundfix','archive',SPEC.name,'--plan','--offline'],e=e)
+ (EV/'archive-plan.txt').write_text('Judge Key Variables and TYPESAFE_API_KEY unset. Fresh HOME and TMPDIR removed after command. No mutation or judge request.\n'+log)
+ print(log,flush=True)
+
+if __name__=='__main__': globals()[sys.argv[1]]()

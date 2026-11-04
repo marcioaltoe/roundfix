@@ -1,0 +1,36 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/delivery/engine.go
+Before: blocker += ": " + reason
+After: blocker = BlockerReviewBlocked
+Input: two-line review reason loses its first line
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/delivery -run '^TestReviewBlockedParkCarriesTheReviewReason$'
+exit: 1
+stdout:
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/empty
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/empty
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/empty
+=== NAME  TestReviewBlockedParkCarriesTheReviewReason/two_lines
+    review_blocked_park_test.go:34: item={SpecSlug:review-blocked Position:0 Stage:parked Blocker:review-blocked Branch:roundfix/deliver-review-blocked Worktree: WorktreeProvisioned:false RunID:run-review-blocked CandidateCommits:[reviewed-review-blocked] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}, want parked with "review-blocked: review unavailable"
+--- FAIL: TestReviewBlockedParkCarriesTheReviewReason (0.00s)
+    --- FAIL: TestReviewBlockedParkCarriesTheReviewReason/two_lines (0.01s)
+    --- PASS: TestReviewBlockedParkCarriesTheReviewReason/empty (0.01s)
+    --- PASS: TestReviewBlockedParkCarriesTheReviewReason/blank_first_line (0.01s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 160.842666ms before and 134.949667ms after
+FAIL	roundfix/internal/delivery	0.612s
+FAIL
+
+stderr:
+

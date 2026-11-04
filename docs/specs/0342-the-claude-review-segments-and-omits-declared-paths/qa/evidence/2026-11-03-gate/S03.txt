@@ -1,0 +1,23 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review.go
+Before: if counts["omit-path"] > 0 {
+After: if true {
+Input: zero omission count changes the literal summary
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths$'
+exit: 1
+stdout:
+=== RUN   TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+=== PAUSE TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+=== CONT  TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths
+    review_omit_paths_test.go:126: summary changed: "existing prompt\nOmitted from this diff (not reviewed): 0 path(s) of QA evidence, 0 of upstream-managed skills, 0 of archived Spec sources, 0 of retired history, 0 of generated files, 0 of pre_pr_review.omit_paths.\n"
+--- FAIL: TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths (0.00s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 148.510041ms before and 135.518709ms after
+FAIL	roundfix/internal/cli	0.752s
+FAIL
+
+stderr:
+

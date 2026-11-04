@@ -1,0 +1,43 @@
+Audited head: b7ece9af5bd3d4ab1630ec6129c310076aa7b304
+Copy: git archive b7ece9af5bd3d4ab1630ec6129c310076aa7b304; initialized and committed disposable baseline before mutation.
+Mutation: internal/cli/review.go
+Before: fit := func(index int, prompt string, _ string) bool {
+After: fit := func(index int, prompt string, diff string) bool { plus Claude fit return len(diff) <= reviewDiffBound
+Input: three 475000-byte commits split into three segments instead of two
+Temporary copy removed after foreground command exit.
+
+$ go test -count=1 -timeout 30m -v ./internal/cli -run '^TestReviewSegmentsAClaudeCandidateOverItsBudget$'
+exit: 1
+stdout:
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== RUN   TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== PAUSE TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+=== CONT  TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context
+    review_claude_segment_test.go:44: exit=2 segments=[] reason="review prompt too large: 576482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part2.txt (980153 bytes), part1.txt (100153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review" stderr="roundfix: review blocked: review prompt too large: 576482 estimated tokens after omitting 0 path(s) exceeds the claude review budget of 500000 tokens, half of its 1000000-token context window; largest files in the diff: part2.txt (980153 bytes), part1.txt (100153 bytes), docs/specs/example/_prd.md (23308 bytes); pre_pr_review.omit_paths in the base commit's Project Config leaves generated files out of the review\n"
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes
+    review_claude_segment_test.go:44: exit=2 segments=[{Base:8194656da71d010b79f473898fc3b53ae0687131 Head:e0bcdbd84ff2bf090891f8e6c651e32aa43a4826 DiffBytes:476389 EstimatedPromptTokens:240127} {Base:e0bcdbd84ff2bf090891f8e6c651e32aa43a4826 Head:df6ebc1352653973bb0e704966f5da68c8664f02 DiffBytes:475152 EstimatedPromptTokens:239022} {Base:df6ebc1352653973bb0e704966f5da68c8664f02 Head:081ee5b1023a959b6de124229dc95525b359697e DiffBytes:475152 EstimatedPromptTokens:239022}] reason="empty agent output" stderr="roundfix: review blocked: empty agent output\n"
+=== NAME  TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary
+    review_claude_segment_test.go:44: exit=2 segments=[{Base:8194656da71d010b79f473898fc3b53ae0687131 Head:0dc5c2d070a73177f9110946397f9377171e76c2 DiffBytes:527144 EstimatedPromptTokens:281528} {Base:0dc5c2d070a73177f9110946397f9377171e76c2 Head:35c2cadc953efd632fc6848919df3009d8479fc2 DiffBytes:490152 EstimatedPromptTokens:246522} {Base:35c2cadc953efd632fc6848919df3009d8479fc2 Head:e0f357515b955c7b5837db29927df84f4a9ec238 DiffBytes:490152 EstimatedPromptTokens:246522}] reason="empty agent output" stderr="roundfix: review blocked: empty agent output\n"
+--- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget (0.00s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/later_commit_fits_without_first_segment_context (0.55s)
+    --- PASS: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_triggers_segmentation (0.59s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/packs_by_tokens_rather_than_bytes (0.66s)
+    --- FAIL: TestReviewSegmentsAClaudeCandidateOverItsBudget/Spec_context_changes_the_first_boundary (0.66s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 146.267625ms before and 135.509083ms after
+FAIL	roundfix/internal/cli	1.380s
+FAIL
+
+stderr:
+

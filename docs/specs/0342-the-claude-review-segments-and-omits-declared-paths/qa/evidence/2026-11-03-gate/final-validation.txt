@@ -1,0 +1,45 @@
+$ ./bin/roundfix qa-report accept docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/qa-report-2026-11-03.md
+exit: 0
+stdout:
+
+stderr:
+
+
+$ git check-ignore -- docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/qa-report-2026-11-03.md docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q04.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S06.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q05.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q07.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S05.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S04.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q06.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S01.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E01.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S07a.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S07b.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/qa-runner.py.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/archive-plan.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/version.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S09.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S08.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q08.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/precondition.txt
+exit: 1
+stdout:
+
+stderr:
+
+
+$ go run /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0342-secretscan-95m0o9ca/scan.go /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0342-secretscan-95m0o9ca/patterns.go /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0342-secretscan-95m0o9ca/main.go docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/qa-report-2026-11-03.md docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q04.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S06.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q05.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q07.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S05.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S04.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q06.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S01.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E01.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S07a.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E02.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S07b.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/E03.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/qa-runner.py.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/archive-plan.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/version.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S09.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/S08.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/Q08.txt docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/evidence/2026-11-03-gate/precondition.txt
+exit: 0
+stdout:
+canonical Secret Pattern scan: no matches
+
+stderr:
+
+
+$ git diff --check
+exit: 0
+stdout:
+
+stderr:
+
+
+$ git diff --name-only HEAD
+exit: 0
+stdout:
+
+stderr:
+
+
+$ git status --short
+exit: 0
+stdout:
+?? docs/specs/0342-the-claude-review-segments-and-omits-declared-paths/qa/
+
+stderr:
+
+
+22 row headings match the matrix; every executed row has typed nonempty inputs, sources and observed evidence. No pending rows. Only QA content changed.

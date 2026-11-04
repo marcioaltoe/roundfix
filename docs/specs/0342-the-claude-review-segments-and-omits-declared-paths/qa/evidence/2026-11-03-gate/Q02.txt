@@ -1,0 +1,125 @@
+$ go test -count=1 -timeout 30m -v ./internal/config -run '^(TestPrePRReviewOmitPathsLoadsAndValidates|TestDefaultConfigSelectsNoPrePRReviewProvider)$'
+exit: 0
+stdout:
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates
+=== RUN   TestDefaultConfigSelectsNoPrePRReviewProvider
+=== PAUSE TestDefaultConfigSelectsNoPrePRReviewProvider
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/absent
+=== CONT  TestDefaultConfigSelectsNoPrePRReviewProvider
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/absent
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/inherits_user
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/inherits_user
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/project_replaces_user
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/project_replaces_user
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/empty_clears_user
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/empty_clears_user
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/provider_still_overrides
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/provider_still_overrides
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/matches_whole_paths
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/matches_whole_paths
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_""
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_""
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"."
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"."
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"./"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"./"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"/tmp/file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"/tmp/file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"../file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"../file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/../file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/../file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/./file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/./file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a\\file"
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a\\file"
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"["
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"["
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[42]
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[42]
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[true]
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[true]
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[null]
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[null]
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[{}]
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[{}]
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[[]]
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[[]]
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_gen/a.json
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_gen/a.json
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_{}
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_{}
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_null
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_null
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_true
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_true
+=== RUN   TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_42
+=== PAUSE TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_42
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/absent
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[[]]
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"."
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[true]
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_42
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[{}]
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_true
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_null
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_{}
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[null]
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_gen/a.json
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/../file"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/provider_still_overrides
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//file"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_""
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/empty_clears_user
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"../file"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"/tmp/file"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"./"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/matches_whole_paths
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/project_replaces_user
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/./file"
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/inherits_user
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"["
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[42]
+=== CONT  TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a\\file"
+--- PASS: TestDefaultConfigSelectsNoPrePRReviewProvider (0.00s)
+--- PASS: TestPrePRReviewOmitPathsLoadsAndValidates (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[[]] (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[true] (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_42 (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_true (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_null (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[{}] (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_{} (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-list_gen/a.json (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[null] (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/../file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"." (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a//" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/matches_whole_paths (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"./" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"../file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a/./file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"[" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_non-string_entry_[42] (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"a\\file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/refuses_"/tmp/file" (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/absent (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/provider_still_overrides (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/project_replaces_user (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/empty_clears_user (0.00s)
+    --- PASS: TestPrePRReviewOmitPathsLoadsAndValidates/inherits_user (0.00s)
+PASS
+suiteguard: guard cost: measured 2906 paths; fingerprint took 629.394459ms before and 130.071834ms after
+ok  	roundfix/internal/config	1.232s
+
+stderr:
+
