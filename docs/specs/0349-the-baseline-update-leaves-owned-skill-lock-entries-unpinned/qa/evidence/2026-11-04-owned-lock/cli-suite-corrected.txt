@@ -1,6 +1,0 @@
-command: go test -count=1 -timeout 40m ./internal/cli
-PATH prepends the installed actual rustfmt executable, not its rustup shim. HOME and TMPDIR remain fresh.
-stdout:
-ok  	roundfix/internal/cli	173.762s
-stderr:
-exit: 0
