@@ -131,6 +131,47 @@ func TestTheSkillsBumpRefusesWhatItMustNotPin(t *testing.T) {
 	}
 }
 
+func TestTheSkillsBumpAcceptsAnAlreadyCurrentCatalog(t *testing.T) {
+	t.Parallel()
+	root, catalog, revision := newSkillsBumpFixture(t)
+	repo := filepath.Join(root, "repo")
+	writeFile(t, repo, ".agents/skills/alpha/SKILL.md", "catalog alpha\n")
+	writeFile(t, repo, ".agents/skills/zeta/SKILL.md", "catalog zeta\n")
+	writeFile(t, repo, "skills-lock.json", `{"skills":{"zeta":{"source":"marcioaltoe/skills","ref":"`+revision+`"},"alpha":{"source":"marcioaltoe/skills","ref":"`+revision+`"},"unrelated":{"source":"other/catalog","ref":"keep"}}}`)
+	writeFile(t, repo, "already-current", "")
+	command := skillsBumpCommand(t, root, catalog)
+	var diagnostics bytes.Buffer
+	command.Stderr = &diagnostics
+	output, err := command.Output()
+	if err != nil {
+		t.Fatalf("already-current bump: %v\n%s\n%s", err, output, &diagnostics)
+	}
+	wantFinal := "skills-third-party-bump: 2 catalog skills and every upstream Setup Snapshot pinned to " + revision
+	if string(output) != wantFinal+"\n" {
+		t.Fatalf("missing final line %q:\n%s", wantFinal, output)
+	}
+	if !strings.Contains(diagnostics.String(), "vendored catalog skills already match "+revision) {
+		t.Fatalf("missing already-current diagnostic:\n%s", &diagnostics)
+	}
+	if calls := readSkillsBumpCalls(t, root); strings.Contains(calls, "--confirm-plan") {
+		t.Fatalf("an already-current catalog confirmed a restore plan:\n%s", calls)
+	}
+	assertSkillsBumpTemporaryDirectoryRemoved(t, root)
+}
+
+func TestTheSkillsBumpRefusesASilentZeroExitPreview(t *testing.T) {
+	t.Parallel()
+	root, catalog, _ := newSkillsBumpFixture(t)
+	writeFile(t, filepath.Join(root, "repo"), "preview-without-changes-line", "")
+	output, err := skillsBumpCommand(t, root, catalog).CombinedOutput()
+	if err == nil || !strings.Contains(string(output), "restore preview exited 0; expected 3 with a Plan Digest, or 0 with no changes") {
+		t.Fatalf("silent zero-exit preview: %v\n%s", err, output)
+	}
+	if calls := readSkillsBumpCalls(t, root); strings.Contains(calls, "--confirm-plan") {
+		t.Fatalf("a refused preview confirmed a restore plan:\n%s", calls)
+	}
+}
+
 func newSkillsBumpFixture(t *testing.T) (string, string, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -188,6 +229,13 @@ case "$*" in
             esac
             shift
         done
+        if [ "$confirmed" = false ] && [ -f already-current ]; then
+            printf 'Baseline skills restore: no changes\n'
+            exit 0
+        fi
+        if [ "$confirmed" = false ] && [ -f preview-without-changes-line ]; then
+            exit 0
+        fi
         if [ "$confirmed" = false ]; then
             printf 'Plan Digest: sha256:fixture-plan\n'
             exit 3

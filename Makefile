@@ -288,10 +288,14 @@ skills-third-party-bump: ## Pin the vendored catalog skills and Setup Snapshots 
 	for name in $$names; do set -- "$$@" --skill "$$name"; done; \
 	set -- "$$@" --source-dir "$$catalog" --repo . --format text; \
 	status=0; roundfix "$$@" > "$$tmp/preview" || status=$$?; cat "$$tmp/preview" >&2; \
-	[ "$$status" -eq 3 ] || refuse "restore preview exited $$status; expected 3 with a Plan Digest"; \
-	digest=$$(sed -n 's/^Plan Digest: //p' "$$tmp/preview"); \
-	[ -n "$$digest" ] || refuse 'restore preview has no Plan Digest'; \
-	roundfix "$$@" --confirm-plan "$$digest" >&2; \
+	if [ "$$status" -eq 0 ] && awk '$$0 == "Baseline skills restore: no changes" { current = 1 } END { exit !current }' "$$tmp/preview"; then \
+		printf 'skills-third-party-bump: vendored catalog skills already match %s\n' "$$ref" >&2; \
+	else \
+		[ "$$status" -eq 3 ] || refuse "restore preview exited $$status; expected 3 with a Plan Digest, or 0 with no changes"; \
+		digest=$$(sed -n 's/^Plan Digest: //p' "$$tmp/preview"); \
+		[ -n "$$digest" ] || refuse 'restore preview has no Plan Digest'; \
+		roundfix "$$@" --confirm-plan "$$digest" >&2; \
+	fi; \
 	for name in $$names; do \
 		set -- "$$catalog"/skills/*/"$$name"; \
 		[ "$$#" -eq 1 ] && [ -d "$$1" ] && diff -r "$$1" ".agents/skills/$$name" >&2 || refuse ".agents/skills/$$name differs from the catalog at $$ref"; \
