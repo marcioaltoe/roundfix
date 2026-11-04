@@ -953,8 +953,12 @@ A line of a non-QA Task's `## Result` that reports the Task's status as `in_prog
 _Avoid_: Status contradiction, stale status, Result status claim
 
 **Review Segment**:
-One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound, each within the bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md)).
+One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound or, for Claude, whose prompt exceeds its token budget, each within the applicable bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md), [ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
 _Avoid_: Review round, independent review
+
+**Review Omit Path**:
+A Project Config path in `pre_pr_review.omit_paths` at the review base whose matching changed files the pre-PR review leaves out with reason `omit-path`, distinct from a Derived Path Declaration ([ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
+_Avoid_: Derived Path Declaration, generated path
 
 **Correction Review**:
 The one review of the fix after round 2 when every standing round-2 finding has exactly one valid fixed disposition, covering only the delta from the round-2 head. It belongs to round 2 and cannot open another Correction Review ([ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md)).

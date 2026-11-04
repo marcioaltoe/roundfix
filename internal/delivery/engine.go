@@ -1226,7 +1226,12 @@ func (engine *Engine) reviewCandidate(ctx context.Context, gitRoot string, item 
 			}
 			return engine.park(ctx, gitRoot, item, BlockerReviewFindings)
 		case ReviewOutcomeBlocked:
-			return engine.park(ctx, gitRoot, item, BlockerReviewBlocked)
+			blocker := BlockerReviewBlocked
+			firstLine, _, _ := strings.Cut(result.Reason, "\n")
+			if reason := strings.TrimSpace(firstLine); reason != "" {
+				blocker += ": " + reason
+			}
+			return engine.park(ctx, gitRoot, item, blocker)
 		case ReviewOutcomeReviewed:
 			if strings.TrimSpace(result.Head) != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)

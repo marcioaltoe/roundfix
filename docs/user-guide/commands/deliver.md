@@ -460,6 +460,10 @@ The Park Class identifies the reason and the next action:
 | `authorization` | `unauthorized` |
 | `unclassified` | an unknown blocker |
 
+A `review-blocked` park carries the first line of the reason in the Pre-PR
+Review Record after a colon: `review-blocked: <first line>`. Its Park Class
+stays `review`.
+
 An unrecovered Provider System Error parks the item as
 `runtime-infrastructure: <scope_id> hit a provider system error: <detail>`.
 Each existing blocker keeps its previous next action. A queue without parked

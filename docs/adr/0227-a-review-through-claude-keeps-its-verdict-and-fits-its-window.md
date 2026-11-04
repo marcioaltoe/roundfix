@@ -56,3 +56,5 @@ diff bound, because it now counts what is sent against the provider's own
 window. If acpx later forwards `disallowedTools` to the Claude adapter, the
 review session can deny the terminal up front and this classification remains
 the fallback.
+
+**Amended by [ADR-0352](0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).** The budget bounds each Claude Review Segment's prompt as sent.

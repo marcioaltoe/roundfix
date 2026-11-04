@@ -56,11 +56,11 @@ func parseReviewFindingAnchor(text string) (reviewFindingAnchor, bool) {
 	return reviewFindingAnchor{Path: match[1], StartLine: start, EndLine: end}, true
 }
 
-type reviewDiffFile struct {
+type reviewAnchorDiffFile struct {
 	whole  bool
 	ranges []reviewFindingAnchor
 }
-type reviewDiffIndex map[string]reviewDiffFile
+type reviewDiffIndex map[string]reviewAnchorDiffFile
 
 // Git quotes paths containing unusual bytes using Go-compatible C escapes.
 func reviewDiffPath(value string) string {
@@ -80,7 +80,7 @@ func indexReviewDiff(diff string) reviewDiffIndex {
 	index := make(reviewDiffIndex)
 	var path, oldPath string
 	inHunk := false
-	file := reviewDiffFile{}
+	file := reviewAnchorDiffFile{}
 	flush := func() {
 		if path != "" && path != "/dev/null" {
 			if len(file.ranges) == 0 {
@@ -93,7 +93,7 @@ func indexReviewDiff(diff string) reviewDiffIndex {
 		switch {
 		case strings.HasPrefix(line, "diff --git "):
 			flush()
-			path, oldPath, file = "", "", reviewDiffFile{}
+			path, oldPath, file = "", "", reviewAnchorDiffFile{}
 			inHunk = false
 			// The b/ path is authoritative for files without ---/+++ headers.
 			header := strings.TrimPrefix(line, "diff --git ")

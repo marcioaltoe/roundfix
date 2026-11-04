@@ -140,6 +140,11 @@ func TestReviewBlocksACandidateNeedingMoreThanFourSegments(t *testing.T) {
 	commitReviewSegments(t, fixture, 5)
 	code, record, stderr := fixture.run(t)
 	want := fmt.Sprintf("review diff too large: %d bytes after omitting 0 path(s) needs 5 review segments; a review allows at most 4", record.DiffBytes)
+	measuredBase := record.BaseCommit
+	if record.Lineage != nil && record.Lineage.Round == 2 {
+		measuredBase = record.Lineage.PreviousHead
+	}
+	want += reviewSizeRefusalTestSuffix(t, fixture, measuredBase, record.HeadCommit, record.OmittedPaths)
 	assertBlockedReviewCommand(t, code, record, stderr, want)
 	if record.Reason != want || runner.probeCalls != 0 || runner.prepareCalls != 0 || runner.preparedCalls != 0 {
 		t.Fatalf("record=%+v runner=%+v", record, runner)
