@@ -1,4 +1,0 @@
-Source: YAML 1.2.2 specification, section 3.2.3.3 Comments, https://yaml.org/spec/1.2.2/
-Source captured in PRD Acceptance evidence on 2026-11-04, independently published by YAML Language Development Team; the Spec did not author this passage.
-Quoted passage: Comments are a presentation detail and must not have any effect on the serialization tree or representation graph.
-Offline comparison: comments in each unchanged copied template are absent from the decoded representation; uncommenting the pair introduces exactly the two expected scalar values. Independent decoder invocation (Q05) exited 0. This directly matches the published presentation/representation distinction. No network lookup attempted or required.

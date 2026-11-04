@@ -1,8 +1,0 @@
-Actual guide frontmatter independently decoded with repository gopkg.in/yaml.v3.
-$ go run /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0346-decode-w9o72qpd/decode.go docs/agents/docs-layout.md
-contract 1 copied: waiting_on absent; since absent
-contract 1 uncommented: both expected scalar values present
-contract 2 copied: waiting_on absent; since absent
-contract 2 uncommented: both expected scalar values present
-
-exit: 0

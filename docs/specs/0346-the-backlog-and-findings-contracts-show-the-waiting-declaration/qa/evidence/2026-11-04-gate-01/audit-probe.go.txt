@@ -1,3 +1,0 @@
-package main
-import("fmt";"os";"roundfix/internal/speccheck";"roundfix/internal/secretscan")
-func main(){if os.Args[1]=="classify" {for _,p:=range os.Args[2:]{if speccheck.GovernedPath(p){fmt.Println("governed "+p)}};return};n:=0;for _,p:=range os.Args[2:]{b,e:=os.ReadFile(p);if e!=nil{panic(e)};for _,m:=range secretscan.ScanContent(p,b){fmt.Println(m.String());n++}};fmt.Printf("Secret Pattern matches: %d\n",n);if n>0{os.Exit(1)}}

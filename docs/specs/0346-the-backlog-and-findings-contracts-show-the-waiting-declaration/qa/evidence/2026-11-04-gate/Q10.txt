@@ -1,9 +1,0 @@
-Pull Request fact: none open, as supplied by the Daemon; no network access attempted.
-Approval: approved cycle AX delivery authority in _authorization.md, granted 2026-11-04; operative revision 1e7f3b4311bf5474a5f752954ea7a43ab9f732ea as seeded by the Daemon.
-Checks/status: Daemon make verify-changed passed exit 0 at audited head; no remote required checks exist to observe yet.
-Unresolved review threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; no Review Source artifact or supervised acceptance was supplied.
-Claimed candidate: 1dc550e4f8da4a777660459a0449fbc5e99cb50d
-Review-artifact ancestry: no reviewed artifact exists to compare with claimed candidate; acceptance of this candidate remains unproven.
-Unblock: after a passing QA rerun, the Supervisor obtains configured current-candidate review, opens the target-branch Pull Request and observes its required checks and Merge-Ready acceptance. The Run branch is never a Pull Request branch.
-Status: blocked (environment: no open Pull Request). This one row alone never prevents a qualifying partial.

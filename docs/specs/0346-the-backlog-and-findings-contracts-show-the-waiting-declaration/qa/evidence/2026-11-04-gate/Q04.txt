@@ -1,7 +1,0 @@
-$ git show 1e7f3b4311bf5474a5f752954ea7a43ab9f732ea:internal/baseline/assets/modules/context-workflow.json
-Independent recursive comparison with current module:
-Module version 29 -> 30, exactly +1: True
-Rule version 18 -> 19, exactly +1: True
-clause.context.backlog-01-operational-contract: exactly one prescribed addition: True
-clause.context.findings-01-frontmatter: exactly one prescribed addition: True
-Complete decoded JSON equal after removing only prescribed additions and versions: True
