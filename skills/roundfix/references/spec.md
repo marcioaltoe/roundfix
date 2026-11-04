@@ -292,7 +292,13 @@ A Task Context entry whose path under the Spec Root is missing resolves to
 the same relative path under the archive root when that file exists. The
 built-in `docs/specs` root resolves through `docs/history/specs`; other roots
 resolve through `<spec-root>/_archived`. Existing active paths keep resolving,
-and a path missing in both places still reports `SC-REF-UNRESOLVED`.
+and a path missing in both places still reports `SC-REF-UNRESOLVED`. An
+`interface:` or `instruction:` path missing from the checked tree also resolves
+when `HEAD` or the Delivery Base tracks it and the checked root is the top level
+of its Git work tree, so a Task that removes a file it lists settles and the QA
+gate accepts the committed removal; any other missing path reports
+`SC-REF-UNRESOLVED`, whose fix says to remove the Task Context entry or declare
+the path under `deletes:`.
 
 
 A non-completed Task reports one `SC-VERIFY-TRUNCATED` error for each
