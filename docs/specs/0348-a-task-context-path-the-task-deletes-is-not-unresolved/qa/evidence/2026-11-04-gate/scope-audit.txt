@@ -1,0 +1,22 @@
+Commands: git rev-list --reverse <delivery-base>..<head>; git diff-tree --no-commit-id --name-only -r <task-commit>; git merge-base --is-ancestor <authority-revision> <task-commit>; git show <authority-revision>:<grant>; git diff --name-only
+Task range contains two consuming Task commits: PASS ['d3d873c17886ab863b4b395c64bda84bfab0911b', 'abf8395e6b9eeb367c3c2ff9ea9e6a1dbb4a87bb']
+task_01 changed-file declaration audit: PASS commit d3d873c17886ab863b4b395c64bda84bfab0911b; actual ['docs/specs/0348-a-task-context-path-the-task-deletes-is-not-unresolved/task_01.md', 'internal/daemon/task_deletes_settlement_test.go', 'internal/speccheck/archive_record_test.go', 'internal/speccheck/citations.go', 'internal/speccheck/task_context_base.go', 'internal/speccheck/task_context_base_test.go']; outside declarations []; Recorded paths: none
+task_01 authority predates change: PASS 
+task_02 changed-file declaration audit: PASS commit abf8395e6b9eeb367c3c2ff9ea9e6a1dbb4a87bb; actual ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/spec.md', '.agents/skills/write-tasks/SKILL.md', '.agents/skills/write-tasks/references/task-template.md', 'CONTEXT.md', 'docs/references/behavior-surfaces.json', 'docs/specs/0348-a-task-context-path-the-task-deletes-is-not-unresolved/task_02.md', 'docs/user-guide/commands/spec.md', 'skills/roundfix/SKILL.md', 'skills/roundfix/references/spec.md', 'skills/task_context_deletion_test.go', 'skills/testdata/owned-skill-versions.json', 'skills/write-tasks/SKILL.md', 'skills/write-tasks/references/task-template.md']; outside declarations []; Recorded paths: none
+task_02 authority predates change: PASS 
+Every changed Governed Path has an earlier bounded grant: PASS governed ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/spec.md', '.agents/skills/write-tasks/SKILL.md', '.agents/skills/write-tasks/references/task-template.md', 'skills/roundfix/SKILL.md', 'skills/write-tasks/SKILL.md']; authorized ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/spec.md', '.agents/skills/write-tasks/SKILL.md', '.agents/skills/write-tasks/references/task-template.md', 'skills/roundfix/SKILL.md', 'skills/write-tasks/SKILL.md']
+Grant not folded into consuming change: PASS 
+Excluded production and tooling scope unchanged: PASS []; explicitly declared speccheck test fixtures remain allowed by task_01
+QA settlement unchanged: .agents/skills/roundfix/SKILL.md: PASS 
+QA settlement unchanged: .agents/skills/roundfix/references/spec.md: PASS 
+QA settlement unchanged: .agents/skills/write-tasks/SKILL.md: PASS 
+QA settlement unchanged: .agents/skills/write-tasks/references/task-template.md: PASS 
+QA settlement unchanged: skills/roundfix/SKILL.md: PASS 
+QA settlement unchanged: skills/roundfix/references/spec.md: PASS 
+QA settlement unchanged: skills/write-tasks/SKILL.md: PASS 
+QA settlement unchanged: skills/write-tasks/references/task-template.md: PASS 
+Only Delivery Base glossary entry changes: PASS {'Delivery Base'}
+_prd.md declares changed term: PASS 
+_techspec.md declares changed term: PASS 
+Delivery Base definition shape and added sentence: PASS 
+No tracked current worktree delta outside QA: PASS ''

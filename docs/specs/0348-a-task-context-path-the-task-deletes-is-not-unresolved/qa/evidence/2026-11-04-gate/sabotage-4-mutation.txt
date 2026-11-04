@@ -1,0 +1,12 @@
+--- internal/speccheck/task_context_base.go
++++ internal/speccheck/task_context_base.go
+@@ -27,9 +27,6 @@
+ 		return false
+ 	}
+ 	top, err = filepath.EvalSymlinks(strings.TrimSpace(top))
+-	if err != nil || root != top {
+-		return false
+-	}
+ 	path = filepath.ToSlash(path)
+ 	if _, err := runner.RunGit(ctx, repoRoot, "cat-file", "-e", "HEAD:"+path); err == nil {
+ 		return true

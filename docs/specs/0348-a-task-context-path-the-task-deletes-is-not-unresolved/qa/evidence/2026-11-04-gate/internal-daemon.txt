@@ -1,0 +1,4 @@
+command: go test -count=1 -timeout 20m ./internal/daemon
+ok  	roundfix/internal/daemon	23.427s
+
+exit: 0

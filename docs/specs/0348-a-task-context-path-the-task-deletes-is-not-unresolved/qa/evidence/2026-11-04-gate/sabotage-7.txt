@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes$ ./skills
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== PAUSE TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== CONT  TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01
+    task_context_deletion_test.go:27: ../skills/write-tasks is missing the removed-file declaration rule
+--- FAIL: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks (0.00s)
+    --- FAIL: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01 (0.00s)
+FAIL
+FAIL	roundfix/skills	0.306s
+FAIL
+
+exit: 1
+expected failures observed: True

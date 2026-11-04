@@ -1,0 +1,65 @@
+command: ./bin/roundfix spec check 9001-fixture
+stdout:
+Spec 9001-fixture
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  SC-CONSTRAINT-MISSING: missing docs/specs/9001-fixture/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/9001-fixture/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/9001-fixture/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/9001-fixture/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/9001-fixture/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/9001-fixture/_techspec.md
+  SC-TOOLING-UNAPPROVED: missing docs/specs/9001-fixture/_techspec.md
+  vocabulary documentation detector: missing docs/specs/9001-fixture/_techspec.md
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-ADR-UNLISTED: missing docs/adr
+  SC-ADR-RELATED: missing docs/adr
+  SC-CITATION-UNSUPPORTED: missing docs/adr
+  SC-ABSENCE-UNPROVEN: missing docs/specs/9001-fixture/_techspec.md
+  SC-ADR-ALTERNATIVES-UNRELATED: missing docs/specs/9001-fixture/_techspec.md
+  SC-COVERAGE-UNREAD: missing docs/specs/9001-fixture/_techspec.md
+  SC-TRANSCRIPT-UNDECLARED: missing docs/specs/9001-fixture/_techspec.md
+  SC-TRANSCRIPT-MALFORMED: missing docs/specs/9001-fixture/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/9001-fixture/_techspec.md
+  SC-CONTRACT-UNDECLARED: missing docs/specs/9001-fixture/_techspec.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-REF-UNRESOLVED: missing docs/specs/9001-fixture/references/_index.md
+
+stderr:
+
+exit: 0
+independent command: ./bin/roundfix spec check 9001-fixture --format json
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"9001-fixture","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-DECISIONS-UNRECORDED","missing":"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"},{"code":"SC-CONSTRAINT-MISSING","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-CONSTRAINT-UNREASONED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-CONSTRAINT-SOURCE","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TOOLING-UNAUTHORIZED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TOOLING-UNBOUNDED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TOOLING-UNTYPED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TOOLING-UNAPPROVED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"docs/references/behavior-surfaces.json"},{"code":"SC-SKILL-VERSION-UNTASKED","missing":"skills/testdata/owned-skill-versions.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-ADR-UNLISTED","missing":"docs/adr"},{"code":"SC-ADR-RELATED","missing":"docs/adr"},{"code":"SC-CITATION-UNSUPPORTED","missing":"docs/adr"},{"code":"SC-ABSENCE-UNPROVEN","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-ADR-ALTERNATIVES-UNRELATED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-COVERAGE-UNREAD","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-TRANSCRIPT-MALFORMED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-COVERAGE-UNMAPPED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-CONTRACT-UNDECLARED","missing":"docs/specs/9001-fixture/_techspec.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-REF-UNRESOLVED","missing":"docs/specs/9001-fixture/references/_index.md"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+
+stderr:
+
+exit: 0
+state reads:
+{
+  "phase": "disk-only",
+  "path_findings": 0,
+  "expected": 0,
+  "path_exists": false,
+  "refs": "38118a45b0b359c9d62a7c810c82a77c1f1602fb refs/heads/main\n38118a45b0b359c9d62a7c810c82a77c1f1602fb refs/heads/work\n38118a45b0b359c9d62a7c810c82a77c1f1602fb refs/remotes/origin/main\n",
+  "worktree": " D src/gone.txt\n?? bin\n",
+  "HEAD_tracks_gone": true,
+  "origin_main_tracks_gone": true,
+  "json_path_findings": 0
+}
+assertions: True

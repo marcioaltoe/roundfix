@@ -1,0 +1,13 @@
+--- internal/speccheck/task_context_base.go
++++ internal/speccheck/task_context_base.go
+@@ -43,8 +43,8 @@
+ 	if err != nil {
+ 		return false
+ 	}
+-	_, err = runner.RunGit(ctx, repoRoot, "cat-file", "-e", strings.TrimSpace(base)+":"+path)
+-	return err == nil
++	_ = base
++	return false
+ }
+ 
+ // taskContextUnresolvedFix is the fix of the Task Context SC-REF-UNRESOLVED.

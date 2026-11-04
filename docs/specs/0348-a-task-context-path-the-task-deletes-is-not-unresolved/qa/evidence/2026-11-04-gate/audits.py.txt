@@ -1,0 +1,78 @@
+from pathlib import Path
+import subprocess,re,json,os,tempfile,sys,shutil
+s=json.loads(Path('/tmp/qa0348-state.json').read_text());root=Path(s['root']);ev=Path(s['evidence']);p=Path(s['report']);sd=root/'docs/specs'/s['slug']
+def run(*args):
+ r=subprocess.run(list(args),cwd=root,text=True,capture_output=True)
+ if r.returncode: raise RuntimeError(' '.join(args)+': '+r.stderr)
+ return r.stdout
+
+def update(row,status,details):
+ b=p.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |');a=b.index('### '+row+' evidence');z=b.find('\n### ',a+5);z=len(b) if z<0 else z
+ block=b[a:z].replace('Evidence and observations pending.',details);p.write_text(b[:a]+block+b[z:]);print(row,status,details,flush=True)
+
+def audit():
+ log=[];checks=[]
+ def check(label,ok,detail=''):
+  checks.append(ok);log.append(label+': '+('PASS' if ok else 'FAIL')+' '+detail)
+ commits=run('git','rev-list','--reverse',s['base']+'..'+s['head']).splitlines();check('Task range contains two consuming Task commits',len(commits)==2,str(commits))
+ changed=set()
+ for commit,task in zip(commits,['task_01','task_02']):
+  text=(sd/(task+'.md')).read_text();context=text.split('## Context\n',1)[1].split('\n## ',1)[0]
+  declared=set(re.findall(r'^- (?:interface|creates|deletes|instruction): `([^`]+)`',context,re.M));declared.add('docs/specs/'+s['slug']+'/'+task+'.md')
+  if '## Recorded paths' in text:declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+  actual=run('git','diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();changed.update(actual);extra=set(actual)-declared
+  check(task+' changed-file declaration audit',not extra,'commit '+commit+'; actual '+repr(actual)+'; outside declarations '+repr(sorted(extra))+'; Recorded paths: none')
+  check(task+' authority predates change',subprocess.run(['git','merge-base','--is-ancestor',s['base'],commit],cwd=root).returncode==0)
+ grant=run('git','show',s['base']+':docs/specs/'+s['slug']+'/_authorization.md');grant_paths=set(re.findall(r'^  - (\S+)$',grant.split('paths:\n',1)[1].split('\noperations:',1)[0],re.M))
+ governed={x for x in changed if x.startswith('.agents/skills/') or (x.startswith('skills/') and x.endswith('/SKILL.md'))}
+ check('Every changed Governed Path has an earlier bounded grant',not (governed-grant_paths),'governed '+repr(sorted(governed))+'; authorized '+repr(sorted(grant_paths)))
+ check('Grant not folded into consuming change','docs/specs/'+s['slug']+'/_authorization.md' not in changed)
+ forbidden={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json'}
+ bad=[]
+ for x in changed:
+  if x in forbidden or x.startswith(('.github/workflows/','internal/baseline/assets/','docs/agents/','.agents/skills/domain-modeling/','skills/domain-modeling/')):bad.append(x)
+  if x.startswith(('skills/','.agents/skills/')) and x not in {'skills/task_context_deletion_test.go','skills/testdata/owned-skill-versions.json'} and not x.startswith(('skills/roundfix/','skills/write-tasks/','.agents/skills/roundfix/','.agents/skills/write-tasks/')):bad.append(x)
+  if x.startswith('internal/speccheck/') and x.endswith('.go') and not x.endswith('_test.go') and x not in {'internal/speccheck/citations.go','internal/speccheck/task_context_base.go'}:bad.append(x)
+ check('Excluded production and tooling scope unchanged',not bad,repr(bad)+'; explicitly declared speccheck test fixtures remain allowed by task_01')
+ def settlement(txt):
+  if '### QA settlement\n' not in txt:return None
+  return re.split(r'\n#{1,3} ',txt.split('### QA settlement\n',1)[1],maxsplit=1)[0]
+ for x in sorted(changed):
+  if x.endswith('.md') and x.startswith(('skills/','.agents/skills/')):
+   old=run('git','show',s['base']+':'+x);new=(root/x).read_text();check('QA settlement unchanged: '+x,settlement(old)==settlement(new))
+ old=run('git','show',s['base']+':CONTEXT.md');new=(root/'CONTEXT.md').read_text()
+ def terms(txt):
+  matches=list(re.finditer(r'^\*\*([^*]+)\*\*:',txt,re.M));return {m.group(1):txt[m.start():matches[i+1].start() if i+1<len(matches) else len(txt)] for i,m in enumerate(matches)}
+ a,b=terms(old),terms(new);diff={k for k in a.keys()|b.keys() if a.get(k)!=b.get(k)};check('Only Delivery Base glossary entry changes',diff=={'Delivery Base'},repr(diff))
+ for filename in ['_prd.md','_techspec.md']:check(filename+' declares changed term','changes: **Delivery Base**' in (sd/filename).read_text())
+ check('Delivery Base definition shape and added sentence',bool(re.search(r'^\*\*Delivery Base\*\*:',new,re.M)) and 'no longer holds, when HEAD or the Delivery Base tracks it' in new and '_Avoid_' in b['Delivery Base'])
+ delta=run('git','diff','--name-only');check('No tracked current worktree delta outside QA',not delta,repr(delta))
+ (ev/'scope-audit.txt').write_text('Commands: git rev-list --reverse <delivery-base>..<head>; git diff-tree --no-commit-id --name-only -r <task-commit>; git merge-base --is-ancestor <authority-revision> <task-commit>; git show <authority-revision>:<grant>; git diff --name-only\n'+'\n'.join(log)+'\n')
+ update('QA-SCOPE','pass' if all(checks) else 'fail','Each Task commit matches its Context declarations plus assigned Task file; no Recorded paths. The six changed Governed Paths have the operative grant at '+s['base']+'; no grant or fix folded into consuming commits. Only Delivery Base changes in the glossary; no forbidden production, tooling or QA settlement section changes. The explicit declared speccheck test paths remain within task_01. [scope audit](evidence/2026-11-04-gate/scope-audit.txt).')
+
+def docs():
+ notes=[];ok=True
+ rule='every path it removes is declared only under `deletes:`, never `interface:` and never `instruction:`. A Task that reads a file before removing it still lists it once, under `deletes:`.'
+ template='A file the Task removes is listed only as deletes:, never as interface: or instruction:.'
+ norm=lambda x:' '.join(x.split())
+ for prefix in ['.agents/skills/','skills/']:
+  for file,expected in [('write-tasks/SKILL.md',rule),('write-tasks/references/task-template.md',template)]:
+   path=prefix+file;text=(root/path).read_text();passed=expected in norm(text) and 'declared under `deletes:`, never `instruction:`' not in norm(text);ok&=passed;notes.append(path+': '+str(passed))
+  path=prefix+'roundfix/references/spec.md';text=norm((root/path).read_text());passed=all(x in text for x in ['`HEAD` or the Delivery Base tracks it','top level of its Git work tree','remove the Task Context entry or declare the path under `deletes:`']);ok&=passed;notes.append(path+': '+str(passed))
+ path='docs/user-guide/commands/spec.md';text=norm((root/path).read_text());passed=all(x in text for x in ['`HEAD` or the Delivery Base tracks it','top level of its Git work tree','remove the Task Context entry or declare the path under `deletes:`']);ok&=passed;notes.append(path+': '+str(passed))
+ r=subprocess.run(['grep','-rn','or update the Task Context entry','internal','skills','docs','.agents'],cwd=root,text=True,capture_output=True);matches=r.stdout.splitlines();unexpected=[x for x in matches if not x.startswith('docs/specs/'+s['slug']+'/')];ok&=not unexpected;notes.append('Required obsolete-fix search: '+str(len(matches))+' matches, '+str(len(unexpected))+' outside this Spec; exit '+str(r.returncode));notes.extend(unexpected)
+ (ev/'wording-audit.txt').write_text('Semantic assertions normalize whitespace; no command outputs compared byte for byte.\n'+'\n'.join(notes)+'\n')
+ update('QA-DOC','pass' if ok else 'fail','The documented rules match both canonical and mirrored skills/templates, both Roundfix spec references, and the user guide. Required obsolete-fix search finds no match outside this Spec. Full skills and docscontract runs independently validate owned versions, mirrors and Behavior Surface Record. [wording audit](evidence/2026-11-04-gate/wording-audit.txt).')
+
+ def_source=sd/'references/2026-11-04-a-task-context-path-the-task-deletes-fails-its-own-settlement.md'
+ source=def_source.read_text();fst=all(x in source for x in ['01a1a5c5-297d-7b21-8a3f-a16ca6bc6b70','2026-11-04','.github/workflows/cd-frontend.yml','SC-REF-UNRESOLVED','ci-frontends.yml','SC-TOOLING-UNDECLARED'])
+ evidence='External source: Fiscus report dated 2026-11-04, from default/gesttione-solutions-fiscus, ai-memory message 01a1a5c5-297d-7b21-8a3f-a16ca6bc6b70, quoted verbatim in references/2026-11-04-a-task-context-path-the-task-deletes-fails-its-own-settlement.md. Offline comparison: original interface deletion caused SC-REF-UNRESOLVED then repair swapped to unauthorized ci-frontends.yml and caused SC-TOOLING-UNDECLARED. The public CLI now has zero unresolved-path findings for disk-only/committed removals; named Daemon tests settle disk-only/staged removals. A typo still fails with the Remove/deletes fix. Existing unauthorized governed-deletion and deletion-refusal regressions are in the full Daemon suite. The source machine logs were not accessed; the report independently predates this Spec.\n'
+ (ev/'outside-fiscus.txt').write_text(evidence);update('QA-EXT01','pass' if fst else 'fail','Compared the dated adopter report sequence with public CLI outputs, the positive/negative Daemon settlement tests, and the unchanged authorization controls; original failure is resolved without encouraging a substitute path. [outside comparison](evidence/2026-11-04-gate/outside-fiscus.txt).')
+ prd=(sd/'_prd.md').read_text();helper=(root/'internal/speccheck/task_context_base.go').read_text();gitok=all(x in prd for x in ['https://git-scm.com/docs/git-cat-file','https://git-scm.com/docs/gitrevisions','relative to the working tree']) and all(x in helper for x in ['"cat-file", "-e", "HEAD:"+path','"merge-base", head.Ref, "HEAD"','filepath.EvalSymlinks','root != top'])
+ manual='External sources: Git manual passages quoted in PRD Acceptance evidence, retrieved during planning on 2026-11-04 (Git 2.56.0): https://git-scm.com/docs/git-cat-file and https://git-scm.com/docs/gitrevisions. Compared offline: cat-file -e object existence and revision:path addressing match HEAD and merge-base reads; the manual root-relative path rule requires the checked repository to be its Git top level. The passing nested-below-another-work-tree test asserts refusal even when outer HEAD tracks the path; the top-level-guard sabotage must fail that same case. Public CLI state reads independently prove HEAD and origin/main object existence across a committed removal. No network lookup or other repository read occurred.\n'
+ (ev/'outside-git.txt').write_text(manual);update('QA-EXT02','pass' if gitok else 'fail','Compared the dated, quoted Git manual semantics against object-existence observations, the nested-root negative case and the revisions API. [manual comparison](evidence/2026-11-04-gate/outside-git.txt).')
+ grant=(sd/'_authorization.md').read_text();pr='No open Pull Request, as supplied by the Daemon prompt. Approval: approved maintainer cycle AX authority at '+s['base']+' grants delivery operations for this Spec. Checks/status: Daemon make verify-changed passed exit 0 at audited head '+s['head']+'. Unresolved review threads: none, because no PR exists. Merge-Ready acceptance: none yet; no Review Source acceptance claimed. Review-artifact ancestry: no artifact yet; claimed candidate is '+s['head']+'. Target branch: roundfix/deliver-0348-a-task-context-path-the-task-deletes-is-not-unresolved-14a3714275b60d81; the Run branch is never pushed. Unblock through Supervisor delivery and current-candidate review on a real PR.\n'
+ (ev/'pull-request.txt').write_text(pr);update('QA-PR','blocked (environment: no open Pull Request)','Approved delivery authority and Daemon checks are recorded; no review threads exist, no Merge-Ready acceptance or review artifact exists yet. Claimed candidate '+s['head']+'. [control evidence](evidence/2026-11-04-gate/pull-request.txt).')
+
+if __name__=='__main__':
+ audit();docs()

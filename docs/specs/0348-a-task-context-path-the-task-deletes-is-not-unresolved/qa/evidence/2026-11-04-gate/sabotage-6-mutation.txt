@@ -1,0 +1,9 @@
+--- internal/speccheck/task_context_base.go
++++ internal/speccheck/task_context_base.go
+@@ -49,5 +49,5 @@
+ 
+ // taskContextUnresolvedFix is the fix of the Task Context SC-REF-UNRESOLVED.
+ func taskContextUnresolvedFix(path, taskDisplayPath string) string {
+-	return "Remove the Task Context entry for " + path + " from " + taskDisplayPath + ", or declare it under deletes: when the Task removes it; replace it only with a path the Task itself reads or changes."
++	return "Create " + path + " or update the Task Context entry in " + taskDisplayPath + "."
+ }

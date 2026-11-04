@@ -1,0 +1,11 @@
+--- skills/write-tasks/SKILL.md
++++ skills/write-tasks/SKILL.md
+@@ -102,7 +102,7 @@
+ - **Declared edits and governed paths are explicit.** Every path a Task edits
+   is declared under `interface:` or `creates:`; every path it removes is
+   declared only under `deletes:`, never `interface:` and never `instruction:`.
+-  A Task that reads a file before removing it still lists it once, under
++  A Task that reads a file before removing it lists it, under
+   `deletes:`. A deletion is skipped by
+   unresolved-reference checks and counts in scope, Governed Path and Wave
+   collision audits. The Daemon refuses settlement before Verification when

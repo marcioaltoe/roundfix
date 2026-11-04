@@ -1,0 +1,4 @@
+command: go test -count=1 -timeout 20m ./internal/spec
+ok  	roundfix/internal/spec	23.086s
+
+exit: 0

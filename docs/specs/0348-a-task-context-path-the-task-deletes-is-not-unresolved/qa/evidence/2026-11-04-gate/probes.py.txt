@@ -1,0 +1,85 @@
+from pathlib import Path
+import subprocess, tempfile, os, json, tarfile, io, sys, difflib
+s=json.loads(Path('/tmp/qa0348-state.json').read_text()); root=Path(s['root']); ev=Path(s['evidence']); report=Path(s['report'])
+caches={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+def finish(row,status,detail):
+ body=report.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |'); marker='### '+row+' evidence'; start=body.index(marker); end=body.find('\n### ',start+len(marker)); end=len(body) if end<0 else end
+ block=body[start:end]; block=block.replace('Evidence and observations pending.',detail)
+ body=body[:start]+block+body[end:];report.write_text(body);print(row,status,detail,flush=True)
+def git(cwd,*args):
+ e=os.environ.copy();e.update(GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null')
+ r=subprocess.run(['git','-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','user.name=QA Fixture','-c','user.email=qa@example.invalid',*args],cwd=cwd,env=e,text=True,capture_output=True)
+ if r.returncode: raise RuntimeError(r.stderr)
+ return r.stdout
+
+def cli():
+ notes=[]
+ with tempfile.TemporaryDirectory(prefix='qa0348-fixture-') as d:
+  fixture=Path(d);sd=fixture/'docs/specs/9001-fixture';sd.mkdir(parents=True);(fixture/'src').mkdir();(fixture/'src/gone.txt').write_text('source\n');(fixture/'bin').symlink_to(root/'bin',target_is_directory=True)
+  (sd/'_prd.md').write_text('---\nstatus: active\n---\n\n# Fixture\n\n## Project Constraints\n\n- Identifier strategy: not applicable — no identifier is introduced. Source: `docs/agents/spec-routing.md`.\n- Authentication and HTTP: not applicable — no network surface. Source: `docs/agents/spec-routing.md`.\n- Active ADR obligations: not applicable — no project ADRs in fixture. Source: `docs/agents/spec-routing.md`.\n- Tooling authority: not applicable — ordinary source path only. Source: `docs/agents/spec-routing.md`.\n\n## Success Metrics\n\nNone. Local path resolution only.\n')
+  (fixture/'docs/agents').mkdir(parents=True);(fixture/'docs/agents/spec-routing.md').write_text('# Fixture routing\n')
+  (sd/'_tasks.md').write_text('---\nschema: spec-tasks/v1\nspec: 9001-fixture\nqa: declined\nqa_reason: disposable path-resolution fixture\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n---\n\n# Task Graph\n')
+  task='---\ntask: task_01\nspec: 9001-fixture\nstatus: pending\ntype: backend\n---\n\n# Task 01: Fixture\n\n## Context\n\n- interface: `src/gone.txt`\n\n## Consumers\n\nNone. Disposable path-resolution fixture with no shared consumer.\n\n## Verification\n\n- `true`\n';(sd/'task_01.md').write_text(task)
+  git(fixture,'init','-b','main');git(fixture,'add','src','docs');git(fixture,'commit','-m','test: seed source');git(fixture,'update-ref','refs/remotes/origin/main','HEAD');git(fixture,'checkout','-b','work')
+  for phase in ['disk-only','committed','typo']:
+   if phase=='disk-only': (fixture/'src/gone.txt').unlink()
+   elif phase=='committed': git(fixture,'rm','src/gone.txt');git(fixture,'commit','-m','test: remove source')
+   else: (sd/'task_01.md').write_text(task.replace('src/gone.txt','src/typo.txt'))
+   with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+    e=os.environ.copy();e.update(caches,HOME=h,TMPDIR=t,GOPROXY='off',GOSUMDB='off')
+    args=['./bin/roundfix','spec','check','9001-fixture'];r=subprocess.run(args,cwd=fixture,env=e,text=True,capture_output=True)
+   lines=[x for x in r.stdout.splitlines() if x.startswith('[error] SC-REF-UNRESOLVED:') and 'declares unresolved Task Context path' in x]
+   want=1 if phase=='typo' else 0; ok=len(lines)==want
+   if phase=='typo':
+    fixes=[x.strip() for x in r.stdout.splitlines() if x.strip().startswith('fix:')];ok=ok and any(x.startswith('fix: Remove the Task Context entry for src/typo.txt') and 'Create' not in x for x in fixes) and 'src/typo.txt' in lines[0] and r.returncode==1
+   else: ok=ok and r.returncode==0
+   with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+    e=os.environ.copy();e.update(caches,HOME=h,TMPDIR=t,GOPROXY='off',GOSUMDB='off')
+    j=subprocess.run(args+['--format','json'],cwd=fixture,env=e,text=True,capture_output=True)
+   parsed=json.loads(j.stdout); observed={'phase':phase,'path_findings':len(lines),'expected':want,'path_exists':(fixture/'src/gone.txt').exists(),'refs':git(fixture,'show-ref'),'worktree':git(fixture,'status','--short'),'HEAD_tracks_gone':subprocess.run(['git','cat-file','-e','HEAD:src/gone.txt'],cwd=fixture,capture_output=True).returncode==0,'origin_main_tracks_gone':subprocess.run(['git','cat-file','-e','refs/remotes/origin/main:src/gone.txt'],cwd=fixture,capture_output=True).returncode==0}
+   def findings(v):
+    if isinstance(v,dict):
+     for k,x in v.items():
+      if k=='code' and x=='SC-REF-UNRESOLVED' and 'declares unresolved Task Context path' in v.get('summary',''): yield v
+      else: yield from findings(x)
+    elif isinstance(v,list):
+     for x in v: yield from findings(x)
+   count=len(list(findings(parsed)));ok=ok and count==want;observed['json_path_findings']=count
+   (ev/('cli-'+phase+'.txt')).write_text('command: ./bin/roundfix spec check 9001-fixture\nstdout:\n'+r.stdout+'\nstderr:\n'+r.stderr+'\nexit: '+str(r.returncode)+'\nindependent command: ./bin/roundfix spec check 9001-fixture --format json\nstdout:\n'+j.stdout+'\nstderr:\n'+j.stderr+'\nexit: '+str(j.returncode)+'\nstate reads:\n'+json.dumps(observed,indent=2)+'\nassertions: '+str(ok)+'\n')
+   notes.append((phase,ok));print('CLI',phase,observed,'assertions',ok,flush=True)
+ finish('QA-CLI','pass' if all(ok for _,ok in notes) else 'fail','Public CLI checks and independent JSON/state reads: '+str(notes)+'. Fresh HOME/TMPDIR on each invocation; fixture and directories removed. [disk-only](evidence/2026-11-04-gate/cli-disk-only.txt), [committed](evidence/2026-11-04-gate/cli-committed.txt), [typo](evidence/2026-11-04-gate/cli-typo.txt).')
+
+def sabotage():
+ archive=subprocess.check_output(['git','archive',s['head']],cwd=root)
+ name='TestTaskContextPathTrackedAtTheBaseResolves';daemon='TestSettlementStillRefusesAContextPathNoRevisionTracks';skill='TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes'
+ cases=[('base-false',['working_tree_removal','committed_removal']),('HEAD-only',['committed_removal']),('base-only',['branch_file_removed_in_the_working_tree']),('unguarded',['nested_below_another_work_tree']),('whole-history',['removed_on_main_before_the_branch','created_and_removed_on_the_branch']),('old-fix',['never_tracked']),('mirror-rule',[])]
+ for i,(kind,expected) in enumerate(cases,1):
+  with tempfile.TemporaryDirectory(prefix='qa0348-sabotage-') as d:
+   cwd=Path(d)
+   with tarfile.open(fileobj=io.BytesIO(archive)) as tf: tf.extractall(cwd,filter='data')
+   f=cwd/('skills/write-tasks/SKILL.md' if i==7 else 'internal/speccheck/task_context_base.go');old=f.read_text();new=old
+   if i==1: new=old.replace('func taskContextTrackedAtBase(repoRoot, path string) bool {','func taskContextTrackedAtBase(repoRoot, path string) bool {\n\treturn false',1)
+   elif i==2: new=old.replace('_, err = runner.RunGit(ctx, repoRoot, "cat-file", "-e", strings.TrimSpace(base)+":"+path)\n\treturn err == nil','_ = base\n\treturn false',1)
+   elif i==3: new=old.replace('\tif _, err := runner.RunGit(ctx, repoRoot, "cat-file", "-e", "HEAD:"+path); err == nil {\n\t\treturn true\n\t}\n','',1)
+   elif i==4: new=old.replace('\tif err != nil || root != top {\n\t\treturn false\n\t}\n','',1)
+   elif i==5: new=old.replace('\tpath = filepath.ToSlash(path)','\tpath = filepath.ToSlash(path)\n\thistory, historyErr := runner.RunGit(ctx, repoRoot, "log", "--all", "--", path)\n\tif historyErr == nil && strings.TrimSpace(history) != "" { return true }',1)
+   elif i==6: new=old.replace('return "Remove the Task Context entry for " + path + " from " + taskDisplayPath + ", or declare it under deletes: when the Task removes it; replace it only with a path the Task itself reads or changes."','return "Create " + path + " or update the Task Context entry in " + taskDisplayPath + "."',1)
+   else: new=old.replace('still lists it once','lists it',1)
+   assert new!=old,(kind,'mutation absent');f.write_text(new)
+   (ev/('sabotage-'+str(i)+'-mutation.txt')).write_text(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile=str(f.relative_to(cwd)),tofile=str(f.relative_to(cwd)))))
+   git(cwd,'init','-b','main');git(cwd,'add','.')
+   commands=[(['go','test','-count=1','-timeout','20m','-v','-run','^'+(skill if i==7 else name)+'$','./skills' if i==7 else './internal/speccheck'],expected)]
+   if i==6: commands.append((['go','test','-count=1','-timeout','20m','-v','-run','^'+daemon+'$','./internal/daemon'],[]))
+   checks=[];transcript=''
+   for cmd,expected_cases in commands:
+    print('START SABOTAGE',i,kind,cmd[-1],flush=True)
+    e=os.environ.copy();e.update(caches,GOPROXY='off',GOSUMDB='off')
+    r=subprocess.run(cmd,cwd=cwd,env=e,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+    target=skill if i==7 else (daemon if cmd[-1]=='./internal/daemon' else name)
+    ok=r.returncode!=0 and ('--- FAIL: '+target+' ') in r.stdout and all(('--- FAIL: '+target+'/'+x+' ') in r.stdout for x in expected_cases)
+    checks.append(ok);transcript+='command: '+' '.join(cmd)+'\n'+r.stdout+'\nexit: '+str(r.returncode)+'\nexpected failures observed: '+str(ok)+'\n';print('END SABOTAGE',i,kind,'exit',r.returncode,'named failure',ok,flush=True)
+   (ev/('sabotage-'+str(i)+'.txt')).write_text(transcript)
+   finish('QA-SAB'+str(i).zfill(2),'pass' if all(checks) else 'fail',kind+': named negative test failed on all required cases: '+str(expected)+'. Each copy came from git archive '+s['head']+' and had initialized/staged Git metadata; copy removed. [transcript](evidence/2026-11-04-gate/sabotage-'+str(i)+'.txt), [mutation](evidence/2026-11-04-gate/sabotage-'+str(i)+'-mutation.txt).')
+if __name__=='__main__':
+ if sys.argv[1]=='cli': cli()
+ else: sabotage()

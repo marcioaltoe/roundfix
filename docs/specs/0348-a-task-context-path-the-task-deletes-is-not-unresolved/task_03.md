@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0348-a-task-context-path-the-task-deletes-is-not-unresolved
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

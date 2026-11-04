@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes$ ./skills
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== PAUSE TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== CONT  TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01
+--- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01 (0.00s)
+PASS
+ok  	roundfix/skills	0.310s
+
+exit: 0

@@ -1,0 +1,9 @@
+Semantic assertions normalize whitespace; no command outputs compared byte for byte.
+.agents/skills/write-tasks/SKILL.md: True
+.agents/skills/write-tasks/references/task-template.md: True
+.agents/skills/roundfix/references/spec.md: True
+skills/write-tasks/SKILL.md: True
+skills/write-tasks/references/task-template.md: True
+skills/roundfix/references/spec.md: True
+docs/user-guide/commands/spec.md: True
+Required obsolete-fix search: 15 matches, 0 outside this Spec; exit 0

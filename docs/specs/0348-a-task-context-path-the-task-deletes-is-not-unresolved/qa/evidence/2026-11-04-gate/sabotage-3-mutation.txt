@@ -1,0 +1,12 @@
+--- internal/speccheck/task_context_base.go
++++ internal/speccheck/task_context_base.go
+@@ -31,9 +31,6 @@
+ 		return false
+ 	}
+ 	path = filepath.ToSlash(path)
+-	if _, err := runner.RunGit(ctx, repoRoot, "cat-file", "-e", "HEAD:"+path); err == nil {
+-		return true
+-	}
+ 	branch, _ := runner.RunGit(ctx, repoRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+ 	head, found, err := preflight.ResolveDefaultBranchHead(ctx, repoRoot, strings.TrimSpace(branch), runner)
+ 	if err != nil || !found {
