@@ -5394,7 +5394,7 @@ Exit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 
 Lists Runs from the Run Database newest first. By default the listing is
-scoped to the current repository and shows the 20 newest Active Runs. When
+scoped to the current repository and shows the 20 newest Active Runs; outside a Git repository it lists every repository. When
 the state filter or the bound hides Runs, one trailing stderr note names the
 hidden count and the widening flag. Without a subcommand at an interactive
 terminal, runs opens the Run Browser; non-interactive contexts must use

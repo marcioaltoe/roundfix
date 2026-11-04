@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0347-read-only-run-commands-work-outside-a-repository
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -89,3 +89,45 @@ as
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 1
 - `_techspec.md` → Current behavior 4-5; API Contract 4; API Contract 5; Surface Transcript 1; Invariant 4; Declared breaks; Testing Approach; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+- Acceptance criterion 1: `runRunsListCommand` sets the existing all-repository
+  option when no Git root is detected, sharing the query, repository column,
+  filters, bounds and trailing note with explicit `--all`. A detected root
+  retains its scope. The replacement test uses Runs from two repositories
+  and compares stdout, stderr and exit code for default, all-state, terminal,
+  bounded, unbounded and combined flags, including explicit `--all` outside
+  a repository; it also asserts that an inside-repository listing excludes
+  the other repository and its repository column.
+- Acceptance criterion 2: `TestRunsListOutsideARepositoryTranscript` asserts
+  Surface Transcript 1 in full. Before the production change, the focused
+  command `go test ./internal/cli -run '^TestRunsListOutsideARepositoryTranscript$' -count=1`
+  exited 1: the command under test returned exit 2, empty stdout and the old
+  refusal. After the change, it returned exit 0, exactly `No Runs found.\n`
+  on stdout and empty stderr. The help adds the specified scope sentence;
+  the guide states the outside-repository scope and the single stderr
+  warning for `runs`, `runs list` and `runs show`.
+- Focused checks: `go test ./internal/cli -run '^(TestRunRunsListOutsideRepositoryListsEveryRepository|TestRunsListOutsideARepositoryTranscript|TestRunRunsListPrintsStableColumnsNewestFirst|TestRunRunsListStateFlagFiltersAndNotes|TestRunRunsListLimitBoundsNewestMatches|TestStrayGitDirectoryTranscripts)$' -count=1 -v`
+  exited 0: all six top-level tests and their subtests passed. This covers
+  the new behavior, existing repository output, filtering and limits, and
+  the prior Task's stray-root transcripts. `git diff --check` exited 0.
+- Removed only the superseded refusal test from `cli_test.go`. The required
+  sanctioned command `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`
+  exited 0 and regenerated the coverage record. Its whole-tree inventory
+  also includes previously unrecorded tests already present in this checkout;
+  the only removed test name is the superseded refusal test. No generated
+  record was edited by hand.
+- Final required operation, after the last source, help, guide and Result edit:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+  This command owns the Behavior Surface Record regeneration; its process
+  output supplies the regeneration result.
+- Scope postflight: newly changed paths are the declared CLI source/tests,
+  runs guide, two generated records and this Task file. The pre-existing
+  Daemon status change remains intact. No config, loader, skill, Task Graph,
+  other Task, Makefile, workflow or Go module edits. No follow-up work found.
+- Declared Verification and repository Verification remain Daemon-owned and
+  were not run. Task status remains `in_progress`; no terminal Task verdict,
+  commit, push or pull request is claimed.
