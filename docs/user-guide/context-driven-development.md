@@ -497,6 +497,8 @@ routing, and status context as dated addenda.
 status: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
+# waiting_on: <who or what it waits on, in one line> # optional, with since
+# since: YYYY-MM-DD # optional, the date the wait began
 ---
 
 # <Area> — <short title> (YYYY-MM-DD)
@@ -526,6 +528,10 @@ when the linked Spec covers only the selected implementation scope and record
 why the rest is unnecessary. Use `deferred` only with a recorded reason not to
 implement. Update `updated_at` for every lifecycle change or addendum and keep
 `created_at` unchanged.
+
+The two commented keys are a Waiting Declaration. A `pending` or `partial`
+Finding, or an `open` Backlog Entry, that waits on someone or something outside
+the repository may uncomment them; see [Waiting Items](commands/follow-up.md#waiting-items).
 
 A retirement deletes a terminal Finding, Rollup or Backlog Entry, a confirmed
 handoff, a finished Review Artifact, or a retired ADR in the change that

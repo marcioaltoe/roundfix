@@ -1194,7 +1194,7 @@
       "sources": [
         "docs/user-guide/context-driven-development.md"
       ],
-      "review": "2026-10-24 — the only change names the new built-in `python` Baseline Profile in the profile list and its skills; the covering skills describe how a Baseline is adopted and refreshed, not which built-in profiles or setups exist, so no skill text changes."
+      "review": "2026-11-04 — Spec 0346 task_01: the guide's Findings template gains the two commented keys and one paragraph explains when to uncomment them; its covering skills describe how a Baseline is adopted and how Specs are written, implemented, checked and archived, not the frontmatter keys of a Finding or a Backlog Entry, so they need no text change."
     },
     {
       "id": "guide docs/user-guide/release-runbook.md",

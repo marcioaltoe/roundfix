@@ -31,8 +31,12 @@ status: open # open | promoted | declined | deferred | done | deprecated | super
 created: YYYY-MM-DD
 spec: null # Spec slug when status: promoted
 reason: null # required for terminal closure without a consuming Spec
+# waiting_on: <who or what it waits on, in one line> # optional, with since
+# since: YYYY-MM-DD # optional, the date the wait began
 ---
 ```
+
+An `open` entry that waits on someone or something outside the repository may uncomment `waiting_on`, naming who or what in one line, and `since`, the `YYYY-MM-DD` date the wait began.
 
 For `type: feat`, use:
 
@@ -127,6 +131,8 @@ Keep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status
 status: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
+# waiting_on: <who or what it waits on, in one line> # optional, with since
+# since: YYYY-MM-DD # optional, the date the wait began
 ---
 
 # <Area> — <short title> (YYYY-MM-DD)
@@ -149,6 +155,8 @@ updated_at: YYYY-MM-DD
 
 <Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>
 ```
+
+A `pending` or `partial` Finding that waits on someone or something outside the repository may uncomment `waiting_on`, naming who or what in one line, and `since`, the `YYYY-MM-DD` date the wait began.
 
 - **mandatory**: Use `pending` when the finding is new and has no implementation Spec.
 

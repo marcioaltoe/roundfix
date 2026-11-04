@@ -199,7 +199,7 @@ A Waiting Item is in the fifth class `waiting`, outside the four, and follows al
 _Avoid_: Jev ranking, severity, score
 
 **Waiting Declaration**:
-The optional `waiting_on` and `since` pair on an open Backlog Entry or an unresolved Finding, naming who or what it waits on in one non-empty line and the `YYYY-MM-DD` date the wait began ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+The optional `waiting_on` and `since` pair on an open Backlog Entry or an unresolved Finding, naming who or what it waits on in one non-empty line and the `YYYY-MM-DD` date the wait began; the copyable Operational Contract blocks the Baseline writes for backlog and findings show the pair as commented keys ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Waiting status, free-text wait
 
 **Waiting Item**:
