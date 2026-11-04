@@ -1,0 +1,26 @@
+Audited head: f71340b1a772c03b18c9518af679e6e8f2a8507a
+Mutation: replace post-restore diff -r guard with true. Actual fixture alpha remains stale via leave-folder (the Task prose calls it beta).
+$ go test -timeout 20m -count=1 -v ./internal/verifyselect -run ^TestTheSkillsBumpRefusesWhatItMustNotPin$/^differing_folder$
+=== RUN   TestTheSkillsBumpRefusesWhatItMustNotPin
+=== PAUSE TestTheSkillsBumpRefusesWhatItMustNotPin
+=== CONT  TestTheSkillsBumpRefusesWhatItMustNotPin
+=== RUN   TestTheSkillsBumpRefusesWhatItMustNotPin/differing_folder
+=== PAUSE TestTheSkillsBumpRefusesWhatItMustNotPin/differing_folder
+=== CONT  TestTheSkillsBumpRefusesWhatItMustNotPin/differing_folder
+    skills_bump_makefile_test.go:111: bump accepted differing folder:
+        From /private/tmp/qa0350-5uhxe1mr/rf0350-env-jycw08jz/tmp/TestTheSkillsBumpRefusesWhatItMustNotPindiffering_folder3747214254/001/catalog
+         * branch            c3bff278b8fbd93f41d1f210dab6134bd93d74e3 -> FETCH_HEAD
+        Plan Digest: sha256:fixture-plan
+        baseline-digests: no changes; derived artifacts already match their canonical sources
+        {"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+        File changes: 0
+        File changes: 0
+        skills-third-party-bump: 2 catalog skills and every upstream Setup Snapshot pinned to c3bff278b8fbd93f41d1f210dab6134bd93d74e3
+--- FAIL: TestTheSkillsBumpRefusesWhatItMustNotPin (0.00s)
+    --- FAIL: TestTheSkillsBumpRefusesWhatItMustNotPin/differing_folder (0.72s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 141.645ms before and 125.888042ms after
+FAIL	roundfix/internal/verifyselect	1.250s
+FAIL
+exit: 1
+Expected assertion failure observed; mutation detected.

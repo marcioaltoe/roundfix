@@ -1,0 +1,3 @@
+git diff --exit-code 5fd01d707207db5545468427b379944441c6e6d2 f71340b1a772c03b18c9518af679e6e8f2a8507a -- internal/cli/baseline_update.go internal/cli/required_skills.go internal/cli/doctor.go
+exit: 0; no diff
+internal/cli/baseline_update.go:338 calls missingRequiredSkills; line 343 passes snapshotComparableSkills to the snapshot comparison. internal/cli/required_skills.go:30 adds outdated external skills as no-longer-matching-lock. internal/cli/doctor.go:474 excludes outdated external skills from snapshot comparison. The restored five files invalidate the unchanged lock computedHash.

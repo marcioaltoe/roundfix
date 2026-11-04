@@ -1,0 +1,26 @@
+Audited head: 78af33207493114026e870800d7b99c8a8f47345
+Mutation: replace stale-ref refusal with true. Actual fixture leave-ref preserves old refs for alpha/zeta (Task prose calls it beta/main).
+$ go test -timeout 20m -count=1 -v ./internal/verifyselect -run ^TestTheSkillsBumpRefusesWhatItMustNotPin$/^entry_at_another_ref$
+=== RUN   TestTheSkillsBumpRefusesWhatItMustNotPin
+=== PAUSE TestTheSkillsBumpRefusesWhatItMustNotPin
+=== CONT  TestTheSkillsBumpRefusesWhatItMustNotPin
+=== RUN   TestTheSkillsBumpRefusesWhatItMustNotPin/entry_at_another_ref
+=== PAUSE TestTheSkillsBumpRefusesWhatItMustNotPin/entry_at_another_ref
+=== CONT  TestTheSkillsBumpRefusesWhatItMustNotPin/entry_at_another_ref
+    skills_bump_makefile_test.go:111: bump accepted entry at another ref:
+        From /private/tmp/qa0350-current-f51mypaz/rf0350-env-ogu1ryho/tmp/TestTheSkillsBumpRefusesWhatItMustNotPinentry_at_another_ref1900585164/001/catalog
+         * branch            fd3d94d7bb0969992c2c00a22daf58b711bd6a41 -> FETCH_HEAD
+        Plan Digest: sha256:fixture-plan
+        baseline-digests: no changes; derived artifacts already match their canonical sources
+        {"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+        File changes: 0
+        File changes: 0
+        skills-third-party-bump: 2 catalog skills and every upstream Setup Snapshot pinned to fd3d94d7bb0969992c2c00a22daf58b711bd6a41
+--- FAIL: TestTheSkillsBumpRefusesWhatItMustNotPin (0.00s)
+    --- FAIL: TestTheSkillsBumpRefusesWhatItMustNotPin/entry_at_another_ref (0.71s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 151.850209ms before and 124.855958ms after
+FAIL	roundfix/internal/verifyselect	1.254s
+FAIL
+exit: 1
+Expected assertion failure observed; mutation detected.

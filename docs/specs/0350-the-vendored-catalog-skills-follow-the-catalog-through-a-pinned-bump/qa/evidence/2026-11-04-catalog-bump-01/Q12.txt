@@ -1,0 +1,76 @@
+Audited head: 78af33207493114026e870800d7b99c8a8f47345
+task_01 9b2f76936e0e97c9e8dbd31ef6853160f7e4bde6
+changed paths: ["Makefile", "docs/agents/setup-context.json", "docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_01.md", "internal/verifyselect/skills_bump_makefile_test.go"]
+declared count: 4
+task_02 ff71f5b5f7aafdbb1f7f598ea49207df122a8f04
+changed paths: [".agents/skills/systematic-debugging/CREATION-LOG.md", ".agents/skills/systematic-debugging/test-academic.md", ".agents/skills/systematic-debugging/test-pressure-1.md", ".agents/skills/systematic-debugging/test-pressure-2.md", ".agents/skills/systematic-debugging/test-pressure-3.md", "docs/agents/setup-context.json", "docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_02.md", "internal/baseline/ai_memory_setup_test.go", "internal/baseline/assets/setups/go-cli-typescript-bun.json", "internal/baseline/assets/setups/go.json", "internal/baseline/assets/setups/python.json", "internal/baseline/assets/setups/rust.json", "internal/baseline/assets/setups/typescript.json", "internal/baseline/python_setup_test.go", "internal/baseline/testdata/catalog.diagnostics.golden.json", "internal/baseline/testdata/catalog.digest", "internal/baseline/testdata/catalog.normalized.json", "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json", "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json", "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json", "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json", "internal/baseline/upstream_setup_revision_test.go", "internal/baseline/vendored_catalog_skills_docscontract_test.go", "internal/verifyselect/contracts_repository_test.go", "skills-lock.json"]
+declared count: 25
+task_03 aaee046dde43bec3ff300780e86578c7cd7cefce
+changed paths: ["CONTEXT.md", "docs/agents/specific-repository.md", "docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_03.md"]
+declared count: 3
+Additional repair commit 57f24967a98362579a91d3cc3c07dc293d9db84e changed paths: ["Makefile", "docs/agents/setup-context.json", "internal/verifyselect/skills_bump_makefile_test.go"]
+Repair is within Task 01 declarations and prior authority, contains its own behavior test and resulting managed manifest, and does not fold in authorization or a separate prerequisite/consequent fix.
+authorization record established before all three Task commits and the governed repair; mechanical granted rows retained.
+$ go run ./qa0350_probe .agents/skills/systematic-debugging/CREATION-LOG.md .agents/skills/systematic-debugging/test-academic.md .agents/skills/systematic-debugging/test-pressure-1.md .agents/skills/systematic-debugging/test-pressure-2.md .agents/skills/systematic-debugging/test-pressure-3.md CONTEXT.md Makefile docs/agents/setup-context.json docs/agents/specific-repository.md docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_01.md docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_02.md docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/task_03.md internal/baseline/ai_memory_setup_test.go internal/baseline/assets/setups/go-cli-typescript-bun.json internal/baseline/assets/setups/go.json internal/baseline/assets/setups/python.json internal/baseline/assets/setups/rust.json internal/baseline/assets/setups/typescript.json internal/baseline/python_setup_test.go internal/baseline/testdata/catalog.diagnostics.golden.json internal/baseline/testdata/catalog.digest internal/baseline/testdata/catalog.normalized.json internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json internal/baseline/testdata/plan-characterization/clean-adoption.golden.json internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json internal/baseline/upstream_setup_revision_test.go internal/baseline/vendored_catalog_skills_docscontract_test.go internal/verifyselect/contracts_repository_test.go internal/verifyselect/skills_bump_makefile_test.go skills-lock.json
+[".agents/skills/systematic-debugging/CREATION-LOG.md",".agents/skills/systematic-debugging/test-academic.md",".agents/skills/systematic-debugging/test-pressure-1.md",".agents/skills/systematic-debugging/test-pressure-2.md",".agents/skills/systematic-debugging/test-pressure-3.md","Makefile","docs/agents/setup-context.json","docs/agents/specific-repository.md","internal/baseline/assets/setups/go-cli-typescript-bun.json","internal/baseline/assets/setups/go.json","internal/baseline/assets/setups/python.json","internal/baseline/assets/setups/rust.json","internal/baseline/assets/setups/typescript.json"]
+exit: 0
+Governed changed paths: [".agents/skills/systematic-debugging/CREATION-LOG.md", ".agents/skills/systematic-debugging/test-academic.md", ".agents/skills/systematic-debugging/test-pressure-1.md", ".agents/skills/systematic-debugging/test-pressure-2.md", ".agents/skills/systematic-debugging/test-pressure-3.md", "Makefile", "docs/agents/setup-context.json", "docs/agents/specific-repository.md", "internal/baseline/assets/setups/go-cli-typescript-bun.json", "internal/baseline/assets/setups/go.json", "internal/baseline/assets/setups/python.json", "internal/baseline/assets/setups/rust.json", "internal/baseline/assets/setups/typescript.json"]
+Current worktree delta (QA only expected):
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q02.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q03.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q04.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q05a.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q05b.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q06.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q07.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08a.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08b.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08c.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08d.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08e.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08f.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08g.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08h.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q08i.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/Q11.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/QV.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/precondition.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/qa-driver.py.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump-01/version.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/F-02-classification.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q02.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q03.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q04.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q05a.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q05b-initial.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q05b.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q06.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q07.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08a.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08b.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08c.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08d.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08e.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08f-fixture-head-ref.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08f-fixture-preflight.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08f-initial-inputs.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08f.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08g.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08h-initial-inputs.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08h.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q08i.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q11.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q12.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q13.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/Q14.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/QV.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/build.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/final-checks.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/precondition.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/qa-driver.py.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/report-validation.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/evidence/2026-11-04-catalog-bump/version.txt
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/qa-report-2026-11-04-01.md
+?? docs/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump/qa/qa-report-2026-11-04.md
+
+Scope errors: []

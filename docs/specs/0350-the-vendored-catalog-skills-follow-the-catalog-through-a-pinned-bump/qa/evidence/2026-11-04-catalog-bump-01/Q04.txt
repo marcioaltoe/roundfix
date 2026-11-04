@@ -1,0 +1,77 @@
+Audited head: 78af33207493114026e870800d7b99c8a8f47345
+$ git init -q --template= /private/tmp/qa0350-current-tlfig6pw/catalog
+exit: 0
+$ git fetch --depth=1 /Users/marcio/.roundfix-operator/scratch/spec-0350/skills c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+From /Users/marcio/.roundfix-operator/scratch/spec-0350/skills
+ * branch            c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84 -> FETCH_HEAD
+exit: 0
+$ git checkout --detach FETCH_HEAD
+HEAD is now at c8b2e85 chore: sync upstream skills (auto) (#148)
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/03-engineering-design/agentic-cli-design /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/agentic-cli-design
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-durable-pages /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-durable-pages
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-handoff /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-handoff
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-learning-maintenance /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-learning-maintenance
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-messaging /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-messaging
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-retrieval /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-retrieval
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/ai-memory-routing-install /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/ai-memory-routing-install
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/bubbletea /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/bubbletea
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/coding-guidelines /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/coding-guidelines
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/01-discovery/context7-cli /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/context7-cli
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/conventional-commits /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/conventional-commits
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/crafting-effective-readmes /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/crafting-effective-readmes
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/03-engineering-design/domain-modeling /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/domain-modeling
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/01-discovery/exa-web-search /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/exa-web-search
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/github-pr-workflow /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/github-pr-workflow
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-cli /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-cli
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-concurrency /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-concurrency
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-context /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-context
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-dependency-management /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-dependency-management
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-error-handling /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-error-handling
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-lint /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-lint
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-safety /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-safety
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-structs-interfaces /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-structs-interfaces
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/golang-testing /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/golang-testing
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/01-discovery/grill-with-docs /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/grill-with-docs
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/01-discovery/grilling /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/grilling
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/00-setup/knowledge-workspace /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/knowledge-workspace
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/no-workarounds /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/no-workarounds
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/06-review-repair/systematic-debugging /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/systematic-debugging
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/07-evidence-delivery/tech-writer /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/tech-writer
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/testing-boss /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/testing-boss
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/03-engineering-design/tui-design /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/tui-design
+exit: 0
+$ diff -r /private/tmp/qa0350-current-tlfig6pw/catalog/skills/05-implementation-loop/typesafe-ai /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T220645Z_46ef94cb82b5f19e/.agents/skills/typesafe-ai
+exit: 0
+All 12 owned skill folders in each of the canonical and embedded trees equal the Delivery Base by Git blob, mode and path.

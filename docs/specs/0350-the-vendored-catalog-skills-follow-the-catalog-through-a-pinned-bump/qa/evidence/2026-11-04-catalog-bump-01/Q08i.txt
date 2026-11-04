@@ -1,0 +1,27 @@
+Audited head: 78af33207493114026e870800d7b99c8a8f47345
+Mutation: typescript ui-ux-pro-max treeDigest equals the incompleteUiUxProMaxTree regression constant.
+$ go test -timeout 20m -count=1 -v ./internal/baseline -run ^TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree$
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+    upstream_setup_revision_test.go:93: load embedded Baseline catalog: validate Baseline catalog: catalog.setup.composition.drift: go-cli-typescript-bun: skills or activation bundles differ from the component union; catalog.setup.digest.mismatch: typescript: got 8d71dc6cb6a76fc714543304367355b84c25b8e89ef97396c85f420a78484e65, want e70174f08f25adb37e482d788efa4de3e682330a57682077f69b2f950e55b883
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+    upstream_setup_revision_test.go:93: load embedded Baseline catalog: validate Baseline catalog: catalog.setup.composition.drift: go-cli-typescript-bun: skills or activation bundles differ from the component union; catalog.setup.digest.mismatch: typescript: got 8d71dc6cb6a76fc714543304367355b84c25b8e89ef97396c85f420a78484e65, want e70174f08f25adb37e482d788efa4de3e682330a57682077f69b2f950e55b883
+--- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree (0.00s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript (0.02s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun (0.02s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 151.398833ms before and 126.281625ms after
+FAIL	roundfix/internal/baseline	0.611s
+FAIL
+exit: 1
+ROW FAILURE: AssertionError()
+
+QA transcript assessment: the authored Requirement 8 asks that the named test fail after replacing the treeDigest. That happened (exit 1; named top-level and typescript subtest FAIL). The harness additionally required the later Spec 0333 error text, which the requirement does not demand. LoadEmbeddedCatalog rejects the altered digest and composed-union mismatch first. This proves the requested named failure; it does not claim the later explicit inequality branch ran. The harness-only assertion is corrected; no test was repeated or product file changed.

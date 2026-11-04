@@ -1,0 +1,5 @@
+Final report checks: 19 rows; 16 pass; 2 fail; 1 blocked (environment: no open Pull Request).
+All coverage sources exact and covered. Every row has typed inputs.
+All report links resolve; no QA path is ignored.
+Tracked source delta empty; untracked delta restricted to this Spec qa/.
+No Task status, commit, push or Pull Request mutation performed.

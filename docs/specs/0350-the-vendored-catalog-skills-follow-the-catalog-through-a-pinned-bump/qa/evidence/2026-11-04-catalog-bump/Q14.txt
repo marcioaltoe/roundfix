@@ -1,0 +1,9 @@
+Audited head: f71340b1a772c03b18c9518af679e6e8f2a8507a
+$ ./bin/roundfix archive 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump --plan --offline
+archive plan for 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump: removes 37 file(s) (1182485 bytes) and writes docs/history/specs/0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-04.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 26 file(s) (1057128 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-04-the-vendored-catalog-skills-trail-the-catalog-and-name-branch-refs.md 5203 bytes: no advice (offline)
+promote with: roundfix archive 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump --promote <path>
+exit: 0

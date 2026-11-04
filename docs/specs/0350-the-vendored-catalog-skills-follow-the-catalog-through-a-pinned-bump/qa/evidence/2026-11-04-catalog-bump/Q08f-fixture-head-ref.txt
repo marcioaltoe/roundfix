@@ -1,0 +1,90 @@
+Audited head: f71340b1a772c03b18c9518af679e6e8f2a8507a
+$ git fetch --depth=1 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T202718Z_36f747a05c5e57d3 f71340b1a772c03b18c9518af679e6e8f2a8507a
+From /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump-65cb5c2eb55f0bd0-a63b8fd8-c7901600/run_20261104T202718Z_36f747a05c5e57d3
+ * branch            f71340b1a772c03b18c9518af679e6e8f2a8507a -> FETCH_HEAD
+exit: 0
+$ git update-ref refs/heads/master FETCH_HEAD
+exit: 0
+Mutation: restore all five systematic-debugging files from the Delivery Base.
+$ go test -timeout 20m -count=1 -v -tags docscontract ./internal/baseline -run ^TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes$
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes
+=== PAUSE TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes
+=== CONT  TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/agentic-cli-design
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-durable-pages
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-handoff
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-learning-maintenance
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-messaging
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-retrieval
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-routing-install
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/bubbletea
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/coding-guidelines
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/context7-cli
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/conventional-commits
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/crafting-effective-readmes
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/domain-modeling
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/exa-web-search
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/github-pr-workflow
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-cli
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-concurrency
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-context
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-dependency-management
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-error-handling
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-lint
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-safety
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-structs-interfaces
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-testing
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/grill-with-docs
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/grilling
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/knowledge-workspace
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/no-workarounds
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/systematic-debugging
+    vendored_catalog_skills_docscontract_test.go:85: catalog skill systematic-debugging tree = "a6a0f1051a12abbf06fa94f900d0e41278d257efe537fd4b9eeb4c6b385a20cf", want Setup Snapshot tree "82616353464fc202c980e52ef1f4841b78faddd773e10c0585f07c6ae0a5b518"; run make skills-third-party-bump
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/tech-writer
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/testing-boss
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/tui-design
+=== RUN   TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/typesafe-ai
+--- FAIL: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes (0.02s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/agentic-cli-design (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-durable-pages (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-handoff (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-learning-maintenance (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-messaging (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-retrieval (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/ai-memory-routing-install (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/bubbletea (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/coding-guidelines (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/context7-cli (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/conventional-commits (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/crafting-effective-readmes (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/domain-modeling (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/exa-web-search (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/github-pr-workflow (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-cli (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-concurrency (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-context (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-dependency-management (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-error-handling (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-lint (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-safety (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-structs-interfaces (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/golang-testing (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/grill-with-docs (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/grilling (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/knowledge-workspace (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/no-workarounds (0.00s)
+    --- FAIL: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/systematic-debugging (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/tech-writer (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/testing-boss (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/tui-design (0.00s)
+    --- PASS: TestEveryVendoredCatalogSkillIsTheTreeItsCatalogCommitPublishes/typesafe-ai (0.00s)
+FAIL
+suiteguard: guard cost: measured 2900 paths; fingerprint took 144.509625ms before and 122.144417ms after
+FAIL	roundfix/internal/baseline	0.482s
+FAIL
+exit: 1
+$ ./bin/roundfix baseline update --repo /private/tmp/qa0350-5uhxe1mr/sabotage-f --no-history --format json
+roundfix: baseline update failed: Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128
+{"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":false,"state":"failed","category":"invalid","message":"Baseline repository requires at least one commit: git rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}: fatal: Needed a single revision: exit status 128","nextAction":"repair the repository or manifest input and rerun roundfix baseline update","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a143bea7ff2eaf009fea9059ea9c0b7b8d8e1193d3c4e01fa176f4138a09c934"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a143bea7ff2eaf009fea9059ea9c0b7b8d8e1193d3c4e01fa176f4138a09c934"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[],"differing":[]}}
+exit: 2
+ROW FAILURE: AssertionError()

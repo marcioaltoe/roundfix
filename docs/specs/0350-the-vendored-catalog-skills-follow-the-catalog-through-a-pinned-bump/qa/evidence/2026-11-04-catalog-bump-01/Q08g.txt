@@ -1,0 +1,92 @@
+Audited head: 78af33207493114026e870800d7b99c8a8f47345
+Mutation: ai-memory-retrieval ref becomes main.
+$ go test -timeout 20m -count=1 -v ./internal/baseline -run ^(TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestThePythonSetupIsThePublishedUpstreamPreset|TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree|TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree|TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox)$
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== PAUSE TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== RUN   TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestThePythonSetupIsThePublishedUpstreamPreset
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== CONT  TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== CONT  TestThePythonSetupIsThePublishedUpstreamPreset
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision
+    python_setup_test.go:101: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+--- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision (0.00s)
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+    ai_memory_setup_test.go:16: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+--- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision (0.00s)
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+    upstream_setup_revision_test.go:146: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestThePythonSetupIsThePublishedUpstreamPreset
+    python_setup_test.go:32: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+--- FAIL: TestThePythonSetupIsThePublishedUpstreamPreset (0.02s)
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+    upstream_setup_revision_test.go:146: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+    upstream_setup_revision_test.go:68: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+    upstream_setup_revision_test.go:146: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+    upstream_setup_revision_test.go:107: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+    upstream_setup_revision_test.go:146: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+    upstream_setup_revision_test.go:107: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+    upstream_setup_revision_test.go:146: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+--- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree (0.00s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript (0.02s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun (0.02s)
+--- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox (0.00s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun (0.02s)
+=== NAME  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+    upstream_setup_revision_test.go:68: catalog skill ai-memory-retrieval ref = "main"; skills-lock.json must name a full 40-character lowercase commit
+--- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree (0.00s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript (0.02s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun (0.02s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 134.567083ms before and 128.90025ms after
+FAIL	roundfix/internal/baseline	0.582s
+FAIL
+exit: 1

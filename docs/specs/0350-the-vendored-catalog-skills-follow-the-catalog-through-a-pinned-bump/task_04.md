@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

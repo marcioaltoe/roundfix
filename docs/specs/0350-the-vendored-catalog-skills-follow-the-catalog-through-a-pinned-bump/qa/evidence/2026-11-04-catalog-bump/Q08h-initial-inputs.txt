@@ -1,0 +1,674 @@
+Audited head: f71340b1a772c03b18c9518af679e6e8f2a8507a
+Mutation: all five setup snapshots restored from Delivery Base while the lock stays at the new catalog commit.
+$ go test -timeout 20m -count=1 -v ./internal/baseline -run ^(TestEveryUpstreamSetupFollowsTheAiMemoryRevision|TestEveryUpstreamSetupFollowsThePythonPresetRevision|TestThePythonSetupIsThePublishedUpstreamPreset|TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree|TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree|TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox)$
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== PAUSE TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== RUN   TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestThePythonSetupIsThePublishedUpstreamPreset
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== CONT  TestEveryUpstreamSetupFollowsTheAiMemoryRevision
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== CONT  TestThePythonSetupIsThePublishedUpstreamPreset
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== RUN   TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== RUN   TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== PAUSE TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+=== PAUSE TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== CONT  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== CONT  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== RUN   TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== PAUSE TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go
+=== RUN   TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+=== PAUSE TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+=== NAME  TestThePythonSetupIsThePublishedUpstreamPreset
+    python_setup_test.go:35: Python setup source = {Setups:[] Type:github Repository:marcioaltoe/skills Ref:86df8608726979064a8fe46003dfaf403ffe0087 Path:setups/python.txt Name:}, want {Setups:[] Type:github Repository:marcioaltoe/skills Ref:c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84 Path:setups/python.txt Name:}
+--- FAIL: TestThePythonSetupIsThePublishedUpstreamPreset (0.02s)
+=== CONT  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript
+    upstream_setup_revision_test.go:108: setup typescript ui-ux-pro-max revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go
+    ai_memory_setup_test.go:36: setup go revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill tui-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill bubbletea revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-concurrency revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-context revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-dependency-management revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-error-handling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-lint revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-safety revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-structs-interfaces revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill golang-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python
+    upstream_setup_revision_test.go:147: setup python knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+=== NAME  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript
+    upstream_setup_revision_test.go:69: setup typescript onioncry revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+=== NAME  TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun
+    upstream_setup_revision_test.go:108: setup go-cli-typescript-bun ui-ux-pro-max revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+--- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree (0.00s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/typescript (0.02s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree/go-cli-typescript-bun (0.02s)
+=== CONT  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust
+    upstream_setup_revision_test.go:147: setup rust knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go
+    upstream_setup_revision_test.go:147: setup go knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:120: setup go revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun
+    upstream_setup_revision_test.go:69: setup go-cli-typescript-bun onioncry revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+--- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree (0.00s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/typescript (0.02s)
+    --- FAIL: TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree/go-cli-typescript-bun (0.02s)
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill tui-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+    python_setup_test.go:120: setup rust revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill bubbletea revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:120: setup python revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+    python_setup_test.go:125: setup rust skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill clap-rust revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill rust-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill rust-expert revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+    python_setup_test.go:125: setup rust skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill golang-concurrency revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-context revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-dependency-management revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-error-handling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust
+    python_setup_test.go:125: setup rust skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup rust skill cut-release revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:120: setup typescript revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill find-rules revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript
+    upstream_setup_revision_test.go:147: setup typescript knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tui-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill bubbletea revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-concurrency revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-context revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-dependency-management revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill turborepo revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill golang-lint revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun
+    upstream_setup_revision_test.go:147: setup go-cli-typescript-bun knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+--- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox (0.00s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/python (0.00s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/rust (0.00s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/typescript (0.02s)
+    --- FAIL: TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox/go-cli-typescript-bun (0.02s)
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill golang-safety revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-structs-interfaces revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill golang-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-error-handling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-lint revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-safety revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-structs-interfaces revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill uv revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill golang-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup go skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill architectural-analysis revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill backend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill ruff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill ty revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill pytest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill typer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill fastapi revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill python-services revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill find-rules revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill turborepo revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill architectural-analysis revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill backend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill clean-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill codebase-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill data-sync-workflows revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill frontend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill security-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill clean-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill codebase-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill data-sync-workflows revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill frontend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/go
+    python_setup_test.go:125: setup go skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill security-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill python-file-pipelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill security-threat-model revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill backend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill external-api-adapters revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill security-threat-model revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill integration-contract-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tactical-ddd revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ui-ux-pro-max revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill vertical-slice-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill ai-sdk revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill baseline-ui revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill tactical-ddd revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ui-ux-pro-max revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill vertical-slice-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-sdk revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill baseline-ui revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill better-auth revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/python
+    python_setup_test.go:125: setup python skill security-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill pdf revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill pdftk-server revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill docker revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup python skill developing-with-streamlit revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill better-auth revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill bun revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill building-components revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill drizzle-orm revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill external-api-adapters revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill frontend-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill bun revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill building-components revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill drizzle-orm revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill external-api-adapters revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill hono revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill frontend-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill hono revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill hono-api-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill inngest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill integration-contract-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill interface-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill hono-api-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill interaction-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill inngest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill integration-contract-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill interface-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill interaction-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill logtape revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill motion revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill logtape revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill motion revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill react revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill react revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill react-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill react-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill react-composition-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill react-hook-form-zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill shadcn revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill solid revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tailwindcss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill react-composition-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill react-hook-form-zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill shadcn revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tanstack-query revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tanstack-router revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill tanstack-table revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill typescript-advanced revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill solid revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill tailwindcss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill tanstack-query revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill tanstack-router revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill tanstack-table revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill typescript-advanced revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill vite revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill vitest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill vite revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill vitest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill zustand revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill agent-browser revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill clean-code revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill core-web-vitals revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill fixing-accessibility revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill fixing-motion-performance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill git-rebase revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill zustand revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill agent-browser revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill clean-code revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill core-web-vitals revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill fixing-accessibility revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill fixing-motion-performance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill git-rebase revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill observability-audit revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill onioncry revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill observability-audit revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill onioncry revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill wcag-audit-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill web-design-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill wcag-audit-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill web-design-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill docker revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill business-storyteller revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill app-renderer-systems revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill firecrawl revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill firecrawl-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill humanizer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup go-cli-typescript-bun skill writing-clearly-and-concisely revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision/python
+=== NAME  TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript
+    python_setup_test.go:125: setup typescript skill docker revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill business-storyteller revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill app-renderer-systems revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill firecrawl revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill firecrawl-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill humanizer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+    python_setup_test.go:125: setup typescript skill writing-clearly-and-concisely revision = "86df8608726979064a8fe46003dfaf403ffe0087", want "c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84"
+--- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision (0.02s)
+    --- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision/rust (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision/go (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision/python (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsThePythonPresetRevision/typescript (0.00s)
+=== NAME  TestEveryUpstreamSetupFollowsTheAiMemoryRevision/python
+    ai_memory_setup_test.go:36: setup python revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill uv revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ruff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill ty revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill pytest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill typer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill fastapi revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill python-services revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill python-file-pipelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill backend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill external-api-adapters revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill integration-contract-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill security-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill pdf revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill pdftk-server revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill docker revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup python skill developing-with-streamlit revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision/rust
+    ai_memory_setup_test.go:36: setup rust revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill clap-rust revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill rust-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill rust-expert revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup rust skill cut-release revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+=== RUN   TestEveryUpstreamSetupFollowsTheAiMemoryRevision/typescript
+    ai_memory_setup_test.go:36: setup typescript revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill find-rules revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill find-skills revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill knowledge-workspace revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill turborepo revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill context7-cli revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill grill-with-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill grilling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill agentic-cli-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill architectural-analysis revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill backend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill clean-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill codebase-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill data-sync-workflows revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill domain-modeling revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill frontend-docs revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill security-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill security-threat-model revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tactical-ddd revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ui-ux-pro-max revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill vertical-slice-architecture revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-sdk revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill baseline-ui revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill better-auth revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill bun revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill building-components revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill coding-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill drizzle-orm revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill external-api-adapters revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill frontend-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill hono revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill hono-api-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill inngest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill integration-contract-testing revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill interface-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill interaction-design revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill logtape revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill motion revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill no-workarounds revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill react revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill react-best-practices revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill react-composition-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill react-hook-form-zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill shadcn revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill solid revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tailwindcss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tanstack-query revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tanstack-router revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tanstack-table revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill testing-boss revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill typesafe-ai revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill typescript-advanced revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill vite revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill vitest revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill zod revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill zustand revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill agent-browser revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill clean-code revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill core-web-vitals revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill fixing-accessibility revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill fixing-motion-performance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill git-rebase revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill observability-audit revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill onioncry revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill systematic-debugging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill wcag-audit-patterns revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill web-design-guidelines revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill conventional-commits revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill crafting-effective-readmes revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill github-pr-workflow revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-durable-pages revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-handoff revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-learning-maintenance revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-messaging revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-retrieval revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill ai-memory-routing-install revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill tech-writer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill docker revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill business-storyteller revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill exa-web-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill app-renderer-systems revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill firecrawl revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill firecrawl-search revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill humanizer revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+    ai_memory_setup_test.go:42: setup typescript skill writing-clearly-and-concisely revision = "86df8608726979064a8fe46003dfaf403ffe0087", want c8b2e8511a7ff89dbe9e87a56cc3c29a6acbcb84
+--- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision (0.02s)
+    --- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision/go-cli-typescript-bun (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision/python (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision/rust (0.00s)
+    --- FAIL: TestEveryUpstreamSetupFollowsTheAiMemoryRevision/typescript (0.00s)
+FAIL
+suiteguard: guard cost: measured 2895 paths; fingerprint took 151.604334ms before and 125.696958ms after
+FAIL	roundfix/internal/baseline	0.871s
+FAIL
+exit: 1
