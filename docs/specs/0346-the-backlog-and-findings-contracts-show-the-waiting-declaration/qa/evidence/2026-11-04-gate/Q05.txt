@@ -1,0 +1,8 @@
+Actual docs-layout.md copyable frontmatter extracted and decoded with repository gopkg.in/yaml.v3, then both comments replaced with valid scalar values.
+$ go run <temporary decode.go> <temporary blocks.json>
+Backlog copied: waiting_on absent; since absent
+Backlog uncommented: expected waiting_on and since scalars present
+Findings copied: waiting_on absent; since absent
+Findings uncommented: expected waiting_on and since scalars present
+
+exit: 0

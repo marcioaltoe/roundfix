@@ -1,0 +1,31 @@
+Fresh git archive 1dc550e4f8da4a777660459a0449fbc5e99cb50d; git init -q; git add -A; sabotage subject.
+$ go test -count=1 -timeout 20m -v -run ^TestTheOperationalContractsShowTheWaitingDeclarationCommented$ ./internal/baseline
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== PAUSE TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== CONT  TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/copied_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/uncommented_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter
+    waiting_declaration_clause_test.go:45: sentence occurs 0 times, want 1
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/copied_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/uncommented_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/Standard_TypeScript_golden
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/repository_guide
+--- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented (0.02s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/copied_YAML (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/uncommented_YAML (0.00s)
+    --- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/copied_YAML (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/uncommented_YAML (0.00s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/repository_guide (0.00s)
+FAIL
+suiteguard: guard cost: measured 2924 paths; fingerprint took 141.713875ms before and 145.461333ms after
+FAIL	roundfix/internal/baseline	0.596s
+FAIL
+
+exit: 1
+Assertions: nonzero=True; named test failed=True; named subtest failed=True; required diagnostic present=False
+Required diagnostic: lacks its waiting sentence

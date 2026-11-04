@@ -1,0 +1,74 @@
+Audited range: 1e7f3b4311bf5474a5f752954ea7a43ab9f732ea..7e2471c6429ceb52fb58e79c3a736bffea0cbbbb
+Seeded mechanical authorization audit remains authoritative; no duplicate chronology audit.
+$ git diff-tree --no-commit-id --name-only -r 3b72e700b2e211121810c0a8855a22f0d430fb04
+CONTEXT.md
+docs/agents/docs-layout.md
+docs/agents/setup-context.json
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/task_01.md
+docs/user-guide/context-driven-development.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+internal/baseline/assets/modules/context-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/baseline/waiting_declaration_clause_test.go
+Undeclared paths: []
+$ git diff-tree --no-commit-id --name-only -r 7e2471c6429ceb52fb58e79c3a736bffea0cbbbb
+internal/baseline/waiting_declaration_clause_test.go
+Undeclared paths: []
+Complete range paths (including separate authoring commit):
+CONTEXT.md
+docs/agents/docs-layout.md
+docs/agents/setup-context.json
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/_techspec.md
+docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/task_01.md
+docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/task_02.md
+docs/user-guide/context-driven-development.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+internal/baseline/assets/modules/context-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/baseline/waiting_declaration_clause_test.go
+Audit helper replaces main only through go -overlay; repository source untouched.
+$ go run -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0346-audit-uwx41a6t/overlay.json ./cmd/roundfix classify CONTEXT.md docs/agents/docs-layout.md docs/agents/setup-context.json docs/references/behavior-surfaces.json docs/references/skill-coverage.json docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/_techspec.md docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/task_01.md docs/specs/0346-the-backlog-and-findings-contracts-show-the-waiting-declaration/task_02.md docs/user-guide/context-driven-development.md internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md internal/baseline/assets/modules/context-workflow.json internal/baseline/assets/profiles/standard-typescript-monorepo.json internal/baseline/module-versions.json internal/baseline/testdata/catalog.diagnostics.golden.json internal/baseline/testdata/catalog.digest internal/baseline/testdata/catalog.normalized.json internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json internal/baseline/testdata/plan-characterization/clean-adoption.golden.json internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json internal/baseline/waiting_declaration_clause_test.go
+governed docs/agents/docs-layout.md
+governed docs/agents/setup-context.json
+governed internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+governed internal/baseline/assets/modules/context-workflow.json
+governed internal/baseline/assets/profiles/standard-typescript-monorepo.json
+
+exit: 0
+Forbidden changes: []
+Glossary extension: ; the copyable Operational Contract blocks the Baseline writes for backlog and findings show the pair as commented keys
+Coverage Review: ["2026-11-04 — Spec 0346 task_01: the guide's Findings template gains the two commented keys and one paragraph explains when to uncomment them; its covering skills describe how a Baseline is adopted and how Specs are written, implemented, checked and archived, not the frontmatter keys of a Finding or a Backlog Entry, so they need no text change."]
+Checks:
+{
+  "Task/repair paths declared 3b72e700b2e211121810c0a8855a22f0d430fb04": true,
+  "Task/repair paths declared 7e2471c6429ceb52fb58e79c3a736bffea0cbbbb": true,
+  "Canonical GovernedPath returns exactly bounded five": true,
+  "No forbidden range change": true,
+  "Only designated review changed": true,
+  "Only glossary extension changed": true,
+  "Glossary defines term": true,
+  "_prd.md declares changed term": true,
+  "_techspec.md declares changed term": true,
+  "No Unreachable Acceptance": true,
+  "Working delta is QA only": true
+}

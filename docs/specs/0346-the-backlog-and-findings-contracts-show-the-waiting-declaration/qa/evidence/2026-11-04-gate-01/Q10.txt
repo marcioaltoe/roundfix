@@ -1,0 +1,8 @@
+Supplied fact: no open Pull Request on the Spec target branch.
+Approval: maintainer cycle AX delivery authority in _authorization.md, operative at 1e7f3b4311bf5474a5f752954ea7a43ab9f732ea.
+Checks: Daemon make verify-changed pass, exit 0 at 7e2471c6429ceb52fb58e79c3a736bffea0cbbbb; local build and QA evidence recorded separately.
+Unresolved review threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet.
+Claimed candidate: 7e2471c6429ceb52fb58e79c3a736bffea0cbbbb.
+Review-artifact ancestry: no acceptance/review artifact available for the claimed candidate; unproven.
+The Run branch is never a Pull Request branch. No network or reviewer contacted.

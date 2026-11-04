@@ -1,0 +1,39 @@
+Fresh git archive 1dc550e4f8da4a777660459a0449fbc5e99cb50d; git init -q; git add -A; sabotage uncomment.
+$ go test -count=1 -timeout 20m -v -run ^TestTheOperationalContractsShowTheWaitingDeclarationCommented$ ./internal/baseline
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== PAUSE TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== CONT  TestTheOperationalContractsShowTheWaitingDeclarationCommented
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract
+    waiting_declaration_clause_test.go:49: frontmatter does not end with both commented keys: type: feat # feat | fix | perf | refactor
+        status: open # open | promoted | declined | deferred | done | deprecated | superseded | closed | cancelled
+        created: YYYY-MM-DD
+        spec: null # Spec slug when status: promoted
+        reason: null # required for terminal closure without a consuming Spec
+        waiting_on: <who or what it waits on, in one line> # optional, with since
+        # since: YYYY-MM-DD # optional, the date the wait began
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/copied_YAML
+    waiting_declaration_clause_test.go:58: copied frontmatter declares waiting_on
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/uncommented_YAML
+    waiting_declaration_clause_test.go:70: waiting_on = {Kind:8 Style:0 Tag:!!str Value:<who or what it waits on, in one line> Anchor: Alias:<nil> Content:[] HeadComment: LineComment:# optional, with since FootComment: Line:6 Column:13}, want scalar "ERP vendor support answer"
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/copied_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/uncommented_YAML
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/Standard_TypeScript_golden
+=== RUN   TestTheOperationalContractsShowTheWaitingDeclarationCommented/repository_guide
+--- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented (0.02s)
+    --- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract (0.00s)
+        --- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/copied_YAML (0.00s)
+        --- FAIL: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.backlog-01-operational-contract/uncommented_YAML (0.00s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/copied_YAML (0.00s)
+        --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/clause.context.findings-01-frontmatter/uncommented_YAML (0.00s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheOperationalContractsShowTheWaitingDeclarationCommented/repository_guide (0.00s)
+FAIL
+suiteguard: guard cost: measured 2924 paths; fingerprint took 138.571958ms before and 141.709667ms after
+FAIL	roundfix/internal/baseline	0.592s
+FAIL
+
+exit: 1
+Assertions: nonzero=True; named test failed=True; named subtest failed=True; required diagnostic present=False
+Required diagnostic: the key must stay commented

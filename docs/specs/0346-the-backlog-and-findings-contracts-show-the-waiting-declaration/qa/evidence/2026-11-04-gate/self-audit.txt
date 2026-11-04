@@ -1,0 +1,7 @@
+Report structural audit: PASS
+17 unique terminal rows; exact 14/2/1 counts and frontmatter 1/0/0 blocked causes; 10 coverage sources closed.
+Every executed row has its planned typed inputs; history rows declare commit_range.
+Every linked evidence file exists; no report/evidence file is Git-ignored.
+Current working-tree changes are confined to this Spec QA report and evidence; no tracked implementation/Task delta.
+Canonical internal/secretscan ScanContent compiled unchanged except its temporary package name and run over report plus all retained evidence: exit 0; no matches.
+No started foreground command remains running.

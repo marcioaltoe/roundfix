@@ -1,0 +1,14 @@
+Outside source: YAML 1.2.2 specification, section 3.2.3.3 Comments
+URL: https://yaml.org/spec/1.2.2/#3233-comments
+Passage captured in PRD on 2026-11-04.
+Offline passage: Comments are a presentation detail and must not have any effect on the serialization tree or representation graph.
+Independent fresh decoding of actual guide contracts:
+$ go run /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0346-outside-kqgizgoz/decode.go docs/agents/docs-layout.md
+contract 1 copied: waiting_on absent; since absent
+contract 1 uncommented: both expected scalar values present
+contract 2 copied: waiting_on absent; since absent
+contract 2 uncommented: both expected scalar values present
+
+exit: 0
+
+Copied blocks omit both commented keys; intentional uncommenting adds both scalars, agreeing with the external representation-graph rule. No network lookup.

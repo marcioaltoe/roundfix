@@ -1,0 +1,25 @@
+$ git clone --shared <Run checkout> <temporary clone>
+$ git checkout --detach 1dc550e4f8da4a777660459a0449fbc5e99cb50d
+$ ./bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmps035u02a/clone --no-skills --no-history --format text
+stdout:
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:ea6df307cb4e043f6921aac176209af9412496a466251b501b8eac7c76d9568d
+Current catalog: sha256:ea6df307cb4e043f6921aac176209af9412496a466251b501b8eac7c76d9568d
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills differing: 0
+Plan Digest: sha256:aa046499d63b8a56b753481f32f8abda68e1e4f5521ce6251c2567597716c896
+stderr:
+
+exit: 0
+Assertions:
+True: File changes: 0
+Clone remained clean: True

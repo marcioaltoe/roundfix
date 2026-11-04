@@ -1,0 +1,14 @@
+Fresh git archive 1dc550e4f8da4a777660459a0449fbc5e99cb50d; git init -q; git add -A; sabotage rename.
+$ go test -count=1 -timeout 20m -v -run ^TestAnAdopterKeepsTheWaitingContractClauses$ ./internal/baseline
+=== RUN   TestAnAdopterKeepsTheWaitingContractClauses
+=== PAUSE TestAnAdopterKeepsTheWaitingContractClauses
+=== CONT  TestAnAdopterKeepsTheWaitingContractClauses
+    waiting_declaration_clause_test.go:108: LoadEmbeddedCatalog() error = load embedded Baseline catalog: validate Baseline catalog: catalog.sourceBaseline.required-clause.missing: baseline.standard-typescript-monorepo-0.0.1: clause.context.findings-01-frontmatter-renamed; the regenerator maintains manifest rows but never creates them, so add this row first; run 'make baseline-digests' to regenerate stale derived artifacts
+--- FAIL: TestAnAdopterKeepsTheWaitingContractClauses (0.01s)
+FAIL
+suiteguard: guard cost: measured 2924 paths; fingerprint took 137.479791ms before and 139.775375ms after
+FAIL	roundfix/internal/baseline	0.585s
+FAIL
+
+exit: 1
+Assertions: nonzero=True; named test failed=True; named subtest failed=True; required diagnostic present=True

@@ -1,0 +1,48 @@
+Report self-audit at 7e2471c6429ceb52fb58e79c3a736bffea0cbbbb
+{
+  "Single frontmatter and verdict": true,
+  "Seeded auditor identity preserved": true,
+  "17 unique terminal rows": true,
+  "Counts exactly match statuses": true,
+  "Complete closed provenance": true,
+  "Typed inputs on every row": true,
+  "Original carry-forward dispositions preserved": true,
+  "Mechanical skips preserved": true,
+  "Seeded authorization audit retained": true,
+  "All local links exist": true,
+  "No ignored evidence": true,
+  "All evidence text": true,
+  "Working delta QA only": true,
+  "Outcome is one paragraph": true
+}
+All row inputs were materialized before observation; Q08 inputs were updated before its independent execution.
+Link evidence/2026-11-04-gate-01/precondition.txt: exists
+Link evidence/2026-11-04-gate-01/build.txt: exists
+Link evidence/2026-11-04-gate-01/version.txt: exists
+Link evidence/2026-11-04-gate-01/Q01.txt: exists
+Link evidence/2026-11-04-gate-01/Q02a.txt: exists
+Link evidence/2026-11-04-gate-01/Q02b.txt: exists
+Link evidence/2026-11-04-gate-01/Q02c.txt: exists
+Link evidence/2026-11-04-gate-01/Q03a.txt: exists
+Link evidence/2026-11-04-gate-01/Q03b.txt: exists
+Link evidence/2026-11-04-gate-01/Q04.txt: exists
+Link evidence/2026-11-04-gate-01/Q05.txt: exists
+Link evidence/2026-11-04-gate-01/Q06a.txt: exists
+Link evidence/2026-11-04-gate-01/Q06b.txt: exists
+Link evidence/2026-11-04-gate-01/Q06c.txt: exists
+Link evidence/2026-11-04-gate-01/Q06d.txt: exists
+Link evidence/2026-11-04-gate-01/Q06e.txt: exists
+Link evidence/2026-11-04-gate-01/Q07.txt: exists
+Link evidence/2026-11-04-gate-01/Q08.txt: exists
+Link evidence/2026-11-04-gate-01/Q09.txt: exists
+Link evidence/2026-11-04-gate-01/Q10.txt: exists
+Link evidence/2026-11-04-gate-01/Q05-driver-initial.txt: exists
+Link evidence/2026-11-04-gate-01/Q09-driver-initial.txt: exists
+Link evidence/2026-11-04-gate-01/Q10.txt: exists
+Link evidence/2026-11-04-gate-01/archive-plan.txt: exists
+Link evidence/2026-11-04-gate-01/self-audit.txt: exists
+Link evidence/2026-11-04-gate-01/secret-scan.txt: exists
+Link evidence/2026-11-04-gate-01/report-accept.txt: exists
+Link evidence/2026-11-04-gate-01/gate-driver.py.txt: exists
+Link evidence/2026-11-04-gate-01/audit-driver.py.txt: exists
+Link evidence/2026-11-04-gate-01/audit-probe.go.txt: exists

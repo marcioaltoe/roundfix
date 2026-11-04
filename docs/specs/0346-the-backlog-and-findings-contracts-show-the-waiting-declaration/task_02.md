@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0346-the-backlog-and-findings-contracts-show-the-waiting-declaration
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,14 @@
+$ for phrase in 'entry that waits on someone or something outside the repository may uncomment' 'Finding that waits on someone or something outside the repository may uncomment' '# waiting_on: <who or what it waits on, in one line> # optional, with since' '# since: YYYY-MM-DD # optional, the date the wait began'; do tr -s '[:space:]' ' ' < docs/agents/docs-layout.md | grep -qF -- "$phrase" || { printf 'missing phrase in docs/agents/docs-layout.md: %s\n' "$phrase" >&2; exit 1; }; tr -s '[:space:]' ' ' < internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md | grep -qF -- "$phrase" || { printf 'missing phrase in the Standard TypeScript golden: %s\n' "$phrase" >&2; exit 1; }; done; go test -timeout 20m -count=1 -run '^(TestTheOperationalContractsShowTheWaitingDeclarationCommented|TestAnAdopterKeepsTheWaitingContractClauses|TestTheRetirementClausesCarryTheirText|TestLifecycleClausesCarryTheScopedWording|TestFindingsOperationalContract|TestEveryBaselineModuleVersionIsRecorded|TestNoTwoBaselineClausesShareText|TestBaselineClauseForceIsCharacterized)$' ./internal/baseline && go test -timeout 20m -count=1 ./internal/baseline
+ok  	roundfix/internal/baseline	1.121s
+ok  	roundfix/internal/baseline	79.810s
+
+exit: 0
+
+$ for phrase in 'The two commented keys are a Waiting Declaration.' '# waiting_on: <who or what it waits on, in one line> # optional, with since' '# since: YYYY-MM-DD # optional, the date the wait began'; do tr -s '[:space:]' ' ' < docs/user-guide/context-driven-development.md | grep -qF -- "$phrase" || { printf 'missing phrase in docs/user-guide/context-driven-development.md: %s\n' "$phrase" >&2; exit 1; }; done; grep -qF -- '2026-11-04 — Spec 0346 task_01' docs/references/skill-coverage.json || { printf 'missing Coverage Review in docs/references/skill-coverage.json\n' >&2; exit 1; }; go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract -run '^(TestGuidanceCompositionDocumentation|TestTheSkillCoverageMapIsCurrent|TestTheSetupManifestIsCurrent)$'
+ok  	roundfix/internal/docscontract	0.838s
+
+exit: 0
+
+$ grep -F -- '**Waiting Declaration**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Waiting Declaration\*\*(:| —( |$))' && { tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'Operational Contract blocks the Baseline writes for backlog and findings show the pair as commented keys' || { printf 'missing phrase in CONTEXT.md: %s\n' 'Operational Contract blocks the Baseline writes for backlog and findings show the pair as commented keys' >&2; exit 1; }; }
+
+exit: 0
