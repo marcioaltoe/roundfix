@@ -54,6 +54,30 @@ entirely. The routing rules live in
 `write-tasks`, so implementation always executes from a Task Graph rather than an
 ad-hoc plan.
 
+### Spec Event Announcements
+
+A user who follows Specs on a board, a tracker or an assistant can have the
+Spec skills announce each Spec Event as it happens. The skills never name a
+destination: the user's own instructions, global or for the repository,
+define the destination and the format, and without them no skill announces
+anything or adds a report line. Each announcement carries the project, the
+Spec number and full slug, the title, the event, the event date, the start
+date, the proposed deadline or none, and the Spec path, plus any field the
+instructions add; `completed` and `cancelled` add a summary of one to three
+sentences for a business reader. An announcement never waits for a reply and
+never blocks the step it follows, and an Agent inside a Daemon-assigned Run
+never announces ([ADR-0354](../adr/0354-the-spec-skills-announce-spec-events-only-through-the-users-own-instructions.md)).
+
+| Spec Event | Announced by | When |
+| --- | --- | --- |
+| `new` | `write-prd`, or `write-techspec` on its correction route | the Spec's first `_prd.md` is written |
+| `authorized` | `write-tasks` | the first Task Graph is written for an approved `_authorization.md` |
+| `deadline proposed` | `write-prd` or `write-techspec` | a real deadline is recorded in the PRD of a Spec already announced |
+| `started` | the Supervisor session that started the Run or queued the item | the first Task of the Spec enters `in_progress` |
+| `blocked` | the same Supervisor session | a Run of the Spec ends `Unresolved`, `BudgetExceeded` or `Failed`, or the Delivery Queue parks its item |
+| `completed` | `archive-spec`, or the Supervisor session when the Delivery Queue archives | the Archive Record is written, or the queue item merges |
+| `cancelled` | `archive-spec` | the Cancel Command writes the Archive Record |
+
 ### QA report reachability and verdicts
 
 Roundfix gives the QA Agent an explicit Pull Request fact resolved from the

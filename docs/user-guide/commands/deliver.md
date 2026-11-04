@@ -19,7 +19,7 @@ tab-separated:
   with an earlier Spec in the plan.
 - `backlog`, `finding`, and `inbox` rows list repository intent that is not
   approved to run. Backlog and finding rows carry their frontmatter status;
-  inbox rows use `-`.
+  inbox rows use `-`. Inbox rows exclude a file or folder whose name starts with a dot, such as `.gitkeep`, and everything inside such a folder.
 
 `--json` emits one `roundfix-deliver-plan/v1` document with the same Specs,
 verdicts, reasons, shared premises, Task counts, and intent. Exit `0` means

@@ -186,16 +186,25 @@ The destination-project act that converts one pending Cross-project Message into
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
-The read-only `roundfix follow-up` command that lists a repository's Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
-One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note in `docs/_inbox/` or an active Spec, with its kind, reference, type, date, title and the project that sent it.
+One pending unit the Follow-up Command lists: an ai-memory message the caller hands in, a next step or open question of a Session Handoff the caller hands in as a message entry with id `handoff:<handoff id>:<n>`, an open Backlog Entry, an unresolved Finding, a note that is a file in `docs/_inbox/` outside any file or folder whose name starts with a dot, or an active Spec, with its kind, reference, type, date, title and the project that sent it.
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
-The order of Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+The order of ranked Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+A Waiting Item is in the fifth class `waiting`, outside the four, and follows all ranked items only when `--all` is given, oldest `since` first and then reference ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Jev ranking, severity, score
+
+**Waiting Declaration**:
+The optional `waiting_on` and `since` pair on an open Backlog Entry or an unresolved Finding, naming who or what it waits on in one non-empty line and the `YYYY-MM-DD` date the wait began ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+_Avoid_: Waiting status, free-text wait
+
+**Waiting Item**:
+A Follow-up Item with a valid Waiting Declaration, held back from the default list and counted on its source, listed with `--all` in class `waiting`, and never sent to the judge ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+_Avoid_: Blocked item, deferred item
 
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
@@ -247,6 +256,14 @@ _Avoid_: Delete command, abandon, archive override
 **Ignored Spec File**:
 A file under an active Spec folder that Git ignores, so no commit holds it. The Archive Command and the Cancel Command refuse while one exists ([ADR-0269](docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md)).
 _Avoid_: Untracked change, scratch file, ignored repository file
+
+**Spec Event**:
+One of the seven moments in a Spec's life that a Spec Event Announcement reports: `new` when its first PRD is written, `authorized` when its first Task Graph is written for an approved authorization record, `deadline proposed` when a real deadline is added to a Spec already announced, `started` when its first Task enters `in_progress`, `blocked` when a Run of the Spec ends `Unresolved`, `BudgetExceeded` or `Failed` or the Delivery Queue parks its item, `completed` when its Archive Record is written or the Delivery Queue merges the Spec it archived, and `cancelled` when the Cancel Command writes its record ([ADR-0354](docs/adr/0354-the-spec-skills-announce-spec-events-only-through-the-users-own-instructions.md)).
+_Avoid_: Spec status, milestone, Run Event
+
+**Spec Event Announcement**:
+The message a session following `write-prd`, `write-techspec`, `write-tasks`, `archive-spec` or the Roundfix skill's implement reference sends at a Spec Event, only when the user's own instructions, global or for the repository, define its destination and format. It carries the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline and the Spec path, never waits for a reply and never blocks or fails its step; no owned skill names a destination, and an Agent inside a Daemon-assigned Run never sends one ([ADR-0354](docs/adr/0354-the-spec-skills-announce-spec-events-only-through-the-users-own-instructions.md)).
+_Avoid_: Notification, release announcement, Spec report
 
 **Source Return**:
 The Cancel Command's hand-back of a cancelled Spec's adopted sources: a Backlog Entry returns to `docs/backlog/` with `status: open` and no Spec, a Finding returns to `docs/findings/` with `status: pending` and a dated addendum, and every other byte is kept. Other adopted sources stay in Git with the folder ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).

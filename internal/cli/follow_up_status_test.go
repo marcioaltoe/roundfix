@@ -24,12 +24,13 @@ func TestFollowUpHelpTranscript(t *testing.T) {
 	t.Parallel()
 	newFollowUpFixture(t)
 	const want = `Usage:
-  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
 
 List this repository's pending work in Follow-up Priority order, or show its status.
 It is read-only: it never writes a file, commits, pushes or prompts.
 Options:
   --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
   --messages  JSON file of ai-memory messages to list with the pending work
   --format    text (default) or json
 
@@ -42,7 +43,7 @@ configuration or messages file; 1 for an unreadable Run Database.
 	}
 	var rootOut, rootErr bytes.Buffer
 	code = runCLI(t, []string{"--help"}, &rootOut, &rootErr)
-	if code != 0 || rootErr.Len() != 0 || !strings.Contains(rootOut.String(), "  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]\n") {
+	if code != 0 || rootErr.Len() != 0 || !strings.Contains(rootOut.String(), "  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]\n") {
 		t.Fatalf("root help exit=%d stderr=%q stdout=%q", code, rootErr.String(), rootOut.String())
 	}
 }

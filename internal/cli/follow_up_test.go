@@ -559,12 +559,13 @@ func TestFollowUpListHelpMatchesTranscript(t *testing.T) {
 	t.Parallel()
 	newFollowUpFixture(t)
 	const want = `Usage:
-  roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+  roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
 
 List this repository's pending work in Follow-up Priority order, or show its status.
 It is read-only: it never writes a file, commits, pushes or prompts.
 Options:
   --status    Show work in progress, pending Specs, the next release and blockers
+  --all       Also list items waiting on someone else, held back by default
   --messages  JSON file of ai-memory messages to list with the pending work
   --format    text (default) or json
 
@@ -721,6 +722,23 @@ func TestFollowUpListsRepositoryNotesAndMessageTitleFallback(t *testing.T) {
 	}
 	if doc.Items[0].Kind != "note" || doc.Items[0].Date != "2026-10-01" || doc.Items[1].Title != strings.Repeat("é", 80) || doc.Items[2].Title != "undated" || doc.Items[2].Date != "" {
 		t.Fatalf("items=%+v", doc.Items)
+	}
+}
+
+func TestFollowUpIgnoresHiddenInboxEntries(t *testing.T) {
+	t.Parallel()
+	f := newFollowUpFixture(t)
+	followUpWrite(t, f.repo, "docs/_inbox/.gitkeep", "")
+	followUpWrite(t, f.repo, "docs/_inbox/.obsidian/app.json", "{}\n")
+	followUpWrite(t, f.repo, "docs/_inbox/note.md", "# Note\n")
+
+	doc := followUpJSON(t)
+
+	if source := doc.Sources[3]; source.State != "checked" || source.Count != 1 {
+		t.Fatalf("repository-inbox source=%+v, want checked count 1", source)
+	}
+	if len(doc.Items) != 1 || doc.Items[0].Kind != "note" || doc.Items[0].Ref != "docs/_inbox/note.md" {
+		t.Fatalf("items=%+v, want only docs/_inbox/note.md as a note", doc.Items)
 	}
 }
 

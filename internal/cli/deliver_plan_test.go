@@ -201,6 +201,34 @@ func TestDeliverPlanListsIntentThatIsNotApprovedToRun(t *testing.T) {
 	}
 }
 
+func TestDeliverPlanIgnoresHiddenInboxEntries(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newDeliverPlanWorkspace(t, deliverPlanFixtureSpec{slug: implementTestSlug, operations: allDeliveryOperations})
+	mustMkdir(t, filepath.Join(repoDir, "docs", "_inbox", ".obsidian"))
+	mustWrite(t, filepath.Join(repoDir, "docs", "_inbox", ".gitkeep"), "")
+	mustWrite(t, filepath.Join(repoDir, "docs", "_inbox", ".obsidian", "app.json"), "{}\n")
+	mustWrite(t, filepath.Join(repoDir, "docs", "_inbox", "note.md"), "# Note\n")
+	gitImplement(t, repoDir, "add", "docs/_inbox")
+	gitImplement(t, repoDir, "commit", "-m", "seed hidden inbox entries")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"deliver", "plan", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("deliver plan exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	var inboxRows []string
+	for _, row := range strings.Split(stdout.String(), "\n") {
+		if strings.HasPrefix(row, "inbox\t") {
+			inboxRows = append(inboxRows, row)
+		}
+	}
+	if len(inboxRows) != 1 || inboxRows[0] != "inbox\tdocs/_inbox/note.md\t-" {
+		t.Fatalf("inbox rows=%q, want only docs/_inbox/note.md", inboxRows)
+	}
+}
+
 func TestDeliverPlanWritesNothing(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newDeliverPlanWorkspace(t, deliverPlanFixtureSpec{slug: implementTestSlug, operations: allDeliveryOperations})

@@ -1,7 +1,7 @@
 ### follow-up
 
 ```bash
-roundfix follow-up [--status] [--messages <path>] [--format <text|json>]
+roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
 ```
 
 Lists this repository's pending work in Follow-up Priority order. Use
@@ -38,7 +38,9 @@ unavailable source does not fail the command.
   it is `missing` with `no --messages file`.
 - `backlog` reads open Backlog Entries.
 - `findings` reads pending or partial Findings.
-- `repository-inbox` reads every file in `docs/_inbox/`.
+- `repository-inbox` reads every file in `docs/_inbox/` except a file or folder
+  whose name starts with a dot, such as `.gitkeep`, and everything inside such
+  a folder.
 - `specs` reads active Specs. When the repository's Spec Root is absent,
   this source is `checked` with count `0` (ADR-0348).
 - `runs` reads active Runs for this Git root; no Run Database is `checked`
@@ -49,7 +51,8 @@ unavailable source does not fail the command.
 - `git` reads the branch, head, upstream, changed paths and unpushed commits;
   inspection failure is `unavailable`.
 
-Each source carries these JSON fields: `name`, `state`, `count`, `detail`.
+Each source carries these JSON fields: `name`, `state`, `count`, `detail`,
+`waiting`.
 A source-reading error can make the affected sources `unavailable`; the
 report still lists the other sources.
 
@@ -72,9 +75,58 @@ lists the accepted types and says that `type` can be omitted.
 Messages become `message:<id>` items. Their title is `subject`, or the first
 line of `text` cut to 80 characters, and `requested_by` is `from`.
 
+## Waiting Items
+
+An open Backlog Entry or a pending or partial Finding may carry a Waiting
+Declaration in its frontmatter:
+
+```yaml
+waiting_on: ERP vendor support answer
+since: 2026-10-25
+```
+
+`waiting_on` names who or what the item waits on: one non-empty line, trimmed
+when read. `since` is the calendar date the wait began, in `YYYY-MM-DD` form.
+An absent key or YAML null is absent. The declaration applies only to Backlog
+Entries and Findings, never to messages, notes or Specs.
+
+A valid declaration makes the item a Waiting Item in the fifth class
+`waiting`, outside the four ranked classes. The default list holds Waiting
+Items back. `--all` lists them after every ranked item, oldest `since` first,
+then reference in byte order, with priority `5`, `priority_name` and `basis`
+`waiting`, and null `answers`, `blocks` and `reason`.
+A Waiting Item is never sent to the judge, with or without --all.
+
+Each source's `count` includes every item it read. The `backlog` and
+`findings` sources add a non-zero `waiting` count; their text line appends
+`: <n> waiting, held back without --all` to the count, or `: <n> waiting`
+with `--all`. A listed Waiting Item appends
+` — waiting on <waiting_on> since <since>` to its text line.
+
+A malformed declaration keeps its item in its ordinary class, adds
+`waiting_error` in JSON and ` — invalid waiting declaration: <waiting_error>`
+in text, and never makes a source unavailable. Validation returns the first
+applicable reason, in this order:
+
+1. `waiting_on must be one line of non-empty text` — `waiting_on` is
+   non-scalar, blank after trimming, or contains a line break.
+2. `since is missing` — `waiting_on` is valid and `since` is absent.
+3. `since must be a YYYY-MM-DD date` — `waiting_on` is valid and `since`
+   is non-scalar or is not a calendar date in that form.
+4. `since needs waiting_on` — `since` is present and `waiting_on` is absent.
+
+The new JSON keys `waiting`, `waiting_on`, `since` and `waiting_error` are
+omitted when zero or empty. With no ranked items the judge is `not_asked`,
+with reason `no item` if the list is empty or `only waiting items` otherwise.
+Judge answer totals count ranked items only.
+
+`--all` is refused with `--status`, with exit `2` and the diagnostic
+`--all applies only to the follow-up list; drop it with --status`.
+The status view reads no Backlog Entry or Finding and prints no waiting count.
+
 ## Follow-up Priority
 
-The command asks four yes/no questions per item and computes the order in
+The command asks four yes/no questions per ranked item and computes the order in
 code: `is_fix`, `blocks_other_project`, `is_small` and `affects_production`.
 The classes are `unblocking`, `health`, `feature` and `other`. An item is
 `unblocking` when it blocks another project and is a fix or small; otherwise a
@@ -96,7 +148,7 @@ produce a report and exit `0`.
 
 ## Text and JSON reports
 
-For an empty inventory with no work in progress, the list view prints:
+For an empty list with no work in progress, including when all items are held back, the list view prints:
 
 ```text
 Nothing to do: no pending item and nothing in progress.
@@ -111,7 +163,7 @@ The judge carries these JSON fields: `state`, `reason`, `model`, `calls`,
 `cost_usd`.
 Each item carries these JSON fields: `rank`, `priority`, `priority_name`,
 `kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `basis`,
-`answers`, `reason`.
+`answers`, `reason`, `waiting_on`, `since`, `waiting_error`.
 
 For example:
 
