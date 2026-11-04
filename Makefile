@@ -36,7 +36,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -253,11 +253,58 @@ clean: ## Remove build artifacts
 
 ##@ Agent Skills
 
-skills-update: ## Install missing skills and update existing ones to latest (reads skills-lock.json)
-	bunx skills experimental_install
-	bunx skills update -p -y
-	bun run fmt
-	
+SKILLS_CATALOG ?= https://github.com/marcioaltoe/skills.git
+SKILLS_CATALOG_ORIGIN := https://github.com/marcioaltoe/skills.git
+SKILLS_REF ?=
+
+skills-third-party-bump: ## Pin the vendored catalog skills and Setup Snapshots to one catalog commit (default: its main)
+	@set -eu; export LC_ALL=C GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local; \
+	refuse() { printf 'skills-third-party-bump: %s\n' "$$*" >&2; exit 1; }; \
+	names=$$(jq -er '.skills | to_entries | map(select(.value.source == "marcioaltoe/skills") | .key) | sort | .[]' skills-lock.json) || refuse 'catalog skill set must be non-empty'; \
+	for name in $$names; do case " $(OWNED_SKILLS) " in *" $$name "*) refuse "Roundfix-owned skill $$name must stay out of the catalog lock" ;; esac; done; \
+	folders=$$(for folder in .agents/skills/*/; do [ -d "$$folder" ] || continue; name=$${folder%/}; name=$${name##*/}; case " $(OWNED_SKILLS) " in (*" $$name "*) : ;; (*) printf '%s\n' "$$name" ;; esac; done | sort); \
+	tmp=$$(mktemp -d "$${TMPDIR:-/tmp}/rf-skills.XXXXXX") || refuse 'cannot create temporary directory'; \
+	trap 'rm -rf "$$tmp"' EXIT; trap 'exit 1' HUP INT TERM; \
+	printf '%s\n' "$$names" > "$$tmp/names"; printf '%s\n' "$$folders" > "$$tmp/folders"; \
+	difference=$$(comm -3 "$$tmp/names" "$$tmp/folders" | awk '{print $$1}' | sort); \
+	[ -z "$$difference" ] || refuse "catalog lock and vendored folders differ: $$difference"; \
+	profile=$$(jq -er '.profile | select(type == "string" and length > 0)' docs/agents/setup-context.json) || refuse 'Setup Manifest must name a profile'; \
+	ref='$(SKILLS_REF)'; \
+	if [ -z "$$ref" ]; then ref=$$(git ls-remote "$(SKILLS_CATALOG)" refs/heads/main | awk '{print $$1}'); fi; \
+	printf '%s\n' "$$ref" | LC_ALL=C awk 'NR == 1 && length($$0) == 40 && $$0 !~ /[^0-9a-f]/ { valid = 1 } END { exit !(valid && NR == 1) }' || refuse 'SKILLS_REF must be a full 40-character lowercase commit'; \
+	catalog="$$tmp/catalog"; \
+	git init -q "$$catalog"; \
+	git -C "$$catalog" fetch --depth=1 "$(SKILLS_CATALOG)" "$$ref" >&2 || refuse "catalog does not serve commit $$ref"; \
+	git -C "$$catalog" checkout -q --detach FETCH_HEAD; \
+	[ "$$(git -C "$$catalog" rev-parse HEAD)" = "$$ref" ] || refuse "catalog does not serve commit $$ref"; \
+	git -C "$$catalog" remote add origin "$(SKILLS_CATALOG_ORIGIN)"; \
+	mkdir "$$tmp/home"; \
+	roundfix() { HOME="$$tmp/home" "$$tmp/roundfix" "$$@"; }; \
+	$(GO) build -o "$$tmp/roundfix" ./cmd/roundfix; \
+	roundfix baseline assets sync --source-dir "$$catalog/setups" --format text >&2; \
+	roundfix baseline assets sync --source-dir "$$catalog/setups" --check --format text >&2; \
+	$(GO) build -o "$$tmp/roundfix" ./cmd/roundfix; \
+	set -- baseline skills restore --profile "$$profile"; \
+	for name in $$names; do set -- "$$@" --skill "$$name"; done; \
+	set -- "$$@" --source-dir "$$catalog" --repo . --format text; \
+	status=0; roundfix "$$@" > "$$tmp/preview" || status=$$?; cat "$$tmp/preview" >&2; \
+	[ "$$status" -eq 3 ] || refuse "restore preview exited $$status; expected 3 with a Plan Digest"; \
+	digest=$$(sed -n 's/^Plan Digest: //p' "$$tmp/preview"); \
+	[ -n "$$digest" ] || refuse 'restore preview has no Plan Digest'; \
+	roundfix "$$@" --confirm-plan "$$digest" >&2; \
+	for name in $$names; do \
+		set -- "$$catalog"/skills/*/"$$name"; \
+		[ "$$#" -eq 1 ] && [ -d "$$1" ] && diff -r "$$1" ".agents/skills/$$name" >&2 || refuse ".agents/skills/$$name differs from the catalog at $$ref"; \
+	done; \
+	unpinned=$$(jq -r --arg ref "$$ref" '.skills | to_entries | map(select(.value.source == "marcioaltoe/skills" and .value.ref != $$ref) | .key) | sort | .[]' skills-lock.json); \
+	[ -z "$$unpinned" ] || refuse "not pinned to $$ref: $$unpinned"; \
+	$(MAKE) --no-print-directory -f "$(abspath $(firstword $(MAKEFILE_LIST)))" baseline-digests >&2; \
+	roundfix baseline update --repo . --no-skills --no-history --yes --format text >&2; \
+	roundfix baseline update --repo . --no-skills --no-history --yes --format text > "$$tmp/refresh"; cat "$$tmp/refresh" >&2; \
+	awk '$$0 == "File changes: 0" { current = 1 } END { exit !current }' "$$tmp/refresh" || refuse 'second managed refresh must report File changes: 0'; \
+	set -- $$names; \
+	printf 'skills-third-party-bump: %s catalog skills and every upstream Setup Snapshot pinned to %s\n' "$$#" "$$ref"
+
 skills-check: ## Validate shipped Roundfix skill artifacts
 	$(GO) run $(RUN_FLAGS) $(CMD) skills check
 

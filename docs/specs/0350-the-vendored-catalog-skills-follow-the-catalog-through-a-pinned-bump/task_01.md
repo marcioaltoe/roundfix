@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0350-the-vendored-catalog-skills-follow-the-catalog-through-a-pinned-bump
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -108,3 +108,72 @@ verifiable without the network and without moving any real skill.
 - `_prd.md` → Goals; Core Feature 1; User Experience; Success Metric 1; Success Metric 5
 - `_techspec.md` → API Contracts 1-3; Invariants 2, 4 and 5; Testing Approach; Build Order 1
 - ADR-0360
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, evidence-gate, tech-writer, roundfix, setup-context-driven, systematic-debugging.
+
+Added `skills-third-party-bump` and retired `skills-update`. The target derives
+and validates the catalog set against `OWNED_SKILLS` and the installed folders,
+resolves or accepts one full commit, fetches it into a disposable checkout, and
+composes the asset sync, its check, two builds, confirmed restoration, post-restore
+checks, digest regeneration and two managed refreshes. Go module, checksum and
+toolchain downloads are disabled inside the target; only the catalog resolution
+and fetch may contact the network. Every direct Roundfix invocation uses the
+checkout's temporary empty HOME, and the exit trap removes the checkout.
+
+Acceptance evidence:
+
+- **Default main and writer sequence:**
+  `TestTheSkillsBumpPinsTheCatalogMainCommit` passes against a local fake Git
+  catalog. It asserts the exact stdout line with that catalog's main commit,
+  exactly two builds, sync and check against the fetched `setups`, the manifest's
+  profile, exactly the sorted catalog names, confirmation with the preview's
+  Plan Digest, the `baseline-digests` probe, strict catalog validation and two
+  managed refreshes. The stub verifies an empty temporary HOME and the canonical
+  origin without contacting it. The owned fixture remains unchanged.
+- **Refusals:** `TestTheSkillsBumpRefusesWhatItMustNotPin` passes with six
+  parallel cases. An owned lock entry, branch ref, unavailable commit and folder
+  absent from the lock record no stub call. A differing restored folder and
+  unpinned lock entries stop before any regeneration or managed refresh. Every
+  case checks its diagnostic and temporary-directory cleanup.
+- **Retirement and manifest currency:** the positive fixture also invokes
+  `skills-update`, requires `No rule to make target`, and verifies no additional
+  stub call. The managed refresh regenerated only the two Makefile declaration
+  digests in `docs/agents/setup-context.json`; its second invocation reported
+  `File changes: 0` and verified idempotence.
+
+Focused checks:
+
+- Before implementation, `go test ./internal/verifyselect -run '^TestTheSkillsBump'
+  -count=1 -timeout 2m` failed because the target did not exist.
+- Final focused command:
+  `go test ./internal/verifyselect -run '^(TestTheSkillsBump.*|TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped|TestMakeSharesOneGoBuildCache)$' -count=1 -timeout 2m`
+  exited 0. This covers the two new tests and adjacent existing Makefile tests.
+- Four disposable Makefile mutations were tested through Go overlays with
+  `go test -overlay=<scratch-overlay.json> ./internal/verifyselect -run <affected-test> -count=1 -timeout 2m`.
+  Removing the owned-name check failed `owned_skill_in_lock` on its required
+  diagnostic; removing the folder comparison failed `differing_folder` because
+  the bump accepted it; removing the second build failed the exact call sequence;
+  removing the ref check failed `entry_at_another_ref` because the bump accepted
+  it. All four failures were inspected; no mutation touched the real Makefile.
+- After the last Makefile edit, ran twice:
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`.
+  Both exited 0, reporting respectively `File changes: 1` and `File changes: 0`.
+  HOME was a fresh disposable directory, with GOMODCACHE and GOCACHE captured
+  from `go env` before changing HOME, offline Go settings, and cleanup on exit.
+  Both runs retained the existing nested-carrier warnings for Baseline fixtures.
+- `gofmt` reported no remaining formatting changes; `git diff --check` exited 0.
+
+Scope audit: the only implementation paths are `Makefile`,
+`internal/verifyselect/skills_bump_makefile_test.go` and the generated
+`docs/agents/setup-context.json`, plus this Result. The Daemon's existing
+`in_progress` status was preserved. No real catalog bump, vendored skill edit,
+lock or Setup Snapshot edit, production Go change, other Task/manifest edit,
+commit, push or pull request was performed. Declared Verification and Task
+settlement remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261104T202718Z_36f747a05c5e57d3`
+- Source commit: `799bf3c90771395c9def15a466c2093d21b93359`
