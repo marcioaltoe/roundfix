@@ -27,9 +27,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "744"
 type: fix
 ---
 
 # The baseline update leaves owned skill lock entries unpinned
 
-The bundle install now removes the stale catalog pin from existing installed owned-skill lock entries while preserving external entries and all other owned metadata, reports the change, and leaves the lock untouched on replay. Doctor names pinned or mis-hashed owned entries and one bundle install clears the warning. Required tests, eight semantic sabotage probes and offline external-source comparisons passed; the pre-PR row remains unproven because no Pull Request or Merge-Ready acceptance exists. The offline archive plan (`docs/specs/0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned/qa/evidence/2026-11-04-owned-lock/archive-plan.txt` (not reachable from any branch or tag)) ran with the Run-built binary and all Judge Key Variables plus TYPESAFE_API_KEY unset, reported judge skipped offline and listed its candidates without contacting a judge.
+The bundle install now removes the stale catalog pin from existing installed owned-skill lock entries while preserving external entries and all other owned metadata, reports the change, and leaves the lock untouched on replay. Doctor names pinned or mis-hashed owned entries and one bundle install clears the warning. Required tests, eight semantic sabotage probes and offline external-source comparisons passed; the pre-PR row remains unproven because no Pull Request or Merge-Ready acceptance exists.
