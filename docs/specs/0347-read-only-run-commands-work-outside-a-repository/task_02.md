@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0347-read-only-run-commands-work-outside-a-repository
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -99,3 +99,58 @@ maintainer report of 2026-11-03, adopted as
 
 - `_prd.md` → Goals; Core Feature 3; Success Metric 2; Success Metric 4
 - `_techspec.md` → Current behavior 3; API Contract 3; API Contract 5; Surface Transcript 2; Surface Transcript 3; Invariants 2 and 3; Declared breaks; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, knowledge-workspace, evidence-gate.
+
+Implemented the reader-only loader and switched exactly `runs list`, `runs
+show`, `attach`, `events`, and the bare `runs` browser to it. It uses the same
+load options as the strict loader plus `WorktreeLocationOptional`, emits the
+specified warning once, and propagates configuration and warning-write errors.
+`loadCommandConfig` is byte-identical; repository scoping and `runs` help are
+unchanged. Both command guides now state the any-directory and warning contract.
+
+Focused evidence by acceptance criterion:
+
+- Inside-repository output: before changing production commands,
+  `go test -count=1 -run '^TestReadOnlyRunCommandsKeepTheirOutputInsideARepository$' ./internal/cli`
+  exited 0 (`ok roundfix/internal/cli`, 1.032s). The characterization exercises
+  a resolved Run through show (text and JSON), events, explicit attach, the
+  scoped and all-repository lists, and both browser entry points. Readers
+  outside any repository match inside stdout and stderr exactly; the scoped
+  list contains exactly the resolved Run's row. Browser selection, cockpit,
+  refresh and cancellation use existing seams.
+- Stray `.git` directory and file: before the loader change,
+  `go test -count=1 -run '^TestReadOnlyRunCommandsWarnOnAStrayGitDirectory$' ./internal/cli`
+  exited 1, reproducing exit 2 from every reader. After the change,
+  `go test -count=1 -run '^(TestReadOnlyRunCommands|TestStrayGitDirectoryTranscripts)' ./internal/cli`
+  exited 0 (0.781s). Both marker forms preserve inside-repository stdout and
+  exit codes, with stderr exactly the warning followed by baseline stderr.
+  A hidden-terminal-Run diagnostic proves ordering; the scoped list still
+  reports no Runs for the stray root. Both browsers select the stored Run,
+  return from the cockpit, and cancel with only the warning on stderr.
+- Surface Transcripts 2 and 3: `TestStrayGitDirectoryTranscripts` compares the
+  entire stdout, stderr and exit code in separate named subtests, substituting
+  only the temporary home. The list warns and exits 0; `reconcile` retains
+  its exact refusal and usage line and exits 2, naming the Git root and `.git`.
+- Parallel execution and nearby contracts:
+  `go test -race -count=1 -run '^(TestReadOnlyRunCommands|TestStrayGitDirectoryTranscripts|TestRunRunsListOutsideRepositoryRequiresAll$|TestAttachWithoutRunDatabaseFailsAsCLIError$|TestEventsValidationErrorsEmitNoStdout$)' ./internal/cli`
+  exited 0 (2.815s). This also retains task_03's current outside-repository
+  refusal and the existing missing-store and invalid-events contracts.
+  Every new top-level test starts with `t.Parallel()`; fixtures use temporary
+  homes and existing fake collaborators, without live Agent sessions or network.
+
+`git diff --check` exited 0. The initial changed-path baseline contained only
+this Task file's Daemon-owned status change; it is preserved. No other Task,
+Task Graph, config package, skill, tooling, module or workflow file was edited.
+The selected repository gates, full package suites and declared Verification
+commands are reserved for the Daemon. No commit, push or Pull Request was made.
+
+Behavior Surface Record: the sanctioned recorder is the final implementation
+step after both guide edits; its outcome is recorded below.
+
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 (0.440s).
+The generated diff contains only the two edited guide fingerprints. No guide
+or implementation edit followed regeneration.

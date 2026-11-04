@@ -78,7 +78,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRunReaderCommandConfig(environment, stderr)
 	if err != nil {
 		printRunsListFailure(err, stderr)
 		return exitPreflight

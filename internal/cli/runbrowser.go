@@ -80,7 +80,7 @@ func browserRunListings(ctx context.Context, reader *store.Store) (active []stor
 // opens the machine-wide Run Browser. No repository is required — the
 // browser lists every repository's Runs.
 func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer, environment commandEnvironment) int {
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRunReaderCommandConfig(environment, stderr)
 	if err != nil {
 		printRunsBrowserFailure(err, stderr)
 		return exitPreflight

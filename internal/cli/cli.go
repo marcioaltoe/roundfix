@@ -478,6 +478,26 @@ func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundc
 	return roundconfig.Load(options)
 }
 
+// loadRunReaderCommandConfig keeps worktree-location refusals visible without
+// blocking commands that only read the Run Database.
+func loadRunReaderCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	options.WorktreeLocationOptional = true
+	loaded, err := roundconfig.Load(options)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	if loaded.WorktreeLocationErr != nil {
+		if _, err := fmt.Fprintf(stderr, "roundfix: warning: %v; commands that create a Run Worktree refuse it\n", loaded.WorktreeLocationErr); err != nil {
+			return roundconfig.Loaded{}, fmt.Errorf("write worktree.location warning: %w", err)
+		}
+	}
+	return loaded, nil
+}
+
 func (environment commandEnvironment) resolveWorkDir(operation string) (string, error) {
 	if environment.workDirErr != nil {
 		return "", fmt.Errorf("%s: %w", operation, environment.workDirErr)

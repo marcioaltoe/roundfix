@@ -4,6 +4,11 @@
 roundfix events <run-id> [--follow] [--filter task-status,batch,verification,outcome,agent-selection,usage]
 ```
 
+`events` is a Read-Only Run Command: it runs from any directory. If
+`worktree.location` would be refused there, it prints that refusal once on
+stderr as a warning, naming the detected Git root and the `.git` it found,
+and continues.
+
 Writes only `roundfix-events/v1` JSONL records to stdout; diagnostics go to
 stderr. The public Supervisor categories, in journal cursor order, are
 `task-status`, `batch`, `verification`, `outcome`, `agent-selection`, and `usage`;

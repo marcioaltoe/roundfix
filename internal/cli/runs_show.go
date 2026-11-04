@@ -37,7 +37,7 @@ func runRunsShowCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return fail(fmt.Errorf("runs show requires exactly one Run ID"))
 	}
 	id := fs.Arg(0)
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRunReaderCommandConfig(environment, stderr)
 	if err != nil {
 		return fail(err)
 	}
