@@ -113,7 +113,10 @@ comparisons through the managed refresh preview.
      naming `ai-memory-retrieval` (the skill `go-cli-tui` does not require);
    - restore the five `systematic-debugging` files from the Delivery Base:
      the new contract fails naming `systematic-debugging`, and the managed
-     refresh preview lists it under `differing`;
+     refresh preview lists it under `missing` with the reason that it no
+     longer matches its lock entry (the restored files break its
+     `computedHash`, so the preview reports the hash drift, not a Setup
+     Snapshot Difference);
    - set one catalog entry's `ref` to `main`: the six setup revision and tree
      tests fail on the lock read;
    - restore the five setup snapshots from the Delivery Base: the six setup
