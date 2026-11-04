@@ -79,6 +79,11 @@ same key; it does not append to it. The command runs from the Run Worktree
 root, and Roundfix appends each selected file as its own argument after the
 configured command.
 
+The Format Command covers every QA Report the Daemon commits, the Precondition
+Refusal report included; without `verification.format`, the Daemon commits its
+reports as written, and a repository whose Verification checks the formatting
+of `qa/` files configures it.
+
 The Daemon runs the command at two points: after the mechanical stage and
 before the repository Verification precondition when it has imported a prior
 pass, and immediately before the QA Report commit over the files that commit

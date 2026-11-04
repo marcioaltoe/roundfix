@@ -392,6 +392,15 @@ func (engine *Engine) copyPriorQAPass(ctx context.Context, plan TaskPlan, pass *
 			return "", err
 		}
 	}
+	for _, path := range pass.Files {
+		if !strings.HasPrefix(filepath.Base(path), "qa-report-") || !strings.HasSuffix(path, ".md") {
+			continue
+		}
+		report, err := spec.ReadQAReportFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && report.RowsBlockedPrecondition > 0 {
+			return "precondition refusal: " + path, nil
+		}
+	}
 	findings, err := speccheck.ReportShapeFindings(plan.WorkDir, pass.Report)
 	if err != nil {
 		return "", err
