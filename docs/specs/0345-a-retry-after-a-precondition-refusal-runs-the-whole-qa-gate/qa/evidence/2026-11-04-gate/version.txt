@@ -1,3 +1,0 @@
-roundfix 0.130.1 (b171eb18-dirty, built 2026-11-04 12:12:14 -0300)
-
-exit: 0
