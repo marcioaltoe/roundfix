@@ -101,8 +101,8 @@ links only files it kept.
    row in `rows_blocked_declared`.
 10. MUST perform the glossary check (`docs/agents/domain.md`): record that
     the PRD and TechSpec declare `changes: **Waiting Declaration**`, that
-    `CONTEXT.md` defines it in the `**Term**:` form and names the Backlog
-    and Findings Operational Contracts, and that the Task commit range
+    `CONTEXT.md` defines it in the `**Term**:` form and names the Operational
+    Contract blocks for backlog and findings, and that the Task commit range
     changes no other glossary entry.
 11. MUST verify from the repository history:
     - task_01's changed files stay within its declarations or its `##

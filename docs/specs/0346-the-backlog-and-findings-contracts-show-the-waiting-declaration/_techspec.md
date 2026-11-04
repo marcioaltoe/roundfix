@@ -226,7 +226,7 @@ None outside the repository. Adopters receive the change through their own
 
 ## Glossary
 
-- changes: **Waiting Declaration** — the entry names the Baseline's Backlog and Findings Operational Contracts that show it commented
+- changes: **Waiting Declaration** — the entry names the Operational Contract blocks the Baseline writes for backlog and findings, which show it commented
 
 ## Decisions
 
