@@ -1,0 +1,277 @@
+PASS audited HEAD matches candidate
+
+PASS Delivery Base is merge base with main
+
+PASS existing test/helper bytes retained as exact prefix: internal/daemon/qa_prior_pass_test.go
+
+PASS existing test/helper bytes retained as exact prefix: internal/daemon/qa_prior_pass_skip_test.go
+
+PASS existing test/helper bytes retained as exact prefix: internal/daemon/qa_two_pass_carry_test.go
+
+PASS existing test/helper bytes retained as exact prefix: internal/daemon/qa_format_test.go
+
+PASS production diff is only the refusal guard inside copyPriorQAPass
+
+diff --git a/internal/daemon/qa_prior_pass.go b/internal/daemon/qa_prior_pass.go
+index 0fb066bc..b9aa1fa4 100644
+--- a/internal/daemon/qa_prior_pass.go
++++ b/internal/daemon/qa_prior_pass.go
+@@ -392,6 +392,15 @@ func (engine *Engine) copyPriorQAPass(ctx context.Context, plan TaskPlan, pass *
+ 			return "", err
+ 		}
+ 	}
++	for _, path := range pass.Files {
++		if !strings.HasPrefix(filepath.Base(path), "qa-report-") || !strings.HasSuffix(path, ".md") {
++			continue
++		}
++		report, err := spec.ReadQAReportFile(filepath.Join(root, filepath.FromSlash(path)))
++		if err == nil && report.RowsBlockedPrecondition > 0 {
++			return "precondition refusal: " + path, nil
++		}
++	}
+ 	findings, err := speccheck.ReportShapeFindings(plan.WorkDir, pass.Report)
+ 	if err != nil {
+ 		return "", err
+
+
+PASS carryforward.go unchanged throughout Task range
+
+PASS carry requires matching Spec and nonempty Roundfix-Task trailer, so QA commits excluded
+
+func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, []string, error) {
+	if strings.TrimSpace(run.HeadSHA) == "" {
+		return nil, nil, fmt.Errorf("Run %q has no recorded starting commit", run.ID)
+	}
+	output, err := reconcileGitText(ctx, run.WorkDir, "rev-list", "--reverse", run.HeadSHA+"..HEAD")
+	if err != nil {
+		return nil, nil, fmt.Errorf("list settlement commits for Run %q: %w", run.ID, err)
+	}
+	commits := make(map[string][]string)
+	integrationOrder := make([]string, 0)
+	for _, commit := range strings.Fields(output) {
+		message, err := reconcileGitText(ctx, run.WorkDir, "show", "-s", "--format=%B", commit)
+		if err != nil {
+			return nil, nil, fmt.Errorf("read Run %q commit %s: %w", run.ID, commit, err)
+		}
+		if gitTrailerValue(message, "Roundfix-Spec") != run.SpecSlug {
+			continue
+		}
+		taskID := gitTrailerValue(message, "Roundfix-Task")
+		if taskID == "" {
+			continue
+		}
+		if len(commits[taskID]) == 0 {
+			integrationOrder = append(integrationOrder, taskID)
+		}
+		commits[taskID] = append(commits[taskID], commit)
+	}
+	return commits, integrationOrder, nil
+}
+
+
+Task task_01 commit 6e28c54f064b9845c153eed36a8b3d8259d6bdb0
+docs/specs/0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate/task_01.md
+internal/daemon/qa_format_test.go
+internal/daemon/qa_prior_pass.go
+internal/daemon/qa_prior_pass_test.go
+
+PASS all task_01 actual commit paths declared; own settlement task file accounted for
+
+PASS declaration confirmed: internal/daemon/qa_format_test.go
+
+PASS declaration confirmed: internal/daemon/qa_prior_pass.go
+
+PASS declaration confirmed: internal/daemon/qa_prior_pass_test.go
+
+Task task_02 commit b171eb183bc59a8ed7898062eb2760cbe100861c
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+CONTEXT.md
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md
+docs/references/behavior-surfaces.json
+docs/specs/0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate/task_02.md
+docs/user-guide/configuration.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/testdata/owned-skill-versions.json
+
+PASS all task_02 actual commit paths declared; own settlement task file accounted for
+
+PASS declaration confirmed: .agents/skills/roundfix/SKILL.md
+
+PASS declaration confirmed: .agents/skills/roundfix/references/implement.md
+
+PASS declaration confirmed: CONTEXT.md
+
+PASS declaration confirmed: docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md
+
+PASS declaration confirmed: docs/references/behavior-surfaces.json
+
+PASS declaration confirmed: docs/user-guide/configuration.md
+
+PASS declaration confirmed: skills/roundfix/SKILL.md
+
+PASS declaration confirmed: skills/roundfix/references/implement.md
+
+PASS declaration confirmed: skills/testdata/owned-skill-versions.json
+
+PASS no forbidden path: docs/specs/0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate/task_01.md
+
+PASS no forbidden path: internal/daemon/qa_format_test.go
+
+PASS no forbidden path: internal/daemon/qa_prior_pass.go
+
+PASS no forbidden path: internal/daemon/qa_prior_pass_test.go
+
+PASS no forbidden path: .agents/skills/roundfix/SKILL.md
+
+PASS no forbidden path: .agents/skills/roundfix/references/implement.md
+
+PASS no forbidden path: CONTEXT.md
+
+PASS no forbidden path: docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md
+
+PASS no forbidden path: docs/references/behavior-surfaces.json
+
+PASS no forbidden path: docs/specs/0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate/task_02.md
+
+PASS no forbidden path: docs/user-guide/configuration.md
+
+PASS no forbidden path: skills/roundfix/SKILL.md
+
+PASS no forbidden path: skills/roundfix/references/implement.md
+
+PASS no forbidden path: skills/testdata/owned-skill-versions.json
+
+PASS changed Governed Path authorized at Delivery Base: .agents/skills/roundfix/SKILL.md
+
+PASS changed Governed Path authorized at Delivery Base: .agents/skills/roundfix/references/implement.md
+
+PASS changed Governed Path authorized at Delivery Base: skills/roundfix/SKILL.md
+
+PASS authority approved before both Task commits; seeded mechanical audit names task_02
+
+PASS QA settlement bytes unchanged: .agents/skills/roundfix/SKILL.md
+
+PASS QA settlement bytes unchanged: skills/roundfix/SKILL.md
+
+PASS no tracked delta after tests
+
+PASS only declared glossary entries changed: ['Precondition Refusal', 'QA Report Import']
+
+PASS glossary defines new entry and revised exclusion
+
+PASS documented: .agents/skills/roundfix/references/implement.md: the Precondition Refusal report included
+
+PASS documented: .agents/skills/roundfix/references/implement.md: never imports a Precondition Refusal
+
+PASS documented: .agents/skills/roundfix/references/implement.md: precondition refusal: <path>
+
+PASS documented: .agents/skills/roundfix/references/implement.md: a pass with no previous report
+
+PASS documented: .agents/skills/roundfix/references/implement.md: commit already in the Run's history
+
+PASS documented: .agents/skills/roundfix/references/implement.md: one no recorded Run Branch holds
+
+PASS documented: .agents/skills/roundfix/references/implement.md: a Task commit or another Spec's commit
+
+PASS documented: .agents/skills/roundfix/references/implement.md: report not newer than the newest one in the worktree
+
+PASS documented: .agents/skills/roundfix/references/implement.md: dated after today
+
+PASS documented: .agents/skills/roundfix/references/implement.md: shape detector refuses
+
+PASS documented: .agents/skills/roundfix/references/implement.md: path that differs from an existing file
+
+PASS documented: .agents/skills/roundfix/references/implement.md: Compiled-source evidence files are skipped one by one
+
+PASS documented: .agents/skills/roundfix/references/implement.md: destructive Git operation
+
+PASS documented: .agents/skills/roundfix/references/implement.md: maintainer's authority
+
+PASS documented: .agents/skills/roundfix/references/implement.md: a refusal never needs it
+
+PASS documented: skills/roundfix/references/implement.md: the Precondition Refusal report included
+
+PASS documented: skills/roundfix/references/implement.md: never imports a Precondition Refusal
+
+PASS documented: skills/roundfix/references/implement.md: precondition refusal: <path>
+
+PASS documented: skills/roundfix/references/implement.md: a pass with no previous report
+
+PASS documented: skills/roundfix/references/implement.md: commit already in the Run's history
+
+PASS documented: skills/roundfix/references/implement.md: one no recorded Run Branch holds
+
+PASS documented: skills/roundfix/references/implement.md: a Task commit or another Spec's commit
+
+PASS documented: skills/roundfix/references/implement.md: report not newer than the newest one in the worktree
+
+PASS documented: skills/roundfix/references/implement.md: dated after today
+
+PASS documented: skills/roundfix/references/implement.md: shape detector refuses
+
+PASS documented: skills/roundfix/references/implement.md: path that differs from an existing file
+
+PASS documented: skills/roundfix/references/implement.md: Compiled-source evidence files are skipped one by one
+
+PASS documented: skills/roundfix/references/implement.md: destructive Git operation
+
+PASS documented: skills/roundfix/references/implement.md: maintainer's authority
+
+PASS documented: skills/roundfix/references/implement.md: a refusal never needs it
+
+PASS canonical/mirror equal: references/implement.md
+
+PASS canonical/mirror equal: SKILL.md
+
+diff --git a/docs/user-guide/configuration.md b/docs/user-guide/configuration.md
+index 5131d18f..fb19b4e8 100644
+--- a/docs/user-guide/configuration.md
++++ b/docs/user-guide/configuration.md
+@@ -79,6 +79,11 @@ same key; it does not append to it. The command runs from the Run Worktree
+ root, and Roundfix appends each selected file as its own argument after the
+ configured command.
+ 
++The Format Command covers every QA Report the Daemon commits, the Precondition
++Refusal report included; without `verification.format`, the Daemon commits its
++reports as written, and a repository whose Verification checks the formatting
++of `qa/` files configures it.
++
+ The Daemon runs the command at two points: after the mechanical stage and
+ before the repository Verification precondition when it has imported a prior
+ pass, and immediately before the QA Report commit over the files that commit
+
+
+PASS configuration guide carries required format sentence
+
+PASS ADR-0355 accepted
+
+COMMAND: rg -n -i precondition refusal|previous report|never imports docs/user-guide/ docs/agents/ CONTEXT.md docs/adr/ .agents/skills/roundfix/ skills/roundfix/
+CONTEXT.md:317:The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, `auditor_staleness`, and the public-row binary's `--version` line as `user_flow_binary`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. The auditor fields are Daemon-owned: the gate keeps the seeded `auditing_binary` and `auditor_staleness` values. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. A report the Daemon closes without an Agent turn, a Precondition Refusal or a blocking mechanical result, records the audited commit as `build`, as the gate's full report does; the pending report the Daemon seeds for the gate carries none. The pre-PR pull request row, recorded as `blocked (environment: no open Pull Request)` with the pull request row named in its provenance, never decides a qualifying partial and needs no Unreachable Acceptance declaration. A `pending` verdict is never accepted, a report that records no QA row is refused, and a report whose front matter is empty or duplicated is unreadable and refused; only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing. A QA Report settles only when every local link resolves in the committed tree. ([ADR-0351](docs/adr/0351-a-qa-report-settles-only-when-its-local-links-resolve-in-the-committed-tree.md))
+CONTEXT.md:321:The Daemon step before a pass builds its matrix that copies byte for byte the newest QA Report commit the Daemon produced for the Spec that a recorded Run Branch holds and the Run's history lacks, failed passes included, as the pass's previous report; a pass always runs the whole gate, and only rows whose Evidence Snapshot proves their inputs unmoved carry. It never imports a Precondition Refusal and refuses with `precondition refusal: <path>`, nor does it bring in a commit already in the Run's history, one no recorded Run Branch holds, a Task commit or another Spec's commit, a report not newer than the newest one in the worktree, one dated after today, one the shape detector refuses, a path that differs from an existing file, or compiled-source evidence files, which are skipped one by one ([ADR-0194](docs/adr/0194-the-daemon-records-what-a-qa-row-observed-and-hands-a-failed-pass-to-the-next.md), [ADR-0355](docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md)).
+CONTEXT.md:332:**Precondition Refusal**:
+CONTEXT.md:334:A later Run never imports it as its previous report. In other words, a later
+CONTEXT.md:335:Run never imports it.
+skills/roundfix/references/implement.md:197:   Precondition Refusal report included; without `verification.format`, the
+skills/roundfix/references/implement.md:204:   pass's previous report. A pass always runs the whole gate, and an imported
+skills/roundfix/references/implement.md:208:   The import never imports a Precondition Refusal and refuses with
+skills/roundfix/references/implement.md:209:   `precondition refusal: <path>`. It never brings in a commit already in the
+skills/roundfix/references/implement.md:216:   To start a pass with no previous report, after the earlier Run's Tasks are
+.agents/skills/roundfix/references/implement.md:197:   Precondition Refusal report included; without `verification.format`, the
+.agents/skills/roundfix/references/implement.md:204:   pass's previous report. A pass always runs the whole gate, and an imported
+.agents/skills/roundfix/references/implement.md:208:   The import never imports a Precondition Refusal and refuses with
+.agents/skills/roundfix/references/implement.md:209:   `precondition refusal: <path>`. It never brings in a commit already in the
+.agents/skills/roundfix/references/implement.md:216:   To start a pass with no previous report, after the earlier Run's Tasks are
+docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md:50:keeps its previous report bytes.
+docs/adr/0195-rows-that-read-the-gate-or-the-commits-are-observed-on-every-pass.md:24:Every row of the previous report now receives a recorded carry disposition in
+docs/adr/0194-the-daemon-records-what-a-qa-row-observed-and-hands-a-failed-pass-to-the-next.md:26:Branch is the next pass's previous report.
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md:9:# A precondition refusal is never imported as a prior QA pass
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md:12:pass becomes the next pass's previous report. ADR-0249 rejected not importing
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md:14:which configures no Format Command, retried after a precondition refusal; the
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md:20:A candidate whose added or modified reports record a Precondition Refusal is
+docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md:32:  previous report rather than selecting an earlier report whose status is no
+
+
+Reviewed hits: ADR-0355 introduction is the historical defect, its considered option is explicitly rejected; ADR-0194 retains generic failed-pass import, narrowed by ADR-0355; live operative statements exclude Precondition Refusals. No live current instruction says they are imported.
+exit: 0

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

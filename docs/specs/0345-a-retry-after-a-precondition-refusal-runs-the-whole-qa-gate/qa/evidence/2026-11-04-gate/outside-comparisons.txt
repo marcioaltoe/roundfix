@@ -1,0 +1,15 @@
+Outside-evidence comparisons, offline; no external repository or network accessed.
+
+Pantheon source: ai-memory message 01a1a32d-4113-7043-9940-998aca690524 from gesttione-solutions-pantheon, dated 2026-11-03. Adopted verbatim reference: references/2026-11-03-pantheon-retry-reimports-a-precondition-refusal.md.
+External Run 2: refusal 73d704a recommitted as a2c3e68; no Agent session; imported report fails oxfmt --check on table delimiters.
+Task_01 starting characterization: imported outcome, zero fake-Agent prompts, verdict fail, byte-identical refusal included in the next QA commit. Its custom verifier tests the same delimiter trigger, avoiding dependency on Pantheon's formatter.
+Fresh negative confirmation: sabotage-removed.txt removes exactly the new guard. All refusal cases import true; retry gets zero Agent prompts and verdict fail. Fixed confirmation: daemon.txt runs the matching TaskCycle, passes, accepts its own report, prompts the fake Agent once, runs the real verifier and checks no refusal path remains in the worktree or new QA commit.
+Conclusion: gate resolves the externally observed failure shape. Limitation: hermetic operational fixture, not a live rerun of Pantheon; the independently authored incident remains the external source.
+
+Bazel source: user manual, Commands and Options, --cache_test_results, https://bazel.build/docs/user-manual; consulted by planning on 2026-11-04 and quoted in _prd.md Acceptance evidence. This is the access date, not an asserted publication date. Gate compares the supplied passage offline; network is prohibited.
+Passage includes failed tests among conditions for default auto reruns.
+Comparison: retry executes the full precondition and gate rather than using a refusal as reusable acceptance evidence. A failed matrix report still imports as evidence, and a pass runs the whole gate with only unmoved-input rows carrying. This is a limited rerun analogy, not a shared cache policy claim.
+Fresh behavior: daemon.txt passes refusal/retry and failed-matrix import; sabotage-all-fail.txt rejects an overbroad interpretation by failing import and carry canaries.
+Conclusion: refusing reuse of a precondition failure agrees with the supplied passage while retaining the separate failed-pass evidence contract. No live Bazel execution claimed.
+
+Source-shape and comparison assertions passed after normalizing prose whitespace; exit: 0.

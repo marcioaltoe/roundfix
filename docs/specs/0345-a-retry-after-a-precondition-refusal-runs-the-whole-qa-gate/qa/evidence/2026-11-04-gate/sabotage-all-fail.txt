@@ -1,0 +1,69 @@
+Fresh git archive of b171eb183bc59a8ed7898062eb2760cbe100861c; git init and git add ., no commit. Mutation before test start. GOPROXY/GOSUMDB disabled.
+--- internal/daemon/qa_prior_pass.go before
++++ internal/daemon/qa_prior_pass.go mutated
+@@ -397,7 +397,7 @@
+ 			continue
+ 		}
+ 		report, err := spec.ReadQAReportFile(filepath.Join(root, filepath.FromSlash(path)))
+-		if err == nil && report.RowsBlockedPrecondition > 0 {
++		if err == nil && (report.RowsBlockedPrecondition > 0 || report.Verdict == spec.VerdictFail) {
+ 			return "precondition refusal: " + path, nil
+ 		}
+ 	}
+
+COMMAND: go test -count=1 -timeout 3m -v -run ^(TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte|TestQAGateCarriesARowFromAnUnintegratedFailedPass)$ ./internal/daemon
+=== RUN   TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte
+    qa_prior_pass_test.go:121: import = {Commit: Head: Report: Files:[] Skipped:[]} false <nil>
+--- FAIL: TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte (0.27s)
+=== RUN   TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== PAUSE TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== CONT  TestQAGateCarriesARowFromAnUnintegratedFailedPass
+    qa_prior_pass_test.go:298: second seed lacks carry dispositions:
+        ---
+        verdict: pending
+        auditing_binary: "0.130.1"
+        auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"
+        rows_blocked_environment: 0
+        rows_blocked_finding: 0
+        rows_blocked_declared: 0
+        ---
+        
+        # QA Report
+        
+        ## Performed repairs
+        
+        None.
+        
+        ## Assigned repair failures
+        
+        None.
+        
+        ## Authorization audit inputs
+        
+        None.
+        
+        ## Mechanical findings
+        
+        None.
+        
+        ## Results
+        
+        | # | Status | Provenance |
+        | - | --- | --- |
+        
+        ## Mechanical skips
+        
+        | Detector | Missing artifact |
+        | --- | --- |
+        | authorization bounded paths | Task commits of earlier Runs |
+        | authorization bounded paths | tooling authorization |
+        | consequent-fix commit order | consequent-fix declaration |
+        | QA Report structure | QA Report |
+        | QA evidence paths | QA Report |
+--- FAIL: TestQAGateCarriesARowFromAnUnintegratedFailedPass (0.43s)
+FAIL
+suiteguard: guard cost: measured 2914 paths; fingerprint took 144.149458ms before and 134.102292ms after
+FAIL	roundfix/internal/daemon	1.310s
+FAIL
+
+exit: 1

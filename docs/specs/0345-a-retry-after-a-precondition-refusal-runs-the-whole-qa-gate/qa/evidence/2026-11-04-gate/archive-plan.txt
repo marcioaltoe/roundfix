@@ -1,0 +1,12 @@
+COMMAND: ./bin/roundfix archive 0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate --plan --offline
+STDOUT:
+archive plan for 0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate: removes 21 file(s) (148623 bytes) and writes docs/history/specs/0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-04.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 11 file(s) (56518 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-03-pantheon-retry-reimports-a-precondition-refusal.md 2360 bytes: no advice (offline)
+promote with: roundfix archive 0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate --promote <path>
+
+STDERR:
+
+exit: 0

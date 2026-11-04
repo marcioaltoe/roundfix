@@ -1,0 +1,39 @@
+Fresh git archive of b171eb183bc59a8ed7898062eb2760cbe100861c; git init and git add ., no commit. Mutation before test start. GOPROXY/GOSUMDB disabled.
+--- internal/daemon/qa_prior_pass.go before
++++ internal/daemon/qa_prior_pass.go mutated
+@@ -393,6 +393,9 @@
+ 		}
+ 	}
+ 	for _, path := range pass.Files {
++		if path != pass.Report {
++			continue
++		}
+ 		if !strings.HasPrefix(filepath.Base(path), "qa-report-") || !strings.HasSuffix(path, ".md") {
+ 			continue
+ 		}
+
+COMMAND: go test -count=1 -timeout 3m -v -run ^TestPriorQAPassRefusesAPreconditionRefusal$ ./internal/daemon
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== NAME  TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+    qa_prior_pass_test.go:427: refusal import = true <nil>
+--- FAIL: TestPriorQAPassRefusesAPreconditionRefusal (0.00s)
+    --- PASS: TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal (0.24s)
+    --- PASS: TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal (0.25s)
+    --- FAIL: TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report (0.25s)
+FAIL
+suiteguard: guard cost: measured 2914 paths; fingerprint took 148.618208ms before and 135.725333ms after
+FAIL	roundfix/internal/daemon	0.876s
+FAIL
+
+exit: 1

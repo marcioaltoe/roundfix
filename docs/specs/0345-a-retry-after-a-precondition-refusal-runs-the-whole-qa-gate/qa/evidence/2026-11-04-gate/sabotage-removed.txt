@@ -1,0 +1,60 @@
+Fresh git archive of b171eb183bc59a8ed7898062eb2760cbe100861c; git init and git add ., no commit. Mutation before test start. GOPROXY/GOSUMDB disabled.
+--- internal/daemon/qa_prior_pass.go before
++++ internal/daemon/qa_prior_pass.go mutated
+@@ -392,15 +392,6 @@
+ 			return "", err
+ 		}
+ 	}
+-	for _, path := range pass.Files {
+-		if !strings.HasPrefix(filepath.Base(path), "qa-report-") || !strings.HasSuffix(path, ".md") {
+-			continue
+-		}
+-		report, err := spec.ReadQAReportFile(filepath.Join(root, filepath.FromSlash(path)))
+-		if err == nil && report.RowsBlockedPrecondition > 0 {
+-			return "precondition refusal: " + path, nil
+-		}
+-	}
+ 	findings, err := speccheck.ReportShapeFindings(plan.WorkDir, pass.Report)
+ 	if err != nil {
+ 		return "", err
+
+COMMAND: go test -count=1 -timeout 3m -v -run ^(TestPriorQAPassRefusesAPreconditionRefusal|TestARetryAfterAPreconditionRefusalRunsTheWholeGate)$ ./internal/daemon
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal
+=== RUN   TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+=== PAUSE TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal
+=== CONT  TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== NAME  TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+    qa_prior_pass_test.go:427: refusal import = true <nil>
+=== NAME  TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+    qa_prior_pass_test.go:427: refusal import = true <nil>
+=== NAME  TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+    qa_prior_pass_test.go:427: refusal import = true <nil>
+--- FAIL: TestPriorQAPassRefusesAPreconditionRefusal (0.00s)
+    --- FAIL: TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal (0.26s)
+    --- FAIL: TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal (0.26s)
+    --- FAIL: TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report (0.27s)
+=== NAME  TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+    qa_prior_pass_test.go:464: prior_report event = map[commit:95a6b08c6caa32439c1d599830183145332d4e16 files:[docs/specs/0001-sample-feature/qa/evidence/qa-report-2026-01-01-01.md.bin docs/specs/0001-sample-feature/qa/qa-report-2026-01-01-01.md] outcome:imported phase:prior_report reason: report:docs/specs/0001-sample-feature/qa/qa-report-2026-01-01-01.md skipped:[]]
+    qa_prior_pass_test.go:467: Agent prompts = 0, want 1; verdict = fail; progress:
+        Verification failed (attempt 1); diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestARetryAfterAPreconditionRefusalRunsTheWholeGate1322676488/003/artifacts/runs/run_20261104T151753Z_89ead18ae0790691/verification/batch-001-attempt-1.log
+        QA mechanical stage blocked Spec 0001-sample-feature with 0 finding(s).
+        QA verdict: fail
+        QA Report commit created: docs: qa report for 0001-sample-feature (fail)
+--- FAIL: TestARetryAfterAPreconditionRefusalRunsTheWholeGate (0.42s)
+FAIL
+suiteguard: guard cost: measured 2914 paths; fingerprint took 147.317416ms before and 134.6035ms after
+FAIL	roundfix/internal/daemon	1.109s
+FAIL
+
+exit: 1

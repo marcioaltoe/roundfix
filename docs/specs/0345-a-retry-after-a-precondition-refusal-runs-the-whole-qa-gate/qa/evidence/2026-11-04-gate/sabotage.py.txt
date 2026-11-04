@@ -1,0 +1,40 @@
+import os,sys,subprocess,pathlib,tempfile,tarfile,io,difflib
+root=pathlib.Path.cwd();mode=sys.argv[1]
+env=os.environ.copy()
+for k in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']:env.pop(k,None)
+env.update(GOPROXY='off',GOSUMDB='off')
+with tempfile.TemporaryDirectory(prefix='qa345-'+mode+'-') as tmp:
+ d=pathlib.Path(tmp)
+ archive=subprocess.run(['git','archive','b171eb183bc59a8ed7898062eb2760cbe100861c'],capture_output=True,check=True).stdout
+ with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(d,filter='data')
+ # Initialize and stage the extracted baseline for suiteguard; no commit is created.
+ for args in [['git','init','-q'],['git','add','.']]:subprocess.run(args,cwd=d,check=True,capture_output=True)
+ f=d/'internal/daemon/qa_prior_pass.go';original=f.read_text();modified=original
+ if mode=='removed':
+  start=modified.index('\n\tfor _, path := range pass.Files {\n\t\tif !strings.HasPrefix(filepath.Base(path), "qa-report-")');end=modified.index('\n\tfindings, err := speccheck.ReportShapeFindings',start);modified=modified[:start]+modified[end:]
+  selection='^(TestPriorQAPassRefusesAPreconditionRefusal|TestARetryAfterAPreconditionRefusalRunsTheWholeGate)$'
+  expected=['TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal','TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal','TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report','TestARetryAfterAPreconditionRefusalRunsTheWholeGate'];diag='Agent prompts = 0, want 1'
+ elif mode=='newest-only':
+  needle='\n\tfor _, path := range pass.Files {\n\t\tif !strings.HasPrefix(filepath.Base(path), "qa-report-")';replacement='\n\tfor _, path := range pass.Files {\n\t\tif path != pass.Report {\n\t\t\tcontinue\n\t\t}\n\t\tif !strings.HasPrefix(filepath.Base(path), "qa-report-")';assert modified.count(needle)==1;modified=modified.replace(needle,replacement)
+  selection='^TestPriorQAPassRefusesAPreconditionRefusal$';expected=['TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report'];diag='refusal import = true'
+ elif mode=='all-fail':
+  needle='if err == nil && report.RowsBlockedPrecondition > 0 {';assert modified.count(needle)==1;modified=modified.replace(needle,'if err == nil && (report.RowsBlockedPrecondition > 0 || report.Verdict == spec.VerdictFail) {')
+  selection='^(TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte|TestQAGateCarriesARowFromAnUnintegratedFailedPass)$';expected=['TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte','TestQAGateCarriesARowFromAnUnintegratedFailedPass'];diag=''
+ elif mode=='skip-refusal-format':
+  f=d/'internal/daemon/qa_format.go';original=f.read_text();needle='func (engine *Engine) formatQADirectory(ctx context.Context, plan TaskPlan, ordinal int, stage string, paths []string, verdict string) error {';assert original.count(needle)==1;modified=original.replace(needle,needle+'\n\tif report, err := spec.ReadQAReport(plan.Spec.Dir); err == nil && report.RowsBlockedPrecondition > 0 {\n\t\treturn nil\n\t}')
+  selection='^TestQAFormatFormatsAPreconditionRefusalReport$';expected=['TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs'];diag="committed refusal lacks the formatter's bytes"
+ else:raise ValueError(mode)
+ f.write_text(modified)
+ diff=''.join(difflib.unified_diff(original.splitlines(True),modified.splitlines(True),fromfile=str(f.relative_to(d))+' before',tofile=str(f.relative_to(d))+' mutated'))
+ cmd=['go','test','-count=1','-timeout','3m','-v','-run',selection,'./internal/daemon']
+ p=subprocess.run(cmd,cwd=d,env=env,text=True,capture_output=True)
+ out=p.stdout+p.stderr
+ pathlib.Path('/private/tmp/qa345-sabotage-'+mode+'.txt').write_text('Fresh git archive of b171eb183bc59a8ed7898062eb2760cbe100861c; git init and git add ., no commit. Mutation before test start. GOPROXY/GOSUMDB disabled.\n'+diff+'\nCOMMAND: '+' '.join(cmd)+'\n'+out+'\nexit: '+str(p.returncode)+'\n')
+ print('mutation:',mode,'test exit:',p.returncode)
+ print('\n'.join(x for x in out.splitlines() if 'FAIL' in x or 'PASS:' in x or '.go:' in x))
+ assert p.returncode==1,'expected test assertion failure, not success or infrastructure failure'
+ for name in expected:assert '--- FAIL: '+name+' ' in out,'missing expected failure: '+name
+ if diag:assert diag in out,'missing behavior diagnostic: '+diag
+ if mode=='newest-only':
+  for name in ['repository_Verification_refusal','strict_Spec_check_refusal']:assert '--- PASS: TestPriorQAPassRefusesAPreconditionRefusal/'+name+' ' in out,'single-refusal canary failed'
+ print('Verified every required named failure and case; temporary copy removed at exit.')

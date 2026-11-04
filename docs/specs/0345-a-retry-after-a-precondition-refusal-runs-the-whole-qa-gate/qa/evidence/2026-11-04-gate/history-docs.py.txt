@@ -1,0 +1,61 @@
+from pathlib import Path
+import subprocess,re,hashlib,json,shutil
+root=Path.cwd();slug='0345-a-retry-after-a-precondition-refusal-runs-the-whole-qa-gate';spec=root/'docs/specs'/slug
+base='66ac68e37449751a707f3cd8babe4c537a335741';head='b171eb183bc59a8ed7898062eb2760cbe100861c'
+log=[]
+def git(*a):
+ p=subprocess.run(['git',*a],text=True,capture_output=True,check=True);return p.stdout
+def check(value,label):
+ log.append(('PASS ' if value else 'FAIL ')+label)
+ if not value:raise AssertionError(label)
+check(git('rev-parse','HEAD').strip()==head,'audited HEAD matches candidate')
+check(git('merge-base','HEAD','main').strip()==base,'Delivery Base is merge base with main')
+for f in ['internal/daemon/qa_prior_pass_test.go','internal/daemon/qa_prior_pass_skip_test.go','internal/daemon/qa_two_pass_carry_test.go','internal/daemon/qa_format_test.go']:
+ old=git('show',base+':'+f);new=(root/f).read_text();check(new.startswith(old),'existing test/helper bytes retained as exact prefix: '+f)
+f='internal/daemon/qa_prior_pass.go';old=git('show',base+':'+f);new=(root/f).read_text();start=new.index('\n\tfor _, path := range pass.Files {\n\t\tif !strings.HasPrefix(filepath.Base(path), "qa-report-")');end=new.index('\n\tfindings, err := speccheck.ReportShapeFindings',start)
+check(new[:start]+new[end:]==old,'production diff is only the refusal guard inside copyPriorQAPass')
+log.append(git('diff','--unified=3',base+'..'+head,'--',f))
+f='internal/cli/carryforward.go';check(git('diff',base+'..'+head,'--',f)=='','carryforward.go unchanged throughout Task range');text=(root/f).read_text();func=text[text.index('func carryForwardTaskCommits('):text.index('\nfunc gitTrailerValue(')]
+check('gitTrailerValue(message, "Roundfix-Spec") != run.SpecSlug' in func and 'gitTrailerValue(message, "Roundfix-Task")' in func and 'if taskID == "" {\n\t\t\tcontinue' in func,'carry requires matching Spec and nonempty Roundfix-Task trailer, so QA commits excluded');log.append(func)
+commits=git('rev-list','--reverse',base+'..'+head).split();allowed={
+ 'task_01':{'internal/daemon/qa_prior_pass.go','internal/daemon/qa_prior_pass_test.go','internal/daemon/qa_format_test.go','internal/daemon/qa_prior_pass_skip_test.go','internal/daemon/qa_two_pass_carry_test.go','internal/daemon/task_engine_test.go'},
+ 'task_02':{'.agents/skills/roundfix/references/implement.md','skills/roundfix/references/implement.md','.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md','skills/testdata/owned-skill-versions.json','docs/user-guide/configuration.md','docs/references/behavior-surfaces.json','CONTEXT.md','docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md'}}
+changed=[]
+for c in commits:
+ msg=git('show','-s','--format=%B',c);task=re.search(r'^Roundfix-Task: (\S+)',msg,re.M).group(1)
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines();changed+=paths
+ log.append('Task '+task+' commit '+c+'\n'+'\n'.join(paths))
+ # Daemon-owned settlement status/Result in its own task file is not implementation scope.
+ check(set(paths)<=(allowed[task]|{'docs/specs/'+slug+'/'+task+'.md'}),'all '+task+' actual commit paths declared; own settlement task file accounted for')
+ for path in paths:
+  if path in allowed[task]:check('`'+path+'`' in (spec/(task+'.md')).read_text(),'declaration confirmed: '+path)
+for path in changed:
+ check(path in (set().union(*allowed.values())|{'docs/specs/'+slug+'/task_01.md','docs/specs/'+slug+'/task_02.md'}),'no forbidden path: '+path)
+auth=git('show',base+':docs/specs/'+slug+'/_authorization.md')
+for path in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/implement.md','skills/roundfix/SKILL.md']:check('  - '+path+'\n' in auth,'changed Governed Path authorized at Delivery Base: '+path)
+check('status: approved' in auth,'authority approved before both Task commits; seeded mechanical audit names task_02')
+for f in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ def settlement(t):
+  x=t.split('### QA settlement\n',1)[1];return re.split(r'\n#{1,3} ',x,1)[0]
+ check(settlement(git('show',base+':'+f))==settlement((root/f).read_text()),'QA settlement bytes unchanged: '+f)
+check(git('diff','--name-only',head).strip()=='','no tracked delta after tests')
+# Glossary: compare each entry's complete bytes rather than just entry names.
+def entries(text):
+ m=list(re.finditer(r'^\*\*([^*]+)\*\*:',text,re.M));return {a.group(1):text[a.start():m[i+1].start() if i+1<len(m) else len(text)] for i,a in enumerate(m)}
+a=entries(git('show',base+':CONTEXT.md'));b=entries((root/'CONTEXT.md').read_text());different={k for k in a.keys()|b.keys() if a.get(k)!=b.get(k)}
+check(different=={'QA Report Import','Precondition Refusal'},'only declared glossary entries changed: '+str(sorted(different)))
+check('_Avoid_:' in b['QA Report Import'] and 'a later\nRun never imports it' in b['Precondition Refusal'],'glossary defines new entry and revised exclusion')
+for f in ['.agents/skills/roundfix/references/implement.md','skills/roundfix/references/implement.md']:
+ t=' '.join((root/f).read_text().split())
+ phrases=['the Precondition Refusal report included','never imports a Precondition Refusal','precondition refusal: <path>','a pass with no previous report',"commit already in the Run's history",'one no recorded Run Branch holds',"a Task commit or another Spec's commit",'report not newer than the newest one in the worktree','dated after today','shape detector refuses','path that differs from an existing file','Compiled-source evidence files are skipped one by one','destructive Git operation','maintainer\'s authority','a refusal never needs it']
+ for phrase in phrases:check(phrase in t,'documented: '+f+': '+phrase)
+for f in ['references/implement.md','SKILL.md']:check((root/'.agents/skills/roundfix'/f).read_bytes()==(root/'skills/roundfix'/f).read_bytes(),'canonical/mirror equal: '+f)
+config_old=git('show',base+':docs/user-guide/configuration.md');config_new=(root/'docs/user-guide/configuration.md').read_text();added='The Format Command covers every QA Report the Daemon commits, the\nPrecondition Refusal report included; without `verification.format`, the\nDaemon commits its reports as written, and a repository whose Verification\nchecks the formatting of `qa/` files configures it.\n'
+log.append(git('diff',base+'..'+head,'--','docs/user-guide/configuration.md'))
+check('the Precondition Refusal report included' in ' '.join(config_new.split()),'configuration guide carries required format sentence')
+check('status: accepted' in (root/'docs/adr/0355-a-precondition-refusal-is-never-imported-as-a-prior-qa-pass.md').read_text(),'ADR-0355 accepted')
+# Broad live wording sweep: inspect historical contexts and narrowed ADR-0194 separately.
+cmd=['rg','-n','-i','precondition refusal|previous report|never imports','docs/user-guide/','docs/agents/','CONTEXT.md','docs/adr/','.agents/skills/roundfix/','skills/roundfix/']
+p=subprocess.run(cmd,text=True,capture_output=True,check=True);log.append('COMMAND: '+' '.join(cmd)+'\n'+p.stdout)
+log.append('Reviewed hits: ADR-0355 introduction is the historical defect, its considered option is explicitly rejected; ADR-0194 retains generic failed-pass import, narrowed by ADR-0355; live operative statements exclude Precondition Refusals. No live current instruction says they are imported.')
+Path('/private/tmp/qa345-history-docs.txt').write_text('\n\n'.join(log)+'\nexit: 0\n');print('\n'.join(x for x in log if x.startswith(('PASS','FAIL'))))

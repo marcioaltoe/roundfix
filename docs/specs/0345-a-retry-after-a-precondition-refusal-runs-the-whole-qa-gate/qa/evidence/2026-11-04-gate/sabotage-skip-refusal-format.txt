@@ -1,0 +1,36 @@
+Fresh git archive of b171eb183bc59a8ed7898062eb2760cbe100861c; git init and git add ., no commit. Mutation before test start. GOPROXY/GOSUMDB disabled.
+--- internal/daemon/qa_format.go before
++++ internal/daemon/qa_format.go mutated
+@@ -36,6 +36,9 @@
+ 
+ // formatQADirectory formats the supplied QA files without widening the commit set.
+ func (engine *Engine) formatQADirectory(ctx context.Context, plan TaskPlan, ordinal int, stage string, paths []string, verdict string) error {
++	if report, err := spec.ReadQAReport(plan.Spec.Dir); err == nil && report.RowsBlockedPrecondition > 0 {
++		return nil
++	}
+ 	if strings.TrimSpace(plan.FormatCommand) == "" {
+ 		return nil
+ 	}
+
+COMMAND: go test -count=1 -timeout 3m -v -run ^TestQAFormatFormatsAPreconditionRefusalReport$ ./internal/daemon
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+    qa_format_test.go:343: formatter did not capture the Daemon's report: open /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestQAFormatFormatsAPreconditionRefusalReportformatter_fails68279984/004/original-report.md: no such file or directory
+=== NAME  TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+    qa_format_test.go:339: committed refusal lacks the formatter's bytes: "---\nverdict: fail\nbuild: \"32b3fd18d0fa26118b0e799c41523e622aee45de\"\nauditing_binary: \"0.130.1\"\nauditor_staleness: \"unknown: auditing binary has no build commit and audited tree declares no version\"\nrows_blocked_precondition: 1\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\nprecondition_check: \"exit 3\"\nprecondition_reason: \"exited 3; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestQAFormatFormatsAPreconditionRefusalReportformatter_runs3876152099/003/artifacts/runs/run_20261104T151923Z_755a81758be70bdd/verification/batch-001-attempt-1.log\"\n---\n\n# QA Report\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| 0 | blocked | precondition |\n\n## Precondition refusal\n\n- check: exit 3\n- reason: exited 3; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestQAFormatFormatsAPreconditionRefusalReportformatter_runs3876152099/003/artifacts/runs/run_20261104T151923Z_755a81758be70bdd/verification/batch-001-attempt-1.log\n\nThe gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n## Authorization audit inputs\n\nNone.\n\n## Mechanical findings\n\nNone.\n\n## Mechanical rows\n\n| # | Status | Provenance |\n| - | --- | --- |\n\n## Mechanical skips\n\n| Detector | Missing artifact |\n| --- | --- |\n| authorization bounded paths | tooling authorization |\n| consequent-fix commit order | consequent-fix declaration |\n| QA Report structure | QA Report |\n| QA evidence paths | QA Report |\n"
+--- FAIL: TestQAFormatFormatsAPreconditionRefusalReport (0.00s)
+    --- FAIL: TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails (0.32s)
+    --- FAIL: TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs (0.32s)
+FAIL
+suiteguard: guard cost: measured 2914 paths; fingerprint took 139.753875ms before and 135.384ms after
+FAIL	roundfix/internal/daemon	0.914s
+FAIL
+
+exit: 1

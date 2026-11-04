@@ -1,0 +1,218 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestPriorQAPassRefusesAPreconditionRefusal|TestARetryAfterAPreconditionRefusalRunsTheWholeGate|TestQAFormatFormatsAPreconditionRefusalReport|TestPriorQAPass.*|TestAPriorPassIsImportedOnlyFromARecordedRunCommit|TestQAGateCarriesARowFromAnUnintegratedFailedPass|TestQAPromptNamesTheImportedPassHead|TestTwoGatePasses.*|TestQAFormat.*|TestQAGateRefusesOnFailedRepositoryVerification)$ ./internal/daemon
+=== RUN   TestQAFormatCommitsTheFormattedReport
+=== PAUSE TestQAFormatCommitsTheFormattedReport
+=== RUN   TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+=== PAUSE TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+=== RUN   TestQAFormatRevertsAFailingFormatter
+=== PAUSE TestQAFormatRevertsAFailingFormatter
+=== RUN   TestQAFormatRevertsAVerdictChange
+=== PAUSE TestQAFormatRevertsAVerdictChange
+=== RUN   TestQAFormatLeavesFilesOutsideTheQADirectory
+=== PAUSE TestQAFormatLeavesFilesOutsideTheQADirectory
+=== RUN   TestQAFormatEmptyCommandRunsNothing
+=== PAUSE TestQAFormatEmptyCommandRunsNothing
+=== RUN   TestQAFormatCancellationRestoresFiles
+=== PAUSE TestQAFormatCancellationRestoresFiles
+=== RUN   TestQAFormatStartFailureRestoresFiles
+--- PASS: TestQAFormatStartFailureRestoresFiles (0.13s)
+=== RUN   TestQAFormatBoundsDiagnostics
+=== PAUSE TestQAFormatBoundsDiagnostics
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport
+=== RUN   TestPriorQAPassSkipsCompiledSourceEvidence
+=== PAUSE TestPriorQAPassSkipsCompiledSourceEvidence
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension
+=== PAUSE TestPriorQAPassSkipsEveryCompiledExtension
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers
+=== PAUSE TestPriorQAPassSkipNeverReportsPathDiffers
+=== RUN   TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+=== PAUSE TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+=== RUN   TestAPriorPassIsImportedOnlyFromARecordedRunCommit
+=== PAUSE TestAPriorPassIsImportedOnlyFromARecordedRunCommit
+=== RUN   TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte
+--- PASS: TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte (0.25s)
+=== RUN   TestPriorQAPassIgnoresReportsAlreadyInHistory
+=== PAUSE TestPriorQAPassIgnoresReportsAlreadyInHistory
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== PAUSE TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== RUN   TestPriorQAPassRefusesADifferingPath
+=== PAUSE TestPriorQAPassRefusesADifferingPath
+=== RUN   TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+=== PAUSE TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+=== RUN   TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+=== PAUSE TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+=== RUN   TestPriorQAPassRefusesAReportDatedAfterToday
+=== PAUSE TestPriorQAPassRefusesAReportDatedAfterToday
+=== RUN   TestQAPromptNamesTheImportedPassHead
+=== PAUSE TestQAPromptNamesTheImportedPassHead
+=== RUN   TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== PAUSE TestQAGateCarriesARowFromAnUnintegratedFailedPass
+=== RUN   TestPriorQAPassKeepsIdenticalExistingEvidence
+=== PAUSE TestPriorQAPassKeepsIdenticalExistingEvidence
+=== RUN   TestPriorQAPassSkipsAPrunedRunBranch
+=== PAUSE TestPriorQAPassSkipsAPrunedRunBranch
+=== RUN   TestPriorQAPassCancellationPublishesStop
+=== PAUSE TestPriorQAPassCancellationPublishesStop
+=== RUN   TestPriorQAPassGitErrorIsInfrastructure
+=== PAUSE TestPriorQAPassGitErrorIsInfrastructure
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal
+=== RUN   TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+=== PAUSE TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+=== RUN   TestQAFormatterOutputIsScannedBeforeTheQACommit
+=== PAUSE TestQAFormatterOutputIsScannedBeforeTheQACommit
+=== RUN   TestQAFormatterNeverSeesEvidenceWithASecretMatch
+=== PAUSE TestQAFormatterNeverSeesEvidenceWithASecretMatch
+=== RUN   TestTwoGatePassesCarryAnUnmovedRowIntoTheCommittedReport
+=== PAUSE TestTwoGatePassesCarryAnUnmovedRowIntoTheCommittedReport
+=== RUN   TestTwoGatePassesReRunARowWhoseInputMoved
+=== PAUSE TestTwoGatePassesReRunARowWhoseInputMoved
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification
+=== CONT  TestPriorQAPassRefusesAReportOlderThanTheTreesNewest
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport
+=== CONT  TestPriorQAPassSkipsCompiledSourceEvidence
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+=== CONT  TestQAFormatLeavesFilesOutsideTheQADirectory
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+=== RUN   TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+=== PAUSE TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+=== RUN   TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+=== PAUSE TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+=== CONT  TestQAFormatRevertsAVerdictChange
+=== CONT  TestQAFormatRevertsAFailingFormatter
+=== CONT  TestQAFormatCancellationRestoresFiles
+=== CONT  TestQAFormatBoundsDiagnostics
+=== RUN   TestQAFormatCancellationRestoresFiles/context
+=== CONT  TestQAFormatFormatsAnImportedPassBeforeThePrecondition
+=== CONT  TestPriorQAPassGitErrorIsInfrastructure
+=== CONT  TestQAFormatCommitsTheFormattedReport
+=== RUN   TestQAFormatCancellationRestoresFiles/stop_request
+--- PASS: TestQAFormatLeavesFilesOutsideTheQADirectory (0.43s)
+=== CONT  TestTwoGatePassesReRunARowWhoseInputMoved
+--- PASS: TestPriorQAPassGitErrorIsInfrastructure (0.43s)
+=== CONT  TestTwoGatePassesCarryAnUnmovedRowIntoTheCommittedReport
+--- PASS: TestQAFormatRevertsAVerdictChange (0.44s)
+=== CONT  TestQAFormatterNeverSeesEvidenceWithASecretMatch
+--- PASS: TestQAFormatBoundsDiagnostics (0.44s)
+=== CONT  TestQAFormatterOutputIsScannedBeforeTheQACommit
+=== CONT  TestARetryAfterAPreconditionRefusalRunsTheWholeGate
+--- PASS: TestQAFormatCommitsTheFormattedReport (0.45s)
+--- PASS: TestQAFormatRevertsAFailingFormatter (0.45s)
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+=== RUN   TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== PAUSE TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== CONT  TestQAGateCarriesARowFromAnUnintegratedFailedPass
+--- PASS: TestPriorQAPassRefusesAReportOlderThanTheTreesNewest (0.54s)
+=== CONT  TestPriorQAPassCancellationPublishesStop
+--- PASS: TestPriorQAPassSkipsCompiledSourceEvidence (0.69s)
+=== CONT  TestQAFormatEmptyCommandRunsNothing
+--- PASS: TestQAFormatCancellationRestoresFiles (0.69s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/context (0.32s)
+    --- PASS: TestQAFormatCancellationRestoresFiles/stop_request (0.36s)
+=== CONT  TestPriorQAPassSkipsAPrunedRunBranch
+--- PASS: TestPriorQAPassCancellationPublishesStop (0.23s)
+=== CONT  TestPriorQAPassKeepsIdenticalExistingEvidence
+--- PASS: TestQAFormatterNeverSeesEvidenceWithASecretMatch (0.47s)
+=== CONT  TestPriorQAPassRefusesAReportDatedAfterToday
+--- PASS: TestQAFormatterOutputIsScannedBeforeTheQACommit (0.50s)
+=== CONT  TestQAPromptNamesTheImportedPassHead
+=== CONT  TestPriorQAPassRefusesAReportTheShapeDetectorRefuses
+--- PASS: TestQAFormatFormatsAnImportedPassBeforeThePrecondition (0.95s)
+--- PASS: TestQAFormatEmptyCommandRunsNothing (0.35s)
+=== CONT  TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/feat:_task
+--- PASS: TestPriorQAPassSkipsAPrunedRunBranch (0.41s)
+=== CONT  TestAPriorPassIsImportedOnlyFromARecordedRunCommit
+--- PASS: TestPriorQAPassKeepsIdenticalExistingEvidence (0.44s)
+=== CONT  TestPriorQAPassRefusesADifferingPath
+--- PASS: TestARetryAfterAPreconditionRefusalRunsTheWholeGate (0.80s)
+=== CONT  TestPriorQAPassIgnoresReportsAlreadyInHistory
+--- PASS: TestPriorQAPassRefusesAReportDatedAfterToday (0.43s)
+=== CONT  TestPriorQAPassSkipsEveryCompiledExtension
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.go
+--- PASS: TestPriorQAPassRefusesAReportTheShapeDetectorRefuses (0.45s)
+=== CONT  TestPriorQAPassSkipNeverReportsPathDiffers
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.go
+=== RUN   TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/docs:_qa_report_for_another-spec_(fail)
+--- PASS: TestQAPromptNamesTheImportedPassHead (0.52s)
+=== CONT  TestPriorQAPassWithoutRecordedPassPreservesNullFiles
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs
+--- PASS: TestAPriorPassIsImportedOnlyFromARecordedRunCommit (0.40s)
+--- PASS: TestPriorQAPassRefusesADifferingPath (0.44s)
+=== CONT  TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails
+--- PASS: TestPriorQAPassIgnoresReportsAlreadyInHistory (0.44s)
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure
+--- PASS: TestQAGateCarriesARowFromAnUnintegratedFailedPass (1.26s)
+=== CONT  TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry
+--- PASS: TestPriorQAPassWithoutRecordedPassPreservesNullFiles (0.28s)
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal
+--- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs (0.80s)
+    --- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/feat:_task (0.40s)
+    --- PASS: TestPriorQAPassIgnoresTaskCommitsAndOtherSpecs/docs:_qa_report_for_another-spec_(fail) (0.40s)
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.rs
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.rs
+--- PASS: TestTwoGatePassesCarryAnUnmovedRowIntoTheCommittedReport (1.56s)
+=== CONT  TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal
+--- PASS: TestTwoGatePassesReRunARowWhoseInputMoved (1.57s)
+--- PASS: TestQAGateRefusesOnFailedRepositoryVerification (0.00s)
+    --- PASS: TestQAGateRefusesOnFailedRepositoryVerification/ordinary_command_failure (0.46s)
+    --- PASS: TestQAGateRefusesOnFailedRepositoryVerification/temporary_exit_has_no_retry (0.44s)
+--- PASS: TestQAFormatFormatsAPreconditionRefusalReport (0.00s)
+    --- PASS: TestQAFormatFormatsAPreconditionRefusalReport/formatter_runs (0.63s)
+    --- PASS: TestQAFormatFormatsAPreconditionRefusalReport/formatter_fails (0.58s)
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.ts
+--- PASS: TestPriorQAPassRefusesAPreconditionRefusal (0.00s)
+    --- PASS: TestPriorQAPassRefusesAPreconditionRefusal/repository_Verification_refusal (0.43s)
+    --- PASS: TestPriorQAPassRefusesAPreconditionRefusal/older_refusal_beside_a_matrix_report (0.38s)
+    --- PASS: TestPriorQAPassRefusesAPreconditionRefusal/strict_Spec_check_refusal (0.30s)
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.ts
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.tsx
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.tsx
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.mts
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.mts
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.cts
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.cts
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.js
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.js
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.jsx
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.jsx
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.mjs
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.mjs
+=== RUN   TestPriorQAPassSkipsEveryCompiledExtension/.cjs
+=== RUN   TestPriorQAPassSkipNeverReportsPathDiffers/.cjs
+--- PASS: TestPriorQAPassSkipsEveryCompiledExtension (2.97s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.go (0.54s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.rs (0.41s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.ts (0.25s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.tsx (0.25s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.mts (0.26s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.cts (0.25s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.js (0.27s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.jsx (0.25s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.mjs (0.24s)
+    --- PASS: TestPriorQAPassSkipsEveryCompiledExtension/.cjs (0.25s)
+--- PASS: TestPriorQAPassSkipNeverReportsPathDiffers (2.94s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.go (0.56s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.rs (0.37s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.ts (0.25s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.tsx (0.26s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.mts (0.25s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.cts (0.25s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.js (0.27s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.jsx (0.25s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.mjs (0.25s)
+    --- PASS: TestPriorQAPassSkipNeverReportsPathDiffers/.cjs (0.24s)
+PASS
+suiteguard: guard cost: measured 2920 paths; fingerprint took 198.6535ms before and 133.452042ms after
+ok  	roundfix/internal/daemon	5.446s
+
+exit: 0
