@@ -3741,27 +3741,6 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 	}
 }
 
-func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
-	t.Parallel()
-	homeDir := t.TempDir()
-	outsideRepo := t.TempDir()
-	setCommandEnvironmentForTest(t, homeDir, outsideRepo)
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
-
-	if code != exitPreflight {
-		t.Fatalf("expected exit code 2 outside repository, got %d", code)
-	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout, got %q", stdout.String())
-	}
-	if !strings.Contains(stderr.String(), "--all") {
-		t.Fatalf("expected --all guidance, got %q", stderr.String())
-	}
-}
-
 func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

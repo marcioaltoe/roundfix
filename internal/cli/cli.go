@@ -478,6 +478,26 @@ func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundc
 	return roundconfig.Load(options)
 }
 
+// loadRunReaderCommandConfig keeps worktree-location refusals visible without
+// blocking commands that only read the Run Database.
+func loadRunReaderCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	options.WorktreeLocationOptional = true
+	loaded, err := roundconfig.Load(options)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	if loaded.WorktreeLocationErr != nil {
+		if _, err := fmt.Fprintf(stderr, "roundfix: warning: %v; commands that create a Run Worktree refuse it\n", loaded.WorktreeLocationErr); err != nil {
+			return roundconfig.Loaded{}, fmt.Errorf("write worktree.location warning: %w", err)
+		}
+	}
+	return loaded, nil
+}
+
 func (environment commandEnvironment) resolveWorkDir(operation string) (string, error) {
 	if environment.workDirErr != nil {
 		return "", fmt.Errorf("%s: %w", operation, environment.workDirErr)
@@ -5374,7 +5394,7 @@ Exit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 
 Lists Runs from the Run Database newest first. By default the listing is
-scoped to the current repository and shows the 20 newest Active Runs. When
+scoped to the current repository and shows the 20 newest Active Runs; outside a Git repository it lists every repository. When
 the state filter or the bound hides Runs, one trailing stderr note names the
 hidden count and the widening flag. Without a subcommand at an interactive
 terminal, runs opens the Run Browser; non-interactive contexts must use

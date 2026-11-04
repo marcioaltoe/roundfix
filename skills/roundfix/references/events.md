@@ -22,6 +22,11 @@ without a stdout trailer. With `--follow`, replay drains first and live follow
 starts without duplicating the boundary event; terminal Runs replay and exit
 immediately with `0`.
 
+`events` is a Read-Only Run Command. If `worktree.location` is refused, it
+writes `roundfix: warning: <refusal>; commands that create a Run Worktree
+refuse it` to stderr once and continues; the warning never appears in the
+JSONL on stdout.
+
 Default replay emits these public categories in journal cursor order:
 `task-status`, `batch`, `verification`, `outcome`, `agent-selection`, and
 `usage`. `--filter` accepts a comma-separated subset of only those category

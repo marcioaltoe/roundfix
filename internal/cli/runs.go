@@ -78,15 +78,14 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRunReaderCommandConfig(environment, stderr)
 	if err != nil {
 		printRunsListFailure(err, stderr)
 		return exitPreflight
 	}
 	gitRoot := strings.TrimSpace(loaded.GitRoot)
-	if !opts.all && gitRoot == "" {
-		printRunsListFailure(validationError{message: "runs list requires a Git repository; pass --all to list every repository"}, stderr)
-		return exitPreflight
+	if gitRoot == "" {
+		opts.all = true
 	}
 
 	reader, found, err := openRunsListReader(ctx, loaded.HomeDir)

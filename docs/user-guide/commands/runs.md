@@ -14,11 +14,21 @@ effects. In a non-interactive context it exits `2` naming `runs list`.
 `runs list` prints one Run per line, newest first:
 `<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>
 <branch>`. Targets are `pr:<number>` or `spec:<slug>`. Default scope is the
-current repository's 20 newest Active Runs; `--state` widens the state filter,
-`--limit N` changes the bound (`0` unbounded), `--all` lists every repository
-and adds a repository column. When Runs are hidden, exactly one trailing
-stderr note names the hidden count and the widening flag. Empty results print
+current repository's 20 newest Active Runs; outside a Git repository it lists
+every repository, as `--all` does, including the repository column. `--state`
+widens the state filter, `--limit N` changes the bound (`0` unbounded), and
+`--all` lists every repository and adds a repository column. When Runs are
+hidden, exactly one trailing stderr note names the hidden count and the
+widening flag. Empty results print
 `No Runs found.` and exit `0`.
+
+`runs`, `runs list` and `runs show` are Read-Only Run Commands: they run from
+any directory and print a `worktree.location` refusal as one stderr warning,
+then continue. The refusal names the detected Git root and the `.git` path it
+found, including a stray `.git` in a parent such as the home directory.
+Commands that create a Run Worktree still refuse that location. A detected
+Git root, including a stray one, keeps `runs list` scoped to that repository
+unless `--all` is passed.
 
 When the selected repository scope contains retained terminal Run Worktrees or
 Run Branches, Runs List keeps the stdout row shape unchanged and writes one
