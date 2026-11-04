@@ -1375,6 +1375,14 @@ _Avoid_: Installed skills, plugin set, global skill set
 A skill a repository installs from an upstream source and never edits locally, because the next sync replaces its folder. A divergence is corrected in order: a rule that governs over the skill's default, then a repository-authored skill that supplies only what is missing, then a repository-authored replacement only when the vendored skill is useless or almost useless; an objective defect goes upstream as a pull request ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
 _Avoid_: Forked skill, local skill copy, edited upstream skill
 
+**Catalog Revision**:
+The one full commit of `marcioaltoe/skills` that every catalog entry of `skills-lock.json` and every upstream Setup Snapshot names, never a branch name ([ADR-0360](docs/adr/0360-the-vendored-catalog-skills-follow-the-catalog-through-one-pinned-commit.md)).
+_Avoid_: Catalog branch, floating ref, partial catalog revision
+
+**Catalog Skill Bump**:
+`make skills-third-party-bump`, which moves the Vendored Skills, their `skills-lock.json` entries and every upstream Setup Snapshot to one Catalog Revision, by default the catalog's current `main`; it refuses a Roundfix-owned skill and a tree the catalog does not publish; a second run at the same commit changes nothing ([ADR-0360](docs/adr/0360-the-vendored-catalog-skills-follow-the-catalog-through-one-pinned-commit.md)).
+_Avoid_: `skills-update`, manual vendoring, floating catalog sync
+
 **Setup Snapshot Difference**:
 A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
 _Avoid_: Trailing skill, outdated skill, stale skill

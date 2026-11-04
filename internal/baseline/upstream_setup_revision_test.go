@@ -1,20 +1,46 @@
 // Suite: published upstream Setup Snapshot revision and tree contracts
-// Invariant: both TypeScript setups pin the onioncry and ui-ux-pro-max trees and every setup pins the knowledge-workspace tree published at the shared upstream revision.
-// Boundary IN: embedded catalog, setup provenance and skill tree digests.
+// Invariant: setup revisions follow the catalog lock and onioncry, ui-ux-pro-max and knowledge-workspace never return to the trees replaced by Specs 0320, 0333 and 0326.
+// Boundary IN: repository catalog lock, embedded catalog, setup provenance and skill tree digests.
 // Boundary OUT: network, host skill checkouts, asset synchronization and skill installation.
 package baseline
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 )
 
-// upstreamSetupRevision is the upstream skills commit every upstream Setup
-// Snapshot and every skill it pins follow; it moves with each sync.
-const upstreamSetupRevision = "86df8608726979064a8fe46003dfaf403ffe0087"
+// upstreamSetupRevision returns the one full commit every catalog entry of
+// skills-lock.json names, refusing branches, short or mixed refs and no entry.
+func upstreamSetupRevision(t *testing.T) string {
+	t.Helper()
+	lock, err := loadSkillsLock(filepath.Join("..", "..", skillsLockPath))
+	if err != nil {
+		t.Fatalf("read catalog revision from skills-lock.json: %v", err)
+	}
+	var revision string
+	for _, entry := range lock.skillEntries() {
+		source, _ := entry.value.stringField("source")
+		if source != "marcioaltoe/skills" {
+			continue
+		}
+		ref, _ := entry.value.stringField("ref")
+		if len(ref) != 40 || !immutableGitID.MatchString(ref) {
+			t.Fatalf("catalog skill %s ref = %q; skills-lock.json must name a full 40-character lowercase commit", entry.name, ref)
+		}
+		if revision != "" && ref != revision {
+			t.Fatalf("catalog skill %s ref = %q, want shared catalog revision %q in skills-lock.json", entry.name, ref, revision)
+		}
+		revision = ref
+	}
+	if revision == "" {
+		t.Fatal("skills-lock.json has no marcioaltoe/skills catalog entry")
+	}
+	return revision
+}
 
-// onioncryTreeDigest is the onioncry tree that commit publishes.
-const onioncryTreeDigest = "66b054d73b38954303e64c4dc2c57916aab971dc8b320f76b930e5c3ef99f3d0"
+// replacedOnioncryTree is the tree Spec 0320 replaced.
+const replacedOnioncryTree = "f918508da464fcc37b436a5a26fc243ffa159ead9e07b19e991451ed0ca53b6c"
 
 func TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree(t *testing.T) {
 	t.Parallel()
@@ -39,11 +65,11 @@ func TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree(t *testing.T) {
 				if skill.Name != "onioncry" {
 					continue
 				}
-				if skill.Source.Ref != upstreamSetupRevision {
-					t.Errorf("setup %s onioncry revision = %q, want %q", id, skill.Source.Ref, upstreamSetupRevision)
+				if revision := upstreamSetupRevision(t); skill.Source.Ref != revision {
+					t.Errorf("setup %s onioncry revision = %q, want %q", id, skill.Source.Ref, revision)
 				}
-				if skill.TreeDigest != onioncryTreeDigest {
-					t.Errorf("setup %s onioncry tree = %q, want %q", id, skill.TreeDigest, onioncryTreeDigest)
+				if skill.TreeDigest == replacedOnioncryTree {
+					t.Errorf("setup %s onioncry carries tree %q replaced by Spec 0320", id, skill.TreeDigest)
 				}
 				return
 			}
@@ -52,8 +78,8 @@ func TestTheTypeScriptSetupsCarryTheRepublishedOnioncryTree(t *testing.T) {
 	}
 }
 
-// uiUxProMaxTreeDigest is the completed ui-ux-pro-max tree that commit publishes.
-const uiUxProMaxTreeDigest = "34f2a8a3be83f0fff1e9af200c09ad33821d0380298ef2f4952da75652d80807"
+// incompleteUiUxProMaxTree is the tree Spec 0333 replaced.
+const incompleteUiUxProMaxTree = "b13db828c6a7fbebf8612185dfde2e4cf20414f4c8fdaa33cc50b3b59f427d24"
 
 func TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree(t *testing.T) {
 	t.Parallel()
@@ -78,11 +104,11 @@ func TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree(t *testing.T) {
 				if skill.Name != "ui-ux-pro-max" {
 					continue
 				}
-				if skill.Source.Ref != upstreamSetupRevision {
-					t.Errorf("setup %s ui-ux-pro-max revision = %q, want %q", id, skill.Source.Ref, upstreamSetupRevision)
+				if revision := upstreamSetupRevision(t); skill.Source.Ref != revision {
+					t.Errorf("setup %s ui-ux-pro-max revision = %q, want %q", id, skill.Source.Ref, revision)
 				}
-				if skill.TreeDigest != uiUxProMaxTreeDigest {
-					t.Errorf("setup %s ui-ux-pro-max tree = %q, want %q", id, skill.TreeDigest, uiUxProMaxTreeDigest)
+				if skill.TreeDigest == incompleteUiUxProMaxTree {
+					t.Errorf("setup %s ui-ux-pro-max carries tree %q replaced by Spec 0333", id, skill.TreeDigest)
 				}
 				return
 			}
@@ -91,9 +117,8 @@ func TestTheTypeScriptSetupsCarryTheCompletedUiUxProMaxTree(t *testing.T) {
 	}
 }
 
-// knowledgeWorkspaceTreeDigest is the knowledge-workspace tree that commit
-// publishes, the one that sends research through ai-memory.
-const knowledgeWorkspaceTreeDigest = "490af37df4faba388e560380df0863b88881716d96e6185858918681182f2a96"
+// inboxKnowledgeWorkspaceTree is the tree Spec 0326 replaced.
+const inboxKnowledgeWorkspaceTree = "19cb0bd73c1a2429e902b5e5c0e951fdd38d396352e7b1dc007748fc11a7aa7c"
 
 func TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox(t *testing.T) {
 	t.Parallel()
@@ -118,11 +143,11 @@ func TestEverySetupCarriesTheKnowledgeWorkspaceThatRetiredTheSecondbrainInbox(t 
 				if skill.Name != "knowledge-workspace" {
 					continue
 				}
-				if skill.Source.Ref != upstreamSetupRevision {
-					t.Errorf("setup %s knowledge-workspace revision = %q, want %q", id, skill.Source.Ref, upstreamSetupRevision)
+				if revision := upstreamSetupRevision(t); skill.Source.Ref != revision {
+					t.Errorf("setup %s knowledge-workspace revision = %q, want %q", id, skill.Source.Ref, revision)
 				}
-				if skill.TreeDigest != knowledgeWorkspaceTreeDigest {
-					t.Errorf("setup %s knowledge-workspace tree = %q, want %q", id, skill.TreeDigest, knowledgeWorkspaceTreeDigest)
+				if skill.TreeDigest == inboxKnowledgeWorkspaceTree {
+					t.Errorf("setup %s knowledge-workspace carries tree %q replaced by Spec 0326", id, skill.TreeDigest)
 				}
 				return
 			}

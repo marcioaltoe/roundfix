@@ -1,5 +1,5 @@
 // Suite: published Python Setup Snapshot
-// Invariant: Python mirrors the curated upstream preset and shares every upstream skill revision with the other snapshots.
+// Invariant: Python mirrors the curated upstream preset and every upstream snapshot and skill follows the catalog lock revision.
 // Boundary IN: embedded setup provenance, ordered skill membership, and upstream revisions.
 // Boundary OUT: profile composition, asset synchronization, and skill installation.
 
@@ -29,7 +29,7 @@ func TestThePythonSetupIsThePublishedUpstreamPreset(t *testing.T) {
 	}
 	wantSource := assetsSyncSource{
 		Type: "github", Repository: "marcioaltoe/skills",
-		Ref: upstreamSetupRevision, Path: "setups/python.txt",
+		Ref: upstreamSetupRevision(t), Path: "setups/python.txt",
 	}
 	if !reflect.DeepEqual(setup.Source, wantSource) {
 		t.Errorf("Python setup source = %+v, want %+v", setup.Source, wantSource)
@@ -98,6 +98,7 @@ func TestThePythonSetupIsThePublishedUpstreamPreset(t *testing.T) {
 
 func TestEveryUpstreamSetupFollowsThePythonPresetRevision(t *testing.T) {
 	t.Parallel()
+	revision := upstreamSetupRevision(t)
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
@@ -115,13 +116,13 @@ func TestEveryUpstreamSetupFollowsThePythonPresetRevision(t *testing.T) {
 			if err := json.Unmarshal(entry.Data, &setup); err != nil {
 				t.Fatal(err)
 			}
-			if setup.Source.Ref != upstreamSetupRevision {
-				t.Errorf("setup %s revision = %q, want %q", id, setup.Source.Ref, upstreamSetupRevision)
+			if setup.Source.Ref != revision {
+				t.Errorf("setup %s revision = %q, want %q", id, setup.Source.Ref, revision)
 			}
 			var hasMemoryHandoff bool
 			for _, skill := range setup.Skills {
-				if skill.Source.Type == "github" && skill.Source.Ref != upstreamSetupRevision {
-					t.Errorf("setup %s skill %s revision = %q, want %q", id, skill.Name, skill.Source.Ref, upstreamSetupRevision)
+				if skill.Source.Type == "github" && skill.Source.Ref != revision {
+					t.Errorf("setup %s skill %s revision = %q, want %q", id, skill.Name, skill.Source.Ref, revision)
 				}
 				if id == "python" && skill.Name == "handoff" {
 					t.Error("Python setup still contains the retired handoff skill")
