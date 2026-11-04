@@ -23,7 +23,8 @@ on stderr. Outside a Git repository, or without a Setup Manifest, it checks
 only the shipped bundle.
 
 After bundle installation, an existing `skills-lock.json` entry naming an
-owned skill is updated with the installed folder's computed hash; every other
-field is preserved. No entry or lock is created when no matching lock entry
-exists. Each changed name is reported as `Updated skills-lock.json computedHash:
-<name>`.
+owned skill receives the installed folder's `computedHash` and loses its
+`ref`; every other field is preserved. No entry or lock is created when no
+matching lock entry exists. Each name whose hash changed is reported as
+`Updated skills-lock.json computedHash: <name>`, followed by
+`Removed skills-lock.json ref: <name>` for each entry whose `ref` was removed.

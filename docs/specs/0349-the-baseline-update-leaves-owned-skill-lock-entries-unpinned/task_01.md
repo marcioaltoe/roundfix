@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -124,3 +124,58 @@ answers the marcioaltoe-skills report of 2026-11-04 (ai-memory message
 
 - `_prd.md` → Goals; Core Features 1-2 and 4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 5
 - `_techspec.md` → Current behavior 1-3 and 5; Interfaces; Data Models; API Contracts 1-2 and 5; Surface Transcript 1; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Characterization before changing the writer:
+`go test -count=1 -v ./internal/baseline -run '^TestRecordInstalledOwnedSkillsRemovesTheRefOfAnInstalledOwnedSkill$/skills_tool_format$'`
+exited 1 against the new whole-file unpin expectation. The actual document
+kept every `ref` (`roundfix`, external `testing-boss`, and uninstalled
+`write-prd`); only the `roundfix` hash changed from zero to the installed
+folder digest. The writer was unchanged for this check.
+
+Implementation and acceptance evidence:
+
+- Installed owned entries now receive their installed hash and lose `ref`
+  through the specified member spans. `OwnedSkillsLockUpdate.Hashed` and
+  `.Unpinned` are sorted, and `Names()` returns their sorted union. Whole-file
+  assertions cover middle, first, last/current-hash and sole/null `ref`
+  members, duplicate input names, unchanged external and uninstalled-owned
+  entries, and preserved mode. Existing hash-only tests retain their names
+  and use `sourceType` fixtures; other writer tests use `Names()`.
+- The install regression asserts Surface Transcript 1 in full (stdout,
+  empty stderr, exit 0) and the complete resulting lock. The baseline stage
+  regression asserts both result lists, complete lock bytes with the external
+  `ref` kept, the contiguous text report, and adjacent JSON `lockUpdated` /
+  `lockUnpinned` fields. All three dependency stubs use the new return type.
+- Every new regression checks a second invocation: no lock-update report,
+  unchanged file identity, modification time and bytes. The baseline JSON
+  omits both empty lock fields. All new top-level tests begin with
+  `t.Parallel()`.
+- Both command guides describe the installed `computedHash`, removed `ref`
+  and preserved other fields. The baseline guide names
+  `skills.lockUnpinned` and `- lock ref removed <name>`; the skills guide
+  names `Removed skills-lock.json ref: <name>`. A focused Python inspection
+  of whitespace-normalized guide text confirmed those phrases.
+
+Focused checks (each exited 0 after implementation):
+
+- `go test -count=1 -timeout 3m ./internal/baseline -run '^TestRecordInstalledOwnedSkills'`
+- `go test -count=1 -timeout 5m ./internal/cli -run '^Test(SkillsInstall(RewritesTheOwnedSkillLockHash|RemovesTheRefOfOwnedSkillLockEntries)|BaselineUpdateSkillsStage(ReportsThe(Rewritten|Unpinned)LockEntries|FailsOnAnUnsafeLock))$'`
+- `go test -count=1 -timeout 3m ./internal/cli -run '^TestBaselineUpdateSkillsStage(UsesPreviewThenConfirmation|DegradesUnreachableSourcePerSkill)$'`
+- `go test -count=1 -timeout 3m ./internal/cli -run '^TestBaselineUpdateKeepsASetupSnapshotDifference$'`
+- `git diff --check`
+
+Final implementation step: re-recorded the Behavior Surface Record with
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+(exit 0), after the last edit of `internal/cli/baseline_update.go` and both
+command guides. No generated record was edited by hand; only this Result
+was appended afterward.
+
+The initial changed path was this Task file's Daemon-owned `in_progress`
+status. That status and the graph are unchanged by the Agent. No declared
+Verification command, repository Verification, commit, push or PR operation
+was run. Doctor, skill guidance and glossary changes remain with the later
+Tasks; no follow-up outside the authored graph was discovered.

@@ -29,13 +29,13 @@ func TestRecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill(t 
 	t.Parallel()
 	root, hash := ownedLockFixture(t)
 	stale := strings.Repeat("0", 64)
-	before := `{ "version":1,"skills":{"external":{"computedHash":"` + stale + `"},"roundfix":{"extra":{"number":1e2,"escaped":"\u0061"}, "ref":"keep", "computedHash":"` + stale + `"},"missing":{"computedHash":"` + stale + `"},"nonobject":false},"extra":true }` + "\n"
+	before := `{ "version":1,"skills":{"external":{"computedHash":"` + stale + `"},"roundfix":{"extra":{"number":1e2,"escaped":"\u0061"}, "sourceType":"keep", "computedHash":"` + stale + `"},"missing":{"computedHash":"` + stale + `"},"nonobject":false},"extra":true }` + "\n"
 	filename := filepath.Join(root, "skills-lock.json")
 	if err := os.WriteFile(filename, []byte(before), 0o640); err != nil {
 		t.Fatal(err)
 	}
 	names, err := RecordInstalledOwnedSkills(t.Context(), root, []string{"missing", "roundfix", "roundfix", "nonobject", "unlisted"})
-	if err != nil || !reflect.DeepEqual(names, []string{"roundfix"}) {
+	if err != nil || !reflect.DeepEqual(names.Names(), []string{"roundfix"}) {
 		t.Fatalf("names=%v err=%v", names, err)
 	}
 	after, err := os.ReadFile(filename)
@@ -69,7 +69,7 @@ func TestRecordInstalledOwnedSkillsLeavesAMatchingLockUntouched(t *testing.T) {
 	}
 	for range 2 {
 		names, err := RecordInstalledOwnedSkills(t.Context(), root, []string{"roundfix"})
-		if err != nil || len(names) != 0 {
+		if err != nil || len(names.Names()) != 0 {
 			t.Fatalf("names=%v err=%v", names, err)
 		}
 		after, err := os.Stat(filename)
@@ -91,7 +91,7 @@ func TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock(t *testing.T) {
 	root, _ := ownedLockFixture(t)
 	filename := filepath.Join(root, "skills-lock.json")
 	names, err := RecordInstalledOwnedSkills(t.Context(), root, []string{"roundfix"})
-	if err != nil || len(names) != 0 {
+	if err != nil || len(names.Names()) != 0 {
 		t.Fatalf("names=%v err=%v", names, err)
 	}
 	if _, err := os.Lstat(filename); !os.IsNotExist(err) {
@@ -102,7 +102,7 @@ func TestRecordInstalledOwnedSkillsAddsNoEntryAndNoLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	names, err = RecordInstalledOwnedSkills(t.Context(), root, []string{"roundfix"})
-	if err != nil || len(names) != 0 {
+	if err != nil || len(names.Names()) != 0 {
 		t.Fatalf("names=%v err=%v", names, err)
 	}
 	after, err := os.ReadFile(filename)
@@ -147,7 +147,7 @@ func TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock(t *testing.T) {
 				t.Fatal(err)
 			}
 			names, err := RecordInstalledOwnedSkills(t.Context(), root, []string{"roundfix"})
-			if err == nil || !strings.Contains(err.Error(), "skills-lock.json") || len(names) != 0 {
+			if err == nil || !strings.Contains(err.Error(), "skills-lock.json") || len(names.Names()) != 0 {
 				t.Fatalf("names=%v err=%v", names, err)
 			}
 			after, err := os.Lstat(filename)
@@ -188,7 +188,7 @@ func TestRecordInstalledOwnedSkillsSetsMissingHashesInSortedOrder(t *testing.T) 
 		t.Fatal(err)
 	}
 	names, err := RecordInstalledOwnedSkills(t.Context(), root, []string{"write-tasks", "roundfix", "qa-gate"})
-	if err != nil || !reflect.DeepEqual(names, []string{"qa-gate", "roundfix", "write-tasks"}) {
+	if err != nil || !reflect.DeepEqual(names.Names(), []string{"qa-gate", "roundfix", "write-tasks"}) {
 		t.Fatalf("names=%v err=%v", names, err)
 	}
 	after, err := os.ReadFile(filename)
