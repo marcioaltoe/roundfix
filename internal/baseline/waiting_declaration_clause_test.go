@@ -42,11 +42,11 @@ func TestTheOperationalContractsShowTheWaitingDeclarationCommented(t *testing.T)
 				t.Errorf("clause force/replacements changed: %+v", clause)
 			}
 			if count := strings.Count(clause.Guidance, want.sentence); count != 1 {
-				t.Errorf("sentence occurs %d times, want 1", count)
+				t.Errorf("clause lacks its waiting sentence: it occurs %d times, want 1", count)
 			}
 			frontmatter := firstFrontmatterBlock(t, clause.Guidance)
 			if !strings.HasSuffix(frontmatter, waitingOnContractLine+"\n"+sinceContractLine) {
-				t.Errorf("frontmatter does not end with both commented keys: %s", frontmatter)
+				t.Errorf("the key must stay commented: frontmatter does not end with both commented keys: %s", frontmatter)
 			}
 			t.Run("copied YAML", func(t *testing.T) {
 				var fields map[string]yaml.Node
@@ -55,7 +55,7 @@ func TestTheOperationalContractsShowTheWaitingDeclarationCommented(t *testing.T)
 				}
 				for _, key := range []string{"waiting_on", "since"} {
 					if _, exists := fields[key]; exists {
-						t.Errorf("copied frontmatter declares %s", key)
+						t.Errorf("the key must stay commented: copied frontmatter declares %s", key)
 					}
 				}
 			})
