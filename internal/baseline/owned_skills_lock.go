@@ -147,6 +147,61 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 	return update, nil
 }
 
+// StaleOwnedLockEntry describes an installed owned skill whose lock pins another copy.
+type StaleOwnedLockEntry struct {
+	Skill string
+	Ref   string // The ref member's value as text; empty when absent.
+	Hash  bool   // computedHash is absent or differs from the installed tree.
+}
+
+// StaleOwnedLockEntries compares only named, installed skills with existing lock
+// entries. It never writes the lock or follows an unsafe installed tree.
+func StaleOwnedLockEntries(ctx context.Context, root string, names []string) ([]StaleOwnedLockEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	document, err := loadSkillsLock(filepath.Join(root, "skills-lock.json"))
+	if err != nil {
+		return nil, err
+	}
+	if document.before == nil {
+		return nil, nil
+	}
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	var stale []StaleOwnedLockEntry
+	for i, name := range sorted {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if i > 0 && sorted[i-1] == name {
+			continue
+		}
+		entry, ok := document.objectEntry("skills", name)
+		if !ok {
+			continue
+		}
+		files, exists, err := inspectRestoreTarget(root, ".agents/skills/"+name)
+		if err != nil {
+			return nil, fmt.Errorf("inspect installed skill %q for skills-lock.json: %w", name, err)
+		}
+		if !exists {
+			continue
+		}
+		ref, pinned := entry["ref"]
+		hash := stringMapValue(entry, "computedHash") != externalSkillsLockDigest(files)
+		if !pinned && !hash {
+			continue
+		}
+		item := StaleOwnedLockEntry{Skill: name, Hash: hash}
+		if pinned {
+			item.Ref = fmt.Sprint(ref)
+		}
+		stale = append(stale, item)
+	}
+	return stale, nil
+}
+
 type ownedLockField struct {
 	start, end             int
 	removeStart, removeEnd int

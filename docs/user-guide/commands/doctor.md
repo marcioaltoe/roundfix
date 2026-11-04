@@ -85,6 +85,8 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   `skills-lock.json`. The minimum version of an owned skill is the version
   of that skill the running binary carries, so a copy installed by an older
   binary fails this line until it is refreshed.
+  `DR-SKILL-LOCK-STALE` warns when an installed owned skill has a `ref` or
+  a `computedHash` that differs from its installed tree in `skills-lock.json`.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage.
 - `storage:` — whether Run storage is reclaimable from terminal Runs or free
@@ -172,6 +174,28 @@ The comparison accepts repository-owned Baseline Profiles and uses their
 modules' external skill contracts from the embedded Setup Snapshots. An
 unresolvable profile's detail says "neither built-in nor resolvable" and
 names the searched `.roundfix/baseline/profiles/<id>.json` path.
+
+With a Setup Manifest, Doctor also checks installed Roundfix-owned lock entries
+and appends the exact suffix
+`; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: <names>`,
+where `<names>` are sorted and joined by `, `:
+
+```text
+skills: warn (<counts>; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: <names>; next: roundfix skills install --target project)
+```
+
+An `ok` line becomes `warn`; `failed` and `unversioned` keep their status.
+The warning never changes Doctor's exit code and never names external entries.
+It adds `roundfix skills install --target project` once to the next action,
+joined to an existing action by ` && `. One bundle install rewrites the
+installed owned entries with the installed tree's hash and no `ref`, clearing
+the warning. If the scan cannot run, Doctor appends
+`; skills-lock.json comparison unavailable: <error>` and keeps the status and
+next action. The release plan's `skills` check reads this same line.
+
+In the catalog's sync window right after a release, `skills update` over an
+unpinned entry can still install the previous copy. Doctor's version check
+reports that older installed copy, and one bundle install restores it.
 
 A missing or outdated required skill, or an invalid required lock declaration,
 prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints

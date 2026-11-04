@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -207,6 +208,25 @@ func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies,
 						result.Detail += "; snapshot comparison unavailable: " + comparisonErr.Error()
 					} else if len(names) != 0 {
 						result.Detail += "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: " + strings.Join(names, ", ")
+					}
+				}
+				stale, comparisonErr := baseline.StaleOwnedLockEntries(ctx, repositoryRoot, skills.Names())
+				if comparisonErr != nil {
+					result.Detail += "; skills-lock.json comparison unavailable: " + comparisonErr.Error()
+				} else if len(stale) != 0 {
+					names := make([]string, 0, len(stale))
+					for _, entry := range stale {
+						names = append(names, entry.Skill)
+					}
+					result.Detail += "; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: " + strings.Join(names, ", ")
+					if result.Status == CheckStatusOK {
+						result.Status = CheckStatusWarn
+					}
+					if !slices.Contains(strings.Split(result.NextAction, " && "), ownedSkillsNextAction) {
+						if result.NextAction != "" {
+							result.NextAction += " && "
+						}
+						result.NextAction += ownedSkillsNextAction
 					}
 				}
 				return result

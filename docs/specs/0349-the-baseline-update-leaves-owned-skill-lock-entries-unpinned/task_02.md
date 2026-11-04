@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0349-the-baseline-update-leaves-owned-skill-lock-entries-unpinned
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,71 @@ answers the marcioaltoe-skills report of 2026-11-04 (ai-memory message
 
 - `_prd.md` → Goals; Core Features 3-4; Success Metric 4; Success Metric 5; Glossary
 - `_techspec.md` → Current behavior 4; Interfaces; API Contracts 3-5; Invariant 5; Declared breaks; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, no-workarounds, systematic-debugging, tech-writer, testing-boss, evidence-gate.
+
+Implemented the Task slice for Daemon Verification:
+
+- Added `StaleOwnedLockEntry` and the read-only `StaleOwnedLockEntries` scan. It sorts and deduplicates the supplied names, considers only existing object entries with installed trees, detects any `ref` member or absent/mismatched hash, and preserves loader errors and cancellation.
+- Doctor scans after the Setup Snapshot suffix on the Setup Manifest branch. It adds the exact `DR-SKILL-LOCK-STALE` suffix, changes only `ok` to `warn`, and adds the owned install action once with ` && `. Comparison errors append their diagnostic without changing readiness status or next action. No dependency field, readiness formatter, external remediation, release-plan code or exit-code logic changed.
+- Updated only the Doctor command guide with the warning suffix and example, status and exit behavior, external-entry exclusion, shared release-plan line, and catalog sync-window limitation.
+- Re-recorded `docs/references/behavior-surfaces.json` through its sanctioned command after the final Doctor source and guide edits; the generated diff contains only the Doctor guide fingerprint.
+
+Acceptance evidence:
+
+- Pinned or mis-hashed installed owned entries warn, and external entries are excluded: `TestDoctorNamesAStaleOwnedSkillLockEntry` compares the complete printed line for current-hash pinned `archive-spec` and `roundfix`, hash-only stale `write-prd`, and an installed pinned external `testing-boss` that is never named. It also checks that Doctor changes no repository bytes.
+- A failed line remains failed with the install action once: `TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry` lowers both installed `roundfix` version declarations, pins its entry with a zero hash, and asserts the failed prefix, exact warning before the next action, and one install command.
+- One bundle recording clears the stale lock warning: both rows of `TestDoctorNamesAStaleOwnedSkillLockEntry` call `RecordInstalledOwnedSkills` once and then compare the complete `skills: ok (<counts>)` line.
+- Additional focused tests cover sorted/deduplicated scan results and `Ref`/`Hash` fields, ignored uninstalled/nonobject/unlisted entries, cancellation, empty/null/nonstring refs, missing/nonstring hashes, absent/malformed/unsafe locks, preservation of failed/unversioned readiness, snapshot suffix ordering, and joining an existing external action. Every new top-level test starts with `t.Parallel()` and uses `t.TempDir()` roots.
+
+Focused checks (all final commands exited 0):
+
+- Red reproduction before implementation: `go test -count=1 -timeout 5m ./internal/cli -run 'TestDoctor.*StaleOwned'` exited 1. The pinned fixture printed `skills: ok` instead of the warning, and the failed fixture omitted the warning. The same focused command passed after implementation.
+- `go test -count=1 -timeout 5m ./internal/cli -run 'Test(Doctor.*(StaleOwned|OwnedLock)|StaleOwnedLockEntries|DoctorNamesASetupSnapshotDifferenceWithoutWarning|DoctorSnapshotComparisonPreservesReadinessAndFiltersSkills|RunDoctorRepositorySkillReadiness|DoctorAndSkillsCheckReportSharedOwnedSkillReadiness|RunDoctorRealRepositoryCheckDoesNotMutateState|DoctorLeavesAnObsoleteLockEntryUntouched)'` — passed, including the new tests and adjacent readiness/snapshot regressions.
+- `go test -count=1 -timeout 5m ./internal/baseline -run '^TestRecordInstalledOwnedSkills'` — passed.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestCommandReferenceLinksResolve|TestUserGuideLinksResolve)$'` — passed.
+- Final implementation step: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed; no generated record was hand-edited.
+- `git diff --check` — passed. Changed paths are limited to this Task's declared interfaces, its new test file, and this Result section; the pre-existing Daemon status edit is preserved.
+
+The declared Verification commands and repository gates remain Daemon-owned and were not run. No other Task, manifest, skill, guide, tooling configuration, dependency or root lock was edited. The Verification Feedback follow-up is recorded below.
+
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261104T183354Z_6fb3237eae19e727/verification/batch-002-attempt-1.log`.
+The Daemon's `make verify-changed` reached a suiteguard process-residue failure
+in `internal/verifyselect` after that package's test assertions passed. The
+remaining helper was a detached Git filesystem monitor. This is not an
+assertion failure in the Task's lock scan or Doctor tests.
+
+The selector's `TestPartitionFollowsTheMakefileRecipes` calls
+`makeRecipeCLITests` (`internal/verifyselect/verifyselect_test.go`) with its
+make process rooted in the real checkout. Parsing the Makefile evaluates
+`BUILD_COMMIT`, which runs Git status without disabling the filesystem
+monitor. A read-only query confirmed that the effective `core.fsmonitor=true`
+comes from user Git configuration. A temporary `GIT_TRACE2_EVENT` capture of
+the focused partition test confirmed seven unisolated status commands and
+21 filesystem-monitor protocol events. That invocation started no new
+monitor and exited 0; it does not establish that the Daemon's residue failure
+is repaired. Trace files were removed with their temporary directory.
+
+Fresh focused checks:
+
+- `go test -count=1 -timeout 3m ./internal/verifyselect -run '^TestPartitionFollowsTheMakefileRecipes$'` with a temporary Git trace — exit 0; used to trace the pre-existing Makefile/Git boundary, not as a substitute for Daemon Verification.
+- `go test -count=1 -timeout 5m ./internal/cli -run 'Test(Doctor.*(StaleOwned|OwnedLock)|StaleOwnedLockEntries)'` — exit 0; the Task's warning, recovery, scan, error and status/action tests still pass.
+- `git diff --check` — exit 0 after the evidence update.
+
+No Task source change is indicated by this failure. Follow-up outside this
+slice: isolate Git configuration at the selector's make-process boundary so
+the Makefile's build-stamp read cannot start a detached monitor under the
+test binary's suiteguard mark. Task 02 expressly prohibits Makefile changes
+and does not own `internal/verifyselect`, so neither was edited, nor was
+suiteguard weakened or a Git/process setting changed to mask the failure.
+The Behavior Surface Record remains current with the unchanged Doctor
+source and guide. Task status is preserved; the declared Verification and
+`make verify-changed` were not rerun by the Agent. The Daemon owns the next
+full configured Verification sequence.
