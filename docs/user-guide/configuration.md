@@ -394,6 +394,14 @@ worktree:
   # Maximum time before the bootstrap command fails the owning Run or Task.
   bootstrap_timeout: 10m
 
+Roundfix refuses a `worktree.location` inside the current Git root. The refusal
+names both paths: `worktree.location must not be inside the repository tree:
+"<location>" is inside the Git root "<root>" (found "<root>/.git")`. Repository
+detection finds any `.git` entry in an ancestor, so a stray `.git` in a parent
+such as the home directory is found this way. Read-Only Run Commands only warn
+with `roundfix: warning: <refusal>; commands that create a Run Worktree refuse
+it`; commands that create a Run Worktree still refuse the location.
+
 verification:
   # Maximum concurrent Task Verification attempts within one Implement Run.
   concurrency: 1

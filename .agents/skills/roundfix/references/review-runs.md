@@ -231,6 +231,14 @@ it:
 - `worktree.location` sets the parent directory with Project Config > User
   Config > built-in default precedence. The built-in default is
   `~/.roundfix/worktrees`.
+- A `worktree.location` inside the current Git root is refused with a message
+  that names the root and the `.git` found there:
+  `worktree.location must not be inside the repository tree: "<location>" is
+  inside the Git root "<root>" (found "<root>/.git")`. Repository detection
+  finds any `.git` entry in an ancestor, so a stray `.git` in a parent such as
+  the home directory is found this way. Read-Only Run Commands only warn with
+  `roundfix: warning: <refusal>; commands that create a Run Worktree refuse
+  it`; commands that create a Run Worktree still refuse the location.
 - Each spec Run Worktree is created at
   `<worktree.location>/<repo-slug>/<run-id>` on a Run Branch named
   `roundfix/run-<id>`. The Run row records the path as `work_dir`.

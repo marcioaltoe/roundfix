@@ -134,7 +134,7 @@ A repository path the tooling-authority rules bind — the configuration, script
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
-The merge base of the audited head and the Default Branch Head. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
+The merge base of the audited head and the Default Branch Head. The pre-PR review diffs the candidate from it. The mechanical stage reads a Spec's Task commits and its grant from it. A QA requirement that holds a file byte-identical compares it with the Delivery Base, never with a named commit. The Spec Consistency Check also resolves a path a Task lists under `interface:` or `instruction:` that the checked tree no longer holds, when HEAD or the Delivery Base tracks it. ([ADR-0295](docs/adr/0295-reachability-reads-the-fetched-default-branch-and-origin-names-it-when-origin-head-is-unset.md)).
 _Avoid_: Run start head, audited head, delivery target
 
 **Undeclared Governed Path**:
@@ -1390,6 +1390,10 @@ _Avoid_: Dashboard, report, log file
 **Run Browser**:
 The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
 _Avoid_: Run picker, run manager, dashboard
+
+**Read-Only Run Command**:
+A command that only reads the Run Database (bare `runs`, `runs list`, `runs show`, `attach`, `events`) and never creates a Run Worktree, so it runs from any directory; outside a Git repository `runs list` lists every repository, and a `worktree.location` refusal becomes one stderr warning; `runs causes` is not one ([ADR-0357](docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md)).
+_Avoid_: Run Browser, read-only command, support command
 
 **Cockpit**:
 The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.

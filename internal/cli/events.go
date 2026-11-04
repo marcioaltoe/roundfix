@@ -27,7 +27,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printEventsFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRunReaderCommandConfig(environment, stderr)
 	if err != nil {
 		printEventsFailure(err, stderr)
 		return exitPreflight
