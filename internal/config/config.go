@@ -281,11 +281,12 @@ type Runs struct {
 }
 
 type Loaded struct {
-	Config            Config
-	GitRoot           string
-	HomeDir           string
-	UserConfigPath    string
-	ProjectConfigPath string
+	Config              Config
+	GitRoot             string
+	HomeDir             string
+	UserConfigPath      string
+	ProjectConfigPath   string
+	WorktreeLocationErr error // the refusal when the option was set; Location is then ""
 }
 
 type SpecsRoot struct {
@@ -299,6 +300,9 @@ type LoadOptions struct {
 	HomeDir string
 	WorkDir string
 	Stderr  io.Writer
+	// WorktreeLocationOptional keeps a worktree.location refusal from failing
+	// Load, for a Read-Only Run Command that never creates a Run Worktree.
+	WorktreeLocationOptional bool
 }
 
 type InitOptions struct {
@@ -904,7 +908,10 @@ func Load(opts LoadOptions) (Loaded, error) {
 	}
 	worktreeLocation, err := ResolveWorktreeLocation(loaded.Config.Worktree.Location, loaded.GitRoot, loaded.HomeDir)
 	if err != nil {
-		return Loaded{}, err
+		if !opts.WorktreeLocationOptional {
+			return Loaded{}, err
+		}
+		loaded.WorktreeLocationErr = err
 	}
 	loaded.Config.Worktree.Location = worktreeLocation
 	return loaded, nil
@@ -1714,7 +1721,7 @@ func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (s
 	}
 	resolved := filepath.Clean(expanded)
 	if strings.TrimSpace(gitRoot) != "" && pathInsideOrSame(resolved, gitRoot) {
-		return "", fmt.Errorf("worktree.location must not be inside the repository tree: %q", resolved)
+		return "", fmt.Errorf("worktree.location must not be inside the repository tree: %q is inside the Git root %q (found %q)", resolved, gitRoot, filepath.Join(gitRoot, ".git"))
 	}
 	return resolved, nil
 }
