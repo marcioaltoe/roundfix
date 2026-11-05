@@ -1,7 +1,0 @@
-Pull Request fact supplied by Daemon: none open on the Spec target branch. The Run branch is not a PR branch.
-Approval: approved Spec delivery authority in _authorization.md at Delivery Base 4b904073751ae5ff12c334c59c04be55311d22d3; operations implement/commit/push/pull_request/merge/release. This is authority, not an obtained PR approval. No PR acceptance exists.
-Checks/status: Daemon make verify-changed pass, exit 0, at audited head 8151c5827b1e2982b4479002ca1c9bf94f4ce35f. Positive focused tests, skills and docscontract suites pass. No hosted required-check run exists. QA fails Requirement 8 on F-01.
-Unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: none exists yet; no Review Source acceptance supplied or requested.
-Review-artifact ancestry: claimed candidate 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; no review artifact exists for this head. Operative authorization is an ancestor at Delivery Base.
-Unblocking: after the QA finding is resolved, the authorized Supervisor must perform pre-PR review and open the Spec target-branch PR; then observe its approval, checks, review threads, Merge-Ready acceptance and artifact ancestry. The child Agent neither opens nor mutates a PR.

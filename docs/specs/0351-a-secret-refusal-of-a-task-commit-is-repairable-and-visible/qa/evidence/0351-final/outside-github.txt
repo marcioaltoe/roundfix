@@ -1,5 +1,0 @@
-Origin: GitHub Docs, Working with push protection from the command line, https://docs.github.com/en/code-security/how-tos/secure-your-secrets/work-with-leak-prevention/push-protection-on-the-command-line and Push protection; passage read 2026-11-04, retained in _prd.md Acceptance evidence. Uses the pre-run quoted offline passage only; no network lookup.
-
-The quoted practice identifies the secret type and a location such as path: README.md:4 and gives a detailed reason for the block. Comparison: feedback names fixture.txt:2: credential-assignment and an explicit Fix line; Causes text and JSON identify each path/line/kind, null signature/evidence, and the park preserves the same location/kind and concrete repair. The feedback/report tests deliberately inspect all eight-byte windows of runtime-generated values and unknown match fields; none reaches public outputs. Real Causes/status process reopens reproduce the location-only display.
-
-This source is published outside this Spec and supports the diagnostic form; it does not prove this implementation. Fresh local observations supply that separate proof.

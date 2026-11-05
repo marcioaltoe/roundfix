@@ -1,8 +1,0 @@
-Origin: fiscus; ai-memory message 01a1a775-04f2-7980-8817-539d9fc49c5f, 2026-11-04 13:47 BRT; Roundfix 0.130.1; adopted source references/2026-11-04-fiscus-a-task-commit-secret-refusal-is-invisible.md. This source predates this Spec and was not authored by this Spec. Offline comparison, no other repository read.
-
-External symptom -> current independent observable
-Commands and two checks passed, later refusal invisible to Agent -> TestTaskCommitSecretMatchReturnsAsVerificationFeedback passes; asserts completed commit after one feedback turn, location/kind/Fix line, and no eight-byte value slice in prompts/logs/events/progress.
-No runs causes item -> real binary Q03CLI returns two distinct secret-scan items for legacy/new events, with attempts null/1 and match arrays, and no duplicate verification item; TestRunsCausesPrintsASecretRefusal checks full stdout/stderr/exit and JSON.
-Bare run-unresolved and skipped dependents unexplained -> real binary Q04CLI names failed task_01, fixture.txt:2: credential-assignment and skipped task_02/task_03, with secret repair and Pending Question/Answer; TestDeliverStatusNamesTheSecretRefusalOfARunUnresolvedPark checks entire transcript.
-
-The tracked-value exemption suggested by Fiscus remains declined by the recorded maintainer decision; scanner history is unchanged. This comparison proves the observed report shape is addressed locally, not that Fiscus ran this unreleased candidate.

@@ -1,8 +1,0 @@
-Audited head: 945c8936f982140d8894440605e4462053af909e
-Carried runtime evidence established at head 8151c5827b1e2982b4479002ca1c9bf94f4ce35f, retained by seeded carry-forward. Those four rows were not executed again.
-Source date: 2026-11-04. Origin: fiscus, ai-memory 01a1a775-04f2-7980-8817-539d9fc49c5f, 13:47 BRT, Roundfix 0.130.1; adopted reference predates the Spec.
-Actual comparison assertions:
-- Original: Verification and two checks passed before the Task commit refusal. Carried TestTaskCommitSecretMatchReturnsAsVerificationFeedback passes and observes one repair with path, line, kind, Fix and no eight-byte value slice in any prompt, diagnostic, event or progress.
-- Original: runs causes has no row. Parsed carried CLI JSON has exactly two secret-scan items, legacy null/new attempt 1, repository-convention, null signature/evidence and path/line/kind-only matches. Fresh TestBuildReportsASecretRefusalAsItsOwnItem passes at the audited head.
-- Original: generic park and invisible skipped dependents. Both carried process reads have the exact failure location, task_02/task_03 skips, finding class, repair action, Pending Question and Answer.
-No external repository, service or production Fiscus installation was used; this demonstrates local resolution of the independently reported shape.
