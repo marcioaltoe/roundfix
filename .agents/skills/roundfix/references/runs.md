@@ -150,6 +150,14 @@ commits, pushes, stops, or resolves Review Source threads. An unknown Run ID
 exits `2` with an error stating that picker numbers are not stable Run ids —
 pass a run id or run `roundfix attach` to pick interactively.
 
+`attach` and `runs show` also accept the short id that the `runs list`
+table shows, or any longer prefix of a Run id's random suffix up to its
+sixteen digits, when it names exactly one Run. A prefix that matches
+several Runs exits `2` and lists them:
+`Run id prefix "<prefix>" matches <n> Runs: <id>, <id>; pass more digits or the full Run id`.
+`events`, `stop`, `reconcile` and every other command need the full Run
+id.
+
 ## Live Run View
 
 The Live Run View uses the same cockpit for review and spec Runs, whether the

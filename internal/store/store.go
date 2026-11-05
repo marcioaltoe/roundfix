@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -1396,6 +1397,64 @@ func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
 		return Run{}, false, err
 	}
 	return run, true, nil
+}
+
+// AmbiguousRunReferenceError lists every Run named by a suffix prefix.
+type AmbiguousRunReferenceError struct {
+	Reference string
+	RunIDs    []string
+}
+
+func (err *AmbiguousRunReferenceError) Error() string {
+	return fmt.Sprintf("Run id prefix %q matches %d Runs: %s; pass more digits or the full Run id", err.Reference, len(err.RunIDs), strings.Join(err.RunIDs, ", "))
+}
+
+var shortRunReferencePattern = regexp.MustCompile(`^[0-9a-f]{8,16}$`)
+
+// ResolveRunReference matches an exact Run id before a unique random-suffix prefix.
+func (store *Store) ResolveRunReference(ctx context.Context, reference string) (Run, bool, error) {
+	reference = strings.TrimSpace(reference)
+	run, found, err := store.Run(ctx, reference)
+	if err != nil || found {
+		return run, found, err
+	}
+	if !shortRunReferencePattern.MatchString(reference) {
+		return Run{}, false, nil
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, repository_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, owner_identity_unproven, created_at, updated_at, completed_at
+FROM runs
+WHERE id LIKE ? ESCAPE '\'
+ORDER BY id DESC`, `run\_%\_`+reference+`%`)
+	if err != nil {
+		return Run{}, false, fmt.Errorf("resolve Run reference %q: %w", reference, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var ids []string
+	for rows.Next() {
+		matched, err := scanRun(rows)
+		if err != nil {
+			return Run{}, false, fmt.Errorf("scan Run reference %q: %w", reference, err)
+		}
+		if len(ids) == 0 {
+			run = matched
+		}
+		ids = append(ids, matched.ID)
+	}
+	if err := rows.Err(); err != nil {
+		return Run{}, false, fmt.Errorf("iterate Run reference %q: %w", reference, err)
+	}
+	switch len(ids) {
+	case 0:
+		return Run{}, false, nil
+	case 1:
+		return run, true, nil
+	default:
+		return Run{}, false, &AmbiguousRunReferenceError{Reference: reference, RunIDs: ids}
+	}
 }
 
 func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {

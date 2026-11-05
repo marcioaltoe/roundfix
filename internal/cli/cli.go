@@ -5254,6 +5254,8 @@ resolves Review Source threads. Without a Run ID at an interactive
 terminal, attach opens the Run Browser to pick a Run; leaving the Live
 Run View returns to a refreshed browser until you quit.
 
+<run-id> is a full Run ID or the eight-digit short id that runs list shows.
+
 Options:
   --run-id    Run ID to attach to (same as the positional argument)
   --no-input  Fail instead of opening the Run Browser when no Run ID is passed
@@ -5385,6 +5387,7 @@ Options:
   roundfix runs show <run-id> [--json]
 
 Prints recorded token usage per Work Item scope and in total, read-only.
+<run-id> is a full Run ID or the eight-digit short id that runs list shows.
 
 Options:
   --json  Print schema roundfix/runs-show/v1 with null unreported counts

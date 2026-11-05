@@ -61,6 +61,11 @@ diagnostic is the one trailing stderr note.
 starting an Agent or changing recorded state. It prints a header, one
 tab-separated row per Work Item scope, then a Run total:
 
+`<run-id>` may also be the eight-digit short id that the
+`runs list` table shows, or a longer prefix of the id's random suffix, when
+it names one Run; a prefix that names several Runs exits `2` and lists
+them ([ADR-0363](../../adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md)).
+
 ```text
 Run <run-id>: implement <spec-slug> Clean
 task_01	codex/gpt-6.1-sol/high	5639755 tokens (request-sum) from 1 of 1 prompt(s)	cost not reported

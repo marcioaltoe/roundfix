@@ -75,7 +75,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return code
 	}
 
-	run, found, err := reader.Run(ctx, req.runID)
+	run, found, err := reader.ResolveRunReference(ctx, req.runID)
 	if err != nil {
 		printAttachFailure(err, stderr)
 		return exitPreflight

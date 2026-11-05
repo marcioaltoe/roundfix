@@ -49,14 +49,14 @@ func runRunsShowCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return fail(fmt.Errorf("%s", unknownRunMessage(ctx, id, loaded.Config.Store.RunRetentionDays)))
 	}
 	defer func() { _ = reader.Close() }()
-	run, found, err := reader.Run(ctx, id)
+	run, found, err := reader.ResolveRunReference(ctx, id)
 	if err != nil {
 		return fail(err)
 	}
 	if !found {
 		return fail(fmt.Errorf("%s", unknownRunMessage(ctx, id, loaded.Config.Store.RunRetentionDays)))
 	}
-	report, err := reader.RunTokenUsage(ctx, id)
+	report, err := reader.RunTokenUsage(ctx, run.ID)
 	if err != nil {
 		return fail(err)
 	}

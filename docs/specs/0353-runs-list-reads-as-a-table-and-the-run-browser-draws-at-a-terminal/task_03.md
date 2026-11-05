@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -152,3 +152,108 @@ maintainer on 2026-11-05 asked for "id curto"
 
 - `_prd.md` → Goals; User Story 3; Core Feature 4; Core Feature 7; Success Metric 4; Success Metric 7
 - `_techspec.md` → Current behavior 7; API Contract 9; API Contract 10; Invariant 5; ADR-0363; Testing Approach; Build Order 3
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, domain-modeling.
+
+Implemented this Task's short-reference lookup and documentation slice. The
+Daemon retains Task status and declared Verification ownership.
+
+### Acceptance evidence
+
+- Unique and exact references: `ResolveRunReference` trims input, uses the
+  unchanged exact-id `Run` lookup first, then resolves only lowercase hexadecimal
+  suffix prefixes of eight to sixteen digits with the specified escaped `LIKE`
+  query. Explicit-id `attach` and `runs show` use it; token usage uses the
+  resolved `run.ID`. `TestResolveRunReferenceNamesOneRunByItsShortID` passes
+  against a read-only reader over three Runs created in distinct temporary
+  repositories and renamed through a raw connection with foreign keys disabled.
+  Its exact, unique-prefix, longer-prefix and trimmed cases exercise resolution;
+  its `Run_stays_exact` case proves `Run` still refuses a prefix.
+- Ambiguity and unknown references: the store test checks the typed error,
+  reference, both full ids in descending id order, and exact error text.
+  `TestAnAmbiguousShortIDListsEveryMatch` passes with both prescribed renamed
+  Runs, asserting exit `2`, empty stdout and each command's exact stderr,
+  including the `runs show` usage line. Its invalid-reference case proves both
+  commands retain their unknown-Run messages for too-short, uppercase,
+  non-hexadecimal and unmatched input. Store cases additionally cover empty,
+  whitespace-only and overlong input.
+- Command behavior: `TestAttachAndRunsShowAcceptTheShortID` passes. A completed
+  Run seeded through the existing attach fixture replays identical stdout for
+  short and full ids without probing an Agent; a `seedUsageRun` fixture prints
+  identical token usage in both text and JSON for short and full ids.
+- Documentation: ADR-0363 is accepted and byte-identical to the TechSpec's ADR
+  block. Both help descriptions contain the required short-id line. The
+  canonical `runs` skill reference and both user guides contain the prescribed
+  paragraphs, and both guide links resolve to ADR-0363. The skill reference and
+  `SKILL.md` mirrors are byte-identical. The sanctioned version recorder raised
+  both Roundfix version fields from `0.1.187` to `0.1.188` and recorded the new
+  digest. The Behavior Surface Record was regenerated after the final guide edit;
+  only the attach/show help and attach/runs guide fingerprints changed.
+
+### Focused checks
+
+- Before changing code:
+  `go test -count=1 -timeout 20m -v -run '^(TestRunsShow.*|TestAttachUnknownRunFailsBeforeTUIStart|TestAttachReplaysCompletedRunReadOnly)$' ./internal/cli`
+  — exit `0`; all eight selected tests passed. In particular,
+  `TestRunsShowRefusesAnUnknownRun` refused `runs show run_missing` with exit
+  `2`, empty stdout and
+  `roundfix: runs show failed: Run "run_missing" does not exist`, followed by
+  `Run 'roundfix runs show --help' for usage.`
+- Test-first signal:
+  `go test -count=1 -run '^TestResolveRunReferenceNamesOneRunByItsShortID$' ./internal/store`
+  — exit `1` before implementation, because `ResolveRunReference` and
+  `AmbiguousRunReferenceError` were undefined.
+- `go test -count=1 -timeout 10m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$' ./internal/store`
+  — exit `0`; every resolution subtest passed.
+- `go test -count=1 -timeout 10m -v -run '^(TestAttachAndRunsShowAcceptTheShortID|TestAnAmbiguousShortIDListsEveryMatch)$' ./internal/cli`
+  — exit `0`; both command tests and all their subtests passed.
+- `go test -count=1 -timeout 10m ./internal/store` — exit `0`; the entire
+  affected store package passed, including its unchanged existing tests.
+- `go test -count=1 -timeout 10m -run '^(TestAttach|TestRunsShow|TestRunCommandHelp)' ./internal/cli`
+  — exit `0`; the existing attach/show/help tests passed unchanged.
+- `make skills-sync`, followed by
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — both exited `0`; mirror content and both recorded version fields agree.
+- `make baseline-digests` — exit `0`; reported
+  `baseline-digests: no changes; derived artifacts already match their canonical sources`
+  and `changed: false`; no Baseline artifact changed.
+- As the last documentation regeneration step, after the last guide edit:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  — exit `0`; generated `docs/references/behavior-surfaces.json`.
+- Artifact inspection confirmed the exact ADR content, matching skill mirrors,
+  valid guide links and a clean `git diff --check`.
+
+### Required sabotage probes
+
+Each probe ran on its own disposable copy of the current checkout under
+`/private/tmp/rf-task03-sabotage-t4ad3ukg`, with a separate local Git database
+for suiteguard. Neither mutation was applied to the Run Worktree.
+
+- Sabotage 9 changed the accepted prefix length from `{8,16}` to `{7,16}`.
+  `go test -count=1 -timeout 10m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$/^too_short$' ./internal/store`
+  exited `1` with named failure
+  `TestResolveRunReferenceNamesOneRunByItsShortID/too_short`:
+  `reference="0123456" id="run_20260706T120200Z_0123456789abcdef" found=true err=<nil>; want id=""`.
+- Sabotage 10 replaced the ambiguity return with the newest matching Run.
+  `go test -count=1 -timeout 10m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$/^ambiguous$' ./internal/store`
+  exited `1` with named failure
+  `TestResolveRunReferenceNamesOneRunByItsShortID/ambiguous`:
+  `id="run_20260706T120100Z_93cee2a3aaaaaaaa" found=true err=<nil>; want ambiguous reference`.
+- Both failing transcripts were inspected: each failed the expected behavioral
+  assertion and suiteguard reported no repository-boundary violation. Logs are
+  `sabotage-9.log` and `sabotage-10.log` beside the temporary copies.
+
+### Scope and settlement
+
+Only Task 03's declared paths were changed. The pre-existing Task-file change
+was its Daemon-owned `in_progress` status, which was preserved. No existing
+test was edited. No Run schema, id generator, exact-id lookup, other command,
+Run Browser, configuration, other skill/reference, Makefile, workflow, module
+file, Task Graph or other Task file changed. No follow-up work was discovered.
+
+The declared `## Verification` command and repository Verification were not
+run; the Daemon runs them after this turn. No terminal Task verdict, commit,
+push or pull request is claimed or performed.

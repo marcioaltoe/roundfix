@@ -4,6 +4,11 @@
 roundfix attach [<run-id>]
 ```
 
+`<run-id>` may also be the eight-digit short id that the
+`runs list` table shows, or a longer prefix of the id's random suffix, when
+it names one Run; a prefix that names several Runs exits `2` and lists
+them ([ADR-0363](../../adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md)).
+
 `attach` is a Read-Only Run Command: it runs from any directory. If
 `worktree.location` would be refused there, it prints that refusal once on
 stderr as a warning, naming the detected Git root and the `.git` it found,
