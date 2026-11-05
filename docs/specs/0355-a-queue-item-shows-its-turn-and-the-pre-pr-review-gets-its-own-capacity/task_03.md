@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -149,3 +149,49 @@ continues without its worktree being prepared again.
 
 - `_prd.md` → Goals; User Story 2; User Story 3; User Story 4; Core Feature 4; Core Feature 5; Core Feature 7; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 2; Current behavior 3; Current behavior 7; API Contract 3; API Contract 4; Invariants 2-6; Testing Approach; Build Order 2; ADR-0304; ADR-0225
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-concurrency, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented this Task's review scheduling slice:
+
+- Added `ReviewCapacity` (minimum/default `1`) and `TurnPollInterval` (default `30s`) to the engine dependencies, and wired the operator's `Delivery.ReviewConcurrency` into the command dependencies. The new command test proves a configured capacity of `3` reaches the engine.
+- Each `Run` owns the slot pool, poller, cancellation and worker join. The poller admits only provisioned `reviewing` items with an existing worktree directory. Claims protect the resume prologue; returned-item selection, hold checking and claiming are atomic. Reviews keep calling the unchanged `reviewCandidate`; live errors park only their own item with the existing blocker, and cancellation leaves `reviewing` without a blocker.
+- The pass hands reviews off, continues returned `archiving` items without the workspace prologue, and waits until a pass leaves the slots empty. Later passes skip previously merged items, preserving one merged cleanup per Run. Prerequisite waits and releases retain their existing next-Run behavior.
+- The queued-start check runs after prerequisites and remembers a held queued item for the rest of that pass. It emits no log line. Slot admission logs the prescribed capacity-wait line once per waiting item. Slot take, start, end and poll events report through `reviewSlotsChanged`.
+
+Acceptance evidence:
+
+| Criterion | Focused evidence |
+| --- | --- |
+| A retried review starts beside implementation; its worktree is not prepared again | `TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements` holds implementation until the retried review starts, keeps that review active until the other item archives, observes one review per item and zero `UseItemBranch` calls for `retried`, and checks the default poll interval. |
+| Review Capacity bounds concurrency; one capacity-wait line | `TestReviewCapacityBoundsConcurrentReviews` exercises three provisioned reviews at capacity `2`, verifies the maximum and the third review's start after a prior review ends, and checks the exact wait line occurs once. Its `capacity below one` subtest exercises dependency capacity `0` and observes maximum concurrency `1`. |
+| Queued start order and unchanged existing behavior | `TestAQueuedItemWaitsForAnEarlierItemInReview` verifies no second branch during the first review and the complete event order of inline capacity-one delivery. Its `an earlier blocker ends during the pass` subtest proves `second` starts before `third` after `first` parks mid-pass. All existing delivery and matched CLI tests pass without edits. |
+| Review error and owner cancellation | `TestAFailedReviewParksOnlyItsItem` checks `delivery-error: run pre-PR review: review exploded` and the next item's merge. `TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing` verifies cancellation matching, review shutdown before Run returns, and the unchanged reviewing stage and empty blocker. |
+
+Required characterization, run before changing code; both passed:
+
+- `go test -count=1 -timeout 20m ./internal/delivery`
+- `go test -count=1 -timeout 30m -run 'Deliver|Delivery|Queue' ./internal/cli`
+
+Focused implementation checks passed:
+
+- `go test -race -count=1 -timeout 3m ./internal/delivery` — final source and fixtures, including every existing delivery test and all five new tests.
+- `go test -race -count=20 -timeout 3m -run 'TestAReviewHanded|TestReviewCapacityBounds|TestAQueuedItemWaits|TestAFailedReview|TestStoppingTheOwner' ./internal/delivery` — repeated scheduling, capacity, ordering, error and cancellation coverage.
+- `go test -count=1 -timeout 5m -run 'Deliver|Delivery|Queue' ./internal/cli` — existing command tests plus the new wiring test.
+- `go test -count=1 -timeout 3m -run '^TestTheDeliveryEngineGetsTheReviewCapacity$' ./internal/cli`
+- `git diff --check`; byte comparison against `HEAD` confirms `Engine.Retry` and `reviewCandidate` remain unchanged. No existing test or fixture was edited.
+
+Sabotages 1–5 were applied to separate initialized temporary repository copies. Every command used `go test -count=1 -timeout 3m -run '<named test selector>' ./internal/delivery`; failures came from the named behavioral tests, not compilation or fixture setup. Logs are under `/private/tmp/roundfix-task03-sabotages-w971ycj4/` (the `*.final.log` files cover the final implementation).
+
+| Sabotage | Named test and input | Observed failure |
+| --- | --- | --- |
+| 1: inline review, with the independent poll handoff removed | `TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements`; `implementing` at running before provisioned `retried` at reviewing | The retried review never starts while implementation waits; the named test fails its event wait. |
+| 2: ignore capacity when starting waiting reviews | `TestReviewCapacityBoundsConcurrentReviews`; three reviewing items, capacity `2`, and its capacity-`0` subtest | Maximum concurrency becomes `3` instead of `2`/`1`; the third review starts before either earlier review ends. |
+| 3: remove queued-start rule | `TestAQueuedItemWaitsForAnEarlierItemInReview`; `first` and `second` queued | `second` creates its branch during the first review and the complete event sequence differs from inline order. |
+| 3, same-pass clause only | `TestAQueuedItemWaitsForAnEarlierItemInReview/an_earlier_blocker_ends_during_the_pass`; three queued items, first review parks during third's prerequisite read | `third:create` precedes `second:create`. |
+| 4: prepare a worktree held by the slots | `TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements`; the same running/reviewing pair | `UseItemBranch` for `retried` is called twice instead of zero times. |
+| 5: park cancelled reviews using a context that permits the write | `TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing`; cancel the owner after its review starts | The item becomes parked with `delivery-error: run pre-PR review: context canceled`. |
+
+The authored Verification command and platform builds remain for the Daemon. The pre-existing `status: in_progress` was preserved, and the Task Graph was not edited. No commit, push or pull request was made.
