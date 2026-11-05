@@ -1427,7 +1427,7 @@ func defaultResolveSkillsProjectRoot(ctx context.Context, cwd string) (string, e
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	if root := findSkillsGitRoot(cwd); root != "" {
+	if root := roundconfig.FindGitRoot(cwd); root != "" {
 		return root, nil
 	}
 	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
@@ -1441,20 +1441,6 @@ func defaultResolveSkillsProjectRoot(ctx context.Context, cwd string) (string, e
 		return "", errors.New("project skill install requires running inside a git repository or passing --dir")
 	}
 	return root, nil
-}
-
-func findSkillsGitRoot(start string) string {
-	current := filepath.Clean(start)
-	for {
-		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
-			return current
-		}
-		parent := filepath.Dir(current)
-		if parent == current {
-			return ""
-		}
-		current = parent
-	}
 }
 
 func maybeCreateProjectClaudeSkillSymlink(ctx context.Context, projectRoot string, stdout, stderr io.Writer) error {

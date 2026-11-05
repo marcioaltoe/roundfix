@@ -63,6 +63,22 @@ func IsolatedEnv() []string {
 	)
 }
 
+// MarkRepository writes the smallest .git directory Git accepts under dir: a
+// HEAD naming a branch and empty objects and refs directories.
+func MarkRepository(t testing.TB, dir string) {
+	t.Helper()
+	for _, name := range []string{"objects", "refs"} {
+		path := filepath.Join(dir, ".git", name)
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatalf("gittest: create %s: %v", path, err)
+		}
+	}
+	head := filepath.Join(dir, ".git", "HEAD")
+	if err := os.WriteFile(head, []byte("ref: refs/heads/main\n"), 0o644); err != nil {
+		t.Fatalf("gittest: write %s: %v", head, err)
+	}
+}
+
 // InitRepo creates a disposable repository at the absolute repoPath and
 // disables its automatic maintenance and filesystem monitor. Extra arguments
 // are passed to git init,

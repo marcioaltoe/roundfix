@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestRepositoryAtSettlementDefaultsToTrue(t *testing.T) {
@@ -11,7 +13,7 @@ func TestRepositoryAtSettlementDefaultsToTrue(t *testing.T) {
 	home, work := t.TempDir(), t.TempDir()
 	// Both config files exist but omit the new key.
 	mustMkdir(t, filepath.Join(home, ".roundfix"))
-	mustMkdir(t, filepath.Join(work, ".git"))
+	gittest.MarkRepository(t, work)
 	mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "verification:\n  concurrency: 2\n")
 	mustWrite(t, filepath.Join(work, ".roundfixrc.yml"), "verification:\n  concurrency: 3\n")
 	loaded, err := Load(LoadOptions{HomeDir: home, WorkDir: work})
@@ -29,7 +31,7 @@ func TestRepositoryAtSettlementReadsFalse(t *testing.T) {
 		t.Run(scope, func(t *testing.T) {
 			home, work := t.TempDir(), t.TempDir()
 			mustMkdir(t, filepath.Join(home, ".roundfix"))
-			mustMkdir(t, filepath.Join(work, ".git"))
+			gittest.MarkRepository(t, work)
 			path := filepath.Join(home, ".roundfix", "config.yml")
 			if scope != "user" {
 				path = filepath.Join(work, ".roundfixrc.yml")

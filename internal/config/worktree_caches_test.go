@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestWorktreeCachesDefaultsToNone(t *testing.T) {
@@ -24,7 +26,7 @@ func TestWorktreeCachesAcceptsRepositoryRelativeDirectories(t *testing.T) {
 		t.Run(scope, func(t *testing.T) {
 			t.Parallel()
 			home, repo := t.TempDir(), t.TempDir()
-			mustMkdir(t, filepath.Join(repo, ".git"))
+			gittest.MarkRepository(t, repo)
 			path := filepath.Join(repo, ".roundfixrc.yml")
 			if scope == "user" {
 				path = filepath.Join(home, ".roundfix", "config.yml")

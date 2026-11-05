@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestDefaultConfigScopesReviewSourceToPullRequestFeedback(t *testing.T) {
@@ -51,7 +53,7 @@ func TestDefaultConfigSelectsNoPrePRReviewProvider(t *testing.T) {
 
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(workDir, projectConfigName), projectConfig)
 
 	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})

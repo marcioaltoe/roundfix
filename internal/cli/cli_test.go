@@ -3122,7 +3122,7 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	gittest.MarkRepository(t, otherRepo)
 	runs := seedRunsForListColumns(t, homeDir, repoDir, otherRepo)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -3184,7 +3184,7 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	gittest.MarkRepository(t, otherRepo)
 	runs := seedRunsForListColumns(t, homeDir, repoDir, otherRepo)
 	activeLine := fmt.Sprintf(
 		"%s  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run\n",
@@ -3846,7 +3846,7 @@ func TestSetupWritesNoRunCeilingIntoProjectConfig(t *testing.T) {
 
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), projectContent)
 	var loadStderr bytes.Buffer
 	if _, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &loadStderr}); err != nil {
@@ -12202,7 +12202,7 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
-	mustMkdir(t, filepath.Join(repoDir, ".git"))
+	gittest.MarkRepository(t, repoDir)
 	setCommandEnvironmentForTest(t, homeDir, repoDir)
 	return homeDir, repoDir
 }
@@ -13212,11 +13212,18 @@ type fakeWorktree struct {
 	calls int
 }
 
-func (worktree *fakeWorktree) Snapshot(context.Context, string) ([]string, error) {
+func (worktree *fakeWorktree) Snapshot(_ context.Context, workDir string) ([]string, error) {
 	worktree.mu.Lock()
 	defer worktree.mu.Unlock()
 	worktree.calls++
 	if worktree.calls%2 == 0 {
+		// The reported change exists on disk before the commit boundary reads it.
+		if err := os.MkdirAll(filepath.Join(workDir, "src"), 0o755); err != nil {
+			return nil, fmt.Errorf("create fake worktree source directory: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(workDir, "src", "agent-change.go"), []byte("package src\n"), 0o644); err != nil {
+			return nil, fmt.Errorf("write fake worktree change: %w", err)
+		}
 		return []string{"src/agent-change.go"}, nil
 	}
 	return nil, nil
@@ -15058,7 +15065,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	gittest.MarkRepository(t, otherRepo)
 	base := time.Date(2026, 7, 6, 14, 0, 0, 0, time.UTC)
 	runs := seedRunsForList(t, homeDir, []runListSeed{
 		{

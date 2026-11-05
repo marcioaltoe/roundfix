@@ -93,6 +93,11 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` lists every repository as `runs list --all` does and
 exits `0`.
 
+Only a `.git` entry that Git accepts marks a Git root: a directory with a
+valid `HEAD` and `objects` and `refs` directories, or a file that starts with
+`gitdir:`. Any other `.git`, such as a directory that holds only `gk` and
+`info`, is skipped as Git skips it.
+
 `runs list` has two formats. Agents and scripts pass `--format plain`,
 which always prints the stable lines above; without `--format` the stable
 lines are also printed whenever standard output is not an interactive

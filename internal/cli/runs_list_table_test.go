@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 )
@@ -47,7 +48,7 @@ func TestRunsListPlainFormatKeepsTheStableLine(t *testing.T) {
 	home, repo := withCLIWorkspace(t)
 	runsListFormatEnvironment(t)
 	other := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(other, ".git"))
+	gittest.MarkRepository(t, other)
 	runs := seedRunsForListColumns(t, home, repo, other)
 	for _, test := range []struct {
 		name  string
@@ -84,8 +85,8 @@ func seedRunsForTable(t *testing.T) (string, string, []store.Run) {
 	home, _ := withCLIWorkspace(t)
 	roots := t.TempDir()
 	fiscus, quaestor := filepath.Join(roots, "fiscus"), filepath.Join(roots, "quaestor")
-	mustMkdir(t, filepath.Join(fiscus, ".git"))
-	mustMkdir(t, filepath.Join(quaestor, ".git"))
+	gittest.MarkRepository(t, fiscus)
+	gittest.MarkRepository(t, quaestor)
 	setCommandEnvironmentForTest(t, home, fiscus)
 	runsListFormatEnvironment(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
@@ -232,7 +233,7 @@ func TestRunsListTableKeepsTheWarningAndHiddenNote(t *testing.T) {
 	home, _, _ := seedRunsForTable(t)
 	outside := filepath.Join(home, "drive")
 	mustMkdir(t, outside)
-	mustMkdir(t, filepath.Join(home, ".git"))
+	gittest.MarkRepository(t, home)
 	setCommandEnvironmentForTest(t, home, outside)
 	warning := fmt.Sprintf("roundfix: warning: worktree.location must not be inside the repository tree: %q is inside the Git root %q (found %q); commands that create a Run Worktree refuse it\n", filepath.Join(home, ".roundfix", "worktrees"), home, filepath.Join(home, ".git"))
 	wantErr := warning + "(1 terminal Run(s) hidden; use --state all)\n"

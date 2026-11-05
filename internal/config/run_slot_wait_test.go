@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/gittest"
 )
 
 func TestRunSlotWaitIsReadFromUserConfig(t *testing.T) {
@@ -41,7 +43,7 @@ func TestProjectConfigCannotSetTheRunSlotWait(t *testing.T) {
 		t.Run(value, func(t *testing.T) {
 			home, work := t.TempDir(), t.TempDir()
 			mustMkdir(t, filepath.Join(home, ".roundfix"))
-			mustMkdir(t, filepath.Join(work, ".git"))
+			gittest.MarkRepository(t, work)
 			mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "runs:\n  slot_wait: 90m\n")
 			mustWrite(t, filepath.Join(work, ".roundfixrc.yml"), "runs:\n  slot_wait: "+value+"\n")
 			var stderr bytes.Buffer

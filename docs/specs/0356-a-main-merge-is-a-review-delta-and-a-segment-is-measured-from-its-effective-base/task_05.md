@@ -31,6 +31,13 @@ the checkout while a test suite runs. The gate keeps its evidence under names
 the repository does not ignore, `.txt` for command output, and links only
 files it kept.
 
+The `go test` package and test runs of this gate do not run `bin/roundfix`
+and keep the session's own `HOME` and `TMPDIR`: their tests make their own
+temporary homes, and some, such as `TestGuidanceCompositionJourney/rust-cli`,
+call an installed formatter (`rustfmt` through rustup) that needs the
+session's toolchain configuration under `HOME`. Only rows that run
+`bin/roundfix` use fresh temporary homes.
+
 ## Requirements
 
 1. MUST build the binary with `make build` and run the repository
