@@ -92,7 +92,7 @@ func TestDeliverStatusNamesTheSecretRefusalOfARunUnresolvedPark(t *testing.T) {
 	const answer = "if the failed Task's text prescribes the value the blocker locates, amend it in /worktrees/0077-example to one no Secret Pattern matches (letters only, or fewer than 20 characters); then run roundfix deliver retry 0077-example, whose rerun returns any Secret Match to the Agent as Verification Feedback"
 	want := "0077-example\tparked\t" + blocker + "\t/worktrees/0077-example\n" +
 		"Park: 0077-example finding: " + answer + "\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n" +
 		"Pending question: 0077-example parked " + blocker + "\n" +
 		"Answer: " + answer + "\n"

@@ -391,7 +391,7 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 			fmt.Fprintf(stdout, "Continuing item branch %s for %s\n", branch, slug)
 		}
 	}
-	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
 
@@ -453,7 +453,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return printDeliverFailure("status", err, stderr)
 	}
-	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	printDeliveryUsage(stdout, report.Total)
 	if question, found := delivery.PendingQuestionFor(queue); found {
 		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
@@ -503,7 +503,7 @@ func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controlle
 	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state)
 }
 
-func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
+func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits, reviewConcurrency int) {
 	deadline := "none"
 	if !limits.Deadline.IsZero() {
 		deadline = limits.Deadline.UTC().Format(time.RFC3339)
@@ -518,9 +518,10 @@ func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
 	}
 	fmt.Fprintf(
 		output,
-		"Limits: deadline %s, retries per item %s, concurrency 1, tokens %s\n",
+		"Limits: deadline %s, retries per item %s, concurrency 1, review concurrency %d, tokens %s\n",
 		deadline,
 		retries,
+		reviewConcurrency,
 		tokens,
 	)
 }

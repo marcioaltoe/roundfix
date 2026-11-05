@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -129,3 +129,77 @@ Delivery Engine.
 
 - `_prd.md` → Goals; Core Feature 6; Success Metric 5
 - `_techspec.md` → Current behavior 4; Current behavior 6; API Contract 1; API Contract 2; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Added the operator-only `delivery.review_concurrency` key beside the existing
+Check Wait handling. The built-in default is `2`; the overlay accepts a User
+Config integer and validation refuses values below `1`. Project Config removes
+the key before strict decoding and emits the exact operator-only warning, even
+for invalid values. `deliver start` and `deliver status` pass the loaded value
+to `printDeliveryLimits`, which prints it after `concurrency 1`.
+
+### Characterization before code changes
+
+Both required commands passed, exit `0`:
+
+- `go test -count=1 -timeout 20m -v -run '^(TestDeliveryCheckTimeoutIsReadFromUserConfig|TestProjectConfigCannotSetTheDeliveryCheckTimeout)$' ./internal/config`
+- `go test -count=1 -timeout 20m -run '^TestDeliver(Start|Status)' ./internal/cli`
+
+The new tests first exposed the missing behavior: the configuration tests
+could not compile without the new constant and field; the new command test
+failed because strict decoding rejected `review_concurrency` as unknown.
+
+### Acceptance evidence
+
+- Configuration: `go test -count=1 -timeout 3m -v -run 'ReviewConcurrency' ./internal/config`
+  passed, exit `0`. All three new named tests passed: default `2`, explicit `1`
+  and `4`, User Config refusal of `0`, `-1` and `two`, and Project Config values
+  `0`, `5`, `-1` and `two` ignored while retaining User Config `3` and printing
+  exactly the required warning. Each top-level test begins with `t.Parallel()`;
+  directory fixtures use only `t.TempDir()` and the Project Config fixture uses
+  `gittest.MarkRepository`.
+- Command output: `go test -count=1 -timeout 5m -v -run '^TestDeliver(LimitsNameTheReviewConcurrency|StartRecords.*|StartPrintsTokensNone|Status.*)$' ./internal/cli`
+  passed, exit `0`. `TestDeliverLimitsNameTheReviewConcurrency` exercises start
+  with omitted limits and status over its recorded queue, both with User Config
+  `3`, and checks the exact `Limits: deadline none, retries per item none, concurrency 1, review concurrency 3, tokens none`
+  line. The affected default-value transcripts, including the Spec 0356 review
+  lineage transcript, also passed.
+- Scope: a byte comparison against `git show HEAD:<path>`, after removing the
+  new command test and reversing only `review concurrency 2, ` in existing
+  expectations, reproduced all eleven original command test files exactly.
+  `DefaultConfigYAML` and `DefaultProjectConfigYAML` are byte-identical to HEAD.
+  No other existing test, fixture or expectation changed. `git diff --check`
+  passed. The Delivery Engine, Run Database, other keys, templates, skills,
+  guides and tooling files were not changed.
+
+### Required sabotages
+
+Both ran on an isolated temporary copy under `/private/tmp/roundfix-0355-task02-1x3zp6d9/repo`,
+materialized from HEAD plus this Task's changes, with disposable Git metadata.
+Neither mutation touched the assigned worktree.
+
+- Sabotage 8 removed the review concurrency text and its formatting argument
+  from `printDeliveryLimits`. `go test -count=1 -timeout 3m -v -run '^TestDeliverLimitsNameTheReviewConcurrency$' ./internal/cli`
+  exited `1`: `TestDeliverLimitsNameTheReviewConcurrency` saw a successful start
+  printing the old line without `review concurrency 3` and failed its output
+  assertion.
+- After restoring the command source, sabotage 9 removed the Project Config
+  key stripping and allowed its overlay to apply. `go test -count=1 -timeout 3m -v -run '^TestProjectConfigCannotSetTheDeliveryReviewConcurrency$' ./internal/config`
+  exited `1`: `TestProjectConfigCannotSetTheDeliveryReviewConcurrency/5` observed
+  `ReviewConcurrency = 5, want 3`; `/0` and `/-1` failed validation, and `/two`
+  failed decoding. All four subtests failed as intended.
+
+### Final record and settlement boundary
+
+The final repository edit regenerates `docs/references/behavior-surfaces.json`
+with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+No record bytes are edited by hand. The Agent handback reports the command's
+outcome.
+
+Declared Verification and repository Verification were not run; they remain
+Daemon-owned. Task status and checkboxes are unchanged. No commit, push or
+Pull Request was made. Giving this field to the Delivery Engine remains
+`task_03`'s slice; there is no additional follow-up in this diff.

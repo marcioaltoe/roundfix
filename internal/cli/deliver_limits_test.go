@@ -46,7 +46,7 @@ func TestDeliverStartRecordsAndPrintsItsLimits(t *testing.T) {
 	if queue.Limits.Deadline.Before(wantEarliest) || queue.Limits.Deadline.After(wantLatest) || queue.Limits.MaxRetries != 2 {
 		t.Fatalf("recorded limits = %+v, want deadline in [%s, %s] and retries 2", queue.Limits, wantEarliest, wantLatest)
 	}
-	want := "Limits: deadline " + queue.Limits.Deadline.Format(time.RFC3339) + ", retries per item 2, concurrency 1, tokens none\n"
+	want := "Limits: deadline " + queue.Limits.Deadline.Format(time.RFC3339) + ", retries per item 2, concurrency 1, review concurrency 2, tokens none\n"
 	if stdout.String() != want {
 		t.Fatalf("deliver start stdout = %q, want %q", stdout.String(), want)
 	}
@@ -74,9 +74,52 @@ func TestDeliverStartRecordsNoneForOmittedLimits(t *testing.T) {
 	if !queue.Limits.Deadline.IsZero() || queue.Limits.MaxRetries != 0 {
 		t.Fatalf("recorded omitted limits = %+v, want zero values", queue.Limits)
 	}
-	want := "Limits: deadline none, retries per item none, concurrency 1, tokens none\n"
+	want := "Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n"
 	if stdout.String() != want {
 		t.Fatalf("deliver start stdout = %q, want %q", stdout.String(), want)
+	}
+}
+
+func TestDeliverLimitsNameTheReviewConcurrency(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writeUserConfig(t, homeDir, "delivery:\n  review_concurrency: 3\n")
+	setImplementFixtureAuthorizationOperations(t, repoDir, allDeliveryOperations...)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.deliveryReadiness = readyDeliveryReadiness
+		dependencies.startDeliveryOwner = func(context.Context, roundconfig.Loaded, commandEnvironment, io.Writer, io.Writer) int {
+			return exitOK
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	want := "Limits: deadline none, retries per item none, concurrency 1, review concurrency 3, tokens none\n"
+
+	code := runCLI(t, []string{"deliver", "start", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
+		t.Fatalf("deliver start exit=%d stderr=%q stdout=%q, want %q", code, stderr.String(), stdout.String(), want)
+	}
+	queue := openDeliveryQueueForCLI(t, homeDir, repoDir)
+	if !queue.Limits.Deadline.IsZero() || queue.Limits.MaxRetries != 0 {
+		t.Fatalf("recorded omitted limits = %+v, want zero values", queue.Limits)
+	}
+	stdout.Reset()
+	stderr.Reset()
+
+	code = runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
+
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("deliver status exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	var limitsLine string
+	for line := range strings.SplitSeq(stdout.String(), "\n") {
+		if strings.HasPrefix(line, "Limits:") {
+			limitsLine += line + "\n"
+		}
+	}
+	if limitsLine != want {
+		t.Fatalf("deliver status Limits line = %q, want %q", limitsLine, want)
 	}
 }
 

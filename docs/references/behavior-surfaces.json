@@ -61,7 +61,7 @@
     "command window clear": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "command window set": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "command window show": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
-    "config keys": "sha256:958fee19b0af9395cfe38fd972a5f04a3cb47c687a266647c581847d55d0a1bd",
+    "config keys": "sha256:8471c50d7dd17e4a5aca0f840775985ce9f5a9db31323a9c4d34ac9d47b9b702",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
     "guide docs/user-guide/commands.md": "sha256:662eee7721d6e23889211f0f1600c4bc9af89e0fdffdefbbe107a38f482ff3fb",
     "guide docs/user-guide/commands/archive.md": "sha256:f96486598d76e1479ca16f370060fa7f29af9ed433d35b66a8ff00489f54df8d",

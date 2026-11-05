@@ -155,7 +155,7 @@ func TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks(t *testing.T) {
 		"Warning: 0300-example premise-changed: internal/example.go\n" +
 		fmt.Sprintf("Owner: Delivery Queue owner PID %d is not running; run roundfix deliver resume\n", pid) +
 		"Park: 0301-example environment: resolve the blocker, then run roundfix deliver retry 0301-example\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n" +
 		"Pending question: 0301-example parked checks-timeout\n" +
 		"Answer: resolve the blocker, then run roundfix deliver retry 0301-example\n"
@@ -204,7 +204,7 @@ func assertDeliveryOwnerStatus(t *testing.T, ownerLine, diagnostic string) {
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
 	want := "0300-example\tchecking\t-\t-\n" + ownerLine +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n"
 	if code != exitOK || stdout.String() != want || stderr.String() != diagnostic {
 		t.Fatalf("exit=%d stdout=%q stderr=%q; want stdout=%q stderr=%q", code, stdout.String(), stderr.String(), want, diagnostic)
