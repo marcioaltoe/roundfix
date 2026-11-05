@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -173,3 +173,88 @@ Record beside the owner's console log, and `deliver status` prints one
 
 - `_prd.md` → Goals; User Story 1; User Story 5; Core Feature 1; Core Feature 2; Core Feature 3; Success Metric 4
 - `_techspec.md` → Current behavior 4; Data Models; API Contract 3; API Contract 5; API Contract 6; API Contract 7; API Contract 8; Surface Transcript 1; Invariant 1; Invariant 7; Invariant 8; Testing Approach; Build Order 3; ADR-0279; ADR-0304
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-concurrency, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented this Task's turn recording and status slice. The pre-existing
+`status: in_progress` is preserved for Daemon settlement. No existing test,
+review-slot implementation, Task Graph, other Task, configuration, guide,
+skill, database schema, stage, blocker or Park Class was changed.
+
+Acceptance evidence:
+
+- `TurnLines` renders all six forms in queue order, excludes merged and
+  parked items, ignores stale non-advancing entries when counting slots and
+  waits, and ranks the owner's waiting items after the advancing position
+  before wrapping. `TestTurnLinesNameEachItemsTurn` passes the required
+  ten-item input, `nothing advancing`, and an advancing entry whose stored
+  stage changed.
+- The engine records fresh queue reads at pass start/stop, slot callbacks,
+  prerequisite waits and polls, with the advancing item and prerequisite
+  state protected by the same mutex as the read and recorder call. The
+  existing review slots remain unchanged. `TestTheOwnerRecordsEachItemsTurn`
+  observes capacity 1 with `implementing` advancing, `reviewed` reviewing,
+  `waiting` waiting for a review slot, and `later` waiting for the owner;
+  every item then merges. Its `prerequisite wait` subtest observes
+  `dependent` waiting on `[blocker]` before releasing the review, then
+  preserves the existing next-Run prerequisite deferral. Its `recorder
+  failure` subtest merges both items despite `disk full` and observes the
+  exact required warning. A nil recorder returns before any recording read
+  or warning.
+- The command injects `*ownerTurnRecorder`, which caches the current PID,
+  identity and path and atomically replaces `turn.json` beside the console
+  log. `TestTheTurnRecorderWritesBesideTheConsoleLog` checks the v1 schema,
+  literal JSON field names, identity, capacity, ordered items, omitted empty
+  prerequisites, file mode `0600`, directory mode `0700`, and replacement
+  with no temporary file left. `TestTheDeliveryEngineGetsTheTurnRecorder`
+  checks the production dependency builder.
+- `deliver status` reads turns only after proving the owner live and matching
+  both recorded PID and identity. `TestDeliverStatusReproducesSurfaceTranscriptQueueTurns`
+  checks every line of Surface Transcript 1, empty stderr and exit 0.
+  `TestDeliverStatusIgnoresATurnRecordOfAnotherOwner` covers another identity,
+  another PID, an absent owner, no record, malformed JSON, a wrong schema,
+  unproven identity and unreadable owner identity. It checks that status
+  preserves the queue, creates no artifact directory for a missing record,
+  and emits exactly one diagnostic for an unreadable or unsupported record
+  while exiting 0. `TestDeliverStatusOrdersWarningsTurnsAndParks` checks the
+  exact ordering and unchanged adjacent lines.
+
+Focused checks (all exit 0 unless explicitly identified as the red signal):
+
+- Before changing code, the required characterization passed:
+  `go test -count=1 -timeout 20m -v -run '^(TestDeliverStatus.*Owner.*|TestDeliverStatusPrintsTheItemWorktree|TestDeliverStatusPrintsAParkLinePerParkedItem)$' ./internal/cli`.
+- Red signal after adding the engine tests, before implementation:
+  `go test -count=1 -run '^TestTurnLinesNameEachItemsTurn$' ./internal/delivery`
+  exited 1 with the absent `TurnState`, `Turn` and turn constants.
+- `go test -count=1 -timeout 3m -v -run '^(TestTurnLinesNameEachItemsTurn|TestTheOwnerRecordsEachItemsTurn)$' ./internal/delivery`.
+- `go test -count=1 -timeout 3m -run '^TestDeliverStatusPrintsNoOwnerLineForAProvenOwner$' ./internal/cli`.
+- `go test -count=1 -timeout 3m -v -run '^(TestDeliverStatusReproducesSurfaceTranscriptQueueTurns|TestDeliverStatusIgnoresATurnRecordOfAnotherOwner|TestTheTurnRecorderWritesBesideTheConsoleLog|TestTheDeliveryEngineGetsTheTurnRecorder)$' ./internal/cli`.
+- `go test -race -count=1 -timeout 5m -v -run '^(TestTurnLinesNameEachItemsTurn|TestTheOwnerRecordsEachItemsTurn|TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements|TestReviewCapacityBoundsConcurrentReviews|TestAQueuedItemWaitsForAnEarlierItemInReview|TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing)$' ./internal/delivery`.
+- `go test -race -count=1 -timeout 5m -v -run '^(TestDeliverStatus.*Owner.*|TestDeliverStatusReproducesSurfaceTranscriptQueueTurns|TestDeliverStatusOrdersWarningsTurnsAndParks|TestDeliverStatusPrintsTheItemWorktree|TestDeliverStatusPrintsAParkLinePerParkedItem|TestTheTurnRecorderWritesBesideTheConsoleLog|TestTheDeliveryEngineGetsTheTurnRecorder)$' ./internal/cli`.
+- After strengthening the independent JSON-field and directory-mode assertions:
+  `go test -race -count=1 -timeout 3m -v -run '^TestTheTurnRecorderWritesBesideTheConsoleLog$' ./internal/cli`.
+- `git diff --check` reports no whitespace errors. The changed-file scope is
+  this Task file and the seven declared Go implementation/test files only.
+
+Required sabotage evidence, each on the isolated copy at
+`/private/tmp/roundfix-0355-turn-sabotage-vsdxuu76/repo`, with each mutation
+restored after its probe:
+
+- Sabotage 6 disabled the rotation after the advancing position, leaving
+  position-only ranking. `go test -count=1 -timeout 3m -v -run '^TestTurnLinesNameEachItemsTurn$' ./internal/delivery`
+  exited 1 in `TestTurnLinesNameEachItemsTurn`: the input with `b` advancing
+  at position 1 and `a`, `c`, `d` waiting produced places 1, 2, 3 instead of
+  3, 1, 2. Exact transcript:
+  `/private/tmp/roundfix-0355-turn-sabotage-vsdxuu76/sabotage-6.log`.
+- Sabotage 7 removed only the Turn Record owner-identity comparison, retaining
+  the PID comparison. `go test -count=1 -timeout 3m -v -run '^TestDeliverStatusIgnoresATurnRecordOfAnotherOwner$/^other_identity$' ./internal/cli`
+  exited 1 in `TestDeliverStatusIgnoresATurnRecordOfAnotherOwner/other_identity`:
+  a record with the live owner's PID but `another-owner-identity` incorrectly
+  printed `Turn: 0300-example advancing at checking`. Exact transcript:
+  `/private/tmp/roundfix-0355-turn-sabotage-vsdxuu76/sabotage-7.log`.
+
+The declared Verification, cross-platform builds and repository gates were
+not run; they remain Daemon-owned. No commit, push or pull request was made.

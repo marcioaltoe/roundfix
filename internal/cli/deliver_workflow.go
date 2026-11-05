@@ -92,6 +92,7 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
 		RunSlotWait:    loaded.Config.Runs.SlotWait,
 		CheckTimeout:   loaded.Config.Delivery.CheckTimeout,
 		ReviewCapacity: loaded.Config.Delivery.ReviewConcurrency,
+		TurnRecorder:   &ownerTurnRecorder{loaded: loaded},
 		Log:            os.Stderr,
 	}
 }

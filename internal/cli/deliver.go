@@ -440,8 +440,12 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			}
 		}
 	}
-	if line := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr); line != "" {
-		fmt.Fprintln(stdout, line)
+	ownerLine, ownerLive := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr)
+	if ownerLine != "" {
+		fmt.Fprintln(stdout, ownerLine)
+	}
+	if ownerLive {
+		printDeliveryTurns(loaded, queue, stdout, stderr)
 	}
 	for _, item := range queue.Items {
 		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
@@ -465,9 +469,9 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	return exitOK
 }
 
-func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) string {
+func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) (string, bool) {
 	if queue.OwnerPID <= 0 {
-		return ""
+		return "", false
 	}
 	canAdvance := false
 	for _, item := range queue.Items {
@@ -477,7 +481,7 @@ func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controlle
 		}
 	}
 	if !canAdvance {
-		return ""
+		return "", false
 	}
 
 	state := "is not running"
@@ -490,17 +494,17 @@ func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controlle
 		}
 		switch {
 		case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
-			return ""
+			return "", true
 		case proofErr == nil:
 			// The process exited between the liveness check and identity proof.
 		case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
 			state = "has a different process identity"
 		default:
 			fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d could not be checked: %v\n", queue.OwnerPID, proofErr)
-			return ""
+			return "", false
 		}
 	}
-	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state)
+	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state), false
 }
 
 func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits, reviewConcurrency int) {

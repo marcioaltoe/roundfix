@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/config"
@@ -370,6 +371,7 @@ type ConflictResolution struct {
 }
 
 type EngineDependencies struct {
+	TurnRecorder     TurnRecorder
 	ReviewCapacity   int
 	TurnPollInterval time.Duration
 
@@ -404,11 +406,15 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
-	reviewCapacity   int
-	turnPollInterval time.Duration
-	reviewSlots      *reviewSlots
-	queuedTurnHeld   bool
-	prerequisiteWait bool
+	turnRecorder      TurnRecorder
+	turnMu            sync.Mutex
+	advancing         string
+	prerequisiteWaits map[string][]string
+	reviewCapacity    int
+	turnPollInterval  time.Duration
+	reviewSlots       *reviewSlots
+	queuedTurnHeld    bool
+	prerequisiteWait  bool
 
 	merges         MergeObserver
 	policyRefusals map[string]bool
@@ -478,6 +484,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		turnPollInterval = defaultTurnPollInterval
 	}
 	return &Engine{
+		turnRecorder:     dependencies.TurnRecorder,
 		reviewCapacity:   reviewCapacity,
 		turnPollInterval: turnPollInterval,
 
@@ -848,6 +855,8 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 
 	slots := newReviewSlots(engine, gitRoot)
 	engine.reviewSlots = slots
+	engine.advancing = ""
+	engine.prerequisiteWaits = make(map[string][]string)
 	slots.start(ctx)
 	defer func() {
 		slots.stop()
@@ -925,12 +934,14 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 			if item.Stage != store.DeliveryStageMerged {
 				priorMerges := mergedCommitsBefore(queue.Items, index)
 				engine.prerequisiteWait = false
+				engine.advancingTurn(ctx, gitRoot, item.SpecSlug)
 				var advanceErr error
 				if resumed {
 					advanceErr = engine.advanceStages(ctx, gitRoot, &item)
 				} else {
 					advanceErr = engine.advanceItem(ctx, gitRoot, &item, priorMerges)
 				}
+				engine.advancingTurn(ctx, gitRoot, "")
 				if engine.prerequisiteWait {
 					deferredPrerequisites[item.SpecSlug] = true
 				}
@@ -1005,6 +1016,7 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 
 // reviewSlotsChanged is the single engine boundary for slot and poll events.
 func (engine *Engine) reviewSlotsChanged() {
+	engine.recordTurn(engine.reviewSlots.ctx, engine.reviewSlots.gitRoot)
 	select {
 	case engine.reviewSlots.changed <- struct{}{}:
 	default:
@@ -1070,6 +1082,7 @@ func (engine *Engine) advanceItem(
 				}
 				if waiting {
 					engine.prerequisiteWait = true
+					engine.prerequisiteTurn(ctx, gitRoot, item.SpecSlug, unmet)
 					fmt.Fprintf(engine.log, "roundfix: prerequisite wait: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(unmet, ", "))
 					return nil
 				}
