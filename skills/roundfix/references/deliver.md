@@ -366,6 +366,10 @@ be checked, status adds no `Owner:` line and writes
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
 
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the six the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+
+When the retried item returns to `reviewing` and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver retry` prints the same `Review:` line right after `Retried <slug>: <blocker> -> reviewing`, before the owner runs the review.
+
 After any `Owner:` line, status prints one
 `Park: <slug> <class>: <next command>` line per parked item in queue order,
 before `Limits:`. Status and the Pending Question use the same Park Classes:

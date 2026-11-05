@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-03T12:00:00Z
-updated_at: 2026-11-03T12:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -71,3 +71,5 @@ that would leave them out. The Delivery Queue parks a blocked review as
   ADR-0227's quoted reason.
 - Every `review-blocked` park carries the record's reason after a colon; its
   Park Class is unchanged.
+
+**Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** A Claude Review Segment's prompt is estimated on its diff measured from its Effective Base.

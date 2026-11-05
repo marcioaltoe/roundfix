@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T13:00:00Z
-updated_at: 2026-10-18T13:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -96,3 +96,5 @@ fixing commit opens it.
 - This amends ADR-0197's ceiling and ADR-0272's declared-path bound for exactly
   this case. ADR-0165's corrective-Spec park and ADR-0196's validation of
   findings are unchanged.
+
+**Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** When the head merged the default branch without conflict, the Correction Review's delta starts from the round-2 head carried onto the new merge base; its conditions and its single run are unchanged.
