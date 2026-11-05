@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0356-a-main-merge-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -104,3 +104,46 @@ adopted as
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → API Contract 6; Declared breaks; ADR Alternatives; Glossary; Build Order 4
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implementation evidence:
+
+- Added the API Contract 6 Effective Base paragraph, updated Reviewer Lineage
+  rules, and six restart reasons to both review references and the user guide.
+- Added the `Review:` status and retry notices to both deliver references and
+  the user guide.
+- Added the Effective Base glossary entry and ADR-0366 citations to the
+  Review Segment and Reviewer Lineage entries; appended the four ADR-0366
+  amendment notices and updated their timestamps.
+- Ran `make skills-sync`; the canonical and mirror hashes for both references
+  and both `roundfix/SKILL.md` files match.
+- The owned-skill recorder passed (`1 passed`) and recorded version `0.1.190`
+  in both Roundfix skill files and `skills/testdata/owned-skill-versions.json`.
+- The final Behavior Surface Record recorder passed (`1 passed`) and updated
+  `docs/references/behavior-surfaces.json`.
+
+Focused checks:
+
+- `git diff --check`: passed.
+- Focused Contract 6 assertions for all review and deliver copies, obsolete
+  lineage text absence, glossary terms, and ADR anchors: passed.
+- The four ADRs each contain the required `updated_at` value and final
+  amendment paragraph; the skill `### QA settlement` section is unchanged.
+
+Acceptance evidence:
+
+- Review copies contain the Effective Base paragraph, conflict-free-merge
+  lineage rule, and all six restart reasons; the old changed-merge-base rule
+  is absent from those copies.
+- Deliver copies contain the status and retry `Review:` contract text.
+- `CONTEXT.md` defines Effective Base and cites ADR-0366 from the changed
+  glossary entries; all four named ADRs carry the amendment.
+- Mirrors and generated records were produced by their sanctioned commands;
+  the Daemon must run the declared Verification commands, including the full
+  documentation contract suite, before settlement.
+
+Not run: the commands in this Task's `## Verification` section, per the
+Daemon-assigned execution contract.

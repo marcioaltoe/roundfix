@@ -439,6 +439,8 @@ be checked, status adds no `Owner:` line and writes
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
 
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the six the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+
 After any `Owner:` line and before `Limits:`, it prints one line per parked
 item in queue order, except `queue-token-ceiling` (see Token usage below):
 
@@ -619,6 +621,8 @@ missing item branch, a moved archived head without accepted recovery evidence,
 a refused carry-forward, a recorded Pull Request closed without merging, a failed
 merge observation, or an owner hand-off failure exits `2` and starts no owner.
 An item-level refusal leaves the stored item unchanged.
+
+When the retried item returns to `reviewing` and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver retry` prints the same `Review:` line right after `Retried <slug>: <blocker> -> reviewing`, before the owner runs the review.
 
 A recorded Pull Request closed without merging, with no merge evidence on the
 local default branch, refuses the retry with this reason:

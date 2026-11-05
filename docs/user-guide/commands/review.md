@@ -304,17 +304,25 @@ standing finding identity without a disposition. A `fixed` disposition never
 clears that head; the fix belongs to a changed candidate. The `none` and
 `coderabbit` policies keep their behavior above.
 
-Reviews in one checkout form a **Reviewer Lineage** when the provider and
-merge base stay the same and each reviewed head descends from the last.
+Reviews in one checkout form a **Reviewer Lineage** when the provider stays the same,
+each reviewed head descends from the last, and the merge base stays the same or
+moves only by a conflict-free merge of the default branch.
 Round 1 reviews the full candidate diff. Round 2 reviews only the delta from
 the round-1 head to the current head; its prompt always includes every round-1
 finding with its validation and operator disposition. A fixed or dismissed
 finding is raised again only if the delta reintroduces it. For a segmented round 1, anchors are validated against their own segment
 diff; otherwise they are validated against the full merge-base candidate
 diff in either round.
-A rebase, changed provider or merge base, or a head that does not descend
-starts a new lineage at round 1. A blocked review retries its own round with
-its recorded previous data.
+A merge of the default branch keeps the lineage when every merge the head gained since the reviewed head brings in only commits the new merge base contains and the reviewed head merges onto the new merge base without conflict. The round-2 or Correction Review delta then starts from the reviewed head carried onto the new merge base, recorded as `lineage.deltaBase`, and the prompt adds: `The candidate merged the default branch since then; the diff starts from tree <deltaBase>, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.` A rebase, a changed provider, a head that does not descend, or any other move of the merge base starts a new lineage at round 1, and `roundfix deliver status` and `roundfix deliver retry` name the reason before the review runs. A blocked review retries its own round with its recorded previous data.
+
+A restart names one of these reasons:
+
+- `the review provider changed from <prior provider> to <provider>`
+- `the head does not descend from the reviewed head <prior head>`
+- `the merge base moved from <prior base> to <base> at the reviewed head`
+- `the merge base moved from <prior base> to <base>, which does not descend from it`
+- `the merge base moved from <prior base> to <base> through merge <merge> of <parent>, which the default branch does not contain`
+- `the merge base moved from <prior base> to <base> and the reviewed head <prior head> conflicts with it`
 
 When round 2 ends with `findings`, a **Correction Review** reviews the fix once
 if the head moved and descends from the round-2 head, and every standing
