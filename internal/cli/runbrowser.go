@@ -17,7 +17,7 @@ import (
 var runBrowserSession = defaultRunBrowserSession
 
 func defaultRunBrowserSession(ctx context.Context, stdout io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
-	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowserWithTokens(active, all, roundtui.ResolveTokens(colorEnabled(stdout))))
+	return roundtui.RunBrowserSession(ctx, terminalOutput(stdout), roundtui.NewRunBrowserWithTokens(active, all, roundtui.ResolveTokens(colorEnabled(stdout))))
 }
 
 // browserAttachCockpit is the cockpit step of the browser loop. It is the
@@ -41,6 +41,7 @@ func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *s
 			return exitRunFailed, fmt.Errorf("run the Run Browser: %w", err)
 		}
 		if outcome.Cancelled {
+			fmt.Fprintln(stderr, browserClosedLine(outcome))
 			return exitOK, nil
 		}
 		run, found, err := reader.Run(ctx, outcome.RunID)
@@ -93,9 +94,13 @@ func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer, enviro
 	if !found {
 		// No Run Database yet: one browser pass shows the empty state;
 		// with no rows, only cancel closes it.
-		if _, err := commandDependenciesForContext(ctx).runBrowserSession(ctx, stdout, nil, nil); err != nil {
+		outcome, err := commandDependenciesForContext(ctx).runBrowserSession(ctx, stdout, nil, nil)
+		if err != nil {
 			printRunsBrowserFailure(fmt.Errorf("run the Run Browser: %w", err), stderr)
 			return exitRunFailed
+		}
+		if outcome.Cancelled {
+			fmt.Fprintln(stderr, browserClosedLine(outcome))
 		}
 		return exitOK
 	}
@@ -107,6 +112,15 @@ func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer, enviro
 		printRunsBrowserFailure(err, stderr)
 	}
 	return code
+}
+
+// browserClosedLine is the one stderr line a Run Browser closed without a
+// selection prints, so bare `runs` and `attach` never end silently.
+func browserClosedLine(outcome roundtui.BrowserOutcome) string {
+	if outcome.Reason == "" {
+		return fmt.Sprintf("%s: Run Browser closed; no Run selected.", app.Name)
+	}
+	return fmt.Sprintf("%s: Run Browser closed (%s); no Run selected.", app.Name, outcome.Reason)
 }
 
 func printRunsBrowserFailure(err error, stderr io.Writer) {

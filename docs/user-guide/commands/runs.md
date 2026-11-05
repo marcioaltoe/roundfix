@@ -10,6 +10,9 @@ Bare `runs` opens the machine-wide read-only Run Browser: every repository's
 Runs newest first, Active only by default, `a` toggles active/all, `Enter`
 attaches read-only, `q`/`Esc`/`Ctrl-C` quits with exit `0` and no side
 effects. In a non-interactive context it exits `2` naming `runs list`.
+When the Run Browser closes without a selection it prints
+`roundfix: Run Browser closed (<key>); no Run selected.` on stderr and exits
+`0`.
 
 `runs list` prints one Run per line, newest first:
 `<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>

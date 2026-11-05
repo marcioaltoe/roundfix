@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path/filepath"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +51,9 @@ var browserColumnDropOrder = []int{
 type BrowserOutcome struct {
 	RunID     string // selected Run id; empty on cancel
 	Cancelled bool
+	// Reason names what closed a cancelled browser: the key (`q`, `esc`,
+	// `ctrl+c`), or `interrupted` when the program ended without one.
+	Reason string
 }
 
 // RunBrowser is the Run Browser model: every repository's Runs newest
@@ -130,7 +133,7 @@ func (browser RunBrowser) handleKey(key tea.Key) (RunBrowser, tea.Cmd) {
 		browser.outcome = BrowserOutcome{RunID: rows[browser.cursor].ID}
 		return browser, tea.Quit
 	case "q", "esc", "ctrl+c":
-		browser.outcome = BrowserOutcome{Cancelled: true}
+		browser.outcome = BrowserOutcome{Cancelled: true, Reason: key.String()}
 		return browser, tea.Quit
 	}
 	return browser, nil
@@ -179,7 +182,7 @@ func (browser RunBrowser) renderRows(width int) []string {
 	for _, run := range runs {
 		row := FormatRunRow(run, browser.now, true, true)
 		row[browserColumnID] = browserShortRunID(run.ID)
-		row[browserColumnRepo] = browserRepoName(run.GitRoot)
+		row[browserColumnRepo] = RunRepositoryName(run)
 		fields = append(fields, row)
 	}
 	keep, widths := browser.fitColumns(fields, width)
@@ -292,6 +295,11 @@ func (program runBrowserProgram) View() tea.View {
 // blocks until the user selects a Run or cancels. Context cancellation
 // closes the session as a cancel: Run discovery never mutates anything.
 func RunBrowserSession(ctx context.Context, output io.Writer, browser RunBrowser) (BrowserOutcome, error) {
+	if _, ok := output.(*os.File); !ok {
+		// Bubble Tea sizes the screen only through a terminal file; any
+		// other writer draws nothing, so refuse it loudly.
+		return BrowserOutcome{}, fmt.Errorf("run browser session: output %T is not a terminal file", output)
+	}
 	prog := tea.NewProgram(runBrowserProgram{browser: browser}, tea.WithOutput(output), tea.WithoutSignalHandler())
 	done := make(chan struct{})
 	defer close(done)
@@ -314,6 +322,7 @@ func RunBrowserSession(ctx context.Context, output io.Writer, browser RunBrowser
 		// The program ended without a key outcome: context cancellation
 		// quit it, which is a cancel, never a selection.
 		outcome.Cancelled = true
+		outcome.Reason = "interrupted"
 	}
 	return outcome, nil
 }
@@ -324,16 +333,6 @@ func browserOutcomeFromModel(final tea.Model) (BrowserOutcome, error) {
 		return BrowserOutcome{}, fmt.Errorf("run browser session: unexpected model type %T", final)
 	}
 	return program.browser.Outcome(), nil
-}
-
-// browserRepoName is the readable repository column: the git root's base
-// name; the full path stays on the text surface (`runs list --all`).
-func browserRepoName(gitRoot string) string {
-	gitRoot = strings.TrimSpace(gitRoot)
-	if gitRoot == "" {
-		return runRowEmptyField
-	}
-	return filepath.Base(gitRoot)
 }
 
 // browserShortRunID is the timestamp-less suffix of a run id

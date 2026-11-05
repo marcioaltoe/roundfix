@@ -123,6 +123,14 @@ exits `2` and names `roundfix runs list` as the discovery command. The Run
 Browser is the human surface — agents use the bounded `runs list`, which is
 repository-scoped inside a repository and lists every repository outside one.
 
+When the Run Browser closes without a selection, bare `runs` and `attach`
+print one line on stderr and exit `0`:
+`roundfix: Run Browser closed (<key>); no Run selected.`, where `<key>` is
+`q`, `esc` or `ctrl+c`, or `interrupted` when a signal ended it. The Run
+Browser and the Live Run View draw on the terminal itself; given any other
+output they refuse with `output <type> is not a terminal file`. The Run
+Browser's repository column names the repository, not the Run Worktree.
+
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,
 commits, pushes, stops, or resolves Review Source threads. An unknown Run ID

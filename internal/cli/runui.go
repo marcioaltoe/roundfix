@@ -59,7 +59,7 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 		cockpitDone:   make(chan error, 1),
 	}
 	go func() {
-		ui.cockpitDone <- roundtui.RunCockpit(cockpitCtx, stderr, roundtui.CockpitConfig{
+		ui.cockpitDone <- roundtui.RunCockpit(cockpitCtx, terminalOutput(stderr), roundtui.CockpitConfig{
 			Mode:         roundtui.CockpitOwning,
 			View:         view,
 			RunID:        runID,

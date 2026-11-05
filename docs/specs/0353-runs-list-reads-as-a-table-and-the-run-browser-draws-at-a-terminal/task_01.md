@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -163,3 +163,84 @@ the maintainer on 2026-11-05
 
 - `_prd.md` → Goals; User Story 4; Core Feature 5; Core Feature 6; Success Metric 5; Success Metric 6
 - `_techspec.md` → Current behavior 1–5; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Invariant 3; Invariant 4; Invariant 6; Declared breaks; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, bubbletea, golang-error-handling, golang-testing, tech-writer
+
+### What changed
+
+- `internal/cli/tui_output.go` adds `terminalOutput`, which strips the
+  command environment wrapper. `defaultRunBrowserSession` and
+  `runAttachCockpit` pass `terminalOutput(stdout)`, and `startRunUI` passes
+  `terminalOutput(stderr)`. `colorEnabled` and `liveTUIEnabled` still read
+  the wrapper.
+- `RunBrowserSession` and `RunCockpit` check the writer before they build a
+  program or model. A writer that is not an `*os.File` is refused with
+  `run browser session: output %T is not a terminal file` or
+  `run cockpit: output %T is not a terminal file`.
+- `BrowserOutcome.Reason` is set to the cancel key (`q`, `esc`,
+  `ctrl+c`). It is `interrupted` when the program ended without a key
+  outcome.
+- `browserClosedLine` builds the closing line. `runRunBrowserLoop` and the
+  empty pass of `runRunsBrowserCommand` print it on stderr after every
+  cancelled outcome and exit `0`, with nothing on stdout.
+- `roundtui.RunRepositoryName` (`internal/tui/runrow.go`) uses the base name
+  of `RepositoryRoot`, then of `GitRoot`, and `-` when both are empty. It
+  replaces `browserRepoName`, which is deleted.
+- `assertRunReaderBrowser` now expects the warning followed by
+  `roundfix: Run Browser closed; no Run selected.\n`, as listed in Declared
+  breaks.
+- The closing-line paragraph is in the `runs` reference, and `make
+  skills-sync` copied it to the mirror. The skill version went from 0.1.185
+  to 0.1.186 through `-record-skill-versions`. The sentence is in the `runs`
+  and `attach` guides. The last step re-recorded the Behavior Surface Record
+  with `-record-skill-coverage`.
+
+### Evidence
+
+- Req 1 (before any code change): the four named tests passed.
+  `TestReadOnlyRunCommandsKeepTheirOutputInsideARepository` passed all 10
+  subtests, including the 4 browser subtests. Those subtests asserted that
+  the browser's stderr was exactly the warning.
+- New model tests: `go test -count=1 -run '^(TestRunBrowserSessionRefusesAWriterThatIsNotAFile|TestRunCockpitRefusesAWriterThatIsNotAFile|TestRunBrowserCancelKeysNameTheirReason|TestRunRepositoryNameNamesTheRepository)$' -v ./internal/tui` → all four PASS. `go test -count=1 ./internal/tui` → ok.
+- New command tests: `go test -count=1 -v -run '^(TestTerminalProgramsReceiveTheTerminalFile|TestRunBrowserEndWithoutASelectionPrintsOneLine)$' ./internal/cli` → PASS for `run_browser`, `attach_cockpit`, `owning_cockpit`, `attach`, `runs`, `runs_without_a_Run_Database` and `no_reason`.
+- Existing tests: `go test -count=1 -timeout 20m -run '^(TestReadOnlyRunCommands.*|TestAttach.*|TestRunRuns.*|TestBrowserAttachCockpit.*)$' ./internal/cli` → ok.
+- Other checks: `gofmt -l` clean; `go vet ./internal/cli ./internal/tui` clean; `GOOS=windows go build ./...` ok; `cmp` shows the runs reference and its mirror are identical; `TestTheSkillCoverageMapIsCurrent` ok after recording.
+- Sabotages (Req 12) were run on a temporary copy under `/tmp`. The copy was
+  made a git repository because the suite guard runs `git ls-files`. Each
+  sabotage was reverted and the copy deleted afterwards.
+  1. `defaultRunBrowserSession` passes `stdout` →
+     `TestTerminalProgramsReceiveTheTerminalFile/run_browser` FAIL with
+     `output cli.commandEnvironmentWriter is not a terminal file`.
+  2. `runAttachCockpit` passes `stdout` → `/attach_cockpit` FAIL with
+     `roundfix attach failed: run cockpit: output cli.commandEnvironmentWriter …`.
+  3. `startRunUI` passes `stderr` → `/owning_cockpit` FAIL with
+     `run cockpit: output cli.commandEnvironmentWriter …`.
+  4. The closing line is removed from `runRunBrowserLoop` →
+     `TestRunBrowserEndWithoutASelectionPrintsOneLine/attach`, `/runs` and
+     `/no_reason` FAIL with stderr `""`.
+  5. `RunRepositoryName` reads `GitRoot` first →
+     `TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree`
+     FAIL with `"roundfix-deliver-0063-x-411942b2"; want "fiscus"`, and
+     `/the_Run_Browser_names_the_repository` also FAIL.
+
+### Acceptance criteria
+
+- Terminal file and writer guard: shown by
+  `TestTerminalProgramsReceiveTheTerminalFile`, the two `…RefusesAWriterThatIsNotAFile` tests and sabotages 1–3.
+- One closing line, empty stdout, exit `0`: shown by
+  `TestRunBrowserEndWithoutASelectionPrintsOneLine`, the updated
+  `assertRunReaderBrowser`, `TestRunBrowserCancelKeysNameTheirReason` and
+  sabotage 4.
+- The repository column names the repository for a queued Run: shown by
+  `TestRunRepositoryNameNamesTheRepository` and sabotage 5.
+
+### Notes
+
+- The owning-cockpit subtest waits for the cockpit inside `ui.waitOnce`
+  itself, so the deferred `Close` does not wait a second time on the drained
+  channel.
+- Nothing changed in the keys, layout, short id, column drop order,
+  non-interactive refusals, `runs list`, `internal/config`, `internal/store`,
+  `cli_test.go`, the Makefile, CI, `go.mod` or `go.sum`.
