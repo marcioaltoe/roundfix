@@ -474,6 +474,28 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 			},
 		},
 		{
+			name: "scalar unrelated entry",
+			write: func(t *testing.T, root string) {
+				path := filepath.Join(root, "skills-lock.json")
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var raw map[string]any
+				if err := json.Unmarshal(data, &raw); err != nil {
+					t.Fatal(err)
+				}
+				raw["skills"].(map[string]any)["unrelated-scalar"] = "not an entry"
+				data, err = json.Marshal(raw)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, data, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
 			name: "unreadable lock artifact shape",
 			write: func(t *testing.T, root string) {
 				path := filepath.Join(root, "skills-lock.json")

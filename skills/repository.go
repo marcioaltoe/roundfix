@@ -418,6 +418,26 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath 
 			fmt.Errorf("got %d, want 1", lock.Version),
 		)
 	}
+	// Every entry is read raw, but it must still be a JSON object or null, as
+	// when entries decoded into a struct: a string, number, boolean or array
+	// entry is malformed lock data, whichever skill it names.
+	names := make([]string, 0, len(lock.Skills))
+	for name := range lock.Skills {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		trimmed := bytes.TrimSpace(lock.Skills[name])
+		if bytes.Equal(trimmed, []byte("null")) || (len(trimmed) > 0 && trimmed[0] == '{') {
+			continue
+		}
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"decode skills lock",
+			displayPath,
+			fmt.Errorf("skills lock entry %q must be a JSON object", name),
+		)
+	}
 	return lock, nil
 }
 
