@@ -136,6 +136,13 @@ func (declaration DerivedPathDeclaration) MatchesLines(name string) bool {
 	return declaration.Lines != nil && matchesDerivedPath(declaration.Lines.Paths, name)
 }
 
+// IsNumberedFile reports whether a numbered_files pattern matches name and
+// its base name starts with an ASCII digit.
+func (delivery Delivery) IsNumberedFile(name string) bool {
+	base := path.Base(name)
+	return matchesDerivedPath(delivery.NumberedFiles, name) && base[0] >= '0' && base[0] <= '9'
+}
+
 func matchesDerivedPath(paths []string, name string) bool {
 	for _, entry := range paths {
 		if strings.HasSuffix(entry, "/") && strings.HasPrefix(name, entry) {

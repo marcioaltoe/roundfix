@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -94,3 +94,58 @@ declaration is how a repository tells the queue which numbers to compare.
 
 - `_prd.md` → Goal 1; User Story 1; User Story 5; Core Feature 1; Core Feature 2; Success Metric 1
 - `_techspec.md` → Current behavior 5; API Contract 1; API Contract 2; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Added `Delivery.NumberedFiles`, its optional `numbered_files` YAML overlay,
+and shared path-pattern validation. The merge sits beside `DerivedPaths` in
+`applyOverlay`, which `applyConfigContent` calls in this checkout. Project
+values replace User Config, absence inherits, and `[]` clears the list.
+`IsNumberedFile` reuses `matchesDerivedPath` and requires the basename's first
+byte to be an ASCII digit. Existing derived-path behavior and tests are unchanged.
+
+Before changing code:
+
+- `go test -count=1 -timeout 20m -run '^TestDerivedLineDeclarationsAreReadAndValidated$' ./internal/config`
+  exited 0 (`ok`, 0.562s).
+- A temporary `go test -overlay` probe called
+  `ResolveConfigProposal(nil, []byte("delivery:\n  numbered_files: [db/*.sql]\n"))`.
+  `TestNumberedFilesUnknownKeyCharacterization` passed by observing
+  `field numbered_files not found in type config.deliveryOverlay`.
+  The probe created no repository file.
+
+Focused acceptance evidence:
+
+| Criterion | Evidence |
+| --- | --- |
+| Config precedence, clearing and validation | `TestNumberedFileDeclarationsAreReadAndValidated` covers `absent` (nil), `project_replaces_user`, `user_inherited`, `explicit_empty` (non-nil empty list), all three unsafe patterns and the invalid pattern, including the required key-specific diagnostics. |
+| Matching and leading digit | `TestIsNumberedFileNeedsAMatchAndALeadingDigit` covers every required directory/glob/no-pattern case, ASCII boundary digits, punctuation, a non-ASCII digit and an empty name. Both new top-level tests call `t.Parallel()` first. |
+| Existing config behavior | `go test -count=1 -timeout 20m ./internal/config` exited 0 (`ok`, 1.943s), exercising all existing config tests unchanged and both new tests. |
+| Behavior Surface Record | As the final implementation step, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 (`ok`, 0.439s), regenerating and checking `docs/references/behavior-surfaces.json` from the YAML tags. |
+
+Required sabotages ran on a temporary copy of the working tree with isolated
+Git metadata, without a commit; the copy was removed afterward:
+
+1. Dropping the leading-digit check: `go test -count=1 -timeout 20m -v -run '^TestIsNumberedFileNeedsAMatchAndALeadingDigit$' ./internal/config`
+   exited 1. `TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_journal`
+   failed because `drizzle/meta/_journal.json` returned true, expected false.
+   Other non-digit cases also failed.
+2. Removing the numbered-files overlay merge: `go test -count=1 -timeout 20m -v -run '^TestNumberedFileDeclarationsAreReadAndValidated$/^project_replaces_user$' ./internal/config`
+   exited 1. `TestNumberedFileDeclarationsAreReadAndValidated/project_replaces_user`
+   failed with a nil list instead of `[]string{"drizzle/*.sql"}`.
+
+The prescribed failures were behavioral assertion failures; neither was a
+suite-guard refusal. No sabotage changed the working checkout.
+
+Daemon-owned declared Verification and repository Verification were not run.
+The pre-existing `status: in_progress` remains unchanged. No Task Graph,
+other Task, guide, skill, Project Config, dependency or delivery change was
+made. No follow-up was found within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T211401Z_cae788fdc7c4d6e1`
+- Source commit: `fa728f5395b9f394ac10d90431162b51c1495683`

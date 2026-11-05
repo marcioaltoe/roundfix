@@ -146,6 +146,7 @@ type PrePRReview struct {
 type Delivery struct {
 	CheckTimeout   time.Duration
 	DerivedPaths   []DerivedPathDeclaration
+	NumberedFiles  []string
 	ItemBinary     ItemBinaryDeclaration
 	LinuxLane      bool
 	LinuxLaneImage string
@@ -435,6 +436,7 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 type deliveryOverlay struct {
 	CheckTimeout   *durationValue            `yaml:"check_timeout"`
 	DerivedPaths   *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	NumberedFiles  *[]string                 `yaml:"numbered_files"`
 	ItemBinary     *ItemBinaryDeclaration    `yaml:"item_binary"`
 	LinuxLane      *bool                     `yaml:"linux_lane"`
 	LinuxLaneImage *string                   `yaml:"linux_lane_image"`
@@ -1145,6 +1147,9 @@ func Validate(config Config) error {
 		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
 	}
 	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
+		return err
+	}
+	if err := validateDerivedPathPatterns("delivery.numbered_files", config.Delivery.NumberedFiles); err != nil {
 		return err
 	}
 	if err := validateReviewOmitPaths(config.PrePRReview.OmitPaths); err != nil {
@@ -1941,6 +1946,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
+	}
+	if overlay.Delivery != nil && overlay.Delivery.NumberedFiles != nil {
+		config.Delivery.NumberedFiles = *overlay.Delivery.NumberedFiles
 	}
 	if overlay.Delivery != nil && overlay.Delivery.LinuxLane != nil {
 		config.Delivery.LinuxLane = *overlay.Delivery.LinuxLane
