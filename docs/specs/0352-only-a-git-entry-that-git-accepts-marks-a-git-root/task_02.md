@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0352-only-a-git-entry-that-git-accepts-marks-a-git-root
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -75,3 +75,39 @@ as
 
 - `_prd.md` → Goals; Core Feature 2; Success Metric 1; Success Metric 4
 - `_techspec.md` → Current behavior 2; API Contracts 2 and 3; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Invariant 3; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, systematic-debugging, no-workarounds, evidence-gate, tech-writer
+
+`defaultResolveSkillsProjectRoot` now calls `roundconfig.FindGitRoot(cwd)`;
+the duplicate `findSkillsGitRoot` walk is removed. The Git subprocess fallback
+and both copies of the refusal text remain byte-identical. No other production
+code or existing test file changed.
+
+Focused implementation evidence:
+
+- Before the production edit, `rtk proxy go test ./internal/cli -run '^TestSkillsProjectRootSkipsARejectedGitDirectory$' -count=1 -v`
+  exited 1: the rejected `.git` incorrectly resolved to the temporary home with
+  no error, instead of the required refusal.
+- After the edit, `rtk proxy go test ./internal/cli -run '^(TestRejectedGitDirectoryTranscripts|TestSkillsProjectRootSkipsARejectedGitDirectory)$' -count=1 -v`
+  exited 0, with both named tests and all three transcript subtests passing.
+- Acceptance criterion 1: each transcript uses a fresh temporary home holding
+  only `gk/` and `info/` under `.git`, runs from `drive` through
+  `setCommandEnvironmentForTest` and `runCLI`, compares whole stdout, stderr
+  and exit code, and asserts that `<home>/.roundfixrc.yml` does not exist.
+- Acceptance criterion 2: the skills-root test asserts the exact refusal and
+  empty root from `drive`, then creates `drive/repo` with `gittest.InitRepo`
+  and asserts that resolving from `drive/repo/sub` returns that repository.
+- Both new top-level tests call `t.Parallel()` first and create their fixtures
+  solely under `t.TempDir()`; the new file carries all four suite boundary
+  comment lines. `gofmt` was applied to the new test file.
+
+The pre-existing Daemon-owned `status: in_progress` is preserved. Declared
+Verification and the full CLI suite remain for the Daemon; neither was run
+in this turn. No follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T105803Z_8c2fa84cfd81bb6f`
+- Source commit: `c81b3df1d4d20d5538fa66ea88726158dd6280db`
