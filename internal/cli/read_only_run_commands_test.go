@@ -85,8 +85,10 @@ func assertRunReaderBrowser(t *testing.T, args []string, runID, warning string) 
 	if code := runCLI(t, args, &stdout, &stderr); code != exitOK {
 		t.Fatalf("browser exit=%d stderr=%q", code, stderr.String())
 	}
-	if stdout.Len() != 0 || stderr.String() != warning {
-		t.Fatalf("browser stdout=%q stderr=%q; want empty stdout and stderr=%q", stdout.String(), stderr.String(), warning)
+	// The scripted cancel has no reason, so the closing line names none.
+	wantStderr := warning + "roundfix: Run Browser closed; no Run selected.\n"
+	if stdout.Len() != 0 || stderr.String() != wantStderr {
+		t.Fatalf("browser stdout=%q stderr=%q; want empty stdout and stderr=%q", stdout.String(), stderr.String(), wantStderr)
 	}
 	if len(*sessions) != 2 || len(*cockpit) != 1 || (*cockpit)[0].runID != runID {
 		t.Fatalf("expected select, cockpit, then cancel: sessions=%+v cockpit=%+v", *sessions, *cockpit)

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,6 +33,18 @@ func FormatRunRow(run store.Run, now time.Time, relative bool, withRepo bool) []
 		fields = append(fields, runRowField(run.GitRoot))
 	}
 	return fields
+}
+
+// RunRepositoryName names a Run's repository: the base name of its
+// repository's main checkout, else of its Git root, else `-`. A queued Run's
+// Git root is its Run Worktree, so the main checkout comes first.
+func RunRepositoryName(run store.Run) string {
+	for _, root := range []string{run.RepositoryRoot, run.GitRoot} {
+		if root = strings.TrimSpace(root); root != "" {
+			return filepath.Base(root)
+		}
+	}
+	return runRowEmptyField
 }
 
 func runRowField(value string) string {

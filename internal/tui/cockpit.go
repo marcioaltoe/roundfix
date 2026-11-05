@@ -173,6 +173,9 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 // RunCockpit opens the interactive Live Run View and blocks until the user
 // leaves it (detach in attach mode, Run end or stop in owning mode).
 func RunCockpit(ctx context.Context, output io.Writer, cfg CockpitConfig) error {
+	if _, ok := output.(*os.File); !ok {
+		return fmt.Errorf("run cockpit: output %T is not a terminal file", output)
+	}
 	model, err := newCockpitModel(ctx, cfg)
 	if err != nil {
 		return err

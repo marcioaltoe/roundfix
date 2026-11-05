@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,9 +28,11 @@ const (
 )
 
 type runsListOptions struct {
-	all   bool
-	state string
-	limit int
+	all    bool
+	state  string
+	limit  int
+	format string
+	wide   bool
 }
 
 // runsListNow is the listing clock seam; tests pin it so durations and
@@ -94,7 +97,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 	if !found {
-		printRunsList(stdout, nil, opts, commandDependenciesForContext(ctx).runsListNow())
+		printRunsListOutput(stdout, nil, opts, commandDependenciesForContext(ctx))
 		return exitOK
 	}
 	defer func() {
@@ -122,7 +125,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	if opts.limit > 0 && len(matching) > opts.limit {
 		visible = matching[:opts.limit]
 	}
-	printRunsList(stdout, visible, opts, commandDependenciesForContext(ctx).runsListNow())
+	printRunsListOutput(stdout, visible, opts, commandDependenciesForContext(ctx))
 	note := runsListRetainedWorktreeNote(retainedWorktrees)
 	if note == "" {
 		note = runsListHiddenNote(opts.state, len(runs), len(matching), len(visible))
@@ -140,6 +143,8 @@ func parseRunsListOptions(args []string) (runsListOptions, error) {
 	fs.BoolVar(&opts.all, "all", false, "List Runs from every repository")
 	fs.StringVar(&opts.state, "state", runsListStateActive, "Filter by Run state: active, terminal, or all")
 	fs.IntVar(&opts.limit, "limit", runsListDefaultLimit, "Print at most N matching Runs; 0 lists all")
+	fs.StringVar(&opts.format, "format", "", "Print table or plain output")
+	fs.BoolVar(&opts.wide, "wide", false, "Print the table with full Run details")
 	if err := fs.Parse(args); err != nil {
 		return opts, validationError{message: err.Error()}
 	}
@@ -153,6 +158,14 @@ func parseRunsListOptions(args []string) (runsListOptions, error) {
 	}
 	if opts.limit < 0 {
 		return opts, validationError{message: fmt.Sprintf("--limit must be 0 or a positive count, got %d", opts.limit)}
+	}
+	switch opts.format {
+	case "", "table", "plain":
+	default:
+		return opts, validationError{message: fmt.Sprintf("unknown --format %q; use table or plain", opts.format)}
+	}
+	if opts.wide && opts.format == "plain" {
+		return opts, validationError{message: "--wide applies only to --format table"}
 	}
 	return opts, nil
 }
@@ -217,6 +230,28 @@ func openRunsListReader(ctx context.Context, homeDir string) (*store.Store, bool
 		return nil, false, nil
 	}
 	return nil, false, err
+}
+
+func printRunsListOutput(stdout io.Writer, runs []store.Run, opts runsListOptions, dependencies commandDependencies) {
+	now := dependencies.runsListNow()
+	table := opts.format == "table" || opts.format == "" && (opts.wide || liveTUIEnabled(stdout))
+	if !table {
+		printRunsList(stdout, runs, opts, now)
+		return
+	}
+	environment, output := environmentForWriter(stdout)
+	width, err := strconv.Atoi(strings.TrimSpace(environment.columns))
+	if err != nil || width < 40 {
+		width = 0
+		if file, ok := output.(*os.File); ok {
+			if columns, found := terminalColumns(file); found {
+				width = columns
+			}
+		}
+	}
+	fmt.Fprint(stdout, roundtui.RenderRunTable(runs, roundtui.RunTableOptions{
+		Now: now, Location: dependencies.runsListLocation(), Repo: opts.all, Wide: opts.wide, Width: width,
+	}))
 }
 
 func printRunsList(stdout io.Writer, runs []store.Run, opts runsListOptions, now time.Time) {

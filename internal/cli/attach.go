@@ -75,7 +75,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return code
 	}
 
-	run, found, err := reader.Run(ctx, req.runID)
+	run, found, err := reader.ResolveRunReference(ctx, req.runID)
 	if err != nil {
 		printAttachFailure(err, stderr)
 		return exitPreflight
@@ -134,7 +134,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
 func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, capacities attachCapacities, stdout io.Writer, stderr io.Writer) int {
 	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, capacities, stdout)
-	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
+	err := roundtui.RunCockpit(ctx, terminalOutput(stdout), roundtui.CockpitConfig{
 		Mode:         roundtui.CockpitAttach,
 		View:         view,
 		RunID:        run.ID,

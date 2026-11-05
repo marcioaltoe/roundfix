@@ -93,7 +93,7 @@ Usage:
   roundfix storage report
   roundfix upgrade [--check]
   roundfix runs
-  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
   roundfix runs show <run-id> [--json]
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
@@ -286,6 +286,7 @@ type commandDependencies struct {
 	fallbackConfirmationInput       func() io.Reader
 	fallbackConfirmationAvailable   func(io.Writer) bool
 	runsListNow                     func() time.Time
+	runsListLocation                func() *time.Location
 	currentRunWindowTime            func() time.Time
 	implementBudgetNow              func() time.Time
 	runsInteractiveInputAvailable   func() bool
@@ -363,6 +364,7 @@ func defaultCommandDependencies() commandDependencies {
 		fallbackConfirmationInput:       fallbackConfirmationInput,
 		fallbackConfirmationAvailable:   fallbackConfirmationAvailable,
 		runsListNow:                     runsListNow,
+		runsListLocation:                func() *time.Location { return time.Local },
 		currentRunWindowTime:            runWindowNow,
 		implementBudgetNow:              time.Now,
 		runsInteractiveInputAvailable:   runsInteractiveInputAvailable,
@@ -5238,6 +5240,8 @@ resolves Review Source threads. Without a Run ID at an interactive
 terminal, attach opens the Run Browser to pick a Run; leaving the Live
 Run View returns to a refreshed browser until you quit.
 
+<run-id> is a full Run ID or the eight-digit short id that runs list shows.
+
 Options:
   --run-id    Run ID to attach to (same as the positional argument)
   --no-input  Fail instead of opening the Run Browser when no Run ID is passed
@@ -5369,6 +5373,7 @@ Options:
   roundfix runs show <run-id> [--json]
 
 Prints recorded token usage per Work Item scope and in total, read-only.
+<run-id> is a full Run ID or the eight-digit short id that runs list shows.
 
 Options:
   --json  Print schema roundfix/runs-show/v1 with null unreported counts
@@ -5378,7 +5383,7 @@ Exit codes: 0 when the Run exists; 2 for usage errors or an unknown Run.
 	case "runs":
 		return `Usage:
   roundfix runs
-  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
   roundfix runs show <run-id> [--json]
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 
@@ -5392,8 +5397,9 @@ terminal, runs opens the Run Browser; non-interactive contexts must use
 Commands:
   causes  Explain failed Verification and corrective Tasks (read-only)
   show  Print recorded token usage per scope and in total (read-only)
-  list  Print run id, state, kind, target, agent, start time (UTC), duration,
-        and local branch columns
+  list  Print a table at an interactive terminal, and the stable run id, state,
+        kind, target, agent, start time (UTC), duration and local branch
+        line otherwise or with --format plain
 
 Options:
   --all    List Runs from every repository and include the repository column
@@ -5401,7 +5407,9 @@ Options:
   --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)
   --since  causes: inclusive UTC date (YYYY-MM-DD)
   --until  causes: exclusive UTC date (YYYY-MM-DD)
-  --format causes: text (default) or json
+  --format list: table or plain (default: table at an interactive terminal,
+           plain otherwise); causes: text (default) or json
+  --wide   list: table with the full Run id, kind, branch and worktree
 `
 	case "fetch":
 		return `Usage:

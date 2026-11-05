@@ -98,6 +98,19 @@ valid `HEAD` and `objects` and `refs` directories, or a file that starts with
 `gitdir:`. Any other `.git`, such as a directory that holds only `gk` and
 `info`, is skipped as Git skips it.
 
+`runs list` has two formats. Agents and scripts pass `--format plain`,
+which always prints the stable lines above; without `--format` the stable
+lines are also printed whenever standard output is not an interactive
+terminal. At an interactive terminal, or with `--format table`, it prints
+a table for people: a header and aligned columns `RUN` (the eight-digit
+short id), `REPO` (only when the listing spans repositories), `STATE`,
+`TARGET`, `AGENT`, `STARTED (<zone>)` in the machine's local time, and
+`DURATION`; only `TARGET` is cut with `…` to fit the terminal width.
+`--wide` selects the table with the full Run id and adds `KIND`, `BRANCH`
+and `WORKTREE`; `--wide --format plain` and any other `--format` value
+exit `2`. The stderr notes and `No Runs found.` are the same in both
+formats.
+
 The Read-Only Run Commands are bare `runs`, `runs list`, `runs show`, `attach`,
 and `events`. They only read the Run Database and never create a Run Worktree.
 When `worktree.location` is refused, they print one warning on stderr shaped as
@@ -128,11 +141,27 @@ exits `2` and names `roundfix runs list` as the discovery command. The Run
 Browser is the human surface — agents use the bounded `runs list`, which is
 repository-scoped inside a repository and lists every repository outside one.
 
+When the Run Browser closes without a selection, bare `runs` and `attach`
+print one line on stderr and exit `0`:
+`roundfix: Run Browser closed (<key>); no Run selected.`, where `<key>` is
+`q`, `esc` or `ctrl+c`, or `interrupted` when a signal ended it. The Run
+Browser and the Live Run View draw on the terminal itself; given any other
+output they refuse with `output <type> is not a terminal file`. The Run
+Browser's repository column names the repository, not the Run Worktree.
+
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,
 commits, pushes, stops, or resolves Review Source threads. An unknown Run ID
 exits `2` with an error stating that picker numbers are not stable Run ids —
 pass a run id or run `roundfix attach` to pick interactively.
+
+`attach` and `runs show` also accept the short id that the `runs list`
+table shows, or any longer prefix of a Run id's random suffix up to its
+sixteen digits, when it names exactly one Run. A prefix that matches
+several Runs exits `2` and lists them:
+`Run id prefix "<prefix>" matches <n> Runs: <id>, <id>; pass more digits or the full Run id`.
+`events`, `stop`, `reconcile` and every other command need the full Run
+id.
 
 ## Live Run View
 

@@ -2,7 +2,7 @@
 
 ```bash
 roundfix runs                     # Run Browser at an interactive terminal
-roundfix runs list [--state active|terminal|all] [--limit N] [--all]
+roundfix runs list [--state active|terminal|all] [--limit N] [--all] [--format table|plain] [--wide]
 roundfix runs show <run-id> [--json]
 ```
 
@@ -10,6 +10,9 @@ Bare `runs` opens the machine-wide read-only Run Browser: every repository's
 Runs newest first, Active only by default, `a` toggles active/all, `Enter`
 attaches read-only, `q`/`Esc`/`Ctrl-C` quits with exit `0` and no side
 effects. In a non-interactive context it exits `2` naming `runs list`.
+When the Run Browser closes without a selection it prints
+`roundfix: Run Browser closed (<key>); no Run selected.` on stderr and exits
+`0`.
 
 `runs list` prints one Run per line, newest first:
 `<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>
@@ -21,6 +24,14 @@ widens the state filter, `--limit N` changes the bound (`0` unbounded), and
 hidden, exactly one trailing stderr note names the hidden count and the
 widening flag. Empty results print
 `No Runs found.` and exit `0`.
+
+At an interactive terminal, or with `--format table`, `runs list` prints a
+table instead: a header and the columns `RUN` (short id), `REPO` (only when
+the listing spans repositories), `STATE`, `TARGET`, `AGENT`,
+`STARTED (<zone>)` in local time and `DURATION`, with only `TARGET` cut to
+the terminal width. `--wide` shows the full Run id and adds `KIND`, `BRANCH`
+and `WORKTREE`. Piped output, and `--format plain`, keep the stable line, so
+scripts and Agents pass `--format plain`.
 
 `runs`, `runs list` and `runs show` are Read-Only Run Commands: they run from
 any directory and print a `worktree.location` refusal as one stderr warning,
@@ -53,6 +64,11 @@ diagnostic is the one trailing stderr note.
 `roundfix runs show <run-id>` reads the Run Database without creating a Run,
 starting an Agent or changing recorded state. It prints a header, one
 tab-separated row per Work Item scope, then a Run total:
+
+`<run-id>` may also be the eight-digit short id that the
+`runs list` table shows, or a longer prefix of the id's random suffix, when
+it names one Run; a prefix that names several Runs exits `2` and lists
+them ([ADR-0363](../../adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md)).
 
 ```text
 Run <run-id>: implement <spec-slug> Clean
