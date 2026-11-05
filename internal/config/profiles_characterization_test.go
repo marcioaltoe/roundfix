@@ -3,6 +3,8 @@ package config
 import (
 	"path/filepath"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 // Characterization corpus for Spec 0088-a-third-runtime-that-can-run.
@@ -129,7 +131,7 @@ func loadCharacterizationConfig(t *testing.T, document string) Loaded {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), document)
 
 	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})

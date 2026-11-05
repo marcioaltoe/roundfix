@@ -93,6 +93,11 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` lists every repository as `runs list --all` does and
 exits `0`.
 
+Only a `.git` entry that Git accepts marks a Git root: a directory with a
+valid `HEAD` and `objects` and `refs` directories, or a file that starts with
+`gitdir:`. Any other `.git`, such as a directory that holds only `gk` and
+`info`, is skipped as Git skips it.
+
 The Read-Only Run Commands are bare `runs`, `runs list`, `runs show`, `attach`,
 and `events`. They only read the Run Database and never create a Run Worktree.
 When `worktree.location` is refused, they print one warning on stderr shaped as

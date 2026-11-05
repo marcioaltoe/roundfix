@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	roundtui "roundfix/internal/tui"
 )
 
@@ -109,7 +110,7 @@ func TestReadOnlyRunCommandsWarnOnAStrayGitDirectory(t *testing.T) {
 			drive := filepath.Join(homeDir, "drive")
 			mustMkdir(t, drive)
 			if marker == "directory" {
-				mustMkdir(t, filepath.Join(homeDir, ".git"))
+				gittest.MarkRepository(t, homeDir)
 			} else {
 				mustWrite(t, filepath.Join(homeDir, ".git"), "gitdir: "+t.TempDir()+"\n")
 			}
@@ -185,7 +186,7 @@ func TestStrayGitDirectoryTranscripts(t *testing.T) {
 			homeDir := t.TempDir()
 			drive := filepath.Join(homeDir, "drive")
 			mustMkdir(t, drive)
-			mustMkdir(t, filepath.Join(homeDir, ".git"))
+			gittest.MarkRepository(t, homeDir)
 			setCommandEnvironmentForTest(t, homeDir, drive)
 			var stdout, stderr bytes.Buffer
 			code := runCLI(t, test.args, &stdout, &stderr)

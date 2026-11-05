@@ -9,13 +9,15 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestRunRunsListOutsideRepositoryListsEveryRepository(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	gittest.MarkRepository(t, otherRepo)
 	runs := seedRunsForListColumns(t, homeDir, repoDir, otherRepo)
 	outsideDir := t.TempDir()
 

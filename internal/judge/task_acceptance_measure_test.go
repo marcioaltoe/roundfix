@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/runcause"
 	"roundfix/internal/spec"
 )
@@ -798,9 +799,7 @@ func TestTaskAcceptanceResolvesConfiguredAndArchivedRoot(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			repo, home, labels := acceptanceTestRepo(t)
-			if err := os.Mkdir(filepath.Join(repo, ".git"), 0700); err != nil {
-				t.Fatal(err)
-			}
+			gittest.MarkRepository(t, repo)
 			external, err := filepath.EvalSymlinks(t.TempDir())
 			if err != nil {
 				t.Fatal(err)

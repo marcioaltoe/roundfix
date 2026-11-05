@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestTheRetiredSecondbrainKeysLoadWithAWarning(t *testing.T) {
@@ -26,7 +28,7 @@ func TestTheRetiredSecondbrainKeysLoadWithAWarning(t *testing.T) {
 			t.Parallel()
 			home, repo := t.TempDir(), t.TempDir()
 			mustMkdir(t, filepath.Join(home, ".roundfix"))
-			mustMkdir(t, filepath.Join(repo, ".git"))
+			gittest.MarkRepository(t, repo)
 			mustWrite(t, filepath.Join(home, ".roundfix/config.yml"), tc.user)
 			mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), tc.project)
 			var warnings bytes.Buffer
@@ -54,7 +56,7 @@ func TestAnUnknownSecondbrainKeyStillFailsStrictValidation(t *testing.T) {
 			t.Parallel()
 			home, repo := t.TempDir(), t.TempDir()
 			mustMkdir(t, filepath.Join(home, ".roundfix"))
-			mustMkdir(t, filepath.Join(repo, ".git"))
+			gittest.MarkRepository(t, repo)
 			path := filepath.Join(home, ".roundfix/config.yml")
 			if layer == "Project" {
 				path = filepath.Join(repo, ".roundfixrc.yml")

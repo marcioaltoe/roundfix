@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestPrePRReviewOmitPathsLoadsAndValidates(t *testing.T) {
@@ -41,7 +43,7 @@ func TestPrePRReviewOmitPathsLoadsAndValidates(t *testing.T) {
 			}
 
 			home, repo := t.TempDir(), t.TempDir()
-			mustMkdir(t, filepath.Join(repo, ".git"))
+			gittest.MarkRepository(t, repo)
 			if userContent != nil {
 				mustMkdir(t, filepath.Join(home, ".roundfix"))
 				mustWrite(t, filepath.Join(home, userConfigRelPath), string(userContent))

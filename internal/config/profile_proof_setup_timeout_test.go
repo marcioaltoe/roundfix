@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/gittest"
 )
 
 func TestProfileProofSetupTimeoutConfig(t *testing.T) {
@@ -30,7 +32,7 @@ func TestProfileProofSetupTimeoutConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			home, work := t.TempDir(), t.TempDir()
-			mustMkdir(t, filepath.Join(work, ".git"))
+			gittest.MarkRepository(t, work)
 			if tt.user != "" {
 				mustMkdir(t, filepath.Join(home, ".roundfix"))
 				mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "defaults:\n  profile_proof_setup_timeout: "+tt.user+"\n")

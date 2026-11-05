@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 const jevCeilingWarning = "config: jev.monthly_ceiling_usd in Project Config is ignored; set jev.monthly_ceiling_usd in User Config\n"
@@ -13,7 +15,7 @@ func jevCeilingFixture(t *testing.T, user, project string) (LoadOptions, *bytes.
 	t.Helper()
 	home, repo := t.TempDir(), t.TempDir()
 	mustMkdir(t, filepath.Join(home, ".roundfix"))
-	mustMkdir(t, filepath.Join(repo, ".git"))
+	gittest.MarkRepository(t, repo)
 	mustWrite(t, filepath.Join(home, ".roundfix/config.yml"), user)
 	mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), project)
 	stderr := &bytes.Buffer{}

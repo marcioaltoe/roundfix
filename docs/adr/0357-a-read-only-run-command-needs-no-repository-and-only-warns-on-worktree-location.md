@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-04T09:30:00Z
-updated_at: 2026-11-04T09:30:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -51,6 +51,8 @@ path it found: `worktree.location must not be inside the repository tree:
 How the Git root is found does not change: any `.git` entry, directory or
 file, still marks a repository.
 
+**Amended by [ADR-0362](0362-only-a-git-entry-that-git-accepts-marks-a-git-root.md) (2026-11-05).** A `.git` entry marks a Git root only when Git accepts it: a directory that passes Git's repository test or a file starting with `gitdir:`. A stray `.git` that Git rejects is skipped. The refusal text and the Read-Only Run Command contract still hold.
+
 ## Considered Options
 
 - Keep refusing `runs list` outside a repository: rejected because the
@@ -65,7 +67,8 @@ file, still marks a repository.
 - Recognize a `.git` only when Git would, or refuse one at the home directory:
   rejected in this change because it alters repository detection for every
   command, and a `.git` file of a linked worktree or submodule must keep
-  marking a repository.
+  marking a repository. ADR-0362 takes the first half of this option,
+  recognizing a `.git` only when Git would.
 - Include `runs causes`: rejected because it reads the repository's own
   Archive Records and keeps requiring one.
 
