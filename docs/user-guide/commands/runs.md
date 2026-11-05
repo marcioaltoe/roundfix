@@ -25,10 +25,14 @@ widening flag. Empty results print
 `runs`, `runs list` and `runs show` are Read-Only Run Commands: they run from
 any directory and print a `worktree.location` refusal as one stderr warning,
 then continue. The refusal names the detected Git root and the `.git` path it
-found, including a stray `.git` in a parent such as the home directory.
+found, including one in a parent such as the home directory. Only a `.git`
+entry that Git accepts marks a Git root: a directory with a valid `HEAD` and
+`objects` and `refs` directories, or a file that starts with `gitdir:`. Any
+other `.git`, such as a directory that holds only `gk` and `info`, is skipped
+as Git skips it.
 Commands that create a Run Worktree still refuse that location. A detected
-Git root, including a stray one, keeps `runs list` scoped to that repository
-unless `--all` is passed.
+Git root, including one in a parent directory, keeps `runs list` scoped to
+that repository unless `--all` is passed.
 
 When the selected repository scope contains retained terminal Run Worktrees or
 Run Branches, Runs List keeps the stdout row shape unchanged and writes one

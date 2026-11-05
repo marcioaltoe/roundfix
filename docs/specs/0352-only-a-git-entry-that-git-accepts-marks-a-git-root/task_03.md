@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0352-only-a-git-entry-that-git-accepts-marks-a-git-root
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -100,3 +100,60 @@ It answers the maintainer report of 2026-11-05, adopted as
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 5
 - `_techspec.md` → Current behavior 4; API Contract 5; Declared breaks; ADR Alternatives; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, tech-writer, systematic-debugging, evidence-gate
+
+Implementation:
+
+- Replaced the stale any-`.git` detection wording in the canonical
+  `review-runs` reference, added the rule after the outside-repository sentence
+  in the canonical `runs` reference, and updated the `runs` guide with the
+  requested parent-directory wording and rule sentence.
+- Added ADR-0362's linked amendment notice and Considered Option sentence to
+  ADR-0357, and set its `updated_at` to `2026-11-05T12:00:00Z`.
+- Ran `make skills-sync`; the canonical and mirror reference files now have
+  matching SHA-256 hashes.
+- Ran the sanctioned owned-skill recorder, which raised both `roundfix`
+  `SKILL.md` version fields to `0.1.187` and recorded the digest.
+- Ran the sanctioned Behavior Surface recorder as the last guide-generation
+  step; it passed with 1 test in 1 package.
+
+Focused checks:
+
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed: 1 test in 1 package.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed: 1 test in 1 package.
+- `git diff --check` — passed.
+- SHA-256 checks confirmed equal canonical/mirror pairs for both references and
+  both `roundfix/SKILL.md` files; the required rule and ADR amendment markers
+  are present in the edited documents.
+
+Acceptance evidence:
+
+- Both copies of the two references and the `runs` guide contain the
+  Git-accepted `.git` rule, and the old any-entry sentence is absent from the
+  changed reference and guide text.
+- ADR-0357 contains the linked ADR-0362 amendment and states that ADR-0362
+  takes the first half of the considered option.
+- Mirror equality, owned-skill version recording, and the focused Behavior
+  Surface recording have fresh evidence above. The Task's declared
+  Verification commands remain for Daemon Verification.
+
+Verification feedback:
+
+- Inspected the Daemon artifact for `make verify-changed`: formatting, vet,
+  build, and the selected non-CLI packages ran before the `internal/cli` suite
+  timed out at its 10-minute test deadline. The timeout involved existing
+  review-disposal and spec-folder-status tests, not this Task's documentation
+  surfaces.
+- The Makefile confirms `verify-changed-core` invokes the selected `internal/cli`
+  package after the non-CLI packages. No Task-slice failure or documentation
+  contract diagnostic was reported, so no source repair was warranted.
+- The Daemon-owned status remains `in_progress`; the Daemon may rerun the full
+  configured Verification sequence.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T105803Z_8c2fa84cfd81bb6f`
+- Source commit: `cca415878dcdf26dea29f77fc160a8e9b07aa94e`
