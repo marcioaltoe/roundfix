@@ -66,11 +66,9 @@ func (err *RepositoryReadinessError) Unwrap() error {
 }
 
 type localSkillsLock struct {
-	Version int                       `json:"version"`
-	Skills  map[string]localLockSkill `json:"skills"`
+	Version int                        `json:"version"`
+	Skills  map[string]json.RawMessage `json:"skills"`
 }
-
-type localLockSkill struct{}
 
 func CheckRepository(ctx context.Context, root string) (RepositoryReadiness, error) {
 	return CheckRepositoryWithExternal(ctx, root, Recommended())
@@ -428,8 +426,20 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath 
 func requiredExternalLockEntries(lockPath string, lock localSkillsLock, external []string) error {
 	var missing []string
 	for _, name := range external {
-		if _, exists := lock.Skills[name]; !exists {
+		entry, exists := lock.Skills[name]
+		if !exists {
 			missing = append(missing, name)
+			continue
+		}
+		// Only the entry's presence is read, but it must be a JSON object: a
+		// null, string, number or array is a malformed entry, as before.
+		if trimmed := bytes.TrimSpace(entry); len(trimmed) == 0 || trimmed[0] != '{' {
+			return repositoryReadinessError(
+				RepositoryOwnershipExternal,
+				"validate required skills lock entry",
+				lockPath,
+				fmt.Errorf("external skill %q entry must be a JSON object", name),
+			)
 		}
 	}
 	if len(missing) > 0 {
