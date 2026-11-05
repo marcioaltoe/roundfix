@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.132.0] - 2026-11-05
+
+### A secret refusal of a Task commit is repairable and visible
+
+- **The Task commit's Secret Scan runs as `settlement check: secret scan`, the last check of every Verification attempt**, after the Settlement Checks and in every Task Graph. A Secret Match on the first attempt returns as Verification Feedback for the one repair turn, with `Task commit carries a secret: <path>:<line>: <kind>` and a `Fix:` line that names a value no Secret Pattern matches (letters only, or fewer than 20 characters), and the second attempt scans again. Only a match on the final attempt settles the Task `failed`, with the same reason as before and no Task commit. Before, the scan ran after the last attempt, so the Agent never learned of the refusal (reported by fiscus; ADR-0361, which amends ADR-0292).
+- **The diagnostic, the prompt, the reason and the `secret_scan` event carry only path, line and kind, never the value**; the event now names its attempt. The scan's matching rules are unchanged: it still reads only the lines the commit adds, and a value that a tracked file already holds is still refused.
+- **`roundfix runs causes` lists each secret refusal as an item of kind `secret-scan`**, with its Spec, Task, Run, attempt (`null` for an event an earlier release wrote) and locations; JSON adds `matches` with each path, line and kind, and every other item has `matches: null`. Its class is `repository-convention`, set by its kind, and the attempt's failed scan is not listed again as a `verification` item. Runs from earlier releases are listed too.
+- **A `run-unresolved` park names its failed and skipped Tasks**: `run-unresolved: <task> failed: <reason>; skipped: <task>, <task>`, each reason cut to 300 characters, in `deliver status` and the Pending Question. When the failed Task's commit carried a secret, the next action says how to amend the value and retry. A Run with neither keeps the bare `run-unresolved`, and the Park Class stays `finding`.
+
 ## [0.131.0] - 2026-11-04
 
 ### A retry after a QA precondition refusal runs the whole QA gate
