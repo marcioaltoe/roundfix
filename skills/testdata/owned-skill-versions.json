@@ -981,6 +981,10 @@
       {
         "version": "0.1.186",
         "digest": "885ef6fbecd7d776f38d50cc8834108e9bb276eee92db6bbb60d365a2fb3ffa9"
+      },
+      {
+        "version": "0.1.187",
+        "digest": "eee3e901558fa43a92abd40b3c20d4ce4560ab46d3edc630b103398c918e9e31"
       }
     ],
     "setup-context-driven": [

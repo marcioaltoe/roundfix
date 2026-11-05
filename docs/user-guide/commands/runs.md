@@ -2,7 +2,7 @@
 
 ```bash
 roundfix runs                     # Run Browser at an interactive terminal
-roundfix runs list [--state active|terminal|all] [--limit N] [--all]
+roundfix runs list [--state active|terminal|all] [--limit N] [--all] [--format table|plain] [--wide]
 roundfix runs show <run-id> [--json]
 ```
 
@@ -24,6 +24,14 @@ widens the state filter, `--limit N` changes the bound (`0` unbounded), and
 hidden, exactly one trailing stderr note names the hidden count and the
 widening flag. Empty results print
 `No Runs found.` and exit `0`.
+
+At an interactive terminal, or with `--format table`, `runs list` prints a
+table instead: a header and the columns `RUN` (short id), `REPO` (only when
+the listing spans repositories), `STATE`, `TARGET`, `AGENT`,
+`STARTED (<zone>)` in local time and `DURATION`, with only `TARGET` cut to
+the terminal width. `--wide` shows the full Run id and adds `KIND`, `BRANCH`
+and `WORKTREE`. Piped output, and `--format plain`, keep the stable line, so
+scripts and Agents pass `--format plain`.
 
 `runs`, `runs list` and `runs show` are Read-Only Run Commands: they run from
 any directory and print a `worktree.location` refusal as one stderr warning,

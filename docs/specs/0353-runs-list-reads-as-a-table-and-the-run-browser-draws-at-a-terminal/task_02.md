@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -196,3 +196,91 @@ of the report reported by the maintainer on 2026-11-05
 
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 5; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 7; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 7
 - `_techspec.md` → Current behavior 6; API Contract 6; API Contract 7; API Contract 8; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Invariant 1; Invariant 2; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-testing, testing-boss, golang-structs-interfaces, golang-error-handling, tui-design, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented the assigned listing slice. `--format table|plain` and `--wide`
+select the human table or the existing stable line. The table uses short ids,
+repository names, local starts, bare durations and the optional owner-identity
+note; only TARGET shrinks, with a twelve-column minimum. Wide output keeps
+full cells and includes KIND, BRANCH and WORKTREE. Width comes from COLUMNS
+(at least 40), then the unwrapped stdout's Unix terminal size, then no budget.
+The location dependency defaults to `time.Local`. `printRunsList` and
+`FormatRunRow` are unchanged, as are the state/scope/limit and diagnostic paths.
+
+Acceptance evidence:
+
+- Stable bytes: `TestRunsListPlainFormatKeepsTheStableLine` passes for the
+  four required flag sets, including explicit plain output with forced
+  terminal detection. It pins the existing default row and hidden-state
+  note byte for byte.
+- Table selection and layout: `TestRunsListTableShowsAlignedColumns`,
+  `TestRunsListTableFitsTheWidthByCuttingTheTarget`, and
+  `TestRunsListWideShowsEveryColumn` pass. They assert the authored rows,
+  repository scoping inside and outside a repository, automatic terminal
+  selection, local dates, owner-identity note, 80-column target truncation,
+  invalid COLUMNS fallback and full wide cells. Renderer checks additionally
+  cover missing fields, clock skew, different years, empty results, note
+  omission, trailing spaces and minimum target width.
+- Usage errors and help: `TestRunsListFormatTranscripts` asserts all stdout,
+  stderr and exit-code bytes of Surface Transcripts 1–3;
+  `TestRunsHelpNamesTheFormatAndWideFlags` asserts the required help lines.
+  `TestRunsListTableKeepsTheWarningAndHiddenNote` proves identical warning
+  and trailing-note order in both formats.
+
+Focused commands and outcomes:
+
+- Before editing code,
+  `go test -count=1 -timeout 20m -v -run '^(TestRunRunsList.*|TestRunsListOutsideARepositoryTranscript|TestRunRunsListOutsideRepositoryListsEveryRepository|TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted)$' ./internal/cli`
+  exited 0. All selected pre-existing stable-line checks passed.
+- New tests initially exposed missing `runsListLocation` and `ShortRunID`
+  with `go test -count=1 -run '^TestRunsListFormatTranscripts$' ./internal/cli`.
+- `go test -count=1 -timeout 3m -v -run '^(TestRunsListPlainFormatKeepsTheStableLine|TestRunsListTableShowsAlignedColumns|TestRunsListTableFitsTheWidthByCuttingTheTarget|TestRunsListWideShowsEveryColumn|TestRunsListFormatTranscripts|TestRunsHelpNamesTheFormatAndWideFlags)$' ./internal/cli`
+  exited 0 with all six named tests passing.
+- After adding fallback-width and diagnostic coverage,
+  `go test -count=1 -timeout 3m -v -run '^(TestRunRunsList.*|TestRunsList.*|TestReadOnlyRunCommands.*|TestRunCommandHelp)$' ./internal/cli`
+  exited 0. Every selected existing and new test passed unchanged.
+- `go test -count=1 -timeout 3m ./internal/tui` exited 0, including
+  `TestShortRunIDIsTheFirstEightSuffixDigits` and every existing TUI test.
+- `GOOS=windows go build -buildvcs=false ./internal/cli` and
+  `GOOS=linux go build -buildvcs=false ./internal/cli` each exited 0.
+- `make skills-sync` and
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0. Both Roundfix skill copies now declare `0.1.187` in both
+  version fields; the recorder wrote the version record. Both reference and
+  SKILL.md mirrors compare byte-identical.
+- `make baseline-digests` on the temporary copy containing these edits
+  exited 0 with `changed:false`; no derived Baseline change was needed or
+  copied into this worktree.
+- After the final guide edit,
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and refreshed only the `runs`, `runs list` and runs-guide surface
+  fingerprints.
+
+Required sabotages were isolated under
+`/private/tmp/roundfix-task02-sabotages-v3j6pubk/repo`, created from HEAD with
+this Task's edits overlaid and disposable Git metadata. The three named
+positive checks first exited 0 there. Each mutation was then applied alone,
+tested with `go test -count=1 -timeout 3m -v -run '^(<named test>)$' ./internal/cli`,
+and restored. The actual failing transcripts were inspected:
+
+| Probe | Mutation | Named failure and observed evidence |
+| --- | --- | --- |
+| 6 | Auto mode always selects the table | `TestRunsListPlainFormatKeepsTheStableLine`; auto stdout acquired a RUN header instead of the pinned stable line. |
+| 7 | Disable width truncation | `TestRunsListTableFitsTheWidthByCuttingTheTarget`; full targets remained instead of the exact ellipsis cells at COLUMNS=80. |
+| 8 | Render starts with `CreatedAt.UTC()` | `TestRunsListTableShowsAlignedColumns`; starts became 12:04 / 12:02 instead of 09:04 / 09:02 in the fixture's -03 zone. |
+
+Each sabotage exited 1 because of its named assertion, without compilation
+or suite-guard failure. Logs remain beside the temporary copy as
+`sabotage-6.log`, `sabotage-7.log`, and `sabotage-8.log`.
+
+Scope inspection found only declared task_02 paths changed. The pre-existing
+Daemon-owned `in_progress` status was preserved. No Task Graph, other Task,
+Run Browser, configuration/store code, existing tests, dependency manifests,
+Makefile or workflow was edited. `git diff --check` reported no whitespace
+errors. Commands used the physical checkout because the logical workspace's
+symlink prevents sandbox process startup. The declared Verification and
+repository gates were left to the Daemon; Task settlement remains pending.

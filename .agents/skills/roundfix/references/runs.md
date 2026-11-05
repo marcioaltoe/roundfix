@@ -93,6 +93,19 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` lists every repository as `runs list --all` does and
 exits `0`.
 
+`runs list` has two formats. Agents and scripts pass `--format plain`,
+which always prints the stable lines above; without `--format` the stable
+lines are also printed whenever standard output is not an interactive
+terminal. At an interactive terminal, or with `--format table`, it prints
+a table for people: a header and aligned columns `RUN` (the eight-digit
+short id), `REPO` (only when the listing spans repositories), `STATE`,
+`TARGET`, `AGENT`, `STARTED (<zone>)` in the machine's local time, and
+`DURATION`; only `TARGET` is cut with `…` to fit the terminal width.
+`--wide` selects the table with the full Run id and adds `KIND`, `BRANCH`
+and `WORKTREE`; `--wide --format plain` and any other `--format` value
+exit `2`. The stderr notes and `No Runs found.` are the same in both
+formats.
+
 The Read-Only Run Commands are bare `runs`, `runs list`, `runs show`, `attach`,
 and `events`. They only read the Run Database and never create a Run Worktree.
 When `worktree.location` is refused, they print one warning on stderr shaped as
