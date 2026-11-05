@@ -1,0 +1,34 @@
+import sys
+sys.path.insert(0,str(__import__('pathlib').Path(__file__).parent))
+from qa0351_common import *
+logs=[];good=True
+for file in ['SKILL.md','references/implement.md','references/runs.md','references/deliver.md']:
+ a=ROOT/'.agents/skills/roundfix'/file;b=ROOT/'skills/roundfix'/file
+ assert a.read_bytes()==b.read_bytes();logs.append('Mirror byte equality: '+file+' PASS')
+for prefix in ['.agents/skills/roundfix','skills/roundfix']:
+ t=' '.join((ROOT/prefix/'SKILL.md').read_text().split())
+ for phrase in ['settlement check: secret scan`: the lines that commit would add','a Secret Match names path, line and kind, never the value']:assert phrase in t,(prefix,phrase)
+ assert (ROOT/prefix/'SKILL.md').stat().st_size<=20000
+ logs.append(prefix+': Settlement Checks phrases, version 0.1.185 and entry budget PASS')
+for ref,phrase in [('implement','returns as Verification Feedback for the one repair turn and the second attempt scans again'),('runs','set by its kind rather than by a signature'),('deliver','park names each Task the Run settled')]:
+ for file in [ROOT/'.agents/skills/roundfix/references'/f'{ref}.md',ROOT/'skills/roundfix/references'/f'{ref}.md',ROOT/'docs/user-guide/commands'/f'{ref}.md']:
+  assert phrase in ' '.join(file.read_text().split()),str(file);logs.append(str(file.relative_to(ROOT))+': prescribed phrase PASS')
+context=' '.join((ROOT/'CONTEXT.md').read_text().split())
+for phrase in ['**Settlement Check**:','authorization of the prospective Task commit and its Secret Scan','**Secret Scan**:','a first-attempt Secret Match returns as Verification Feedback','**Cause Class**:','or by kind for a']:assert phrase in context,phrase
+prd=(SPEC/'_prd.md').read_text()
+for term in ['Settlement Check','Secret Scan','Cause Class']:assert 'changes: **'+term+'**' in prd
+unreachable=re.search(r'^## Unreachable Acceptance\n(.*?)(?=^## |\Z)',prd,re.M|re.S)[1];assert unreachable.strip().startswith('None.')
+logs.append('PRD Unreachable Acceptance: None. No declared-blocked rows. Three declared changes and three prescribed glossary revisions PASS; exact glossary delta in scope-audit.txt.')
+adr=ROOT/'docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md';assert re.search(r'^status: accepted$',adr.read_text(),re.M)
+logs.append('ADR-0361 accepted PASS')
+# Keep every hit for review, including the earlier accepted decision.
+r,scan=run(['rg','-n','-i','secret.scan|secret match|scan.{0,100}verification|verification.{0,100}scan','docs/user-guide','docs/agents','CONTEXT.md','docs/adr','.agents/skills/roundfix','skills/roundfix']);assert r.returncode==0;logs.append(scan)
+old=ROOT/'docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md'
+t=old.read_text();stale='After a Task\'s Verification passes\nand the Daemon has prepared' in t and 'Giving the Agent a repair turn after a Task Secret Match was rejected' in t
+amended='**Amended by [ADR-0361]' in t and 'no longer waits for a passing Verification' in t and 'Only a Secret Match on the final attempt' in t and 'uses the existing repair turn instead of a new repair class' in t
+assert stale and amended
+logs.append('ADR-0292 retains the historical original and explicitly amends its timing/refusal immediately below, links ADR-0361, and updates the formerly rejected option. Added-lines, Secret Rewrite and fixture decisions remain applicable. F-01 resolves at the original reader entry point.')
+for args in [['go','test','-count=1','-timeout','20m','-v','./skills'],['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','./internal/docscontract']]:
+ r,log=run(args,env=offline());logs.append(log);passed=len(re.findall(r'--- PASS:',r.stdout));skipped=len(re.findall(r'--- SKIP:',r.stdout));print(args[-1],'exit',r.returncode,'pass lines',passed,'skips',skipped,flush=True);good &= r.returncode==0
+(EVID/'Q08.txt').write_text('\n'.join(logs));mark('Q08','pass' if good else 'fail','Evidence: [phrase checks, complete wording sweep and documentation suites](evidence/0351-rerun/Q08.txt). Mirrors, required text, accepted ADR-0361, three glossary revisions and ADR-0292 amendment checked. '+('Both suites passed; F-01 resolved.' if good else 'Suite failure requires inspection.'))
+print('Q08',good,flush=True)

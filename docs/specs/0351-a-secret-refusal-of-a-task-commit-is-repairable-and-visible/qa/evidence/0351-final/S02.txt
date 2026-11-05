@@ -1,0 +1,46 @@
+Isolated git archive 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; git init and git add before mutation. No scratch commit.
+Mutation:
+diff --git a/internal/daemon/task_engine.go b/internal/daemon/task_engine.go
+index 32f5308..5852fdc 100644
+--- a/internal/daemon/task_engine.go
++++ b/internal/daemon/task_engine.go
+@@ -1843,7 +1843,9 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
+ 			engine.authorizationSettlementCheck(plan, task, before),
+ 		}
+ 	}
++	if plan.settlementChecks {
+ 	request.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))
++	}
+ 	remaining, deleteErr := undeletedTaskPaths(plan.WorkDir, task)
+ 	if deleteErr != nil || len(remaining) > 0 {
+ 		request.Commands = nil
+
+command: go test -count=1 -timeout 20m -v -run '^(TestTaskCommitSecretScanRunsAfterTheSettlementChecks|TestTaskCommitSecretMatchReturnsAsVerificationFeedback)$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== PAUSE TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== CONT  TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+    task_secret_scan_test.go:339: commands = 1, checks = [], want [settlement check: secret scan]
+=== NAME  TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+    task_secret_scan_test.go:237: Task commit does not contain the letters-only repair
+--- FAIL: TestTaskCommitSecretMatchReturnsAsVerificationFeedback (0.19s)
+--- FAIL: TestTaskCommitSecretScanRunsAfterTheSettlementChecks (0.00s)
+    --- FAIL: TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate (0.12s)
+    --- PASS: TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph (0.26s)
+FAIL
+suiteguard: guard cost: measured 2901 paths; fingerprint took 132.21875ms before and 134.052125ms after
+FAIL	roundfix/internal/daemon	0.859s
+FAIL
+
+stderr:
+

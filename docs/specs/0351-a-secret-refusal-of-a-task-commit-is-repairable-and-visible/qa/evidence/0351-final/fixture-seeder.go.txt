@@ -1,0 +1,32 @@
+package main
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "os"
+ "time"
+ "roundfix/internal/store"
+ "roundfix/internal/runevent"
+ "roundfix/internal/speccheck"
+)
+func must(err error){if err!=nil {panic(err)}}
+func main(){
+ if os.Args[1]=="governed" {for _,p:=range os.Args[2:] {fmt.Printf("%s\t%t\n",p,speccheck.GovernedPath(p))};return}
+ ctx:=context.Background();home,root:=os.Args[1],os.Args[2]
+ s,err:=store.Open(ctx,home);must(err)
+ run,err:=s.CreateRun(ctx,store.CreateRunRequest{Kind:store.KindImplement,GitRoot:root,LocalBranch:"main",SpecSlug:"0077-example"});must(err)
+ events:=[]struct{kind runevent.Kind;task string;p map[string]any}{
+ {runevent.KindDaemonTask,"task_01",map[string]any{"phase":"started"}},
+ {runevent.KindDaemonTask,"task_01",map[string]any{"phase":"secret_scan","matches":[]map[string]any{{"path":"fixture.txt","line":2,"kind":"credential-assignment"}}}},
+ {runevent.KindDaemonTask,"task_02",map[string]any{"phase":"started","task":"task_02"}},
+ {runevent.KindDaemonVerification,"task_02",map[string]any{"task":"task_02","phase":"failed","attempt":1,"command":runevent.SettlementCheckSecretScan}},
+ {runevent.KindDaemonTask,"task_02",map[string]any{"task":"task_02","phase":"secret_scan","attempt":1,"matches":[]map[string]any{{"path":"fixture.txt","line":2,"kind":"credential-assignment"},{"path":"second.txt","line":7,"kind":"credential-assignment"}}}},
+ {runevent.KindDaemonVerification,"task_02",map[string]any{"task":"task_02","phase":"verdict","attempt":1,"verdict":"failed"}},
+ }
+ for _,e:=range events{p,err:=json.Marshal(e.p);must(err);_,err=s.AppendRunEvent(ctx,runevent.RunEvent{RunID:run.ID,Kind:e.kind,ReviewIssue:e.task,Source:runevent.SourceDaemon,Time:time.Now(),Payload:p});must(err)}
+ _,err=s.CompleteRun(ctx,run.ID,store.StateUnresolved);must(err)
+ queue,err:=s.CreateDeliveryQueue(ctx,root,[]string{"0077-example"});must(err)
+ item:=queue.Items[0];item.Stage=store.DeliveryStageParked;item.Blocker="run-unresolved: task_01 failed: Task commit carries a secret: fixture.txt:2: credential-assignment; skipped: task_02, task_03";item.Branch="roundfix/deliver-0077-example";item.Worktree="/worktrees/0077-example"
+ _,_,_,err=s.RecordDeliveryQueueItemWorktree(ctx,root,item.SpecSlug,item.Branch,item.Worktree);must(err);must(s.UpdateDeliveryQueueItem(ctx,root,item));must(s.Close())
+ fmt.Println("Seeded disposable Run Database with legacy/new location-only secret refusals and a parked delivery item; writer closed.")
+}

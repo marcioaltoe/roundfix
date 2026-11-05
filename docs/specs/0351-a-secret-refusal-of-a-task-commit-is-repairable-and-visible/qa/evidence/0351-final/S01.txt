@@ -1,0 +1,41 @@
+Isolated git archive 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; git init and git add before mutation. No scratch commit.
+Mutation:
+diff --git a/internal/daemon/task_engine.go b/internal/daemon/task_engine.go
+index 32f5308..31596f9 100644
+--- a/internal/daemon/task_engine.go
++++ b/internal/daemon/task_engine.go
+@@ -1843,7 +1843,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
+ 			engine.authorizationSettlementCheck(plan, task, before),
+ 		}
+ 	}
+-	request.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))
++
+ 	remaining, deleteErr := undeletedTaskPaths(plan.WorkDir, task)
+ 	if deleteErr != nil || len(remaining) > 0 {
+ 		request.Commands = nil
+
+command: go test -count=1 -timeout 20m -v -run '^TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+    task_secret_scan_test.go:69: Task result = {IntegratedVerificationFailure: Completed:1 Failed:0 Skipped:0 QAVerdict: QAAccepted:false QAReportPath: Outcomes:[{Task:task_01 Status:completed Reason:}] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:}, want failed without completion
+=== NAME  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+    task_secret_scan_test.go:69: Task result = {IntegratedVerificationFailure: Completed:1 Failed:0 Skipped:0 QAVerdict: QAAccepted:false QAReportPath: Outcomes:[{Task:task_01 Status:completed Reason:}] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:}, want failed without completion
+--- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit (0.00s)
+    --- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file (0.19s)
+    --- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file (0.19s)
+FAIL
+suiteguard: guard cost: measured 2901 paths; fingerprint took 147.690667ms before and 133.525125ms after
+FAIL	roundfix/internal/daemon	0.815s
+FAIL
+
+stderr:
+

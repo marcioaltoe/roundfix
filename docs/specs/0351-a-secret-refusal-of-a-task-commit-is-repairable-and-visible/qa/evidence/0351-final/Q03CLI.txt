@@ -1,0 +1,32 @@
+Setup: fixture-seeder.go.txt compiled on an isolated git archive of the audited head; temporary git repository and HOME; writer closed before reading. No Agent/ACP/provider started.
+Seeded disposable Run Database with legacy/new location-only secret refusals and a parked delivery item; writer closed.
+
+command: ./bin/roundfix runs causes
+exit: 0
+stdout:
+secret-scan 0077-example/task_01 run_20261105T031449Z_c6b8505bbb4adb38 - repository-convention -: fixture.txt:2: credential-assignment
+secret-scan 0077-example/task_02 run_20261105T031449Z_c6b8505bbb4adb38 attempt-1 repository-convention -: fixture.txt:2: credential-assignment; second.txt:7: credential-assignment
+Causes: 2 item(s) from 1 terminal Spec Run(s) in window *..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 2, implementation-defect 0, environment 0, unclassified 0; repository knowledge 2 of 2 classified; signatures 53e5e5a76410
+
+stderr:
+
+
+command: ./bin/roundfix runs causes --format json
+exit: 0
+stdout:
+{"schema":"roundfix/runs-causes/v1","window":{"since":null,"until":null},"signatures_sha256":"53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f","runs":1,"items":[{"kind":"secret-scan","spec":"0077-example","task":"task_01","run_id":"run_20261105T031449Z_c6b8505bbb4adb38","attempt":null,"check":"fixture.txt:2: credential-assignment","class":"repository-convention","signature":null,"evidence":null,"matches":[{"path":"fixture.txt","line":2,"kind":"credential-assignment"}]},{"kind":"secret-scan","spec":"0077-example","task":"task_02","run_id":"run_20261105T031449Z_c6b8505bbb4adb38","attempt":1,"check":"fixture.txt:2: credential-assignment; second.txt:7: credential-assignment","class":"repository-convention","signature":null,"evidence":null,"matches":[{"path":"fixture.txt","line":2,"kind":"credential-assignment"},{"path":"second.txt","line":7,"kind":"credential-assignment"}]}],"tasks":[{"spec":"0077-example","task":"task_01","qa":false,"corrective":false,"verdicts_passed":0,"verdicts_failed":0,"feedback_rounds":0,"runs":1},{"spec":"0077-example","task":"task_02","qa":false,"corrective":false,"verdicts_passed":0,"verdicts_failed":1,"feedback_rounds":0,"runs":1}],"summary":{"classified":2,"environment":0,"implementation-defect":0,"items":2,"repository-convention":2,"repository_knowledge":2,"scope-or-authorization":0,"shared-section-contract":0,"unclassified":0},"specs_not_found":[]}
+
+stderr:
+
+
+command: ./bin/roundfix runs causes
+exit: 0
+stdout:
+secret-scan 0077-example/task_01 run_20261105T031449Z_c6b8505bbb4adb38 - repository-convention -: fixture.txt:2: credential-assignment
+secret-scan 0077-example/task_02 run_20261105T031449Z_c6b8505bbb4adb38 attempt-1 repository-convention -: fixture.txt:2: credential-assignment; second.txt:7: credential-assignment
+Causes: 2 item(s) from 1 terminal Spec Run(s) in window *..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 2, implementation-defect 0, environment 0, unclassified 0; repository knowledge 2 of 2 classified; signatures 53e5e5a76410
+
+stderr:
+
+
+Assertions: exactly two secret-scan items, legacy null and new attempt 1, match arrays 1/2; class repository-convention; null signature/evidence; text identical after fresh process reopen; no duplicate verification item.

@@ -1,0 +1,18 @@
+package main
+import (
+ "fmt"
+ "io/fs"
+ "os"
+ "path/filepath"
+ "roundfix/internal/spec"
+ "roundfix/internal/secretscan"
+)
+func main(){
+ r,err:=spec.ReadQAReportFile(os.Args[1]);if err!=nil{panic(err)}
+ if r.Verdict!="fail"||r.RowsBlockedEnvironment!=1||r.RowsBlockedFinding!=0||r.RowsBlockedDeclared!=0||r.Hollow {panic(fmt.Sprintf("unexpected report: %+v",r))}
+ fmt.Println("Production QA parser: fail verdict, one environment block, zero finding/declared blocks, nonempty Results accepted.")
+ if err:=spec.QAReportEligibility(filepath.Dir(filepath.Dir(os.Args[1])),r);err==nil{panic("failed QA unexpectedly archive-eligible")}else{fmt.Println("Eligibility refuses failed QA:",err)}
+ files,matches:=0,0
+ err=filepath.WalkDir(filepath.Dir(os.Args[1]),func(path string,d fs.DirEntry,err error)error{if err!=nil{return err};if d.IsDir(){return nil};b,err:=os.ReadFile(path);if err!=nil{return err};files++;for _,m:=range secretscan.ScanContent(path,b){fmt.Println(m.String());matches++};return nil});if err!=nil{panic(err)}
+ fmt.Printf("Production Secret Scan: %d files checked; %d matches.\n",files,matches);if matches!=0{os.Exit(1)}
+}

@@ -1,0 +1,116 @@
+Delivery Base 4b904073751ae5ff12c334c59c04be55311d22d3; audited head 945c8936f982140d8894440605e4462053af909e
+
+Task task_03 commit 185c7fdec7824db14b55bc4fece9dad6ba722e37
+  docs/references/behavior-surfaces.json
+  docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/task_03.md
+  docs/user-guide/commands/deliver.md
+  internal/cli/deliver_run_unresolved_park_test.go
+  internal/cli/deliver_workflow.go
+  internal/delivery/engine.go
+  internal/delivery/park_class.go
+  internal/delivery/run_unresolved_park_test.go
+undeclared: []
+
+Task task_01 commit c7cc16d44d43d7413d90603563f4b90edde09044
+  docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/task_01.md
+  internal/cli/implement_test.go
+  internal/daemon/engine.go
+  internal/daemon/settlement_secret_scan.go
+  internal/daemon/task_engine.go
+  internal/daemon/task_engine_test.go
+  internal/daemon/task_secret_scan_test.go
+  internal/runevent/event.go
+  internal/runevent/settlement_label_projection_test.go
+  internal/runevent/stream.go
+undeclared: []
+
+Task task_02 commit d459f8700a24f88a0fef873889a2eee006fe9d33
+  docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/task_02.md
+  internal/cli/runs_causes_test.go
+  internal/runcause/report.go
+  internal/runcause/report_test.go
+undeclared: []
+
+Task task_04 commit 04bb8e6adc060472c0c69b2184f0dca0cefffcff
+  .agents/skills/roundfix/SKILL.md
+  .agents/skills/roundfix/references/deliver.md
+  .agents/skills/roundfix/references/implement.md
+  .agents/skills/roundfix/references/runs.md
+  CONTEXT.md
+  docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md
+  docs/references/behavior-surfaces.json
+  docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/task_04.md
+  docs/user-guide/commands/implement.md
+  docs/user-guide/commands/runs.md
+  skills/roundfix/SKILL.md
+  skills/roundfix/references/deliver.md
+  skills/roundfix/references/implement.md
+  skills/roundfix/references/runs.md
+  skills/testdata/owned-skill-versions.json
+undeclared: []
+Standalone repair (not a Task commit) 945c8936f982140d8894440605e4462053af909e paths ['docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md']
+
+Governed measured: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', '.agents/skills/roundfix/references/implement.md', '.agents/skills/roundfix/references/runs.md', 'skills/roundfix/SKILL.md']
+Outside exact approved paths: []
+Authorization exists at Delivery Base before all Task commits; no Task includes the authorization record. Seeded mechanical authorization audit grants task_04. No prerequisite/consequent fix declared.
+protected Makefile: unchanged
+protected .github/workflows: unchanged
+protected go.mod: unchanged
+protected go.sum: unchanged
+protected .roundfixrc.yml: unchanged
+protected skills-lock.json: unchanged
+protected CHANGELOG.md: unchanged
+protected internal/app/version.go: unchanged
+protected dist: unchanged
+protected docs/references/skill-coverage.json: unchanged
+protected docs/history/specs: unchanged
+protected internal/baseline/assets: unchanged
+protected docs/agents: unchanged
+protected internal/secretscan: unchanged
+protected internal/store: unchanged
+protected internal/runcause/signatures.json: unchanged
+protected internal/runcause/testdata: unchanged
+skill path allowed .agents/skills/roundfix/SKILL.md: True
+skill path allowed .agents/skills/roundfix/references/deliver.md: True
+skill path allowed .agents/skills/roundfix/references/implement.md: True
+skill path allowed .agents/skills/roundfix/references/runs.md: True
+skill path allowed skills/roundfix/SKILL.md: True
+skill path allowed skills/roundfix/references/deliver.md: True
+skill path allowed skills/roundfix/references/implement.md: True
+skill path allowed skills/roundfix/references/runs.md: True
+.agents/skills/roundfix/SKILL.md QA settlement unchanged: True
+skills/roundfix/SKILL.md QA settlement unchanged: True
+Glossary delta: ['Cause Class', 'Secret Scan', 'Settlement Check']
+diff --git a/CONTEXT.md b/CONTEXT.md
+index aa80880b..1fc43e24 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -238,7 +238,7 @@ A Task appended to an active Spec's Task Graph, before its QA gate, to fix a fin
+ _Avoid_: Corrective Spec, follow-up Task
+ 
+ **Cause Class**:
+-The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, never by a model judgment ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md)).
++The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, or by kind for a `secret-scan` item, never by a model judgment ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md), [ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
+ _Avoid_: failure category, root cause, model verdict
+ 
+ **Classification Signature**:
+@@ -688,7 +688,7 @@ The failure diagnostics returned to an Agent Session after the Daemon runs Verif
+ _Avoid_: Full verification output, test log, progress stream
+ 
+ **Settlement Check**:
+-A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph, with or without a QA gate. The repository Verification at settlement runs with or without a QA gate; the two in-process checks run only with one. The checks cover the Spec Consistency Check, the repository Verification at settlement, and authorization of the prospective Task commit.
++A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph, with or without a QA gate. The repository Verification at settlement and the Task commit's Secret Scan run with or without a QA gate; the two in-process checks run only with one. The checks cover the Spec Consistency Check, the repository Verification at settlement, authorization of the prospective Task commit and its Secret Scan, which runs last in every attempt ([ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
+ _Avoid_: QA settlement, archive check, post-Run check
+ 
+ **Repeated Failure**:
+@@ -1128,7 +1128,7 @@ A rewritten head of an archived item parked `secret-found`, bounded by its Run s
+ _Avoid_: Post-archive correction, reset, arbitrary history rewrite
+ 
+ **Secret Scan**:
+-A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)).
++A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)). The Task commit's scan runs as the last Settlement Check of every Verification attempt, so a first-attempt Secret Match returns as Verification Feedback ([ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
+ _Avoid_: Redaction, post-push scan, advisory check
+ 
+ **Archive Command**:
+
+Tracked working-tree delta: ''

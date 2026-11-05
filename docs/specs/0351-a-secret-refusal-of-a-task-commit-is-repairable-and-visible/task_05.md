@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

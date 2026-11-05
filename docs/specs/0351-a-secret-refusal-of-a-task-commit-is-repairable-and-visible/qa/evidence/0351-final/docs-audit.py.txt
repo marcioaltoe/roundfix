@@ -1,0 +1,35 @@
+import sys
+sys.path.insert(0,'/private/tmp')
+from qa0351_common import *
+logs=[];good=True
+for file in ['SKILL.md','references/implement.md','references/runs.md','references/deliver.md']:
+ a=ROOT/'.agents/skills/roundfix'/file;b=ROOT/'skills/roundfix'/file
+ assert a.read_bytes()==b.read_bytes();logs.append('Mirror byte equality: '+file+' PASS')
+for prefix in ['.agents/skills/roundfix','skills/roundfix']:
+ t=' '.join((ROOT/prefix/'SKILL.md').read_text().split())
+ for phrase in ['settlement check: secret scan`: the lines that commit would add','a Secret Match names path, line and kind, never the value']:assert phrase in t,(prefix,phrase)
+ assert (ROOT/prefix/'SKILL.md').stat().st_size<=20000
+ logs.append(prefix+': Settlement Checks phrases, version 0.1.185 and entry budget PASS')
+for ref,phrase in [('implement','returns as Verification Feedback for the one repair turn and the second attempt scans again'),('runs','set by its kind rather than by a signature'),('deliver','park names each Task the Run settled')]:
+ for file in [ROOT/'.agents/skills/roundfix/references'/f'{ref}.md',ROOT/'skills/roundfix/references'/f'{ref}.md',ROOT/'docs/user-guide/commands'/f'{ref}.md']:
+  assert phrase in ' '.join(file.read_text().split()),str(file);logs.append(str(file.relative_to(ROOT))+': prescribed phrase PASS')
+context=' '.join((ROOT/'CONTEXT.md').read_text().split())
+for phrase in ['**Settlement Check**:','authorization of the prospective Task commit and its Secret Scan','**Secret Scan**:','a first-attempt Secret Match returns as Verification Feedback','**Cause Class**:','or by kind for a']:assert phrase in context,phrase
+prd=(SPEC/'_prd.md').read_text()
+for term in ['Settlement Check','Secret Scan','Cause Class']:assert 'changes: **'+term+'**' in prd
+unreachable=re.search(r'^## Unreachable Acceptance\n(.*?)(?=^## |\Z)',prd,re.M|re.S)[1];assert unreachable.strip().startswith('None.')
+logs.append('PRD Unreachable Acceptance: None. No declared-blocked rows. Three declared changes and three prescribed glossary revisions PASS; exact glossary delta in scope-audit.txt.')
+adr=ROOT/'docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md';assert re.search(r'^status: accepted$',adr.read_text(),re.M)
+logs.append('ADR-0361 accepted PASS')
+# Keep every hit for review, including the earlier accepted decision.
+r,scan=run(['rg','-n','-i','secret.scan|secret match|scan.{0,100}verification|verification.{0,100}scan','docs/user-guide','docs/agents','CONTEXT.md','docs/adr','.agents/skills/roundfix','skills/roundfix']);assert r.returncode==0;logs.append(scan)
+old=ROOT/'docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md'
+t=old.read_text();stale='After a Task\'s Verification passes\nand the Daemon has prepared' in t and 'Giving the Agent a repair turn after a Task Secret Match was rejected' in t
+assert stale
+logs.append('F-01: ADR-0292 remains status accepted, superseded_by null; decision lines 27-35 still place the scan after Verification passes and immediately fail the Task on a Secret Match; lines 82-84 still reject a repair turn. No amendment notice or ADR-0361 link exists in ADR-0292. ADR-0361 amends the decision in the opposite direction, but does not repair the stale text at this reader entry point. Requirement 8 wording sweep fails.\n')
+for args in [['go','test','-count=1','-timeout','20m','-v','./skills'],['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','./internal/docscontract']]:
+ r,log=run(args,env=offline());logs.append(log);passed=len(re.findall(r'--- PASS:',r.stdout));skipped=len(re.findall(r'--- SKIP:',r.stdout));print(args[-1],'exit',r.returncode,'pass lines',passed,'skips',skipped,flush=True);good &= r.returncode==0
+(EVID/'Q08.txt').write_text('\n'.join(logs));mark('Q08','fail','Evidence: [phrase checks, full wording sweep and suites](evidence/0351-final/Q08.txt). Prescribed phrases, mirrors, ADR-0361 and glossary checks pass; Task 04 skills/docscontract suites ran. F-01: accepted ADR-0292 still prescribes the former timing and rejects the repair turn, failing Requirement 8. See Findings.')
+# Correct first probe classification only after reading its behavioral failure.
+mark('S01','pass','Evidence: [S01 mutation and failing transcript](evidence/0351-final/S01.txt). Both new_file and tracked_file fail, exit 1: the Task completes instead of refusing. The initially expected diagnostic phrase was a harness mismatch; the named behavioral failure is present. No product change or test rerun was needed.')
+print('Q08 fail: F-01 stale accepted ADR; positive suites',good,flush=True)

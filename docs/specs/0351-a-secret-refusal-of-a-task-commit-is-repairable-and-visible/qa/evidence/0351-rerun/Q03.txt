@@ -1,0 +1,120 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestBuildReportsASecretRefusalAsItsOwnItem|TestBuild.*|TestCauses.*|TestClassify.*)$' ./internal/runcause
+exit: 0
+stdout:
+=== RUN   TestClassifyAppliesEachSignatureInOrder
+=== PAUSE TestClassifyAppliesEachSignatureInOrder
+=== RUN   TestCausesRecordIsConsistent
+--- PASS: TestCausesRecordIsConsistent (0.00s)
+=== RUN   TestCausesRecordRejectsASabotagedFixture
+=== PAUSE TestCausesRecordRejectsASabotagedFixture
+=== RUN   TestCausesRecordDecisionBoundaries
+=== PAUSE TestCausesRecordDecisionBoundaries
+=== RUN   TestBuildReportsAttemptsTasksAndCorrectives
+=== PAUSE TestBuildReportsAttemptsTasksAndCorrectives
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== PAUSE TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== RUN   TestBuildLeavesTheRunDatabaseUnchanged
+=== PAUSE TestBuildLeavesTheRunDatabaseUnchanged
+=== RUN   TestBuildWindowAndMultipleRuns
+=== PAUSE TestBuildWindowAndMultipleRuns
+=== RUN   TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+=== PAUSE TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot
+=== PAUSE TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot
+=== RUN   TestBuildReportsASecretRefusalAsItsOwnItem
+=== PAUSE TestBuildReportsASecretRefusalAsItsOwnItem
+=== CONT  TestClassifyAppliesEachSignatureInOrder
+=== CONT  TestBuildLeavesTheRunDatabaseUnchanged
+=== CONT  TestBuildReportsAttemptsTasksAndCorrectives
+=== CONT  TestBuildIgnoresALogOutsideTheArtifactDirectory
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/leaf_symlink
+=== CONT  TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/blank_root
+=== CONT  TestBuildReportsASecretRefusalAsItsOwnItem
+=== CONT  TestBuildBoundsEvidenceAndExportsNoPrivateCommandText
+=== RUN   TestClassifyAppliesEachSignatureInOrder/database-locked
+=== CONT  TestCausesRecordDecisionBoundaries
+=== CONT  TestBuildWindowAndMultipleRuns
+=== CONT  TestCausesRecordRejectsASabotagedFixture
+=== RUN   TestClassifyAppliesEachSignatureInOrder/disk-full
+=== RUN   TestClassifyAppliesEachSignatureInOrder/network-unreachable
+=== RUN   TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:3_unknown:13_verdict:inconclusive}
+=== RUN   TestClassifyAppliesEachSignatureInOrder/killed-or-timed-out
+=== RUN   TestClassifyAppliesEachSignatureInOrder/governed-path
+=== RUN   TestClassifyAppliesEachSignatureInOrder/authorization-or-scope
+=== RUN   TestClassifyAppliesEachSignatureInOrder/shared-section
+=== RUN   TestClassifyAppliesEachSignatureInOrder/record-or-golden
+=== RUN   TestClassifyAppliesEachSignatureInOrder/lint-or-format
+=== RUN   TestClassifyAppliesEachSignatureInOrder/help-or-guide
+=== RUN   TestClassifyAppliesEachSignatureInOrder/go-test-failure
+=== RUN   TestClassifyAppliesEachSignatureInOrder/review-defect
+--- PASS: TestClassifyAppliesEachSignatureInOrder (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/database-locked (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/disk-full (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/network-unreachable (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/killed-or-timed-out (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/governed-path (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/authorization-or-scope (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/shared-section (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/record-or-golden (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/lint-or-format (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/help-or-guide (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/go-test-failure (0.00s)
+    --- PASS: TestClassifyAppliesEachSignatureInOrder/review-defect (0.00s)
+--- PASS: TestCausesRecordRejectsASabotagedFixture (0.00s)
+=== RUN   TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:4_unknown:12_verdict:reopen}
+=== RUN   TestCausesRecordDecisionBoundaries/{knowledge:15_defect:10_environment:5_unknown:0_verdict:keep_closed}
+=== RUN   TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:0_unknown:0_verdict:inconclusive}
+=== RUN   TestCausesRecordDecisionBoundaries/{knowledge:16_defect:10_environment:4_unknown:0_verdict:reopen}
+--- PASS: TestCausesRecordDecisionBoundaries (0.01s)
+    --- PASS: TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:3_unknown:13_verdict:inconclusive} (0.00s)
+    --- PASS: TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:4_unknown:12_verdict:reopen} (0.00s)
+    --- PASS: TestCausesRecordDecisionBoundaries/{knowledge:15_defect:10_environment:5_unknown:0_verdict:keep_closed} (0.00s)
+    --- PASS: TestCausesRecordDecisionBoundaries/{knowledge:20_defect:0_environment:0_unknown:0_verdict:inconclusive} (0.00s)
+    --- PASS: TestCausesRecordDecisionBoundaries/{knowledge:16_defect:10_environment:4_unknown:0_verdict:reopen} (0.00s)
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/parent_symlink
+--- PASS: TestBuildReportsAttemptsTasksAndCorrectives (0.03s)
+--- PASS: TestBuildLeavesTheRunDatabaseUnchanged (0.03s)
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/relative_root
+--- PASS: TestBuildWindowAndMultipleRuns (0.03s)
+--- PASS: TestBuildReportsASecretRefusalAsItsOwnItem (0.04s)
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/outside
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/absolute_root
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/other_run
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/blank_root_without_home
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/directory
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/leaf_symlink
+=== RUN   TestBuildIgnoresALogOutsideTheArtifactDirectory/missing
+--- PASS: TestBuildBoundsEvidenceAndExportsNoPrivateCommandText (0.06s)
+--- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory (0.07s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/leaf_symlink (0.03s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/parent_symlink (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/outside (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/other_run (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/directory (0.01s)
+    --- PASS: TestBuildIgnoresALogOutsideTheArtifactDirectory/missing (0.01s)
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/parent_symlink
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/outside
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/other_run
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/directory
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/missing
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/diagnostic_under_the_recorded_value
+=== RUN   TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/inspection_error
+--- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot (0.12s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/blank_root (0.03s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/relative_root (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/absolute_root (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/blank_root_without_home (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/leaf_symlink (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/parent_symlink (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/outside (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/other_run (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/directory (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/missing (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/diagnostic_under_the_recorded_value (0.01s)
+    --- PASS: TestBuildReadsTheDiagnosticUnderTheResolvedArtifactRoot/inspection_error (0.01s)
+PASS
+ok  	roundfix/internal/runcause	0.388s
+
+stderr:
+

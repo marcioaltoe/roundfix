@@ -1,0 +1,28 @@
+import sys,tarfile,io
+sys.path.insert(0,'/private/tmp')
+from qa0351_common import *
+archive=subprocess.check_output(['git','archive',META['head']],cwd=ROOT)
+mutations=[
+('S01','internal/daemon/task_engine.go','\trequest.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))','', './internal/daemon','^TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit$','TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file','Task result'),
+('S02','internal/daemon/task_engine.go','\trequest.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))','\tif plan.settlementChecks {\n\trequest.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))\n\t}', './internal/daemon','^(TestTaskCommitSecretScanRunsAfterTheSettlementChecks|TestTaskCommitSecretMatchReturnsAsVerificationFeedback)$','TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate',''),
+('S03','internal/daemon/engine.go','if err != nil && check.HaltOnError {','if false && err != nil && check.HaltOnError {','./internal/daemon','^TestTaskSecretScanReadErrorHaltsTheRun$','TestTaskSecretScanReadErrorHaltsTheRun','scan read error sent Verification Feedback'),
+('S04','internal/daemon/engine.go','\tif command == runevent.SettlementCheckSecretScan {\n\t\tfirst, _, _ := strings.Cut(commandErr.Err.Error(), "\\n")\n\t\treturn first\n\t}\n','', './internal/daemon','^TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit$','TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file','Settlement check failed:'),
+('S05','internal/daemon/settlement_secret_scan.go',' + "\\n" +\n\t\t\t"Fix: replace each named value with one no Secret Pattern matches, such as letters only or fewer than 20 characters; copying a value the repository already tracks is refused the same way."','', './internal/daemon','^TestTaskCommitSecretMatchReturnsAsVerificationFeedback$','TestTaskCommitSecretMatchReturnsAsVerificationFeedback','Fix:'),
+('S06','internal/runcause/report.go','\t\t\tif p.Command == runevent.SettlementCheckSecretScan {\n\t\t\t\tcontinue\n\t\t\t}\n','', './internal/runcause','^TestBuildReportsASecretRefusalAsItsOwnItem$','TestBuildReportsASecretRefusalAsItsOwnItem','secret scan duplicated as a verification item'),
+('S07','internal/cli/deliver_workflow.go','\t\t\t\t\tresult.SkippedTasks = append(result.SkippedTasks, task)\n','', './internal/cli','^TestDeliveryRunResultReadsFailedAndSkippedTasks$','TestDeliveryRunResultReadsFailedAndSkippedTasks','SkippedTasks:[]'),
+('S08','internal/delivery/engine.go','\t\tif len(reason) > 300 {\n\t\t\treason = append(reason[:300], \'…\')\n\t\t}\n','', './internal/delivery','^TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason$','TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason','parked item')]
+for row,path,old,new,pkg,pattern,case,diagnostic in mutations:
+ with tempfile.TemporaryDirectory(prefix='qa0351-'+row+'-') as d:
+  root=Path(d)
+  with tarfile.open(fileobj=io.BytesIO(archive)) as t:t.extractall(root,filter='data')
+  for args in [['git','init','--initial-branch=main'],['git','add','.']]:
+   r,log=run(args,cwd=root)
+   if r.returncode:raise RuntimeError(log)
+  p=root/path;source=p.read_text();assert source.count(old)==1,(row,source.count(old));p.write_text(source.replace(old,new))
+  diff=subprocess.check_output(['git','diff','--',path],cwd=root,text=True)
+  args=['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg]
+  r,log=run(args,cwd=root,env=offline())
+  good=r.returncode==1 and re.search(r'--- FAIL: '+re.escape(case)+r'(?:\s|$)',r.stdout) is not None and (not diagnostic or diagnostic in r.stdout)
+  (EVID/(row+'.txt')).write_text('Isolated git archive '+META['head']+'; git init and git add before mutation. No scratch commit.\nMutation:\n'+safe(diff)+'\n'+log)
+  mark(row,'pass' if good else 'fail',f'Evidence: [{row} mutation and failing transcript](evidence/0351-final/{row}.txt). '+('Named behavioral failure observed, exit 1: `'+case+'`.' if good else 'Negative probe did not satisfy its named behavioral failure; inspect transcript.'))
+  print(row,'exit',r.returncode,'expected named failure',good,flush=True)

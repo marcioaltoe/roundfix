@@ -1,0 +1,12 @@
+package main
+import("fmt";"io/fs";"os";"path/filepath";"unicode/utf8";"roundfix/internal/spec";"roundfix/internal/secretscan")
+func main(){
+ r,err:=spec.ReadQAReportFile(os.Args[1]);if err!=nil{panic(err)}
+ if r.Verdict!=spec.VerdictPartial||r.RowsBlockedEnvironment!=1||r.RowsBlockedPrePullRequest!=1||r.RowsBlockedFinding!=0||r.RowsBlockedDeclared!=0||r.RowsSkipped!=0||r.Hollow{panic("unexpected report metadata")}
+ fmt.Println("Production QA parser: partial, one pre-PR environment block, zero finding/declared/skipped rows, nonempty Results accepted.")
+ if err:=spec.QAReportEligibility(filepath.Dir(filepath.Dir(os.Args[1])),r);err!=nil{panic(err)}
+ fmt.Println("Production QA eligibility: qualifying partial accepted.")
+ files,matches:=0,0
+ err=filepath.WalkDir(filepath.Dir(os.Args[1]),func(path string,d fs.DirEntry,err error)error{if err!=nil{return err};if d.IsDir(){return nil};b,err:=os.ReadFile(path);if err!=nil{return err};if !utf8.Valid(b){return fmt.Errorf("non-text evidence: %s",path)};files++;for _,m:=range secretscan.ScanContent(path,b){fmt.Println(m.String());matches++};return nil});if err!=nil{panic(err)}
+ fmt.Printf("Evidence type: %d UTF-8 text files. Production Secret Scan: %d matches.\n",files,matches);if matches!=0{os.Exit(1)}
+}

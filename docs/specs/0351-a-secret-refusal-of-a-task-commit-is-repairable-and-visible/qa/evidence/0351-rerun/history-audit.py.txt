@@ -1,0 +1,61 @@
+import sys
+sys.path.insert(0,str(__import__('pathlib').Path(__file__).parent))
+from qa0351_common import *
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+base,head=META['base'],META['head'];logs=[];good=True
+allowed={
+ 'internal/daemon/task_secret_scan_test.go':{'TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit'},
+ 'internal/daemon/task_engine_test.go':{'TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt','TestTaskCycleExecutesAgentVerifySettleCommitContract'},
+ 'internal/cli/implement_test.go':{'TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree'},
+ 'internal/runevent/settlement_label_projection_test.go':{'TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot'}}
+def functions(s):
+ starts=list(re.finditer(r'^func (?:\([^\n]+\) )?(\w+)\(',s,re.M));return {m[1]:s[m.start():starts[i+1].start() if i+1<len(starts) else len(s)].rstrip() for i,m in enumerate(starts)}
+for path,declared in allowed.items():
+ old=functions(git('show',base+':'+path));new=functions(git('show',head+':'+path));changed={n for n in old if old[n]!=new.get(n)}
+ logs.append(path+'\n  changed existing functions: '+', '.join(sorted(changed))+'\n  added functions: '+', '.join(sorted(new.keys()-old.keys()))+'\n  removed: '+', '.join(sorted(old.keys()-new.keys())))
+ good &= changed==declared and not (old.keys()-new.keys())
+ logs.append(git('diff','--unified=3',base,head,'--',path))
+for path in ['internal/secretscan','internal/runcause/signatures.json','internal/runcause/testdata']:
+ d=git('diff',base,head,'--',path);logs.append(path+': '+('UNCHANGED' if not d else 'CHANGED'));good &= not d
+(EVID/'history-breaks.txt').write_text('\n'.join(logs));mark('Q05','pass' if good else 'fail','Evidence: [per-function and exact history diffs](evidence/0351-rerun/history-breaks.txt). Only the five declared existing test bodies changed; new tests/helper and their imports are added. Scanner source unchanged.')
+# Requirement 3 history observation is part of its planned commit-range input.
+s=REPORT.read_text().replace('46 passing test/case lines; no skips or failures.','46 passing test/case lines; no skips or failures. Signature table and testdata have empty Delivery Base-to-head diffs: [history comparison](evidence/0351-rerun/history-breaks.txt).');REPORT.write_text(s)
+logs=['Delivery Base '+base+'; audited head '+head];good=True
+commits=git('rev-list','--reverse',base+'..'+head).splitlines()
+for commit in commits:
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ tasks=[p for p in paths if re.search(r'/task_0[1-4]\.md$',p)]
+ if not tasks:
+  logs.append('Standalone repair (not a Task commit) '+commit+' paths '+str(paths));assert paths==['docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md'];continue
+ assert len(tasks)==1,(commit,tasks)
+ task=tasks[0];text=git('show',commit+':'+task)
+ context=re.search(r'^## Context\n(.*?)(?=^## |\Z)',text,re.S|re.M).group(1)
+ declared=set(re.findall(r'^- (?:creates|interface|deletes): `([^`]+)`',context,re.M));declared.add(task)
+ recorded=re.search(r'^## Recorded paths\n(.*?)(?=^## |\Z)',text,re.S|re.M)
+ if recorded:declared.update(re.findall(r'`([^`]+)`',recorded[1]))
+ outside=set(paths)-declared;good &= not outside
+ logs.append('\nTask '+Path(task).stem+' commit '+commit+'\n'+'\n'.join('  '+p for p in paths)+'\nundeclared: '+str(sorted(outside)))
+record=(SPEC/'_authorization.md').read_text();bounded=set(re.findall(r'^  - (.+)$',record.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+governed={line.split('\t')[0] for line in (EVID/'governed.txt').read_text().splitlines() if line.endswith('\ttrue')}
+logs.append('\nGoverned measured: '+str(sorted(governed))+'\nOutside exact approved paths: '+str(sorted(governed-bounded)));good &= governed<=bounded
+first=commits[0];authrev=git('log','-1','--format=%H',base,'--',str(SPEC.relative_to(ROOT)/'_authorization.md')).strip();assert authrev==base
+logs.append('Authorization exists at Delivery Base before all Task commits; no Task includes the authorization record. Seeded mechanical authorization audit grants task_04. No prerequisite/consequent fix declared.')
+protected=['Makefile','.github/workflows','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist','docs/references/skill-coverage.json','docs/history/specs','internal/baseline/assets','docs/agents','internal/secretscan','internal/store','internal/runcause/signatures.json','internal/runcause/testdata']
+for path in protected:
+ d=git('diff',base,head,'--',path);good &= not d;logs.append('protected '+path+': '+('unchanged' if not d else 'CHANGED'))
+paths=git('diff','--name-only',base,head).splitlines()
+for p in paths:
+ if p.startswith(('.agents/skills/','skills/')) and p!='skills/testdata/owned-skill-versions.json':
+  permitted=p in {prefix+f for prefix in ['.agents/skills/roundfix/','skills/roundfix/'] for f in ['SKILL.md','references/deliver.md','references/implement.md','references/runs.md']};good &= permitted;logs.append('skill path allowed '+p+': '+str(permitted))
+for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ def settlement(rev):
+  t=git('show',rev+':'+p);m=re.search(r'^### QA settlement\n(.*?)(?=^###? |\Z)',t,re.S|re.M);return m[0]
+ same=settlement(base)==settlement(head);good &= same;logs.append(p+' QA settlement unchanged: '+str(same))
+old=git('show',base+':CONTEXT.md');new=git('show',head+':CONTEXT.md')
+def terms(t):
+ ms=list(re.finditer(r'^\*\*([^*]+)\*\*:\s*$',t,re.M));return {m[1]:t[m.start():ms[i+1].start() if i+1<len(ms) else len(t)] for i,m in enumerate(ms)}
+a,b=terms(old),terms(new);delta={n for n in a.keys()|b.keys() if a.get(n)!=b.get(n)};good &= delta=={'Settlement Check','Secret Scan','Cause Class'}
+logs.append('Glossary delta: '+str(sorted(delta)));logs.append(git('diff',base,head,'--','CONTEXT.md'))
+delta=git('diff','--name-only',head);good &= not delta;logs.append('Tracked working-tree delta: '+repr(delta))
+(EVID/'scope-audit.txt').write_text('\n'.join(logs));mark('Q12','pass' if good else 'fail','Evidence: [per-commit scope, authority and protected paths audit](evidence/0351-rerun/scope-audit.txt) and [actual GovernedPath output](evidence/0351-rerun/governed.txt). Every path is declared, approved governed set matches, protected paths and QA settlement are unchanged; only the three declared glossary entries change.')
+print('History/scope audit',good,flush=True)

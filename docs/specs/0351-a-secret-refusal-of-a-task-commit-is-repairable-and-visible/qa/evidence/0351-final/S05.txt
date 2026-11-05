@@ -1,0 +1,31 @@
+Isolated git archive 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; git init and git add before mutation. No scratch commit.
+Mutation:
+diff --git a/internal/daemon/settlement_secret_scan.go b/internal/daemon/settlement_secret_scan.go
+index 4294c3d..7e425b6 100644
+--- a/internal/daemon/settlement_secret_scan.go
++++ b/internal/daemon/settlement_secret_scan.go
+@@ -34,7 +34,6 @@ func (engine *Engine) secretScanSettlementCheck(plan TaskPlan, task spec.Task, o
+ 			return "", err
+ 		}
+ 		fmt.Fprintln(engine.deps.Progress, message)
+-		return "Task commit carries a secret: " + strings.Join(details, "; ") + "\n" +
+-			"Fix: replace each named value with one no Secret Pattern matches, such as letters only or fewer than 20 characters; copying a value the repository already tracks is refused the same way.", nil
++		return "Task commit carries a secret: " + strings.Join(details, "; "), nil
+ 	}}
+ }
+
+command: go test -count=1 -timeout 20m -v -run '^TestTaskCommitSecretMatchReturnsAsVerificationFeedback$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== PAUSE TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== CONT  TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+    task_secret_scan_test.go:247: repair prompt missing "Fix: replace each named value with one no Secret Pattern matches, such as letters only or fewer than 20 characters; copying a value the repository already tracks is refused the same way."
+--- FAIL: TestTaskCommitSecretMatchReturnsAsVerificationFeedback (0.23s)
+FAIL
+suiteguard: guard cost: measured 2901 paths; fingerprint took 147.664291ms before and 134.39425ms after
+FAIL	roundfix/internal/daemon	0.850s
+FAIL
+
+stderr:
+

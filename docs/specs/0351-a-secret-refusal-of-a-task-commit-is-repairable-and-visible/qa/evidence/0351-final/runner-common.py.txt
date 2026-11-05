@@ -1,0 +1,25 @@
+from pathlib import Path
+import os,subprocess,re,json,tempfile,shlex
+ROOT=Path.cwd();SPEC=ROOT/'docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible';REPORT=SPEC/'qa/qa-report-2026-11-05.md';EVID=SPEC/'qa/evidence/0351-final';META=json.loads(Path('/private/tmp/qa0351-matrix.json').read_text())
+def safe(s):
+ return re.sub(r'(?:K8){4,}|(?:8K){4,}', '[refused-value-omitted]', s)
+def mark(row,status,note):
+ s=REPORT.read_text();s=re.sub(r'(\| '+re.escape(row)+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],s)
+ start=s.index('### '+row+'\n');end=s.find('\n### ',start+1);end=len(s) if end<0 else end
+ b=s[start:end].replace('Evidence: pending.',note)
+ s=s[:start]+b+s[end:];REPORT.write_text(s)
+def run(args,cwd=ROOT,env=None):
+ r=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True)
+ return r,'command: '+shlex.join(args)+'\nexit: '+str(r.returncode)+'\nstdout:\n'+safe(r.stdout)+'\nstderr:\n'+safe(r.stderr)+'\n'
+def tests(row,selections):
+ logs=[];ok=True;total=0
+ for package,pattern in selections:
+  args=['go','test','-count=1','-timeout','20m','-v','-run',pattern,package]
+  r,log=run(args,env=offline());logs.append(log)
+  passed=len(re.findall(r'--- PASS:',r.stdout));skips=len(re.findall(r'--- SKIP:',r.stdout));total+=passed
+  print(row,package,'exit',r.returncode,'passed test/case lines',passed,'skips',skips,flush=True)
+  ok=ok and r.returncode==0 and passed>0 and skips==0
+ (EVID/(row+'.txt')).write_text('\n'.join(logs));mark(row,'pass' if ok else 'fail',f'Evidence: [{row} test transcript](evidence/0351-final/{row}.txt). {total} passing test/case lines; '+('no skips or failures.' if ok else 'inspect the transcript for failures/skips.'))
+ return ok
+def offline():
+ e={k:v for k,v in os.environ.items() if k not in {'ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY'}};e.update(GOPROXY='off',GOSUMDB='off');return e

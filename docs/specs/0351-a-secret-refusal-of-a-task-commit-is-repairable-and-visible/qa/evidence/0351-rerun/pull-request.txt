@@ -1,0 +1,8 @@
+PR01 — supplied environment fact: no open Pull Request. The Run Worktree branch has no PR and is never pushed.
+Claimed candidate: 945c8936f982140d8894440605e4462053af909e
+1. Approval: recorded maintainer delivery authority in _authorization.md, granted 2026-11-04, status approved; authorizing revision 4b904073751ae5ff12c334c59c04be55311d22d3. This authorizes delivery operations, but is not hosted review acceptance.
+2. Checks/status: Daemon make verify-changed passed at audited head, exit 0, diagnostics removed on success; make build and strict Spec check passed. Hosted required checks do not exist yet.
+3. Unresolved threads: none, because no Pull Request exists.
+4. Merge-Ready acceptance: none obtained yet; no Review Source approval exists for this candidate.
+5. Review-artifact ancestry: no review artifact exists; the evidence claims only candidate 945c8936f982140d8894440605e4462053af909e.
+All controls answered; hosted acceptance is unavailable, so the row remains environment-blocked and the verdict is qualifying partial.

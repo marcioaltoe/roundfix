@@ -1,0 +1,18 @@
+command: ./bin/roundfix --version
+exit: 0
+stdout:
+roundfix 0.131.0 (8151c582-dirty, built 2026-11-05 00:07:22 -0300)
+stderr:
+
+command: ./bin/roundfix spec check 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible --strict
+exit: 0
+stdout:
+Spec 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/_techspec.md Vocabulary Contract
+stderr:

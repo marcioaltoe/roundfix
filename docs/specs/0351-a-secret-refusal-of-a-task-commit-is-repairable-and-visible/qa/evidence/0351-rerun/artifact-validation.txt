@@ -1,0 +1,19 @@
+command: go build -o /private/tmp/qa0351-rerun-8afg_lv0/artifact-validator ./cmd/qa0351-validator
+exit: 0
+stdout:
+
+stderr:
+
+
+command: /private/tmp/qa0351-rerun-8afg_lv0/artifact-validator /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible-ad22d14d91550bb5-7ef88b2d-fa469ffd/run_20261105T033222Z_1d0ed43f3ecf7fd4/docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/qa/qa-report-2026-11-05-01.md
+exit: 0
+stdout:
+Production QA parser: partial, one pre-PR environment block, zero finding/declared/skipped rows, nonempty Results accepted.
+Production QA eligibility: qualifying partial accepted.
+Evidence type: 63 UTF-8 text files. Production Secret Scan: 0 matches.
+
+stderr:
+
+
+Matrix audit: 20 rows; 15 fresh pass, 4 carried, 1 pre-PR block; every required source and every executed row input declared.
+Local report links: 32 resolve and are unignored. Tracked working-tree delta: empty. Every untracked path is under this Spec qa/. Audited HEAD unchanged.

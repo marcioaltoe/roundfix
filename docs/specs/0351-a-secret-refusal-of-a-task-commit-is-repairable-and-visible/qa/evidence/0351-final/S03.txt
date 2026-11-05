@@ -1,0 +1,31 @@
+Isolated git archive 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; git init and git add before mutation. No scratch commit.
+Mutation:
+diff --git a/internal/daemon/engine.go b/internal/daemon/engine.go
+index 9493d55..858474b 100644
+--- a/internal/daemon/engine.go
++++ b/internal/daemon/engine.go
+@@ -495,7 +495,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
+ 		if verificationStopRequested(ctx, err) {
+ 			return verificationAttemptOutcome{}, err
+ 		}
+-		if err != nil && check.HaltOnError {
++		if false && err != nil && check.HaltOnError {
+ 			if publishErr := req.publishInfrastructureFailure(ctx, check.Label, err); publishErr != nil {
+ 				return verificationAttemptOutcome{}, publishErr
+ 			}
+
+command: go test -count=1 -timeout 20m -v -run '^TestTaskSecretScanReadErrorHaltsTheRun$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestTaskSecretScanReadErrorHaltsTheRun
+=== PAUSE TestTaskSecretScanReadErrorHaltsTheRun
+=== CONT  TestTaskSecretScanReadErrorHaltsTheRun
+    task_secret_scan_test.go:375: scan read error sent Verification Feedback
+--- FAIL: TestTaskSecretScanReadErrorHaltsTheRun (0.18s)
+FAIL
+suiteguard: guard cost: measured 2901 paths; fingerprint took 149.595459ms before and 134.789083ms after
+FAIL	roundfix/internal/daemon	0.881s
+FAIL
+
+stderr:
+

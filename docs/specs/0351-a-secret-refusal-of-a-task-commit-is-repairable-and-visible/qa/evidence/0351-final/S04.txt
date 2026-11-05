@@ -1,0 +1,44 @@
+Isolated git archive 8151c5827b1e2982b4479002ca1c9bf94f4ce35f; git init and git add before mutation. No scratch commit.
+Mutation:
+diff --git a/internal/daemon/engine.go b/internal/daemon/engine.go
+index 9493d55..f3503a3 100644
+--- a/internal/daemon/engine.go
++++ b/internal/daemon/engine.go
+@@ -292,10 +292,6 @@ func verificationTerminalReason(commandErr *VerificationCommandError) string {
+ 	if diagnostics == "" {
+ 		diagnostics = "unavailable"
+ 	}
+-	if command == runevent.SettlementCheckSecretScan {
+-		first, _, _ := strings.Cut(commandErr.Err.Error(), "\n")
+-		return first
+-	}
+ 	if strings.HasPrefix(command, "settlement check: ") {
+ 		first, _, _ := strings.Cut(commandErr.Err.Error(), "\n")
+ 		return terminalReasonLine(fmt.Sprintf("Settlement check failed: %s: %s; diagnostics: %s", command, first, diagnostics))
+
+command: go test -count=1 -timeout 20m -v -run '^TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== NAME  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+    task_secret_scan_test.go:92: refusals = 2, reason = "Settlement check failed: settlement check: secret scan: Task commit carries a secret: fixture.txt:2: credential-assignment; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTaskCommitWithASecretMatchSettlesFailedWithoutACommitnew_fi3586937169/003/artifacts/runs/run_20261105T031100Z_95731a8d79a6388d/verification/batch-001-attempt-2-settlement-secret-scan.log", want two refusals with "Task commit carries a secret: fixture.txt:2: credential-assignment"
+=== NAME  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+    task_secret_scan_test.go:92: refusals = 2, reason = "Settlement check failed: settlement check: secret scan: Task commit carries a secret: fixture.txt:2: credential-assignment; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTaskCommitWithASecretMatchSettlesFailedWithoutACommittracke2012449475/003/artifacts/runs/run_20261105T031100Z_1c38b6a9979e3b3e/verification/batch-001-attempt-2-settlement-secret-scan.log", want two refusals with "Task commit carries a secret: fixture.txt:2: credential-assignment"
+--- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit (0.00s)
+    --- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file (0.20s)
+    --- FAIL: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file (0.21s)
+FAIL
+suiteguard: guard cost: measured 2901 paths; fingerprint took 149.419208ms before and 134.026333ms after
+FAIL	roundfix/internal/daemon	0.844s
+FAIL
+
+stderr:
+

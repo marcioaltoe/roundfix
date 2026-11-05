@@ -1,0 +1,228 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestTaskCommitSecretMatchReturnsAsVerificationFeedback|TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit|TestTaskCommitSecretScanRunsAfterTheSettlementChecks|TestTaskSecretScanReadErrorHaltsTheRun|TestTaskCommitScansOnlyTheLinesItAdds|TestTaskCommitAcceptsALettersOnlyFixture|TestTaskSecretScanUsesHeadAndPreparedPaths|TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt|TestTaskCycleExecutesAgentVerifySettleCommitContract|TestSettlement.*|TestSpecConsistency.*|TestGatelessGraphNeverCallsTheSettlementChecker)$' ./internal/daemon
+exit: 0
+stdout:
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== RUN   TestSettlementRefusesATaskThatPinsItsSpecPath
+=== PAUSE TestSettlementRefusesATaskThatPinsItsSpecPath
+=== RUN   TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== PAUSE TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== RUN   TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== PAUSE TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== RUN   TestSettlementCheckerErrorFailsTheCheck
+=== PAUSE TestSettlementCheckerErrorFailsTheCheck
+=== RUN   TestSettlementChecksRunAfterAFailedCommand
+=== PAUSE TestSettlementChecksRunAfterAFailedCommand
+=== RUN   TestSettlementChecksPublishVerificationEvents
+=== PAUSE TestSettlementChecksPublishVerificationEvents
+=== RUN   TestGatelessGraphNeverCallsTheSettlementChecker
+=== PAUSE TestGatelessGraphNeverCallsTheSettlementChecker
+=== RUN   TestSettlementChecksSkipAnUnobservedCommand
+=== PAUSE TestSettlementChecksSkipAnUnobservedCommand
+=== RUN   TestSettlementChecksSkipAnInfrastructureError
+=== PAUSE TestSettlementChecksSkipAnInfrastructureError
+=== RUN   TestSettlementChecksSkipAStopRequest
+=== PAUSE TestSettlementChecksSkipAStopRequest
+=== RUN   TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== PAUSE TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+=== RUN   TestSettlementChecksExcludePreexistingGovernedPaths
+=== PAUSE TestSettlementChecksExcludePreexistingGovernedPaths
+=== RUN   TestSettlementChecksRunAgainOnTemporaryRetry
+=== PAUSE TestSettlementChecksRunAgainOnTemporaryRetry
+=== RUN   TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== PAUSE TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+=== RUN   TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== PAUSE TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+=== RUN   TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== PAUSE TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== RUN   TestSpecConsistencyCheckerErrorFailsTheCheck
+=== PAUSE TestSpecConsistencyCheckerErrorFailsTheCheck
+=== RUN   TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== PAUSE TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+=== RUN   TestSettlementStillReportsALinkToADeletedFile
+=== PAUSE TestSettlementStillReportsALinkToADeletedFile
+=== RUN   TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== PAUSE TestSettlementRefusesAnUnauthorizedGovernedDeletion
+=== RUN   TestSettlementStillRefusesAContextPathNoRevisionTracks
+=== PAUSE TestSettlementStillRefusesAContextPathNoRevisionTracks
+=== RUN   TestTaskCycleExecutesAgentVerifySettleCommitContract
+=== PAUSE TestTaskCycleExecutesAgentVerifySettleCommitContract
+=== RUN   TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+=== PAUSE TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitScansOnlyTheLinesItAdds
+=== PAUSE TestTaskCommitScansOnlyTheLinesItAdds
+=== RUN   TestTaskCommitAcceptsALettersOnlyFixture
+=== PAUSE TestTaskCommitAcceptsALettersOnlyFixture
+=== RUN   TestTaskSecretScanUsesHeadAndPreparedPaths
+=== PAUSE TestTaskSecretScanUsesHeadAndPreparedPaths
+=== RUN   TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== PAUSE TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== RUN   TestTaskSecretScanReadErrorHaltsTheRun
+=== PAUSE TestTaskSecretScanReadErrorHaltsTheRun
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary
+=== CONT  TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork
+=== CONT  TestSettlementChecksSkipAnUnobservedCommand
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+=== RUN   TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== PAUSE TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+=== CONT  TestGatelessGraphNeverCallsTheSettlementChecker
+=== CONT  TestSettlementChecksExcludePreexistingGovernedPaths
+=== CONT  TestSettlementChecksPublishVerificationEvents
+=== CONT  TestSettlementChecksRunAfterAFailedCommand
+=== CONT  TestSettlementCheckerErrorFailsTheCheck
+=== CONT  TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason
+=== CONT  TestSettlementAuditFindingReturnsFeedbackAndRepairSettles
+=== CONT  TestSettlementRefusesATaskThatPinsItsSpecPath
+--- PASS: TestSpecConsistencyBaselineErrorFailsTheTaskBeforeAgentWork (0.24s)
+=== CONT  TestSettlementIgnoresASpecConsistencyFindingPresentAtStart
+--- PASS: TestSettlementRefusesATaskThatPinsItsSpecPath (0.34s)
+=== CONT  TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced
+--- PASS: TestSettlementChecksSkipAnUnobservedCommand (0.42s)
+=== CONT  TestSettlementChecksRunAgainOnTemporaryRetry
+--- PASS: TestSettlementChecksExcludePreexistingGovernedPaths (0.43s)
+=== CONT  TestSettlementChecksSkipAStopRequest
+--- PASS: TestSettlementIgnoresASpecConsistencyFindingPresentAtStart (0.30s)
+=== CONT  TestSettlementChecksSkipGrantReadsForOrdinaryPaths
+--- PASS: TestSettlementCheckFailureOnFinalAttemptFailsWithNamedReason (0.65s)
+=== CONT  TestSettlementChecksSkipAnInfrastructureError
+--- PASS: TestGatelessGraphNeverCallsTheSettlementChecker (0.65s)
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+=== RUN   TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== PAUSE TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+=== CONT  TestTaskSecretScanReadErrorHaltsTheRun
+--- PASS: TestSettlementChecksRunAfterAFailedCommand (0.67s)
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+=== RUN   TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+=== PAUSE TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+=== CONT  TestTaskCommitSecretMatchReturnsAsVerificationFeedback
+--- PASS: TestSettlementChecksPublishVerificationEvents (0.69s)
+=== CONT  TestTaskSecretScanUsesHeadAndPreparedPaths
+--- PASS: TestSettlementAuditFindingReturnsFeedbackAndRepairSettles (0.69s)
+=== CONT  TestTaskCommitAcceptsALettersOnlyFixture
+--- PASS: TestSettlementRefusesASpecConsistencyFindingTheTaskIntroduced (0.35s)
+=== CONT  TestTaskCommitScansOnlyTheLinesItAdds
+--- PASS: TestSettlementCheckerErrorFailsTheCheck (0.70s)
+=== CONT  TestSettlementRefusesAnUnauthorizedGovernedDeletion
+--- PASS: TestSettlementChecksSkipAStopRequest (0.37s)
+=== CONT  TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt
+--- PASS: TestTaskSecretScanUsesHeadAndPreparedPaths (0.15s)
+=== CONT  TestTaskCycleExecutesAgentVerifySettleCommitContract
+--- PASS: TestSettlementChecksSkipGrantReadsForOrdinaryPaths (0.38s)
+=== CONT  TestSettlementStillRefusesAContextPathNoRevisionTracks
+--- PASS: TestSettlementRefusesAnUnauthorizedGovernedDeletion (0.25s)
+=== CONT  TestSpecConsistencyRepairKeepsTheTaskStartBaseline
+--- PASS: TestTaskSecretScanReadErrorHaltsTheRun (0.32s)
+=== CONT  TestSettlementStillReportsALinkToADeletedFile
+--- PASS: TestSettlementChecksRunAgainOnTemporaryRetry (0.61s)
+=== CONT  TestSpecConsistencyCheckerErrorFailsTheCheck
+--- PASS: TestSettlementChecksSkipAnInfrastructureError (0.38s)
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing
+--- PASS: TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt (0.28s)
+=== CONT  TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign
+--- PASS: TestTaskCommitScansOnlyTheLinesItAdds (0.43s)
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file
+--- PASS: TestTaskCommitAcceptsALettersOnlyFixture (0.44s)
+=== CONT  TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file
+--- PASS: TestTaskCommitSecretMatchReturnsAsVerificationFeedback (0.49s)
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph
+--- PASS: TestTaskCycleExecutesAgentVerifySettleCommitContract (0.36s)
+=== CONT  TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate
+--- PASS: TestSpecConsistencyRepairKeepsTheTaskStartBaseline (0.39s)
+--- PASS: TestSpecConsistencyCheckerErrorFailsTheCheck (0.35s)
+--- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit (0.00s)
+    --- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/tracked_file (0.37s)
+    --- PASS: TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit/new_file (0.39s)
+--- PASS: TestSettlementStillReportsALinkToADeletedFile (0.56s)
+--- PASS: TestTaskCommitSecretScanRunsAfterTheSettlementChecks (0.00s)
+    --- PASS: TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate (0.22s)
+    --- PASS: TestTaskCommitSecretScanRunsAfterTheSettlementChecks/gated_graph (0.43s)
+--- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary (0.00s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/missing (0.64s)
+    --- PASS: TestSettlementOutsideASelfAuditIgnoresTheUserFlowBinary/foreign (0.60s)
+--- PASS: TestSettlementStillRefusesAContextPathNoRevisionTracks (0.83s)
+PASS
+suiteguard: guard cost: measured 2907 paths; fingerprint took 191.332084ms before and 136.107333ms after
+ok  	roundfix/internal/daemon	2.486s
+
+stderr:
+
+
+command: go test -count=1 -timeout 20m -v -run '^TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot$' ./internal/runevent
+exit: 0
+stdout:
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot
+=== PAUSE TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot
+=== CONT  TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/failed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/failed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/failed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/failed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/failed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/started
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/command-passed
+=== RUN   TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/failed
+--- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_spec_consistency/failed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization/failed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_secret_scan/failed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/make_verify/failed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/settlement_check:_authorization;_make_verify/failed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/started (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/command-passed (0.00s)
+    --- PASS: TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot/_settlement_check:_spec_consistency/failed (0.00s)
+PASS
+ok  	roundfix/internal/runevent	0.234s
+
+stderr:
+
+
+command: go test -count=1 -timeout 20m -v -run '^TestRunImplementTemporaryVerificationFlow' ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== RUN   TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== PAUSE TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+=== RUN   TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== PAUSE TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== CONT  TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair
+=== CONT  TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair
+=== CONT  TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree
+--- PASS: TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair (0.37s)
+--- PASS: TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair (0.38s)
+--- PASS: TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree (0.42s)
+PASS
+suiteguard: guard cost: measured 2907 paths; fingerprint took 139.768334ms before and 128.715667ms after
+ok  	roundfix/internal/cli	1.147s
+
+stderr:
+

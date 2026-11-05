@@ -1,0 +1,10 @@
+Final artifact check after all report additions. All 20 Results rows have typed inputs; statuses: 18 pass, 1 fail, 1 environment-blocked. All local Markdown targets exist and are unignored.
+command: go run ./cmd/qa0351validate /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible-ad22d14d91550bb5-7ef88b2d-fa469ffd/run_20261105T015847Z_709cb0723a1fbaae/docs/specs/0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible/qa/qa-report-2026-11-05.md
+exit: 0
+stdout:
+Production QA parser: fail verdict, one environment block, zero finding/declared blocks, nonempty Results accepted.
+Eligibility refuses failed QA: newest QA Report verdict is "fail"; expected "pass"
+Production Secret Scan: 36 files checked; 0 matches.
+
+stderr:
+
