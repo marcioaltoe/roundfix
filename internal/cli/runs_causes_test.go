@@ -358,3 +358,79 @@ func assertResolvedCausesTranscript(t *testing.T, env commandEnvironment) {
 		t.Fatalf("exit=%d stderr=%q\nout=%q\nwant=%q", code, diag, out, want)
 	}
 }
+
+func TestRunsCausesPrintsASecretRefusal(t *testing.T) {
+	t.Parallel()
+	env := causesCLIWorkspace(t)
+	s, err := store.Open(t.Context(), env.homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := s.CreateRun(t.Context(), store.CreateRunRequest{Kind: store.KindImplement, GitRoot: env.workDir, LocalBranch: "main", SpecSlug: "0300-example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.CompleteRun(t.Context(), run.ID, store.StateUnresolved); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", store.DatabasePath(env.homeDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE runs SET id = ?, created_at = ? WHERE id = ?`, causesFixtureID, "2026-10-01T12:00:00Z", run.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = store.Open(t.Context(), env.homeDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range []struct {
+		kind    runevent.Kind
+		payload string
+	}{
+		{runevent.KindDaemonTask, `{"task":"task_01","phase":"started"}`},
+		{runevent.KindDaemonVerification, fmt.Sprintf(`{"task":"task_01","phase":"failed","attempt":1,"command":%q}`, runevent.SettlementCheckSecretScan)},
+		{runevent.KindDaemonTask, `{"task":"task_01","phase":"secret_scan","attempt":1,"matches":[{"path":"fixture.txt","line":2,"kind":"credential-assignment"}]}`},
+		{runevent.KindDaemonVerification, `{"task":"task_01","phase":"verdict","attempt":1,"verdict":"failed"}`},
+	} {
+		if _, err := s.AppendRunEvent(t.Context(), runevent.RunEvent{RunID: causesFixtureID, Kind: e.kind, ReviewIssue: "task_01", Source: runevent.SourceDaemon, Time: time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC), Payload: []byte(e.payload)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	code, out, diag := runCausesCLI(t, env)
+	want := "secret-scan 0300-example/task_01 " + causesFixtureID + " attempt-1 repository-convention -: fixture.txt:2: credential-assignment\n" +
+		"Causes: 1 item(s) from 1 terminal Spec Run(s) in window *..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 1, implementation-defect 0, environment 0, unclassified 0; repository knowledge 1 of 1 classified; signatures " + causesDigest(t) + "\n"
+	if code != 0 || diag != "" || out != want {
+		t.Fatalf("exit=%d stderr=%q\nout=%q\nwant=%q", code, diag, out, want)
+	}
+	code, out, diag = runCausesCLI(t, env, "--format", "json")
+	if code != 0 || diag != "" {
+		t.Fatalf("exit=%d stderr=%q", code, diag)
+	}
+	var document struct {
+		Items []map[string]json.RawMessage `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(out), &document); err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Items) != 1 {
+		t.Fatalf("JSON=%s", out)
+	}
+	for field, expected := range map[string]string{
+		"kind": `"secret-scan"`, "attempt": "1", "check": `"fixture.txt:2: credential-assignment"`, "class": `"repository-convention"`,
+		"signature": "null", "evidence": "null", "matches": `[{"path":"fixture.txt","line":2,"kind":"credential-assignment"}]`,
+	} {
+		if string(document.Items[0][field]) != expected {
+			t.Errorf("%s=%s, want %s", field, document.Items[0][field], expected)
+		}
+	}
+}

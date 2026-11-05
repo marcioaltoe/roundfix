@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -106,3 +106,77 @@ fiscus on 2026-11-04
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 4
 - `_techspec.md` → Current behavior 5; API Contract 6; Invariant 1; Declared breaks; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+The Causes builder now emits one `secret-scan` item per refusal event, including
+legacy events without payload Task or attempt. The item carries only match
+locations and kinds, uses `repository-convention`, and has null signature and
+evidence. The failed scan check marks its attempt seen without emitting a
+verification item, so its later failed verdict cannot duplicate the refusal.
+Other items serialize `matches` as null; the schema and text formatter remain
+unchanged.
+
+Acceptance evidence:
+
+- Each refusal appears once in text and JSON: the new report test seeds one
+  terminal Run with a legacy refusal and a new refusal containing two matches,
+  checks Work Item fallback and payload Task precedence, null/1 attempts,
+  locations, classes, match arrays and summary counts, and rejects the duplicate
+  verification item. The new CLI test checks the entire prescribed two-line
+  transcript, exit 0, empty stderr and the JSON fields against an isolated Run
+  Database with the pinned fixture ID and creation time.
+- No fixture value reaches an item: the report test builds the value at runtime,
+  includes it in unknown input match fields, and rejects every consecutive
+  eight-byte slice in each serialized item. It also checks explicit null
+  `matches` for verification and corrective items. Prefix comparisons against
+  `HEAD` confirm every byte of both existing test files remains unchanged before
+  the appended tests. Byte comparisons confirm the signature table and
+  `internal/cli/runs_causes.go` remain unchanged. Signature SHA256:
+  `53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f`.
+
+Characterization and focused checks:
+
+- Before changing code, an untracked temporary test supplied through a Go
+  overlay created a terminal Run with a `task_01` start, one legacy
+  `secret_scan` match and a failed settlement. Command:
+  `go test -overlay "$probe/overlay.json" -count=1 -timeout 5m -v -run '^TestCharacterizeSecretRefusalMissing$' ./internal/runcause`.
+  Exit 0: the characterization asserted one terminal Run and zero Causes items.
+  The temporary test was never added to the worktree.
+- Before the builder change,
+  `go test -count=1 -timeout 5m -run '^TestBuildReportsASecretRefusalAsItsOwnItem$' ./internal/runcause`
+  exited 1 with `secret scan duplicated as a verification item for task_02 attempt 1`
+  and only one item instead of two.
+- After the builder change,
+  `go test -count=1 -timeout 5m -v -run '^TestBuildReportsASecretRefusalAsItsOwnItem$' ./internal/runcause`
+  exited 0.
+- After the last test edit,
+  `go test -count=1 -timeout 5m ./internal/runcause` exited 0, covering the
+  existing package tests and the new report test.
+- `go test -count=1 -timeout 10m -run 'TestRunsCauses|TestBuildLeavesTheRunDatabaseUnchanged' ./internal/cli`
+  exited 0, covering the existing Causes command tests and the new transcript
+  and JSON test.
+- Required sabotage: copied `report.go` to a temporary directory, removed only
+  the `p.Command == runevent.SettlementCheckSecretScan` skip, and mapped that
+  copy through a Go overlay. Command:
+  `go test -overlay "$sabotage/overlay.json" -count=1 -timeout 5m -v -run '^TestBuildReportsASecretRefusalAsItsOwnItem$' ./internal/runcause`.
+  Expected exit 1 observed. The named test reported
+  `secret scan duplicated as a verification item for task_02 attempt 1` and
+  three items rather than two. Production source was unchanged by the probe.
+- `git diff --check` exited 0; `gofmt -l` on the three changed Go files printed
+  nothing. Changed-path inspection found only those files and this Task file.
+
+Execution note: the sandbox could not start with the configured symlinked
+writable root, so commands used the same physical checkout with escalated
+execution. The only pre-existing diff was the Daemon's `status: in_progress`;
+that field was preserved. No other Task or manifest was edited. Declared Task
+Verification and repository Verification are left to the Daemon. No commit,
+push or pull request was created. No follow-up work was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T015847Z_709cb0723a1fbaae`
+- Source commit: `94a172ae9c39a07c755024b7b334d8641c79df90`
