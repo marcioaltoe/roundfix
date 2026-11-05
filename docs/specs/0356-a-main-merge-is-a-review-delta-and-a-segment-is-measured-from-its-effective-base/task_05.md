@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0356-a-main-merge-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

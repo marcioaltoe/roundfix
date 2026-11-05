@@ -1,0 +1,17 @@
+.agents/skills/roundfix/references/review.md: exact Effective Base paragraph, both lineage changes, all six reasons; obsolete sentence absent
+skills/roundfix/references/review.md: exact Effective Base paragraph, both lineage changes, all six reasons; obsolete sentence absent
+docs/user-guide/commands/review.md: exact Effective Base paragraph, both lineage changes, all six reasons; obsolete sentence absent
+.agents/skills/roundfix/references/deliver.md: exact status/retry paragraphs; every other byte equals Delivery Base
+skills/roundfix/references/deliver.md: exact status/retry paragraphs; every other byte equals Delivery Base
+docs/user-guide/commands/deliver.md: exact status/retry paragraphs; every other byte equals Delivery Base
+mirror references/review.md: equal SHA256 e64a4af2128dd4ab97f31bc60cb9f7deaf616eea6e4932f43663358469e94a68
+mirror references/deliver.md: equal SHA256 27f046280ede80d26898bcde574024a37daa7ebf49ec0bd9829938bf6e482320
+mirror SKILL.md: equal SHA256 0e868c7b743d52a3bae00619b6d33a8e20cfed3bac8d28c8d131e55462a8a16a
+glossary Reviewer Lineage: definition with ADR-0366 exists
+glossary Review Segment: definition with ADR-0366 exists
+glossary Effective Base: definition with ADR-0366 exists
+docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md: exact final amendment, 2026-11-05 updated_at; other bytes preserved
+docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md: exact final amendment, 2026-11-05 updated_at; other bytes preserved
+docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md: exact final amendment, 2026-11-05 updated_at; other bytes preserved
+docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md: exact final amendment, 2026-11-05 updated_at; other bytes preserved
+PRD: no Unreachable Acceptance; zero declared blocks. PRD and TechSpec declarations match all three glossary entries.

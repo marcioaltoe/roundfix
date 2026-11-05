@@ -1,0 +1,122 @@
+from pathlib import Path
+import subprocess,re,json,hashlib,tempfile
+root=Path.cwd();s=next(Path('docs/specs').glob('0356-*'));e=s/'qa/evidence/2026-11-05-local';report=s/'qa/qa-report-2026-11-05.md'
+base='f3018091fc725223ae2302d7b8754d32180e4424';head='787ea0bd74b5506afd5abd50ea846141d2ccf066'
+commits=['152cff7865aacafc85368190f43a48e4dcd439ac','711db8a3acd2c0c3b2bc47213997d3a767197208','5e94dae8aadd80de6346aa6b818dac7593fe0cd7',head]
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+def norm(x):return ' '.join(x.split())
+def update(row,status,detail):
+ text=report.read_text();text=re.sub(r'(?m)^\| '+str(row)+r' \| [^|]+ \|',f'| {row} | {status} |',text)
+ start=text.index(f'### Row {row}:');end=text.find('\n### Row ',start+1);end=len(text) if end<0 else end
+ text=text[:end]+'\n'+detail+'\n'+text[end:];report.write_text(text)
+# Exact documentation contract, whitespace free only where authorized.
+tech=(s/'_techspec.md').read_text();part=tech.split('6. API Contract:',1)[1].split('### Surface Transcripts',1)[0]
+blocks=[norm(x) for x in re.findall(r'```markdown\n(.*?)\n\s*```',part,re.S)]
+assert len(blocks)==5,len(blocks)
+reasons=re.findall(r'\d\. `([^`]+)`',tech.split('4. API Contract:',1)[1].split('5. API Contract:',1)[0]);assert len(reasons)==6
+reviewPaths=['.agents/skills/roundfix/references/review.md','skills/roundfix/references/review.md','docs/user-guide/commands/review.md']
+deliverPaths=['.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md','docs/user-guide/commands/deliver.md']
+log=[]
+for path in reviewPaths:
+ text=norm(Path(path).read_text())
+ for block in blocks[:2]:assert block in text,(path,block)
+ assert 'Reviews in one checkout form a **Reviewer Lineage** when the provider stays the same, each reviewed head descends from the last, and the merge base stays the same or moves only by a conflict-free merge of the default branch.' in text
+ for reason in reasons:assert norm(reason) in text,(path,reason)
+ assert 'changed provider or merge base, or a head' not in text
+ log.append(path+': exact Effective Base paragraph, both lineage changes, all six reasons; obsolete sentence absent')
+for path in deliverPaths:
+ text=Path(path).read_text()
+ for block in blocks[2:4]:assert block in norm(text),(path,block)
+ # This slice owns exactly those two paragraphs.
+ stripped=text
+ for block in blocks[2:4]:
+  # Authored paragraphs are unwrapped in the resulting files.
+  assert block+'\n\n' in stripped
+  stripped=stripped.replace(block+'\n\n','',1)
+ assert stripped==git('show',base+':'+path),(path,'unexpected additional edit')
+ log.append(path+': exact status/retry paragraphs; every other byte equals Delivery Base')
+for relative in ['references/review.md','references/deliver.md','SKILL.md']:
+ a=Path('.agents/skills/roundfix')/relative;b=Path('skills/roundfix')/relative;assert a.read_bytes()==b.read_bytes();log.append('mirror '+relative+': equal SHA256 '+hashlib.sha256(a.read_bytes()).hexdigest())
+link='0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md'
+context=Path('CONTEXT.md').read_text()
+expected=blocks[4].replace('(ADR-0366)','([ADR-0366](docs/adr/'+link+'))')
+assert expected in norm(context)
+for term in ['Reviewer Lineage','Review Segment','Effective Base']:
+ match=re.search(r'^\*\*'+term+r'\*\*:\n(.*?)(?=\n\n|\Z)',context,re.M|re.S);assert match and 'ADR-0366' in match[1];log.append('glossary '+term+': definition with ADR-0366 exists')
+assert 'each measured from its Effective Base and within the applicable bound' in context
+assert 'A conflict-free merge of the default branch keeps it, and the delta then starts from the round-1 head carried onto the new merge base.' in context
+amendments=re.findall(r'- ADR-(\d{4}): "([^\"]+)"',part,re.S);assert len(amendments)==4,len(amendments)
+adrPaths=[]
+for number,amendment in amendments:
+ path=next(Path('docs/adr').glob(number+'-*.md'));adrPaths.append(str(path));text=path.read_text()
+ expected=norm(amendment).replace('ADR-0366','[ADR-0366]('+link+')')
+ assert norm(text).endswith(expected),(path,expected)
+ assert 'updated_at: 2026-11-05T12:00:00Z' in text
+ original=git('show',base+':'+str(path));oldDate=re.search(r'^updated_at: (.+)$',original,re.M)[0]
+ restored=re.sub(r'^updated_at: .+$',oldDate,text,flags=re.M)
+ # Only amendment and updated_at may change.
+ assert restored[:restored.index('**Amended by [ADR-0366]')].rstrip()==original.rstrip()
+ log.append(str(path)+': exact final amendment, 2026-11-05 updated_at; other bytes preserved')
+for file in ['_prd.md','_techspec.md']:
+ text=(s/file).read_text()
+ for declaration in ['- adds: **Effective Base**','- changes: **Reviewer Lineage**','- changes: **Review Segment**']:assert declaration in text
+prd=(s/'_prd.md').read_text();assert prd.split('## Unreachable Acceptance',1)[1].split('## ',1)[0].strip().startswith('None.')
+log.append('PRD: no Unreachable Acceptance; zero declared blocks. PRD and TechSpec declarations match all three glossary entries.')
+(e/'wording-and-glossary.txt').write_text('\n'.join(log)+'\n');print('\n'.join(log),flush=True)
+update(18,'pass','Exact normalized API Contract 6 assertions passed for all six references/guides, six restart reasons, three glossary entries and four amended ADRs. Obsolete wording absent; ADRs and deliver texts have no unrelated edits. Mirrors byte-identical. [Assertions](evidence/2026-11-05-local/wording-and-glossary.txt).')
+# Actual changed-file scope from every Task commit.
+allPaths=set();audit=[]
+for index,commit in enumerate(commits,1):
+ task=s/f'task_{index:02d}.md';text=task.read_text();declared=set(re.findall(r'^- (?:creates|interface|instruction|deletes): `([^`]+)`',text,re.M));declared.add(str(task))
+ recorded=text.split('## Recorded paths',1)[1].split('\n## ',1)[0] if '## Recorded paths' in text else ''
+ declared.update(re.findall(r'`([^`]+)`',recorded))
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();allPaths.update(paths)
+ missing=[path for path in paths if path not in declared and not any(path.startswith(d.rstrip('/')+'/') for d in declared if '.' not in d.rsplit('/',1)[-1])]
+ assert not missing,(index,missing)
+ audit.append(f'task_{index:02d} {commit}: all {len(paths)} changed paths declared; Recorded paths: '+('present' if recorded else 'none'))
+ audit.extend('  '+path for path in paths)
+forbidden={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/references/coverage-record.json'}
+for path in allPaths:
+ assert path not in forbidden
+ assert not path.startswith(('.github/workflows/','internal/baseline/','internal/delivery/','internal/store/','internal/config/','docs/agents/'))
+ if path.startswith('docs/adr/'):assert path in adrPaths
+ if path.startswith(('.agents/skills/','skills/')) and path!='skills/testdata/owned-skill-versions.json':assert path in {'.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md',*reviewPaths[:2],*deliverPaths[:2]}
+for path in allPaths:
+ if path.endswith('SKILL.md'):
+  def settlement(text):return re.search(r'^### QA settlement\n.*?(?=^## |^### |\Z)',text,re.M|re.S)[0]
+  assert settlement(Path(path).read_text())==settlement(git('show',base+':'+path))
+authority=s/'_authorization.md';assert git('show',base+':'+str(authority))==authority.read_text();assert str(authority) not in allPaths
+subprocess.run(['git','merge-base','--is-ancestor',base,commits[3]],check=True)
+audit.append('Authority is byte-identical to Delivery Base and predates all four Task commits. No authorization folded into any Task. No prohibited path, other skill, extra ADR or QA settlement edit.')
+# Use the current governed-path classifier through an overlay; no repository source is written.
+with tempfile.TemporaryDirectory(prefix='qa0356-governed-') as tmp:
+ temp=Path(tmp);probe=temp/'probe.go';overlay=temp/'overlay.json'
+ array=','.join(json.dumps(p) for p in sorted(allPaths))
+ probe.write_text('package speccheck\nimport "testing"\nfunc TestQAGovernedScope(t *testing.T){t.Parallel(); for _,p:=range []string{'+array+'}{t.Logf("%s governed=%t",p,GovernedPath(p))}}\n')
+ overlay.write_text(json.dumps({'Replace':{str(root/'internal/speccheck/qa_governed_overlay_test.go'):str(probe)}}))
+ args=['go','test','-count=1','-timeout','20m','-v','-overlay',str(overlay),'-run','^TestQAGovernedScope$','./internal/speccheck']
+ r=subprocess.run(args,text=True,capture_output=True);audit.append('command: go test -count=1 -timeout 20m -v -overlay <temporary overlay> -run ^TestQAGovernedScope$ ./internal/speccheck');audit.append('exit: '+str(r.returncode));audit.append(r.stdout+r.stderr)
+ assert r.returncode==0,r.stdout+r.stderr
+ governed=set(re.findall(r'\s(\S+) governed=true',r.stdout));granted=set(re.findall(r'^  - (.+)$',authority.read_text().split('paths:\n',1)[1].split('operations:',1)[0],re.M));assert governed<=granted,(governed,granted)
+ audit.append('Measured governed changes: '+', '.join(sorted(governed))+'; every one granted.')
+(e/'history-and-authority.txt').write_text('\n'.join(audit)+'\n');print('\n'.join(audit[:1]+audit[-2:]),flush=True)
+update(22,'pass','Read diff-tree for all four commits and compared actual paths with each Task declaration and Recorded paths. Current GovernedPath overlay measured four governed changes, all granted at the Delivery Base before implementation. No forbidden files, unrelated ADR/skill edits or QA settlement changes. [History and classifier evidence](evidence/2026-11-05-local/history-and-authority.txt).')
+# Read external report offline; compare its actual observations with independent before/after command executions.
+source=next((s/'references').glob('2026-11-05-fiscus*.md')).read_text()
+for phrase in ['0066','0074','0070','~1,5–2 MB','01a1ab64-9074-7520-ad17-6f970973d186']:assert phrase in source
+b=(e/'reproduction-delivery-base.txt').read_text();h=(e/'reproduction-audited-head.txt').read_text()
+assert '1223758 bytes' in b and 'BEGIN CANDIDATE DIFF' in b and 'BEGIN ROUND 2 DELTA DIFF' in h
+comparison='External Fiscus message 01a1ab64-9074-7520-ad17-6f970973d186, 2026-11-05 08:07 BRT, adopted verbatim at '+str(next((s/'references').glob('2026-11-05-fiscus*.md')))+'.\nPoint 2 names Specs 0066 and 0074: merge main after findings reopens full round 1. The Delivery Base reproduces round 1/full candidate; current head round 2/fix only.\nPoint 4 names Spec 0070 and about 1.5–2 MB of main appearing reverted: Delivery Base synthetic shape refuses at 1223758 candidate bytes against 917504; current head reviews two segments with no mainwork lines. The distinct three-segment shape in the named current regression passes for codex and claude. The synthetic sizes are a causal reproduction, not a new measurement of the original Fiscus repository.\n'
+(e/'outside-fiscus-comparison.txt').write_text(comparison);print(comparison)
+update(19,'pass','Offline source predates the Spec: Fiscus ai-memory message 01a1ab64-9074-7520-ad17-6f970973d186, 2026-11-05 08:07 BRT. Compared points 2 (0066/0074) and 4 (0070; reported ~1.5–2 MB) with separately executed Delivery Base/head public-command fixtures. [Source comparison](evidence/2026-11-05-local/outside-fiscus-comparison.txt). Reproduction confirms cause and changed behavior, not production sizing.')
+# Requirement 6: execute every specifically named test via one selector; package consumers already ran once.
+tasks='\n'.join((s/f'task_{i:02d}.md').read_text().split('## Verification',1)[1].split('## References',1)[0] for i in range(1,5))
+names=sorted(set(re.findall(r'\bTest[A-Za-z0-9_]+',tasks)))
+observed=(e/'named-regressions.txt').read_text()
+assert all('--- PASS: '+n+' ' in observed for n in names if n not in ['TestEveryOwnedSkillVersionIsRecorded'])
+# Exercise additional advisory and explicit glossary observables with named verbose results.
+for name,args,row in [('advisory-and-bounds',['go','test','-count=1','-timeout','20m','-v','-run','^(TestReviewLineageNoticeIsAdvisory|TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented|TestReviewKeepsCodexSegmentRecordsWithoutClaudeEstimates)$','./internal/cli'],17),('glossary-named',['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','-run','^TestGlossary','./internal/docscontract'],21)]:
+ print('START '+name,flush=True);r=subprocess.run(args,text=True,capture_output=True);(e/(name+'.txt')).write_text('command: '+' '.join(args)+'\nexit: '+str(r.returncode)+'\n'+r.stdout+r.stderr);print('END '+name+' exit='+str(r.returncode),flush=True)
+ update(row,'pass' if r.returncode==0 else 'fail','Exact glossary/declaration assertions and independent named boundary checks. [Named evidence](evidence/2026-11-05-local/'+name+'.txt). All tests Tasks 01–04 name ran in the named regression command; their whole-package consumers ran in the package commands. Requirement 6 executed no record-writing flags. PRD declares no Unreachable Acceptance; no declared-blocked row.')
+update(23,'blocked (environment: no open Pull Request)','Supplied fact: no open Pull Request on the Spec target branch; the Run branch has none by design. Approval: maintainer authority approved 2026-11-05, unchanged and already present at Delivery Base. Checks: Daemon make verify-changed pass, exit 0 at '+head+'. Threads: none because no Pull Request exists. Merge-Ready acceptance: none yet; no Review Source approval exists for this candidate, so equivalence is incomplete. Claimed candidate and checks head: '+head+'. Unblock through the Supervisor delivery sequence: configured pre-PR review, publication, required checks and Merge-Ready acceptance on that head. This lone pre-PR environment row permits a qualifying partial.')
+print('AUDIT FINISHED',flush=True)

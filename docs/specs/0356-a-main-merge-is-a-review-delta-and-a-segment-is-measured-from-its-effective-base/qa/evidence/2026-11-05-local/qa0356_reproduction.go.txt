@@ -1,0 +1,88 @@
+// Suite: QA reproductions of the external Fiscus shapes.
+// Invariant: a clean merge keeps the fix delta and excludes main from segment sizes.
+// Boundary IN: archived Delivery Base or audited head, disposable repositories, fake reviewers.
+// Boundary OUT: public command records, prompts, stdout/stderr and real Git exit codes.
+package cli
+
+import (
+ "bytes"
+ "encoding/json"
+ "errors"
+ "strings"
+ "testing"
+ "roundfix/internal/agent"
+ "roundfix/internal/gittest"
+ "roundfix/internal/preflight"
+)
+
+const qaExpectCurrent = EXPECT_CURRENT
+
+func qaReadReview(t *testing.T) (int, reviewRecord, string) {
+ t.Helper()
+ var stdout, stderr bytes.Buffer
+ code := runCLI(t, []string{"review", "--base", "main"}, &stdout, &stderr)
+ var record reviewRecord
+ if err := json.Unmarshal(stdout.Bytes(), &record); err != nil { t.Fatalf("decode: %v stdout=%q stderr=%q",err,stdout.String(),stderr.String()) }
+ return code,record,stderr.String()
+}
+
+func TestQAFiscusPoint2(t *testing.T) {
+ t.Parallel()
+ runner:=newLineageRunner("Findings:\n- review.txt:2 Failure: candidate defect", "No findings.")
+ fixture:=newReviewCommandFixture(t,"codex",runner)
+ code,first,stderr:=qaReadReview(t)
+ if code!=exitRunFailed || stderr!="" || first.Lineage.Round!=1 {t.Fatalf("first=%+v exit=%d stderr=%q",first,code,stderr)}
+ fix:=commitLineageFile(t,fixture,"review.txt","before review\nfixed after round one\n")
+ disposeLineageFinding(t,"--fixed-by",fix)
+ gittest.Run(t,fixture.repository,"checkout","main")
+ commitLineageFile(t,fixture,"upstream.txt","main moved on\n")
+ gittest.Run(t,fixture.repository,"checkout","feature/review")
+ gittest.Run(t,fixture.repository,"merge","--no-edit","main")
+ code,second,stderr:=qaReadReview(t)
+ wantRound:=1; if qaExpectCurrent {wantRound=2}
+ if code!=exitOK || stderr!="" || second.Lineage.Round!=wantRound { t.Fatalf("exit=%d record=%+v stderr=%q",code,second,stderr) }
+ prompt:=runner.prompts[1]
+ if qaExpectCurrent {
+  if !strings.Contains(prompt,"BEGIN ROUND 2 DELTA DIFF") || !strings.Contains(prompt,"fixed after round one") || strings.Contains(prompt,"main moved on") || !strings.Contains(prompt,"the diff starts from tree") {t.Fatalf("unexpected delta prompt %s",prompt)}
+ } else if !strings.Contains(prompt,"BEGIN CANDIDATE DIFF") {t.Fatalf("expected full candidate: %s",prompt)}
+ encoded,_:=json.Marshal(second)
+ t.Logf("review --base main exit=%d stderr=%q record=%s\nprompt:\n%s",code,stderr,encoded,prompt)
+}
+
+func TestQAFiscusPoint4(t *testing.T) {
+ t.Parallel()
+ runner:=&segmentReviewRunner{reviewCommandRunner:reviewCommandRunner{results:[]reviewCommandRunResult{
+  {result:agent.ExecuteResult{Message:"No findings.",ACPSessionID:"qa-fiscus"}},
+  {result:agent.ExecuteResult{Message:"No findings.",ACPSessionID:"qa-fiscus"}},
+  {result:agent.ExecuteResult{Message:"No findings.",ACPSessionID:"qa-fiscus"}},
+ }}}
+ fixture:=newReviewCommandFixture(t,"codex",runner)
+ gittest.Run(t,fixture.repository,"checkout","main")
+ commitScopeFile(t,fixture,"mainwork.txt",strings.Repeat("m",reviewDiffBound+reviewDiffBound/5)+"\n")
+ gittest.Run(t,fixture.repository,"checkout","feature/review")
+ gittest.Run(t,fixture.repository,"merge","--no-edit","main")
+ commitScopeFile(t,fixture,"part1.txt",strings.Repeat("x",reviewDiffBound*2/3)+"\n")
+ commitScopeFile(t,fixture,"part2.txt",strings.Repeat("y",reviewDiffBound*2/3)+"\n")
+ code,record,stderr:=qaReadReview(t)
+ if qaExpectCurrent {
+  if code!=exitOK || record.Outcome!=reviewOutcomeReviewed || len(record.Segments)!=2 {t.Fatalf("exit=%d record=%+v stderr=%q",code,record,stderr)}
+  for _,request:=range runner.requests {if strings.Contains(request.Prompt,strings.Repeat("m",1000)) {t.Fatal("main's work in prompt")}}
+ } else if code!=exitPreflight || !strings.HasPrefix(record.Reason,"review diff too large: 1223758 bytes after omitting 0 path(s) exceeds the review bound of 917504 bytes") {t.Fatalf("exit=%d record=%+v stderr=%q",code,record,stderr)}
+ encoded,_:=json.Marshal(record)
+ t.Logf("review --base main exit=%d stderr=%q record=%s prompts=%d; no mainwork lines in successful segments",code,stderr,encoded,len(runner.requests))
+}
+
+func TestQAGitMergeOracle(t *testing.T) {
+ t.Parallel()
+ fixture:=newReviewCommandFixture(t,"codex",&segmentReviewRunner{})
+ gittest.Run(t,fixture.repository,"checkout","main")
+ base:=commitScopeFile(t,fixture,"upstream.txt","main moved on\n")
+ gittest.Run(t,fixture.repository,"checkout","feature/review")
+ gittest.Run(t,fixture.repository,"merge","--no-edit","main")
+ gittest.Run(t,fixture.repository,"checkout","-b","test/conflict",fixture.headCommit)
+ conflicting:=commitScopeFile(t,fixture,"upstream.txt","candidate wrote this differently\n")
+ out,err:= (preflight.ExecGitRunner{}).RunGit(t.Context(),fixture.repository,"merge-tree","--write-tree",conflicting,base)
+ var exitErr interface{ExitCode()int}
+ if !errors.As(err,&exitErr)||exitErr.ExitCode()!=1 {t.Fatalf("git merge-tree err=%v output=%s",err,out)}
+ t.Logf("git merge-tree --write-tree <conflicting> <main-tip>: exit=%d; matches git-merge-tree(1) quoted conflict exit 1\n%s",exitErr.ExitCode(),out)
+}

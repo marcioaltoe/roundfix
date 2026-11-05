@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 20m -v -overlay <temporary overlay> -run ^TestQAFinalReport$ ./internal/spec
+exit: 0
+=== RUN   TestQAFinalReport
+=== PAUSE TestQAFinalReport
+=== CONT  TestQAFinalReport
+    qa_final_overlay_test.go:19: qualifying partial accepted; one pre-PR environment block; all evidence links resolve; 27 QA text files scanned with no Secret Match
+--- PASS: TestQAFinalReport (0.04s)
+PASS
+suiteguard: guard cost: measured 3008 paths; fingerprint took 634.353708ms before and 133.538792ms after
+ok  	roundfix/internal/spec	1.349s

@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run ^TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange$ ./internal/cli
+exit: 1
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== PAUSE TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== CONT  TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/same_Effective_Base
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/start_on_the_base
+    review_effective_base_test.go:46: measured=8408fb2187037b64d7af1a5e61f46cffd4efebfe carried=true, want 56d4b9ab4b2f3301602839bae239bdc27ff4730e true
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/merge_of_the_default_branch
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry
+--- FAIL: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange (0.22s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/same_Effective_Base (0.01s)
+    --- FAIL: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/start_on_the_base (0.01s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/merge_of_the_default_branch (0.02s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry (0.02s)
+FAIL
+suiteguard: guard cost: measured 2978 paths; fingerprint took 150.170958ms before and 142.29ms after
+FAIL	roundfix/internal/cli	0.975s
+FAIL

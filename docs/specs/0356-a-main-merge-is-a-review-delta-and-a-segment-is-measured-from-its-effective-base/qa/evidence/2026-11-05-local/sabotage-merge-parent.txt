@@ -1,0 +1,15 @@
+command: go test -count=1 -timeout 20m -v -run ^TestReviewLineageRestartNamesItsReason$/merge_of_another_branch$ ./internal/cli
+exit: 1
+=== RUN   TestReviewLineageRestartNamesItsReason
+=== PAUSE TestReviewLineageRestartNamesItsReason
+=== CONT  TestReviewLineageRestartNamesItsReason
+=== RUN   TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+=== PAUSE TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+=== CONT  TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+    review_main_merge_lineage_test.go:211: round=2 restart="" reuse=false ceiling=false, want round=1 restart="the merge base moved from ee7d611b31bd78db6f721dccb069293e03c8ee56 to 41a969d03651db34d3060e5d4719728317462eae through merge e9615786877977e77041b592c7da0b280d895264 of 981af9319bc52ace704c15b83a5b3a07d8e0ff72, which the default branch does not contain"
+--- FAIL: TestReviewLineageRestartNamesItsReason (0.00s)
+    --- FAIL: TestReviewLineageRestartNamesItsReason/merge_of_another_branch (0.24s)
+FAIL
+suiteguard: guard cost: measured 2978 paths; fingerprint took 148.965791ms before and 137.521834ms after
+FAIL	roundfix/internal/cli	1.014s
+FAIL

@@ -1,0 +1,3 @@
+command: go test -count=1 -timeout 20m ./internal/cli
+exit: 0
+ok  	roundfix/internal/cli	194.950s

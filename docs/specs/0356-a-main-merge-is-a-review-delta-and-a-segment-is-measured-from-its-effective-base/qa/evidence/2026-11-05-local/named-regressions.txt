@@ -1,0 +1,155 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange|TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase|TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch|TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix|TestReviewLineageRestartNamesItsReason|TestReviewLineageDecidesEachRound|TestDeliverStatusNamesAReviewThatOpensANewLineage|TestDeliverRetryNamesAReviewThatOpensANewLineage)$ ./internal/cli
+exit: 0
+=== RUN   TestDeliverStatusNamesAReviewThatOpensANewLineage
+=== PAUSE TestDeliverStatusNamesAReviewThatOpensANewLineage
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== PAUSE TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== RUN   TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase
+=== PAUSE TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase
+=== RUN   TestReviewLineageDecidesEachRound
+=== PAUSE TestReviewLineageDecidesEachRound
+=== RUN   TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch
+=== PAUSE TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch
+=== RUN   TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix
+=== PAUSE TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix
+=== RUN   TestReviewLineageRestartNamesItsReason
+=== PAUSE TestReviewLineageRestartNamesItsReason
+=== CONT  TestDeliverStatusNamesAReviewThatOpensANewLineage
+=== CONT  TestReviewLineageDecidesEachRound
+=== CONT  TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch
+=== RUN   TestDeliverStatusNamesAReviewThatOpensANewLineage/rewritten_head
+=== PAUSE TestDeliverStatusNamesAReviewThatOpensANewLineage/rewritten_head
+=== RUN   TestDeliverStatusNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== PAUSE TestDeliverStatusNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== CONT  TestDeliverStatusNamesAReviewThatOpensANewLineage/rewritten_head
+=== CONT  TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix
+=== CONT  TestDeliverStatusNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== CONT  TestReviewLineageRestartNamesItsReason
+=== RUN   TestReviewLineageRestartNamesItsReason/clean_merge
+=== CONT  TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== CONT  TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase
+=== RUN   TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/codex
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+=== PAUSE TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/codex
+=== RUN   TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/claude
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+=== PAUSE TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/claude
+=== CONT  TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/codex
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+=== PAUSE TestReviewLineageRestartNamesItsReason/clean_merge
+=== CONT  TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/claude
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+=== RUN   TestReviewLineageRestartNamesItsReason/provider
+=== PAUSE TestReviewLineageRestartNamesItsReason/provider
+=== RUN   TestReviewLineageRestartNamesItsReason/rewritten_head
+=== PAUSE TestReviewLineageRestartNamesItsReason/rewritten_head
+=== RUN   TestReviewLineageRestartNamesItsReason/same_head
+=== PAUSE TestReviewLineageRestartNamesItsReason/same_head
+=== RUN   TestReviewLineageRestartNamesItsReason/base_not_descending
+=== PAUSE TestReviewLineageRestartNamesItsReason/base_not_descending
+=== RUN   TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+=== PAUSE TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+=== RUN   TestReviewLineageRestartNamesItsReason/conflict
+=== PAUSE TestReviewLineageRestartNamesItsReason/conflict
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors
+=== PAUSE TestReviewLineageRestartNamesItsReason/git_failures_stay_errors
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+=== RUN   TestReviewLineageDecidesEachRound/absent
+=== RUN   TestReviewLineageDecidesEachRound/another_provider
+=== RUN   TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase
+=== RUN   TestReviewLineageDecidesEachRound/head_does_not_descend
+=== RUN   TestReviewLineageDecidesEachRound/same_head_reuse
+=== RUN   TestReviewLineageDecidesEachRound/same_head_blocked_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats
+=== RUN   TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats
+=== RUN   TestReviewLineageDecidesEachRound/legacy_reviewed
+=== RUN   TestReviewLineageDecidesEachRound/round_one_reviewed
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/same_Effective_Base
+=== RUN   TestReviewLineageDecidesEachRound/another_checkout
+=== RUN   TestReviewLineageDecidesEachRound/same_head_closed_reuse
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings
+=== CONT  TestReviewLineageRestartNamesItsReason/clean_merge
+=== RUN   TestReviewLineageDecidesEachRound/round_one_findings_dismissed
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/start_on_the_base
+=== RUN   TestReviewLineageDecidesEachRound/round_two_ceiling
+=== RUN   TestReviewLineageDecidesEachRound/closed_ceiling
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/merge_of_the_default_branch
+--- PASS: TestReviewLineageDecidesEachRound (0.38s)
+    --- PASS: TestReviewLineageDecidesEachRound/absent (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_provider (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/moved_merge_base_after_rebase (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/head_does_not_descend (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_blocked_repeats (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_legacy_repeats (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/ancestor_blocked_round_two_repeats (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/legacy_reviewed (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_reviewed (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/another_checkout (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/same_head_closed_reuse (0.00s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_one_findings_dismissed (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/round_two_ceiling (0.01s)
+    --- PASS: TestReviewLineageDecidesEachRound/closed_ceiling (0.01s)
+=== CONT  TestReviewLineageRestartNamesItsReason/base_not_descending
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry
+=== CONT  TestReviewLineageRestartNamesItsReason/git_failures_stay_errors
+=== CONT  TestReviewLineageRestartNamesItsReason/conflict
+--- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange (0.47s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/same_Effective_Base (0.02s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/start_on_the_base (0.02s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/merge_of_the_default_branch (0.05s)
+    --- PASS: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry (0.03s)
+=== CONT  TestReviewLineageRestartNamesItsReason/merge_of_another_branch
+--- PASS: TestDeliverStatusNamesAReviewThatOpensANewLineage (0.00s)
+    --- PASS: TestDeliverStatusNamesAReviewThatOpensANewLineage/rewritten_head (0.45s)
+    --- PASS: TestDeliverStatusNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch (0.58s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/head_ancestry
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/base_ancestry
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/merge_list
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/parent_ancestry
+=== RUN   TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/carry
+=== CONT  TestReviewLineageRestartNamesItsReason/rewritten_head
+=== CONT  TestReviewLineageRestartNamesItsReason/same_head
+=== CONT  TestReviewLineageRestartNamesItsReason/provider
+=== RUN   TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch/oversized_carried_delta
+=== PAUSE TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch/oversized_carried_delta
+=== CONT  TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch/oversized_carried_delta
+--- PASS: TestReviewLineageRestartNamesItsReason (0.00s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/clean_merge (0.30s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/conflict (0.31s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/base_not_descending (0.40s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors (0.38s)
+        --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/head_ancestry (0.00s)
+        --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/base_ancestry (0.01s)
+        --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/merge_list (0.03s)
+        --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/parent_ancestry (0.03s)
+        --- PASS: TestReviewLineageRestartNamesItsReason/git_failures_stay_errors/carry (0.07s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/merge_of_another_branch (0.50s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/same_head (0.20s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/rewritten_head (0.24s)
+    --- PASS: TestReviewLineageRestartNamesItsReason/provider (0.23s)
+--- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage (0.00s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation (0.34s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head (0.45s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner (0.42s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch (0.54s)
+--- PASS: TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix (1.23s)
+--- PASS: TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase (0.00s)
+    --- PASS: TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/codex (1.33s)
+    --- PASS: TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/claude (1.37s)
+--- PASS: TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch (0.88s)
+    --- PASS: TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch/oversized_carried_delta (0.60s)
+PASS
+suiteguard: guard cost: measured 2983 paths; fingerprint took 481.875708ms before and 134.8315ms after
+ok  	roundfix/internal/cli	2.775s
