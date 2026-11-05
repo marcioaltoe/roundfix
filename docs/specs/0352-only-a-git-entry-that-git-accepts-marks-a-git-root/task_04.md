@@ -25,7 +25,12 @@ request to a provider, the judge or a reviewer, or reads a credential. Every
 `go test` it runs carries an explicit `-timeout`. Every row that runs
 `bin/roundfix` sets `HOME` and `TMPDIR` to fresh temporary directories, with
 `GOMODCACHE` and `GOCACHE` kept at their `go env` values, because the CLI
-loads `$HOME/.roundfix/config.yml`, and removes them afterwards. The QA never
+loads `$HOME/.roundfix/config.yml`, and removes them afterwards. The `go test`
+package runs of requirement 2 and of the sabotages do not run `bin/roundfix`
+and keep the session's own `HOME` and `TMPDIR`: their tests make their own
+temporary homes, and some, such as `TestGuidanceCompositionJourney/rust-cli`,
+call an installed formatter (`rustfmt` through rustup) that needs the
+session's toolchain configuration under `HOME`. The QA never
 writes into the checkout while a test suite runs. The gate keeps its evidence
 under names the repository does not ignore, `.txt` for command output, and
 links only files it kept.
