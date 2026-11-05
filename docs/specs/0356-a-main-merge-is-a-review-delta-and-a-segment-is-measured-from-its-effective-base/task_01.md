@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0356-a-main-merge-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -118,3 +118,61 @@ point 4 of the Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 1; Core Feature 2; Success Metric 1
 - `_techspec.md` → Current behavior 3 and 4; API Contract 1; API Contract 2; API Contract 6; Invariants 1, 2 and 4; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Added `reviewEffectiveBase` and `reviewMeasuredFrom` with the authored signatures.
+The measurement keeps the start for a shared Effective Base, uses the destination's
+Effective Base for a start on the default branch, and otherwise carries the start
+with `git merge-tree --write-tree`. It reads the first output line, returns the
+original start and `false` on exit 1, and wraps other failures with both commits.
+Both the per-commit and growing-segment diffs now use that measurement; their
+Project Config declaration base remains the candidate base. Segment records omit
+`measuredFrom` unless the measured origin differs from `base`. The exact second
+header line participates in both fit estimates and sent prompts.
+
+Acceptance evidence from focused checks:
+
+- Older-base commits and a default-branch merge, for both providers:
+  `TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase/codex` and `/claude`
+  each return exit `0`, outcome `reviewed`, and the expected three segment ranges.
+  The first measured origin is the old base, the second is the carried tree,
+  and the third is absent. No prompt includes 1,000 consecutive `m` characters
+  from the default branch's oversized `mainwork.txt`.
+- Optional record and prompt behavior: the same test checks all three segments'
+  `head`, `base`, and `measuredFrom`, the unchanged first header line, the exact
+  second line in only the first two prompts, and a tree object for the second
+  segment's origin. Existing segment checks also retain the original Codex JSON
+  encoding and Claude prompt-token estimates for a single Effective Base.
+- Conflicting carry: the `conflicting carry` row of
+  `TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange` returns the original
+  start, `false`, and no error. Its other rows cover a shared Effective Base,
+  a start on the base, and a clean carry whose object is a tree and whose diff
+  to the actual merge is empty.
+
+Commands and observed outcomes:
+
+- `rtk proxy go test -count=1 -timeout 4m ./internal/cli -run 'TestReview(MeasuredFrom|SegmentsMeasure)' -v`:
+  before the planner change, exit `1`; both provider segment subtests reproduced
+  exit `2` size refusals while all four measurement rows passed. After the
+  planner change, exit `0`; both top-level tests and every subtest passed.
+- `rtk proxy go test -count=1 -timeout 4m ./internal/cli -run 'TestReview(Segments|Greedily|Blocks.*(Segments|Commit)|Keeps(ClaudeRoundTwo|CodexSegmentRecords))' -v`:
+  exit `0`; all 10 selected top-level tests passed, including existing packing,
+  four-segment refusals, oversized-commit refusals, Claude round-2 refusal,
+  session/anchor behavior, and record/token-estimate compatibility.
+- `rtk proxy git diff --check`: exit `0`.
+- Read-only Python checks: the guide equals its original bytes plus exactly the
+  prescribed Effective Base paragraph at the prescribed insertion point; all
+  three Go files have empty `gofmt -l` output.
+
+Required final regeneration after this Result entry:
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+The recorder owns `docs/references/behavior-surfaces.json`; it is never edited by
+hand. Its execution outcome is reported in the Agent's handback.
+
+Task status and declared Verification remain Daemon-owned. No existing test,
+lineage/delta code, delivery code, skill, other Task, or Task Graph was changed.
+No follow-up implementation was included.

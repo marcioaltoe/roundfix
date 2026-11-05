@@ -84,6 +84,8 @@ both `segments` and the finding's `segment` field. Verdict reuse,
 dispositions, convention validation and round accounting remain per candidate
 head: all segments are one round.
 
+Each diff the segment plan measures starts from the Effective Base of the commit it ends at, the merge base of that commit with the review's merge base. A commit cut from an older default branch is measured from that older commit, and a merge of the default branch from the earlier commit's change carried onto the merged base with `git merge-tree --write-tree`, so no segment shows the default branch's own work. A segment whose diff starts elsewhere than its base records `measuredFrom`, the commit or tree it starts from, and its prompt adds a second header line: `This segment's diff starts from <measuredFrom> instead of <segment base>, so it leaves out what the default branch changed.` A carry that conflicts measures the segment from its base.
+
 A single commit above the bound, or an oversized round-2 or Correction Review
 delta, still blocks with exit `2` before any provider call, readiness probe or
 session preparation:
