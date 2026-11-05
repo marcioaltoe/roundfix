@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.132.2] - 2026-11-05
+
+### Republication of 0.132.1
+
+- **0.132.2 ships the 0.132.1 changes below unchanged.** The 0.132.1 npm publication published the five `@roundfix/cli-*` platform packages, then the transparency log answered `409` for the `roundfix` package. npm never received `roundfix` at 0.132.1, and that version has no GitHub Release. Install 0.132.2.
+
 ## [0.132.1] - 2026-11-05
 
 ### Only a .git entry that Git accepts marks a Git root
