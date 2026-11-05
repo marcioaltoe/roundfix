@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.133.1] - 2026-11-05
+
+### A main merge is a review delta, and a segment is measured from its Effective Base
+
+- **A conflict-free merge of the default branch keeps the pre-PR review's Reviewer Lineage.** When the head descends from the reviewed head, the new merge base descends from the recorded one, every merge since brings in only default-branch commits and the reviewed head carries onto the new base without conflict, the next round reads only the item's own delta, starting from that carried tree (`lineage.deltaBase`). Before, merging main into an item before a retry opened round 1 and reviewed everything again, with new findings (reported by fiscus; ADR-0366, which amends ADR-0197, ADR-0282, ADR-0286 and ADR-0352). A rebase or any other move of the merge base still starts round 1.
+- **Review Segments are measured from each commit's Effective Base**, its merge base with the current default branch. A commit cut from an old default branch shows only its own change instead of the default branch's work as reverted, so it no longer blocks the review by size; a segment measured elsewhere records `measuredFrom`. A single commit or a fifth segment that still exceeds its bound blocks as before.
+- **`roundfix deliver status` and `roundfix deliver retry` print a `Review:` line before a review that will restart at round 1**, naming the head and one of six reasons.
+
 ## [0.133.0] - 2026-11-05
 
 ### runs list reads as a table, and the Run Browser draws, at a terminal
