@@ -206,7 +206,7 @@ func TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions(t *testing.T) 
 				content := regexp.MustCompile(`(?m)^[ \t]*version:.*$`).ReplaceAllString(string(mustReadBytes(t, filename)), "")
 				mustWrite(t, filename, content)
 			} else {
-				dependencies.resolveExternal = func(string) ([]string, bool, error) { return []string{"testing-boss"}, true, nil }
+				dependencies.resolveExternal = func(string) ([]string, bool, error) { return []string{"testing-boss", "agentic-cli-design"}, true, nil }
 			}
 			external, _, err := dependencies.resolveExternal(root)
 			if err != nil {

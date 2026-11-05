@@ -12,8 +12,8 @@ import (
 )
 
 // missingRequiredSkills names each external skill the adopted modules require
-// that the inspection proved absent from .agents/skills or skills-lock.json,
-// or no longer matching its lock entry. An error naming no skill adds nothing.
+// that the inspection proved absent from .agents/skills or skills-lock.json.
+// An error naming no skill adds nothing.
 func missingRequiredSkills(profile string, readiness roundskills.RepositoryReadiness, checkErr error) []baselineUpdateSkillDrift {
 	reasons := make(map[string]string)
 	add := func(names []string, reason string) {
@@ -29,7 +29,6 @@ func missingRequiredSkills(profile string, readiness roundskills.RepositoryReadi
 	if errors.As(checkErr, &readinessErr) {
 		add(readinessErr.MissingExternal, absent)
 	}
-	add(readiness.OutdatedExternal, "required by the Baseline and no longer matches its skills-lock.json entry")
 	var result []baselineUpdateSkillDrift
 	for name, reason := range reasons {
 		result = append(result, baselineUpdateSkillDrift{Skill: name, Reason: reason})

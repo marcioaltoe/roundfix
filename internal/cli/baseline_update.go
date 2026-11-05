@@ -361,7 +361,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 				}
 				result.State = "plan_ready"
 				result.Category = "approval"
-				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d required skill(s) are missing or no longer match skills-lock.json: %s", len(names), strings.Join(names, ", "))
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d required skill(s) are missing: %s", len(names), strings.Join(names, ", "))
 				result.NextAction = "rerun with --yes to restore them from the Setup Snapshot, or restore one with roundfix baseline skills restore --profile " + input.Manifest.Profile + " --skill " + names[0]
 				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 			}
@@ -631,9 +631,6 @@ func baselineUpdateExternalDrift(
 ) ([]string, error) {
 	names := make(map[string]struct{})
 	for _, name := range readiness.MissingExternal {
-		names[name] = struct{}{}
-	}
-	for _, name := range readiness.OutdatedExternal {
 		names[name] = struct{}{}
 	}
 	if checkErr != nil {

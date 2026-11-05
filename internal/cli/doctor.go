@@ -721,16 +721,11 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	result.Status = CheckStatusFailed
 	missing := append([]string{}, readiness.MissingOwned...)
 	missing = append(missing, readiness.MissingExternal...)
-	outdated := append([]string{}, readiness.OutdatedExternal...)
 	sort.Strings(missing)
-	sort.Strings(outdated)
 
 	var details []string
 	if len(missing) > 0 {
 		details = append(details, "missing: "+strings.Join(missing, ", "))
-	}
-	if len(outdated) > 0 {
-		details = append(details, "outdated: "+strings.Join(outdated, ", "))
 	}
 	below := ownedSkillReadinessWithState(readiness, skills.ReadinessBelow)
 	for _, owned := range below {
@@ -747,7 +742,7 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	result.Detail = strings.Join(details, "; ")
 
 	ownedFailure := len(readiness.MissingOwned) > 0 || len(below) > 0
-	externalFailure := len(readiness.MissingExternal) > 0 || len(readiness.OutdatedExternal) > 0
+	externalFailure := len(readiness.MissingExternal) > 0
 	var readinessErr *skills.RepositoryReadinessError
 	if errors.As(checkErr, &readinessErr) {
 		switch readinessErr.Ownership {
@@ -806,7 +801,6 @@ func ownedSkillNames(readiness []skills.OwnedSkillReadiness) []string {
 // rather than the readiness struct, so both sources feed the same remediation.
 func doctorExternalSkillNextActions(readiness skills.RepositoryReadiness, fromError []string) []string {
 	names := append([]string{}, readiness.MissingExternal...)
-	names = append(names, readiness.OutdatedExternal...)
 	names = append(names, fromError...)
 	sort.Strings(names)
 

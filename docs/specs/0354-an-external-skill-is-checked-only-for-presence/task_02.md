@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0354-an-external-skill-is-checked-only-for-presence
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -148,3 +148,50 @@ fluxus report of 2026-11-05, adopted as
 
 - `_prd.md` → Goals; Core Features 1, 3 and 4; Success Metric 2; Success Metric 4; Success Metric 6
 - `_techspec.md` → Current behavior 1, 2, 4, 5 and 6; API Contracts 1, 2, 3, 5 and 6; Invariants 1 to 4; Declared breaks; Testing Approach; Build Order 2
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, tech-writer, evidence-gate.
+
+Implemented the Task 02 slice. External readiness now requires a lock entry
+and a directory without reading the entry's hash or walking the directory.
+`OutdatedExternal` and its readers are removed. Doctor renders install actions
+only for missing skills; the Baseline preview uses the required missing-only
+message, and the refresh restores only missing skills. Owned version checks,
+lock loading and root validation retain their existing paths and diagnostics.
+The empty lock-entry struct keeps object decoding while ignoring its members.
+
+The live repository contract now compares each required external skill's
+`skills.SkillFolderHash` with its lock entry's `computedHash` only when
+`wantReady` is true, using the prescribed Catalog Skill Bump diagnostic.
+Added all seven presence rows and the two Doctor/refresh lock regressions;
+changed only the existing assertions and fixtures declared by this Task.
+
+Focused checks and observed outcomes:
+
+- Before production edits, `rtk proxy go test -count=1 -timeout 5m -run '^(TestCheckRepositoryChecksAnExternalSkillOnlyForPresence|TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady|TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock)$' ./skills ./internal/cli` exited 1. Changed/added files were classified outdated, a nested link and a hashless entry were refused, Doctor printed `outdated: testing-boss` with exit 1, and the refresh called restore for the present copy.
+- `rtk proxy go test -count=1 -timeout 5m -run '^(TestCheckRepository|TestRepositoryReadiness)' ./skills` exited 0 after the implementation, exercising presence, existing malformed-lock and unsafe-root/name refusals, and owned readiness.
+- `rtk proxy go test -count=1 -timeout 5m -run '^(TestDoctor.*Skill|TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady|TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable|TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock|TestBaselineUpdateNeverRestoresAPresentExternalSkill|TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestBaselineUpdateSkillsStage|TestMissingRequiredSkillsCollectsNamedEvidence)$' ./internal/cli` exited 0.
+- `rtk proxy go test -count=1 -timeout 5m -run '^(TestRunDoctorRepositorySkillReadiness|TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions|TestBaselineUpdateSkillsStage.*)$' ./internal/cli` exited 0, explicitly covering the mixed Doctor table, missing-entry external failure with its owned-lock warning, and missing-skill restoration fixtures.
+- `rtk proxy go test -count=1 -timeout 5m -tags docscontract -v -run '^(TestCheckRepositoryChecksAnExternalSkillOnlyForPresence|TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady|TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock|TestBaselineUpdatePreviewNamesAMissingRequiredSkill)$' ./skills ./internal/cli` exited 0. All seven presence rows, both new CLI tests and all four preview rows reported PASS, with no skips.
+- `rtk proxy go test -count=1 -timeout 5m -tags docscontract -run '^(TestThisRepositoryHoldsEveryRequiredExternalSkill|TestARepositoryMissingARequiredExternalSkillIsReported)$' ./internal/cli` exited 0.
+- Negative live-contract probe: a temporary Go overlay changed the live test to use `copyThisRepositorySkillSetFixture`, setting only the copied `agentic-cli-design` lock entry's hash to 64 zeros. `rtk proxy go test -count=1 -timeout 5m -tags docscontract -overlay /tmp/roundfix-0354-live-lock-14pgq6vj/overlay.json -run '^TestThisRepositoryHoldsEveryRequiredExternalSkill$' ./internal/cli` exited 1 with exactly `external skill agentic-cli-design no longer matches its skills-lock.json computedHash; run make skills-third-party-bump`. Repository skills and lock bytes were untouched.
+- `rtk proxy git diff --check` exited 0. The Go-source search for `OutdatedExternal` and `requiredExternalHashes` found no remaining readers. Changed paths are limited to this Task's declared files and this Result; the pre-existing `in_progress` status was preserved.
+
+Acceptance evidence:
+
+1. A lock-mismatched copy is ready in the presence test and Doctor, the preview
+   reports `current` without `missing`, and the refresh test forbids any restore
+   call and compares the external copy's bytes afterward.
+2. Missing folders and lock entries remain named in the new presence rows and
+   existing preview/Doctor tests. Root symlinks remain refused; existing lock
+   refusal and owned-readiness focused tests pass.
+3. The live repository test passes on this tree and the copied-lock negative
+   probe fails with the exact required diagnostic.
+4. Focused skills and CLI checks pass with and without `docscontract`.
+   The complete skills, Baseline and CLI suites and the authored Verification
+   commands were not run: they belong to Daemon Verification and settlement.
+
+No additional follow-up was identified. The rule's documentation and ADR
+amendments remain in the already-planned task_03 slice.

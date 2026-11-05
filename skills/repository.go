@@ -28,13 +28,11 @@ type RepositoryReadiness struct {
 	MissingOwned     []string
 	Owned            []OwnedSkillReadiness
 	MissingExternal  []string
-	OutdatedExternal []string
 }
 
 func (readiness RepositoryReadiness) Ready() bool {
 	if len(readiness.MissingOwned) != 0 ||
-		len(readiness.MissingExternal) != 0 ||
-		len(readiness.OutdatedExternal) != 0 {
+		len(readiness.MissingExternal) != 0 {
 		return false
 	}
 	for _, owned := range readiness.Owned {
@@ -72,9 +70,7 @@ type localSkillsLock struct {
 	Skills  map[string]localLockSkill `json:"skills"`
 }
 
-type localLockSkill struct {
-	ComputedHash string `json:"computedHash"`
-}
+type localLockSkill struct{}
 
 func CheckRepository(ctx context.Context, root string) (RepositoryReadiness, error) {
 	return CheckRepositoryWithExternal(ctx, root, Recommended())
@@ -132,7 +128,6 @@ func checkRepositoryWithReadiness(ctx context.Context, root string, owned []stri
 		}
 	}()
 
-	var externalHashes map[string]string
 	if len(external) > 0 {
 		const lockPath = "skills-lock.json"
 		lockDisplayPath := repositoryDisplayPath(root, lockPath)
@@ -140,8 +135,7 @@ func checkRepositoryWithReadiness(ctx context.Context, root string, owned []stri
 		if err != nil {
 			return readiness, err
 		}
-		externalHashes, err = requiredExternalHashes(lockDisplayPath, lock, external)
-		if err != nil {
+		if err := requiredExternalLockEntries(lockDisplayPath, lock, external); err != nil {
 			return readiness, err
 		}
 	}
@@ -227,18 +221,6 @@ func checkRepositoryWithReadiness(ctx context.Context, root string, owned []stri
 				errors.New("skill root is not a directory"),
 			)
 		}
-		hash, err := skillFolderHash(ctx, repositoryRoot.FS(), skillRoot, skillDisplayPath)
-		if err != nil {
-			return readiness, repositoryReadinessError(
-				RepositoryOwnershipExternal,
-				"hash external skill",
-				skillDisplayPath,
-				err,
-			)
-		}
-		if hash != externalHashes[name] {
-			readiness.OutdatedExternal = append(readiness.OutdatedExternal, name)
-		}
 	}
 
 	sortRepositoryReadiness(&readiness)
@@ -285,7 +267,6 @@ func sortRepositoryReadiness(readiness *RepositoryReadiness) {
 		return readiness.Owned[i].Skill < readiness.Owned[j].Skill
 	})
 	sort.Strings(readiness.MissingExternal)
-	sort.Strings(readiness.OutdatedExternal)
 }
 
 func validateRequiredSkillNames(owned []string, external []string) error {
@@ -442,27 +423,17 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath 
 	return lock, nil
 }
 
-func requiredExternalHashes(lockPath string, lock localSkillsLock, external []string) (map[string]string, error) {
-	hashes := make(map[string]string, len(external))
+// requiredExternalLockEntries proves that the lock names every required
+// external skill. It reads no computedHash (ADR-0364).
+func requiredExternalLockEntries(lockPath string, lock localSkillsLock, external []string) error {
 	var missing []string
 	for _, name := range external {
-		entry, exists := lock.Skills[name]
-		if !exists {
+		if _, exists := lock.Skills[name]; !exists {
 			missing = append(missing, name)
-			continue
 		}
-		if !lowerHexSHA256(entry.ComputedHash) {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipExternal,
-				"validate required skills lock hash",
-				lockPath,
-				fmt.Errorf("external skill %q computedHash must be 64 lowercase hexadecimal characters", name),
-			)
-		}
-		hashes[name] = entry.ComputedHash
 	}
 	if len(missing) > 0 {
-		return nil, &RepositoryReadinessError{
+		return &RepositoryReadinessError{
 			Ownership:       RepositoryOwnershipExternal,
 			Operation:       "validate required skills lock entry",
 			Path:            lockPath,
@@ -470,22 +441,8 @@ func requiredExternalHashes(lockPath string, lock localSkillsLock, external []st
 			MissingExternal: append([]string(nil), missing...),
 		}
 	}
-	return hashes, nil
+	return nil
 }
-
-func lowerHexSHA256(value string) bool {
-	if len(value) != sha256HexLength {
-		return false
-	}
-	for _, char := range value {
-		if (char < '0' || char > '9') && (char < 'a' || char > 'f') {
-			return false
-		}
-	}
-	return true
-}
-
-const sha256HexLength = 64
 
 func inspectOwnedSkillReadiness(
 	ctx context.Context,
