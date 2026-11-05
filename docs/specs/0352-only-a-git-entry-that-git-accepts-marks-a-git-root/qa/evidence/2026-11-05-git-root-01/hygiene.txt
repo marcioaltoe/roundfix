@@ -1,9 +1,0 @@
-Report: one frontmatter; partial; 25 unique completed observations; 24 pass and one PR environment block; 25 non-empty typed input declarations; no evidence_snapshots authored.
-Seed preservation: auditor fields, both authorization input rows, no mechanical findings, consequent-fix mechanical skip and all 25 carry-forward dispositions retained.
-Text and secrets: 72 QA files decoded as UTF-8, checked for NULs and scanned against all 10 current repository Secret Patterns; only path/line/kind would be printed for a match.
-Links: 30 local report targets checked for existence and git ignore status.
-git diff --check: exit 0. git diff HEAD --name-only: empty; no tracked source, Task, manifest or configuration edits.
-All new evidence uses .txt; no compiled Go source, executable, build output, database or archive retained. Previous report and evidence were read only; every QA write was directed to the seeded report or this new evidence directory.
-All build, suite, sabotage, CLI and offline archive subprocesses returned; no started foreground command remains running.
-Problems: 0
-

@@ -1,2 +1,0 @@
-QA evidence hygiene: UTF-8 text only; no NUL bytes; zero Secret Pattern matches using the ten expressions from internal/secretscan/patterns.go and its credential letter/digit condition; all report evidence links resolve; all QA files are unignored; git diff --check exits 0; no tracked source delta.
-Rows: 25 total; 23 pass; 1 fail (PACKAGES); 1 environment-blocked (PR); no pending, finding-blocked, declared-blocked or skipped rows.
