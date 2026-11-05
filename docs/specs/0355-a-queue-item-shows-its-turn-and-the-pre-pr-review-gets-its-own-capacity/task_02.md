@@ -67,11 +67,20 @@ Delivery Engine.
    line.
 6. MUST change, in the sixteen tests `_techspec.md` → Declared breaks names,
    only the expected `Limits:` text, inserting `review concurrency 2, ` before
-   `tokens`; no other expectation, fixture or test name changes.
+   `tokens`; no other expectation, fixture or test name changes. The same
+   change applies to `TestDeliverStatusNamesAReviewThatOpensANewLineage` in
+   `internal/cli/deliver_review_lineage_notice_test.go`, which Spec 0356
+   added on the default branch after this plan was written and which pins the
+   whole `deliver status` output, `Limits:` line included.
 7. MUST run sabotages 8 and 9 of `_techspec.md` → Testing Approach on a
    temporary copy and record which named test fails.
-8. MUST NOT change the Delivery Engine, the Run Database, any other
-   configuration key, the templates, any document or skill, the Makefile, CI
+8. MUST, as the last edit, re-record `docs/references/behavior-surfaces.json`
+   with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`,
+   because the new key changes the record's `config keys` fingerprint; the
+   repository Verification fails with a stale fingerprint otherwise.
+9. MUST NOT change the Delivery Engine, the Run Database, any other
+   configuration key, the templates, any document or skill other than the
+   Behavior Surface Record of requirement 8, the Makefile, CI
    workflows, `go.mod` or `go.sum`.
 
 ## Subtasks
@@ -104,6 +113,8 @@ Delivery Engine.
 - interface: `internal/cli/deliver_test.go`
 - interface: `internal/cli/deliver_token_ceiling_test.go`
 - interface: `internal/cli/deliver_usage_test.go`
+- interface: `internal/cli/deliver_review_lineage_notice_test.go`
+- interface: `docs/references/behavior-surfaces.json`
 
 ## Consumers
 
