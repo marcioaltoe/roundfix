@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -222,3 +222,36 @@ state.
 
 - `_prd.md` → Goals; Core Feature 1; Core Feature 8; Success Metric 6; Glossary
 - `_techspec.md` → ADR-0365; API Contract 2; API Contract 6; API Contract 8; Coverage Map; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implementation evidence:
+
+- Created ADR-0365 with accepted lifecycle frontmatter and the prescribed decision, alternatives and consequences.
+- Replaced the Queue Owner glossary entry and added Review Capacity, Queue Turn and Turn Record with accepted ADR links.
+- Updated the `deliver` and configuration guides with the Review Capacity key, stage meaning, limits and `Turn:` contract.
+- Updated the canonical Roundfix `deliver` reference; `make skills-sync` synchronized its mirror; the sanctioned version recorder raised the Roundfix skill pair to `0.1.191` and updated `skills/testdata/owned-skill-versions.json`.
+- Re-recorded `docs/references/behavior-surfaces.json` as the last guide-related regeneration step.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed (`1 passed in 1 packages`).
+- `rg -n "concurrency 1, tokens|spend not measured" docs/user-guide .agents/skills skills CONTEXT.md`: no matches (exit 1 as expected for the required absence check).
+- `git diff --check`: passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed (`1 passed in 1 packages`).
+
+Acceptance evidence for Daemon Verification:
+
+- ADR/glossary criterion: the new accepted ADR and four glossary entries are present with the required links and terms.
+- Guide/reference criterion: the `Limits:` lines, stage explanation, `Turn:` lines, and `delivery.review_concurrency` documentation are present in all declared surfaces; the canonical and mirrored references are synchronized by `make skills-sync`.
+- Record criterion: the owned-skill version test and Behavior Surface Record regeneration both passed.
+
+Not run: the commands in this Task's `## Verification` section; the Daemon owns those checks and Task status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T203527Z_b348492260e5bafb`
+- Source commit: `6977e95ac77d48957b0826e873e9439b70e4ba10`
