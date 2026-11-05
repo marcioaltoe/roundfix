@@ -139,26 +139,25 @@ writes nothing. A declared decision also answers a new decision without
 `--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
 `roundfix baseline update --decision auth.base_path=/auth`.
 
-Doctor reports `DR-SKILL-DIFFERS-FROM-SNAPSHOT` when a required upstream skill
-is present and matches its lock but differs from the embedded Setup Snapshot.
-Newer or older is unknown, so the `skills` line keeps its readiness status and
-gains no next action. The managed refresh lists such a skill under
-`skills.differing`, keeps it, and never restores it unasked; restore one
-deliberately with `roundfix baseline skills restore --profile <id> --skill <name>`.
-A missing skill, or one that no longer matches its lock, is still restored under
-`skills.drifted`.
+Roundfix checks a required external skill only for presence: an entry in
+`skills-lock.json` and a folder under `.agents/skills`. It reads neither the
+folder's files nor the entry's `computedHash`, never compares the skill with
+its Setup Snapshot, and never replaces a present copy unasked; `roundfix
+baseline skills restore --profile <id> --skill <name>` replaces one
+deliberately.
+
+The managed refresh restores only a missing skill, under `skills.drifted`.
 
 The preview without `--yes` or `--confirm-plan` lists, under `skills.missing`
-(`Skills missing` in text), each external skill the adopted modules require and
-dispatch that is absent from `.agents/skills` or `skills-lock.json`, or no
-longer matches its lock entry: a Missing Required Skill. Each entry names the
-skill and the command that restores it,
-`roundfix baseline skills restore --profile <id> --skill <name>`.
+(`Skills missing` in text), each external skill the adopted modules require
+and dispatch that is absent from `.agents/skills` or `skills-lock.json`: a
+Missing Required Skill. Each entry names the skill and the command that
+restores it, `roundfix baseline skills restore --profile <id> --skill <name>`.
 `skills.status` reads `missing`; with unchanged guidance the state is
 `plan_ready` instead of `current` and the exit code is `3`, as for an owned
-skill older than the binary's, and `--yes` restores the listed skills.
-A skill the upstream catalog retired while the Baseline still dispatches it
-is a Baseline defect to report, not a skill to keep restoring by hand.
+skill older than the binary's, and `--yes` restores the listed skills. A skill
+the upstream catalog retired while the Baseline still dispatches it is a
+Baseline defect to report, not a skill to keep restoring by hand.
 `--no-skills` skips the list, and an absent or unreadable `skills-lock.json`
 adds nothing to it; `roundfix doctor` reports that state.
 

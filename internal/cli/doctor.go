@@ -26,17 +26,16 @@ import (
 )
 
 type doctorDependencies struct {
-	readiness           func(context.Context, roundconfig.Loaded) []CheckResult
-	loadConfig          func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	healthChecker       func(roundconfig.Loaded, string) HealthChecker
-	profileReadiness    func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
-	resolveExternal     func(string) ([]string, bool, error)
-	checkSkills         func(context.Context, string, []string) (skills.RepositoryReadiness, error)
-	snapshotDifferences func(string, []string) ([]string, error)
-	residue             func(context.Context, string) []CheckResult
-	storage             func(context.Context, roundconfig.Loaded) []CheckResult
-	diskSpace           func(context.Context, roundconfig.Loaded) []CheckResult
-	linuxLane           func(context.Context, roundconfig.Loaded) CheckResult
+	readiness        func(context.Context, roundconfig.Loaded) []CheckResult
+	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	healthChecker    func(roundconfig.Loaded, string) HealthChecker
+	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
+	resolveExternal  func(string) ([]string, bool, error)
+	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	residue          func(context.Context, string) []CheckResult
+	storage          func(context.Context, roundconfig.Loaded) []CheckResult
+	diskSpace        func(context.Context, roundconfig.Loaded) []CheckResult
+	linuxLane        func(context.Context, roundconfig.Loaded) CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -51,13 +50,12 @@ func defaultDoctorDependencies() doctorDependencies {
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, commandDependenciesForContext(ctx).newEngineCollaborators().runner)
 		},
-		resolveExternal:     resolveExternalSkillRequirement,
-		checkSkills:         skills.CheckRepositoryWithExternal,
-		snapshotDifferences: manifestSnapshotDifferences,
-		residue:             defaultDoctorResidueResults,
-		storage:             defaultDoctorStorageResults,
-		diskSpace:           defaultDoctorDiskSpaceResults,
-		linuxLane:           doctorLinuxLaneCheck,
+		resolveExternal: resolveExternalSkillRequirement,
+		checkSkills:     skills.CheckRepositoryWithExternal,
+		residue:         defaultDoctorResidueResults,
+		storage:         defaultDoctorStorageResults,
+		diskSpace:       defaultDoctorDiskSpaceResults,
+		linuxLane:       doctorLinuxLaneCheck,
 	}
 }
 
@@ -202,14 +200,6 @@ func repositorySkillsCheck(ctx context.Context, dependencies doctorDependencies,
 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
 				result := doctorSkillReadinessResult(skillReadiness, skillErr)
-				if dependencies.snapshotDifferences != nil {
-					names, comparisonErr := dependencies.snapshotDifferences(repositoryRoot, snapshotComparableSkills(external, skillReadiness, skillErr))
-					if comparisonErr != nil {
-						result.Detail += "; snapshot comparison unavailable: " + comparisonErr.Error()
-					} else if len(names) != 0 {
-						result.Detail += "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: " + strings.Join(names, ", ")
-					}
-				}
 				stale, comparisonErr := baseline.StaleOwnedLockEntries(ctx, repositoryRoot, skills.Names())
 				if comparisonErr != nil {
 					result.Detail += "; skills-lock.json comparison unavailable: " + comparisonErr.Error()
@@ -441,43 +431,6 @@ func formatResidueDuration(duration time.Duration) string {
 }
 
 const doctorSetupManifestPath = "docs/agents/setup-context.json"
-
-// manifestSnapshotDifferences uses the same Profile the restore command selects.
-func manifestSnapshotDifferences(root string, required []string) ([]string, error) {
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath)))
-	if err != nil {
-		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
-	}
-	var manifest struct {
-		Profile string `json:"profile"`
-	}
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return nil, fmt.Errorf("read Setup Manifest profile: %w", err)
-	}
-	return baseline.SetupSnapshotDifferences(root, manifest.Profile, required)
-}
-
-func snapshotComparableSkills(required []string, readiness skills.RepositoryReadiness, checkErr error) []string {
-	// A read failure can leave inspection incomplete, so the lock has not
-	// established which installed trees are intact enough to compare.
-	if checkErr != nil {
-		return nil
-	}
-	excluded := make(map[string]bool)
-	for _, name := range readiness.MissingExternal {
-		excluded[name] = true
-	}
-	for _, name := range readiness.OutdatedExternal {
-		excluded[name] = true
-	}
-	var comparable []string
-	for _, name := range required {
-		if !excluded[name] {
-			comparable = append(comparable, name)
-		}
-	}
-	return comparable
-}
 
 func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
 	root = strings.TrimSpace(root)

@@ -149,10 +149,6 @@ func TestSkillSnapshotProfileNamesTheRepositoryPath(t *testing.T) {
 	if !errors.As(err, &resolution) {
 		t.Fatalf("resolution error was not wrapped: %v", err)
 	}
-	_, compareErr := SetupSnapshotDifferences(root, "missing-profile", nil)
-	if compareErr == nil || !strings.HasPrefix(compareErr.Error(), "load profile for snapshot comparison: ") || !strings.Contains(compareErr.Error(), ".roundfix/baseline/profiles/missing-profile.json") {
-		t.Fatalf("comparison error = %v", compareErr)
-	}
 }
 
 func TestRepositorySnapshotContractsRefusesDisagreement(t *testing.T) {
@@ -213,37 +209,5 @@ func TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill(t *testing.T) {
 	}
 	if _, err := repositorySnapshotContracts("catalog-agreement", required, snapshots); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestSetupSnapshotDifferencesCompareARepositoryProfile(t *testing.T) {
-	t.Parallel()
-	root, catalog, id := snapshotProfileFixture(t)
-	profile, err := loadSkillSnapshotProfile(root, id, catalog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	const matching = "golang-cli"
-	files, exists, err := inspectRestoreTarget("../..", ".agents/skills/"+matching)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !exists || portableRestoreDigest(files) != profile.Skills[matching].TreeDigest {
-		t.Fatal("control tree does not match the snapshot")
-	}
-	for _, file := range files {
-		target := filepath.Join(root, ".agents", "skills", matching, filepath.FromSlash(file.Path))
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(target, file.Content, 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	const edited = "testing-boss"
-	writeInspectionFile(t, root, ".agents/skills/"+edited+"/SKILL.md", "different installed upstream tree\n")
-	got, err := SetupSnapshotDifferences(root, id, []string{edited, matching, edited, "golang-context", "roundfix"})
-	if err != nil || !reflect.DeepEqual(got, []string{edited}) {
-		t.Fatalf("differing = %v, error = %v", got, err)
 	}
 }

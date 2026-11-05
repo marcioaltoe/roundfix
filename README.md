@@ -55,10 +55,11 @@ skills: ok (41 required: 13 Roundfix-owned, 28 external)
 The numbers come from the repository's Repository Skill Set.
 
 The running binary's embedded bundle is authoritative for Roundfix-owned
-skills, including the Roundfix Skill. Each required external skill must match
-its `computedHash` in the repository's `skills-lock.json`. Missing, outdated,
-or invalid required skill state prints `skills: failed (...)`, still runs the
-other Doctor checks, and makes Doctor exit `1`.
+skills, including the Roundfix Skill. Each required external skill must be
+present, named by the repository's `skills-lock.json` and installed under
+`.agents/skills`; its content is not compared. Missing or invalid required
+skill state prints `skills: failed (...)`, still runs the other Doctor checks,
+and makes Doctor exit `1`.
 
 Doctor checks these authorities locally, without network access or writes. It
 ignores unrelated extra skill directories and lock entries, never deletes or
