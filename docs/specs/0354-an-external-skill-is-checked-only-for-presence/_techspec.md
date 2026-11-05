@@ -229,7 +229,8 @@ loses its `skills.differing` member (API Contract 3).
      required external skill matches its lock ... nothing is restored."
      becomes the rule sentence.
    - `.agents/skills/roundfix/references/runtime.md`: "and checks each
-     remaining skill against its `computedHash` in `skills-lock.json`."
+     remaining skill only for presence: its `skills-lock.json` entry and its
+     folder."
      becomes "and checks each remaining skill only for presence: its
      `skills-lock.json` entry and its folder."; "Each named missing or
      outdated external skill prints" becomes "Each named missing external

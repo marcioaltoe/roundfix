@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0354-an-external-skill-is-checked-only-for-presence
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -99,3 +99,41 @@ Contract 7, and the four amendment notices. It answers the fluxus report of
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 7; Glossary
 - `_techspec.md` → API Contract 7; Build Order 3; Glossary
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate, systematic-debugging
+
+- Updated the canonical Roundfix `baseline`, `setup` and `runtime` references with the API Contract 7 presence-only rule, synchronized their mirrors with `make skills-sync`, and recorded Roundfix skill version `0.1.190` with `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (passed).
+- Revised the `Missing Required Skill` and `Setup Snapshot Difference` glossary entries with linked ADR references while preserving their `_Avoid_` lines.
+- Added the linked ADR-0364 amendment notices to ADR-0221, ADR-0224, ADR-0241 and ADR-0264 and set each `updated_at` to `2026-11-05T12:00:00Z`.
+- Re-recorded `docs/references/behavior-surfaces.json` with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (passed).
+
+Focused checks passed:
+
+- `cmp` confirmed all three canonical/mirror reference pairs are identical.
+- A repository search confirmed none of the six Roundfix reference copies names `DR-SKILL-DIFFERS-FROM-SNAPSHOT` or `skills.differing`.
+- `git diff --check` passed.
+
+Acceptance evidence:
+
+- Baseline and setup copies contain the presence-only rule; runtime copies say remaining external skills are checked only for presence; the retired comparison identifiers are absent from all six reference files.
+- The glossary revisions state that a present copy is never a Missing Required Skill and that Roundfix no longer looks for a Setup Snapshot Difference, with Markdown links for ADR-0264 and ADR-0364.
+- Each named ADR contains the linked ADR-0364 amendment notice and `updated_at: 2026-11-05T12:00:00Z`; no other pre-existing ADR lines were changed.
+- The sanctioned owned-skill recorder and Behavior Surface recorder both passed; mirror equality and focused document checks passed.
+
+The Daemon still owns declared Verification and Task status; those were not run or changed here.
+
+Verification feedback repair:
+
+- Root cause: `docscontract` reported `SC-RECEIPT-UNPROVEN` because the TechSpec receipt at line 231 still quoted the pre-change `runtime.md` sentence about checking `computedHash`.
+- Updated that receipt to quote the presence-only runtime sentence now present in the canonical reference; no implementation or Task status change was made.
+- Focused inspection confirmed the quoted passage now matches `.agents/skills/roundfix/references/runtime.md`, and `git diff --check` passed after the repair.
+- `go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^TestCheckActiveCorpusHasNoErrors$'` passed after the repair.
+- The Daemon's declared Verification and settlement consistency check were not rerun in this repair turn.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/specs/0354-an-external-skill-is-checked-only-for-presence/_techspec.md`

@@ -915,7 +915,7 @@ A skill the Baseline no longer requires although the upstream catalog may still 
 _Avoid_: Deprecated skill, obsolete skill
 
 **Missing Required Skill**:
-An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`, or no longer matches its lock entry. The `roundfix baseline update` preview lists it under `skills.missing` with its restore command and reports `plan_ready` instead of `current`; `roundfix doctor` and `roundfix skills check` fail on it.
+An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
 _Avoid_: Uninstalled skill, absent skill, dispatched skill gap
 
 **Park Class**:
@@ -1384,7 +1384,7 @@ _Avoid_: Catalog branch, floating ref, partial catalog revision
 _Avoid_: `skills-update`, manual vendoring, floating catalog sync
 
 **Setup Snapshot Difference**:
-A required external skill that is installed and matches its `skills-lock.json` entry but whose tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Doctor names it without a warning and the managed refresh keeps it; only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md)).
+A required external skill whose installed tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Roundfix no longer looks for one: Doctor and the managed refresh check an external skill only for presence, and only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md), [ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
 _Avoid_: Trailing skill, outdated skill, stale skill
 
 **Stale Owned Lock Entry**:

@@ -138,10 +138,12 @@ skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
 
-When a required external skill matches its lock but differs from its Setup
-Snapshot, the `skills` line keeps its status and appends
-`DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>`;
-nothing is restored.
+Roundfix checks a required external skill only for presence: an entry in
+`skills-lock.json` and a folder under `.agents/skills`. It reads neither the
+folder's files nor the entry's `computedHash`, never compares the skill with
+its Setup Snapshot, and never replaces a present copy unasked;
+`roundfix baseline skills restore --profile <id> --skill <name>` replaces one
+deliberately.
 
 `roundfix skills check` validates the shipped bundle and, inside an adopted
 Git repository, fails with exit `1` for each Missing Required Skill, naming it
