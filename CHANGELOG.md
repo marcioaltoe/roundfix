@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.132.1] - 2026-11-05
+
+### Only a .git entry that Git accepts marks a Git root
+
+- **A `.git` entry marks a Git root only when Git itself would accept it**: a directory whose `HEAD` names a ref or an object and whose common directory holds `objects` and `refs`, or a regular file that starts with `gitdir:`, as a linked worktree or a submodule writes it. Any other `.git` entry is skipped and the walk continues with the parent, as Git does. Before, any file or directory named `.git` stopped the walk, so a plain `~/.git` folder that another tool created (holding only `gk/` and `info/`) made the home directory a Git root: `worktree.location` was refused and `roundfix init --scope project` wrote `.roundfixrc.yml` into the home directory (reported by the maintainer; ADR-0362, which amends ADR-0357).
+- **The rule is read from the file system, with no `git` process**, so loading configuration stays fast and needs no `git` binary. Configuration resolution and the project scope of `roundfix skills install` now use this one walk; the separate copy in `skills install` is gone.
+- **The Roundfix skill's `runs` and `review-runs` references, the configuration and `runs` guides state the rule.** A real repository, a linked worktree and a nested repository under a stray ancestor `.git` resolve as before.
+
 ## [0.132.0] - 2026-11-05
 
 ### A secret refusal of a Task commit is repairable and visible
