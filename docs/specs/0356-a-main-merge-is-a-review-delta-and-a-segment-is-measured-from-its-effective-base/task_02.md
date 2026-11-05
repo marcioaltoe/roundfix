@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0356-a-main-merge-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -102,3 +102,64 @@ adopted as
 
 - `_prd.md` → Goals; Core Feature 3; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 1 and 2; API Contract 3; API Contract 4; Invariants 1 to 4; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Implemented the ordered lineage checks and all six exact restart reasons.
+A moved merge base preserves the existing round planning only after head
+ancestry, base ancestry, every new merge's secondary parents and the
+conflict-free carry have been checked. Git failures propagate as errors.
+Round-2 plans compute optional `lineage.deltaBase` before reuse; both delta
+prompts and their size measurements start from that object and include the
+specified sentence when it is present.
+
+Acceptance evidence from focused checks:
+
+- Round 1 to round 2: `TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch`
+  exercises findings, an actual fix, `dispose F1 --fixed-by` and a merge of
+  `main`. It asserts round 2, the original reviewed head and findings, the
+  fixing disposition, a persisted tree `deltaBase`, its JSON name, the exact
+  prompt sentence and its placement, delta markers, and exclusion of
+  `main moved on` and the full-candidate marker. Its `oversized carried delta`
+  subtest asserts the exact size refusal and stderr, no upstream file in the
+  refusal, no segments and no reviewer readiness or prompt call.
+- Correction Review: `TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix`
+  exercises clean round 1, round-2 findings on `delta.txt`, its fix and
+  disposition, and the merge of `main`. It asserts the Correction Review's
+  carried tree, persisted record, fix-only prompt, exact sentence placement
+  and dispositions, and reuse at the same head without another reviewer call.
+- Restarts: `TestReviewLineageRestartNamesItsReason` asserts all seven named
+  rows, each round and exact reason. The provider row also rewrites the head
+  to prove provider precedence; two unreviewed branch merges prove that the
+  earliest offending merge is named. Additional subtests inject failures at
+  head/base/parent ancestry, merge listing and carrying, and exercise a real
+  Git failure other than exit 1. `TestReviewLineageDecidesEachRound` passes
+  every existing row without changes to that test.
+
+Focused commands and outcomes:
+
+- Before the behavioral change, after adding only the new record/plan fields,
+  `rtk proxy go test ./internal/cli -run '^(TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch|TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix|TestReviewLineageRestartNamesItsReason)$' -count=1 -timeout=5m`
+  exited 1: both command flows restarted at round 1, and every restart reason
+  was empty.
+- Final regression check:
+  `rtk proxy go test ./internal/cli -run '^(TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch|TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix|TestReviewLineageRestartNamesItsReason)$' -count=1 -timeout=5m -v`
+  exited 0, including the oversized carried delta and Git-failure subtests.
+- Compatibility check:
+  `rtk proxy go test ./internal/cli -run '^(TestReviewLineage.*|TestCorrectionReview.*|TestReviewRound.*|TestReviewCeiling.*|TestBlockedCorrectionReviewRepeatsItsDelta|TestADismissedRoundTwoFindingKeepsTheCeiling|TestReviewScopesRoundTwoDelta|TestReviewKeepsClaudeRoundTwoAndOversizedCommitsUnsegmented|TestReviewBlocksAboveTheBoundWithoutAProviderCall)$' -count=1 -timeout=5m -v`
+  exited 0. This covers the existing lineage table, full-candidate anchors,
+  session continuation and fallback, ceiling and Correction Review conditions,
+  scoped deltas and both providers' existing size refusals.
+- `rtk proxy gofmt -l internal/cli/review.go internal/cli/review_lineage.go internal/cli/review_main_merge_lineage_test.go`
+  exited 0 with no output; `rtk proxy git diff --check` exited 0.
+
+Scope: production edits are confined to `review.go` and `review_lineage.go`;
+the new tests and reusable `mergeAdvancedDefaultBranch` helper are in
+`review_main_merge_lineage_test.go`. The pre-existing Daemon status change
+in this Task file is preserved. No existing test, other Task, Task Graph,
+measurement helper, segmentation code, delivery code or other document changed.
+No follow-up work was identified within this slice. Declared Verification,
+the full CLI suite, repository gates and Task settlement remain with the Daemon;
+none was run or claimed here.
