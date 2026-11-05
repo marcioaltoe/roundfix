@@ -1,0 +1,65 @@
+commits in range: 3
+authorization paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/runs.md', 'skills/roundfix/SKILL.md']
+
+## 5611a779 task_01 — 19 files
+  declared governed  .agents/skills/roundfix/SKILL.md
+  declared governed  .agents/skills/roundfix/references/runs.md
+  declared  docs/references/behavior-surfaces.json
+  declared  docs/specs/0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal/task_01.md
+  declared  docs/user-guide/commands/attach.md
+  declared  docs/user-guide/commands/runs.md
+  declared  internal/cli/attach.go
+  declared  internal/cli/read_only_run_commands_test.go
+  declared  internal/cli/run_browser_terminal_test.go
+  declared  internal/cli/runbrowser.go
+  declared  internal/cli/runui.go
+  declared  internal/cli/tui_output.go
+  declared  internal/tui/cockpit.go
+  declared  internal/tui/runbrowser.go
+  declared  internal/tui/runrow.go
+  declared  internal/tui/terminal_output_test.go
+  declared governed  skills/roundfix/SKILL.md
+  declared  skills/roundfix/references/runs.md
+  declared  skills/testdata/owned-skill-versions.json
+
+## f4393427 task_02 — 15 files
+  declared governed  .agents/skills/roundfix/SKILL.md
+  declared governed  .agents/skills/roundfix/references/runs.md
+  declared  docs/references/behavior-surfaces.json
+  declared  docs/specs/0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal/task_02.md
+  declared  docs/user-guide/commands/runs.md
+  declared  internal/cli/cli.go
+  declared  internal/cli/runs.go
+  declared  internal/cli/runs_list_table_test.go
+  declared  internal/cli/terminal_columns_other.go
+  declared  internal/cli/terminal_columns_unix.go
+  declared  internal/tui/runtable.go
+  declared  internal/tui/runtable_test.go
+  declared governed  skills/roundfix/SKILL.md
+  declared  skills/roundfix/references/runs.md
+  declared  skills/testdata/owned-skill-versions.json
+
+## 23c1440e task_03 — 16 files
+  declared governed  .agents/skills/roundfix/SKILL.md
+  declared governed  .agents/skills/roundfix/references/runs.md
+  declared  docs/adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md
+  declared  docs/references/behavior-surfaces.json
+  declared  docs/specs/0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal/task_03.md
+  declared  docs/user-guide/commands/attach.md
+  declared  docs/user-guide/commands/runs.md
+  declared  internal/cli/attach.go
+  declared  internal/cli/cli.go
+  declared  internal/cli/run_short_id_test.go
+  declared  internal/cli/runs_show.go
+  declared  internal/store/run_reference_test.go
+  declared  internal/store/store.go
+  declared governed  skills/roundfix/SKILL.md
+  declared  skills/roundfix/references/runs.md
+  declared  skills/testdata/owned-skill-versions.json
+
+governed paths changed: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/runs.md', 'skills/roundfix/SKILL.md'] all in authorization paths: True
+internal/cli/cli_test.go changed: False
+diff lines touching '### QA settlement': 0
+
+working tree delta: ?? docs/specs/0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal/qa/
+RESULT: pass

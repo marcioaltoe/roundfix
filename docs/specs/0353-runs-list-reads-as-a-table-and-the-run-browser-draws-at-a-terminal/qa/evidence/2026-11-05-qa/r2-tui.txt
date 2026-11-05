@@ -1,0 +1,118 @@
+=== RUN   TestRunBrowserDefaultShowsActiveRunsNewestFirst
+=== PAUSE TestRunBrowserDefaultShowsActiveRunsNewestFirst
+=== RUN   TestRunBrowserToggleShowsAllAndDistinguishesActive
+=== PAUSE TestRunBrowserToggleShowsAllAndDistinguishesActive
+=== RUN   TestRunBrowserUsesPerInstanceIdentityTokens
+=== PAUSE TestRunBrowserUsesPerInstanceIdentityTokens
+=== RUN   TestRunBrowserNavigationMovesAndClamps
+=== PAUSE TestRunBrowserNavigationMovesAndClamps
+=== RUN   TestRunBrowserEnterReportsSelectedRunID
+=== PAUSE TestRunBrowserEnterReportsSelectedRunID
+=== RUN   TestRunBrowserCancelKeysReportCancel
+=== PAUSE TestRunBrowserCancelKeysReportCancel
+=== RUN   TestRunBrowserEmptyStatesNameTheFilter
+=== PAUSE TestRunBrowserEmptyStatesNameTheFilter
+=== RUN   TestRunBrowserNarrowWidthDropsColumnsInOrder
+=== PAUSE TestRunBrowserNarrowWidthDropsColumnsInOrder
+=== RUN   TestRunBrowserSmallHeightKeepsCursorVisible
+=== PAUSE TestRunBrowserSmallHeightKeepsCursorVisible
+=== RUN   TestRunBrowserProgramDelegatesToTheModel
+=== PAUSE TestRunBrowserProgramDelegatesToTheModel
+=== RUN   TestRunBrowserSessionRefusesAWriterThatIsNotAFile
+=== PAUSE TestRunBrowserSessionRefusesAWriterThatIsNotAFile
+=== RUN   TestRunCockpitRefusesAWriterThatIsNotAFile
+=== PAUSE TestRunCockpitRefusesAWriterThatIsNotAFile
+=== RUN   TestRunBrowserCancelKeysNameTheirReason
+=== PAUSE TestRunBrowserCancelKeysNameTheirReason
+=== RUN   TestRunRepositoryNameNamesTheRepository
+=== PAUSE TestRunRepositoryNameNamesTheRepository
+=== CONT  TestRunBrowserDefaultShowsActiveRunsNewestFirst
+=== CONT  TestRunBrowserNarrowWidthDropsColumnsInOrder
+=== CONT  TestRunCockpitRefusesAWriterThatIsNotAFile
+=== CONT  TestRunRepositoryNameNamesTheRepository
+=== RUN   TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree
+=== RUN   TestRunBrowserNarrowWidthDropsColumnsInOrder/full_width_keeps_every_column
+=== PAUSE TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree
+=== RUN   TestRunRepositoryNameNamesTheRepository/only_the_Git_root
+=== CONT  TestRunBrowserSessionRefusesAWriterThatIsNotAFile
+=== CONT  TestRunBrowserProgramDelegatesToTheModel
+=== RUN   TestRunBrowserSessionRefusesAWriterThatIsNotAFile/buffer
+--- PASS: TestRunBrowserDefaultShowsActiveRunsNewestFirst (0.00s)
+=== CONT  TestRunBrowserUsesPerInstanceIdentityTokens
+=== CONT  TestRunBrowserSmallHeightKeepsCursorVisible
+=== PAUSE TestRunBrowserSessionRefusesAWriterThatIsNotAFile/buffer
+=== CONT  TestRunBrowserEnterReportsSelectedRunID
+=== CONT  TestRunBrowserEmptyStatesNameTheFilter
+=== CONT  TestRunBrowserCancelKeysReportCancel
+=== RUN   TestRunCockpitRefusesAWriterThatIsNotAFile/buffer
+=== PAUSE TestRunRepositoryNameNamesTheRepository/only_the_Git_root
+=== RUN   TestRunBrowserSessionRefusesAWriterThatIsNotAFile/embedded_writer
+--- PASS: TestRunBrowserUsesPerInstanceIdentityTokens (0.00s)
+=== CONT  TestRunBrowserNavigationMovesAndClamps
+=== CONT  TestRunBrowserToggleShowsAllAndDistinguishesActive
+=== RUN   TestRunBrowserCancelKeysReportCancel/q
+=== RUN   TestRunRepositoryNameNamesTheRepository/neither
+=== CONT  TestRunBrowserCancelKeysNameTheirReason
+=== PAUSE TestRunRepositoryNameNamesTheRepository/neither
+=== PAUSE TestRunCockpitRefusesAWriterThatIsNotAFile/buffer
+=== PAUSE TestRunBrowserSessionRefusesAWriterThatIsNotAFile/embedded_writer
+=== CONT  TestRunBrowserSessionRefusesAWriterThatIsNotAFile/buffer
+=== RUN   TestRunBrowserCancelKeysNameTheirReason/q
+=== CONT  TestRunBrowserSessionRefusesAWriterThatIsNotAFile/embedded_writer
+=== PAUSE TestRunBrowserCancelKeysNameTheirReason/q
+=== RUN   TestRunBrowserNarrowWidthDropsColumnsInOrder/medium_width_drops_branch,_agent,_then_start
+=== RUN   TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository
+=== PAUSE TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository
+=== CONT  TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree
+=== CONT  TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository
+=== CONT  TestRunRepositoryNameNamesTheRepository/neither
+=== CONT  TestRunRepositoryNameNamesTheRepository/only_the_Git_root
+=== RUN   TestRunCockpitRefusesAWriterThatIsNotAFile/embedded_writer
+--- PASS: TestRunBrowserProgramDelegatesToTheModel (0.00s)
+=== RUN   TestRunBrowserCancelKeysNameTheirReason/esc
+--- PASS: TestRunBrowserEnterReportsSelectedRunID (0.00s)
+--- PASS: TestRunBrowserSmallHeightKeepsCursorVisible (0.00s)
+--- PASS: TestRunBrowserEmptyStatesNameTheFilter (0.00s)
+=== PAUSE TestRunBrowserCancelKeysNameTheirReason/esc
+--- PASS: TestRunBrowserNavigationMovesAndClamps (0.00s)
+=== RUN   TestRunBrowserCancelKeysReportCancel/esc
+=== PAUSE TestRunCockpitRefusesAWriterThatIsNotAFile/embedded_writer
+--- PASS: TestRunBrowserSessionRefusesAWriterThatIsNotAFile (0.00s)
+    --- PASS: TestRunBrowserSessionRefusesAWriterThatIsNotAFile/buffer (0.00s)
+    --- PASS: TestRunBrowserSessionRefusesAWriterThatIsNotAFile/embedded_writer (0.00s)
+--- PASS: TestRunBrowserToggleShowsAllAndDistinguishesActive (0.00s)
+--- PASS: TestRunRepositoryNameNamesTheRepository (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/neither (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/only_the_Git_root (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository (0.00s)
+=== RUN   TestRunBrowserCancelKeysNameTheirReason/ctrl+c
+=== PAUSE TestRunBrowserCancelKeysNameTheirReason/ctrl+c
+=== CONT  TestRunCockpitRefusesAWriterThatIsNotAFile/embedded_writer
+=== RUN   TestRunBrowserCancelKeysReportCancel/ctrl+c
+=== RUN   TestRunBrowserNarrowWidthDropsColumnsInOrder/minimal_width_keeps_id,_state,_and_duration
+=== CONT  TestRunCockpitRefusesAWriterThatIsNotAFile/buffer
+--- PASS: TestRunBrowserCancelKeysReportCancel (0.00s)
+    --- PASS: TestRunBrowserCancelKeysReportCancel/q (0.00s)
+    --- PASS: TestRunBrowserCancelKeysReportCancel/esc (0.00s)
+    --- PASS: TestRunBrowserCancelKeysReportCancel/ctrl+c (0.00s)
+=== RUN   TestRunBrowserCancelKeysNameTheirReason/enter
+--- PASS: TestRunCockpitRefusesAWriterThatIsNotAFile (0.00s)
+    --- PASS: TestRunCockpitRefusesAWriterThatIsNotAFile/embedded_writer (0.00s)
+    --- PASS: TestRunCockpitRefusesAWriterThatIsNotAFile/buffer (0.00s)
+=== PAUSE TestRunBrowserCancelKeysNameTheirReason/enter
+=== CONT  TestRunBrowserCancelKeysNameTheirReason/q
+=== CONT  TestRunBrowserCancelKeysNameTheirReason/enter
+=== CONT  TestRunBrowserCancelKeysNameTheirReason/ctrl+c
+=== CONT  TestRunBrowserCancelKeysNameTheirReason/esc
+--- PASS: TestRunBrowserNarrowWidthDropsColumnsInOrder (0.00s)
+    --- PASS: TestRunBrowserNarrowWidthDropsColumnsInOrder/full_width_keeps_every_column (0.00s)
+    --- PASS: TestRunBrowserNarrowWidthDropsColumnsInOrder/medium_width_drops_branch,_agent,_then_start (0.00s)
+    --- PASS: TestRunBrowserNarrowWidthDropsColumnsInOrder/minimal_width_keeps_id,_state,_and_duration (0.00s)
+--- PASS: TestRunBrowserCancelKeysNameTheirReason (0.00s)
+    --- PASS: TestRunBrowserCancelKeysNameTheirReason/q (0.00s)
+    --- PASS: TestRunBrowserCancelKeysNameTheirReason/enter (0.00s)
+    --- PASS: TestRunBrowserCancelKeysNameTheirReason/esc (0.00s)
+    --- PASS: TestRunBrowserCancelKeysNameTheirReason/ctrl+c (0.00s)
+PASS
+ok  	roundfix/internal/tui	0.298s

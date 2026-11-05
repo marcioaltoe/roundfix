@@ -1,0 +1,248 @@
+## sabotage control: internal/cli/runs.go
+mutation diff:
+$ go test -count=1 -timeout 20m -v -run '^(TestTerminalProgramsReceiveTheTerminalFile|TestRunBrowserEndWithoutASelectionPrintsOneLine|TestRunsListPlainFormatKeepsTheStableLine|TestRunsListTableFitsTheWidthByCuttingTheTarget|TestRunsListTableShowsAlignedColumns)$' ./internal/cli
+--- PASS: TestTerminalProgramsReceiveTheTerminalFile (0.00s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/run_browser (0.00s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit (0.03s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit (0.03s)
+--- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine (0.00s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/runs_without_a_Run_Database (0.00s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/attach (0.03s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/no_reason (0.03s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/runs (0.03s)
+--- PASS: TestRunsListTableFitsTheWidthByCuttingTheTarget (0.04s)
+--- PASS: TestRunsListPlainFormatKeepsTheStableLine (0.04s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/default (0.00s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_repositories (0.00s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_states (0.00s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_repositories_and_states (0.00s)
+--- PASS: TestRunsListTableShowsAlignedColumns (0.05s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/one_repository (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/terminal_detection (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/outside_repository (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget (0.00s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/invalid (0.00s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/39 (0.00s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/0 (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/another_day (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/terminal_duration_and_target (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/owner_identity_unproven (0.00s)
+ok  	roundfix/internal/cli	0.752s
+go test exit: 0
+
+## sabotage control: internal/store/store.go
+mutation diff:
+$ go test -count=1 -timeout 20m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$' ./internal/store
+--- PASS: TestResolveRunReferenceNamesOneRunByItsShortID (0.01s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/exact (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix#01 (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/longer_prefix (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/trimmed (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/too_short (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/not_hex (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/not_hex#01 (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/too_long (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/no_match (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/ambiguous (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/empty (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/Run_stays_exact (0.00s)
+ok  	roundfix/internal/store	0.560s
+go test exit: 0
+
+## sabotage control: internal/tui/runrow.go
+mutation diff:
+$ go test -count=1 -timeout 20m -v -run '^TestRunRepositoryNameNamesTheRepository$' ./internal/tui
+--- PASS: TestRunRepositoryNameNamesTheRepository (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/only_the_Git_root (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/neither (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository (0.00s)
+ok  	roundfix/internal/tui	0.304s
+go test exit: 0
+
+## sabotage 1: internal/cli/runbrowser.go
+mutation diff:
+20c20
+< 	return roundtui.RunBrowserSession(ctx, terminalOutput(stdout), roundtui.NewRunBrowserWithTokens(active, all, roundtui.ResolveTokens(colorEnabled(stdout))))
+---
+> 	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowserWithTokens(active, all, roundtui.ResolveTokens(colorEnabled(stdout))))
+ M internal/cli/runbrowser.go
+$ go test -count=1 -timeout 20m -v -run '^TestTerminalProgramsReceiveTheTerminalFile$/^run_browser$' ./internal/cli
+    run_browser_terminal_test.go:49: expected the refusal to name *bytes.Buffer, got "run browser session: output cli.commandEnvironmentWriter is not a terminal file"
+--- FAIL: TestTerminalProgramsReceiveTheTerminalFile (0.00s)
+    --- FAIL: TestTerminalProgramsReceiveTheTerminalFile/run_browser (0.00s)
+FAIL
+FAIL	roundfix/internal/cli	0.675s
+FAIL
+go test exit: 1
+
+## sabotage 2: internal/cli/attach.go
+mutation diff:
+137c137
+< 	err := roundtui.RunCockpit(ctx, terminalOutput(stdout), roundtui.CockpitConfig{
+---
+> 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
+ M internal/cli/attach.go
+$ go test -count=1 -timeout 20m -v -run '^TestTerminalProgramsReceiveTheTerminalFile$/^attach_cockpit$' ./internal/cli
+    run_browser_terminal_test.go:73: expected the refusal to name *bytes.Buffer, got "roundfix attach failed: run cockpit: output cli.commandEnvironmentWriter is not a terminal file\n"
+--- FAIL: TestTerminalProgramsReceiveTheTerminalFile (0.00s)
+    --- FAIL: TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.716s
+FAIL
+go test exit: 1
+
+## sabotage 3: internal/cli/runui.go
+mutation diff:
+62c62
+< 		ui.cockpitDone <- roundtui.RunCockpit(cockpitCtx, terminalOutput(stderr), roundtui.CockpitConfig{
+---
+> 		ui.cockpitDone <- roundtui.RunCockpit(cockpitCtx, stderr, roundtui.CockpitConfig{
+ M internal/cli/runui.go
+$ go test -count=1 -timeout 20m -v -run '^TestTerminalProgramsReceiveTheTerminalFile$/^owning_cockpit$' ./internal/cli
+    run_browser_terminal_test.go:102: expected the refusal to name *bytes.Buffer, got "run cockpit: output cli.commandEnvironmentWriter is not a terminal file"
+--- FAIL: TestTerminalProgramsReceiveTheTerminalFile (0.00s)
+    --- FAIL: TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.719s
+FAIL
+go test exit: 1
+
+## sabotage 4: internal/cli/runbrowser.go
+mutation diff:
+44d43
+< 			fmt.Fprintln(stderr, browserClosedLine(outcome))
+ M internal/cli/runbrowser.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunBrowserEndWithoutASelectionPrintsOneLine$/^attach$' ./internal/cli
+    run_browser_terminal_test.go:143: stderr=""; want "roundfix: Run Browser closed (q); no Run selected.\n"
+--- FAIL: TestRunBrowserEndWithoutASelectionPrintsOneLine (0.00s)
+    --- FAIL: TestRunBrowserEndWithoutASelectionPrintsOneLine/attach (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.705s
+FAIL
+go test exit: 1
+
+## sabotage 5: internal/tui/runrow.go
+mutation diff:
+42c42
+< 	for _, root := range []string{run.RepositoryRoot, run.GitRoot} {
+---
+> 	for _, root := range []string{run.GitRoot, run.RepositoryRoot} {
+ M internal/tui/runrow.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunRepositoryNameNamesTheRepository$' ./internal/tui
+    terminal_output_test.go:118: RunRepositoryName = "roundfix-deliver-0063-x-411942b2"; want "fiscus"
+    terminal_output_test.go:128: expected the REPO column to name fiscus, not the Run Worktree:
+--- FAIL: TestRunRepositoryNameNamesTheRepository (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/neither (0.00s)
+    --- PASS: TestRunRepositoryNameNamesTheRepository/only_the_Git_root (0.00s)
+    --- FAIL: TestRunRepositoryNameNamesTheRepository/repository_root_over_the_Run_Worktree (0.00s)
+    --- FAIL: TestRunRepositoryNameNamesTheRepository/the_Run_Browser_names_the_repository (0.00s)
+FAIL
+FAIL	roundfix/internal/tui	0.312s
+FAIL
+go test exit: 1
+
+## sabotage 6: internal/cli/runs.go
+mutation diff:
+237c237
+< 	table := opts.format == "table" || opts.format == "" && (opts.wide || liveTUIEnabled(stdout))
+---
+> 	table := opts.format == "table" || opts.format == "" && (opts.wide || liveTUIEnabled(stdout) || true)
+ M internal/cli/runs.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunsListPlainFormatKeepsTheStableLine$' ./internal/cli
+    runs_list_table_test.go:71: stable line changed: stdout="RUN       STATE   TARGET              AGENT  STARTED (-03)  DURATION\nad74e8e7  Active  0017-run-discovery  codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"
+    runs_list_table_test.go:75: [runs list --all --format plain]: exit=0 stdout="run_20261105T141507Z_b7b9f4e705436055  Active  watch  pr:999  codex  2026-07-06T12:04:00Z  running 10m  feature/other  /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunsListPlainFormatKeepsTheStableLine312579603/003/other-repo\nrun_20261105T141507Z_ad74e8e785e1db7d  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run  /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunsListPlainFormatKeepsTheStableLine312579603/002\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"; want exit=0 stdout="RUN       REPO        STATE   TARGET              AGENT  STARTED (-03)  DURATION\nb7b9f4e7  other-repo  Active  pr:999              codex  09:04          10m\nad74e8e7  002         Active  0017-run-discovery  codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"
+    runs_list_table_test.go:75: [runs list --state all --format plain]: exit=0 stdout="run_20261105T141507Z_ad74e8e785e1db7d  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run\nrun_20261105T141507Z_f320b86c6705cc2b  Clean  resolve  pr:123  codex  2026-07-06T12:00:00Z  42m  feature/review\n" stderr=""; want exit=0 stdout="RUN       STATE   TARGET              AGENT  STARTED (-03)  DURATION\nad74e8e7  Active  0017-run-discovery  codex  09:02          12m\nf320b86c  Clean   pr:123              codex  09:00          42m\n" stderr=""
+    runs_list_table_test.go:75: [runs list --all --state all --format plain]: exit=0 stdout="run_20261105T141507Z_b7b9f4e705436055  Active  watch  pr:999  codex  2026-07-06T12:04:00Z  running 10m  feature/other  /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunsListPlainFormatKeepsTheStableLine312579603/003/other-repo\nrun_20261105T141507Z_ad74e8e785e1db7d  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run  /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunsListPlainFormatKeepsTheStableLine312579603/002\nrun_20261105T141507Z_f320b86c6705cc2b  Clean  resolve  pr:123  codex  2026-07-06T12:00:00Z  42m  feature/review  /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunsListPlainFormatKeepsTheStableLine312579603/002\n" stderr=""; want exit=0 stdout="RUN       REPO        STATE   TARGET              AGENT  STARTED (-03)  DURATION\nb7b9f4e7  other-repo  Active  pr:999              codex  09:04          10m\nad74e8e7  002         Active  0017-run-discovery  codex  09:02          12m\nf320b86c  002         Clean   pr:123              codex  09:00          42m\n" stderr=""
+--- FAIL: TestRunsListPlainFormatKeepsTheStableLine (0.01s)
+    --- FAIL: TestRunsListPlainFormatKeepsTheStableLine/default (0.00s)
+    --- FAIL: TestRunsListPlainFormatKeepsTheStableLine/all_repositories (0.00s)
+    --- FAIL: TestRunsListPlainFormatKeepsTheStableLine/all_states (0.00s)
+    --- FAIL: TestRunsListPlainFormatKeepsTheStableLine/all_repositories_and_states (0.00s)
+FAIL
+FAIL	roundfix/internal/cli	0.722s
+FAIL
+go test exit: 1
+
+## sabotage 7a: internal/tui/runtable.go
+mutation diff:
+116c116
+< 		if excess := total - options.Width; excess > 0 {
+---
+> 		if excess := total - options.Width; excess > 1<<30 {
+ M internal/tui/runtable.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunsListTableFitsTheWidthByCuttingTheTarget$' ./internal/cli
+    runs_list_table_test.go:155: [runs list --all --format table]: exit=0 stdout="RUN       REPO      STATE   TARGET                                                AGENT  STARTED (-03)  DURATION\n3af5e3f0  quaestor  Active  0063-sequencia-pela-emissao-propria-e-pdf-ao-cliente  codex  09:04          10m\n6ca90fd5  fiscus    Active  0063-um-gtin-por-mestre-e-a-pendencia-de-identidade   codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"; want exit=0 stdout="RUN       REPO      STATE   TARGET                AGENT  STARTED (-03)  DURATION\n3af5e3f0  quaestor  Active  0063-sequencia-pela…  codex  09:04          10m\n6ca90fd5  fiscus    Active  0063-um-gtin-por-me…  codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"
+--- FAIL: TestRunsListTableFitsTheWidthByCuttingTheTarget (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.690s
+FAIL
+go test exit: 1
+
+## sabotage 7b: internal/tui/runtable.go
+mutation diff:
+117c117
+< 			widths[targetColumn] = max(12, widths[targetColumn]-excess)
+---
+> 			widths[targetColumn+1] = max(1, widths[targetColumn+1]-excess)
+119c119
+< 				row[targetColumn] = truncateDisplay(row[targetColumn], widths[targetColumn])
+---
+> 				row[targetColumn+1] = truncateDisplay(row[targetColumn+1], widths[targetColumn+1])
+ M internal/tui/runtable.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunsListTableFitsTheWidthByCuttingTheTarget$' ./internal/cli
+    runs_list_table_test.go:155: [runs list --all --format table]: exit=0 stdout="RUN       REPO      STATE   TARGET                                                A  STARTED (-03)  DURATION\nf4ee5310  quaestor  Active  0063-sequencia-pela-emissao-propria-e-pdf-ao-cliente  c  09:04          10m\nd8f3e405  fiscus    Active  0063-um-gtin-por-mestre-e-a-pendencia-de-identidade   c  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"; want exit=0 stdout="RUN       REPO      STATE   TARGET                AGENT  STARTED (-03)  DURATION\nf4ee5310  quaestor  Active  0063-sequencia-pela…  codex  09:04          10m\nd8f3e405  fiscus    Active  0063-um-gtin-por-me…  codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"
+--- FAIL: TestRunsListTableFitsTheWidthByCuttingTheTarget (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.719s
+FAIL
+go test exit: 1
+
+## sabotage 8: internal/tui/runtable.go
+mutation diff:
+81c81
+< 		started := run.CreatedAt.In(location)
+---
+> 		started := run.CreatedAt.In(time.UTC)
+ M internal/tui/runtable.go
+$ go test -count=1 -timeout 20m -v -run '^TestRunsListTableShowsAlignedColumns$' ./internal/cli
+    runs_list_table_test.go:108: [runs list --all --format table]: exit=0 stdout="RUN       REPO      STATE   TARGET                                                AGENT  STARTED (-03)  DURATION\n56ef0d46  quaestor  Active  0063-sequencia-pela-emissao-propria-e-pdf-ao-cliente  codex  12:04          10m\n3ca76c85  fiscus    Active  0063-um-gtin-por-mestre-e-a-pendencia-de-identidade   codex  12:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"; want exit=0 stdout="RUN       REPO      STATE   TARGET                                                AGENT  STARTED (-03)  DURATION\n56ef0d46  quaestor  Active  0063-sequencia-pela-emissao-propria-e-pdf-ao-cliente  codex  09:04          10m\n3ca76c85  fiscus    Active  0063-um-gtin-por-mestre-e-a-pendencia-de-identidade   codex  09:02          12m\n" stderr="(1 terminal Run(s) hidden; use --state all)\n"
+--- FAIL: TestRunsListTableShowsAlignedColumns (0.01s)
+FAIL
+FAIL	roundfix/internal/cli	0.714s
+FAIL
+go test exit: 1
+
+## sabotage 9: internal/store/store.go
+mutation diff:
+1412c1412
+< var shortRunReferencePattern = regexp.MustCompile(`^[0-9a-f]{8,16}$`)
+---
+> var shortRunReferencePattern = regexp.MustCompile(`^[0-9a-f]{7,16}$`)
+ M internal/store/store.go
+$ go test -count=1 -timeout 20m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$/^too_short$' ./internal/store
+    run_reference_test.go:71: reference="0123456" id="run_20260706T120200Z_0123456789abcdef" found=true err=<nil>; want id=""
+--- FAIL: TestResolveRunReferenceNamesOneRunByItsShortID (0.01s)
+    --- FAIL: TestResolveRunReferenceNamesOneRunByItsShortID/too_short (0.00s)
+FAIL
+FAIL	roundfix/internal/store	0.557s
+FAIL
+go test exit: 1
+
+## sabotage 10: internal/store/store.go
+mutation diff:
+1456c1456
+< 		return Run{}, false, &AmbiguousRunReferenceError{Reference: reference, RunIDs: ids}
+---
+> 		return run, true, nil
+ M internal/store/store.go
+$ go test -count=1 -timeout 20m -v -run '^TestResolveRunReferenceNamesOneRunByItsShortID$/^ambiguous$' ./internal/store
+    run_reference_test.go:79: id="run_20260706T120100Z_93cee2a3aaaaaaaa" found=true err=<nil>; want ambiguous reference
+--- FAIL: TestResolveRunReferenceNamesOneRunByItsShortID (0.01s)
+    --- FAIL: TestResolveRunReferenceNamesOneRunByItsShortID/ambiguous (0.00s)
+FAIL
+FAIL	roundfix/internal/store	0.621s
+FAIL
+go test exit: 1
+

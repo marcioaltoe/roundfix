@@ -1,0 +1,127 @@
+=== RUN   TestRunRunsWithoutSubcommandHonorsInteractivity
+=== PAUSE TestRunRunsWithoutSubcommandHonorsInteractivity
+=== RUN   TestAttachWithoutRunIDNonInteractiveNamesAllRunsList
+=== PAUSE TestAttachWithoutRunIDNonInteractiveNamesAllRunsList
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository
+=== PAUSE TestReadOnlyRunCommandsKeepTheirOutputInsideARepository
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== PAUSE TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== RUN   TestTerminalProgramsReceiveTheTerminalFile
+=== PAUSE TestTerminalProgramsReceiveTheTerminalFile
+=== RUN   TestRunBrowserEndWithoutASelectionPrintsOneLine
+=== PAUSE TestRunBrowserEndWithoutASelectionPrintsOneLine
+=== CONT  TestRunRunsWithoutSubcommandHonorsInteractivity
+=== CONT  TestReadOnlyRunCommandsKeepTheirOutputInsideARepository
+=== CONT  TestAttachWithoutRunIDNonInteractiveNamesAllRunsList
+=== RUN   TestRunRunsWithoutSubcommandHonorsInteractivity/non-interactive_exits_2_naming_runs_list
+=== CONT  TestRunBrowserEndWithoutASelectionPrintsOneLine
+=== RUN   TestAttachWithoutRunIDNonInteractiveNamesAllRunsList/no_tty
+=== CONT  TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== CONT  TestTerminalProgramsReceiveTheTerminalFile
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory
+=== RUN   TestTerminalProgramsReceiveTheTerminalFile/run_browser
+=== RUN   TestRunBrowserEndWithoutASelectionPrintsOneLine/attach
+=== PAUSE TestRunBrowserEndWithoutASelectionPrintsOneLine/attach
+=== RUN   TestRunBrowserEndWithoutASelectionPrintsOneLine/runs
+=== PAUSE TestRunBrowserEndWithoutASelectionPrintsOneLine/runs
+=== RUN   TestRunBrowserEndWithoutASelectionPrintsOneLine/runs_without_a_Run_Database
+=== PAUSE TestRunBrowserEndWithoutASelectionPrintsOneLine/runs_without_a_Run_Database
+=== RUN   TestRunBrowserEndWithoutASelectionPrintsOneLine/no_reason
+=== PAUSE TestTerminalProgramsReceiveTheTerminalFile/run_browser
+=== PAUSE TestRunBrowserEndWithoutASelectionPrintsOneLine/no_reason
+=== CONT  TestRunBrowserEndWithoutASelectionPrintsOneLine/attach
+=== CONT  TestRunBrowserEndWithoutASelectionPrintsOneLine/runs_without_a_Run_Database
+=== CONT  TestRunBrowserEndWithoutASelectionPrintsOneLine/runs
+=== RUN   TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit
+=== CONT  TestRunBrowserEndWithoutASelectionPrintsOneLine/no_reason
+=== PAUSE TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit
+=== RUN   TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit
+=== PAUSE TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit
+=== CONT  TestTerminalProgramsReceiveTheTerminalFile/run_browser
+=== CONT  TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit
+=== RUN   TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_stdin_without_a_TTY_exits_2_naming_runs_list
+=== RUN   TestAttachWithoutRunIDNonInteractiveNamesAllRunsList/no_input_flag
+=== CONT  TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit
+=== RUN   TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_terminal_opens_the_Run_Browser_over_the_repository's_Runs
+--- PASS: TestAttachWithoutRunIDNonInteractiveNamesAllRunsList (0.01s)
+    --- PASS: TestAttachWithoutRunIDNonInteractiveNamesAllRunsList/no_tty (0.00s)
+    --- PASS: TestAttachWithoutRunIDNonInteractiveNamesAllRunsList/no_input_flag (0.00s)
+--- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine (0.00s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/runs_without_a_Run_Database (0.00s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/runs (0.03s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/attach (0.03s)
+    --- PASS: TestRunBrowserEndWithoutASelectionPrintsOneLine/no_reason (0.03s)
+--- PASS: TestTerminalProgramsReceiveTheTerminalFile (0.00s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/run_browser (0.00s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/attach_cockpit (0.02s)
+    --- PASS: TestTerminalProgramsReceiveTheTerminalFile/owning_cockpit (0.03s)
+=== RUN   TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_terminal_without_a_Run_Database_opens_the_empty_browser
+--- PASS: TestRunRunsWithoutSubcommandHonorsInteractivity (0.03s)
+    --- PASS: TestRunRunsWithoutSubcommandHonorsInteractivity/non-interactive_exits_2_naming_runs_list (0.00s)
+    --- PASS: TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_stdin_without_a_TTY_exits_2_naming_runs_list (0.00s)
+    --- PASS: TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_terminal_opens_the_Run_Browser_over_the_repository's_Runs (0.02s)
+    --- PASS: TestRunRunsWithoutSubcommandHonorsInteractivity/interactive_terminal_without_a_Run_Database_opens_the_empty_browser (0.00s)
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_show_run_20261105T141133Z_ebc744325c821ede
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T141133Z_3b9e03513bd08eeb
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T141133Z_3b9e03513bd08eeb_--json
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_show_run_20261105T141133Z_ebc744325c821ede_--json
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/events_run_20261105T141133Z_ebc744325c821ede
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T141133Z_3b9e03513bd08eeb
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_run_20261105T141133Z_ebc744325c821ede
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T141133Z_3b9e03513bd08eeb
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/repository_scoped_list
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_browser_inside
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_browser_outside
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_browser_inside
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser
+=== RUN   TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_browser_outside
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser
+--- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository (0.05s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_show_run_20261105T141133Z_ebc744325c821ede (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_show_run_20261105T141133Z_ebc744325c821ede_--json (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/events_run_20261105T141133Z_ebc744325c821ede (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_run_20261105T141133Z_ebc744325c821ede (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_list_--all_--state_all (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/repository_scoped_list (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_browser_inside (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/attach_browser_outside (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_browser_inside (0.00s)
+    --- PASS: TestReadOnlyRunCommandsKeepTheirOutputInsideARepository/runs_browser_outside (0.00s)
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T141133Z_c6adbebd23bdaef3
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T141133Z_c6adbebd23bdaef3_--json
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T141133Z_c6adbebd23bdaef3
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T141133Z_c6adbebd23bdaef3
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser
+--- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory (0.08s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory (0.05s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T141133Z_3b9e03513bd08eeb (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T141133Z_3b9e03513bd08eeb_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T141133Z_3b9e03513bd08eeb (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T141133Z_3b9e03513bd08eeb (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser (0.00s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file (0.02s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T141133Z_c6adbebd23bdaef3 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T141133Z_c6adbebd23bdaef3_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T141133Z_c6adbebd23bdaef3 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T141133Z_c6adbebd23bdaef3 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser (0.00s)
+PASS
+suiteguard: guard cost: measured 2994 paths; fingerprint took 166.104333ms before and 133.585291ms after
+ok  	roundfix/internal/cli	0.812s

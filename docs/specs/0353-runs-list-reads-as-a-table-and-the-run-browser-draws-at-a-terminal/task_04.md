@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

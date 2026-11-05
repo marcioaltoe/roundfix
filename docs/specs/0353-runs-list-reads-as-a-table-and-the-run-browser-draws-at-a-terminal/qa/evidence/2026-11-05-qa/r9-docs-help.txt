@@ -1,0 +1,36 @@
+$ cmp .agents/skills/roundfix/references/runs.md skills/roundfix/references/runs.md
+exit=0
+5040146bf490e426a1b999f019ed3f555ef94d8a01dcd0fd804c8eb26702c32f  .agents/skills/roundfix/references/runs.md
+5040146bf490e426a1b999f019ed3f555ef94d8a01dcd0fd804c8eb26702c32f  skills/roundfix/references/runs.md
+
+$ head -7 docs/adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md
+---
+status: accepted
+created_at: 2026-11-05T12:00:00Z
+updated_at: 2026-11-05T12:00:00Z
+deprecated_at: null
+superseded_by: null
+---
+
+$ roundfix runs --help
+exit=0
+3:  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
+17:  list  Print a table at an interactive terminal, and the stable run id, state,
+18:        kind, target, agent, start time (UTC), duration and local branch
+19:        line otherwise or with --format plain
+27:  --format list: table or plain (default: table at an interactive terminal,
+28:           plain otherwise); causes: text (default) or json
+29:  --wide   list: table with the full Run id, kind, branch and worktree
+stderr bytes: 0
+
+$ roundfix attach --help
+exit=0
+10:<run-id> is a full Run ID or the eight-digit short id that runs list shows.
+stderr bytes: 0
+
+$ roundfix runs show --help
+exit=0
+4:Prints recorded token usage per Work Item scope and in total, read-only.
+5:<run-id> is a full Run ID or the eight-digit short id that runs list shows.
+stderr bytes: 0
+

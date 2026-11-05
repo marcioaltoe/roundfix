@@ -1,0 +1,33 @@
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID
+=== PAUSE TestResolveRunReferenceNamesOneRunByItsShortID
+=== CONT  TestResolveRunReferenceNamesOneRunByItsShortID
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/exact
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix#01
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/longer_prefix
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/trimmed
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/too_short
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/not_hex
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/not_hex#01
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/too_long
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/no_match
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/ambiguous
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/empty
+=== RUN   TestResolveRunReferenceNamesOneRunByItsShortID/Run_stays_exact
+--- PASS: TestResolveRunReferenceNamesOneRunByItsShortID (0.01s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/exact (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/unique_prefix#01 (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/longer_prefix (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/trimmed (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/too_short (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/not_hex (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/not_hex#01 (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/too_long (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/no_match (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/ambiguous (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/empty (0.00s)
+    --- PASS: TestResolveRunReferenceNamesOneRunByItsShortID/Run_stays_exact (0.00s)
+PASS
+suiteguard: guard cost: measured 2994 paths; fingerprint took 161.604541ms before and 135.495958ms after
+ok  	roundfix/internal/store	0.586s

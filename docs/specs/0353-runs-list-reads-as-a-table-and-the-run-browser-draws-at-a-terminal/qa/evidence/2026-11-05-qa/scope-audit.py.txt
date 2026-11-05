@@ -1,0 +1,44 @@
+import subprocess,re,sys,fnmatch
+S="docs/specs/0353-runs-list-reads-as-a-table-and-the-run-browser-draws-at-a-terminal"
+base="9eb6bea0c647bfed5277d62ab70ce9d01dca33d4"; head="23c1440e3856402622003253e3d07b787d4cbf1e"
+def git(*a): return subprocess.run(["git",*a],capture_output=True,text=True,check=True).stdout
+commits=git("rev-list","--reverse",f"{base}..{head}").split()
+tasks={"5611a7790664cfc44dc6ffaebd17e7962c4bf8ce":"task_01","f439342784bf58386a69583ce307efab8191f1b5":"task_02","23c1440e3856402622003253e3d07b787d4cbf1e":"task_03"}
+print("commits in range:",len(commits))
+auth=open(f"{S}/_authorization.md").read().split("---")[1]
+governed=re.findall(r"^  - (\S+)$",auth.split("operations:")[0],re.M)
+print("authorization paths:",governed)
+forbidden=["Makefile",".github/workflows/*","go.mod","go.sum",".roundfixrc.yml","skills-lock.json","CHANGELOG.md","internal/app/version.go","dist/*","CONTEXT.md","docs/references/skill-coverage.json","docs/history/*","docs/agents/*","internal/config/*","internal/baseline/*",".golangci*"]
+bad=0; allchanged=set()
+for c in commits:
+    t=tasks.get(c,"UNLISTED")
+    files=git("diff-tree","--no-commit-id","--name-only","-r",c).split()
+    allchanged|=set(files)
+    tf=open(f"{S}/{t}.md").read() if t!="UNLISTED" else ""
+    ctx=tf.split("## Context",1)[1].split("## ",1)[0] if tf else ""
+    declared=set(re.findall(r"^- (?:interface|creates|instruction): `([^`]+)`",ctx,re.M))
+    declared.add(f"{S}/{t}.md")
+    rec=set(re.findall(r"^- `([^`]+)`",tf.split("## Recorded paths",1)[1],re.M)) if "## Recorded paths" in tf else set()
+    print(f"\n## {c[:8]} {t} — {len(files)} files")
+    for f in files:
+        status = "declared" if f in declared else ("recorded" if f in rec else "UNDECLARED")
+        g = " governed" if f in governed else ""
+        fb = " FORBIDDEN" if any(fnmatch.fnmatch(f,p) for p in forbidden) else ""
+        if status=="UNDECLARED" or fb: bad+=1
+        print(f"  {status}{g}{fb}  {f}")
+# references and skills other than runs / roundfix
+for f in sorted(allchanged):
+    if (f.startswith(".agents/skills/") or f.startswith("skills/")) and not (f in governed or f in ["skills/roundfix/references/runs.md","skills/testdata/owned-skill-versions.json"]):
+        print("OUT-OF-SCOPE skill file:",f); bad+=1
+    if "/references/" in f and ("skills" in f) and not f.endswith("references/runs.md"):
+        print("OTHER ROUNDFIX REFERENCE:",f); bad+=1
+gov_changed=[f for f in allchanged if f in governed]
+print("\ngoverned paths changed:",sorted(gov_changed),"all in authorization paths:",all(f in governed for f in gov_changed))
+print("internal/cli/cli_test.go changed:", "internal/cli/cli_test.go" in allchanged)
+d=git("diff",base,head)
+qs=[l for l in d.splitlines() if l[:1] in "+-" and "QA settlement" in l and not l.startswith(("+++","---"))]
+print("diff lines touching '### QA settlement':",len(qs))
+bad+=len(qs)+("internal/cli/cli_test.go" in allchanged)
+print("\nworking tree delta:",git("status","--porcelain").strip())
+print("RESULT:", "pass" if bad==0 else f"FAIL ({bad})")
+sys.exit(1 if bad else 0)

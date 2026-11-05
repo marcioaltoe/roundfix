@@ -1,0 +1,26 @@
+import sys,re
+def n(s): return re.sub(r"\s+"," ",s).strip()
+A="When the Run Browser closes without a selection, bare `runs` and `attach` print one line on stderr and exit `0`: `roundfix: Run Browser closed (<key>); no Run selected.`, where `<key>` is `q`, `esc` or `ctrl+c`, or `interrupted` when a signal ended it. The Run Browser and the Live Run View draw on the terminal itself; given any other output they refuse with `output <type> is not a terminal file`. The Run Browser's repository column names the repository, not the Run Worktree."
+B="When the Run Browser closes without a selection it prints `roundfix: Run Browser closed (<key>); no Run selected.` on stderr and exits `0`."
+C="`runs list` has two formats. Agents and scripts pass `--format plain`, which always prints the stable lines above; without `--format` the stable lines are also printed whenever standard output is not an interactive terminal. At an interactive terminal, or with `--format table`, it prints a table for people: a header and aligned columns `RUN` (the eight-digit short id), `REPO` (only when the listing spans repositories), `STATE`, `TARGET`, `AGENT`, `STARTED (<zone>)` in the machine's local time, and `DURATION`; only `TARGET` is cut with `…` to fit the terminal width. `--wide` selects the table with the full Run id and adds `KIND`, `BRANCH` and `WORKTREE`; `--wide --format plain` and any other `--format` value exit `2`. The stderr notes and `No Runs found.` are the same in both formats."
+D="At an interactive terminal, or with `--format table`, `runs list` prints a table instead: a header and the columns `RUN` (short id), `REPO` (only when the listing spans repositories), `STATE`, `TARGET`, `AGENT`, `STARTED (<zone>)` in local time and `DURATION`, with only `TARGET` cut to the terminal width. `--wide` shows the full Run id and adds `KIND`, `BRANCH` and `WORKTREE`. Piped output, and `--format plain`, keep the stable line, so scripts and Agents pass `--format plain`."
+Dusage="roundfix runs list [--state active|terminal|all] [--limit N] [--all] [--format table|plain] [--wide]"
+E="`attach` and `runs show` also accept the short id that the `runs list` table shows, or any longer prefix of a Run id's random suffix up to its sixteen digits, when it names exactly one Run. A prefix that matches several Runs exits `2` and lists them: `Run id prefix \"<prefix>\" matches <n> Runs: <id>, <id>; pass more digits or the full Run id`. `events`, `stop`, `reconcile` and every other command need the full Run id."
+F="`<run-id>` may also be the eight-digit short id that the `runs list` table shows, or a longer prefix of the id's random suffix, when it names one Run; a prefix that names several Runs exits `2` and lists them ([ADR-0363](../../adr/0363-runs-list-prints-a-table-at-a-terminal-and-a-short-run-id-names-a-run.md))."
+anch={"A":"lists every repository outside one.","C":"`runs list` exits `0` for matching and empty results.","E":"pass a run id or run `roundfix attach` to pick interactively.","B_runs":"In a non-interactive context it exits `2` naming `runs list`.","B_attach":"in non-interactive mode it exits `2` naming `roundfix runs list`.","D":"Empty results print `No Runs found.` and exit `0`.","F_runs":"`roundfix runs show <run-id>` reads the Run Database"}
+checks=[]
+for f in [".agents/skills/roundfix/references/runs.md","skills/roundfix/references/runs.md"]:
+    checks+= [(f,"task_01 R10",A,anch["A"]),(f,"task_02 R8",C,anch["C"]),(f,"task_03 R8",E,anch["E"])]
+g="docs/user-guide/commands/runs.md"; a="docs/user-guide/commands/attach.md"
+checks+=[(g,"task_01 R11",B,anch["B_runs"]),(a,"task_01 R11",B,anch["B_attach"]),(g,"task_02 R9 paragraph",D,anch["D"]),(g,"task_02 R9 usage",Dusage,None),(g,"task_03 R9",F,anch["F_runs"]),(a,"task_03 R9",F,"```")]
+bad=0
+for f,label,text,anchor in checks:
+    s=n(open(f).read()); i=s.find(n(text))
+    ok=i>=0
+    order=""
+    if ok and anchor:
+        j=s.find(n(anchor)); order=f" anchor_at={j} text_at={i} after_anchor={0<=j<i}"
+        ok = ok and 0<=j<i
+    print(("ok  " if ok else "FAIL"),f,label+order)
+    bad+= not ok
+sys.exit(1 if bad else 0)

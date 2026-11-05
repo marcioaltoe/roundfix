@@ -1,0 +1,177 @@
+=== RUN   TestRunRunsListPrintsStableColumnsNewestFirst
+=== PAUSE TestRunRunsListPrintsStableColumnsNewestFirst
+=== RUN   TestRunRunsListRendersOwnerIdentityUnprovenMarker
+=== PAUSE TestRunRunsListRendersOwnerIdentityUnprovenMarker
+=== RUN   TestRunRunsListStateFlagFiltersAndNotes
+=== PAUSE TestRunRunsListStateFlagFiltersAndNotes
+=== RUN   TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout
+=== PAUSE TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout
+=== RUN   TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository
+=== PAUSE TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository
+=== RUN   TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased
+=== PAUSE TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased
+=== RUN   TestRunRunsListReportsRetainedWorktreeInspectionFailure
+=== PAUSE TestRunRunsListReportsRetainedWorktreeInspectionFailure
+=== RUN   TestRunRunsListLimitBoundsNewestMatches
+=== PAUSE TestRunRunsListLimitBoundsNewestMatches
+=== RUN   TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine
+=== PAUSE TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine
+=== RUN   TestRunRunsListEmptyResultExitsZero
+=== PAUSE TestRunRunsListEmptyResultExitsZero
+=== RUN   TestRunRunsListUsageErrors
+=== PAUSE TestRunRunsListUsageErrors
+=== RUN   TestRunsListOnAnOlderDatabaseNamesMigrate
+=== PAUSE TestRunsListOnAnOlderDatabaseNamesMigrate
+=== RUN   TestRunsListOnANewerDatabaseNamesUpgrade
+=== PAUSE TestRunsListOnANewerDatabaseNamesUpgrade
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository
+=== PAUSE TestRunRunsListOutsideRepositoryListsEveryRepository
+=== RUN   TestRunsListOutsideARepositoryTranscript
+=== PAUSE TestRunsListOutsideARepositoryTranscript
+=== RUN   TestRunsListPlainFormatKeepsTheStableLine
+=== PAUSE TestRunsListPlainFormatKeepsTheStableLine
+=== RUN   TestRunsListTableShowsAlignedColumns
+=== PAUSE TestRunsListTableShowsAlignedColumns
+=== RUN   TestRunsListTableFitsTheWidthByCuttingTheTarget
+=== PAUSE TestRunsListTableFitsTheWidthByCuttingTheTarget
+=== RUN   TestRunsListWideShowsEveryColumn
+=== PAUSE TestRunsListWideShowsEveryColumn
+=== RUN   TestRunsListFormatTranscripts
+=== PAUSE TestRunsListFormatTranscripts
+=== RUN   TestRunsHelpNamesTheFormatAndWideFlags
+=== PAUSE TestRunsHelpNamesTheFormatAndWideFlags
+=== RUN   TestRunsListTableKeepsTheWarningAndHiddenNote
+=== PAUSE TestRunsListTableKeepsTheWarningAndHiddenNote
+=== RUN   TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted
+=== PAUSE TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted
+=== CONT  TestRunRunsListPrintsStableColumnsNewestFirst
+=== CONT  TestRunsListOnANewerDatabaseNamesUpgrade
+=== CONT  TestRunRunsListReportsRetainedWorktreeInspectionFailure
+=== CONT  TestRunsListWideShowsEveryColumn
+=== CONT  TestRunRunsListEmptyResultExitsZero
+=== CONT  TestRunsListTableKeepsTheWarningAndHiddenNote
+=== CONT  TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted
+=== CONT  TestRunsHelpNamesTheFormatAndWideFlags
+=== CONT  TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout
+=== CONT  TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine
+--- PASS: TestRunsHelpNamesTheFormatAndWideFlags (0.00s)
+=== CONT  TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased
+--- PASS: TestRunRunsListEmptyResultExitsZero (0.00s)
+=== CONT  TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository
+--- PASS: TestRunsListOnANewerDatabaseNamesUpgrade (0.03s)
+=== CONT  TestRunRunsListStateFlagFiltersAndNotes
+--- PASS: TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine (0.04s)
+=== CONT  TestRunsListOnAnOlderDatabaseNamesMigrate
+=== RUN   TestRunsListTableKeepsTheWarningAndHiddenNote/plain
+=== RUN   TestRunsListTableKeepsTheWarningAndHiddenNote/table
+--- PASS: TestRunRunsListReportsRetainedWorktreeInspectionFailure (0.05s)
+=== CONT  TestRunRunsListUsageErrors
+=== RUN   TestRunRunsListUsageErrors/unknown_subcommand
+=== RUN   TestRunRunsListUsageErrors/unexpected_list_argument
+--- PASS: TestRunRunsListPrintsStableColumnsNewestFirst (0.05s)
+=== CONT  TestRunRunsListRendersOwnerIdentityUnprovenMarker
+=== RUN   TestRunRunsListUsageErrors/unknown_state_value
+=== RUN   TestRunRunsListUsageErrors/negative_limit
+=== RUN   TestRunRunsListUsageErrors/removed_active_flag
+--- PASS: TestRunRunsListUsageErrors (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unknown_subcommand (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unexpected_list_argument (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unknown_state_value (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/negative_limit (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/removed_active_flag (0.00s)
+=== CONT  TestRunsListPlainFormatKeepsTheStableLine
+=== CONT  TestRunsListTableFitsTheWidthByCuttingTheTarget
+--- PASS: TestRunsListWideShowsEveryColumn (0.05s)
+--- PASS: TestRunsListTableKeepsTheWarningAndHiddenNote (0.05s)
+    --- PASS: TestRunsListTableKeepsTheWarningAndHiddenNote/plain (0.00s)
+    --- PASS: TestRunsListTableKeepsTheWarningAndHiddenNote/table (0.00s)
+=== CONT  TestRunsListTableShowsAlignedColumns
+=== RUN   TestRunRunsListStateFlagFiltersAndNotes/state_all_includes_terminal_Runs_without_a_note
+--- PASS: TestRunsListOnAnOlderDatabaseNamesMigrate (0.02s)
+=== CONT  TestRunsListOutsideARepositoryTranscript
+=== RUN   TestRunRunsListStateFlagFiltersAndNotes/state_terminal_excludes_Active_Runs_and_notes_them
+--- PASS: TestRunsListOutsideARepositoryTranscript (0.00s)
+=== CONT  TestRunRunsListOutsideRepositoryListsEveryRepository
+=== RUN   TestRunRunsListStateFlagFiltersAndNotes/all_flag_appends_the_repository_column
+--- PASS: TestRunRunsListStateFlagFiltersAndNotes (0.04s)
+    --- PASS: TestRunRunsListStateFlagFiltersAndNotes/state_all_includes_terminal_Runs_without_a_note (0.00s)
+    --- PASS: TestRunRunsListStateFlagFiltersAndNotes/state_terminal_excludes_Active_Runs_and_notes_them (0.00s)
+    --- PASS: TestRunRunsListStateFlagFiltersAndNotes/all_flag_appends_the_repository_column (0.00s)
+=== CONT  TestRunsListFormatTranscripts
+=== RUN   TestRunsListFormatTranscripts/unknown_format
+=== RUN   TestRunsListFormatTranscripts/wide_plain
+=== RUN   TestRunsListFormatTranscripts/no_Run_Database
+--- PASS: TestRunsListFormatTranscripts (0.00s)
+    --- PASS: TestRunsListFormatTranscripts/unknown_format (0.00s)
+    --- PASS: TestRunsListFormatTranscripts/wide_plain (0.00s)
+    --- PASS: TestRunsListFormatTranscripts/no_Run_Database (0.00s)
+=== CONT  TestRunRunsListLimitBoundsNewestMatches
+--- PASS: TestRunRunsListRendersOwnerIdentityUnprovenMarker (0.03s)
+=== RUN   TestRunsListPlainFormatKeepsTheStableLine/default
+--- PASS: TestRunsListTableFitsTheWidthByCuttingTheTarget (0.04s)
+=== RUN   TestRunsListTableShowsAlignedColumns/one_repository
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/default
+=== RUN   TestRunsListTableShowsAlignedColumns/terminal_detection
+=== RUN   TestRunsListTableShowsAlignedColumns/outside_repository
+=== RUN   TestRunsListPlainFormatKeepsTheStableLine/all_repositories
+=== RUN   TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget
+=== RUN   TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/invalid
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/all_states
+=== RUN   TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/39
+=== RUN   TestRunsListPlainFormatKeepsTheStableLine/all_states
+=== RUN   TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/0
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/limit_one
+=== RUN   TestRunsListTableShowsAlignedColumns/another_day
+=== RUN   TestRunsListTableShowsAlignedColumns/terminal_duration_and_target
+=== RUN   TestRunsListTableShowsAlignedColumns/owner_identity_unproven
+=== RUN   TestRunsListPlainFormatKeepsTheStableLine/all_repositories_and_states
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/terminal
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/unbounded
+--- PASS: TestRunsListPlainFormatKeepsTheStableLine (0.08s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/default (0.01s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_repositories (0.01s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_states (0.01s)
+    --- PASS: TestRunsListPlainFormatKeepsTheStableLine/all_repositories_and_states (0.02s)
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/all_states_limited
+--- PASS: TestRunsListTableShowsAlignedColumns (0.08s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/one_repository (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/terminal_detection (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/outside_repository (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget (0.01s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/invalid (0.00s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/39 (0.00s)
+        --- PASS: TestRunsListTableShowsAlignedColumns/invalid_width_falls_back_to_no_budget/0 (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/another_day (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/terminal_duration_and_target (0.00s)
+    --- PASS: TestRunsListTableShowsAlignedColumns/owner_identity_unproven (0.02s)
+=== RUN   TestRunRunsListOutsideRepositoryListsEveryRepository/inside_keeps_repository_scope
+--- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository (0.08s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/default (0.01s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/all_states (0.01s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/limit_one (0.00s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/terminal (0.02s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/unbounded (0.01s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/all_states_limited (0.01s)
+    --- PASS: TestRunRunsListOutsideRepositoryListsEveryRepository/inside_keeps_repository_scope (0.00s)
+=== RUN   TestRunRunsListLimitBoundsNewestMatches/default_bounds_to_the_20_newest
+=== RUN   TestRunRunsListLimitBoundsNewestMatches/limit_zero_is_unbounded
+=== RUN   TestRunRunsListLimitBoundsNewestMatches/explicit_limit_bounds_the_newest
+--- PASS: TestRunRunsListLimitBoundsNewestMatches (0.09s)
+    --- PASS: TestRunRunsListLimitBoundsNewestMatches/default_bounds_to_the_20_newest (0.00s)
+    --- PASS: TestRunRunsListLimitBoundsNewestMatches/limit_zero_is_unbounded (0.00s)
+    --- PASS: TestRunRunsListLimitBoundsNewestMatches/explicit_limit_bounds_the_newest (0.00s)
+--- PASS: TestRunsListPrintsNoWarningForARunWhoseCheckoutWasDeleted (0.17s)
+--- PASS: TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased (0.18s)
+=== RUN   TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/terminal_current_repository
+=== RUN   TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/all-state_current_repository
+=== RUN   TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/terminal_every_repository
+=== RUN   TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/all-state_every_repository
+--- PASS: TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository (0.27s)
+    --- PASS: TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/terminal_current_repository (0.01s)
+    --- PASS: TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/all-state_current_repository (0.01s)
+    --- PASS: TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/terminal_every_repository (0.02s)
+    --- PASS: TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository/all-state_every_repository (0.02s)
+--- PASS: TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout (0.31s)
+PASS
+suiteguard: guard cost: measured 2994 paths; fingerprint took 147.479625ms before and 133.296542ms after
+ok  	roundfix/internal/cli	0.894s
