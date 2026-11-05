@@ -76,6 +76,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		blocker string
 		class   ParkClass
 	}{
+		{BlockerNumberedFileCollision, ParkClassConflict},
 		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven
@@ -87,6 +88,9 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				item := store.DeliveryQueueItem{SpecSlug: "example", Worktree: "/worktrees/example", Stage: store.DeliveryStageParked, Blocker: tt.blocker + suffix}
 				queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
 				park := ClassifyPark(queue, item)
+				if tt.blocker == BlockerNumberedFileCollision && park.Next != "in /worktrees/example, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry example" {
+					t.Fatalf("numbered-file-collision next action = %q", park.Next)
+				}
 				if tt.blocker == BlockerArchivedItemUnproven && park.Next != "in /worktrees/example, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry example" {
 					t.Fatalf("archived-item-unproven next action = %q", park.Next)
 				}

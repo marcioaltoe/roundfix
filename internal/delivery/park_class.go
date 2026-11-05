@@ -45,6 +45,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 			}
 		}
 		classification.Next = "deliver or merge " + strings.TrimSpace(detail) + ", then run roundfix deliver retry " + item.SpecSlug
+	case BlockerNumberedFileCollision:
+		classification.Class = ParkClassConflict
+		classification.Next = "in " + item.Worktree + ", renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry " + item.SpecSlug
 	case BlockerPullRequestConflict:
 		classification.Class = ParkClassConflict
 		classification.Next = "merge the default branch into the item branch in " + item.Worktree + ", resolve " + strings.TrimSpace(detail) + ", commit, then run roundfix deliver retry " + item.SpecSlug

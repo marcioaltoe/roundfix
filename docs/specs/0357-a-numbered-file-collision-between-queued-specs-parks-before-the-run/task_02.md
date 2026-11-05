@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -123,3 +123,85 @@ maintainer chose for point 3 of the report reported by fiscus on 2026-11-05
 
 - `_prd.md` → Goal 2; Goal 3; User Story 2; User Story 3; Core Feature 3; Core Feature 4; Core Feature 5; Core Feature 6; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 1; Current behavior 2; Current behavior 4; Interfaces; API Contract 3; API Contract 4; API Contract 5; API Contract 6; API Contract 7; Invariants 2; Invariants 3; Invariants 5; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, evidence-gate, tech-writer, systematic-debugging.
+
+Implemented the pure comparison and report, the pre-Run park, the no-Run retry
+refusal, and the conflict Park Class with its exact next action. The comparison
+reads only supplied paths; it imports no configuration and runs no command.
+
+Pre-change characterization:
+
+- Before changing code, ran the required
+  `go test -count=1 -timeout 20m -run '^(TestRevalidation.*|TestRetryOfAnItemWithoutARun.*|TestEveryBlockerHasAParkClass|TestParkClassesAndNextActions)$' ./internal/delivery`:
+  passed (25 tests including subtests).
+- The pre-change search
+  `rg -n '^(type|const|func) [A-Z].*(Numbered|numbered)|NumberedFile|numbered-file' internal/delivery`
+  returned no matches: no exported identifier named a numbered file. Adding
+  the tests before implementation then produced the expected build failure
+  for the absent `NumberedFileClaims`, `NumberedFileReport` and
+  `NumberedFileCollision` types.
+- Initial Git status contained only the Daemon's `pending` → `in_progress`
+  change in this Task file. That status remains untouched.
+
+Acceptance evidence:
+
+- Directory and numeric-value comparison against the default branch and all
+  earlier claims: `TestFindNumberedFileCollisions` covers all nine required
+  cases, including different padding, identical paths, ignored journal names,
+  separate directories, and the next free number above every external claim.
+  Additional cases cover the root directory, the 18-digit limit, ASCII digits,
+  subject deduplication, ordering by rendered owner, padding from colliding
+  subject paths, and unchanged input slices. `TestNumberedFileReportRendersTheBlocker`
+  checks the hand-built example's Detail and Blocker byte for byte.
+- `TestRevalidationParksANumberedFileCollisionBeforeTheRun` checks the exact
+  blocker, retained branch/worktree/provisioned flag, no Run ID or `run`
+  event, and preserved premise and owner warnings. Its first focused run
+  exposed a missing fake-workspace recording callback; adding the existing
+  `recordWorkspace` fixture setup resolved it without changing production
+  persistence or weakening assertions.
+- `TestStrictFindingsParkBeforeANumberedFileCollision` checks the exact
+  findings blocker when both findings and collisions are present.
+  `TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides` checks the
+  exact refusal, equality of every persisted item field before and after,
+  and absence of carry-forward.
+- `TestParkClassesAndNextActions/numbered-file-collision` checks the conflict
+  class and exact next action for both the bare blocker and a colon suffix;
+  the existing Pending Question assertion checks the same answer.
+- After the fixture correction,
+  `go test -count=1 -timeout 5m ./internal/delivery` exited 0
+  (`ok roundfix/internal/delivery 2.601s`). This package check exercised the
+  new tests and all existing delivery tests. Existing tests were left
+  unchanged apart from the required Park Class row and its exact-action check.
+
+Sabotages 3–8 ran in six separate temporary source checkouts, each built
+from `git archive HEAD` plus this Task's six delivery files. Every mutant
+compiled and exited 1 on the expected behavioral assertion. Commands used
+`go test -count=1 -timeout 5m -v -run <selector> ./internal/delivery`:
+
+| Sabotage | Selector | Observed failure |
+| --- | --- | --- |
+| 3: compare digit strings | `^TestFindNumberedFileCollisions$/^by_value$` | `TestFindNumberedFileCollisions/by_value`: missing collision for `052` versus `0052` |
+| 4: default-only next free | `^TestFindNumberedFileCollisions$/^next_free_above_every_claim$` | `TestFindNumberedFileCollisions/next_free_above_every_claim`: `drizzle/0052` instead of `drizzle/0054` |
+| 5: ignore directory | `^TestFindNumberedFileCollisions$/^other_directory$` | `TestFindNumberedFileCollisions/other_directory`: unexpected cross-directory collision |
+| 6: remove engine collision park | `^TestRevalidationParksANumberedFileCollisionBeforeTheRun$` | `TestRevalidationParksANumberedFileCollisionBeforeTheRun`: item merged and events included `run` |
+| 7: remove retry collision refusal | `^TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides$` | `TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides`: nil error instead of refusal |
+| 8: remove classification case | `^(TestEveryBlockerHasAParkClass\|TestParkClassesAndNextActions)$/^numbered-file-collision$` | `TestEveryBlockerHasAParkClass` and `TestParkClassesAndNextActions/numbered-file-collision`: unclassified blocker and generic next action |
+
+Temporary transcripts: `/private/tmp/roundfix-0357-task02-7twr02su/sabotage-{3,4,5,6,7,8}.log`;
+command/results index: `/private/tmp/roundfix-0357-task02-7twr02su/results.json`;
+runner: `/private/tmp/roundfix-0357-task02-sabotages.py`.
+
+Scope: only the six declared delivery files and this Result were authored.
+The command workflow that supplies claims remains task_04's slice, and the
+park documentation remains task_03's slice. Declared Task Verification,
+repository Verification and CLI checks were not run; the Daemon owns them.
+No Task status, manifest, other Task, configuration, guide, skill, schema,
+module, Makefile or workflow was edited. No commit, push or Pull Request.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T211401Z_cae788fdc7c4d6e1`
+- Source commit: `7ba96664b8388136d31e5ec75d8aa34f3e7abea4`

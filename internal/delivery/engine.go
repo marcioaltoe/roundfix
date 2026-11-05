@@ -189,6 +189,7 @@ type CarryForwardResult struct {
 }
 
 type Revalidation struct {
+	NumberedFiles   NumberedFileReport
 	Findings        []string // unique, sorted finding codes
 	ChangedPremises []string // unique, sorted repository-relative paths
 	ChangedBy       []string // the prior merge commits that changed at least one of them, in queue order
@@ -752,6 +753,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 					strings.Join(revalidation.Findings, ", "),
 				)
 			}
+			if len(revalidation.NumberedFiles.Collisions) > 0 {
+				return RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: numbered file collision: %s", specSlug, revalidation.NumberedFiles.Detail())
+			}
 		}
 		carried, err := engine.recovery.CarryForward(
 			ctx,
@@ -1024,6 +1028,9 @@ func (engine *Engine) advanceItem(
 					item,
 					BlockerRevalidationFailed+": "+strings.Join(revalidation.Findings, ", "),
 				)
+			}
+			if len(revalidation.NumberedFiles.Collisions) > 0 {
+				return engine.park(ctx, gitRoot, item, revalidation.NumberedFiles.Blocker())
 			}
 			if err := engine.setStage(ctx, gitRoot, item, store.DeliveryStageRunning); err != nil {
 				return err
