@@ -149,7 +149,8 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return nil
 	}
 
-	if _, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot); err != nil {
+	queue, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot)
+	if err != nil {
 		reason := fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
 		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
 	} else if !found {
@@ -167,6 +168,16 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, err, stderr)
 	}
 
+	var reviewNotice string
+	if result.Stage == store.DeliveryStageReviewing {
+		for _, item := range queue.Items {
+			if item.SpecSlug == specSlug {
+				reviewNotice = reviewLineageNotice(ctx, dependencies.reviewSpecGitRunner, loaded, specSlug, item.Worktree)
+				break
+			}
+		}
+	}
+
 	if result.OwnerPID > 0 {
 		ownerState := "is not running"
 		if store.ProcessAlive(result.OwnerPID) {
@@ -180,6 +191,9 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 					return printDeliverFailure("retry", err, stderr)
 				}
 				printDeliverRetryResult(stdout, specSlug, result)
+				if reviewNotice != "" {
+					fmt.Fprintln(stdout, reviewNotice)
+				}
 				fmt.Fprintf(stdout, "Handed %s to Delivery Queue owner PID %d.\n", specSlug, result.OwnerPID)
 				return exitOK
 			case proofErr == nil:
@@ -213,6 +227,9 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return printDeliverFailure("retry", err, stderr)
 	}
 	printDeliverRetryResult(stdout, specSlug, result)
+	if reviewNotice != "" {
+		fmt.Fprintln(stdout, reviewNotice)
+	}
 	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
 
@@ -414,6 +431,13 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	for _, item := range queue.Items {
 		if item.Warning != "" {
 			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
+		}
+	}
+	for _, item := range queue.Items {
+		if item.Stage == store.DeliveryStageParked || item.Stage == store.DeliveryStageReviewing {
+			if line := reviewLineageNotice(ctx, commandDependenciesForContext(ctx).reviewSpecGitRunner, loaded, item.SpecSlug, item.Worktree); line != "" {
+				fmt.Fprintln(stdout, line)
+			}
 		}
 	}
 	if line := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr); line != "" {

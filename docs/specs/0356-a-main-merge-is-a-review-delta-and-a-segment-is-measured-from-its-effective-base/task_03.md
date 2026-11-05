@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0356-a-main-merge-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -101,3 +101,33 @@ It answers point 2 of the Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 4; Success Metric 4
 - `_techspec.md` → Current behavior 5; API Contract 5; Surface Transcript 1; Surface Transcript 2; Invariant 5; Testing Approach; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Added the advisory `reviewLineageNotice` helper. It resolves the configured
+artifact location without creating it, reads the worktree's existing review
+record, resolves the default review base and delegates to `decideReviewLineage`.
+It returns the prescribed line only for a changed head with a restart reason;
+unsupported providers and read/Git failures return no notice.
+
+`deliver status` prints notices for parked and reviewing items in queue order,
+after warnings and before the owner line. `deliver retry` retains the queue's
+recorded item worktree before closing the store and prints its notice after
+`printDeliverRetryResult` in both the live-owner and replacement-owner paths,
+only when retry returns to reviewing.
+
+Focused evidence:
+
+- Before the implementation, `rtk proxy go test ./internal/cli -run 'TestDeliver(Status|Retry)NamesAReviewThatOpensANewLineage/rewritten_head$' -count=1 -timeout=3m` exited 1: both rewritten-head cases lacked the required `Review:` line while retaining exit 0 and empty stderr.
+- After the final code changes, `rtk proxy go test ./internal/cli -run 'TestDeliver(Status|Retry)|TestReviewLineageNoticeIsAdvisory' -count=1 -timeout=5m` exited 0 (`ok roundfix/internal/cli`, 3.059s).
+- Acceptance criterion 1: the new status and retry tests assert the full stdout, empty stderr and exit 0 for a rewritten head, including the exact restart reason. The retry test also covers the live-owner handoff; no additional reviewer prompt runs before owner startup.
+- Acceptance criterion 2: both command tests include a conflict-free default-branch merge and assert their full output without a `Review:` line.
+- Acceptance criterion 3: the focused run includes the existing status/retry transcript, warning, owner, park, usage, refusal and exit-code tests unchanged. The new retry test also confirms that returning to implementation prints no notice.
+- `TestReviewLineageNoticeIsAdvisory` covers codex and claude, unsupported providers, the same head, missing/non-Git worktrees, missing artifacts/records, malformed records and Git ancestry failure. It checks that the record remains unchanged, absent artifacts stay absent and no reviewer runs.
+- `rtk proxy git diff --check` exited 0. Inspection confirmed that the production diff is limited to the new notice helper and its status/retry integration; no review decision, delivery package, existing test, Task Graph or other Task was changed by this turn.
+
+Declared Verification and repository Verification were not run; the Daemon
+owns both Verification and Task settlement. The pre-existing `in_progress`
+status was preserved. No follow-up work was identified within this slice.
