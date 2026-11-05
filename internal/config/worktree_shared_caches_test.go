@@ -6,12 +6,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/gittest"
 )
 
 func TestWorktreeSharedCachesLoadsAndResolvesItsTemplate(t *testing.T) {
 	t.Parallel()
 	home, repo := t.TempDir(), t.TempDir()
-	mustMkdir(t, filepath.Join(repo, ".git"))
+	gittest.MarkRepository(t, repo)
 	mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), "worktree:\n  shared_caches:\n    - path: '{tmpdir}/roundfix-go-build-{uid}'\n      kind: go-build\n      max_size_mb: 20480\n      idle: 4h\n")
 	loaded, err := Load(LoadOptions{HomeDir: home, WorkDir: repo})
 	if err != nil {
@@ -62,7 +64,7 @@ func TestWorktreeSharedCachesRejectsAnUnsafeEntry(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			home, repo := t.TempDir(), t.TempDir()
-			mustMkdir(t, filepath.Join(repo, ".git"))
+			gittest.MarkRepository(t, repo)
 			mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  shared_caches:\n    - path: %q\n      kind: %s\n      max_size_mb: %s\n      idle: %s\n", tc.path, tc.kind, tc.limit, tc.idle))
 			_, err := Load(LoadOptions{HomeDir: home, WorkDir: repo})
 			if err == nil || !strings.Contains(err.Error(), "worktree.shared_caches") {

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/gittest"
 )
 
 func TestDeliveryCheckTimeoutIsReadFromUserConfig(t *testing.T) {
@@ -44,7 +46,7 @@ func TestProjectConfigCannotSetTheDeliveryCheckTimeout(t *testing.T) {
 		t.Run(value, func(t *testing.T) {
 			home, work := t.TempDir(), t.TempDir()
 			mustMkdir(t, filepath.Join(home, ".roundfix"))
-			mustMkdir(t, filepath.Join(work, ".git"))
+			gittest.MarkRepository(t, work)
 			mustWrite(t, filepath.Join(home, ".roundfix", "config.yml"), "delivery:\n  check_timeout: 45m\n")
 			mustWrite(t, filepath.Join(work, ".roundfixrc.yml"), "delivery:\n  check_timeout: "+value+"\n")
 			var stderr bytes.Buffer

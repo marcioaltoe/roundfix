@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit(t *testing.T) {
@@ -27,7 +29,7 @@ func TestWorktreeLocationRefusalNamesTheGitRootAndItsDotGit(t *testing.T) {
 			if test.gitFile {
 				mustWrite(t, filepath.Join(gitRoot, ".git"), "gitdir: "+t.TempDir()+"\n")
 			} else {
-				mustMkdir(t, filepath.Join(gitRoot, ".git"))
+				gittest.MarkRepository(t, gitRoot)
 			}
 			location := filepath.Join(gitRoot, ".roundfix", "worktrees")
 			if test.locationIsRoot {
@@ -75,7 +77,7 @@ func TestLoadWithOptionalWorktreeLocationReturnsTheRefusal(t *testing.T) {
 			if test.gitFile {
 				mustWrite(t, filepath.Join(gitRoot, ".git"), "gitdir: "+t.TempDir()+"\n")
 			} else {
-				mustMkdir(t, filepath.Join(gitRoot, ".git"))
+				gittest.MarkRepository(t, gitRoot)
 			}
 			userConfigPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 			mustMkdir(t, filepath.Dir(userConfigPath))

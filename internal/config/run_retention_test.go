@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestRunRetentionDaysDefaultsToThirty(t *testing.T) {
@@ -37,9 +39,7 @@ func TestRunRetentionDaysIsUserConfigOnly(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(home, ".roundfix"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Mkdir(filepath.Join(repo, ".git"), 0755); err != nil {
-		t.Fatal(err)
-	}
+	gittest.MarkRepository(t, repo)
 	if err := os.WriteFile(filepath.Join(home, ".roundfix", "config.yml"), []byte("store:\n  run_retention_days: 15\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -58,9 +58,7 @@ func TestRunRetentionDaysIsUserConfigOnly(t *testing.T) {
 
 func TestInitUserConfigCarriesRunRetentionDays(t *testing.T) {
 	home, repo := t.TempDir(), t.TempDir()
-	if err := os.Mkdir(filepath.Join(repo, ".git"), 0755); err != nil {
-		t.Fatal(err)
-	}
+	gittest.MarkRepository(t, repo)
 	for _, scope := range []string{InitScopeUser, InitScopeProject} {
 		result, err := Init(context.Background(), InitOptions{HomeDir: home, WorkDir: repo, Scope: scope})
 		if err != nil {

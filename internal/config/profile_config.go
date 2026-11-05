@@ -316,7 +316,7 @@ func profileConfigTarget(scope string, homeDir string, workDir string) (string, 
 	if normalizedScope == InitScopeUser {
 		return normalizedScope, filepath.Join(resolvedHome, userConfigRelPath), ProfileSourceUser, nil
 	}
-	gitRoot := findGitRoot(resolvedWork)
+	gitRoot := FindGitRoot(resolvedWork)
 	if gitRoot == "" {
 		return "", "", "", errors.New("project profiles configure requires a Git root; use --scope user outside a repository")
 	}

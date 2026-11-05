@@ -17,6 +17,7 @@ import (
 	"roundfix/internal/agent"
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/store"
 	"roundfix/skills"
 )
@@ -1471,7 +1472,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	setCommandEnvironmentForTest(t, homeDir, repoDir)
-	mustMkdir(t, filepath.Join(repoDir, ".git"))
+	gittest.MarkRepository(t, repoDir)
 	writeDoctorReadyRepositoryFixture(t, repoDir)
 	external, manifestOK, err := resolveExternalSkillRequirement(repoDir)
 	if err != nil {
@@ -1569,7 +1570,7 @@ func TestDoctorLeavesAnObsoleteLockEntryUntouched(t *testing.T) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	setCommandEnvironmentForTest(t, homeDir, repoDir)
-	mustMkdir(t, filepath.Join(repoDir, ".git"))
+	gittest.MarkRepository(t, repoDir)
 	writeDoctorReadyRepositoryFixture(t, repoDir)
 
 	lockPath := filepath.Join(repoDir, "skills-lock.json")

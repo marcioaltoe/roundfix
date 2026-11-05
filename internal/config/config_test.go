@@ -32,7 +32,7 @@ func TestLoadAppliesConfigPrecedence(t *testing.T) {
 	userWorktreeLocation := filepath.Join(homeDir, "configured-user-worktrees")
 	projectWorktreeLocation := filepath.Join(homeDir, "configured-project-worktrees")
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 defaults:
   agent: claude
@@ -204,7 +204,7 @@ pre_pr_review:
 			t.Parallel()
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if tt.userConfig != "" {
 				mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
@@ -288,7 +288,7 @@ pre_pr_review:
 			t.Parallel()
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.config)
 
 			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -345,7 +345,7 @@ func TestProjectConfigCannotRaiseTheRunCeiling(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), "runs:\n  max_active: 1\n")
 			mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), fmt.Sprintf("runs:\n  max_active: %d\n", projectMax))
 			var stderr bytes.Buffer
@@ -370,7 +370,7 @@ func TestProjectInitWritesNoRunCeiling(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 
 	projectResult, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeProject,
@@ -401,7 +401,7 @@ func TestProjectInitThenLoadWarnsNothing(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 
 	if _, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeProject,
@@ -498,7 +498,7 @@ func TestRenderedConfig(t *testing.T) {
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
 		mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		mustWrite(t, filepath.Join(homeDir, userConfigRelPath), content)
 
 		loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -593,7 +593,7 @@ func TestProfileResolverUsesAtomicProjectOverUserPrecedence(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 profiles:
   backend:
@@ -767,7 +767,7 @@ profiles:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
 
 			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -787,7 +787,7 @@ func TestAgentSelectionProfileDistinguishesMissingReasoningFromEmptyReasoning(t 
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 profiles:
   backend:
@@ -822,7 +822,7 @@ func TestProfileLegacyMigrationConvertsRuntimeDefaults(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 defaults:
   agent: claude
@@ -857,7 +857,7 @@ func TestProfileLegacyDefaultCodexKeepsDistinctBuiltInFallback(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
 runtimes:
   claude:
@@ -929,7 +929,7 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 			mustMkdir(t, filepath.Dir(configPath))
 			if err := os.WriteFile(configPath, input, 0o644); err != nil {
@@ -1072,7 +1072,7 @@ watch:
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 			mustMkdir(t, filepath.Dir(configPath))
 			mustWrite(t, configPath, tt.original)
@@ -1107,7 +1107,7 @@ artifact_dir: *backend_model
 `
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1183,7 +1183,7 @@ func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1238,7 +1238,7 @@ func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1335,7 +1335,7 @@ func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1387,7 +1387,7 @@ func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1426,7 +1426,7 @@ func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				homeDir := t.TempDir()
 				workDir := t.TempDir()
-				mustMkdir(t, filepath.Join(workDir, ".git"))
+				gittest.MarkRepository(t, workDir)
 				configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 				mustMkdir(t, filepath.Dir(configPath))
 				mustWrite(t, configPath, tt.content)
@@ -1477,7 +1477,7 @@ artifact_dir: *backend_model
 
 		homeDir := t.TempDir()
 		workDir := t.TempDir()
-		mustMkdir(t, filepath.Join(workDir, ".git"))
+		gittest.MarkRepository(t, workDir)
 		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 		mustMkdir(t, filepath.Dir(configPath))
 		mustWrite(t, configPath, original)
@@ -1680,7 +1680,7 @@ func TestProfileConfigAtomicWritesUserAndProjectProfiles(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 watch:
@@ -1752,7 +1752,7 @@ func TestProfileConfigAtomicDryRunAndFailuresLeaveBytesUnchanged(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
 	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1956,7 +1956,7 @@ func TestWriteProfilesConfigRejectsMultiDocumentConfigWithoutMutating(t *testing
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 	current := "watch:\n  max_rounds: 4\n---\nnotify:\n  enabled: false\n"
 	mustMkdir(t, filepath.Dir(configPath))
@@ -2056,7 +2056,7 @@ func TestLoadAppliesReviewRequestHierarchy(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if tt.userConfig != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2095,7 +2095,7 @@ func TestLoadRejectsNonBooleanReviewRequest(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), "review_source:\n  request_review: \"true\"\n")
 
 	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -2110,7 +2110,7 @@ func TestLoadRejectsProjectNullReviewRequestInsteadOfInheritingUserValue(t *test
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), "review_source:\n  request_review: true\n")
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), "review_source:\n  request_review: null\n")
 
@@ -2148,7 +2148,7 @@ func TestLoadAppliesReviewSourceIncludeNitpicksHierarchy(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if tt.userConfig != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2172,7 +2172,7 @@ func TestLoadAppliesRuntimeConfigHierarchy(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 runtimes:
   codex:
@@ -2281,7 +2281,7 @@ worktree:
 			userLocation := filepath.Join(homeDir, "user-worktrees")
 			projectLocation := filepath.Join(homeDir, "project-worktrees")
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				content := strings.ReplaceAll(tt.userConfig, "__USER_LOCATION__", userLocation)
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), content)
@@ -2349,7 +2349,7 @@ func TestLoadVerificationCapacityHierarchy(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if tt.userConfig != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2415,7 +2415,7 @@ logs:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2478,7 +2478,7 @@ notify:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2551,7 +2551,7 @@ store:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2635,7 +2635,7 @@ resolve:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2669,7 +2669,7 @@ func TestLoadWarnsAndIgnoresDeprecatedDefaultsModel(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 defaults:
   model: user-global-model
@@ -2737,7 +2737,7 @@ resolve:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			if strings.TrimSpace(tt.userConfig) != "" {
 				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
 			}
@@ -2793,7 +2793,7 @@ runtimes:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
 
 			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -2813,7 +2813,7 @@ func TestLoadRejectsUnknownStoreConfigKey(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 store:
   journal_ttl: 24h
@@ -2834,7 +2834,7 @@ func TestLoadRejectsUnknownWorktreeConfigKey(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 worktree:
   bootstrapp: make setup
@@ -2855,7 +2855,7 @@ func TestLoadRejectsUnknownNotifyConfigKey(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 notify:
   channel: desktop
@@ -2996,7 +2996,7 @@ specs:
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
 
 			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -3050,7 +3050,7 @@ func TestValidateVerificationCapacity(t *testing.T) {
 			homeDir := t.TempDir()
 			workDir := t.TempDir()
 			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-			mustMkdir(t, filepath.Join(workDir, ".git"))
+			gittest.MarkRepository(t, workDir)
 			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
 
 			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -3069,7 +3069,7 @@ func TestLoadRejectsWorktreeLocationInsideRepository(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 worktree:
   location: `+filepath.Join(workDir, ".roundfix", "worktrees")+`
@@ -3090,7 +3090,7 @@ func TestLoadExpandsWorktreeLocationHome(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 worktree:
   location: ~/roundfix-worktrees
@@ -3110,7 +3110,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 
 	result, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeUser,
@@ -3157,7 +3157,7 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 
 	result, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeProject,
@@ -3214,7 +3214,7 @@ func TestInitCreatesProjectConfig(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 
 	result, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeProject,
@@ -3252,7 +3252,7 @@ func TestInitDoesNotOverwriteWithoutForce(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	path := filepath.Join(workDir, ".roundfixrc.yml")
 	mustWrite(t, path, "defaults:\n  agent: claude\n")
 
@@ -3276,7 +3276,7 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(workDir, ".git"))
+	gittest.MarkRepository(t, workDir)
 	path := filepath.Join(workDir, ".roundfixrc.yml")
 	mustWrite(t, path, "defaults:\n  agent: claude\n")
 
@@ -3548,7 +3548,7 @@ func TestResolveSpecsRootUsesLoadedDefault(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
 	repoRoot := t.TempDir()
-	mustMkdir(t, filepath.Join(repoRoot, ".git"))
+	gittest.MarkRepository(t, repoRoot)
 	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs"))
 
 	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: repoRoot})

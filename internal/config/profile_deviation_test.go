@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 const deviationProfile = `profiles:
@@ -22,7 +24,7 @@ const validDeviation = `    deviation:
 func deviationWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	home, repo := t.TempDir(), t.TempDir()
-	mustMkdir(t, filepath.Join(repo, ".git"))
+	gittest.MarkRepository(t, repo)
 	mustMkdir(t, filepath.Join(home, ".roundfix"))
 	return home, repo
 }

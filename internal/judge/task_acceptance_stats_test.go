@@ -17,6 +17,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/runcause"
 )
 
@@ -335,9 +336,7 @@ func acceptanceFixtureRepo(t *testing.T) string {
 		t.Fatal(err)
 	}
 	// Isolate Project Config discovery from the checkout's own configuration.
-	if err := os.Mkdir(filepath.Join(repo, ".git"), 0700); err != nil {
-		t.Fatal(err)
-	}
+	gittest.MarkRepository(t, repo)
 	return repo
 }
 func TestTaskAcceptanceRecordIsConsistent(t *testing.T) {

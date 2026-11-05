@@ -887,7 +887,7 @@ func Load(opts LoadOptions) (Loaded, error) {
 
 	loaded := Loaded{
 		Config:         Builtin(),
-		GitRoot:        findGitRoot(workDir),
+		GitRoot:        FindGitRoot(workDir),
 		HomeDir:        homeDir,
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
@@ -961,7 +961,7 @@ func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
 
 	path := filepath.Join(homeDir, userConfigRelPath)
 	if scope == InitScopeProject {
-		gitRoot := findGitRoot(workDir)
+		gitRoot := FindGitRoot(workDir)
 		if gitRoot == "" {
 			return InitResult{}, errors.New("project init requires a Git root; use --scope user outside a repository")
 		}
@@ -2163,10 +2163,12 @@ func resolveWorkDir(workDir string) (string, error) {
 	return resolved, nil
 }
 
-func findGitRoot(start string) string {
+// FindGitRoot returns the nearest directory at or above start whose .git
+// entry Git accepts (ADR-0362), or "" when there is none.
+func FindGitRoot(start string) string {
 	current := filepath.Clean(start)
 	for {
-		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+		if gitEntryAccepted(filepath.Join(current, ".git")) {
 			return current
 		}
 		parent := filepath.Dir(current)
@@ -2175,6 +2177,71 @@ func findGitRoot(start string) string {
 		}
 		current = parent
 	}
+}
+
+// gitEntryAccepted reports whether path, a .git entry, is a directory that
+// passes Git's repository test or a regular file starting with "gitdir:".
+func gitEntryAccepted(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	if info.Mode().IsRegular() {
+		content, err := os.ReadFile(path)
+		return err == nil && bytes.HasPrefix(content, []byte("gitdir:"))
+	}
+	if !info.IsDir() {
+		return false
+	}
+
+	head := filepath.Join(path, "HEAD")
+	headInfo, err := os.Lstat(head)
+	if err != nil {
+		return false
+	}
+	validHead := false
+	if headInfo.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(head)
+		validHead = err == nil && strings.HasPrefix(target, "refs/")
+	} else if headInfo.Mode().IsRegular() {
+		content, err := os.ReadFile(head)
+		if err != nil {
+			return false
+		}
+		if rest, ok := strings.CutPrefix(string(content), "ref:"); ok {
+			validHead = strings.HasPrefix(strings.TrimLeft(rest, " \t\r\n\v\f"), "refs/")
+		} else {
+			digits := 0
+			for _, char := range content {
+				if !('0' <= char && char <= '9' || 'a' <= char && char <= 'f' || 'A' <= char && char <= 'F') {
+					break
+				}
+				digits++
+			}
+			validHead = digits == 40 || digits == 64
+		}
+	}
+	if !validHead {
+		return false
+	}
+
+	common := path
+	content, err := os.ReadFile(filepath.Join(path, "commondir"))
+	if err == nil {
+		common = strings.TrimSpace(string(content))
+		if !filepath.IsAbs(common) {
+			common = filepath.Join(path, common)
+		}
+	} else if !os.IsNotExist(err) {
+		return false
+	}
+	for _, name := range []string{"objects", "refs"} {
+		info, err := os.Stat(filepath.Join(common, name))
+		if err != nil || !info.IsDir() {
+			return false
+		}
+	}
+	return true
 }
 
 func expandHome(path string, homeDir string) (string, error) {

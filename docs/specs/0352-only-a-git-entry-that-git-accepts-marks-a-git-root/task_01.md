@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0352-only-a-git-entry-that-git-accepts-marks-a-git-root
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -147,3 +147,38 @@ report of 2026-11-05, adopted as
 
 - `_prd.md` → Goals; Core Features 1-4; Success Metric 2; Success Metric 3; Success Metric 5
 - `_techspec.md` → Current behavior 1 and 5; API Contracts 1-5; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-cli, golang-error-handling, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+Implemented the assigned slice; Task status and settlement remain Daemon-owned.
+
+- Acceptance 1: `FindGitRoot` and `gitEntryAccepted` implement API Contracts 1 and 2 using filesystem reads only. `Load`, `Init` and `profileConfigTarget` share the exported walk. The acceptance test covers every authored shape, plus symlink HEAD, whitespace after `ref:`, short detached HEAD, invalid ref paths, non-file HEAD, absent/non-directory objects and refs, absolute commondir and symlinked `.git`. Rejected inner entries are also checked beneath an accepted ancestor.
+- Acceptance 2: the Git oracle passes for all 12 authored rows where Git answers the discovery question, plus 10 additional compatible edge shapes. It uses `gittest.IsolatedEnv`, a ceiling at the parent of the physical base and physical-path comparison. The two authored gitfile error cases are tested by the acceptance test and excluded from the oracle as specified.
+- Acceptance 3: the initial focused regression failed because `Load` treated temporary `.git/{gk,info}` as a Git root and refused the default worktree location. After the change, `TestLoadUnderARejectedGitDirectoryFindsNoGitRoot` passes: no Git root or Project Config path, the default home worktree location, both exact project-scope refusal strings, and no Project Config written at the rejected root. Inspection confirms `ResolveWorktreeLocation`, `repositoryRootMetadata` and `internal/cli/cli.go` remain unchanged.
+- Acceptance 4: `gittest.MarkRepository` creates the required HEAD, objects and refs with fatal error handling. All 82 declared empty-marker fixtures in 21 existing test files now use it, including the Spec 0347 directory rows. Existing test names and assertions are unchanged. `fakeWorktree.Snapshot` writes its reported source file under the received work directory and returns filesystem errors with context. Focused consumer checks pass; the complete consumer suites are reserved for Daemon Verification.
+- Acceptance 5: the configuration guide differs from HEAD only by the exact API Contract 5 sentence replacement. The sanctioned recorder passes and changes only that guide's fingerprint in the Behavior Surface Record. The recorder is rerun after this Result as the final implementation step; no generated record was hand-edited.
+
+Focused checks (all exited 0 after the final code edits):
+
+```sh
+go test -count=1 ./internal/config -run '^(TestFindGitRoot|TestLoadUnderARejected|TestLoadApplies|TestProjectInit|TestInit|TestProfileConfig|TestProfilesConfig|TestProfilesConfigure|TestWorktreeLocation|TestLoadWithOptional|TestRunRetention|TestWorktreeShared|TestWorktreeCaches|TestSettlement|TestSecondbrain|TestReviewSource|TestRunSlotWait|TestDeliveryCheck|TestJev|TestPrePRReview)'
+go test -count=1 ./internal/cli -run '^(TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly|TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal|TestRunResolveProcessesAllBatchesBeforeFinalPush|TestWatchFinalPushRunsOncePerCleanRoundThroughEngine|TestAttachRendersWatchDaemonEventsInTimeline|TestRunOperationalCommandAcceptsMVPFlags|TestReadOnlyRunCommands.*|TestStrayGitDirectoryTranscripts|TestRunRunsList.*|TestRunsListOutsideARepositoryTranscript)$'
+go test -count=1 ./internal/judge -run '^(TestTaskAcceptanceResolvesConfiguredAndArchivedRoot|TestTaskAcceptanceRecordIsConsistent)$'
+go test -count=1 ./internal/gittest -run '^TestInitRepo'
+go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+git diff --check
+```
+
+A read-only scope/fixture inspection also confirmed that every changed path belongs to this Task, fixture edits are limited to marker/import replacements plus the declared fake-worktree repair, and the guide contains no other changes.
+
+Follow-up observation outside the authored shape table: an exploratory 65-hex-digit HEAD was accepted by the installed Git, whereas API Contract 1 explicitly requires a run of exactly 40 or 64 digits. The implementation retains that explicit contract; the oracle evidence above is bounded to the authored rows and the compatible extra shapes, not every possible malformed HEAD. No behavior outside this Task was changed for that observation.
+
+Not run: the Task's declared Verification commands, `make verify`, `make verify-changed`, and full consumer/documentation suites; the Daemon owns them. No commit, push, Pull Request, Task status edit, Task Graph edit or other Task edit was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T105803Z_8c2fa84cfd81bb6f`
+- Source commit: `c9c7126c632cfdcfd5d047c6c40660b8dd2e8d1c`
