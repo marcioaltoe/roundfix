@@ -238,7 +238,7 @@ A Task appended to an active Spec's Task Graph, before its QA gate, to fix a fin
 _Avoid_: Corrective Spec, follow-up Task
 
 **Cause Class**:
-The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, never by a model judgment ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md)).
+The one class from a closed list that `roundfix runs causes` assigns to a failed Verification attempt or a Corrective Task: `scope-or-authorization`, `shared-section-contract`, `repository-convention`, `implementation-defect` or `environment`, or `unclassified` when no signature matches. It is assigned by signature, or by kind for a `secret-scan` item, never by a model judgment ([ADR-0214](docs/adr/0214-why-a-verification-failed-is-classified-by-deterministic-signatures.md), [ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
 _Avoid_: failure category, root cause, model verdict
 
 **Classification Signature**:
@@ -688,7 +688,7 @@ The failure diagnostics returned to an Agent Session after the Daemon runs Verif
 _Avoid_: Full verification output, test log, progress stream
 
 **Settlement Check**:
-A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph, with or without a QA gate. The repository Verification at settlement runs with or without a QA gate; the two in-process checks run only with one. The checks cover the Spec Consistency Check, the repository Verification at settlement, and authorization of the prospective Task commit.
+A gate fact the Daemon checks for a non-QA Task before it settles in a Task Graph, with or without a QA gate. The repository Verification at settlement and the Task commit's Secret Scan run with or without a QA gate; the two in-process checks run only with one. The checks cover the Spec Consistency Check, the repository Verification at settlement, authorization of the prospective Task commit and its Secret Scan, which runs last in every attempt ([ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
 _Avoid_: QA settlement, archive check, post-Run check
 
 **Repeated Failure**:
@@ -1128,7 +1128,7 @@ A rewritten head of an archived item parked `secret-found`, bounded by its Run s
 _Avoid_: Post-archive correction, reset, arbitrary history rewrite
 
 **Secret Scan**:
-A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)).
+A check of the lines a Task commit would add, the files a QA Report commit would stage and the commits a Roundfix push would send; it refuses on a Secret Match ([ADR-0273](docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md), [ADR-0292](docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md)). The Task commit's scan runs as the last Settlement Check of every Verification attempt, so a first-attempt Secret Match returns as Verification Feedback ([ADR-0361](docs/adr/0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md)).
 _Avoid_: Redaction, post-push scan, advisory check
 
 **Archive Command**:

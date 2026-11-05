@@ -218,12 +218,17 @@ the largest carriable Task set, breaking ties with the newest Run.
    discards its unintegrated commits, so it is a destructive Git operation that
    needs the maintainer's authority; a refusal never needs it.
 
-   Before each Task settles, the Secret Scan reads the lines each Task commit
-   adds relative to `HEAD`. A Secret Match settles the Task `failed` with
-   `Task commit carries a secret: <path>:<line>: <kind>` and creates no Task
-   commit. The reason and the `secret_scan` event carry only path, line and
-   kind; the Task's changes stay in the Run Worktree. A Git or read error
-   halts the Run as an infrastructure failure.
+   In every Verification attempt, after the Settlement Checks,
+   `settlement check: secret scan` reads the lines the Task commit would add
+   relative to `HEAD`. A Secret Match fails the attempt with `Task commit
+   carries a secret: <path>:<line>: <kind>` and a `Fix:` line, so a match on
+   the first attempt returns as Verification Feedback for the one repair turn
+   and the second attempt scans again. A match on the final attempt settles
+   the Task `failed` with that reason and creates no Task commit. The
+   diagnostic, the prompt, the reason and the `secret_scan` event, which names
+   its attempt, carry only path, line and kind; the Task's changes stay in the
+   Run Worktree. A Git or read error halts the Run as an infrastructure
+   failure.
 
    The QA Report commit boundary also runs the Secret Scan over the files the
    commit would stage. A Secret Match refuses the commit with `QA evidence

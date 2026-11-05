@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.183
+  version: 0.1.185
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.183
+version: 0.1.185
 ---
 
 # Roundfix
@@ -223,28 +223,25 @@ synchronization, or build failure blocks settlement.
 ### Settlement Checks
 
 Settlement Checks apply to every non-QA Task in a Task Graph, with or without a
-QA gate. The repository Verification runs for every such Task. The two
-in-process checks run only in a graph with an authored QA gate Task. A Run
-without a QA gate also runs the Integrated Repository Verification under the
-conditions in API Contract 5 and ends `Unresolved` with the API Contract 6
-failure line when it fails. They run in this order when the Daemon settles the
-Task:
+QA gate: the repository Verification and the secret scan always, the two
+in-process checks only with an authored QA gate Task. A Run without a QA gate
+also runs the Integrated Repository Verification under API Contract 5 and ends
+`Unresolved` with the API Contract 6 failure line when it fails. Each attempt
+runs them after its commands, whatever their result, in this order:
 
-1. The repository Verification runs at settlement as the attempt's last
-   command when `verification.repository_at_settlement` is enabled.
-2. `settlement check: spec consistency` checks for new Spec Consistency
-   findings in the Task's tree.
-3. `settlement check: authorization` checks the prospective Task commit
-   against the frozen authorization record.
-
-Both in-process checks run after the attempt's commands, whatever their
-result, and before the attempt's verdict, only when the graph has an authored
-QA gate.
+1. The repository Verification, as the attempt's last command, when
+   `verification.repository_at_settlement` is enabled.
+2. `settlement check: spec consistency`: new Spec Consistency findings.
+3. `settlement check: authorization`: the prospective Task commit against the
+   frozen authorization record.
+4. `settlement check: secret scan`: the lines that commit would add.
 
 A failed check returns its diagnostics as Verification Feedback for the one
-repair turn. If the final attempt still fails, the Task settles `failed`. The
-`verification.repository_at_settlement` switch turns off only the repository
-Verification at settlement; it does not turn off either in-process check.
+repair turn; a Secret Match names path, line and kind, never the value. If the
+final attempt still fails, the Task settles `failed`, a final Secret Match with
+`Task commit carries a secret: <path>:<line>: <kind>`; a scan error halts the
+Run. The `verification.repository_at_settlement` switch turns off only the
+repository Verification at settlement.
 
 The checks inspect one Task's tree. In a parallel Wave, they do not include
 changes from sibling Tasks that have not been integrated into that tree. A

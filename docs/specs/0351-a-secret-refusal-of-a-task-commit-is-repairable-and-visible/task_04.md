@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -179,3 +179,35 @@ decision. This answers the report reported by fiscus on 2026-11-04
 
 - `_prd.md` → Goals; Core Feature 6; Success Metric 6; Glossary
 - `_techspec.md` → API Contract 10; ADR-0361; Build Order 4
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implemented the documented settlement contract: the canonical Roundfix skill
+now puts the Task commit Secret Scan last in every attempt; Implement documents
+the one repair turn and second scan; Runs documents `secret-scan` Causes items;
+Deliver references document the detailed `run-unresolved` park; `CONTEXT.md`
+defines the updated Settlement Check, Secret Scan and Cause Class; and ADR-0361
+records the decision with its lifecycle overlay. `make skills-sync` copied the
+canonical skill and references to the mirrors, and the sanctioned skill-version
+recorder raised both Roundfix version fields and updated its record.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed (`roundfix/skills`, 0.505s) after the final skill edit.
+- `git diff --check`: passed.
+- Skill entry size: 19943 bytes for both canonical and mirror, under the 20000-byte budget.
+- SHA-256 checks for the four canonical/mirror skill files matched pairwise.
+- Stale-wording sweep: `.agents/skills/roundfix/SKILL.md` had the old three-check settlement list and changed; `skills/roundfix/SKILL.md` received that change through sync. `.agents/skills/roundfix/references/implement.md` and `docs/user-guide/commands/implement.md` had the post-attempt Secret Scan wording and changed; the mirror reference received it through sync. `.agents/skills/roundfix/references/runs.md`, `skills/roundfix/references/runs.md` and `docs/user-guide/commands/runs.md` lacked the secret-refusal Causes item and changed. `.agents/skills/roundfix/references/deliver.md` lacked task_03's park paragraph and changed; its mirror received it through sync. `docs/user-guide/commands/deliver.md` already had that paragraph and was unchanged. The old hits in `CONTEXT.md` were the three glossary definitions and all changed; no stale hit remained in `docs/agents/` or elsewhere in the searched skill trees.
+- No Go file, Makefile, workflow, `go.mod` or `go.sum` changed; the assigned Task file retains `status: in_progress`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed (`roundfix/internal/docscontract`, 0.435s); this re-recorded `docs/references/behavior-surfaces.json` after the final guide/reference edit.
+
+The declared Task Verification commands, including the full skills and
+`docscontract` suites, were not run because this is a Daemon-assigned turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T015847Z_709cb0723a1fbaae`
+- Source commit: `8151c5827b1e2982b4479002ca1c9bf94f4ce35f`
