@@ -1,0 +1,13 @@
+diff --git a/internal/cli/deliver_turn.go b/internal/cli/deliver_turn.go
+index f970714..1c93dd4 100644
+--- a/internal/cli/deliver_turn.go
++++ b/internal/cli/deliver_turn.go
+@@ -99,7 +99,7 @@ func printDeliveryTurns(loaded roundconfig.Loaded, queue store.DeliveryQueue, st
+ 		fmt.Fprintf(stderr, "roundfix: Delivery Queue turn record %s could not be read: %v\n", path, err)
+ 		return
+ 	}
+-	if record.OwnerPID != queue.OwnerPID || record.OwnerIdentity != queue.OwnerIdentity {
++	if record.OwnerPID != queue.OwnerPID {
+ 		return
+ 	}
+ 	for _, line := range delivery.TurnLines(queue, record.Turn) {

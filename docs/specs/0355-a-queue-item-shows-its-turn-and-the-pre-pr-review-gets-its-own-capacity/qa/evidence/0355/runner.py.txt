@@ -1,0 +1,30 @@
+import os, subprocess, tempfile, shutil, re, json, sys
+from pathlib import Path
+ROOT=Path.cwd()
+SPEC=ROOT/'docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity'
+REPORT=SPEC/'qa/qa-report-2026-11-05.md'
+E=SPEC/'qa/evidence/0355'
+def run(args,name,cwd=ROOT,env=None,timeout=2000):
+ p=subprocess.run(args,cwd=cwd,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=timeout)
+ text='command: '+ ' '.join(args)+'\n'+p.stdout+'\nexit: '+str(p.returncode)+'\n'
+ (E/(name+'.txt')).write_text(text)
+ print(name+': exit '+str(p.returncode)+', passes '+str(len(re.findall(r'--- PASS:',p.stdout)))+', skips '+str(len(re.findall(r'--- SKIP:',p.stdout))),flush=True)
+ return p
+def result(row,status,note):
+ s=REPORT.read_text();s=re.sub(r'(\| '+re.escape(row)+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],s,count=1)
+ marker='### '+row+'\n'; a=s.index(marker);b=s.find('\n### ',a+len(marker));b=len(s) if b<0 else b
+ part=s[a:b];part=part.replace('Observation: pending.','Observation: '+note)
+ REPORT.write_text(s[:a]+part+s[b:])
+def public(args,name,cwd=ROOT,config=None):
+ e=os.environ.copy()
+ for key in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']: e.pop(key,None)
+ for key in ['GOMODCACHE','GOCACHE']: e[key]=subprocess.check_output(['go','env',key],text=True).strip()
+ with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+  e.update(HOME=h,TMPDIR=t)
+  if config is not None:
+   d=Path(h)/'.roundfix';d.mkdir();(d/'config.yml').write_text(config)
+  binary=ROOT/'bin/roundfix'
+  p=subprocess.run([str(binary)]+args,cwd=cwd,env=e,text=True,capture_output=True,timeout=180)
+  (E/(name+'.txt')).write_text('command: ./bin/roundfix '+' '.join(args)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n')
+  print(name+': exit '+str(p.returncode),flush=True)
+  return p

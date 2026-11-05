@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 3m -v -run ^TestAQueuedItemWaitsForAnEarlierItemInReview$/^an_earlier_blocker_ends_during_the_pass$ ./internal/delivery
+=== RUN   TestAQueuedItemWaitsForAnEarlierItemInReview
+=== PAUSE TestAQueuedItemWaitsForAnEarlierItemInReview
+=== CONT  TestAQueuedItemWaitsForAnEarlierItemInReview
+=== RUN   TestAQueuedItemWaitsForAnEarlierItemInReview/an_earlier_blocker_ends_during_the_pass
+    review_slots_test.go:190: queued start order after earlier park = [first:create first:run first:review first:review-end third:create third:run third:review third:review-end second:create second:run third:archive second:review second:review-end third:gate third:publication third:push third:pull-request third:checks third:merge second:archive second:gate second:publication second:push second:pull-request second:checks second:merge]
+--- FAIL: TestAQueuedItemWaitsForAnEarlierItemInReview (0.03s)
+    --- FAIL: TestAQueuedItemWaitsForAnEarlierItemInReview/an_earlier_blocker_ends_during_the_pass (0.02s)
+FAIL
+suiteguard: guard cost: measured 2975 paths; fingerprint took 138.323042ms before and 136.120084ms after
+FAIL	roundfix/internal/delivery	0.600s
+FAIL
+
+exit: 1

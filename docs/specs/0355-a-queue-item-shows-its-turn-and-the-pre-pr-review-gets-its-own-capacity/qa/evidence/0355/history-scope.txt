@@ -1,0 +1,64 @@
+8c65edce1f35f0cb0ded847eae65613ee6f7b52e docs: aDR-0365, CONTEXT.md, the Roundfix deliver reference and the guides state the behavior -> task_01
+  .agents/skills/roundfix/SKILL.md
+  .agents/skills/roundfix/references/deliver.md
+  CONTEXT.md
+  docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md
+  docs/references/behavior-surfaces.json
+  docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/task_01.md
+  docs/user-guide/commands/deliver.md
+  docs/user-guide/configuration.md
+  skills/roundfix/SKILL.md
+  skills/roundfix/references/deliver.md
+  skills/testdata/owned-skill-versions.json
+  outside declarations: none
+
+c922d481903c0b14a456b0421e29e5913d67b72b docs: 0355 task_02 updates the 0356 lineage test and re-records the surface record -> task_02
+  docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/task_02.md
+  outside declarations: none
+
+2686b64222ac1188aefd76fe442a1b434f86aad9 feat: delivery.review_concurrency sets the Review Capacity, and the Limits line prints it -> task_02
+  docs/references/behavior-surfaces.json
+  docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/task_02.md
+  internal/cli/deliver.go
+  internal/cli/deliver_lane_skip_visible_test.go
+  internal/cli/deliver_limits_test.go
+  internal/cli/deliver_owner_status_test.go
+  internal/cli/deliver_park_status_test.go
+  internal/cli/deliver_revalidate_test.go
+  internal/cli/deliver_review_lineage_notice_test.go
+  internal/cli/deliver_run_slot_wait_test.go
+  internal/cli/deliver_run_unresolved_park_test.go
+  internal/cli/deliver_test.go
+  internal/cli/deliver_token_ceiling_test.go
+  internal/cli/deliver_usage_test.go
+  internal/config/config.go
+  internal/config/delivery_review_concurrency_test.go
+  outside declarations: none
+
+7e0ff1724a4bf6d26e7dad3b9120cd72179c978e feat: the Queue Owner reviews items in review slots beside its one item, and keeps the start order -> task_03
+  docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/task_03.md
+  internal/cli/deliver_review_capacity_test.go
+  internal/cli/deliver_workflow.go
+  internal/delivery/engine.go
+  internal/delivery/review_slots.go
+  internal/delivery/review_slots_test.go
+  outside declarations: none
+
+bafcf44d026c16db59f71889bd95b56b9ea05484 feat: the owner records each item's Queue Turn, and deliver status prints the Turn lines -> task_04
+  docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/task_04.md
+  internal/cli/deliver.go
+  internal/cli/deliver_turn.go
+  internal/cli/deliver_turn_test.go
+  internal/cli/deliver_workflow.go
+  internal/delivery/engine.go
+  internal/delivery/turn.go
+  internal/delivery/turn_test.go
+  outside declarations: none
+
+GovernedPath actual probe: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/deliver.md, skills/roundfix/SKILL.md; all bounded by the operative grant at Delivery Base, in ancestry before consumption.
+
+Mechanical authorization audit already audited task_01, with granted outcome; no redundant command authorization audit for that Task. All Task path sets were still checked as Requirement 12 requires.
+
+Protected exclusions unchanged. QA settlement sections byte-identical. Current delta: ?? docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity/qa/
+
+Violations: []

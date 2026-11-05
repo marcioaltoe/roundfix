@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 3m -v -run ^TestDeliverLimitsNameTheReviewConcurrency$ ./internal/cli
+=== RUN   TestDeliverLimitsNameTheReviewConcurrency
+=== PAUSE TestDeliverLimitsNameTheReviewConcurrency
+=== CONT  TestDeliverLimitsNameTheReviewConcurrency
+    deliver_limits_test.go:101: deliver start exit=0 stderr="" stdout="Limits: deadline none, retries per item none, concurrency 1, tokens none\n", want "Limits: deadline none, retries per item none, concurrency 1, review concurrency 3, tokens none\n"
+--- FAIL: TestDeliverLimitsNameTheReviewConcurrency (0.13s)
+FAIL
+suiteguard: guard cost: measured 2975 paths; fingerprint took 151.64125ms before and 138.454333ms after
+FAIL	roundfix/internal/cli	0.865s
+FAIL
+
+exit: 1

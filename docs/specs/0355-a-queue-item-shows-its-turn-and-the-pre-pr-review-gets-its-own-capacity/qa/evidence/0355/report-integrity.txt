@@ -1,0 +1,6 @@
+command: go run ./qa0355integrity /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity-d3320e583ff513e8-d07cb58e-d43429a8/run_20261105T221512Z_204b53882edf3f96/docs/specs/0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
+ReadQAReport + QAReportEligibility: qualifying partial
+All evidence links resolve; integrity output itself is materialized immediately after this command.
+Scanned 52 QA text artifacts with product Secret Patterns: 0 matches
+
+exit: 0

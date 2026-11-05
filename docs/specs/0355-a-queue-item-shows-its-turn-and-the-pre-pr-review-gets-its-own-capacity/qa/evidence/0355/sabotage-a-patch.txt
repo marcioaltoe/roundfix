@@ -1,0 +1,27 @@
+diff --git a/internal/delivery/engine.go b/internal/delivery/engine.go
+index 97eeb6b..2f070c2 100644
+--- a/internal/delivery/engine.go
++++ b/internal/delivery/engine.go
+@@ -1206,8 +1206,7 @@ func (engine *Engine) advanceStages(ctx context.Context, gitRoot string, item *s
+ 				return err
+ 			}
+ 		case store.DeliveryStageReviewing:
+-			engine.reviewSlots.take(*item)
+-			return nil
++			if err := engine.reviewCandidate(ctx, gitRoot, item); err != nil { return err }
+ 		case store.DeliveryStageArchiving:
+ 			if err := engine.archiveCandidate(ctx, gitRoot, item); err != nil {
+ 				return err
+diff --git a/internal/delivery/review_slots.go b/internal/delivery/review_slots.go
+index f9b54d9..a696686 100644
+--- a/internal/delivery/review_slots.go
++++ b/internal/delivery/review_slots.go
+@@ -63,7 +63,7 @@ func (slots *reviewSlots) start(ctx context.Context) {
+ 			case <-slots.ctx.Done():
+ 				return
+ 			case <-ticker.C:
+-				slots.poll()
++				// inline review: no independent poll admission
+ 			}
+ 		}
+ 	}()

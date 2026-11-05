@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 3m -v -run ^TestDeliverStatusIgnoresATurnRecordOfAnotherOwner$/^other_identity$ ./internal/cli
+=== RUN   TestDeliverStatusIgnoresATurnRecordOfAnotherOwner
+=== PAUSE TestDeliverStatusIgnoresATurnRecordOfAnotherOwner
+=== CONT  TestDeliverStatusIgnoresATurnRecordOfAnotherOwner
+=== RUN   TestDeliverStatusIgnoresATurnRecordOfAnotherOwner/other_identity
+=== PAUSE TestDeliverStatusIgnoresATurnRecordOfAnotherOwner/other_identity
+=== CONT  TestDeliverStatusIgnoresATurnRecordOfAnotherOwner/other_identity
+    deliver_turn_test.go:172: exit=0 stdout="0300-example\tchecking\t-\t-\nTurn: 0300-example advancing at checking\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n" stderr=""
+--- FAIL: TestDeliverStatusIgnoresATurnRecordOfAnotherOwner (0.00s)
+    --- FAIL: TestDeliverStatusIgnoresATurnRecordOfAnotherOwner/other_identity (0.04s)
+FAIL
+suiteguard: guard cost: measured 2975 paths; fingerprint took 148.072167ms before and 143.258542ms after
+FAIL	roundfix/internal/cli	0.778s
+FAIL
+
+exit: 1

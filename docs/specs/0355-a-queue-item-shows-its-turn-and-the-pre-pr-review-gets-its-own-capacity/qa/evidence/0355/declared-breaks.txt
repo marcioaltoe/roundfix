@@ -1,0 +1,20 @@
+Delivery Base f0db7127fc7e4325e905cbf46099a471174e9bb8; head bafcf44d026c16db59f71889bd95b56b9ea05484
+214 existing delivery top-level test bodies unchanged.
+TestDeliverStatusShowsTheLaneEnvironmentSkipTranscript: only expected Limits insertion
+TestDeliverStartRecordsAndPrintsItsLimits: only expected Limits insertion
+TestDeliverStartRecordsNoneForOmittedLimits: only expected Limits insertion
+TestDeliverStatusPrintsOwnerAfterWarningsAndBeforeParks: only expected Limits insertion
+assertDeliveryOwnerStatus: only expected Limits insertion
+TestDeliverStatusPrintsAParkLinePerParkedItem: only expected Limits insertion
+TestDeliverStatusReproducesSurfaceTranscriptOne: only expected Limits insertion
+TestDeliverStatusPrintsAnItemWarning: only expected Limits insertion
+TestDeliverStatusPrintsNoWarningLineWithoutAWarning: only expected Limits insertion
+TestDeliverStatusNamesAReviewThatOpensANewLineage: only expected Limits insertion (task_02 Requirement 6 carries the Spec 0356 lineage consumer)
+TestDeliverStatusShowsARunSlotWaitTranscript: only expected Limits insertion
+TestDeliverStatusNamesTheSecretRefusalOfARunUnresolvedPark: only expected Limits insertion
+TestDeliverStatusPrintsTheItemWorktree: only expected Limits insertion
+TestDeliverStartRecordsAndPrintsTheTokenCeiling: only expected Limits insertion
+TestDeliverStatusPrintsTheTokenCeilingQuestion: only expected Limits insertion
+TestDeliverStartPrintsTokensNone: only expected Limits insertion
+TestDeliverStatusPrintsNoRunsRecorded: only expected Limits insertion
+TestDeliverStatusPrintsTheUsageLine: only expected Limits insertion

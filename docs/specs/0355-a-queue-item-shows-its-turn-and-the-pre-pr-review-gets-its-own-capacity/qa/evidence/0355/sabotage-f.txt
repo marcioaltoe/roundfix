@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 3m -v -run ^TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing$ ./internal/delivery
+=== RUN   TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+=== PAUSE TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+=== CONT  TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+    review_slots_test.go:283: cancelled review = {SpecSlug:stopping Position:0 Stage:parked Blocker:delivery-error: run pre-PR review: context canceled Branch:roundfix/deliver-stopping Worktree:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing2412070091/001/stopping WorktreeProvisioned:true RunID: CandidateCommits:[reviewed-stopping] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}, want reviewing without blocker
+--- FAIL: TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing (0.01s)
+FAIL
+suiteguard: guard cost: measured 2975 paths; fingerprint took 144.917125ms before and 136.712416ms after
+FAIL	roundfix/internal/delivery	0.585s
+FAIL
+
+exit: 1

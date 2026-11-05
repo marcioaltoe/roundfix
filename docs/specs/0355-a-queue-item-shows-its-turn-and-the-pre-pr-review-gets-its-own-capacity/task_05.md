@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0355-a-queue-item-shows-its-turn-and-the-pre-pr-review-gets-its-own-capacity
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

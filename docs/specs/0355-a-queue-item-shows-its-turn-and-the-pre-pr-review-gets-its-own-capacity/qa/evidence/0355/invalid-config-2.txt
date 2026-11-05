@@ -1,0 +1,14 @@
+command: ./bin/roundfix deliver status
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  delivery.review_concurrency must be greater than 0
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix deliver status --help' for usage.
+exit: 2

@@ -1,0 +1,98 @@
+import sys,tarfile,io
+sys.path.insert(0,'/tmp');from qa0355 import *
+BASE=subprocess.check_output(['git','merge-base','HEAD','main'],text=True).strip();HEAD=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+# Exact function bodies from Go parser, not a regular-expression body matcher.
+with tempfile.TemporaryDirectory(prefix='qa0355-old-') as d:
+ old=Path(d);tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive',BASE,'internal/delivery','internal/cli']))).extractall(old,filter='data')
+ files=list((old/'internal/delivery').glob('*_test.go'))+list((ROOT/'internal/delivery').glob('*_test.go'))
+ oldcli=list((old/'internal/cli').glob('*_test.go'));newcli=[ROOT/p.relative_to(old) for p in oldcli];files+=oldcli+newcli
+ subprocess.run(['go','build','-o','/tmp/funcs0355','/tmp/funcs0355.go'],check=True);p=subprocess.run(['/tmp/funcs0355',*[str(p) for p in files]],text=True,capture_output=True,check=True);funcs=json.loads(p.stdout)
+ notes=[];count=0
+ for key,body in funcs.items():
+  path,name=key.rsplit(':',1)
+  if not path.startswith(str(old/'internal/delivery')) or not name.startswith('Test'):continue
+  target=str(ROOT/Path(path).relative_to(old))+':'+name
+  assert target in funcs and funcs[target]==body,name;count+=1
+ notes.append(str(count)+' existing delivery top-level test bodies unchanged.')
+ declared={}
+ tech=(SPEC/'_techspec.md').read_text();breaks=tech.split('## Declared breaks',1)[1].split('## ADR-',1)[0]
+ for key,body in funcs.items():
+  path,name=key.rsplit(':',1)
+  if not path.startswith(str(old/'internal/cli')):continue
+  target=str(ROOT/Path(path).relative_to(old))+':'+name
+  assert target in funcs,('removed function',name)
+  if funcs[target]!=body:
+   assert funcs[target].replace('review concurrency 2, ','')==body,('non-Limits change',name)
+   assert name in breaks or name=='TestDeliverStatusNamesAReviewThatOpensANewLineage',('undeclared',name)
+   notes.append(name+': only expected Limits insertion'+(' (task_02 Requirement 6 carries the Spec 0356 lineage consumer)' if name=='TestDeliverStatusNamesAReviewThatOpensANewLineage' else ''))
+ (E/'declared-breaks.txt').write_text('Delivery Base '+BASE+'; head '+HEAD+'\n'+'\n'.join(notes)+'\n')
+result('Q05','pass','Go AST function-body comparison confirms every pre-existing delivery top-level test unchanged; existing CLI function changes contain only the expected Limits insertion. Task 02 Requirement 6 also declares the lineage transcript added by Spec 0356. Evidence: [complete comparison](evidence/0355/declared-breaks.txt).')
+# Exact document payloads, apart from line wrapping only.
+wrap=lambda s:re.sub(r'\s+',' ',s).strip()
+task=(SPEC/'task_01.md').read_text();logs=[]
+# All fenced markdown payloads authored as exact text in task_01.
+blocks=re.findall(r'     ````markdown\n(.*?)     ````',task,re.S)
+assert len(blocks)==5,len(blocks)
+paths=['CONTEXT.md','docs/user-guide/commands/deliver.md','docs/user-guide/commands/deliver.md','docs/user-guide/configuration.md','.agents/skills/roundfix/references/deliver.md']
+adr='[ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)'
+context=(ROOT/'CONTEXT.md').read_text();adr279=re.search(r'\[ADR-0279\]\([^)]*\)',context).group()
+for text,path in zip(blocks,paths):
+ text='\n'.join(line.removeprefix('     ') for line in text.splitlines()).replace('<ADR-0365 link>',adr).replace('<ADR-0279 link>',adr279)
+ if path=='CONTEXT.md':
+  actual=context.split('**Queue Owner**:',1)[1].split('**Delivery Plan**:',1)[0]
+  assert ('**Queue Owner**:'+actual).strip()==text.strip(),'glossary exact block'
+ else: assert wrap(text) in wrap((ROOT/path).read_text()),('missing paragraph',path,text[:60])
+ logs.append(path+': prescribed block matches')
+adrtext=tech.split('## ADR-0365\n',1)[1].split('```markdown\n',1)[1].split('```',1)[0]
+adropath='docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md';assert wrap(adrtext)==wrap((ROOT/adropath).read_text());logs.append('ADR-0365 exact content apart from wrapping, accepted.')
+config=(ROOT/'docs/user-guide/configuration.md').read_text();row=re.search(r'   `(\| `delivery.review_concurrency`.*?\|)`',task).group(1);assert row in config
+assert (ROOT/'.agents/skills/roundfix/references/deliver.md').read_bytes()==(ROOT/'skills/roundfix/references/deliver.md').read_bytes();logs.append('deliver references byte-identical.')
+for path in ['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md']:
+ assert 'concurrency 1, review concurrency <n>, tokens <n|none>' in wrap((ROOT/path).read_text()),path
+assert 'Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none' in (ROOT/'docs/user-guide/commands/deliver.md').read_text()
+p=subprocess.run(['rg','-n','concurrency 1, tokens|spend not measured','docs/user-guide','docs/adr','CONTEXT.md','.agents/skills','skills'],capture_output=True,text=True);assert p.returncode in [0,1]
+if p.returncode==0:
+ expected='docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md:12:`roundfix deliver status` said `spend not measured`. A local metering gateway'
+ assert p.stdout.strip()==expected,p.stdout
+ assert '`roundfix deliver status` said `spend not measured`.' in git('show',BASE+':docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md')
+ logs.append('Raw search has exactly one pre-existing retrospective match: '+expected+'. This describes past output with said, not a current command/guide example; it is byte-identical to Delivery Base. No current documented Limits line prints either obsolete form. Built public transcript independently confirms the current output.')
+else:logs.append('Obsolete output search: no matches.')
+(E/'documentation.txt').write_text('\n'.join(logs)+'\n')
+result('Q08','pass','Every prescribed documentation block/table row and Limits form matches task_01; the glossary block matches exactly, references are byte-identical and ADR-0365 matches TechSpec apart from wrapping with accepted status. Obsolete output search found no matches. Glossary contracts also passed. Evidence: [comparisons](evidence/0355/documentation.txt), [glossary suite](evidence/0355/glossary.txt), [document contracts](evidence/0355/docs-task01.txt).')
+# Task commit scope and governing authority.
+commits=git('rev-list','--reverse',BASE+'..'+HEAD).splitlines();scope=[];violations=[];changed=set()
+for commit in commits:
+ subject=git('show','-s','--format=%s',commit).strip();paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();changed.update(paths)
+ m=re.search(r'task_(\d+)',subject)
+ if m:taskid='task_'+m[1]
+ else:
+  taskid={'8c65edce':'task_01','2686b642':'task_02','7e0ff172':'task_03','bafcf44d':'task_04'}[commit[:8]]
+ declaration=(SPEC/(taskid+'.md')).read_text();declared=set(re.findall(r'^- (?:creates|interface|instruction): `([^`]+)`',declaration,re.M));declared.add(str(SPEC.relative_to(ROOT)/(taskid+'.md')))
+ if '## Recorded paths' in declaration:declared.update(re.findall(r'`([^`]+)`',declaration.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ extras=sorted(set(paths)-declared)
+ violations.extend(commit+': undeclared '+p for p in extras)
+ scope.append(commit+' '+subject+' -> '+taskid+'\n'+'\n'.join('  '+p for p in paths)+'\n  outside declarations: '+(', '.join(extras) if extras else 'none'))
+protected=[]
+for p in sorted(changed):
+ forbidden=p in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','docs/references/skill-coverage.json','internal/cli/cli_test.go'] or p.startswith(('.github/workflows/','dist/','internal/store/','docs/history/','internal/baseline/assets/','docs/agents/'))
+ if ('/.agents/skills/' in '/'+p or p.startswith('skills/')) and p not in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/SKILL.md','skills/roundfix/references/deliver.md','skills/testdata/owned-skill-versions.json']:forbidden=True
+ if forbidden:protected.append(p)
+assert not protected,protected
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ def section(s):return s.split('### QA settlement',1)[1].split('\n### ',1)[0].split('\n## ',1)[0]
+ assert section(git('show',BASE+':'+path))==section((ROOT/path).read_text()),path
+assert subprocess.run(['git','merge-base','--is-ancestor','f0db7127fc7e4325e905cbf46099a471174e9bb8',commits[0]]).returncode==0
+# Resolve every changed path with the product's actual GovernedPath function in a disposable copy.
+with tempfile.TemporaryDirectory(prefix='qa0355-governed-') as d:
+ repo=Path(d);tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive','HEAD']))).extractall(repo,filter='data')
+ source='package main\nimport("encoding/json";"os";"roundfix/internal/speccheck")\nfunc main(){m:=map[string]bool{};for _,p:=range os.Args[1:]{m[p]=speccheck.GovernedPath(p)};json.NewEncoder(os.Stdout).Encode(m)}\n'
+ f=repo/'qa0355governed/main.go';f.parent.mkdir();f.write_text(source)
+ p=subprocess.run(['go','run','./qa0355governed',*sorted(changed)],cwd=repo,text=True,capture_output=True,check=True);governed=[k for k,v in json.loads(p.stdout).items() if v]
+ auth=(SPEC/'_authorization.md').read_text().split('paths:\n',1)[1].split('operations:',1)[0];allowed=re.findall(r'^  - (.+)$',auth,re.M)
+ assert sorted(governed)==sorted(allowed),(governed,allowed);scope.append('GovernedPath actual probe: '+', '.join(sorted(governed))+'; all bounded by the operative grant at Delivery Base, in ancestry before consumption.')
+ scope.append('Mechanical authorization audit already audited task_01, with granted outcome; no redundant command authorization audit for that Task. All Task path sets were still checked as Requirement 12 requires.')
+ scope.append('Protected exclusions unchanged. QA settlement sections byte-identical. Current delta: '+git('status','--short')+'\nViolations: '+str(violations))
+ (E/'history-scope.txt').write_text('\n\n'.join(scope)+'\n')
+assert not violations,violations
+result('Q12','pass','Every Task/planning delta was inspected with git diff-tree and fits its declared paths, including the task_02 planning amendment. The actual GovernedPath resolver returns exactly the three granted skill paths. The grant is at Delivery Base before consumption; the seeded mechanical authorization audit is retained. Protected exclusions and QA settlement sections are unchanged; current delta is only QA report/evidence. Evidence: [history and scope audit](evidence/0355/history-scope.txt).')
