@@ -84,6 +84,11 @@ const (
 	ReviewOutcomeBlocked  ReviewOutcome = "blocked"
 )
 
+type TaskFailure struct {
+	Task   string
+	Reason string
+}
+
 type RunResult struct {
 	RuntimeInfrastructure string
 	QAEnvironmentPartial  bool
@@ -91,6 +96,27 @@ type RunResult struct {
 	Outcome               RunOutcome
 	CandidateCommits      []string
 	Reason                string
+	FailedTasks           []TaskFailure
+	SkippedTasks          []string
+}
+
+// RunUnresolvedBlocker describes the Tasks an unresolved Run failed or skipped.
+func RunUnresolvedBlocker(result RunResult) string {
+	var parts []string
+	for _, failure := range result.FailedTasks {
+		reason := []rune(strings.Join(strings.Fields(failure.Reason), " "))
+		if len(reason) > 300 {
+			reason = append(reason[:300], '…')
+		}
+		parts = append(parts, failure.Task+" failed: "+string(reason))
+	}
+	if len(result.SkippedTasks) > 0 {
+		parts = append(parts, "skipped: "+strings.Join(result.SkippedTasks, ", "))
+	}
+	if len(parts) == 0 {
+		return BlockerRunUnresolved
+	}
+	return BlockerRunUnresolved + ": " + strings.Join(parts, "; ")
 }
 
 type ReviewResult struct {
@@ -1105,7 +1131,7 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 		if result.QAEnvironmentPartial {
 			return engine.park(ctx, gitRoot, item, BlockerQAEnvironmentPartial)
 		}
-		return engine.park(ctx, gitRoot, item, BlockerRunUnresolved)
+		return engine.park(ctx, gitRoot, item, RunUnresolvedBlocker(result))
 	case RunOutcomeBudgetExceeded:
 		return engine.park(ctx, gitRoot, item, BlockerRunBudgetExceeded)
 	case RunOutcomeClean:

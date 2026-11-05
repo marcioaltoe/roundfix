@@ -71,7 +71,14 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 	case BlockerSecretFound:
 		classification.Class = ParkClassFinding
 		classification.Next = "in " + item.Worktree + ", rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry " + item.SpecSlug
-	case BlockerRunUnresolved, BlockerReviewFindings, BlockerCorrectiveSpecRequired, BlockerGateFailed, BlockerChecksFailed, BlockerRevalidationFailed:
+	case BlockerRunUnresolved:
+		classification.Class = ParkClassFinding
+		if strings.Contains(detail, " failed: Task commit carries a secret: ") {
+			classification.Next = "if the failed Task's text prescribes the value the blocker locates, amend it in " + item.Worktree +
+				" to one no Secret Pattern matches (letters only, or fewer than 20 characters); then run roundfix deliver retry " + item.SpecSlug +
+				", whose rerun returns any Secret Match to the Agent as Verification Feedback"
+		}
+	case BlockerReviewFindings, BlockerCorrectiveSpecRequired, BlockerGateFailed, BlockerChecksFailed, BlockerRevalidationFailed:
 		classification.Class = ParkClassFinding
 		if blocker == BlockerRevalidationFailed {
 			classification.Next = "amend the Spec on its item branch in " + item.Worktree +

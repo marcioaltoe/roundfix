@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -150,3 +150,85 @@ the report reported by fiscus on 2026-11-04
 
 - `_prd.md` → Goals; Core Feature 5; Core Feature 6; Success Metric 5
 - `_techspec.md` → Current behavior 6; API Contract 7; API Contract 8; API Contract 9; Invariant 6; Declared breaks; Testing Approach; Build Order 3
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, agentic-cli-design, systematic-debugging, no-workarounds, tech-writer, knowledge-workspace, roundfix, evidence-gate.
+
+Implemented this Task's Run result, park detail and secret-refusal next action.
+The initial working-tree change was only this Task's Daemon-owned status;
+that field remains `in_progress`. No other Task or Task Graph was edited.
+
+- Acceptance criterion 1: `runResult` now collects failed settlements and
+  skipped Tasks from the existing ordered `daemon.task` read, using payload
+  `task` with the event's Work Item as fallback. Completed settlements and
+  legacy `secret_scan` events contribute neither. Exhausted runtime recovery
+  keeps its existing handling. `RunUnresolvedBlocker` normalizes reason
+  whitespace, bounds each reason to 300 Unicode characters plus `…` when
+  needed, preserves Task order, and appends skipped Task IDs. The engine
+  persists this detail; runtime infrastructure and QA environment partial
+  parks retain precedence. The secret-specific `finding` action names the
+  item's worktree and Spec exactly as required. The new engine test checks
+  the persisted park, classification and Pending Question. The new CLI tests
+  check the Run result and the whole status stdout, empty stderr and exit 0.
+- Acceptance criterion 2: the engine test's `nothing failed or skipped`
+  case preserves bare `run-unresolved`, class `finding`, and the generic
+  answer. Its two-failure, long-reason and normalized Unicode cases also
+  retain class `finding` and the generic answer. Existing park-class and
+  retry tests remain unchanged and pass in the focused delivery package run.
+- Added the prescribed paragraph immediately after the guide's `secret-found`
+  next action. After the final guide edit, ran the sanctioned Behavior Surface
+  Record generator; it changed only the deliver guide's digest. Left the
+  generated record uncommitted for the Daemon, as the execution invariants
+  require. The Roundfix skill paragraph remains task_04's slice.
+
+Focused evidence:
+
+- Before changing code,
+  `go test -count=1 -timeout 10m -v -run '^(TestAnUnresolvedRunParksWithItsRunID|TestExistingGenericParkAnswersAreUnchanged)$' ./internal/delivery`
+  exited 0: the existing tests passed with the bare blocker and generic answer.
+- Added the regression tests first. The initial
+  `go test -count=1 -timeout 10m -run '^TestARunUnresolvedParkNamesItsFailedAndSkippedTasks$' ./internal/delivery`
+  exited 1 because `TaskFailure`, `FailedTasks` and `SkippedTasks` did not
+  exist, demonstrating the missing contract before implementation.
+- After implementation,
+  `go test -count=1 -timeout 10m -v -run '^TestARunUnresolvedParkNamesItsFailedAndSkippedTasks$' ./internal/delivery`
+  exited 0; all seven engine cases passed, including secret refusal, two
+  failures, the 400-character reason, the bare park, Unicode normalization,
+  runtime precedence and QA environment precedence.
+- `go test -count=1 -timeout 10m ./internal/delivery` exited 0.
+- `go test -count=1 -timeout 10m -run '^(TestDelivery|TestDeliverStatus|TestDeliverRetry)' ./internal/cli`
+  exited 0, including both new CLI tests and the existing runtime, status
+  and retry coverage.
+- Compared all 302 existing tracked delivery and CLI test files byte for byte
+  against `HEAD`: all unchanged. Only the two declared new test files were
+  added. `gofmt` was applied to the five changed/new Go files.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 immediately after the last guide edit.
+- `git diff --check` exited 0.
+
+Required sabotage evidence (isolated temporary copies, current source and new
+tests over `git archive HEAD`, with local Git metadata; no production files
+were sabotaged):
+
+- Removed the skipped-Task append from `runResult`.
+  `go test -count=1 -timeout 10m -v -run '^TestDeliveryRunResultReadsFailedAndSkippedTasks$' ./internal/cli`
+  exited 1 at `TestDeliveryRunResultReadsFailedAndSkippedTasks`: the actual
+  `SkippedTasks` was empty, expected `[task_02 task_03]`.
+- Removed the reason cut from `RunUnresolvedBlocker`.
+  `go test -count=1 -timeout 10m -v -run '^TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason$' ./internal/delivery`
+  exited 1 at
+  `TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason`: the
+  persisted blocker kept 400 characters instead of 300 followed by `…`.
+- Full local transcripts:
+  `/private/tmp/roundfix-0351-sabotage-uit200wp/skips-not-read.log` and
+  `/private/tmp/roundfix-0351-sabotage-uit200wp/reason-not-cut.log`.
+
+The Task's declared Verification, repository Verification and settlement remain
+Daemon-owned and were not run. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T015847Z_709cb0723a1fbaae`
+- Source commit: `df0fb6e1eaee01dda29dda767fbb5075bdd59c83`
