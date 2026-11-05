@@ -1005,12 +1005,30 @@ func (workflow *commandDeliveryWorkflow) runResult(ctx context.Context, gitRoot,
 			for _, event := range events {
 				var payload struct {
 					Phase    string `json:"phase"`
+					Task     string `json:"task"`
+					Status   string `json:"status"`
+					Reason   string `json:"reason"`
 					Recovery string `json:"recovery"`
 					ScopeID  string `json:"scope_id"`
 					Step     string `json:"step"`
 					Detail   string `json:"detail"`
 				}
-				if json.Unmarshal(event.Event.Payload, &payload) != nil || payload.Recovery != "exhausted" {
+				if json.Unmarshal(event.Event.Payload, &payload) != nil {
+					continue
+				}
+				task := payload.Task
+				if task == "" {
+					task = event.Event.ReviewIssue
+				}
+				switch payload.Phase {
+				case "settled":
+					if payload.Status == "failed" {
+						result.FailedTasks = append(result.FailedTasks, delivery.TaskFailure{Task: task, Reason: payload.Reason})
+					}
+				case "skipped":
+					result.SkippedTasks = append(result.SkippedTasks, task)
+				}
+				if payload.Recovery != "exhausted" {
 					continue
 				}
 				switch payload.Phase {

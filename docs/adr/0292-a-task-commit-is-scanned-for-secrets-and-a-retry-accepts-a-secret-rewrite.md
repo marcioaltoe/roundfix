@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T18:00:00Z
-updated_at: 2026-10-18T18:00:00Z
+updated_at: 2026-11-05T03:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -34,6 +34,8 @@ settles the Task `failed` with the reason `Task commit carries a secret:
 changes in the Run Worktree, as every failed Task does. The scan reads added
 lines, not whole files, so it refuses exactly what the Final Push would refuse
 in that commit.
+
+**Amended by [ADR-0361](0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md) (2026-11-05).** The Task commit's Secret Scan no longer waits for a passing Verification: it runs as the last Settlement Check of every Verification attempt. A Secret Match on the first attempt returns as Verification Feedback, naming path, line and kind but never the value, for the one repair turn, and the second attempt scans again. Only a Secret Match on the final attempt settles the Task `failed` with the reason above. The added-lines rule, the Delivery Retry's Secret Rewrite and the fixture guidance below still hold.
 
 **A Delivery Retry accepts a Secret Rewrite.** For an item parked
 `secret-found` whose Spec is archived on the item branch and whose head moved
@@ -81,7 +83,9 @@ characters.
   value the push accepts.
 - Giving the Agent a repair turn after a Task Secret Match was rejected for
   this change: the retry policy belongs to Verification diagnostics, and a new
-  repair class is a separate decision.
+  repair class is a separate decision. [ADR-0361](0361-a-task-commit-secret-match-returns-as-verification-feedback-and-names-its-cause.md) later took that
+  decision: the scan joined the Verification attempt, so its first-attempt
+  Secret Match uses the existing repair turn instead of a new repair class.
 
 ## Consequences
 

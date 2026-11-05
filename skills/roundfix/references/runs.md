@@ -200,9 +200,10 @@ same usage fields without scope identity and selections.
 roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 ```
 
-Read-only: explains failed Verification attempts and corrective Tasks in this
-repository's terminal Spec Runs. The command changes no repository file and no
-Git ref. When an Archive Record's `source_revision` is missing locally and the
+Read-only: explains failed Verification attempts, secret refusals of Task
+commits and corrective Tasks in this repository's terminal Spec Runs. The
+command changes no repository file and no Git ref. When an Archive Record's
+`source_revision` is missing locally and the
 record names its pull request, Source Revision Recovery fetches that pull
 request's head from the configured remote and adds the missing Git objects.
 Dates bound Run creation times at UTC midnight, since inclusive and until
@@ -219,6 +220,15 @@ The first embedded signature that matches determines one of five classes:
 `scope-or-authorization`, `shared-section-contract`, `repository-convention`,
 `implementation-defect`, or `environment`. The first three count as repository
 knowledge. An `unclassified` item is not a class and carries no signature.
+
+A secret refusal of a Task commit is its own item of kind `secret-scan`, one per
+`secret_scan` event, with its Spec, Task, Run and attempt (`null` for an event
+an earlier release wrote) and its locations as the check; JSON adds `matches`
+with each path, line and kind, and never the value. Its class is
+`repository-convention`, set by its kind rather than by a signature, so its
+signature and evidence are null, and the attempt's failed
+`settlement check: secret scan` is not listed again as a `verification` item.
+Every other item has `matches: null`.
 
 Corrective Tasks are graph nodes numbered after the QA Task. The active graph
 is read first, then the archive; a missing graph makes corrective null and

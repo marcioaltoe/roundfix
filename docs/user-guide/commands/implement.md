@@ -113,6 +113,7 @@ order:
    introduced by the Task.
 3. `settlement check: authorization` checks the prospective Task commit against
    the frozen authorization record.
+4. `settlement check: secret scan` checks the lines that commit would add.
 
 The repository Verification runs for every non-QA Task, with or without a QA
 gate. The two in-process checks run after the attempt's commands, whatever
@@ -127,7 +128,9 @@ A failed check returns as Verification Feedback for the single repair turn. A
 final failure settles the Task `failed`. An in-process failure uses the reason
 `Settlement check failed: <label>: <first diagnostic line>; diagnostics: <path>`;
 a failure from the repository Verification keeps the existing Verification
-failure reason.
+failure reason. The secret scan runs in every graph, last, and its final reason
+is its first diagnostic line, `Task commit carries a secret: <path>:<line>:
+<kind>`.
 
 The `verification.repository_at_settlement` User Config or Project Config
 switch turns off only the repository Verification at settlement. It does not
@@ -183,12 +186,16 @@ Daemon Task and QA commits stage only repository paths that do not cross a
 symbolic link; dropped paths are journaled and warned
 (`roundfix: task file <path> kept outside the repository; committed without it`).
 
-Before each Task settles, the Secret Scan reads the lines each Task commit
-adds relative to `HEAD`. A Secret Match settles the Task `failed` with
-`Task commit carries a secret: <path>:<line>: <kind>` and creates no Task
-commit. The reason and the `secret_scan` event carry only path, line and
-kind; the Task's changes stay in the Run Worktree. A Git or read error halts
-the Run as an infrastructure failure.
+In every Verification attempt, after the Settlement Checks,
+`settlement check: secret scan` reads the lines the Task commit would add
+relative to `HEAD`. A Secret Match fails the attempt with `Task commit carries
+a secret: <path>:<line>: <kind>` and a `Fix:` line, so a match on the first
+attempt returns as Verification Feedback for the one repair turn and the
+second attempt scans again. A match on the final attempt settles the Task
+`failed` with that reason and creates no Task commit. The diagnostic, the
+prompt, the reason and the `secret_scan` event, which names its attempt, carry
+only path, line and kind; the Task's changes stay in the Run Worktree. A Git
+or read error halts the Run as an infrastructure failure.
 
 At the QA Report commit boundary, the Secret Scan checks the files that commit
 would stage. A Secret Match refuses the commit with `QA evidence carries a

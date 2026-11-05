@@ -1294,27 +1294,6 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			failure = fmt.Sprintf("Task commit refused: %v", authorizationErr)
 		}
 	}
-	if failure == "" {
-		matches, scanErr := scanTaskCommitPaths(ctx, plan.WorkDir, commit.stageable)
-		if scanErr != nil {
-			return "", "", scanErr
-		}
-		if len(matches) > 0 {
-			details := make([]string, len(matches))
-			locations := make([]map[string]any, len(matches))
-			for index, match := range matches {
-				details[index] = match.String()
-				locations[index] = map[string]any{"path": match.Path, "line": match.Line, "kind": match.Kind}
-			}
-			failure = "Task commit carries a secret: " + strings.Join(details, "; ")
-			message := fmt.Sprintf("Task %s commit refused: %d Secret Match(es)", task.ID, len(matches))
-			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
-				message, map[string]any{"phase": "secret_scan", "matches": locations}); err != nil {
-				return "", "", err
-			}
-			fmt.Fprintln(engine.deps.Progress, message)
-		}
-	}
 	settled := spec.StatusCompleted
 	if failure != "" {
 		settled = spec.StatusFailed
@@ -1854,16 +1833,17 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 			return nil
 		},
 	}
+	var before []string
+	if len(beforeSnapshots) > 0 {
+		before = beforeSnapshots[0]
+	}
 	if plan.settlementChecks {
-		var before []string
-		if len(beforeSnapshots) > 0 {
-			before = beforeSnapshots[0]
-		}
 		request.Checks = []verificationCheck{
 			engine.specConsistencySettlementCheck(plan),
 			engine.authorizationSettlementCheck(plan, task, before),
 		}
 	}
+	request.Checks = append(request.Checks, engine.secretScanSettlementCheck(plan, task, ordinal, attempt, before))
 	remaining, deleteErr := undeletedTaskPaths(plan.WorkDir, task)
 	if deleteErr != nil || len(remaining) > 0 {
 		request.Commands = nil

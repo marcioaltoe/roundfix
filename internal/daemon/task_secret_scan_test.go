@@ -6,9 +6,11 @@ package daemon
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -48,7 +50,21 @@ func TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			fixture, result, path, head := taskSecretScanFixture(t, test.initial, content)
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Write a fixture"}})
+			path := "fixture.txt"
+			if test.initial != "" {
+				mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), test.initial)
+			}
+			commitTaskFixtureSource(t, fixture.gitRoot, "test: establish Task scan input")
+			head := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD"))
+			runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot,
+				afterTask: func(string) { mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), content) },
+			}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+			result, err := engine.TaskCycle(t.Context(), fixture.plan())
+			if err != nil {
+				t.Fatalf("TaskCycle: %v", err)
+			}
 			if result.Failed != 1 || result.Completed != 0 || taskStatusOnDisk(t, fixture.gitRoot, "task_01") != string(spec.StatusFailed) {
 				t.Fatalf("Task result = %+v, want failed without completion", result)
 			}
@@ -64,13 +80,16 @@ func TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit(t *testing.T) {
 					continue
 				}
 				refusals++
+				if payload["attempt"] != float64(refusals) {
+					t.Fatalf("refusal attempt = %v, want %d", payload["attempt"], refusals)
+				}
 				wantMatches := []any{map[string]any{"path": path, "line": float64(2), "kind": "credential-assignment"}}
 				if event.ReviewIssue != "task_01" || event.Summary != "Task task_01 commit refused: 1 Secret Match(es)" || !reflect.DeepEqual(payload["matches"], wantMatches) {
 					t.Fatalf("refusal event = %s %v", event.Summary, payload)
 				}
 			}
-			if refusals != 1 || reason != wantReason {
-				t.Fatalf("refusals = %d, reason = %q, want one refusal with %q", refusals, reason, wantReason)
+			if refusals != 2 || reason != wantReason {
+				t.Fatalf("refusals = %d, reason = %q, want two refusals with %q", refusals, reason, wantReason)
 			}
 			if got := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD")); got != head {
 				t.Fatal("refused Task created a commit")
@@ -86,7 +105,15 @@ func TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			outputs := []string{reason, fixture.progress.String(), string(taskContent)}
+			if len(runner.prompts) != 2 || !strings.Contains(runner.prompts[1], "Verification Feedback") {
+				t.Fatal("expected exactly one repair prompt")
+			}
+			outputs := append([]string{reason, fixture.progress.String(), string(taskContent)}, runner.prompts...)
+			logs := taskSecretScanDiagnostics(t, fixture.artifactDir)
+			if len(logs) != 2 {
+				t.Fatalf("scan diagnostic files = %d, want two attempts", len(logs))
+			}
+			outputs = append(outputs, logs...)
 			for _, event := range fixture.sink.events {
 				outputs = append(outputs, event.Summary, string(event.Payload))
 			}
@@ -177,5 +204,186 @@ func TestTaskSecretScanUsesHeadAndPreparedPaths(t *testing.T) {
 	cancel()
 	if _, err := scanTaskCommitPaths(ctx, fixture.gitRoot, paths); err == nil {
 		t.Fatal("cancelled scan was accepted")
+	}
+}
+
+func TestTaskCommitSecretMatchReturnsAsVerificationFeedback(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Write a fixture"}})
+	commitTaskFixtureSource(t, fixture.gitRoot, "test: establish repair input")
+	head := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD"))
+	value := strings.Repeat("K8", 15)
+	repaired := "clean\n" + "SERVICE_API_KEY" + " = " + strings.Repeat("z", 30) + "\n"
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	runner.afterTask = func(string) {
+		content := "clean\n" + "SERVICE_API_KEY" + " = " + value + "\n"
+		if len(runner.prompts) == 2 {
+			content = repaired
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, "fixture.txt"), content)
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := engine.TaskCycle(t.Context(), fixture.plan())
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || taskStatusOnDisk(t, fixture.gitRoot, "task_01") != string(spec.StatusCompleted) {
+		t.Fatalf("repair result = %+v, want completed", result)
+	}
+	if strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD")) == head {
+		t.Fatalf("repair result = %+v, want completed with a commit", result)
+	}
+	if got := runGitForTest(t, fixture.gitRoot, "show", "HEAD:fixture.txt"); got != repaired {
+		t.Fatal("Task commit does not contain the letters-only repair")
+	}
+	if len(runner.prompts) != 2 || !strings.Contains(runner.prompts[1], "Verification Feedback") {
+		t.Fatal("expected exactly one repair prompt")
+	}
+	for _, want := range []string{
+		"settlement check: secret scan", "fixture.txt:2: credential-assignment",
+		"Fix: replace each named value with one no Secret Pattern matches, such as letters only or fewer than 20 characters; copying a value the repository already tracks is refused the same way.",
+	} {
+		if !strings.Contains(runner.prompts[1], want) {
+			t.Errorf("repair prompt missing %q", want)
+		}
+	}
+	refusals := 0
+	outputs := append([]string{fixture.progress.String()}, runner.prompts...)
+	logs := taskSecretScanDiagnostics(t, fixture.artifactDir)
+	if len(logs) != 2 {
+		t.Fatalf("scan diagnostic files = %d, want two attempts", len(logs))
+	}
+	outputs = append(outputs, logs...)
+	for _, event := range fixture.sink.events {
+		outputs = append(outputs, event.Summary, string(event.Payload))
+		if event.Kind == runevent.KindDaemonTask && eventPayloadMap(t, event)["phase"] == "secret_scan" {
+			refusals++
+			if eventPayloadMap(t, event)["attempt"] != float64(1) {
+				t.Fatal("refusal did not name attempt 1")
+			}
+		}
+	}
+	if refusals != 1 {
+		t.Fatalf("refusals = %d, want one", refusals)
+	}
+	for _, output := range outputs {
+		for index := 0; index+8 <= len(value); index++ {
+			if strings.Contains(output, value[index:index+8]) {
+				t.Fatal("Task diagnostic contains a sample byte run")
+			}
+		}
+	}
+}
+
+func taskSecretScanDiagnostics(t *testing.T, root string) []string {
+	t.Helper()
+	var diagnostics []string
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), "-settlement-secret-scan.log") {
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			diagnostics = append(diagnostics, string(content))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("read scan diagnostics: %v", err)
+	}
+	return diagnostics
+}
+
+func TestTaskCommitSecretScanRunsAfterTheSettlementChecks(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"gated graph", "graph without a QA gate"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var fixture *taskCycleFixture
+			var plan TaskPlan
+			var engine *Engine
+			want := []string{"settlement check: secret scan"}
+			if name == "gated graph" {
+				fixture, plan, _, _, _, engine = settlementAuditFixture(t, &fakeSettlementChecker{})
+				want = append([]string{"settlement check: spec consistency", "settlement check: authorization"}, want...)
+			} else {
+				fixture = newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"declared check"}}})
+				plan = fixture.plan()
+				runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+				engine = fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			}
+			if _, err := engine.TaskCycle(t.Context(), plan); err != nil {
+				t.Fatalf("TaskCycle: %v", err)
+			}
+			var labels []string
+			commands := 0
+			for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+				payload := eventPayloadMap(t, event)
+				if event.ReviewIssue != "task_01" || payload["attempt"] != float64(1) || payload["phase"] != "started" {
+					continue
+				}
+				label, _ := payload["command"].(string)
+				if strings.HasPrefix(label, "settlement check: ") {
+					labels = append(labels, label)
+				} else {
+					commands++
+					if len(labels) != 0 {
+						t.Fatal("Verification command ran after a Settlement Check")
+					}
+				}
+			}
+			if commands == 0 || !reflect.DeepEqual(labels, want) {
+				t.Fatalf("commands = %d, checks = %v, want %v", commands, labels, want)
+			}
+		})
+	}
+}
+
+func TestTaskSecretScanReadErrorHaltsTheRun(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not enforce Unix read permission bits")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("root can read files with mode 000")
+	}
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	commitTaskFixtureSource(t, fixture.gitRoot, "test: establish unreadable output input")
+	head := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD"))
+	path := filepath.Join(fixture.gitRoot, "unreadable.txt")
+	t.Cleanup(func() {
+		if err := os.Chmod(path, 0o644); err != nil {
+			t.Errorf("restore unreadable output: %v", err)
+		}
+	})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	runner.afterTask = func(string) {
+		if len(runner.prompts) > 1 {
+			return
+		}
+		mustWriteForTest(t, path, "unreadable output\n")
+		if err := os.Chmod(path, 0o000); err != nil {
+			t.Fatal(err)
+		}
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, GitWorktreeSnapshotter{})
+	result, err := engine.TaskCycle(t.Context(), fixture.plan())
+	if len(runner.prompts) != 1 {
+		t.Fatal("scan read error sent Verification Feedback")
+	}
+	if err == nil {
+		t.Fatal("TaskCycle accepted a scan read error")
+	}
+	if result.Completed != 0 || taskStatusOnDisk(t, fixture.gitRoot, "task_01") == string(spec.StatusCompleted) {
+		t.Fatal("scan read error settled the Task completed")
+	}
+	if got := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-parse", "HEAD")); got != head {
+		t.Fatal("scan read error created a Task commit")
+	}
+	if len(taskEventsOfKind(fixture.sink, runevent.KindDaemonCommit)) != 0 {
+		t.Fatal("scan read error published a Task commit")
 	}
 }

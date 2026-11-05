@@ -394,6 +394,16 @@ An `archived-item-unproven` park's next action is `in <worktree>, make the item 
 
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
 
+A `run-unresolved` park names each Task the Run settled `failed`, with its
+reason cut to 300 characters, and the Tasks the Run skipped:
+`run-unresolved: <task> failed: <reason>; skipped: <task>, <task>`. A Run
+with neither keeps the bare `run-unresolved` and its answer. When a failed
+Task's commit carried a secret, the next action is `if the failed Task's
+text prescribes the value the blocker locates, amend it in <worktree> to
+one no Secret Pattern matches (letters only, or fewer than 20 characters);
+then run roundfix deliver retry <slug>, whose rerun returns any Secret
+Match to the Agent as Verification Feedback`.
+
 A Delivery Retry from `runtime-infrastructure` is not counted against the retry
 limit and re-enters as a `run-unresolved` retry does.
 When one or more items are parked, it prints exactly one `Pending question:`

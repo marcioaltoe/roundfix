@@ -2712,8 +2712,8 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 			t.Fatalf("expected no second exclusive retry, got %+v", event)
 		}
 	}
-	if temporaryFailures != 2 || retryStarts != 1 {
-		t.Fatalf("expected two temporary failures and one retry start, got failures=%d retry_starts=%d events=%+v", temporaryFailures, retryStarts, verification)
+	if temporaryFailures != 2 || retryStarts != 2 {
+		t.Fatalf("expected two temporary failures and two retry starts (command and secret scan), got failures=%d retry_starts=%d events=%+v", temporaryFailures, retryStarts, verification)
 	}
 	if runner.calls != 2 {
 		t.Fatalf("expected one initial Agent turn per Task and no repair, got %d", runner.calls)

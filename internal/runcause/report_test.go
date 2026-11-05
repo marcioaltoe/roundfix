@@ -555,3 +555,116 @@ func resolvedCauseHashes(t *testing.T, root string) map[string][32]byte {
 	}
 	return hashes
 }
+
+func TestBuildReportsASecretRefusalAsItsOwnItem(t *testing.T) {
+	t.Parallel()
+	home, repo := t.TempDir(), t.TempDir()
+	s, err := store.Open(t.Context(), home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, err := s.CreateRun(t.Context(), store.CreateRunRequest{Kind: store.KindImplement, GitRoot: repo, LocalBranch: "main", SpecSlug: "0300-example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	value := strings.Repeat("K8", 15)
+	events := []struct {
+		kind              runevent.Kind
+		workItem, payload string
+	}{
+		{runevent.KindDaemonTask, "task_01", `{"task":"task_01","phase":"started"}`},
+		// Older events have neither task nor attempt in the payload.
+		{runevent.KindDaemonTask, "task_01", fmt.Sprintf(`{"phase":"secret_scan","matches":[{"path":"legacy.txt","line":3,"kind":"credential-assignment","value":%q}]}`, value)},
+		{runevent.KindDaemonTask, "task_01", `{"task":"task_01","phase":"settled","status":"failed"}`},
+		{runevent.KindDaemonTask, "task_02", `{"task":"task_02","phase":"started"}`},
+		{runevent.KindDaemonVerification, "task_02", fmt.Sprintf(`{"task":"task_02","attempt":1,"phase":"failed","command":%q}`, runevent.SettlementCheckSecretScan)},
+		// The payload Task takes precedence over the Work Item; unknown value fields never leave the reader.
+		{runevent.KindDaemonTask, "task_99", fmt.Sprintf(`{"task":"task_02","attempt":1,"phase":"secret_scan","matches":[{"path":"fixture.txt","line":2,"kind":"credential-assignment","value":%q},{"path":"other.txt","line":4,"kind":"private-key"}]}`, value)},
+		{runevent.KindDaemonVerification, "task_02", `{"task":"task_02","attempt":1,"phase":"verdict","verdict":"failed"}`},
+	}
+	for _, e := range events {
+		if _, err := s.AppendRunEvent(t.Context(), runevent.RunEvent{RunID: run.ID, Kind: e.kind, ReviewIssue: e.workItem, Source: runevent.SourceDaemon, Payload: []byte(e.payload)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.CompleteRun(t.Context(), run.ID, store.StateUnresolved); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := store.OpenReader(t.Context(), home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = reader.Close() }()
+	table, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := Build(t.Context(), table, Request{Reader: reader, RepositoryRoot: repo})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range report.Items {
+		if item.Kind == "verification" && item.Task == "task_02" && item.Attempt != nil && *item.Attempt == 1 {
+			t.Error("secret scan duplicated as a verification item for task_02 attempt 1")
+		}
+	}
+	if report.Runs != 1 || len(report.Items) != 2 {
+		t.Fatalf("report=%+v", report)
+	}
+	for i, want := range []struct {
+		task, check, matches string
+	}{
+		{"task_01", "legacy.txt:3: credential-assignment", `[{"path":"legacy.txt","line":3,"kind":"credential-assignment"}]`},
+		{"task_02", "fixture.txt:2: credential-assignment; other.txt:4: private-key", `[{"path":"fixture.txt","line":2,"kind":"credential-assignment"},{"path":"other.txt","line":4,"kind":"private-key"}]`},
+	} {
+		item := report.Items[i]
+		if item.Kind != "secret-scan" || item.Spec != run.SpecSlug || item.Task != want.task || item.RunID != run.ID || item.Check != want.check || item.Class != "repository-convention" || item.Signature != nil || item.Evidence != nil {
+			t.Fatalf("item=%+v", item)
+		}
+		if (i == 0 && item.Attempt != nil) || (i == 1 && (item.Attempt == nil || *item.Attempt != 1)) {
+			t.Fatalf("attempt=%v at item %d", item.Attempt, i)
+		}
+		data, err := json.Marshal(item)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if string(fields["matches"]) != want.matches || string(fields["signature"]) != "null" || string(fields["evidence"]) != "null" || (i == 0 && string(fields["attempt"]) != "null") {
+			t.Fatalf("JSON=%s", data)
+		}
+		for start := 0; start+8 <= len(value); start++ {
+			if strings.Contains(string(data), value[start:start+8]) {
+				t.Fatal("item contains eight consecutive bytes of the fixture value")
+			}
+		}
+	}
+	wantSummary := map[string]int{"scope-or-authorization": 0, "shared-section-contract": 0, "repository-convention": 2, "implementation-defect": 0, "environment": 0, "unclassified": 0, "items": 2, "classified": 2, "repository_knowledge": 2}
+	if !reflect.DeepEqual(report.Summary, wantSummary) {
+		t.Fatalf("summary=%v", report.Summary)
+	}
+	// Verification and corrective items expose the new field as explicit null.
+	table, req, _, _ := causeFixture(t)
+	other, err := Build(t.Context(), table, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range other.Items {
+		data, err := json.Marshal(item)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if string(fields["matches"]) != "null" {
+			t.Fatalf("non-secret item matches must be null: %s", data)
+		}
+	}
+}

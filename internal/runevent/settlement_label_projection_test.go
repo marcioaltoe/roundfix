@@ -6,7 +6,7 @@ import (
 )
 
 // Suite: Settlement Check labels in the public verification stream.
-// Invariant: only the two exact Roundfix labels disclose a command in ordinary verification events.
+// Invariant: only the three exact Roundfix labels disclose a command in ordinary verification events.
 // Boundary IN: daemon verification payloads and the verification category filter.
 // Boundary OUT: journal persistence and CLI replay.
 func TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot(t *testing.T) {
@@ -19,6 +19,7 @@ func TestASettlementCheckLabelIsProjectedAndARepositoryCommandIsNot(t *testing.T
 	}{
 		{"settlement check: spec consistency", "settlement check: spec consistency"},
 		{"settlement check: authorization", "settlement check: authorization"},
+		{"settlement check: secret scan", "settlement check: secret scan"},
 		{"make verify", ""},
 		{"settlement check: authorization; make verify", ""},
 		{" settlement check: spec consistency", ""},

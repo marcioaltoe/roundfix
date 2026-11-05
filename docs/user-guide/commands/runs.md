@@ -117,6 +117,15 @@ three count as repository knowledge. An unmatched item is `unclassified`,
 which is counted separately and is not a class. The summary counts every
 class and gives the embedded signature table's digest.
 
+A secret refusal of a Task commit is its own item of kind `secret-scan`, one per
+`secret_scan` event, with its Spec, Task, Run and attempt (`null` for an event
+an earlier release wrote) and its locations as the check; JSON adds `matches`
+with each path, line and kind, and never the value. Its class is
+`repository-convention`, set by its kind rather than by a signature, so its
+signature and evidence are null, and the attempt's failed
+`settlement check: secret scan` is not listed again as a `verification` item.
+Every other item has `matches: null`.
+
 A failed attempt's diagnostic is read under the Artifact Root the Run wrote to,
 resolved the way `roundfix storage report` resolves it: a blank recorded Artifact
 Directory uses the repository's default root, a relative one resolves under the

@@ -283,7 +283,7 @@ func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawM
 		var command string
 		command, err = readOptionalString(fields, event, "command")
 		switch command {
-		case "settlement check: spec consistency", "settlement check: authorization":
+		case "settlement check: spec consistency", "settlement check: authorization", SettlementCheckSecretScan:
 			record.Command = command
 		}
 	}

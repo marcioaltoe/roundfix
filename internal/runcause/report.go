@@ -41,6 +41,13 @@ type Window struct {
 	Until *string `json:"until"`
 }
 
+// Match identifies a Secret Match by location and kind, never by value.
+type Match struct {
+	Path string `json:"path"`
+	Line int    `json:"line"`
+	Kind string `json:"kind"`
+}
+
 type Item struct {
 	Kind      string  `json:"kind"`
 	Spec      string  `json:"spec"`
@@ -51,6 +58,7 @@ type Item struct {
 	Class     string  `json:"class"`
 	Signature *string `json:"signature"`
 	Evidence  *string `json:"evidence"`
+	Matches   []Match `json:"matches"`
 }
 
 type TaskCounts struct {
@@ -203,14 +211,33 @@ func Build(ctx context.Context, t Table, req Request) (Report, error) {
 					counts.FeedbackRounds++
 				}
 			}
+			if entry.Event.Kind == runevent.KindDaemonTask && p.Phase == "secret_scan" {
+				locations := make([]string, 0, len(p.Matches))
+				for _, match := range p.Matches {
+					locations = append(locations, fmt.Sprintf("%s:%d: %s", match.Path, match.Line, match.Kind))
+				}
+				report.Items = append(report.Items, Item{
+					Kind: "secret-scan", Spec: run.SpecSlug, Task: p.Task, RunID: run.ID,
+					Attempt: p.Attempt, Check: publicCheck(strings.Join(locations, "; ")),
+					Class: "repository-convention", Matches: p.Matches,
+				})
+				continue
+			}
 			if entry.Event.Kind != runevent.KindDaemonVerification || (p.Phase != "failed" && p.Verdict != "failed") {
 				continue
 			}
-			key := p.Task + "/" + strconv.Itoa(p.Attempt)
+			attempt := 0
+			if p.Attempt != nil {
+				attempt = *p.Attempt
+			}
+			key := p.Task + "/" + strconv.Itoa(attempt)
 			if seenAttempts[key] {
 				continue
 			}
 			seenAttempts[key] = true
+			if p.Command == runevent.SettlementCheckSecretScan {
+				continue
+			}
 			check := p.Command
 			if check == "" {
 				check = strings.Join(p.Commands, "\n")
@@ -219,7 +246,7 @@ func Build(ctx context.Context, t Table, req Request) (Report, error) {
 			if err != nil {
 				return Report{}, err
 			}
-			item := Item{Kind: "verification", Spec: run.SpecSlug, Task: p.Task, RunID: run.ID, Attempt: &p.Attempt, Check: publicCheck(check)}
+			item := Item{Kind: "verification", Spec: run.SpecSlug, Task: p.Task, RunID: run.ID, Attempt: &attempt, Check: publicCheck(check)}
 			item.Class, item.Signature, item.Evidence = classifyItem(t, Evidence{Diagnostic: diagnostic, Command: check})
 			report.Items = append(report.Items, item)
 		}
@@ -265,10 +292,11 @@ type eventPayload struct {
 	Task           string   `json:"task"`
 	Phase          string   `json:"phase"`
 	Verdict        string   `json:"verdict"`
-	Attempt        int      `json:"attempt"`
+	Attempt        *int     `json:"attempt"`
 	Command        string   `json:"command"`
 	Commands       []string `json:"commands"`
 	DiagnosticPath string   `json:"diagnostic_path"`
+	Matches        []Match  `json:"matches"`
 }
 
 func classifyItem(t Table, e Evidence) (string, *string, *string) {
