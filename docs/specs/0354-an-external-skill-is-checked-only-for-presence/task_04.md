@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0354-an-external-skill-is-checked-only-for-presence
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

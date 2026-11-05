@@ -1,0 +1,25 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestCheckRepositoryChecksAnExternalSkillOnlyForPresence)$ ./skills
+exit: 0
+stdout:
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== CONT  TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link
+--- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence (0.12s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry (0.01s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link (0.02s)
+PASS
+ok  	roundfix/skills	0.421s
+
+stderr:

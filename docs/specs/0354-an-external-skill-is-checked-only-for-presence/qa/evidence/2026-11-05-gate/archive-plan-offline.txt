@@ -1,0 +1,14 @@
+Environment variable names only: HOME/TMPDIR use fresh temporary directories; GOMODCACHE/GOCACHE preserve toolchain locations. ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY, TYPESAFE_API_KEY and OPENROUTER_API_KEY unset for the child.
+$ ./bin/roundfix archive 0354-an-external-skill-is-checked-only-for-presence --plan --offline
+exit: 0
+stdout:
+archive plan for 0354-an-external-skill-is-checked-only-for-presence: removes 47 file(s) (216292 bytes) and writes docs/history/specs/0354-an-external-skill-is-checked-only-for-presence.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-05.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 36 file(s) (78410 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-05-only-roundfix-owned-skills-are-checked-by-digest-or-version.md 2782 bytes: no advice (offline)
+promote with: roundfix archive 0354-an-external-skill-is-checked-only-for-presence --promote <path>
+
+stderr:
+
+Fresh temporary HOME/TMPDIR removed after command exit; no archive write requested.

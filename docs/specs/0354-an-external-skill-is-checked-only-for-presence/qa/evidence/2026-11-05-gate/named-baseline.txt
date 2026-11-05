@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestSkillsRestoreOfflinePreviewApplyAndIdempotence)$ ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestSkillsRestoreOfflinePreviewApplyAndIdempotence
+=== PAUSE TestSkillsRestoreOfflinePreviewApplyAndIdempotence
+=== CONT  TestSkillsRestoreOfflinePreviewApplyAndIdempotence
+--- PASS: TestSkillsRestoreOfflinePreviewApplyAndIdempotence (0.46s)
+PASS
+suiteguard: guard cost: measured 2987 paths; fingerprint took 155.705917ms before and 134.381833ms after
+ok  	roundfix/internal/baseline	1.079s
+
+stderr:

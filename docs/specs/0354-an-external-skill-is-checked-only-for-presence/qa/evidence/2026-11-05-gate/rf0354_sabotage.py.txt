@@ -1,0 +1,65 @@
+from rf0354_qa import *
+
+def replace_function(s,name,body):
+ start=s.index('func '+name+'(');br=s.index('{',start);depth=1;i=br+1
+ while depth:
+  depth+=(s[i]=='{')-(s[i]=='}');i+=1
+ return s[:br+1]+'\n'+body+'\n'+s[i-1:]
+
+def sabotage(kind):
+ with tempfile.TemporaryDirectory(prefix='rf354-sabotage-'+kind+'-') as d:
+  root=Path(d);archive_copy(root)
+  for setup in [["git","init","-q"],["git","add","--all"]]:
+   p,l=run(setup,root);assert p.returncode==0,l
+  edit=''
+  if kind=='hash':
+   f=root/'skills/repository.go';s=f.read_text().replace('type localLockSkill struct{}','type localLockSkill struct { ComputedHash string `json:"computedHash"` }')
+   needle='\t\tskillDisplayPath := repositoryDisplayPath(root, skillRoot)'
+   # Validate content only after the existing directory inspection.
+   pos=s.index('\n\t}\n',s.index('\t\tif !info.IsDir() {',s.index('for _, name := range external {')))
+   patch='''
+        sabotageLock, sabotageErr := readLocalSkillsLock(ctx, repositoryRoot, "skills-lock.json", repositoryDisplayPath(root, "skills-lock.json"))
+        if sabotageErr != nil { return readiness, sabotageErr }
+        sabotageHash, sabotageErr := SkillFolderHash(ctx, filepath.Join(root, skillRoot))
+        if sabotageErr != nil { return readiness, sabotageErr }
+        if sabotageHash != sabotageLock.Skills[name].ComputedHash { readiness.MissingExternal = append(readiness.MissingExternal, name) }
+'''
+   s=s[:pos]+patch+s[pos:];f.write_text(s)
+   jobs=[(['go','test','-count=1','-timeout','20m','-v','-run','^TestCheckRepositoryChecksAnExternalSkillOnlyForPresence$/changed_file$','./skills'],'--- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file'),(['go','test','-count=1','-timeout','20m','-v','-run','^TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady$','./internal/cli'],'--- FAIL: TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady')]
+   row='Q0501'
+  elif kind=='lockentry':
+   f=root/'skills/repository.go';f.write_text(replace_function(f.read_text(),'requiredExternalLockEntries','\treturn nil'))
+   jobs=[(['go','test','-count=1','-timeout','20m','-v','-run','^TestCheckRepositoryChecksAnExternalSkillOnlyForPresence$/no_lock_entry$','./skills'],'--- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry')];row='Q0502'
+  elif kind=='suffix':
+   f=root/'internal/cli/doctor.go';s=f.read_text();needle='result := doctorSkillReadinessResult(skillReadiness, skillErr)';assert s.count(needle)==1
+   f.write_text(s.replace(needle,needle+'\n\t\t\t\tif skillErr == nil && len(external) > 0 && len(skillReadiness.MissingExternal) == 0 { result.Detail += "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: " + strings.Join(external, ", ") }'))
+   jobs=[(['go','test','-count=1','-timeout','20m','-v','-run','^TestDoctorChecksAnExternalSkillOnlyForPresence$/differs_from_its_Setup_Snapshot$','./internal/cli'],'--- FAIL: TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot')];row='Q0503'
+  elif kind=='restore':
+   f=root/'internal/cli/baseline_update.go';s=f.read_text();needle='\tnames := make(map[string]struct{})';start=s.index('func baselineUpdateExternalDrift(');a=s[:start];b=s[start:];assert needle in b
+   b=b.replace(needle,'\treturn []string{"testing-boss"}, nil\n'+needle,1);f.write_text(a+b)
+   jobs=[(['go','test','-count=1','-timeout','20m','-v','-run','^TestBaselineUpdateNeverRestoresAPresentExternalSkill$/present_copy_that_differs_from_its_Setup_Snapshot$','./internal/cli'],'--- FAIL: TestBaselineUpdateNeverRestoresAPresentExternalSkill/present_copy_that_differs_from_its_Setup_Snapshot')];row='Q0504'
+  else:
+   lock=root/'skills-lock.json';data=json.loads(lock.read_text());name='agentic-cli-design';assert name in data['skills'];data['skills'][name]['computedHash']='0'*64;lock.write_text(json.dumps(data,indent=2)+'\n')
+   if kind=='repo-disabled':
+    f=root/'internal/cli/live_documents_docscontract_test.go';s=f.read_text();needle='if hash != entry.ComputedHash {';assert s.count(needle)==1;f.write_text(s.replace(needle,'if false && hash != entry.ComputedHash {'))
+   jobs=[(['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','-run','^TestThisRepositoryHoldsEveryRequiredExternalSkill$','./internal/cli'],('--- PASS: TestThisRepositoryHoldsEveryRequiredExternalSkill' if kind=='repo-disabled' else 'external skill agentic-cli-design no longer matches its skills-lock.json computedHash; run make skills-third-party-bump'))];row='Q0506' if kind=='repo-disabled' else 'Q0505'
+  log='Fresh git archive of '+HEAD+'; sabotage '+kind+'.\n'
+  p,l=run(['git','diff','--no-index','/dev/null','/dev/null'],root) # no product changes; mutation diff below uses archived baseline
+  for path in ('skills/repository.go','internal/cli/doctor.go','internal/cli/baseline_update.go','internal/cli/live_documents_docscontract_test.go','skills-lock.json'):
+   src=(ROOT/path).read_text();dst=(root/path).read_text()
+   if src!=dst:
+    import difflib
+    log+=''.join(difflib.unified_diff(src.splitlines(True),dst.splitlines(True),fromfile=path,tofile=path+' (sabotaged)'))+'\n'
+  ok=True
+  for args,expected in jobs:
+   p,l=run(args,root);log+='\n'+l+'\n'
+   target=0 if kind=='repo-disabled' else 1
+   # The named behavioral transcript, not merely a nonzero exit, decides sensitivity.
+   passed=p.returncode==target and expected in (p.stdout+p.stderr) and '[build failed]' not in (p.stdout+p.stderr)
+   ok &= passed;log+='Named behavioral expectation: '+expected+'; satisfied='+str(passed)+'\n'
+  link=save('sabotage-'+kind,log)
+  result(row,'pass' if ok else 'fail',link+'; '+('repository guard removal hides the corrupted-lock failure, as required' if kind=='repo-disabled' else 'named behavioral failure observed; no build failure accepted')+'.')
+ print('Temporary sabotage copy removed: '+kind,flush=True)
+
+if __name__=='__main__':
+ for kind in sys.argv[1:]:sabotage(kind)

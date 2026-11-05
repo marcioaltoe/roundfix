@@ -1,0 +1,42 @@
+Whitespace-normalized exact contract checks:
+PASS docs/user-guide/commands/doctor.md full API Contract 7 rule
+PASS docs/user-guide/commands/baseline.md full API Contract 7 rule
+PASS .agents/skills/roundfix/references/baseline.md full API Contract 7 rule
+PASS .agents/skills/roundfix/references/setup.md full API Contract 7 rule
+PASS skills/roundfix/references/baseline.md full API Contract 7 rule
+PASS skills/roundfix/references/setup.md full API Contract 7 rule
+PASS .agents/skills/roundfix/references/runtime.md remaining skills only for presence
+PASS skills/roundfix/references/runtime.md remaining skills only for presence
+PASS README content is not compared
+PASS docs/user-guide/commands/doctor.md no retired diagnostic/JSON path
+PASS docs/user-guide/commands/baseline.md no retired diagnostic/JSON path
+PASS .agents/skills/roundfix/references/baseline.md no retired diagnostic/JSON path
+PASS .agents/skills/roundfix/references/setup.md no retired diagnostic/JSON path
+PASS skills/roundfix/references/baseline.md no retired diagnostic/JSON path
+PASS skills/roundfix/references/setup.md no retired diagnostic/JSON path
+PASS README.md no retired diagnostic/JSON path
+PASS CONTEXT.md no retired diagnostic/JSON path
+PASS .agents/skills/roundfix/references/runtime.md no retired diagnostic/JSON path
+PASS skills/roundfix/references/runtime.md no retired diagnostic/JSON path
+PASS docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md amendment and updated_at
+PASS docs/adr/0224-this-repository-holds-its-upstream-skills-to-the-snapshot-and-the-lock-not-to-a-pinned-digest.md amendment and updated_at
+PASS docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md amendment and updated_at
+PASS docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md amendment and updated_at
+PASS Missing Required Skill full revised body
+PASS Setup Snapshot Difference full revised body
+
+Revised glossary:
+An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
+A required external skill whose installed tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Roundfix no longer looks for one: Doctor and the managed refresh check an external skill only for presence, and only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md), [ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
+
+docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md historical-body search:
+43: Difference, reported with `DR-SKILL-DIFFERS-FROM-SNAPSHOT` and never restored
+
+docs/adr/0224-this-repository-holds-its-upstream-skills-to-the-snapshot-and-the-lock-not-to-a-pinned-digest.md historical-body search:
+
+docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md historical-body search:
+
+docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md historical-body search:
+25: `DR-SKILL-DIFFERS-FROM-SNAPSHOT` without raising the `skills` line to `warn`
+27: `skills.differing`, keeps it, and never restores it unasked; its reason names
+35: **Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).** Doctor no longer names a Setup Snapshot Difference and the managed refresh no longer lists `skills.differing`: neither compares an external skill with its Setup Snapshot, and a present copy is never restored unasked. `roundfix baseline skills restore` still replaces one deliberately, and the divergence order below still holds.

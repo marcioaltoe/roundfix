@@ -1,0 +1,58 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestDoctorChecksAnExternalSkillOnlyForPresence|TestBaselineUpdateNeverRestoresAPresentExternalSkill|TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady|TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock|TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestBaselineSkillsRestoreCommand|TestDoctorFailsForAnOwnedSkillOlderThanTheBundle)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestBaselineSkillsRestoreCommand
+=== PAUSE TestBaselineSkillsRestoreCommand
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== PAUSE TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== PAUSE TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== RUN   TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== PAUSE TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== RUN   TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== PAUSE TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestDoctorChecksAnExternalSkillOnlyForPresence
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== PAUSE TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== CONT  TestBaselineSkillsRestoreCommand
+=== RUN   TestBaselineSkillsRestoreCommand/public_help_exposes_the_approved_contract
+=== CONT  TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== CONT  TestDoctorChecksAnExternalSkillOnlyForPresence
+=== CONT  TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill/present_copy_that_differs_from_its_Setup_Snapshot
+=== CONT  TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== CONT  TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== CONT  TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+=== RUN   TestBaselineSkillsRestoreCommand/JSON_preview_stays_on_stdout_and_exits_action_required
+=== RUN   TestBaselineSkillsRestoreCommand/text_success_is_diagnostic_free
+--- PASS: TestBaselineSkillsRestoreCommand (0.00s)
+    --- PASS: TestBaselineSkillsRestoreCommand/public_help_exposes_the_approved_contract (0.00s)
+    --- PASS: TestBaselineSkillsRestoreCommand/JSON_preview_stays_on_stdout_and_exits_action_required (0.00s)
+    --- PASS: TestBaselineSkillsRestoreCommand/text_success_is_diagnostic_free (0.00s)
+--- PASS: TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock (0.07s)
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence/missing
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill/missing_copy
+--- PASS: TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady (0.08s)
+--- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill (0.11s)
+    --- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill/present_copy_that_differs_from_its_Setup_Snapshot (0.08s)
+    --- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill/missing_copy (0.04s)
+--- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence (0.12s)
+    --- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot (0.07s)
+    --- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence/missing (0.05s)
+--- PASS: TestDoctorFailsForAnOwnedSkillOlderThanTheBundle (0.98s)
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed
+--- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill (3.02s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed (1.12s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (0.66s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry (0.64s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed (0.60s)
+PASS
+suiteguard: guard cost: measured 2987 paths; fingerprint took 453.150458ms before and 134.586792ms after
+ok  	roundfix/internal/cli	4.052s
+
+stderr:

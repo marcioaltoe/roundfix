@@ -1,0 +1,23 @@
+Fresh git archive of f9b28f661a121ede4193d74ebe2549d31ecfaa5d; sabotage suffix.
+--- internal/cli/doctor.go
++++ internal/cli/doctor.go (sabotaged)
+@@ -200,6 +200,7 @@
+ 			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
+ 			if manifestOK {
+ 				result := doctorSkillReadinessResult(skillReadiness, skillErr)
++				if skillErr == nil && len(external) > 0 && len(skillReadiness.MissingExternal) == 0 { result.Detail += "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: " + strings.Join(external, ", ") }
+ 				stale, comparisonErr := baseline.StaleOwnedLockEntries(ctx, repositoryRoot, skills.Names())
+ 				if comparisonErr != nil {
+ 					result.Detail += "; skills-lock.json comparison unavailable: " + comparisonErr.Error()
+
+
+$ go test -count=1 -timeout 20m -v -run ^TestDoctorChecksAnExternalSkillOnlyForPresence$/differs_from_its_Setup_Snapshot$ ./internal/cli
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/cli	0.449s
+FAIL
+
+stderr:
+
+Named behavioral expectation: --- FAIL: TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot; satisfied=False

@@ -1,0 +1,44 @@
+Fresh git archive of f9b28f661a121ede4193d74ebe2549d31ecfaa5d; sabotage lockentry.
+--- skills/repository.go
++++ skills/repository.go (sabotaged)
+@@ -426,21 +426,6 @@
+ // requiredExternalLockEntries proves that the lock names every required
+ // external skill. It reads no computedHash (ADR-0364).
+ func requiredExternalLockEntries(lockPath string, lock localSkillsLock, external []string) error {
+-	var missing []string
+-	for _, name := range external {
+-		if _, exists := lock.Skills[name]; !exists {
+-			missing = append(missing, name)
+-		}
+-	}
+-	if len(missing) > 0 {
+-		return &RepositoryReadinessError{
+-			Ownership:       RepositoryOwnershipExternal,
+-			Operation:       "validate required skills lock entry",
+-			Path:            lockPath,
+-			Err:             fmt.Errorf("external skills are missing: %s", strings.Join(missing, ", ")),
+-			MissingExternal: append([]string(nil), missing...),
+-		}
+-	}
+ 	return nil
+ }
+ 
+
+
+$ go test -count=1 -timeout 20m -v -run ^TestCheckRepositoryChecksAnExternalSkillOnlyForPresence$/no_lock_entry$ ./skills
+exit: 1
+stdout:
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== CONT  TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry
+    external_presence_test.go:66: error = <nil>, want RepositoryReadinessError
+--- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence (0.02s)
+    --- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry (0.02s)
+FAIL
+FAIL	roundfix/skills	0.311s
+FAIL
+
+stderr:
+
+Named behavioral expectation: --- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry; satisfied=True

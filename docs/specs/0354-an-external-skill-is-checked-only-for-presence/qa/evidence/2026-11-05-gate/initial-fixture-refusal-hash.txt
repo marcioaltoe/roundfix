@@ -1,0 +1,55 @@
+Fresh git archive of f9b28f661a121ede4193d74ebe2549d31ecfaa5d; sabotage hash.
+--- skills/repository.go
++++ skills/repository.go (sabotaged)
+@@ -70,7 +70,7 @@
+ 	Skills  map[string]localLockSkill `json:"skills"`
+ }
+ 
+-type localLockSkill struct{}
++type localLockSkill struct { ComputedHash string `json:"computedHash"` }
+ 
+ func CheckRepository(ctx context.Context, root string) (RepositoryReadiness, error) {
+ 	return CheckRepositoryWithExternal(ctx, root, Recommended())
+@@ -221,6 +221,12 @@
+ 				errors.New("skill root is not a directory"),
+ 			)
+ 		}
++        sabotageLock, sabotageErr := readLocalSkillsLock(ctx, repositoryRoot, "skills-lock.json", repositoryDisplayPath(root, "skills-lock.json"))
++        if sabotageErr != nil { return readiness, sabotageErr }
++        sabotageHash, sabotageErr := SkillFolderHash(ctx, filepath.Join(root, skillRoot))
++        if sabotageErr != nil { return readiness, sabotageErr }
++        if sabotageHash != sabotageLock.Skills[name].ComputedHash { readiness.MissingExternal = append(readiness.MissingExternal, name) }
++
+ 	}
+ 
+ 	sortRepositoryReadiness(&readiness)
+
+
+$ go test -count=1 -timeout 20m -v -run ^TestCheckRepositoryChecksAnExternalSkillOnlyForPresence$/changed_file$ ./skills
+exit: 1
+stdout:
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== CONT  TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file
+    external_presence_test.go:87: readiness = {OwnedRequired:12 ExternalRequired:1 MissingOwned:[] Owned:[{Skill:archive-spec Minimum:0.0.19 Found:0.0.19 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/archive-spec/SKILL.md State:satisfies Detail:} {Skill:brainstorming Minimum:0.0.3 Found:0.0.3 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/brainstorming/SKILL.md State:satisfies Detail:} {Skill:business-analyst Minimum:0.0.3 Found:0.0.3 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/business-analyst/SKILL.md State:satisfies Detail:} {Skill:evidence-gate Minimum:0.0.2 Found:0.0.2 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/evidence-gate/SKILL.md State:satisfies Detail:} {Skill:implement-task Minimum:0.0.6 Found:0.0.6 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/implement-task/SKILL.md State:satisfies Detail:} {Skill:qa-gate Minimum:0.0.24 Found:0.0.24 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/qa-gate/SKILL.md State:satisfies Detail:} {Skill:roundfix Minimum:0.1.190 Found:0.1.190 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/roundfix/SKILL.md State:satisfies Detail:} {Skill:setup-context-driven Minimum:0.0.7 Found:0.0.7 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/setup-context-driven/SKILL.md State:satisfies Detail:} {Skill:write-idea Minimum:0.0.7 Found:0.0.7 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/write-idea/SKILL.md State:satisfies Detail:} {Skill:write-prd Minimum:0.0.18 Found:0.0.18 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/write-prd/SKILL.md State:satisfies Detail:} {Skill:write-tasks Minimum:0.0.30 Found:0.0.30 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/write-tasks/SKILL.md State:satisfies Detail:} {Skill:write-techspec Minimum:0.0.17 Found:0.0.17 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryChecksAnExternalSkillOnlyForPresencechanged_1877532488/001/.agents/skills/write-techspec/SKILL.md State:satisfies Detail:}] MissingExternal:[agentic-cli-design]}, want missing=[] ready=true
+--- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence (0.02s)
+    --- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file (0.02s)
+FAIL
+FAIL	roundfix/skills	0.323s
+FAIL
+
+stderr:
+
+Named behavioral expectation: --- FAIL: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file; satisfied=True
+
+$ go test -count=1 -timeout 20m -v -run ^TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady$ ./internal/cli
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/cli	0.454s
+FAIL
+
+stderr:
+
+Named behavioral expectation: --- FAIL: TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady; satisfied=False

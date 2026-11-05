@@ -1,0 +1,9 @@
+Outside source: vercel-labs/skills issue 806, opened 2026-03-31, https://github.com/vercel-labs/skills/issues/806. Source supplied offline by PRD Acceptance evidence, read during planning on 2026-11-05. Quoted passage: "the stored hash cannot be recomputed from the installed copy". No network lookup performed under the Spec authorization.
+
+PASS issue identity/date
+PASS quoted hash limitation
+PASS changed file named case passed
+PASS hashless lock named case passed
+PASS built binary mismatch reproduction passed
+
+The changed-file and hashless-lock inputs both pass readiness, and Q04 leaves the original hash untouched while editing the installed copy. These observations no longer depend on recomputing or matching that stored hash.

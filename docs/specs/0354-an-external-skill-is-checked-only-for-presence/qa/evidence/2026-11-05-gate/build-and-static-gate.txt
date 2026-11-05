@@ -1,0 +1,13 @@
+make build
+exit: 0
+go build -buildvcs=false -ldflags <build metadata> -o bin/roundfix ./cmd/roundfix
+
+$ ./bin/roundfix --version
+exit: 0
+stdout:
+roundfix 0.133.0 (f9b28f66-dirty, built 2026-11-05 15:07:35 -0300)
+
+stderr:
+
+Daemon-supplied repository Verification: make verify-changed, pass, exit 0, diagnostics removed on success. This result was recorded and the repository Verification was not run by this QA Agent.
+Audited HEAD: f9b28f661a121ede4193d74ebe2549d31ecfaa5d

@@ -1,0 +1,6 @@
+$ go test -count=1 -timeout 20m -tags docscontract ./internal/baseline
+exit: 0
+stdout:
+ok  	roundfix/internal/baseline	78.739s
+
+stderr:

@@ -1,0 +1,24 @@
+PASS changed_file
+PASS added_file
+PASS nested_symbolic_link
+PASS lock_entry_without_computedHash
+PASS missing_directory
+PASS no_lock_entry
+PASS skill_root_is_a_symbolic_link
+PASS removed symbol SetupSnapshotDifferences
+PASS removed symbol snapshotComparableSkills
+PASS removed symbol snapshotDifferences
+PASS removed symbol OutdatedExternal
+PASS removed symbol requiredExternalHashes
+PASS mirror SKILL.md
+PASS mirror references/baseline.md
+PASS mirror references/setup.md
+PASS mirror references/runtime.md
+PASS make skills-sync-check
+$ make skills-sync-check
+exit: 0
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.134s
+
+stderr:

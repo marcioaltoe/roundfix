@@ -1,0 +1,47 @@
+from rf0354_qa import *
+
+def snap(root):
+ return {str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file() and not p.is_symlink() and '.git' not in p.relative_to(root).parts and 'bin' not in p.relative_to(root).parts}
+
+def skillsline(p): return next((v for v in p.stdout.splitlines() if v.startswith('skills: ')),'')
+
+def flows():
+ with tempfile.TemporaryDirectory(prefix='rf354-flow-') as d:
+  root=Path(d);archive_copy(root,True);(root/'bin').mkdir(exist_ok=True);shutil.copy2(ROOT/'bin/roundfix',root/'bin/roundfix')
+  skill=root/'.agents/skills/testing-boss/SKILL.md';orig=skill.read_bytes();lock=(root/'skills-lock.json').read_bytes()
+  skill.write_bytes(orig+b'\nQA presence reproduction: installed content differs.\n');before=snap(root)
+  p,l=cli(['doctor'],root);q,m=cli(['baseline','update','--no-history','--format','text'],root)
+  line=skillsline(p)
+  ok=line.startswith('skills: ok (') and 'outdated:' not in line and 'DR-SKILL-DIFFERS-FROM-SNAPSHOT' not in line and q.returncode==0 and 'Skills differing' not in q.stdout and before==snap(root) and (root/'skills-lock.json').read_bytes()==lock
+  link=save('public-present-text',l+'\n'+m+'\nConfirmed complete fixture bytes unchanged; lock computedHash left untouched.\n')
+  result('Q0401','pass' if ok else 'fail',link+'; Doctor `'+line+'`; preview exit '+str(q.returncode)+'; independent byte snapshot unchanged.')
+  p,l=cli(['baseline','update','--no-history','--format','json'],root)
+  try:
+   data=json.loads(p.stdout);missing=data.get('skills',{}).get('missing',[])
+   def hasdiff(v):return isinstance(v,dict) and ('differing' in v or any(hasdiff(x) for x in v.values())) or isinstance(v,list) and any(hasdiff(x) for x in v)
+   ok=p.returncode==0 and not hasdiff(data) and not any('testing-boss' in str(v) for v in missing) and before==snap(root)
+  except ValueError:ok=False
+  link=save('public-present-json',l+'\nParsed result: no differing member at any depth; testing-boss absent from missing; complete fixture unchanged.\n')
+  result('Q0402','pass' if ok else 'fail',link+'; JSON parse, field absence and independent file snapshot checked.')
+  shutil.rmtree(skill.parent)
+  p,l=cli(['doctor'],root);q,m=cli(['baseline','update','--no-history','--format','text'],root)
+  want='skills: failed (missing: testing-boss; next: bunx skills add marcioaltoe/skills@testing-boss)'
+  ok=skillsline(p)==want and q.returncode==3 and '1 required skill(s) are missing: testing-boss' in q.stdout
+  link=save('public-missing',l+'\n'+m)
+  result('Q0403','pass' if ok else 'fail',link+'; exact Doctor missing line and preview exit 3/message checked.')
+  skill.parent.mkdir();skill.write_bytes(orig)
+  owned=root/'.agents/skills/qa-gate/SKILL.md';owned_orig=owned.read_text()
+  for row,version in [('Q0404','99.0.0'),('Q0405','0.0.1')]:
+   text,n=re.subn(r'(?m)^(\s*version:) [^\n]+',lambda m:m[1]+' '+version,owned_orig);assert n==2
+   owned.write_text(text);p,l=cli(['doctor'],root);line=skillsline(p)
+   ok=line.startswith('skills: ok (') if row=='Q0404' else bool(re.fullmatch(r'skills: failed \(below minimum: skill "qa-gate" requires [^,]+, found 0.0.1; next: roundfix skills install --target project\)',line))
+   link=save('public-'+row.lower(),l)
+   result(row,'pass' if ok else 'fail',link+'; both version fields set to '+version+'; `'+line+'`.')
+  owned.write_text(owned_orig);skill.write_bytes(orig+b'\nQA presence reproduction: installed content differs.\n')
+  before=snap(root);p,l=cli(['skills','check'],root);q,m=cli(['doctor'],root)
+  ok=p.returncode==0 and skillsline(q).startswith('skills: ok (') and before==snap(root)
+  link=save('public-skills-check',l+'\n'+m+'\nIndependent public Doctor invocation agrees; complete fixture bytes unchanged.\n')
+  result('Q0406','pass' if ok else 'fail',link+'; skills check exit '+str(p.returncode)+'; fresh Doctor agrees and complete fixture bytes unchanged.')
+ print('All public-flow temporary directories removed.',flush=True)
+
+if __name__=='__main__':flows()

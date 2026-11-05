@@ -1,0 +1,6 @@
+$ go test -count=1 -timeout 20m -tags docscontract ./internal/cli
+exit: 0
+stdout:
+ok  	roundfix/internal/cli	188.135s
+
+stderr:

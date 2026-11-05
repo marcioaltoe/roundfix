@@ -1,0 +1,104 @@
+from rf0354_qa import *
+
+def docs():
+ rule="Roundfix checks a required external skill only for presence: an entry in `skills-lock.json` and a folder under `.agents/skills`. It reads neither the folder's files nor the entry's `computedHash`, never compares the skill with its Setup Snapshot, and never replaces a present copy unasked; `roundfix baseline skills restore --profile <id> --skill <name>` replaces one deliberately."
+ files=['docs/user-guide/commands/doctor.md','docs/user-guide/commands/baseline.md']+[f'{base}/roundfix/references/{name}.md' for base in ['.agents/skills','skills'] for name in ['baseline','setup']]
+ allfiles=files+['README.md','CONTEXT.md']+[f'{base}/roundfix/references/runtime.md' for base in ['.agents/skills','skills']]
+ adrs=sorted(p for p in (ROOT/'docs/adr').glob('*.md') if p.name[:4] in ['0221','0224','0241','0264'])
+ checks=[]
+ norm=lambda s:' '.join(s.split())
+ for f in files: checks.append((f+' full API Contract 7 rule',rule in norm((ROOT/f).read_text())))
+ for base in ['.agents/skills','skills']:
+  f=f'{base}/roundfix/references/runtime.md';checks.append((f+' remaining skills only for presence','checks each remaining skill only for presence' in norm((ROOT/f).read_text())))
+ checks.append(('README content is not compared','its content is not compared' in norm((ROOT/'README.md').read_text())))
+ for f in allfiles:
+  s=(ROOT/f).read_text();checks.append((f+' no retired diagnostic/JSON path',not re.search(r'DR-SKILL-DIFFERS-FROM-SNAPSHOT|skills\.differing',s)))
+ for f in adrs:
+  s=f.read_text();checks.append((str(f.relative_to(ROOT))+' amendment and updated_at','**Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).**' in s and 'updated_at: 2026-11-05T12:00:00Z' in s))
+ # Historical ADR bodies preserve the superseded decision; only their amendment is current guidance.
+ # They legitimately mention retired fields, so inspect and report those historical matches explicitly.
+ for f in adrs:
+  matches=[f'{i}: {line}' for i,line in enumerate(f.read_text().splitlines(),1) if re.search(r'DR-SKILL-DIFFERS-FROM-SNAPSHOT|skills\.differing',line)]
+  print(f.name, 'historical matches:',len(matches),flush=True)
+ context=(ROOT/'CONTEXT.md').read_text()
+ missing=re.search(r'\*\*Missing Required Skill\*\*:\n([^\n]+)',context)[1]
+ difference=re.search(r'\*\*Setup Snapshot Difference\*\*:\n([^\n]+)',context)[1]
+ checks.append(('Missing Required Skill full revised body',missing=="An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md))."))
+ checks.append(('Setup Snapshot Difference full revised body',difference=="A required external skill whose installed tree differs from the `treeDigest` its Setup Snapshot pins. Nothing offline tells whether the copy is newer or older, so Roundfix no longer looks for one: Doctor and the managed refresh check an external skill only for presence, and only a deliberate per-skill restore replaces it ([ADR-0264](docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md), [ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md))."))
+ log='Whitespace-normalized exact contract checks:\n'+''.join(('PASS ' if ok else 'FAIL ')+n+'\n' for n,ok in checks)+'\nRevised glossary:\n'+missing+'\n'+difference+'\n'
+ for f in adrs:
+  log+='\n'+str(f.relative_to(ROOT))+' historical-body search:\n'+''.join(f'{i}: {line}\n' for i,line in enumerate(f.read_text().splitlines(),1) if re.search(r'DR-SKILL-DIFFERS-FROM-SNAPSHOT|skills\.differing',line))
+ link=save('documentation-contracts',log)
+ result('Q07','pass' if all(ok for _,ok in checks) else 'fail',link+'; full rule sentence, runtime/README wording, both full glossary bodies, amendments and dates checked. Superseded ADR decision paragraphs retain their historical comparison terms as API Contract 7 requires; the current amendment supersedes them.')
+ # Evaluate the Task Verification shell predicates using the current files and named-output logs.
+ checks=[]
+ outputs=(EVIDENCE/'named-skills.txt').read_text()+(EVIDENCE/'named-cli.txt').read_text()
+ for case in ['changed_file','added_file','nested_symbolic_link','lock_entry_without_computedHash','missing_directory','no_lock_entry','skill_root_is_a_symbolic_link']:
+  checks.append((case,('--- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/'+case+' ') in outputs))
+ for symbol in ['SetupSnapshotDifferences','snapshotComparableSkills','snapshotDifferences','OutdatedExternal','requiredExternalHashes']:
+  hits=[]
+  for base in ['internal','skills']:
+   for f in (ROOT/base).rglob('*.go'):
+    if symbol in f.read_text():hits.append(str(f.relative_to(ROOT)))
+  checks.append(('removed symbol '+symbol,not hits))
+ for name in ['SKILL.md','references/baseline.md','references/setup.md','references/runtime.md']:
+  checks.append(('mirror '+name,(ROOT/'.agents/skills/roundfix'/name).read_bytes()==(ROOT/'skills/roundfix'/name).read_bytes()))
+ p,l=run(['make','skills-sync-check'])
+ checks.append(('make skills-sync-check',p.returncode==0))
+ link=save('task-verification-predicates',''.join(('PASS ' if ok else 'FAIL ')+n+'\n' for n,ok in checks)+l)
+ result('Q06','pass' if all(ok for _,ok in checks) else 'fail',link+'; all seven Task 02 named cases, removed-symbol sweeps and four mirrored pairs pass. Every Go test named by Tasks 01–03 Verification was executed uncached in Q02/Q03 at the required package/tag combination; identical test scope is credited without redundant suite runs. Q07 checks the Verification wording predicates; the full skills suite includes the non-recording owned-version contract.')
+
+
+def glossary():
+ prd=(ROOT/SPEC/'_prd.md').read_text();tech=(ROOT/SPEC/'_techspec.md').read_text();context=(ROOT/'CONTEXT.md').read_text()
+ section=prd.split('## Unreachable Acceptance\n',1)[1].split('\n## ',1)[0]
+ checks=[('no Unreachable Acceptance',section.strip().startswith('None.'))]
+ for term in ['Missing Required Skill','Setup Snapshot Difference']:
+  for title,s in [('PRD',prd),('TechSpec',tech)]:checks.append((title+' declares changes: '+term,'- changes: **'+term+'**' in s))
+  checks.append(('CONTEXT defines '+term,'**'+term+'**:' in context))
+ p,l=run(['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','-run','^TestGlossaryPhrasesAreDefinedTerms$','./internal/docscontract'])
+ checks.append(('TestGlossaryPhrasesAreDefinedTerms',p.returncode==0 and '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in p.stdout))
+ link=save('glossary-declarations',''.join(('PASS ' if ok else 'FAIL ')+n+'\n' for n,ok in checks)+l)
+ result('Q10','pass' if all(ok for _,ok in checks) else 'fail',link+'; both declarations and definitions agree; named glossary test passed; no declared-blocked criterion.')
+
+
+def history():
+ log='Audited range '+BASE+'..'+HEAD+'\n';ok=True;allpaths=set();commits=[]
+ for line in subprocess.check_output(['git','log','--reverse','--format=%H',BASE+'..'+HEAD],cwd=ROOT,text=True).splitlines():
+  p,l=run(['git','show','-s','--format=%B',line]);log+=l+'\n';task=re.search(r'Roundfix-Task: (task_\d+)',p.stdout)[1];commits.append((task,line))
+  p,l=run(['git','diff-tree','--no-commit-id','--name-only','-r',line]);paths=p.stdout.splitlines();log+=l+'\n';allpaths.update(paths)
+  text=(ROOT/SPEC/(task+'.md')).read_text();declared=set(re.findall(r'^- (?:instruction|interface|creates): `([^`]+)`',text,re.M));declared.add(str(SPEC/(task+'.md')))
+  if '## Recorded paths\n' in text:declared.update(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths\n',1)[1],re.M))
+  for path in paths:
+   found=path in declared;ok &=found;log+=('PASS ' if found else 'FAIL ')+'declared/Recorded paths '+task+' '+path+'\n'
+  patch=subprocess.check_output(['git','show','--format=','--unified=0',line],cwd=ROOT,text=True)
+  # Exact section extraction compares the entire QA settlement table when a skill file changes.
+  for path in paths:
+   if '/SKILL.md' in path:
+    old=subprocess.check_output(['git','show',line+'^:'+path],cwd=ROOT,text=True);new=subprocess.check_output(['git','show',line+':'+path],cwd=ROOT,text=True)
+    def settlement(s):
+     if '### QA settlement\n' not in s:return ''
+     return re.split(r'(?m)^#{1,3} ',s.split('### QA settlement\n',1)[1],maxsplit=1)[0]
+    equal=settlement(old)==settlement(new);ok &=equal;log+=('PASS ' if equal else 'FAIL ')+'QA settlement unchanged '+task+' '+path+'\n'
+ forbidden=[]
+ allowedskills={p for p in allpaths if p.startswith('.agents/skills/roundfix/') or p.startswith('skills/roundfix/') or p=='skills/testdata/owned-skill-versions.json'}
+ for path in sorted(allpaths):
+  bad=path in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json'] or path.startswith(('.github/workflows/','internal/baseline/assets/','docs/agents/')) or ((path.startswith('.agents/skills/') or path.startswith('skills/')) and path not in allowedskills and not path.endswith('.go'))
+  if bad:forbidden.append(path)
+ ok &=not forbidden;log+='Forbidden changed paths: '+repr(forbidden)+'\n'
+ auth=(ROOT/SPEC/'_authorization.md').read_text();authorized=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+ with tempfile.TemporaryDirectory(prefix='rf354-governed-') as d:
+  d=Path(d);source=d/'governed.go.txt';virtual=ROOT/'internal/speccheck/qa0354_governed_test.go'
+  source.write_text('package speccheck_test\nimport("testing";"roundfix/internal/speccheck")\nfunc TestQA0354GovernedPaths(t *testing.T) { t.Parallel(); for _,p := range []string{'+','.join(json.dumps(p) for p in sorted(allpaths))+'} { t.Logf("GOVERNED %t %s",speccheck.GovernedPath(p),p) } }\n')
+  overlay=d/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(virtual):str(source)}}))
+  p,l=run(['go','test','-count=1','-timeout','20m','-v','-overlay',str(overlay),'-run','^TestQA0354GovernedPaths$','./internal/speccheck']);log+=l+'\n';ok &=p.returncode==0
+  governed=re.findall(r'GOVERNED true ([^\n]+)',p.stdout)
+  for path in governed:
+   yes=path in authorized;ok &=yes;log+=('PASS ' if yes else 'FAIL ')+'governed authorization '+path+'\n'
+  log+='Probe source:\n'+source.read_text()
+ p,l=run(['git','status','--short']);log+=l+'\n';delta=p.stdout.splitlines();ok &=all(str(SPEC/'qa/') in x for x in delta)
+ link=save('history-scope',log)
+ result('Q11','pass' if ok else 'fail',link+'; all three Task commits checked with diff-tree; task_03 TechSpec repair accepted through its Recorded paths. GovernedPath classifier matched every governed mutation to the operative six-path grant. Forbidden-path and complete QA settlement comparisons passed; current delta contains only QA artifacts.')
+
+if __name__=='__main__':
+ for arg in sys.argv[1:]:globals()[arg]()
