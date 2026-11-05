@@ -1,5 +1,0 @@
-command: ./bin/roundfix --version
-stdout:
-roundfix 0.133.0 (bafcf44d-dirty, built 2026-11-05 20:25:05 -0300)
-stderr:
-exit: 0

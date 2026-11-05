@@ -1,3 +1,0 @@
-command: go build -buildvcs=false ./internal/delivery ./internal/cli
-
-exit: 0

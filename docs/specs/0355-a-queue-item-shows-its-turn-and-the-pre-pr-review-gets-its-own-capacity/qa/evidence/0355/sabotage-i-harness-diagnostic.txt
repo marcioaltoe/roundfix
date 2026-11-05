@@ -1,8 +1,0 @@
-command: go test -count=1 -timeout 3m -v -run ^TestDeliverLimitsNameTheReviewConcurrency$ ./internal/cli
-# roundfix/internal/cli
-# [roundfix/internal/cli]
-internal/cli/deliver.go:525:68: fmt.Fprintf format %s has arg reviewConcurrency of wrong type int
-FAIL	roundfix/internal/cli [build failed]
-FAIL
-
-exit: 1

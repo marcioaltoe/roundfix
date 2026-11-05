@@ -1,8 +1,0 @@
-CONTEXT.md: prescribed block matches
-docs/user-guide/commands/deliver.md: prescribed block matches
-docs/user-guide/commands/deliver.md: prescribed block matches
-docs/user-guide/configuration.md: prescribed block matches
-.agents/skills/roundfix/references/deliver.md: prescribed block matches
-ADR-0365 exact content apart from wrapping, accepted.
-deliver references byte-identical.
-Raw search has exactly one pre-existing retrospective match: docs/adr/0198-a-run-counts-the-tokens-its-adapters-report-by-each-reports-own-scope.md:12:`roundfix deliver status` said `spend not measured`. A local metering gateway. This describes past output with said, not a current command/guide example; it is byte-identical to Delivery Base. No current documented Limits line prints either obsolete form. Built public transcript independently confirms the current output.

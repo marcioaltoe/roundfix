@@ -1,3 +1,0 @@
-package main
-import("go/parser";"go/token";"go/ast";"os";"encoding/json")
-func main(){out:=map[string]string{};for _,p:=range os.Args[1:]{b,e:=os.ReadFile(p);if e!=nil{panic(e)};fs:=token.NewFileSet();f,e:=parser.ParseFile(fs,p,b,0);if e!=nil{panic(e)};for _,d:=range f.Decls{if fn,ok:=d.(*ast.FuncDecl);ok&&fn.Recv==nil&&fn.Body!=nil{out[p+":"+fn.Name.Name]=string(b[fs.Position(fn.Body.Pos()).Offset:fs.Position(fn.Body.End()).Offset])}}};json.NewEncoder(os.Stdout).Encode(out)}

@@ -1,8 +1,0 @@
-Pull Request row: environment: no open Pull Request, established by the Daemon assignment. No GitHub lookup is needed or authorized.
-Pre-PR equivalents:
-- Approval: approved Spec _authorization.md at Delivery Base f0db7127fc7e4325e905cbf46099a471174e9bb8, preceding Task consumption; operations include implement, commit, push, pull_request, merge, release with minor ceiling. This gate performs none of those delivery mutations.
-- Checks: Daemon supplied make verify-changed, pass, exit 0, diagnostics removed on success, for audited head bafcf44d026c16db59f71889bd95b56b9ea05484. Recorded without rerun.
-- Review threads: no unresolved Pull Request threads because no Pull Request exists, not an assertion of future approval.
-- Merge-Ready: no acceptance yet; it must be checked when a Pull Request exists.
-- Claimed candidate: bafcf44d026c16db59f71889bd95b56b9ea05484 on the per-Run branch. Any future Pull Request belongs on the Spec target branch named by the Daemon, never on this Run branch.
-This row is blocked until the delivery supervisor opens the candidate Pull Request and observes its controls; the supplied pre-PR equivalents are recorded without claiming live GitHub checks or review.

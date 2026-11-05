@@ -1,4 +1,0 @@
-make build: exit 0, Run worktree binary at bin/roundfix.
-make verify-changed: Daemon supplied pass, exit 0, diagnostics removed on success. Not rerun by QA.
-Audited head bafcf44d026c16db59f71889bd95b56b9ea05484.
-./bin/roundfix spec check <slug> --strict: exit 0, no findings; authored Verification not executed by precondition.
