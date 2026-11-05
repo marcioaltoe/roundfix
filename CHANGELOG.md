@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.133.0] - 2026-11-05
+
+### runs list reads as a table, and the Run Browser draws, at a terminal
+
+- **`roundfix runs list` prints a table at an interactive terminal**: a header and aligned columns `RUN` (the eight-digit short id), `REPO` (only when the listing spans repositories), `STATE`, `TARGET`, `AGENT`, `STARTED (<zone>)` in the machine's local time and `DURATION`; only `TARGET` is cut with `…` to fit the width. `--wide` shows the full Run id and adds `KIND`, `BRANCH` and `WORKTREE`. Piped output and `--format plain` keep the stable line byte for byte, so agents and scripts see no change; `--format table` forces the table, and `--wide --format plain` is a usage error (reported by the maintainer; ADR-0363).
+- **The Run Browser, the attach cockpit and the owning cockpit receive the terminal itself**, so they draw. Before, bare `roundfix attach` and bare `roundfix runs` handed the terminal program a wrapped writer it could not measure: it drew nothing and ended at once with exit `0`. Any other writer is now refused by type.
+- **A Run Browser closed without a selection says so**: `roundfix: Run Browser closed (<key>); no Run selected.` on stderr, exit `0`.
+- **`attach` and `runs show` accept the short id** (eight to sixteen hexadecimal digits of the Run id's random suffix) when it names one Run; two or more matches are a usage error listing every full id. Every other command keeps requiring the exact id.
+
+### Republication of 0.132.1
+
+- **0.133.0 also ships the 0.132.1 changes below.** The 0.132.1 npm publication published the five `@roundfix/cli-*` platform packages, then the transparency log answered `409` for the `roundfix` package. npm never received `roundfix` at 0.132.1, and that version has no GitHub Release. Install 0.133.0.
+
 ## [0.132.1] - 2026-11-05
 
 ### Only a .git entry that Git accepts marks a Git root
