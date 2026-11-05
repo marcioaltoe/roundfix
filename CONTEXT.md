@@ -863,7 +863,7 @@ The read-only account of which Specs have delivery authority, what blocks the ot
 _Avoid_: Delivery Queue, execution plan, approval grant
 
 **Delivery Revalidation**:
-The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a production-premise overlap records a `premise-changed` warning without parking it. It does not run for an Archived Item Resume.
+The check of a queued Spec against the refreshed default branch immediately before its first Run. A strict finding parks it as `revalidation-failed`; a Numbered File Collision parks it as `numbered-file-collision` ([ADR-0367](docs/adr/0367-a-numbered-file-collision-with-an-earlier-queue-item-parks-before-the-run.md)); a production-premise overlap records a `premise-changed` warning without parking it. It does not run for an Archived Item Resume.
 _Avoid_: Initial validation, retry, approval check
 
 **Archived Item Resume**:
@@ -929,6 +929,14 @@ _Avoid_: Queue order, dependency Task
 **Derived Path Declaration**:
 A Project Config entry naming a path pattern and the sanctioned command that regenerates it; a pull request conflict confined to declared derived paths is resolved by regeneration instead of parking ([ADR-0192](docs/adr/0192-a-conflict-confined-to-declared-derived-paths-is-resolved-by-regeneration.md)).
 _Avoid_: Generated file list, merge strategy
+
+**Numbered File**:
+A file that a `delivery.numbered_files` pattern in Project Config matches and whose name starts with digits; its directory and the value of those digits are its place in a sequence, such as a database migration ([ADR-0367](docs/adr/0367-a-numbered-file-collision-with-an-earlier-queue-item-parks-before-the-run.md)).
+_Avoid_: Migration number, sequence file
+
+**Numbered File Collision**:
+A Numbered File that a Delivery Queue item adds, through its branch or the `creates:` declaration of a Task not yet completed, in the same directory and with the same number as a file on the default branch or one that an earlier item of the same queue adds while it is not merged. Delivery Revalidation parks the item as `numbered-file-collision` in the conflict Park Class, naming each pair and the next free number ([ADR-0367](docs/adr/0367-a-numbered-file-collision-with-an-earlier-queue-item-parks-before-the-run.md)).
+_Avoid_: Migration conflict, numbering clash
 
 **Module Version Record**:
 A generated record of each Baseline module's versions and content digests, so a module version names one recorded content and the record step can choose the next free version ([ADR-0250](docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md)).

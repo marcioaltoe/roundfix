@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -175,3 +175,20 @@ fiscus on 2026-11-05
 
 - `_prd.md` → Goal 4; Core Feature 5; Core Feature 7; Success Metric 5; Glossary
 - `_techspec.md` → ADR-0367; Coverage Map; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, coding-guidelines, testing-boss, evidence-gate, systematic-debugging
+
+- Acceptance criterion 1: added the Numbered File and Numbered File Collision glossary entries, changed Delivery Revalidation, and created accepted ADR-0367.
+- Acceptance criterion 2: documented `delivery.numbered_files`, the collision revalidation rule, conflict rows and next action in the user guide and both mirrored deliver references; extended the docs-contract test and synchronized the owned skill mirror.
+- Pre-edit contract check passed: `go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^(TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem|TestGlossaryPhrasesAreDefinedTerms|TestTheSkillCoverageMapIsCurrent)$'`.
+- Focused post-edit checks passed: the glossary test; the three park-action contract tests; `make skills-sync`; and `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`.
+- Sabotage 13 on a temporary copy behaved as required: removing the first document's collision action made `TestTheParkActionContractRequiresTheNumberedFileCollision` fail with exit 1 and the document path.
+- Final Behavior Surface Record regeneration passed with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+- `git diff --check` passed and the two deliver reference copies compare identical. Declared Task Verification was not run; it remains Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T211401Z_cae788fdc7c4d6e1`
+- Source commit: `b66647650bf98c732a781abae09cdc33d77c5cf6`

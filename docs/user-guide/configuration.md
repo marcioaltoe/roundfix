@@ -995,6 +995,25 @@ default branch's Project Config; the review reads the list from its base
 commit, so an item sees the value once its merge base includes that change.
 This list affects review scope and requires no regeneration command.
 
+`delivery.numbered_files` declares the files a repository numbers in
+sequence, such as database migrations. It defaults to `[]`, which turns the
+check off; Project Config replaces the User Config list, and an explicit
+empty list disables it.
+
+```yaml
+delivery:
+  numbered_files: [drizzle/*.sql, drizzle/meta/*_snapshot.json]
+```
+
+Entries use the path grammar of `delivery.derived_paths[].paths`; an unsafe
+path or an invalid pattern is refused with a `delivery.numbered_files`
+config error. A matching file whose name starts with digits is a Numbered
+File; a matching `drizzle/meta/_journal.json` is not. The queue reads the
+list from the fetched default-branch commit, with User Config beneath it,
+and Delivery Revalidation parks an item whose Numbered File collides; see
+[deliver](commands/deliver.md). Declare only directories numbered in
+sequence, because names that start with a date also start with digits.
+
 `delivery.item_binary` declares the Roundfix binary the Delivery Queue builds
 and can run for an item's `implement`, `archive` and `review` steps. It has two
 fields, `build` and `path`; Project Config replaces User Config for this value.
