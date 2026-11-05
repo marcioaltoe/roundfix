@@ -1,0 +1,37 @@
+import runpy
+from pathlib import Path
+ns=runpy.run_path(str(Path.cwd()/'docs/specs/0352-only-a-git-entry-that-git-accepts-marks-a-git-root/qa/evidence/2026-11-05-git-root-01/run-qa.py.txt'))
+globals().update({k:v for k,v in ns.items() if not k.startswith('__')})
+source=SPEC/'references/2026-11-05-a-stray-home-git-directory-makes-the-home-a-git-root.md'
+source_text=source.read_text()
+with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+ home=Path(h);(home/'.git/gk').mkdir(parents=True);(home/'.git/info').mkdir();drive=home/'drive';drive.mkdir();env=isolated(h,t)
+ g,b=command(['git','rev-parse','--show-toplevel'],drive,env)
+ r,br=command([str(ROOT/'bin/roundfix'),'runs','list'],drive,env)
+ actual=sorted(p.name for p in (home/'.git').iterdir())
+ ok=all(x in source_text for x in ['2026-11-05','gk','info','fatal: not a git repository']) and actual==['gk','info'] and g.returncode!=0 and 'not a git repository' in g.stderr and (r.returncode,r.stdout,r.stderr)==(0,'No Runs found.\n','') and not (home/'.roundfixrc.yml').exists()
+ body='Outside source: maintainer-pasted MacBook terminal report, 2026-11-05 BRT.\nPath: '+str(source.relative_to(ROOT))+'\nReported: only gk/ and info/ in ~/.git; no HEAD or objects; Git says fatal: not a git repository.\nIndependent fresh reproduction: .git entries = '+repr(actual)+'\n'+b+'\n'+br+'\nThe only_gk_and_info acceptance case is independently retained in shapes.txt. Nested recovery is retained in repro.txt. The external pre-Spec observation and freshly reproduced Git response agree.\n'
+ body=body.replace(h,'<home>').replace(t,'<tmp>')
+result('OUTSIDE-REPORT',body+'Temporary directories removed: '+str(not Path(h).exists() and not Path(t).exists()),ok)
+with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+ env=isolated(h,t);repo=Path(h)/'repo';repo.mkdir()
+ v,bv=command(['git','--version'],repo,env);p,b=command(['git','init','--quiet'],repo,env)
+ accepted,ba=command(['git','rev-parse','--show-toplevel'],repo,env)
+ head_exists=(repo/'.git/HEAD').is_file();(repo/'.git/HEAD').unlink()
+ rejected,br=command(['git','rev-parse','--show-toplevel'],repo,env)
+ shapes=(E/'shapes.txt').read_text();names=re.findall(r'--- PASS: TestFindGitRootAgreesWithGit/([^ ]+) ',shapes)
+ quote='a valid Git repository must have the HEAD file'
+ ok=v.returncode==0 and p.returncode==0 and accepted.returncode==0 and Path(accepted.stdout.strip()).resolve()==repo.resolve() and head_exists and rejected.returncode!=0 and 'not a git repository' in rejected.stderr and len(names)==22 and quote in (SPEC/'_prd.md').read_text()
+ body='Outside source: installed Git binary, observed 2026-11-05 BRT.\n'+bv+'\n'+b+'\nBefore HEAD removal:\n'+ba+'\nAfter HEAD removal:\n'+br+'\nPublished outside passage: gitrepository-layout(5), https://git-scm.com/docs/gitrepository-layout; quoted by the PRD from the 2026-11-05 reading: "'+quote+'". Checked offline as authorized; no website lookup.\nIndependent Git HEAD-removal experiment agrees with the quoted requirement.\nThe named Git-oracle test pairs Git rev-parse and FindGitRoot for these 22 cases, retained in shapes.txt:\n'+'\n'.join(names)+'\nMalformed gitfile and missing gitdir target are acceptance-only cases because Git reports distinct errors there. Evidence is bounded to the authored shapes, rather than every malformed HEAD.\n'
+ body=body.replace(h,'<home>').replace(t,'<tmp>')
+result('OUTSIDE-GIT',body+'Temporary directories removed: '+str(not Path(h).exists() and not Path(t).exists()),ok)
+with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+ env=isolated(h,t)
+ assert not any(k in env for k in KEYS)
+ before=subprocess.check_output(['git','diff','--name-only','HEAD'],text=True)
+ p,b=command(['./bin/roundfix','archive',SPEC.name,'--plan','--offline'],ROOT,env)
+ after=subprocess.check_output(['git','diff','--name-only','HEAD'],text=True)
+ ok=p.returncode==0 and 'judge: skipped (offline)' in p.stdout and 'candidate ' in p.stdout and before==after and (SPEC/'_tasks.md').is_file()
+ b='Every Judge Key Variable and TYPESAFE_API_KEY unset. HOME/TMPDIR disposable; GOMODCACHE/GOCACHE preserved at go env locations, no values recorded.\n'+b+'\nTracked worktree delta unchanged: '+str(before==after)+'\nSpec remains active: '+str((SPEC/'_tasks.md').is_file())+'\n'
+ b=b.replace(h,'<home>').replace(t,'<tmp>')
+result('ARCHIVE',b+'Temporary HOME and TMPDIR removed: '+str(not Path(h).exists() and not Path(t).exists()),ok)

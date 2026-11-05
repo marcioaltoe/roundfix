@@ -1,0 +1,74 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestRejectedGitDirectoryTranscripts|TestSkillsProjectRootSkipsARejectedGitDirectory|TestReadOnlyRunCommandsWarnOnAStrayGitDirectory|TestStrayGitDirectoryTranscripts)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== PAUSE TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== RUN   TestStrayGitDirectoryTranscripts
+=== PAUSE TestStrayGitDirectoryTranscripts
+=== RUN   TestRejectedGitDirectoryTranscripts
+=== PAUSE TestRejectedGitDirectoryTranscripts
+=== RUN   TestSkillsProjectRootSkipsARejectedGitDirectory
+=== PAUSE TestSkillsProjectRootSkipsARejectedGitDirectory
+=== CONT  TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== CONT  TestSkillsProjectRootSkipsARejectedGitDirectory
+=== CONT  TestRejectedGitDirectoryTranscripts
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory
+=== CONT  TestStrayGitDirectoryTranscripts
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_1
+=== RUN   TestStrayGitDirectoryTranscripts/Surface_Transcript_2
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_2
+=== RUN   TestStrayGitDirectoryTranscripts/Surface_Transcript_3
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_3
+--- PASS: TestStrayGitDirectoryTranscripts (0.00s)
+    --- PASS: TestStrayGitDirectoryTranscripts/Surface_Transcript_2 (0.00s)
+    --- PASS: TestStrayGitDirectoryTranscripts/Surface_Transcript_3 (0.00s)
+--- PASS: TestRejectedGitDirectoryTranscripts (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_1 (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_2 (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_3 (0.00s)
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T125704Z_ad2bf5488aeb2825
+--- PASS: TestSkillsProjectRootSkipsARejectedGitDirectory (0.02s)
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T125704Z_ad2bf5488aeb2825_--json
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T125704Z_ad2bf5488aeb2825
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T125704Z_ad2bf5488aeb2825
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T125704Z_6747f6fcb005f57d
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T125704Z_6747f6fcb005f57d_--json
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T125704Z_6747f6fcb005f57d
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T125704Z_6747f6fcb005f57d
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser
+--- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory (0.05s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory (0.03s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T125704Z_ad2bf5488aeb2825 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T125704Z_ad2bf5488aeb2825_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T125704Z_ad2bf5488aeb2825 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T125704Z_ad2bf5488aeb2825 (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser (0.00s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file (0.02s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T125704Z_6747f6fcb005f57d (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T125704Z_6747f6fcb005f57d_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T125704Z_6747f6fcb005f57d (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T125704Z_6747f6fcb005f57d (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser (0.00s)
+PASS
+suiteguard: guard cost: measured 2930 paths; fingerprint took 139.889459ms before and 133.351042ms after
+ok  	roundfix/internal/cli	0.769s
+stderr:
+

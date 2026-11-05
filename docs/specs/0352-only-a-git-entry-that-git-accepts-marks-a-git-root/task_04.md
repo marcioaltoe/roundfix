@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0352-only-a-git-entry-that-git-accepts-marks-a-git-root
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

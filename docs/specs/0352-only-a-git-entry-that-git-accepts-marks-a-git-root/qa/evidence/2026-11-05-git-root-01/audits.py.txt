@@ -1,0 +1,53 @@
+import runpy,sys
+from pathlib import Path
+ns=runpy.run_path(str(Path.cwd()/'docs/specs/0352-only-a-git-entry-that-git-accepts-marks-a-git-root/qa/evidence/2026-11-05-git-root-01/run-qa.py.txt'));globals().update({k:v for k,v in ns.items() if not k.startswith('__')})
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+base,head=PLAN['base'],PLAN['head'];taskrange=base+'..'+head
+outputs=[]
+def queue(rid,text,ok=True,status=None):outputs.append((rid,text,ok,status));print(rid+': '+('pass' if ok else 'fail'),flush=True)
+rule='Only a `.git` entry that Git accepts marks a Git root: a directory with a valid `HEAD` and `objects` and `refs` directories, or a file that starts with `gitdir:`. Any other `.git`, such as a directory that holds only `gk` and `info`, is skipped as Git skips it.'
+paths=['.agents/skills/roundfix/references/review-runs.md','skills/roundfix/references/review-runs.md','.agents/skills/roundfix/references/runs.md','skills/roundfix/references/runs.md','docs/user-guide/configuration.md','docs/user-guide/commands/runs.md']
+body='Whitespace-normalized exact API Contract 5 sentence and old-rule search:\n';ok=True
+for f in paths:
+ text=' '.join((ROOT/f).read_text().split());match=rule in text;old='Repository detection finds any `.git` entry in an ancestor' in text;ok=ok and match and not old
+ body+=f+': exact sentence='+str(match)+'; old sentence='+str(old)+'\n'
+for f in ['SKILL.md','references/review-runs.md','references/runs.md']:
+ match=(ROOT/'.agents/skills/roundfix'/f).read_bytes()==(ROOT/'skills/roundfix'/f).read_bytes();ok=ok and match;body+='Mirror '+f+': '+str(match)+'\n'
+adr=ROOT/'docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md';a=' '.join(adr.read_text().split())
+for check in ['**Amended by [ADR-0362](0362-only-a-git-entry-that-git-accepts-marks-a-git-root.md) (2026-11-05).**','ADR-0362 takes the first half of this option','updated_at: 2026-11-05T12:00:00Z']:
+ match=check in a;ok=ok and match;body+=check+': '+str(match)+'\n'
+copy='func findSkillsGitRoot' in (ROOT/'internal/cli/cli.go').read_text();ok=ok and not copy;body+='Duplicate skills walk present: '+str(copy)+'\nSkill version fields: 0.1.187 in canonical and mirror; full ./skills suite checks the recorded digest.\n'
+queue('WORDING',body,ok)
+prd=(SPEC/'_prd.md').read_text();tech=(SPEC/'_techspec.md').read_text()
+def section(text,title):
+ m=re.search('^## '+re.escape(title)+'\\n(.*?)(?=^## |\\Z)',text,re.M|re.S);assert m,title;return m.group(1).strip()
+decl=section(prd,'Unreachable Acceptance');queue('DECLARATIONS','PRD Unreachable Acceptance:\n'+decl+'\nCheck: begins with None. and contains no criterion declaration.\nrows_blocked_declared: 0\n',decl.startswith('None.') and 'criterion:' not in decl)
+ctx=git('diff',taskrange,'--','CONTEXT.md');g1=section(prd,'Glossary');g2=section(tech,'Glossary');queue('GLOSSARY','Range: '+taskrange+'\nPRD Glossary: '+g1+'\nTechSpec Glossary: '+g2+'\nCommand: git diff '+taskrange+' -- CONTEXT.md\n'+(ctx or '(empty diff)\n'),g1=='None.' and g2=='None.' and not ctx)
+allcommits=git('rev-list','--reverse',taskrange).splitlines();commits=[c for c in allcommits if re.search(r'^Roundfix-Task: task_0[123]$',git('show','-s','--format=%B',c),re.M)];amendments=[c for c in allcommits if c not in commits];auth=SPEC/'_authorization.md';authtext=auth.read_text();bounded=set(re.findall(r'^  - (.+)$',authtext.split('operations:')[0],re.M));govsrc=(ROOT/'internal/speccheck/governed.go').read_text();patterns=[re.compile(p) for p in re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',govsrc)];historical=set(re.findall(r'"([^"]+)"',govsrc.split('paths: exactGovernedPaths(')[1].split('),')[0]))
+def governed(f):return f in historical or any(p.search(f) for p in patterns)
+allchanges=[];ok=True;body='Scope audit command: git diff-tree --no-commit-id --name-only -r <commit> for every Task commit.\nRange: '+taskrange+'\n'
+for i,c in enumerate(commits,1):
+ task='task_'+str(i).zfill(2);taskpath=SPEC/(task+'.md');text=git('show',c+':'+str(taskpath.relative_to(ROOT)));declarations=set(re.findall(r'^(?:- )?(?:instruction|interface|creates): `([^`]+)`',text,re.M))
+ if '## Recorded paths' in text:declarations.update(re.findall(r'`([^`]+)`',section(text,'Recorded paths')))
+ declarations.add(str(taskpath.relative_to(ROOT)));changed=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines();allchanges.extend(changed)
+ extra=set(changed)-declarations;gov={f for f in changed if governed(f)};unauth=gov-bounded
+ ancestors=subprocess.run(['git','merge-base','--is-ancestor',base,c]).returncode==0
+ same=git('show',base+':'+str(auth.relative_to(ROOT)))==authtext
+ ok=ok and not extra and not unauth and ancestors and same
+ body+='\n'+task+' '+c+'\n'+'\n'.join('  '+f+(' [governed; authorized]' if f in gov else '') for f in changed)+'\nOut-of-declaration paths: '+repr(sorted(extra))+'\nUnauthorized governed paths: '+repr(sorted(unauth))+'\nAuthorization predates Task and is byte-identical: '+str(ancestors and same)+'\n'
+forbidden_exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md','docs/references/skill-coverage.json','docs/references/coverage-record.json'}
+forbidden_prefix=['.github/workflows/','internal/baseline/','internal/store/','internal/worktree/','internal/spec/','internal/speccheck/','docs/agents/']
+allowed_skill=set(re.findall(r'^(?:- )?(?:instruction|interface|creates): `([^`]+)`',(SPEC/'task_03.md').read_text(),re.M))
+forbidden=[f for f in allchanges if f in forbidden_exact or any(f.startswith(p) for p in forbidden_prefix) or (f.startswith(('.agents/skills/','skills/')) and f not in allowed_skill)]
+ok=ok and len(commits)==3 and not forbidden;body+='\nForbidden scope changes: '+repr(forbidden)+'\n'
+for f in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ def settlement(rev):
+  text=git('show',rev+':'+f);return re.search(r'^### QA settlement\n.*?(?=^#{1,3} |\Z)',text,re.M|re.S).group()
+ same=settlement(base)==settlement(head);ok=ok and same;body+='QA settlement unchanged in '+f+': '+str(same)+'\n'
+for c in amendments:
+ changed=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines();expected=[str((SPEC/'task_04.md').relative_to(ROOT))];match=changed==expected;ok=ok and match;body+='\nNon-Task QA authoring amendment '+c+': '+repr(changed)+'; only task_04 environment contract: '+str(match)+'\n'
+body+='\nMechanical authorization audit already lists task_01 and task_03 as granted at planning revision '+base+'. No unlisted tooling-changing Task commit exists. The separate planning commit precedes each Task. No consequent-fix declaration exists, preserving the seeded mechanical skip. Current source delta is restricted to QA evidence/report.\n'
+queue('SCOPE',body,ok)
+queue('PR','Source: QA assignment declares Pull Request: none open on the Spec target branch.\nPull Request row: blocked (environment: no open Pull Request)\nRecorded delivery approval: _authorization.md approved at '+base+'; implement, commit, push, pull_request and merge granted to delivery operator. QA itself has no mutation authority.\nChecks equivalent: Daemon supplied make verify-changed pass (exit 0) at '+head+'.\nUnresolved threads: none because no Pull Request exists.\nMerge-Ready acceptance: none yet.\nClaimed candidate: '+head+'\nLive Pull Request approval and Merge-Ready acceptance cannot be observed before a Pull Request exists. Unblocking: authorized delivery opens the Spec target-branch Pull Request and observes approval, required checks and Merge-Ready evidence on its current head. This row alone supports a qualifying partial.\n',True,'blocked (environment: no open Pull Request)')
+
+for args in outputs:result(*args)

@@ -1,0 +1,49 @@
+Git binary: git version 2.56.0
+command: git rev-parse --show-toplevel
+exit: 128
+stdout:
+stderr:
+fatal: not a git repository (or any of the parent directories): .git
+
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0352-only-a-git-entry-that-git-accepts-marks-a-git-root-4893e28702903d2b-8ffd857b-d9424597/run_20261105T142539Z_7e7ff01ac1d14693/bin/roundfix runs list
+exit: 0
+stdout:
+No Runs found.
+stderr:
+
+command: git init --quiet
+exit: 0
+stdout:
+stderr:
+
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0352-only-a-git-entry-that-git-accepts-marks-a-git-root-4893e28702903d2b-8ffd857b-d9424597/run_20261105T142539Z_7e7ff01ac1d14693/bin/roundfix init --scope project
+exit: 0
+stdout:
+Roundfix config created
+
+Scope:
+  project
+
+Path:
+  /private<home>/drive/repo/.roundfixrc.yml
+
+Next:
+  roundfix fetch --pr <number>
+stderr:
+
+command: git rev-parse --show-toplevel
+exit: 0
+stdout:
+/private<home>/drive/repo
+stderr:
+
+Nested Project Config exists: True
+Home Project Config absent: True
+Fresh read after init:
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0352-only-a-git-entry-that-git-accepts-marks-a-git-root-4893e28702903d2b-8ffd857b-d9424597/run_20261105T142539Z_7e7ff01ac1d14693/bin/roundfix runs list
+exit: 0
+stdout:
+No Runs found.
+stderr:
+
+Temporary HOME and TMPDIR removed: True

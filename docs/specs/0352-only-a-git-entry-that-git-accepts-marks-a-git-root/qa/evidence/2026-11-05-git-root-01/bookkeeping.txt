@@ -1,0 +1,5 @@
+Finalizer assertion initially found 50 identifier matches because Results and Row carry-forward share identifiers.
+Root cause: row update regex applied to the whole report.
+Repair: restrict regex to Results; restore the 25 original carry-forward dispositions verbatim.
+Verification: 25 Results, 24 pass and one PR environment block; 25 carry-forward re-run explanations.
+No test rerun or product mutation required.

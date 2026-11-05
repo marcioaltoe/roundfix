@@ -1,0 +1,39 @@
+Audited head: cca415878dcdf26dea29f77fc160a8e9b07aa94e
+Source: git archive cca415878dcdf26dea29f77fc160a8e9b07aa94e into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: require-gitdir-target
+--- internal/config/config.go original
++++ internal/config/config.go sabotaged
+@@ -2188,6 +2188,10 @@
+ 	}
+ 	if info.Mode().IsRegular() {
+ 		content, err := os.ReadFile(path)
++		if err == nil && bytes.HasPrefix(content, []byte("gitdir:")) {
++			_, targetErr := os.Stat(strings.TrimSpace(strings.TrimPrefix(string(content), "gitdir:")))
++			return targetErr == nil
++		}
+ 		return err == nil && bytes.HasPrefix(content, []byte("gitdir:"))
+ 	}
+ 	if !info.IsDir() {
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestFindGitRootAcceptsOnlyAGitEntryGitAccepts$/^gitdir_file_whose_target_is_missing$ ./internal/config
+exit: 1
+stdout:
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+    git_root_test.go:59: FindGitRoot = "", want "<tmp>/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsgitdir_file_whose_3172847600/001/shape"
+--- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts (0.00s)
+    --- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing (0.00s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 141.009542ms before and 143.26125ms after
+FAIL	roundfix/internal/config	0.559s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True

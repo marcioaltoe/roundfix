@@ -1,0 +1,7 @@
+Source: docs/specs/0352-only-a-git-entry-that-git-accepts-marks-a-git-root/references/2026-11-05-a-stray-home-git-directory-makes-the-home-a-git-root.md
+Origin/date: maintainer terminal report on 2026-11-05, before Spec authoring; captured as adopted source.
+Comparison: report lists only gk/ and info/ under ~/.git, with no HEAD or objects. Its git status/log/remote requests answer fatal: not a git repository.
+Observed: the named only_gk_and_info acceptance and Git oracle cases pass; the independent REPRO Git command rejects the same directory, runs list gives no warning, and nested git-init plus project init succeeds.
+Agreement: True
+This is an offline comparison of third-party observation, not acceptance based on reading the reference alone. See shapes.txt and repro.txt for commands, assertions and raw streams.
+

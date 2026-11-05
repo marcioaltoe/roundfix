@@ -1,0 +1,6 @@
+PRD Unreachable Acceptance:
+None. Every criterion is checked with this repository's files, temporary
+homes and temporary repositories.
+Check: begins with None. and contains no criterion declaration.
+rows_blocked_declared: 0
+

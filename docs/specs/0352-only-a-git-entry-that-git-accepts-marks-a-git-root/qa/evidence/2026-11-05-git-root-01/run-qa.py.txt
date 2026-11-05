@@ -1,0 +1,74 @@
+import os, subprocess, tempfile, json, sys, re, shutil, tarfile, io, difflib
+from pathlib import Path
+ROOT=Path.cwd(); SPEC=ROOT/'docs/specs/0352-only-a-git-entry-that-git-accepts-marks-a-git-root'; QA=SPEC/'qa'; E=QA/'evidence/2026-11-05-git-root-01'; REPORT=QA/'qa-report-2026-11-05-01.md'
+PLAN=json.loads((E/'plan.json.txt').read_text()); CACHE={n:subprocess.check_output(['go','env',n],text=True).strip() for n in ['GOMODCACHE','GOCACHE']}
+KEYS=['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY','OPENROUTER_API_KEY']
+# No environment output is retained. Only the named cache locations are propagated.
+def isolated(home,tmp):
+ e={k:v for k,v in os.environ.items() if k not in KEYS and not k.endswith('_API_KEY') and not k.startswith('GIT_')}
+ e.update(CACHE,HOME=str(home),TMPDIR=str(tmp),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL=os.devnull,GIT_TERMINAL_PROMPT='0',LC_ALL='C')
+ return e
+
+def result(rid,body,ok=True,status=None):
+ name=rid.lower()+'.txt';(E/name).write_text(body+'\n');state=status or ('pass' if ok else 'fail')
+ p=REPORT.read_text(); start_results=p.index('## Results\n'); end_results=p.index('\n## ',start_results+1); table=p[start_results:end_results]; table=re.sub(r'(?m)^\| '+re.escape(rid)+r' \| [^|]+ \|', '| '+rid+' | '+state+' |', table); p=p[:start_results]+table+p[end_results:]
+ start=p.index('### '+rid+'\n');end=p.find('\n### ',start+1);end=len(p) if end<0 else end
+ block=p[start:end].replace('Evidence: pending.','Evidence: ['+name+'](evidence/2026-11-05-git-root-01/'+name+'). Result: '+state+'.')
+ p=p[:start]+block+p[end:];REPORT.write_text(p)
+ print(rid+': '+state,flush=True)
+
+def command(args,cwd=ROOT,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env,capture_output=True,text=True)
+ return p,'command: '+(' '.join(args))+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr
+
+def testenv():
+ e={k:v for k,v in os.environ.items() if not k.endswith(('_API_KEY','_TOKEN','_PASSWORD','_SECRET')) and not k.startswith('GIT_')}
+ e.update(GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL=os.devnull,GIT_TERMINAL_PROMPT='0')
+ return e
+
+def testrow(rid,args,passes=()):
+ p,body=command(['go','test','-count=1','-timeout','20m',*args],env=testenv())
+ ok=p.returncode==0 and all('--- PASS: '+n+' ' in p.stdout for n in passes)
+ result(rid,'Package-test environment: session HOME and TMPDIR retained; no values recorded.\n'+body,ok)
+ print('\n'.join((p.stdout+p.stderr).splitlines()[-8:]),flush=True)
+
+def tests():
+ result('GATE','make build: exit 0\nBinary: '+(E/'version.txt').read_text()+'\nRepository Verification: make verify-changed\nAuthority: Daemon supplied in QA assignment at audited head '+PLAN['head']+'\nverdict: pass (exit 0)\ndiagnostics: removed on success\nNot rerun by QA Agent.\n')
+ config=['TestFindGitRootAcceptsOnlyAGitEntryGitAccepts','TestFindGitRootAgreesWithGit','TestLoadUnderARejectedGitDirectoryFindsNoGitRoot']
+ testrow('SHAPES',['-v','-run','^('+'|'.join(config)+')$','./internal/config'],config)
+ cli=['TestRejectedGitDirectoryTranscripts','TestSkillsProjectRootSkipsARejectedGitDirectory','TestReadOnlyRunCommandsWarnOnAStrayGitDirectory','TestStrayGitDirectoryTranscripts']
+ testrow('CLI-TESTS',['-v','-run','^('+'|'.join(cli)+')$','./internal/cli'],cli)
+ testrow('PACKAGES',['-v','./internal/config','./internal/gittest','./internal/judge','./internal/cli','./skills'])
+ p,b=command(['go','test','-count=1','-timeout','20m','-v','-run','^TestCoverageEquivalence$','./internal/spec'],env=testenv())
+ p2,b2=command(['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','./internal/docscontract'],env=testenv())
+ result('CONTRACTS',b+'\n'+b2,p.returncode==0 and p2.returncode==0)
+ print('\n'.join((p2.stdout+p2.stderr).splitlines()[-10:]),flush=True)
+
+def live():
+ expectations=[(['runs','list'],'No Runs found.\n','',0),(['reconcile'],'',"roundfix: reconcile failed: reconcile requires running inside a Git repository\nRun 'roundfix reconcile --help' for usage.\n",2),(['init','--scope','project'],'',"Init failed\n\nReason:\n  project init requires a Git root; use --scope user outside a repository\n\nUsage:\n  Run 'roundfix init --help' for usage.\n",2)]
+ for i,(args,out,err,code) in enumerate(expectations,1):
+  with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+   home=Path(h);(home/'.git/gk').mkdir(parents=True);(home/'.git/info').mkdir();drive=home/'drive';drive.mkdir();env=isolated(h,t)
+   p,b=command([str(ROOT/'bin/roundfix'),*args],drive,env);absent=not (home/'.roundfixrc.yml').exists()
+   ok=(p.stdout,p.stderr,p.returncode)==(out,err,code) and absent
+   # A fresh command confirms absence/replay without sharing a process.
+   p2,b2=command([str(ROOT/'bin/roundfix'),'runs','list'],drive,env)
+   ok=ok and (p2.returncode,p2.stdout,p2.stderr)==(0,'No Runs found.\n','')
+   b=b.replace(str(home),'<home>').replace(str(t),'<tmp>')+'\nProject Config absent: '+str(absent)+'\nIndependent fresh-process read:\n'+b2.replace(str(home),'<home>')
+  result('TRANSCRIPT-'+str(i),b+'\nHOME and TMPDIR removed: '+str(not Path(h).exists() and not Path(t).exists()),ok)
+ with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+  home=Path(h);(home/'.git/gk').mkdir(parents=True);(home/'.git/info').mkdir();drive=home/'drive';drive.mkdir();env=isolated(h,t)
+  p,b=command(['git','rev-parse','--show-toplevel'],drive,env)
+  p2,b2=command([str(ROOT/'bin/roundfix'),'runs','list'],drive,env)
+  repo=drive/'repo';repo.mkdir();init,bi=command(['git','init','--quiet'],repo,env)
+  project,bp=command([str(ROOT/'bin/roundfix'),'init','--scope','project'],repo,env)
+  git,bg=command(['git','rev-parse','--show-toplevel'],repo,env)
+  config=repo/'.roundfixrc.yml';ok=p.returncode!=0 and 'not a git repository' in p.stderr and (p2.returncode,p2.stdout,p2.stderr)==(0,'No Runs found.\n','') and init.returncode==0 and project.returncode==0 and config.is_file() and Path(git.stdout.strip()).resolve()==repo.resolve() and not (home/'.roundfixrc.yml').exists()
+  # Reopen confirms the written Project Config parses in a fresh CLI process.
+  again,ba=command([str(ROOT/'bin/roundfix'),'runs','list'],repo,env);ok=ok and again.returncode==0
+  b='Git binary: '+subprocess.check_output(['git','--version'],text=True,env=env)+b+'\n'+b2+'\n'+bi+'\n'+bp+'\n'+bg+'\nNested Project Config exists: '+str(config.is_file())+'\nHome Project Config absent: '+str(not (home/'.roundfixrc.yml').exists())+'\nFresh read after init:\n'+ba
+  b=b.replace(h,'<home>').replace(t,'<tmp>')
+ result('REPRO',b+'\nTemporary HOME and TMPDIR removed: '+str(not Path(h).exists() and not Path(t).exists()),ok)
+
+if __name__=='__main__':
+ {'tests':tests,'live':live}[sys.argv[1]]()

@@ -1,0 +1,36 @@
+Audited head: cca415878dcdf26dea29f77fc160a8e9b07aa94e
+Source: git archive cca415878dcdf26dea29f77fc160a8e9b07aa94e into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: snapshot-no-file
+--- internal/cli/cli_test.go original
++++ internal/cli/cli_test.go sabotaged
+@@ -13221,9 +13221,6 @@
+ 		if err := os.MkdirAll(filepath.Join(workDir, "src"), 0o755); err != nil {
+ 			return nil, fmt.Errorf("create fake worktree source directory: %w", err)
+ 		}
+-		if err := os.WriteFile(filepath.Join(workDir, "src", "agent-change.go"), []byte("package src\n"), 0o644); err != nil {
+-			return nil, fmt.Errorf("write fake worktree change: %w", err)
+-		}
+ 		return []string{"src/agent-change.go"}, nil
+ 	}
+ 	return nil, nil
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestRunOperationalCommandAcceptsMVPFlags$/^resolve$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestRunOperationalCommandAcceptsMVPFlags
+=== PAUSE TestRunOperationalCommandAcceptsMVPFlags
+=== CONT  TestRunOperationalCommandAcceptsMVPFlags
+=== RUN   TestRunOperationalCommandAcceptsMVPFlags/resolve
+    cli_test.go:5118: expected Batch commit confirmation, got "Roundfix resolve\n\nTarget:\n  PR: #123 owner/project\n  Branch: feature/review\n  Source: CodeRabbit\n  Agent: Codex\n  Agent Model: gpt-5.6-luna\n  Default Reasoning Effort: max\n  Selections:\n    per-scope history: unavailable\n  HEAD: abc123\n\nRun:\n  ID: run_20261105T130306Z_fef9330390dddb8b\n  State: ResolvingWithAgent\n  User checkout: <tmp>/TestRunOperationalCommandAcceptsMVPFlagsresolve2940778393/002\n  Round: 0 / 6\n  Budget: 0s / 2h0m0s\n  Git: clean, 1 unpushed commit(s), upstream origin/feature/review\n  Auto-commit: on\n  Auto-push: on\n  Last push: pending\n\n+-----------------------------------------+--------------------------------------------------------+\n| Review Issues                           | Agent Console                                          |\n+-----------------------------------------+--------------------------------------------------------+\n| Round 001                               | Agent and verification output will stream below.       |\n| major    pending    internal/test.go:12 |                                                        |\n|   major: handle test issue              |                                                        |\n+-----------------------------------------+--------------------------------------------------------+\nKeys: Ctrl-C stop\n\nroundfix: resolve selected 1 downloaded Unresolved Review Issue(s) from 1 Compatible Artifact Round(s), assigned 1 newest occurrence(s) into 1 Batch(es), and associated 0 older duplicate occurrence(s).\nRun: run_20261105T130306Z_fef9330390dddb8b\nUser checkout: <tmp>/TestRunOperationalCommandAcceptsMVPFlagsresolve2940778393/002 on branch feature/review\nArtifact Directory: <tmp>/TestRunOperationalCommandAcceptsMVPFlagsresolve2940778393/001/.roundfix/artifacts/e4c4cba9b0e051fb\nRound scope: all\nOpen Pull Request: #123 owner/project feature/review\nAgent: Codex\nAgent Model: gpt-5.6-luna\nDefault Reasoning Effort: max\nBatch: 001/001 (1 Review Issue(s))\nSESSION AGENT_WORK_STARTED\nfake agent output\nAgent Batch finished with settled Review Issue statuses.\nVerification passed (attempt 1).\nroundfix: path src/agent-change.go is absent from the worktree and index; omitted from the commit\nBatch commit skipped: Batch 001 made no stageable worktree changes.\nResolved 1 Review Source thread(s).\nFinal Push completed: git push origin HEAD:feature/review\nResolve Run run_20261105T130306Z_fef9330390dddb8b reached Clean.\n"
+--- FAIL: TestRunOperationalCommandAcceptsMVPFlags (0.02s)
+    --- FAIL: TestRunOperationalCommandAcceptsMVPFlags/resolve (0.02s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 145.664584ms before and 142.501541ms after
+FAIL	roundfix/internal/cli	0.767s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True

@@ -1,0 +1,38 @@
+Audited head: cca415878dcdf26dea29f77fc160a8e9b07aa94e
+Source: git archive cca415878dcdf26dea29f77fc160a8e9b07aa94e into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: ignore-commondir
+--- internal/config/config.go original
++++ internal/config/config.go sabotaged
+@@ -2228,7 +2228,8 @@
+ 	common := path
+ 	content, err := os.ReadFile(filepath.Join(path, "commondir"))
+ 	if err == nil {
+-		common = strings.TrimSpace(string(content))
++		common = path
++		_ = content // sabotage: ignore commondir
+ 		if !filepath.IsAbs(common) {
+ 			common = filepath.Join(path, common)
+ 		}
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestFindGitRootAcceptsOnlyAGitEntryGitAccepts$/^common_directory$ ./internal/config
+exit: 1
+stdout:
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+    git_root_test.go:59: FindGitRoot = "", want "<tmp>/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptscommon_directory136362740/001/shape"
+--- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts (0.00s)
+    --- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory (0.00s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 151.765625ms before and 134.90725ms after
+FAIL	roundfix/internal/config	0.611s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True

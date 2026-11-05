@@ -1,0 +1,75 @@
+Package-test environment: session HOME and TMPDIR retained; no values recorded.
+command: go test -count=1 -timeout 20m -v -run ^(TestRejectedGitDirectoryTranscripts|TestSkillsProjectRootSkipsARejectedGitDirectory|TestReadOnlyRunCommandsWarnOnAStrayGitDirectory|TestStrayGitDirectoryTranscripts)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== PAUSE TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== RUN   TestStrayGitDirectoryTranscripts
+=== PAUSE TestStrayGitDirectoryTranscripts
+=== RUN   TestRejectedGitDirectoryTranscripts
+=== PAUSE TestRejectedGitDirectoryTranscripts
+=== RUN   TestSkillsProjectRootSkipsARejectedGitDirectory
+=== PAUSE TestSkillsProjectRootSkipsARejectedGitDirectory
+=== CONT  TestReadOnlyRunCommandsWarnOnAStrayGitDirectory
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory
+=== CONT  TestRejectedGitDirectoryTranscripts
+=== CONT  TestSkillsProjectRootSkipsARejectedGitDirectory
+=== CONT  TestStrayGitDirectoryTranscripts
+=== RUN   TestStrayGitDirectoryTranscripts/Surface_Transcript_2
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_1
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_2
+=== RUN   TestStrayGitDirectoryTranscripts/Surface_Transcript_3
+=== RUN   TestRejectedGitDirectoryTranscripts/Surface_Transcript_3
+--- PASS: TestStrayGitDirectoryTranscripts (0.00s)
+    --- PASS: TestStrayGitDirectoryTranscripts/Surface_Transcript_2 (0.00s)
+    --- PASS: TestStrayGitDirectoryTranscripts/Surface_Transcript_3 (0.00s)
+--- PASS: TestRejectedGitDirectoryTranscripts (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_1 (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_2 (0.00s)
+    --- PASS: TestRejectedGitDirectoryTranscripts/Surface_Transcript_3 (0.00s)
+--- PASS: TestSkillsProjectRootSkipsARejectedGitDirectory (0.02s)
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T143952Z_98e70324ab419f5e
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T143952Z_98e70324ab419f5e_--json
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T143952Z_98e70324ab419f5e
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T143952Z_98e70324ab419f5e
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T143952Z_8af49d27cbad53ed
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T143952Z_8af49d27cbad53ed_--json
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T143952Z_8af49d27cbad53ed
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T143952Z_8af49d27cbad53ed
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser
+=== RUN   TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser
+--- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory (0.05s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory (0.03s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T143952Z_98e70324ab419f5e (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_show_run_20261105T143952Z_98e70324ab419f5e_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/events_run_20261105T143952Z_98e70324ab419f5e (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_run_20261105T143952Z_98e70324ab419f5e (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/directory/runs_browser (0.00s)
+    --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file (0.02s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T143952Z_8af49d27cbad53ed (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_show_run_20261105T143952Z_8af49d27cbad53ed_--json (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/events_run_20261105T143952Z_8af49d27cbad53ed (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_run_20261105T143952Z_8af49d27cbad53ed (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all_--state_all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_list_--all (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/repository_scope_stays_the_stray_root (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/attach_browser (0.00s)
+        --- PASS: TestReadOnlyRunCommandsWarnOnAStrayGitDirectory/file/runs_browser (0.00s)
+PASS
+suiteguard: guard cost: measured 2964 paths; fingerprint took 139.581792ms before and 138.592208ms after
+ok  	roundfix/internal/cli	0.764s
+stderr:
+

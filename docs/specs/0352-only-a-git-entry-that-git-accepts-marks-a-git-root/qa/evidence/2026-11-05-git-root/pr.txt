@@ -1,0 +1,9 @@
+Source: QA assignment declares Pull Request: none open on the Spec target branch.
+Pull Request row: blocked (environment: no open Pull Request)
+Recorded delivery approval: _authorization.md approved at ad77a797fd7422360418e17014311ea04d166305; implement, commit, push, pull_request and merge granted to delivery operator. QA itself has no mutation authority.
+Checks equivalent: Daemon supplied make verify-changed pass (exit 0) at cca415878dcdf26dea29f77fc160a8e9b07aa94e.
+Unresolved threads: none because no Pull Request exists.
+Merge-Ready acceptance: none yet.
+Claimed candidate: cca415878dcdf26dea29f77fc160a8e9b07aa94e
+Live Pull Request approval and Merge-Ready acceptance cannot be observed before a Pull Request exists. Unblocking: authorized delivery opens the Spec target-branch Pull Request and observes approval, required checks and Merge-Ready evidence on its current head. This row alone supports a qualifying partial.
+

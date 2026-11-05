@@ -1,0 +1,39 @@
+Package-test environment: session HOME and TMPDIR retained; no values recorded.
+Audited head: b944dfba6e89e58d0f0a32b001f1c22f002efc9b
+Source: git archive b944dfba6e89e58d0f0a32b001f1c22f002efc9b into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: without-refs
+--- internal/config/config.go original
++++ internal/config/config.go sabotaged
+@@ -2235,7 +2235,7 @@
+ 	} else if !os.IsNotExist(err) {
+ 		return false
+ 	}
+-	for _, name := range []string{"objects", "refs"} {
++	for _, name := range []string{"objects"} {
+ 		info, err := os.Stat(filepath.Join(common, name))
+ 		if err != nil || !info.IsDir() {
+ 			return false
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestFindGitRootAcceptsOnlyAGitEntryGitAccepts$/^HEAD_and_objects_without_refs$ ./internal/config
+exit: 1
+stdout:
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+    git_root_test.go:59: FindGitRoot = "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsHEAD_and_objects_w835459289/001/shape", want ""
+    git_root_test.go:66: FindGitRoot through rejected entry = "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsHEAD_and_objects_w835459289/001/shape", want "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsHEAD_and_objects_w835459289/001"
+--- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts (0.00s)
+    --- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs (0.00s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 144.757792ms before and 143.598667ms after
+FAIL	roundfix/internal/config	0.527s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True

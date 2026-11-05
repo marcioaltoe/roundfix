@@ -1,0 +1,141 @@
+{
+  "head": "cca415878dcdf26dea29f77fc160a8e9b07aa94e",
+  "base": "ad77a797fd7422360418e17014311ea04d166305",
+  "rows": [
+    [
+      "GATE",
+      "Requirement 1; repository Verification",
+      "Build self-audit binary and record Daemon gate"
+    ],
+    [
+      "SHAPES",
+      "Requirement 2; Requirement 6",
+      "Named config shapes and Git agreement"
+    ],
+    [
+      "CLI-TESTS",
+      "Requirement 2; Requirement 6",
+      "Named CLI and unchanged genuine-root warnings"
+    ],
+    [
+      "PACKAGES",
+      "Requirement 2; Requirement 6",
+      "Complete config, gittest, judge, CLI and skills suites"
+    ],
+    [
+      "CONTRACTS",
+      "Requirement 2; Requirement 6",
+      "Coverage equivalence and docscontract suites"
+    ],
+    [
+      "TRANSCRIPT-1",
+      "Requirement 3; Surface Transcript 1",
+      "Fresh HOME: runs list"
+    ],
+    [
+      "TRANSCRIPT-2",
+      "Requirement 3; Surface Transcript 2",
+      "Fresh HOME: reconcile"
+    ],
+    [
+      "TRANSCRIPT-3",
+      "Requirement 3; Surface Transcript 3",
+      "Fresh HOME: project init"
+    ],
+    [
+      "REPRO",
+      "Requirement 4",
+      "Maintainer reproduction and nested git-init recovery"
+    ],
+    [
+      "SABOTAGE-1",
+      "Requirement 5",
+      "any-entry"
+    ],
+    [
+      "SABOTAGE-2",
+      "Requirement 5",
+      "without-refs"
+    ],
+    [
+      "SABOTAGE-3",
+      "Requirement 5",
+      "without-head-content"
+    ],
+    [
+      "SABOTAGE-4",
+      "Requirement 5",
+      "ignore-commondir"
+    ],
+    [
+      "SABOTAGE-5",
+      "Requirement 5",
+      "any-file"
+    ],
+    [
+      "SABOTAGE-6",
+      "Requirement 5",
+      "require-gitdir-target"
+    ],
+    [
+      "SABOTAGE-7",
+      "Requirement 5",
+      "old-skills-walk"
+    ],
+    [
+      "SABOTAGE-8",
+      "Requirement 5",
+      "snapshot-no-file"
+    ],
+    [
+      "WORDING",
+      "Requirement 7; Requirement 6",
+      "Six exact rule sentences, mirrors and ADR amendment"
+    ],
+    [
+      "OUTSIDE-REPORT",
+      "Requirement 8; outside-evidence row",
+      "Dated maintainer report compared offline"
+    ],
+    [
+      "OUTSIDE-GIT",
+      "Requirement 8; outside-evidence row",
+      "Git oracle and quoted repository-layout passage"
+    ],
+    [
+      "DECLARATIONS",
+      "Requirement 9",
+      "No Unreachable Acceptance"
+    ],
+    [
+      "GLOSSARY",
+      "Requirement 10",
+      "None declarations and unchanged CONTEXT"
+    ],
+    [
+      "SCOPE",
+      "Requirement 11",
+      "Per-Task declarations, authority chronology and non-goals"
+    ],
+    [
+      "PR",
+      "Requirement 12; Pull Request row",
+      "Pre-PR equivalent controls"
+    ],
+    [
+      "ARCHIVE",
+      "Requirement 13",
+      "Offline archive preview and record outcome"
+    ]
+  ],
+  "mutations": [
+    "any-entry",
+    "without-refs",
+    "without-head-content",
+    "ignore-commondir",
+    "any-file",
+    "require-gitdir-target",
+    "old-skills-walk",
+    "snapshot-no-file"
+  ]
+}

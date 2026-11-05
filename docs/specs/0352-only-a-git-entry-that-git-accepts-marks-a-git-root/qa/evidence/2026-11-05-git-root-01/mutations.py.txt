@@ -1,0 +1,46 @@
+import runpy,sys
+from pathlib import Path
+ns=runpy.run_path(str(Path.cwd()/'docs/specs/0352-only-a-git-entry-that-git-accepts-marks-a-git-root/qa/evidence/2026-11-05-git-root-01/run-qa.py.txt'))
+globals().update({k:v for k,v in ns.items() if not k.startswith('__')})
+def mutation(text,label):
+ if label=='any-entry':
+  old='func gitEntryAccepted(path string) bool {\n\tinfo, err := os.Stat(path)';new=old+'\n\treturn err == nil'
+ elif label=='without-refs':old='[]string{"objects", "refs"}';new='[]string{"objects"}'
+ elif label=='without-head-content':old='\tif !validHead {\n\t\treturn false\n\t}';new='\tvalidHead = true\n'+old
+ elif label=='ignore-commondir':old='common = strings.TrimSpace(string(content))';new='common = path; _ = content // sabotage: ignore commondir'
+ elif label=='any-file':old='return err == nil && bytes.HasPrefix(content, []byte("gitdir:"))';new='return err == nil || bytes.HasPrefix(content, []byte("gitdir:"))'
+ elif label=='require-gitdir-target':
+  old='\t\treturn err == nil && bytes.HasPrefix(content, []byte("gitdir:"))'
+  new='\t\tif err == nil && bytes.HasPrefix(content, []byte("gitdir:")) {\n\t\t\t_, targetErr := os.Stat(strings.TrimSpace(strings.TrimPrefix(string(content), "gitdir:")))\n\t\t\treturn targetErr == nil\n\t\t}\n'+old
+ elif label=='old-skills-walk':old='roundconfig.FindGitRoot(cwd)';new='qaOldSkillsGitRoot(cwd)'
+ elif label=='snapshot-no-file':
+  old='\t\tif err := os.WriteFile(filepath.Join(workDir, "src", "agent-change.go"), []byte("package src\\n"), 0o644); err != nil {\n\t\t\treturn nil, fmt.Errorf("write fake worktree change: %w", err)\n\t\t}\n';new=''
+ assert text.count(old)==1,(label,text.count(old));text=text.replace(old,new,1)
+ if label=='old-skills-walk':text+='\nfunc qaOldSkillsGitRoot(start string) string {\n\tfor current := filepath.Clean(start); ; current = filepath.Dir(current) {\n\t\tif _, err := os.Stat(filepath.Join(current, ".git")); err == nil { return current }\n\t\tif filepath.Dir(current) == current { return "" }\n\t}\n}\n'
+ return text
+cases=[('only_gk_and_info','./internal/config'),('HEAD_and_objects_without_refs','./internal/config'),('HEAD_that_names_nothing','./internal/config'),('common_directory','./internal/config'),('file_without_gitdir','./internal/config'),('gitdir_file_whose_target_is_missing','./internal/config'),('', './internal/cli'),('resolve','./internal/cli')]
+archive=subprocess.check_output(['git','archive',PLAN['head']])
+for i,label in enumerate(PLAN['mutations'],1):
+ if len(sys.argv)>1 and i != int(sys.argv[1]): continue
+ print('Starting isolated sabotage '+str(i)+': '+label,flush=True)
+ with tempfile.TemporaryDirectory(prefix='qa0352-sabotage-') as scratch,tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+  repo=Path(scratch);tarfile.open(fileobj=io.BytesIO(archive)).extractall(repo,filter='data');env=testenv()
+  for args in [['git','init','--quiet'],['git','add','.']]:
+   init,b=command(args,repo,env)
+   if init.returncode:raise RuntimeError(b)
+  f=repo/('internal/cli/cli.go' if i==7 else 'internal/cli/cli_test.go' if i==8 else 'internal/config/config.go');old=f.read_text();new=mutation(old,label);f.write_text(new)
+  fmt,b=command(['gofmt','-w',str(f)],repo,env)
+  if fmt.returncode:raise RuntimeError(b)
+  target,pkg=cases[i-1];name='TestSkillsProjectRootSkipsARejectedGitDirectory' if i==7 else 'TestRunOperationalCommandAcceptsMVPFlags' if i==8 else 'TestFindGitRootAcceptsOnlyAGitEntryGitAccepts'
+  pattern='^'+name+'$'+('/^'+target+'$' if target else '')
+  commands=[(['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg],name+('/'+target if target else ''))]
+  if i==1:commands.append((['go','test','-count=1','-timeout','20m','-v','-run','^TestRejectedGitDirectoryTranscripts$/^Surface_Transcript_1$','./internal/cli'],'TestRejectedGitDirectoryTranscripts/Surface_Transcript_1'))
+  body='Package-test environment: session HOME and TMPDIR retained; no values recorded.\nAudited head: '+PLAN['head']+'\nSource: git archive '+PLAN['head']+' into this sabotage\'s own temporary repository; git init and git add establish the suiteguard baseline.\nMutation: '+label+'\n'+''.join(difflib.unified_diff(old.splitlines(True),f.read_text().splitlines(True),fromfile=str(f.relative_to(repo))+' original',tofile=str(f.relative_to(repo))+' sabotaged'))+'\n'
+  ok=True
+  for args,expected in commands:
+   p,b=command(args,repo,env);body+='\n'+b
+   found=p.returncode!=0 and '--- FAIL: '+expected+' ' in p.stdout and '[build failed]' not in p.stdout+p.stderr
+   ok=ok and found;body+='\nNamed assertion failure confirmed: '+str(found)+'\n'
+   print('\n'.join((p.stdout+p.stderr).splitlines()[-12:]),flush=True)
+  body=body.replace(scratch,'<scratch>').replace(h,'<home>').replace(t,'<tmp>')
+ result('SABOTAGE-'+str(i),body+'\nAll scratch directories removed: '+str(all(not Path(d).exists() for d in [scratch,h,t])),ok)

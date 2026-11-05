@@ -1,0 +1,16 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0352-only-a-git-entry-that-git-accepts-marks-a-git-root-4893e28702903d2b-8ffd857b-d9424597/run_20261105T105803Z_8c2fa84cfd81bb6f/bin/roundfix reconcile
+exit: 2
+stdout:
+stderr:
+roundfix: reconcile failed: reconcile requires running inside a Git repository
+Run 'roundfix reconcile --help' for usage.
+
+Project Config absent: True
+Independent fresh-process read:
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0352-only-a-git-entry-that-git-accepts-marks-a-git-root-4893e28702903d2b-8ffd857b-d9424597/run_20261105T105803Z_8c2fa84cfd81bb6f/bin/roundfix runs list
+exit: 0
+stdout:
+No Runs found.
+stderr:
+
+HOME and TMPDIR removed: True

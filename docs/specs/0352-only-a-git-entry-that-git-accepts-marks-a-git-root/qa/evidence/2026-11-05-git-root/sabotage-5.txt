@@ -1,0 +1,38 @@
+Audited head: cca415878dcdf26dea29f77fc160a8e9b07aa94e
+Source: git archive cca415878dcdf26dea29f77fc160a8e9b07aa94e into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: any-file
+--- internal/config/config.go original
++++ internal/config/config.go sabotaged
+@@ -2188,7 +2188,7 @@
+ 	}
+ 	if info.Mode().IsRegular() {
+ 		content, err := os.ReadFile(path)
+-		return err == nil && bytes.HasPrefix(content, []byte("gitdir:"))
++		return err == nil || bytes.HasPrefix(content, []byte("gitdir:"))
+ 	}
+ 	if !info.IsDir() {
+ 		return false
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestFindGitRootAcceptsOnlyAGitEntryGitAccepts$/^file_without_gitdir$ ./internal/config
+exit: 1
+stdout:
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+    git_root_test.go:59: FindGitRoot = "<tmp>/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsfile_without_gitdi3284937815/001/shape", want ""
+    git_root_test.go:66: FindGitRoot through rejected entry = "<tmp>/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsfile_without_gitdi3284937815/001/shape", want "<tmp>/TestFindGitRootAcceptsOnlyAGitEntryGitAcceptsfile_without_gitdi3284937815/001"
+--- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts (0.00s)
+    --- FAIL: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir (0.00s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 157.039625ms before and 143.732084ms after
+FAIL	roundfix/internal/config	0.541s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True

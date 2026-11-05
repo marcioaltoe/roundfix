@@ -1,0 +1,205 @@
+Package-test environment: session HOME and TMPDIR retained; no values recorded.
+command: go test -count=1 -timeout 20m -v -run ^(TestFindGitRootAcceptsOnlyAGitEntryGitAccepts|TestFindGitRootAgreesWithGit|TestLoadUnderARejectedGitDirectoryFindsNoGitRoot)$ ./internal/config
+exit: 0
+stdout:
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAgreesWithGit
+=== PAUSE TestFindGitRootAgreesWithGit
+=== RUN   TestLoadUnderARejectedGitDirectoryFindsNoGitRoot
+=== PAUSE TestLoadUnderARejectedGitDirectoryFindsNoGitRoot
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/only_gk_and_info
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/only_gk_and_info
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/empty_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/empty_directory
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_that_names_nothing
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_that_names_nothing
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+=== CONT  TestLoadUnderARejectedGitDirectoryFindsNoGitRoot
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symbolic_ref_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symbolic_ref_HEAD
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/detached_HEAD
+=== CONT  TestFindGitRootAgreesWithGit
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/SHA-256_detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/SHA-256_detached_HEAD
+=== RUN   TestFindGitRootAgreesWithGit/only_gk_and_info
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+=== PAUSE TestFindGitRootAgreesWithGit/only_gk_and_info
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+=== RUN   TestFindGitRootAgreesWithGit/empty_directory
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+=== PAUSE TestFindGitRootAgreesWithGit/empty_directory
+=== RUN   TestFindGitRootAgreesWithGit/HEAD_and_objects_without_refs
+=== PAUSE TestFindGitRootAgreesWithGit/HEAD_and_objects_without_refs
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+=== RUN   TestFindGitRootAgreesWithGit/HEAD_that_names_nothing
+=== PAUSE TestFindGitRootAgreesWithGit/HEAD_that_names_nothing
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/git_init_repository
+=== RUN   TestFindGitRootAgreesWithGit/symbolic_ref_HEAD
+=== PAUSE TestFindGitRootAgreesWithGit/symbolic_ref_HEAD
+=== RUN   TestFindGitRootAgreesWithGit/detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/git_init_repository
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/linked_worktree
+=== PAUSE TestFindGitRootAgreesWithGit/detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/linked_worktree
+=== RUN   TestFindGitRootAgreesWithGit/SHA-256_detached_HEAD
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/repository_under_a_rejected_directory
+=== PAUSE TestFindGitRootAgreesWithGit/SHA-256_detached_HEAD
+=== RUN   TestFindGitRootAgreesWithGit/common_directory
+=== PAUSE TestFindGitRootAgreesWithGit/common_directory
+=== RUN   TestFindGitRootAgreesWithGit/gitdir_file
+=== PAUSE TestFindGitRootAgreesWithGit/gitdir_file
+=== RUN   TestFindGitRootAgreesWithGit/git_init_repository
+=== PAUSE TestFindGitRootAgreesWithGit/git_init_repository
+=== RUN   TestFindGitRootAgreesWithGit/linked_worktree
+=== PAUSE TestFindGitRootAgreesWithGit/linked_worktree
+=== RUN   TestFindGitRootAgreesWithGit/repository_under_a_rejected_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/repository_under_a_rejected_directory
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_HEAD
+=== PAUSE TestFindGitRootAgreesWithGit/repository_under_a_rejected_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_HEAD
+=== RUN   TestFindGitRootAgreesWithGit/symlink_HEAD
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_with_whitespace_after_ref
+=== PAUSE TestFindGitRootAgreesWithGit/symlink_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_with_whitespace_after_ref
+=== RUN   TestFindGitRootAgreesWithGit/HEAD_with_whitespace_after_ref
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/short_detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/short_detached_HEAD
+=== PAUSE TestFindGitRootAgreesWithGit/HEAD_with_whitespace_after_ref
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_naming_a_non-refs_path
+=== RUN   TestFindGitRootAgreesWithGit/short_detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_naming_a_non-refs_path
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_directory
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/missing_objects
+=== PAUSE TestFindGitRootAgreesWithGit/short_detached_HEAD
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/missing_objects
+=== RUN   TestFindGitRootAgreesWithGit/HEAD_naming_a_non-refs_path
+=== PAUSE TestFindGitRootAgreesWithGit/HEAD_naming_a_non-refs_path
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/objects_file
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/objects_file
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/refs_file
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/refs_file
+=== RUN   TestFindGitRootAgreesWithGit/HEAD_directory
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/absolute_common_directory
+=== PAUSE TestFindGitRootAgreesWithGit/HEAD_directory
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/absolute_common_directory
+=== RUN   TestFindGitRootAgreesWithGit/missing_objects
+=== RUN   TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_git_directory
+=== PAUSE TestFindGitRootAgreesWithGit/missing_objects
+=== RUN   TestFindGitRootAgreesWithGit/objects_file
+=== PAUSE TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_git_directory
+=== PAUSE TestFindGitRootAgreesWithGit/objects_file
+=== RUN   TestFindGitRootAgreesWithGit/refs_file
+=== PAUSE TestFindGitRootAgreesWithGit/refs_file
+=== RUN   TestFindGitRootAgreesWithGit/absolute_common_directory
+=== PAUSE TestFindGitRootAgreesWithGit/absolute_common_directory
+=== RUN   TestFindGitRootAgreesWithGit/symlink_git_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_git_directory
+=== PAUSE TestFindGitRootAgreesWithGit/symlink_git_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/only_gk_and_info
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/absolute_common_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/refs_file
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/short_detached_HEAD
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/objects_file
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/missing_objects
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_naming_a_non-refs_path
+--- PASS: TestLoadUnderARejectedGitDirectoryFindsNoGitRoot (0.00s)
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_with_whitespace_after_ref
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_HEAD
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/repository_under_a_rejected_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/linked_worktree
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/git_init_repository
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/SHA-256_detached_HEAD
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symbolic_ref_HEAD
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/detached_HEAD
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/empty_directory
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_that_names_nothing
+=== CONT  TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs
+=== CONT  TestFindGitRootAgreesWithGit/only_gk_and_info
+=== CONT  TestFindGitRootAgreesWithGit/symlink_HEAD
+=== CONT  TestFindGitRootAgreesWithGit/SHA-256_detached_HEAD
+=== CONT  TestFindGitRootAgreesWithGit/repository_under_a_rejected_directory
+=== CONT  TestFindGitRootAgreesWithGit/linked_worktree
+=== CONT  TestFindGitRootAgreesWithGit/git_init_repository
+=== CONT  TestFindGitRootAgreesWithGit/gitdir_file
+=== CONT  TestFindGitRootAgreesWithGit/common_directory
+=== CONT  TestFindGitRootAgreesWithGit/HEAD_that_names_nothing
+=== CONT  TestFindGitRootAgreesWithGit/detached_HEAD
+=== CONT  TestFindGitRootAgreesWithGit/symbolic_ref_HEAD
+=== CONT  TestFindGitRootAgreesWithGit/missing_objects
+=== CONT  TestFindGitRootAgreesWithGit/symlink_git_directory
+=== CONT  TestFindGitRootAgreesWithGit/absolute_common_directory
+=== CONT  TestFindGitRootAgreesWithGit/refs_file
+=== CONT  TestFindGitRootAgreesWithGit/objects_file
+=== CONT  TestFindGitRootAgreesWithGit/HEAD_and_objects_without_refs
+=== CONT  TestFindGitRootAgreesWithGit/empty_directory
+=== CONT  TestFindGitRootAgreesWithGit/HEAD_naming_a_non-refs_path
+=== CONT  TestFindGitRootAgreesWithGit/HEAD_directory
+=== CONT  TestFindGitRootAgreesWithGit/short_detached_HEAD
+=== CONT  TestFindGitRootAgreesWithGit/HEAD_with_whitespace_after_ref
+--- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts (0.00s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/absolute_common_directory (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_with_whitespace_after_ref (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/only_gk_and_info (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_directory (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/objects_file (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_naming_a_non-refs_path (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/missing_objects (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_HEAD (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/short_detached_HEAD (0.02s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/refs_file (0.02s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file_whose_target_is_missing (0.00s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/SHA-256_detached_HEAD (0.00s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/detached_HEAD (0.00s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symbolic_ref_HEAD (0.00s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/common_directory (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/file_without_gitdir (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/empty_directory (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_and_objects_without_refs (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/HEAD_that_names_nothing (0.01s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/symlink_git_directory (0.05s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/repository_under_a_rejected_directory (0.04s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/gitdir_file (0.04s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/git_init_repository (0.04s)
+    --- PASS: TestFindGitRootAcceptsOnlyAGitEntryGitAccepts/linked_worktree (0.09s)
+--- PASS: TestFindGitRootAgreesWithGit (0.00s)
+    --- PASS: TestFindGitRootAgreesWithGit/only_gk_and_info (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/symlink_HEAD (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/SHA-256_detached_HEAD (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/common_directory (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/HEAD_that_names_nothing (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/symbolic_ref_HEAD (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/detached_HEAD (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/missing_objects (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/repository_under_a_rejected_directory (0.05s)
+    --- PASS: TestFindGitRootAgreesWithGit/absolute_common_directory (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/git_init_repository (0.04s)
+    --- PASS: TestFindGitRootAgreesWithGit/refs_file (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/gitdir_file (0.04s)
+    --- PASS: TestFindGitRootAgreesWithGit/empty_directory (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/HEAD_and_objects_without_refs (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/objects_file (0.02s)
+    --- PASS: TestFindGitRootAgreesWithGit/HEAD_directory (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/HEAD_naming_a_non-refs_path (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/short_detached_HEAD (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/symlink_git_directory (0.03s)
+    --- PASS: TestFindGitRootAgreesWithGit/HEAD_with_whitespace_after_ref (0.01s)
+    --- PASS: TestFindGitRootAgreesWithGit/linked_worktree (0.08s)
+PASS
+suiteguard: guard cost: measured 2963 paths; fingerprint took 285.449583ms before and 132.32925ms after
+ok  	roundfix/internal/config	0.862s
+stderr:
+

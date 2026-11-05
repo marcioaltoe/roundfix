@@ -1,0 +1,9 @@
+command: /Users/marcio/.cargo/bin/rustfmt --version
+exit: 1
+stdout:
+stderr:
+error: rustup could not choose a version of rustfmt to run, because one wasn't specified explicitly, and no default is configured.
+help: run 'rustup default stable' to download the latest stable release of Rust and set it as your default toolchain.
+
+Independent isolated tool invocation reproduces the suite diagnostic: True
+No network or installation attempted. Existing system formatter paths /opt/homebrew/bin/rustfmt, /opt/homebrew/opt/rust/bin/rustfmt and /usr/local/bin/rustfmt are absent.

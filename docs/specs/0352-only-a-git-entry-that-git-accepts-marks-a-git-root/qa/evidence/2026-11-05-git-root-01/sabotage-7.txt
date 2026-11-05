@@ -1,0 +1,49 @@
+Package-test environment: session HOME and TMPDIR retained; no values recorded.
+Audited head: b944dfba6e89e58d0f0a32b001f1c22f002efc9b
+Source: git archive b944dfba6e89e58d0f0a32b001f1c22f002efc9b into this sabotage's own temporary repository; git init and git add establish the suiteguard baseline.
+Mutation: old-skills-walk
+--- internal/cli/cli.go original
++++ internal/cli/cli.go sabotaged
+@@ -1425,7 +1425,7 @@
+ 	if err := ctx.Err(); err != nil {
+ 		return "", err
+ 	}
+-	if root := roundconfig.FindGitRoot(cwd); root != "" {
++	if root := qaOldSkillsGitRoot(cwd); root != "" {
+ 		return root, nil
+ 	}
+ 	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+@@ -6230,3 +6230,14 @@
+ func printAgentCheckoutChangesNotice(stderr io.Writer) {
+ 	fmt.Fprintln(stderr, "The tracked checkout was clean at Preflight; inspect current tracked and untracked changes before retrying.")
+ }
++
++func qaOldSkillsGitRoot(start string) string {
++	for current := filepath.Clean(start); ; current = filepath.Dir(current) {
++		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
++			return current
++		}
++		if filepath.Dir(current) == current {
++			return ""
++		}
++	}
++}
+
+
+command: go test -count=1 -timeout 20m -v -run ^TestSkillsProjectRootSkipsARejectedGitDirectory$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestSkillsProjectRootSkipsARejectedGitDirectory
+=== PAUSE TestSkillsProjectRootSkipsARejectedGitDirectory
+=== CONT  TestSkillsProjectRootSkipsARejectedGitDirectory
+    rejected_git_directory_test.go:76: rejected .git: root="/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestSkillsProjectRootSkipsARejectedGitDirectory1866497532/001" error=<nil>; want empty root and error="project skill install requires running inside a git repository or passing --dir"
+--- FAIL: TestSkillsProjectRootSkipsARejectedGitDirectory (0.00s)
+FAIL
+suiteguard: guard cost: measured 2916 paths; fingerprint took 163.751542ms before and 139.213084ms after
+FAIL	roundfix/internal/cli	0.720s
+FAIL
+stderr:
+
+Named assertion failure confirmed: True
+
+All scratch directories removed: True
