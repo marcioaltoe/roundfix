@@ -1,3 +1,0 @@
-command: go test -count=1 -timeout 20m -run ^TestCoverageEquivalence$ ./internal/spec
-exit: 0
-ok  	roundfix/internal/spec	1.184s
