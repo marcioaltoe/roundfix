@@ -180,8 +180,9 @@ func agentLogPath(enabled bool, artifactDir string, runID string, batchNumber in
 }
 
 type verificationCheck struct {
-	Label string
-	Run   func(context.Context, string) (string, error)
+	Label       string
+	Run         func(context.Context, string) (string, error)
+	HaltOnError bool // a checker error halts the Run instead of failing the attempt
 }
 
 type verificationAttemptRequest struct {
@@ -290,6 +291,10 @@ func verificationTerminalReason(commandErr *VerificationCommandError) string {
 	diagnostics := strings.TrimSpace(commandErr.OutputPath)
 	if diagnostics == "" {
 		diagnostics = "unavailable"
+	}
+	if command == runevent.SettlementCheckSecretScan {
+		first, _, _ := strings.Cut(commandErr.Err.Error(), "\n")
+		return first
 	}
 	if strings.HasPrefix(command, "settlement check: ") {
 		first, _, _ := strings.Cut(commandErr.Err.Error(), "\n")
@@ -489,6 +494,12 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		}
 		if verificationStopRequested(ctx, err) {
 			return verificationAttemptOutcome{}, err
+		}
+		if err != nil && check.HaltOnError {
+			if publishErr := req.publishInfrastructureFailure(ctx, check.Label, err); publishErr != nil {
+				return verificationAttemptOutcome{}, publishErr
+			}
+			return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: %w", req.Attempt, err)
 		}
 		if err != nil {
 			failure = err.Error()

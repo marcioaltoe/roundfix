@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// SettlementCheckSecretScan identifies the Task commit Secret Scan in verification events.
+const SettlementCheckSecretScan = "settlement check: secret scan"
+
 // Source identifies which subsystem produced a Run Event.
 type Source string
 

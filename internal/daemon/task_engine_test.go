@@ -5347,8 +5347,8 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 		{id: "task_01", title: "Write the usage docs", taskType: "docs", verification: []string{"echo alpha", "echo beta"}},
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"echo gamma"}},
 	})
-	// Snapshot script: task_01 before/after, then task_02 before/after.
-	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, nil, {"src/two.go"}}
+	// Snapshot script: task_01 before, scan preparation, commit preparation; then task_02 before and scan preparation.
+	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, nil, {"src/two.go"}}
 	runner := &taskFakeRunner{
 		calls:     fixture.calls,
 		gitRoot:   fixture.gitRoot,
@@ -7372,7 +7372,7 @@ func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttemp
 			}
 		}
 	}
-	if got := strings.Join(phases, "|"); got != "waiting|started|command-passed|started|failed|verdict|waiting|started|command-passed|started|failed|verdict" {
+	if got := strings.Join(phases, "|"); got != "waiting|started|command-passed|started|failed|started|command-passed|verdict|waiting|started|command-passed|started|failed|started|command-passed|verdict" {
 		t.Fatalf("expected command phases and one aggregate verdict per attempt, got %s", got)
 	}
 	if verdicts != 2 {

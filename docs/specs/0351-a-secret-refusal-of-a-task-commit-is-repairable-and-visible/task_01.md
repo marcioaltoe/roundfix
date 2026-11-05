@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0351-a-secret-refusal-of-a-task-commit-is-repairable-and-visible
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -141,3 +141,108 @@ de segredos no commit da Task não aparece em runs causes nem no park"
 
 - `_prd.md` → Sources 1; Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 1-4; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; Invariants 1-5; Declared breaks; Testing Approach; Build Order 1
+
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, evidence-gate, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, no-workarounds, systematic-debugging, tech-writer, testing-boss.
+
+The Task commit scan now runs as the last Settlement Check of each Verification
+attempt, outside the QA-gated checks. Its matches enter the existing single
+repair turn with location-only diagnostics and the prescribed `Fix:` line.
+The second attempt scans again. A final match keeps the first diagnostic line
+as the terminal reason; a checker error publishes an infrastructure failure
+and halts the Run. The deletes replacement remains in place.
+
+The stream projects the new label alongside the two existing exact labels.
+`scanTaskCommitPaths`, `prepareTaskCommit`, the QA scan, `internal/secretscan`,
+and all undeclared existing tests/helpers/fixtures retain their source bytes.
+Only the four declared existing daemon/CLI tests and the declared stream-label
+table changed. The new tests use runtime-built fixture values.
+
+### Starting-tree characterization
+
+Before code edits, ran:
+
+`go test -count=1 -timeout 10m -v -run '^TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit$' ./internal/daemon`
+
+Exit 0; both `new file` and `tracked file` passed. The original test asserts
+one `secret_scan` refusal and the exact reason
+`Task commit carries a secret: fixture.txt:2: credential-assignment`, with no
+Task commit. The starting execution path scans after the Verification/repair
+loop, so this refusal sends no repair prompt.
+
+After adding the new tests and before the production change, ran
+`go test -count=1 -timeout 10m -run 'TestTaskCommitSecretMatchReturnsAsVerificationFeedback|TestTaskCommitSecretScanRunsAfterTheSettlementChecks' ./internal/daemon`.
+Exit 1: the feedback test observed a failed Task instead of a repaired commit;
+the ungated ordering case observed no checks; the gated case observed only the
+two existing checks.
+
+### Acceptance evidence from focused checks
+
+- First-attempt match and repair: `TestTaskCommitSecretMatchReturnsAsVerificationFeedback`
+  passes. It observes exactly one repair prompt containing the scan label,
+  `fixture.txt:2: credential-assignment`, and the verbatim `Fix:` line; one
+  refusal with `attempt: 1`; completed status and the letters-only line in the
+  real Git commit. It checks every eight-byte window of the refused value
+  against every prompt, both scan diagnostic files, every event summary and
+  payload, and progress output.
+- Final match: `TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit`
+  passes for new and tracked files. It observes refusals on attempts 1 and 2,
+  exactly one repair prompt, the unchanged reason bytes, failed status,
+  preserved output and no commit. Its value search now also covers all prompts
+  and both scan diagnostic files.
+- Order: both `gated graph` and `graph without a QA gate` cases of
+  `TestTaskCommitSecretScanRunsAfterTheSettlementChecks` pass. Started events
+  place every command before the checks; gated checks are spec consistency,
+  authorization, secret scan; the ungated check is secret scan alone.
+- Read error: `TestTaskSecretScanReadErrorHaltsTheRun` passes without skipping
+  on this host. An untracked file made unreadable with mode `0o000` causes a
+  TaskCycle error, no feedback, no completed settlement and no commit. Cleanup
+  restores its mode. The test skips with reasons on Windows and for root.
+
+Commands run (all exit 0 after implementation):
+
+- `go test -count=1 -timeout 10m -v -run 'TestTaskCommitSecret|TestTaskSecretScanReadError|TestTaskCommitWithASecretMatch|TestTaskCommitScansOnly|TestTaskCommitAccepts|TestTaskSecretScanUses|TestTaskCycleVerificationSequence|TestTaskCycleExecutesAgentVerifySettleCommitContract|TestSettlement|TestSpecConsistency|TestGatelessGraphNeverCalls' ./internal/daemon`
+- After the final test assertion refinements:
+  `go test -count=1 -timeout 10m -v -run 'TestTaskCommitSecret|TestTaskSecretScanReadError|TestTaskCommitWithASecretMatch' ./internal/daemon`
+- `go test -count=1 -timeout 10m -v -run 'TestASettlementCheckLabel|TestRunImplementTemporaryVerificationFlow' ./internal/runevent ./internal/cli`
+  (the three stream phases for the new label, all preserved redaction cases,
+  and all three temporary Verification flows pass).
+- `GOOS=windows go vet ./internal/daemon ./internal/runevent`
+  (repeated after the final test changes; exit 0).
+- `git diff --check`; source comparison against HEAD also confirms only the
+  named existing test bodies changed and both protected Task scan/preparation
+  functions and `scanQAReportPaths` are unchanged.
+
+### Sabotages on a temporary copy
+
+Each mutation ran independently on a copied tree with its own initialized Git
+metadata, then restored the copied source. Each test command used
+`go test -count=1 -timeout 10m -v -run '<named selection>' ./internal/daemon`.
+No sabotage touched the assigned checkout.
+
+| Mutation | Named test that fails | Observed failure |
+| --- | --- | --- |
+| Scan check not appended | `TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit`, both file cases | Task completes with a commit instead of failing. |
+| Scan appended only under `plan.settlementChecks` | `TestTaskCommitSecretScanRunsAfterTheSettlementChecks/graph_without_a_QA_gate` and `TestTaskCommitSecretMatchReturnsAsVerificationFeedback` | No scan label; committed content lacks the expected repair. |
+| `HaltOnError` ignored | `TestTaskSecretScanReadErrorHaltsTheRun` | `scan read error sent Verification Feedback`. |
+| Special final reason removed | `TestTaskCommitWithASecretMatchSettlesFailedWithoutACommit`, both file cases | Reason starts `Settlement check failed:` instead of the exact original reason. |
+| `Fix:` line dropped | `TestTaskCommitSecretMatchReturnsAsVerificationFeedback` | Repair prompt is missing the prescribed `Fix:` line. |
+
+Every sabotage command exited 1 with the named test failure, rather than a
+build or setup failure. Local transcripts are under
+`/private/tmp/roundfix-0351-sabotage-b8lbnqwm/` in `not-appended.log`,
+`gated-only.log`, `halt-ignored.log`, `final-reason-removed.log`, and
+`fix-dropped.log`. The remaining TechSpec sabotages concern task_02/task_03
+and were not applied in this slice.
+
+Declared Verification and repository Verification remain for the Daemon.
+No Task status, manifest, other Task, commit, push or Pull Request was changed
+by the Agent. The status difference from HEAD was already supplied by the
+Daemon. No follow-up implementation was added to this diff.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261105T015847Z_709cb0723a1fbaae`
+- Source commit: `ecfeae386d0349ba0c198d12e6ba8d4427689964`
