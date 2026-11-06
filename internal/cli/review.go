@@ -74,11 +74,12 @@ func sameReviewCheckout(left, right string) bool {
 }
 
 type reviewFinding struct {
-	Segment    int                      `json:"segment,omitempty"`
-	ID         string                   `json:"id"`
-	Text       string                   `json:"text"`
-	Anchor     *reviewFindingAnchor     `json:"anchor,omitempty"`
-	Validation *reviewFindingValidation `json:"validation,omitempty"`
+	DataSegment int                      `json:"dataSegment,omitempty"`
+	Segment     int                      `json:"segment,omitempty"`
+	ID          string                   `json:"id"`
+	Text        string                   `json:"text"`
+	Anchor      *reviewFindingAnchor     `json:"anchor,omitempty"`
+	Validation  *reviewFindingValidation `json:"validation,omitempty"`
 }
 
 type reviewFindingDisposition struct {
@@ -121,6 +122,7 @@ func (err reviewRetriedSelectionError) Error() string { return err.err.Error() }
 func (err reviewRetriedSelectionError) Unwrap() error { return err.err }
 
 type reviewRecord struct {
+	DataSegments          []reviewDataSegment        `json:"dataSegments,omitempty"`
 	Segments              []reviewSegment            `json:"segments,omitempty"`
 	FailedStep            string                     `json:"failedStep,omitempty"`
 	AdapterMessage        string                     `json:"adapterMessage,omitempty"`
@@ -645,6 +647,7 @@ type reviewSpecContext struct {
 }
 
 type reviewSpecContextResult struct {
+	dataSegments          []reviewDataSegment
 	segments              []reviewSegment
 	segmentDiffs          []string
 	segmentAnswers        []reviewSegmentAnswer
@@ -893,10 +896,16 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		plan,
 	)
 	record.Segments = specContext.segments
+	record.DataSegments = specContext.dataSegments
 	record.SelectionRetries = specContext.selectionRetries
 	record.DiffBytes = specContext.diffBytes
 	record.EstimatedPromptTokens = specContext.estimatedPromptTokens
-	record.OmittedPaths = specContext.omittedPaths
+	record.OmittedPaths = make([]reviewOmittedPath, 0, len(specContext.omittedPaths))
+	for _, path := range specContext.omittedPaths {
+		if path.Reason != "data-path" {
+			record.OmittedPaths = append(record.OmittedPaths, path)
+		}
+	}
 	record.Specs = make([]string, 0, len(specContext.contexts))
 	for _, context := range specContext.contexts {
 		record.Specs = append(record.Specs, context.slug)
@@ -906,7 +915,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	record.SpecContextTruncated = specContext.truncated
 	var code int
 	if len(specContext.segmentAnswers) > 0 {
-		record, code = classifyReviewSegmentAnswers(record, specContext.segmentAnswers)
+		record, code = classifyReviewSegmentAnswers(record, specContext.segmentAnswers, max(1, len(specContext.segments)))
 	} else {
 		record, code = classifyReviewCommandResult(record, result, runErr)
 	}
@@ -1463,6 +1472,58 @@ func runConfiguredReviewSession(
 			prompt = prompts[0]
 		}
 	}
+	codePromptCount := max(1, len(segmentPrompts))
+	dataPaths := make(map[string]bool)
+	dataArgs := []string{"diff", "--no-ext-diff", "--no-textconv", "--no-color", measuredBase, headCommit, "--"}
+	for _, path := range specContext.omittedPaths {
+		if path.Reason == "data-path" {
+			dataPaths[path.Path] = true
+			dataArgs = append(dataArgs, ":(literal)"+path.Path)
+		}
+	}
+	if len(dataPaths) > 0 {
+		dataDiff, err := gitRunner.RunGit(ctx, gitRoot, dataArgs...)
+		if err != nil {
+			return agent.ExecuteResult{}, specContext, false, fmt.Errorf("compute review data diff: %w", err)
+		}
+		fit := func(promptBytes, diffBytes int) bool {
+			if config.PrePRReview.Provider == "claude" {
+				return promptBytes/2+promptBytes%2 <= claudeReviewPromptBudget
+			}
+			return diffBytes <= reviewDiffBound
+		}
+		segments, diffs, prompts, err := planReviewDataSegments(dataDiff, measuredBase, headCommit, fit)
+		if err != nil {
+			// The size suffix must measure this data diff alone, including when
+			// the candidate also changes code or paths omitted for other reasons.
+			names, namesErr := gitRunner.RunGit(ctx, gitRoot, "diff", "--name-only", "-z", "--no-ext-diff", "--no-textconv", "--no-color", measuredBase, headCommit, "--")
+			if namesErr != nil {
+				return agent.ExecuteResult{}, specContext, false, reviewPrePromptError{fmt.Errorf("list review data diff paths: %w", namesErr)}
+			}
+			var excluded []reviewOmittedPath
+			for _, path := range strings.Split(names, "\x00") {
+				if path != "" && !dataPaths[path] {
+					excluded = append(excluded, reviewOmittedPath{Path: path})
+				}
+			}
+			return agent.ExecuteResult{}, specContext, false, reviewSizeRefusalForDiff(ctx, gitRunner, gitRoot, measuredBase, headCommit, excluded, dataDiff, err.Error())
+		}
+		for i := range segments {
+			if config.PrePRReview.Provider == "claude" {
+				segments[i].EstimatedPromptTokens = estimateReviewPromptTokens(prompts[i])
+			}
+		}
+		specContext.dataSegments = segments
+		if len(prompts) > 0 {
+			if len(segmentPrompts) == 0 {
+				segmentPrompts = []string{prompt}
+				// Round 2's code findings still anchor against the full candidate.
+				specContext.segmentDiffs = []string{specContext.candidateDiff}
+			}
+			segmentPrompts = append(segmentPrompts, prompts...)
+			specContext.segmentDiffs = append(specContext.segmentDiffs, diffs...)
+		}
+	}
 	readiness := proveProfileSelections(ctx, config, reviewProfileCategories(), gitRoot, runner)
 	if readiness.Err != nil {
 		return agent.ExecuteResult{}, specContext, false, reviewPrePromptError{fmt.Errorf("runtime failure: %w", readiness.Err)}
@@ -1533,7 +1594,14 @@ func runConfiguredReviewSession(
 				return result, runErr
 			}
 			specContext.segmentAnswers = append(specContext.segmentAnswers, reviewSegmentAnswer{result: result, err: runErr, diff: specContext.segmentDiffs[i]})
-			fmt.Fprintf(&answer, "--- Review Segment %d of %d ---\n%s\n", i+1, len(segmentPrompts), result.Message)
+			switch {
+			case i >= codePromptCount:
+				fmt.Fprintf(&answer, "--- Data Review Segment %d of %d ---\n%s\n", i-codePromptCount+1, len(specContext.dataSegments), result.Message)
+			case len(specContext.segments) > 0:
+				fmt.Fprintf(&answer, "--- Review Segment %d of %d ---\n%s\n", i+1, codePromptCount, result.Message)
+			default:
+				fmt.Fprintf(&answer, "--- Review ---\n%s\n", result.Message)
+			}
 			last = result
 			classified, _ := classifyReviewCommandResult(reviewRecord{Outcome: reviewOutcomeBlocked}, result, runErr)
 			if classified.Outcome == reviewOutcomeFindings {

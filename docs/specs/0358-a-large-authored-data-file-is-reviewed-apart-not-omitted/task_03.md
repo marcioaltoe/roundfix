@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -97,3 +97,64 @@ Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 4; User Story 1; User Story 2; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 4; API Contract 4; API Contract 5; Invariants 1 to 3; Testing Approach; Build Order 3
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+The session now plans the data diff from the round's measured base using literal
+pathspecs before readiness checks. It appends Data Review Segments after the code
+prompts in the same prepared session. A plan refusal measures the data diff alone
+for its size suffix, including when the candidate also changes code.
+
+The record separates data segments and findings from code segments, excludes
+data-path entries from omittedPaths, and records data token estimates only for
+Claude. Findings retain send-order ids and validate against their own segment.
+Answer files preserve the required single-code, code-segment and data-segment
+headers. A blocked answer stops subsequent prompts.
+
+Acceptance evidence from focused checks:
+
+- Catalog separation: TestReviewSendsADataPathApart passes for codex and claude
+  with 9,000-entry JSON catalogs, exact scope and data headers, persisted fields,
+  single-code findings without segment labels, data findings with dataSegment,
+  and exact joined answer bytes. Its code-segments cases cover two code segments
+  followed by data in the same session. Its Claude budget case admits a data diff
+  above the Codex byte bound within the Claude token budget.
+- Bounds and anchors: TestReviewSplitsALargeDataFileAtLineBoundaries passes with
+  24,000 entries in two bounded data segments. Every added line is compared with
+  git show at the hunk's coordinates. Line 20,000 is dismissed in data segment 1
+  and stands in data segment 2. Blocked-code and blocked-data answer cases stop
+  the sequence. TestReviewBlocksDataNeedingMoreThanFourDataSegments passes for
+  five 14,000-entry catalogs: exact five-segment refusal and size suffix, exit 2,
+  no answer file, and no provider probe, preparation or prompt.
+- Existing behavior and round 2: TestReviewOmissionWinsOverADataPath retains
+  omit-path and the original unwrapped answer. TestReviewReadsADataPathApartInRoundTwo
+  sends exactly the changed entry's Git delta apart, pins declarations to the
+  base even after the candidate clears data_paths, and resumes the recorded
+  session. Focused existing tests for unchanged prompts, code-only segment
+  records and answers, Claude admission, refusals and round-two behavior pass.
+  The complete CLI suite remains for Daemon Verification.
+
+Commands and outcomes:
+
+- Pre-change signal: rtk proxy go test -count=1 -timeout 5m -run '^TestReviewSendsADataPathApart$/^codex$' ./internal/cli
+  exited 1: only one prompt was sent instead of two.
+- rtk proxy go test -count=1 -timeout 5m -v -run '^TestReviewSendsADataPathApart$' ./internal/cli
+  exited 0, including both providers, mixed code/data segments and Claude's data
+  token-budget case.
+- rtk proxy go test -count=1 -timeout 5m -v -run '^TestReview(SendsADataPathApart|SplitsALargeDataFileAtLineBoundaries)$' ./internal/cli
+  exited 0, including the line-coordinate oracle and blocked-answer cases.
+- rtk proxy go test -count=1 -timeout 5m -v -run '^TestReview(BlocksDataNeedingMoreThanFourDataSegments|OmissionWinsOverADataPath|ReadsADataPathApartInRoundTwo)$' ./internal/cli
+  exited 0. An earlier fixture used entries long enough to require ten segments;
+  shortening the fixture values produced the specified five-segment input
+  without changing the refusal assertion or production bound.
+- rtk proxy go test -count=1 -timeout 5m -run '^TestReview(PromptWithoutSpecIsUnchanged|SegmentsACandidateAboveTheBound|SegmentsAClaudeCandidateOverItsBudget|KeepsCodexSegmentRecordsWithoutTokenEstimates|KeepsClaudeRoundTwoAndOversizedCommitsUnsegmented|SegmentsStopAtTheFirstBlockedAnswer|RoundTwo.*|SizeRefusalNamesTheLargestFiles|CommandExitsZeroOnExplicitClean|CommandExitsOneAndRecordsFindings|GreedilyPacksFourSegments|BlocksACandidateNeedingMoreThanFourSegments)$' ./internal/cli
+  exited 0.
+- rtk proxy git diff --check exited 0.
+
+Only review.go, review_segments.go, the new review_data_paths_test.go and this
+Result are changed by this Task. planReviewSegments, the lineage decision,
+internal/config, existing tests and other documents are untouched. The Task
+status remains Daemon-owned. Declared Verification, repository Verification and
+settlement were not run; no commit, push or pull request was made.
