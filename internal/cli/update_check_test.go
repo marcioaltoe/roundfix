@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -155,6 +157,86 @@ func TestUpdateCheckReadsTheNetworkAtMostOncePerDay(t *testing.T) {
 				t.Fatalf("failed cache releases = %+v", cache.Releases)
 			}
 		})
+	}
+}
+
+func TestUpdateCheckSessionsStartingTogetherReadTheNetworkOnce(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	setCommandEnvironmentForTest(t, home, t.TempDir())
+	var calls atomic.Int32
+	configureUpdateCheckTest(t, "1.0.0", func(context.Context) ([]app.Release, error) {
+		calls.Add(1)
+		// A slow lookup keeps every other session waiting on the first one.
+		time.Sleep(100 * time.Millisecond)
+		return []app.Release{{Version: "2.0.0", Titles: []string{"A change"}}}, nil
+	})
+	const sessions = 8
+	outputs, codes := make([]string, sessions), make([]int, sessions)
+	var wg sync.WaitGroup
+	for i := range sessions {
+		wg.Go(func() {
+			var stdout, stderr bytes.Buffer
+			codes[i] = runCLIContext(t, t.Context(), []string{"update", "check", "--format", "json"}, &stdout, &stderr)
+			outputs[i] = stdout.String() + stderr.String()
+		})
+	}
+	wg.Wait()
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("lookup calls = %d, want 1 for %d sessions starting together", got, sessions)
+	}
+	network := 0
+	for i, output := range outputs {
+		var report updateCheckReport
+		if codes[i] != 0 || json.Unmarshal([]byte(output), &report) != nil || report.Latest != "2.0.0" || report.Lookup.Error != "" {
+			t.Fatalf("session %d: exit=%d output=%s", i, codes[i], output)
+		}
+		if report.Lookup.Source == "network" {
+			network++
+		}
+	}
+	if network != 1 {
+		t.Fatalf("network reports = %d, want 1: %v", network, outputs)
+	}
+	entries, err := os.ReadDir(filepath.Join(home, ".roundfix"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.Name() != updateCheckCacheFile {
+			t.Fatalf("left behind %s beside the cache", entry.Name())
+		}
+	}
+}
+
+func TestUpdateCheckReplacesAStaleLookupLock(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	setCommandEnvironmentForTest(t, home, t.TempDir())
+	lock := filepath.Join(home, ".roundfix", updateCheckCacheFile+".lock")
+	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-updateCheckLockStale - time.Second)
+	if err := os.Chtimes(lock, old, old); err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	configureUpdateCheckTest(t, "1.0.0", func(context.Context) ([]app.Release, error) {
+		calls++
+		return []app.Release{{Version: "2.0.0", Titles: []string{}}}, nil
+	})
+	started := time.Now()
+	output := runUpdateCheckTest(t, "update", "check", "--format", "json")
+	assertUpdateCheckLookup(t, output, "network", false)
+	if calls != 1 || time.Since(started) >= updateCheckTimeout {
+		t.Fatalf("stale lock: calls=%d after %s", calls, time.Since(started))
+	}
+	if _, err := os.Stat(lock); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("lookup lock left behind: %v", err)
 	}
 }
 

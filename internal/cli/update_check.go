@@ -22,6 +22,9 @@ const (
 	updateCheckCacheFile   = "update-check.json"
 	updateCheckInterval    = 24 * time.Hour
 	updateCheckTimeout     = 5 * time.Second
+	// A lookup lock older than this was left by a session that died mid-lookup.
+	updateCheckLockStale = 2 * updateCheckTimeout
+	updateCheckLockPoll  = 50 * time.Millisecond
 )
 
 var updateCheckDeps = defaultUpdateCheckDependencies()
@@ -124,6 +127,16 @@ func buildUpdateCheckReport(ctx context.Context, homeDir, mode string, refresh b
 	cache, ok := readUpdateCheckCache(path, now)
 	report.Lookup.Source = "cache"
 	if refresh || !ok {
+		// Sessions that start together take turns, so only the first reads the
+		// network and the others report the cache it wrote.
+		if release := acquireUpdateCheckLock(ctx, path+".lock"); release != nil {
+			defer release()
+		}
+		if !refresh {
+			cache, ok = readUpdateCheckCache(path, now)
+		}
+	}
+	if refresh || !ok {
 		report.Lookup.Source = "network"
 		cache = updateCheckCache{SchemaVersion: updateCheckCacheSchema, CheckedAt: now, Releases: []app.Release{}}
 		lookupCtx, cancel := context.WithTimeout(ctx, updateCheckTimeout)
@@ -193,7 +206,53 @@ func writeUpdateCheckCache(path string, cache updateCheckCache) {
 	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
 		return
 	}
-	_ = os.WriteFile(path, content, 0o644)
+	// A temporary file renamed into place keeps a concurrent reader from seeing
+	// a partly written cache.
+	file, err := os.CreateTemp(filepath.Dir(path), updateCheckCacheFile+".*.tmp")
+	if err != nil {
+		return
+	}
+	temporary := file.Name()
+	_, writeErr := file.Write(content)
+	closeErr := file.Close()
+	if writeErr != nil || closeErr != nil || os.Chmod(temporary, 0o644) != nil || os.Rename(temporary, path) != nil {
+		_ = os.Remove(temporary)
+	}
+}
+
+// acquireUpdateCheckLock creates the lookup lock beside the cache and returns
+// the function that removes it. It waits up to updateCheckTimeout for another
+// session's lock, replaces a stale one, and returns nil when the lock cannot
+// be taken, so a lock failure never holds up the session.
+func acquireUpdateCheckLock(ctx context.Context, path string) func() {
+	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
+		return nil
+	}
+	deadline := time.NewTimer(updateCheckTimeout)
+	defer deadline.Stop()
+	for {
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+		if err == nil {
+			_ = file.Close()
+			return func() { _ = os.Remove(path) }
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return nil
+		}
+		if info, statErr := os.Stat(path); statErr == nil {
+			if age := time.Since(info.ModTime()); age > updateCheckLockStale || age < -updateCheckLockStale {
+				_ = os.Remove(path)
+				continue
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-deadline.C:
+			return nil
+		case <-time.After(updateCheckLockPoll):
+		}
+	}
 }
 
 func previewUpdateCheckBaseline(ctx context.Context, gitRoot string, environment commandEnvironment) updateCheckBaseline {
