@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -191,6 +192,15 @@ func TestPullRequestBoundaryReportsCurrentHeadChecks(t *testing.T) {
 		},
 		commandStep{
 			name:   "gh",
+			args:   []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"},
+			result: CommandResult{Stdout: `{"total_count":0,"workflow_runs":[]}`},
+		},
+		commandStep{
+			name: "git",
+			args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"},
+		},
+		commandStep{
+			name:   "gh",
 			args:   []string{"pr", "view", "18", "--json", pullRequestJSONFields},
 			result: CommandResult{Stdout: pullRequest},
 		},
@@ -232,6 +242,15 @@ func TestNoChecksReportedIsAnEmptyReport(t *testing.T) {
 				Stderr:   "no checks reported on the 'feat/delivery' branch\n",
 				ExitCode: 1,
 			},
+		},
+		commandStep{
+			name:   "gh",
+			args:   []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"},
+			result: CommandResult{Stdout: `{"total_count":0,"workflow_runs":[]}`},
+		},
+		commandStep{
+			name: "git",
+			args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"},
 		},
 		commandStep{
 			name:   "gh",
@@ -298,6 +317,15 @@ func TestPullRequestBoundaryReportsFailedCurrentHeadChecks(t *testing.T) {
 		},
 		commandStep{
 			name:   "gh",
+			args:   []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"},
+			result: CommandResult{Stdout: `{"total_count":0,"workflow_runs":[]}`},
+		},
+		commandStep{
+			name: "git",
+			args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"},
+		},
+		commandStep{
+			name:   "gh",
 			args:   []string{"pr", "view", "18", "--json", pullRequestJSONFields},
 			result: CommandResult{Stdout: pullRequest},
 		},
@@ -325,6 +353,15 @@ func TestPullRequestBoundaryRejectsChecksFromAMovedHead(t *testing.T) {
 			name:   "gh",
 			args:   []string{"pr", "checks", "18", "--json", "bucket,link,name,state,workflow"},
 			result: CommandResult{Stdout: `[]`},
+		},
+		commandStep{
+			name:   "gh",
+			args:   []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"},
+			result: CommandResult{Stdout: `{"total_count":0,"workflow_runs":[]}`},
+		},
+		commandStep{
+			name: "git",
+			args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"},
 		},
 		commandStep{
 			name:   "gh",
@@ -496,4 +533,121 @@ func (fake *fakePullRequestBoundary) MergePullRequest(ctx context.Context, numbe
 		return MergeResult{}, errors.New("unexpected MergePullRequest call")
 	}
 	return fake.mergePullRequest(ctx, number, expectedHead)
+}
+
+func TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead(t *testing.T) {
+	t.Parallel()
+	const pr = `{"number":18,"baseRefName":"main","headRefOid":"head-two","mergeable":"MERGEABLE","mergeStateStatus":"CLEAN"}`
+	const runs = `{"total_count":4,"workflow_runs":[
+        {"id":9,"name":"CI | Backend","path":".github/workflows/ci-backend.yml","head_sha":"head-two","event":"pull_request","status":"completed","conclusion":"cancelled","run_number":9},
+        {"id":10,"name":"CI | Backend","path":".github/workflows/ci-backend.yml","head_sha":"head-two","event":"pull_request","status":"in_progress","run_number":10,"run_attempt":1,"html_url":"https://github.test/acme/repo/actions/runs/10"},
+        {"id":11,"name":"CI | Backend","path":".github/workflows/ci-backend.yml","head_sha":"head-one","event":"pull_request","status":"completed","conclusion":"success","run_number":11},
+        {"id":1,"name":"CI | Conventions","path":".github/workflows/ci-conventions.yml","head_sha":"head-two","event":"pull_request","status":"completed","conclusion":"success","run_number":1,"html_url":"https://github.test/acme/repo/actions/runs/1"}
+    ]}`
+	tests := []struct {
+		name      string
+		step      int
+		result    CommandResult
+		runnerErr error
+		wantError string
+	}{
+		{name: "reads head runs"},
+		{name: "incomplete page", step: 2, result: CommandResult{Stdout: `{"total_count":101,"workflow_runs":[{"id":1}]}`}, wantError: "read workflow runs: 101 runs reported for head-two, more than one page of 1"},
+		{name: "runs read fails", step: 2, result: CommandResult{ExitCode: 1, Stderr: "HTTP 403"}, wantError: "read workflow runs: HTTP 403"},
+		{name: "ls-tree fails", step: 3, result: CommandResult{ExitCode: 1, Stderr: "missing head"}, wantError: "list workflow files: missing head"},
+		{name: "git show fails", step: 4, result: CommandResult{ExitCode: 1, Stderr: "missing blob"}, wantError: "read workflow file: missing blob"},
+		{name: "runs malformed", step: 2, result: CommandResult{Stdout: "{"}, wantError: "read workflow runs:"},
+		{name: "runs runner fails", step: 2, runnerErr: context.Canceled, wantError: "read workflow runs: context canceled"},
+		{name: "ls-tree runner fails", step: 3, runnerErr: context.Canceled, wantError: "list workflow files: context canceled"},
+		{name: "git show runner fails", step: 4, runnerErr: context.Canceled, wantError: "read workflow file: context canceled"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			steps := []commandStep{
+				{name: "gh", args: []string{"pr", "view", "18", "--json", pullRequestJSONFields}, result: CommandResult{Stdout: pr}},
+				{name: "gh", args: []string{"pr", "checks", "18", "--json", "bucket,link,name,state,workflow"}, result: CommandResult{Stdout: `[{"bucket":"pass","name":"Validate PR title","workflow":"CI | Conventions","state":"SUCCESS","link":"https://github.test/acme/repo/actions/runs/1/job/2"}]`}},
+				{name: "gh", args: []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"}, result: CommandResult{Stdout: runs}},
+				{name: "git", args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"}, result: CommandResult{Stdout: ".github/workflows/ci-backend.yml\x00.github/workflows/ci-conventions.yml\x00.github/workflows/README.md\x00"}},
+				{name: "git", args: []string{"show", "head-two:.github/workflows/ci-backend.yml"}, result: CommandResult{Stdout: "on: {pull_request: {paths: ['internal/**']}}"}},
+				{name: "git", args: []string{"show", "head-two:.github/workflows/ci-conventions.yml"}, result: CommandResult{Stdout: "on: {pull_request: {branches: [main], types: [opened, reopened, edited, synchronize]}}"}},
+				{name: "gh", args: []string{"pr", "view", "18", "--json", pullRequestJSONFields}, result: CommandResult{Stdout: pr}},
+			}
+			if tt.wantError != "" {
+				steps[tt.step].result = tt.result
+				steps[tt.step].err = tt.runnerErr
+				steps = steps[:tt.step+1]
+			}
+			client := GitHubCLI{WorkDir: "/repo", Runner: newScriptedCommandRunner(t, steps...)}
+			report, err := client.CurrentHeadChecks(t.Context(), "18")
+			if tt.wantError != "" {
+				if err == nil || !strings.HasPrefix(err.Error(), tt.wantError) {
+					t.Fatalf("CurrentHeadChecks error = %v, want prefix %q", err, tt.wantError)
+				}
+				if tt.runnerErr != nil && !errors.Is(err, tt.runnerErr) {
+					t.Fatalf("CurrentHeadChecks lost runner error: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantRuns := []WorkflowRun{
+				{ID: "10", Name: "CI | Backend", Path: ".github/workflows/ci-backend.yml", Event: "pull_request", Status: "in_progress", Attempt: 1, URL: "https://github.test/acme/repo/actions/runs/10"},
+				{ID: "1", Name: "CI | Conventions", Path: ".github/workflows/ci-conventions.yml", Event: "pull_request", Status: "completed", Conclusion: "success", URL: "https://github.test/acme/repo/actions/runs/1"},
+			}
+			if !reflect.DeepEqual(report.WorkflowRuns, wantRuns) {
+				t.Fatalf("WorkflowRuns = %+v, want %+v (run 9 is superseded by run 10)", report.WorkflowRuns, wantRuns)
+			}
+			wantExpected := []string{".github/workflows/ci-conventions.yml"}
+			if !reflect.DeepEqual(report.ExpectedWorkflows, wantExpected) {
+				t.Fatalf("ExpectedWorkflows = %v, want %v", report.ExpectedWorkflows, wantExpected)
+			}
+			if report.HeadSHA != "head-two" || report.Mergeable != "MERGEABLE" || report.MergeState != "CLEAN" || len(report.Checks) != 1 || report.Checks[0].Name != "Validate PR title" {
+				t.Fatalf("CheckReport = %+v", report)
+			}
+		})
+	}
+}
+
+func TestPullRequestReadTrimsTheBaseBranch(t *testing.T) {
+	t.Parallel()
+	pr, err := parsePullRequest([]byte(`{"number":18,"baseRefName":" main "}`))
+	if err != nil || pr.BaseBranch != "main" {
+		t.Fatalf("PullRequest = %+v, error = %v", pr, err)
+	}
+}
+
+func TestCurrentHeadChecksKeepsWorkflowEventsSeparate(t *testing.T) {
+	t.Parallel()
+	const pr = `{"number":18,"baseRefName":" main ","headRefOid":"head-two"}`
+	runner := newScriptedCommandRunner(t,
+		commandStep{name: "gh", args: []string{"pr", "view", "18", "--json", pullRequestJSONFields}, result: CommandResult{Stdout: pr}},
+		commandStep{name: "gh", args: []string{"pr", "checks", "18", "--json", "bucket,link,name,state,workflow"}, result: CommandResult{Stdout: `[]`}},
+		commandStep{name: "gh", args: []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=head-two&per_page=100"}, result: CommandResult{Stdout: `{"total_count":5,"workflow_runs":[
+            {"id":30,"name":"CI","path":"ci.yml","event":"push","head_sha":"head-two","run_number":30,"status":"COMPLETED","conclusion":"SUCCESS"},
+            {"id":20,"name":"CI","path":"ci.yml","event":"pull_request","head_sha":"head-two","run_number":20,"status":"IN_PROGRESS"},
+            {"id":10,"name":"CI","path":"ci.yml","event":"pull_request","head_sha":"head-two","run_number":10,"status":"completed","conclusion":"failure"},
+            {"id":40,"name":"CI","path":"ci.yml","event":"push","head_sha":"head-one","run_number":40},
+            {"id":5,"name":"CI","path":"other.yml","event":"push","head_sha":"head-two","run_number":5}
+        ]}`}},
+		commandStep{name: "git", args: []string{"ls-tree", "-z", "--name-only", "head-two", "--", ".github/workflows/"}, result: CommandResult{Stdout: ".github/workflows/ci.yaml\x00"}},
+		commandStep{name: "git", args: []string{"show", "head-two:.github/workflows/ci.yaml"}, result: CommandResult{Stdout: "on: {pull_request: {branches: main}}"}},
+		commandStep{name: "gh", args: []string{"pr", "view", "18", "--json", pullRequestJSONFields}, result: CommandResult{Stdout: pr}},
+	)
+	report, err := (GitHubCLI{WorkDir: "/repo", Runner: runner}).CurrentHeadChecks(t.Context(), "18")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []WorkflowRun{
+		{ID: "30", Name: "CI", Path: "ci.yml", Event: "push", Status: "completed", Conclusion: "success"},
+		{ID: "20", Name: "CI", Path: "ci.yml", Event: "pull_request", Status: "in_progress"},
+		{ID: "5", Name: "CI", Path: "other.yml", Event: "push"},
+	}
+	if !reflect.DeepEqual(report.WorkflowRuns, want) {
+		t.Fatalf("WorkflowRuns = %+v, want %+v", report.WorkflowRuns, want)
+	}
+	if !reflect.DeepEqual(report.ExpectedWorkflows, []string{".github/workflows/ci.yaml"}) {
+		t.Fatalf("ExpectedWorkflows = %v", report.ExpectedWorkflows)
+	}
 }

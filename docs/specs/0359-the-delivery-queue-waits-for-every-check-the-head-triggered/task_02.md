@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0359-the-delivery-queue-waits-for-every-check-the-head-triggered
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -129,3 +129,80 @@ does not read the new fields yet (task_03), so delivery behaves as today.
 
 - `_prd.md` → Core Feature 1; Core Feature 2; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 1; Current behavior 4; Interfaces; API Contract 1; API Contract 2; Declared breaks; Testing Approach; Build Order 2; ADR-0369
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, golang-cli, evidence-gate, systematic-debugging, no-workarounds, tech-writer.
+
+The GitHub boundary now returns the head's workflow runs and Expected
+Workflows alongside the existing checks. It reads runs before listing the
+head's workflow files, reads only `.yml` and `.yaml` entries in listing order,
+and rechecks the pull request head after those reads. The pull request field
+list includes `baseRefName`, and `PullRequest.BaseBranch` trims that value.
+Run selection discards other heads, groups by workflow path and event,
+replaces a superseded run in its original position, and preserves the
+attempt and URL while lower-casing status and conclusion.
+
+`ExpectedWorkflows` parses YAML nodes, preserving quoted and unquoted `on`,
+and sorts the paths admitted by API Contract 2. Filtered, malformed and
+unsupported trigger declarations create no expectation. The engine, re-run
+implementation, turn records, park classification and blocker/log text were
+not changed. Existing scripted reads gained only the two declared empty
+steps, and the command test's fake forge now answers `api` with empty runs.
+
+Focused evidence:
+
+- Before any edits, the required characterization command passed (exit 0):
+  `go test -count=1 -timeout 20m -v -run '^(TestPullRequestBoundaryReportsCurrentHeadChecks|TestNoChecksReportedIsAnEmptyReport|TestPullRequestBoundaryReportsFailedCurrentHeadChecks|TestPullRequestBoundaryRejectsChecksFromAMovedHead|TestPullRequestReadCarriesTheMergeState)$' ./internal/delivery`.
+  All five named tests reported PASS.
+- The new tests first failed to compile on the absent `WorkflowRun`,
+  `ExpectedWorkflows`, `CheckReport` fields and `PullRequest.BaseBranch`.
+- Acceptance criterion 1: after implementation,
+  `TestExpectedWorkflowsFollowTheTriggerRule` returned exactly
+  `[a.yml c.yml e.yml f.yml g.yml h.yml k.yml]` from the one required
+  sixteen-file input. `TestExpectedWorkflowsSkipUnsupportedTriggers` also
+  passed, covering empty mappings, scalar events, missing/non-mapping YAML
+  roots, invalid branch/type values and unsupported keys.
+- Acceptance criterion 2: `TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead`
+  passed with exactly runs 10 and 1 and only
+  `.github/workflows/ci-conventions.yml` expected. Its incomplete-page,
+  runs-read, listing, file-read, malformed JSON and runner-cancellation
+  subtests passed; cancellation remains discoverable with `errors.Is`.
+  `TestCurrentHeadChecksKeepsWorkflowEventsSeparate` passed, covering
+  independent events and files with identical names, descending run numbers,
+  foreign heads, lowercase normalization, `.yaml` reads and a trimmed base.
+- The final focused boundary command passed (exit 0):
+  `go test -count=1 -timeout 20m -v -run '^(TestExpectedWorkflows.*|TestCurrentHeadChecks.*|TestPullRequestReadTrimsTheBaseBranch|TestPullRequestBoundary.*|TestNoChecksReportedIsAnEmptyReport|TestCheckCommandFailuresRemainErrors|TestPullRequestReadCarriesTheMergeState|TestGitHubCLIReadsTheMergeableState)$' ./internal/delivery`.
+- Acceptance criterion 3, focused regression evidence: the following
+  existing engine/recovery checks passed without assertion changes (exit 0):
+  `go test -count=1 -timeout 20m -run '^(TestGitHubCLI.*|TestDeliveryEngine.*|TestDeliveryWaitsThroughUnreportedChecks|TestCheckReadErrorsAreRetriedUntilTheDeadline|TestPersistentCheckReadErrorsParkAtTheDeadline|TestChecksTimeoutParksTheItem|TestAConflictingPullRequestStopsTheCheckWaitAtOnce|TestAnUnknownMergeableStateKeepsWaiting|TestABlockedMergeStateParksAtTheChecksTimeout|TestTheQueueWaitsThroughABlockedMergeState|TestARetryAfterTheDefaultBranchMovedRerunsTheStaleCheckAndMerges|TestAStaleCheckKeepsPollingWhileGitHubReportsTheAttemptItReran|TestAStaleRerunThatFailsOnTheCurrentTipGetsTheOutsideChangeRerun|TestAStaleCheckWhoseRerunIsRefusedParksChecksFailed|TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce|TestCancelledChecksAreNotRerun|TestCheckRerunRestartsTheTimeout|TestAnOldCheckAttemptCannotKeepResettingTheTimeout)$' ./internal/delivery`.
+- Focused CLI archive-record regressions passed (exit 0):
+  `go test -count=1 -timeout 20m -run '^(TestDeliveryWorkflow.*|TestDeliveryRecordProofAllowsOnlyTheRenderedOutcomeShortening)$' ./internal/cli`.
+  The declared command-engine test and full-package/platform checks remain
+  for Daemon Verification; these focused checks do not claim their outcome.
+
+Sabotage evidence (temporary repositories made from `git archive HEAD` with
+the six implementation/test files overlaid; the Run checkout was not
+sabotaged):
+
+- Sabotage 4 accepted `paths` in the pull request trigger. In
+  `/private/tmp/roundfix-0359-task02-sabotage-ucqi6xn6/4`,
+  `go test -count=1 -timeout 20m -v -run '^TestExpectedWorkflowsFollowTheTriggerRule$' ./internal/delivery`
+  exited 1 and failed `TestExpectedWorkflowsFollowTheTriggerRule` on
+  `b.yml`, `branches: [main], paths: ['x/**']`: the actual list incorrectly
+  included `b.yml`. Full transcript:
+  `/private/tmp/roundfix-0359-task02-sabotage-ucqi6xn6/sabotage-4.log`.
+- Sabotage 5 kept the first run for an already-seen workflow path/event.
+  In `/private/tmp/roundfix-0359-task02-sabotage-ucqi6xn6/5`,
+  `go test -count=1 -timeout 20m -v -run '^TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead$' ./internal/delivery`
+  exited 1 and failed
+  `TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs`:
+  the cancelled backend run 9 preceding run 10 was retained instead of the
+  in-progress run 10 with attempt 1 and its URL. Full transcript:
+  `/private/tmp/roundfix-0359-task02-sabotage-ucqi6xn6/sabotage-5.log`.
+
+`git diff --check` passed. No Task status, Task Graph, other Task file,
+protected tooling, dependency manifest or unrelated document was edited by
+this Agent. No commit, push or pull request was made. The declared
+Verification commands and repository gates were not run.

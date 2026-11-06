@@ -21,7 +21,10 @@ func TestPullRequestReadCarriesTheMergeState(t *testing.T) {
 	view := func(state string) commandStep {
 		return commandStep{name: "gh", args: []string{"pr", "view", "1", "--json", pullRequestJSONFields}, result: CommandResult{Stdout: fmt.Sprintf(`{"number":1,"headRefOid":"candidate","mergeable":"MERGEABLE","mergeStateStatus":%q}`, state)}}
 	}
-	runner := newScriptedCommandRunner(t, view(" blocked "), commandStep{name: "gh", args: []string{"pr", "checks", "1", "--json", "bucket,link,name,state,workflow"}, result: CommandResult{Stdout: `[{"name":"test","bucket":"pass"}]`}}, view(" clean "))
+	runner := newScriptedCommandRunner(t, view(" blocked "), commandStep{name: "gh", args: []string{"pr", "checks", "1", "--json", "bucket,link,name,state,workflow"}, result: CommandResult{Stdout: `[{"name":"test","bucket":"pass"}]`}},
+		commandStep{name: "gh", args: []string{"api", "repos/{owner}/{repo}/actions/runs?head_sha=candidate&per_page=100"}, result: CommandResult{Stdout: `{"total_count":0,"workflow_runs":[]}`}},
+		commandStep{name: "git", args: []string{"ls-tree", "-z", "--name-only", "candidate", "--", ".github/workflows/"}},
+		view(" clean "))
 	client := GitHubCLI{WorkDir: "/repo", Runner: runner}
 	report, err := client.CurrentHeadChecks(t.Context(), "1")
 	if err != nil || report.MergeState != "CLEAN" {

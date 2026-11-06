@@ -340,6 +340,7 @@ origin=%s
 branch=%s
 head=$(git --git-dir="$origin" rev-parse "refs/heads/$branch")
 case "$1 $2" in
+ 'api '*) printf '{"total_count":0,"workflow_runs":[]}'; exit 0 ;;
  'pr create') touch "$state/open"; printf 'https://local.invalid/pull/7\n'; exit 0 ;;
  'pr checks') printf '[{"name":"verify","bucket":"pass","state":"SUCCESS"}]'; exit 0 ;;
  'pr merge')
