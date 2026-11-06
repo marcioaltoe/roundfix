@@ -1,4 +1,0 @@
-Module version: 23 -> 24
-Docs-layout rule version: 8 -> 9
-Exact API Contract 1 sentence replacement; identity/enforcement/replaces preserved.
-Every other decoded JSON value is identical.

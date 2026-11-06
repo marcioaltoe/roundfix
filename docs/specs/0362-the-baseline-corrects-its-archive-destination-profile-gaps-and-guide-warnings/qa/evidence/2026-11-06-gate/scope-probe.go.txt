@@ -1,9 +1,0 @@
-package speccheck
-import ("encoding/json"; "os"; "testing")
-func TestQA0362GovernedScope(t *testing.T) {
- t.Parallel()
- data,err:=os.ReadFile("<temporary-path-input.json>");if err!=nil {t.Fatal(err)}
- var v struct { Paths []string `json:"paths"`; Allowed []string `json:"allowed"` };if err:=json.Unmarshal(data,&v);err!=nil{t.Fatal(err)}
- allowed:=map[string]bool{};for _,p:=range v.Allowed{allowed[p]=true}
- for _,p:=range v.Paths{g:=GovernedPath(p);t.Logf("%s governed=%t authorized=%t",p,g,allowed[p]);if g&&!allowed[p]{t.Errorf("governed path lacks authorization: %s",p)}}
-}

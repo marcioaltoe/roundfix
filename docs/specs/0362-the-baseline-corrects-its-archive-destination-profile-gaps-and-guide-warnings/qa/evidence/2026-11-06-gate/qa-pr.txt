@@ -1,8 +1,0 @@
-Pull Request fact: none open (supplied by Daemon).
-Target branch: roundfix/deliver-0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings-ce34ff6b990ad3d6
-Candidate: f63fc5586af7cffebb2b100413d487df9b1fd2ea
-Approval: _authorization.md status approved and delivery operations granted before Task commits.
-Checks: make verify-changed, pass, exit 0, supplied by Daemon for audited head.
-Unresolved threads: none; no PR exists.
-Merge-Ready acceptance: not yet available.
-No PR lookup, creation or mutation performed.
