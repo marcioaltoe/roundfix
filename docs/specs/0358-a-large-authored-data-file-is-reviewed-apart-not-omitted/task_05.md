@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

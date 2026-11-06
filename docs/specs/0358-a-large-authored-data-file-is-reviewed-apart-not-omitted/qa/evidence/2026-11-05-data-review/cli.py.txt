@@ -1,0 +1,31 @@
+import sys,tempfile,json
+sys.path.insert(0,'/tmp')
+from qa358_support import *
+caches={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+transcript='';valid=True
+for paths in ['rules/','/abs']:
+ with tempfile.TemporaryDirectory(prefix='qa358-home-') as home,tempfile.TemporaryDirectory(prefix='qa358-tmp-') as tmp,tempfile.TemporaryDirectory(prefix='qa358-repo-') as repo:
+  repo=Path(repo);(repo/'bin').symlink_to(ROOT/'bin',target_is_directory=True)
+  e=dict(caches,HOME=home,TMPDIR=tmp,GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1')
+  for args in [['git','init','-q','-b','main'],['git','config','user.name','QA fixture'],['git','config','user.email','qa@example.invalid']]:
+   c,_=command(args,cwd=repo,environment=e);assert c==0
+  (repo/'.roundfixrc.yml').write_text('pre_pr_review:\n  provider: none\n  data_paths: ['+paths+']\n')
+  for args in [['git','add','.roundfixrc.yml'],['git','commit','-q','-m','fixture: base'],['git','checkout','-q','-b','candidate']]:
+   c,_=command(args,cwd=repo,environment=e);assert c==0
+  (repo/'code.go').write_text('package code\n')
+  for args in [['git','add','code.go'],['git','commit','-q','-m','fixture: candidate']]:
+   c,_=command(args,cwd=repo,environment=e);assert c==0
+  transcript+='FIXTURE: committed data_paths ['+paths+']; fresh HOME and TMPDIR; ./bin points to the audited Run binary.\n'
+  repeat=2 if paths=='rules/' else 1
+  for i in range(repeat):
+   c,out=command(['./bin/roundfix','review','--base','main'],cwd=repo,environment=e);transcript+=out
+   if paths=='rules/':
+    payload=out.split('\n',1)[1].rsplit('\nEXIT:',1)[0].strip();record=json.loads(payload)
+    valid &= c==0 and record['outcome']=='omitted' and record['provider']=='none'
+    saved=list(Path(home).rglob('pre-pr-review.json'))
+    valid &= len(saved)==1 and json.loads(saved[0].read_text())['outcome']=='omitted'
+    transcript+='Independent persisted-record read: outcome omitted, provider none; process '+str(i+1)+'.\n'
+   else: valid &= c==2 and 'pre_pr_review.data_paths has unsafe path "/abs"' in out
+  transcript+='Temporary repository, HOME and TMPDIR removed.\n'
+result('Q03','pass' if valid else 'fail','Built CLI accepts committed data_paths [rules/] with explicit none (exit 0, omitted), persists the record across two process invocations, and refuses [/abs] with the required error (exit 2).','public-cli.txt',transcript)
+print(transcript)

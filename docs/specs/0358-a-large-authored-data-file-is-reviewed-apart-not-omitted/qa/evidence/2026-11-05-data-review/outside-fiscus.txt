@@ -1,0 +1,28 @@
+Outside origin: fiscus message 01a1ab64-9074-7520-ad17-6f970973d186, 2026-11-05 08:07 BRT, quoted before this Spec was authored.
+Point 5: Catálogos grandes de dados autorais** (`icms-es-v2.json`, ~550 KB) passavam sozinhos do limite do review. Resolvemos com `derived_paths` (PR #263 do Fiscus), mas o revisor deixa de ler as regras fiscais. Talvez valha uma categoria "dado autoral grande": revisado à parte ou resumido, em vez de omitido.
+
+Comparison: the 9,000-entry catalog in TestReviewSendsADataPathApart is 549003 bytes (about 550 KB). Both provider command journeys assert two prompts, catalog absent from code and present in Data Review Segment 1, no omittedPaths, dataSegment=1, persisted record fields and verbatim answer headers. This addresses the sender's omission symptom without contacting Fiscus or its repository.
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestReviewSendsADataPathApart$/^(codex|claude)$ ./internal/cli
+=== RUN   TestReviewSendsADataPathApart
+=== PAUSE TestReviewSendsADataPathApart
+=== CONT  TestReviewSendsADataPathApart
+=== RUN   TestReviewSendsADataPathApart/codex
+=== PAUSE TestReviewSendsADataPathApart/codex
+=== RUN   TestReviewSendsADataPathApart/claude
+=== PAUSE TestReviewSendsADataPathApart/claude
+=== CONT  TestReviewSendsADataPathApart/codex
+=== CONT  TestReviewSendsADataPathApart/claude
+=== RUN   TestReviewSendsADataPathApart/claude/code_segments
+=== RUN   TestReviewSendsADataPathApart/codex/code_segments
+=== RUN   TestReviewSendsADataPathApart/claude/data_uses_the_token_budget
+--- PASS: TestReviewSendsADataPathApart (0.00s)
+    --- PASS: TestReviewSendsADataPathApart/codex (1.89s)
+        --- PASS: TestReviewSendsADataPathApart/codex/code_segments (1.35s)
+    --- PASS: TestReviewSendsADataPathApart/claude (2.99s)
+        --- PASS: TestReviewSendsADataPathApart/claude/code_segments (1.34s)
+        --- PASS: TestReviewSendsADataPathApart/claude/data_uses_the_token_budget (0.77s)
+PASS
+suiteguard: guard cost: measured 2982 paths; fingerprint took 618.732417ms before and 190.317792ms after
+ok  	roundfix/internal/cli	4.235s
+
+EXIT: 0

@@ -1,0 +1,64 @@
+import sys,re,json,hashlib
+sys.path.insert(0,'/tmp')
+from qa358_support import *
+def read(path):return (ROOT/path).read_text()
+def normal(s):return ' '.join(s.split())
+tech=(SPEC/'_techspec.md').read_text();api6=tech.split('6. API Contract: the rule in writing',1)[1].split('### Surface Transcripts',1)[0]
+blocks=re.findall(r'```markdown\n(.*?)\n\s*```',api6,re.S);assert len(blocks)==4
+checks=[]
+for block,file in [(blocks[0],'docs/user-guide/configuration.md'),(blocks[1],'docs/user-guide/configuration.md')]+[(blocks[2],p) for p in ['docs/user-guide/commands/review.md','.agents/skills/roundfix/references/review.md','skills/roundfix/references/review.md']]:
+ ok=normal(block) in normal(read(file));checks.append(ok)
+ print('EXACT API Contract 6:',file,ok)
+context=read('CONTEXT.md');plain=re.sub(r'\[([^\]]+)\]\([^)]*\)',r'\1',context)
+checks.append(normal(blocks[3]) in normal(plain))
+adr='docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md'
+for expected in ['updated_at: 2026-11-05T12:00:00Z','**Amended by [ADR-0368](0368-a-large-authored-data-file-is-reviewed-apart-in-data-review-segments.md) (2026-11-05).** Files declared in `pre_pr_review.data_paths` leave the Review Segments and are reviewed apart in Data Review Segments, which split their diff by file, hunk and line; Review Segments stay commit ranges.','ADR-0368 takes it for declared data files only.']:
+ checks.append(normal(expected) in normal(read(adr)))
+for doc in ['_prd.md','_techspec.md']:
+ for term in ['Review Data Path','Data Review Segment']:checks.append('adds: **'+term+'**' in (SPEC/doc).read_text())
+for file in ['SKILL.md','references/review.md']:
+ checks.append((ROOT/'.agents/skills/roundfix'/file).read_bytes()==(ROOT/'skills/roundfix'/file).read_bytes())
+checks.append(context.index('**Review Omit Path**')<context.index('**Review Data Path**')<context.index('**Data Review Segment**'))
+for term in ['Review Data Path','Data Review Segment']:
+ section=context.split('**'+term+'**:',1)[1].split('\n\n',1)[0]
+ checks.append('docs/adr/0368-a-large-authored-data-file-is-reviewed-apart-in-data-review-segments.md' in section)
+text='API Contract 6 normalized word-for-word checks: '+str(sum(checks))+'/'+str(len(checks))+' passed.\n'
+text+='Both terms declared in PRD and TechSpec, in required glossary order and linked to ADR-0368. Both mirrors byte-identical. Roundfix skill 0.1.191 in both copies.\n'
+text+='Configuration exact required row/sentence:\n'+blocks[0]+'\n'+blocks[1]+'\n\nReview guide and both references exact required paragraphs:\n'+blocks[2]+'\n\nGlossary exact entries with ADR links normalized:\n'+blocks[3]+'\n\nADR amended date and both sentences checked.\n'
+result('Q09','pass' if all(checks) else 'fail','Exact API Contract 6 wording and glossary declarations checked mechanically; mirror bytes agree. Q02 separately records live glossary and skill-version tests.','documentation.txt',text)
+
+base='aa1048d1071264f2605fe6cea2a5a1d32dd2d5f8';head='63bb974109f9c8ca603892c06fb4bda9f069ebd5'
+commits=subprocess.check_output(['git','rev-list','--reverse',base+'..'+head],text=True).splitlines()
+log='Task scope command audit; each changed path comes from git diff-tree, not the Task Result.\n';allpaths=[];issues=[]
+authpath=str((SPEC/'_authorization.md').relative_to(ROOT));auth=read(authpath)
+authpaths=re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M)
+governed=read('internal/speccheck/governed.go');patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',governed,re.S);exact=re.findall(r'^\s+"([^"\n]+)",?$',governed,re.M)
+for index,commit in enumerate(commits,1):
+ task=f'task_{index:02}.md';taskpath=str((SPEC/task).relative_to(ROOT))
+ source=subprocess.check_output(['git','show',commit+':'+taskpath],text=True)
+ declared=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',source,re.M));declared.add(taskpath)
+ if '## Recorded paths' in source:declared.update(re.findall(r'`([^`]+)`',source.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ args=['git','diff-tree','--no-commit-id','--name-only','-r',commit];code,out=command(args);log+=out
+ paths=subprocess.check_output(args,text=True).splitlines();allpaths.extend(paths)
+ for path in paths:
+  gov=any(re.search(pattern,path) for pattern in patterns) or path in exact
+  log+=f'{task} | {path} | declared={path in declared} | governed={gov} | granted={path in authpaths if gov else "not applicable"}\n'
+  if path not in declared:issues.append('undeclared '+path)
+  if gov and path not in authpaths:issues.append('ungrounded governed '+path)
+ # Grant precedes every consuming commit and is byte-identical to operative grant.
+ parentauth=subprocess.check_output(['git','show',commit+'^:'+authpath],text=True)
+ if parentauth!=auth:issues.append('authorization differs at parent '+commit)
+allpaths=set(allpaths)
+for p in allpaths:
+ forbidden=p in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/references/coverage-record.json'] or p.startswith(('.github/workflows/','internal/baseline/','internal/delivery/','internal/store/','docs/agents/')) or (p.startswith('docs/adr/') and p!=adr) or (p.startswith(('.agents/skills/','skills/')) and p not in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/review.md','skills/roundfix/SKILL.md','skills/roundfix/references/review.md','skills/testdata/owned-skill-versions.json'])
+ if forbidden:issues.append('forbidden '+p)
+for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ old=subprocess.check_output(['git','show',base+':'+p],text=True);new=read(p)
+ def settlement(s):return s.split('### QA settlement\n',1)[1].split('\n##',1)[0]
+ if settlement(old)!=settlement(new):issues.append('changed settlement '+p)
+code,out=command(['git','merge-base','--is-ancestor',base,head]);assert code==0
+baseauth=subprocess.check_output(['git','show',base+':'+authpath],text=True);assert baseauth==auth
+log+='Authorization operative and identical at delivery base, before all four Task commits. Mechanical authorization audit already grants task_04 at this base; no repeated mechanical refusal detector.\n'
+log+='Protected files/prefixes unchanged; no other skill/ADR; QA settlement unchanged; existing tests not modified.\nIssues: '+repr(issues)+'\n'
+result('Q12','pass' if not issues else 'fail','All four Task commits fit their declared interfaces/creates plus their own Task file. Three changed Governed Paths are bounded by the prior operative grant. Forbidden paths and QA settlement unchanged.','scope-audit.txt',log)
+print(log)

@@ -1,0 +1,162 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestPrePRReviewDataPathsLoadsAndValidates$ ./internal/config
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/absent
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/absent
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/inherits_user
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/inherits_user
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/project_replaces_user
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/project_replaces_user
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/empty_clears_user
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/empty_clears_user
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_mapping
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_mapping
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/matches_whole_paths
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/matches_whole_paths
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/absent
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/matches_whole_paths
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/empty_clears_user
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/User_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/Project_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_mapping
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/project_replaces_user
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/inherits_user
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/User_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/Project_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/User_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/User_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/Project_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/Project_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/User_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/User_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/User_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/Project_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/User_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/Project_Config_proposal
+=== RUN   TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/Project_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/User_Config_proposal
+=== PAUSE TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/User_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/Project_Config_proposal
+=== CONT  TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/Project_Config_proposal
+--- PASS: TestPrePRReviewDataPathsLoadsAndValidates (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/absent (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/User_Config_proposal (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_number_entry/Project_Config_proposal (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/matches_whole_paths (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/project_replaces_user (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_mapping (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/User_Config_proposal (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_mapping/Project_Config_proposal (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/User_Config_proposal (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/an_absolute_path/Project_Config_proposal (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/inherits_user (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/empty_clears_user (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/Project_Config_proposal (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_bad_pattern/User_Config_proposal (0.00s)
+    --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/Project_Config_proposal (0.00s)
+        --- PASS: TestPrePRReviewDataPathsLoadsAndValidates/a_parent_segment/User_Config_proposal (0.00s)
+PASS
+suiteguard: guard cost: measured 2976 paths; fingerprint took 201.881917ms before and 130.968833ms after
+ok  	roundfix/internal/config	0.806s
+
+EXIT: 0
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestReviewDataSegmentsPackCutAndBound|TestReviewSendsADataPathApart|TestReviewSplitsALargeDataFileAtLineBoundaries|TestReviewBlocksDataNeedingMoreThanFourDataSegments|TestReviewOmissionWinsOverADataPath|TestReviewReadsADataPathApartInRoundTwo)$ ./internal/cli
+=== RUN   TestReviewSendsADataPathApart
+=== PAUSE TestReviewSendsADataPathApart
+=== RUN   TestReviewSplitsALargeDataFileAtLineBoundaries
+=== PAUSE TestReviewSplitsALargeDataFileAtLineBoundaries
+=== RUN   TestReviewBlocksDataNeedingMoreThanFourDataSegments
+=== PAUSE TestReviewBlocksDataNeedingMoreThanFourDataSegments
+=== RUN   TestReviewOmissionWinsOverADataPath
+=== PAUSE TestReviewOmissionWinsOverADataPath
+=== RUN   TestReviewReadsADataPathApartInRoundTwo
+=== PAUSE TestReviewReadsADataPathApartInRoundTwo
+=== RUN   TestReviewDataSegmentsPackCutAndBound
+=== PAUSE TestReviewDataSegmentsPackCutAndBound
+=== CONT  TestReviewSendsADataPathApart
+=== CONT  TestReviewOmissionWinsOverADataPath
+=== RUN   TestReviewSendsADataPathApart/codex
+=== CONT  TestReviewBlocksDataNeedingMoreThanFourDataSegments
+=== PAUSE TestReviewSendsADataPathApart/codex
+=== RUN   TestReviewSendsADataPathApart/claude
+=== PAUSE TestReviewSendsADataPathApart/claude
+=== CONT  TestReviewSendsADataPathApart/codex
+=== CONT  TestReviewSplitsALargeDataFileAtLineBoundaries
+=== CONT  TestReviewDataSegmentsPackCutAndBound
+=== RUN   TestReviewDataSegmentsPackCutAndBound/small_files_share_one_segment
+=== CONT  TestReviewReadsADataPathApartInRoundTwo
+=== CONT  TestReviewSendsADataPathApart/claude
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/small_files_share_one_segment
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_line_that_fits_no_segment_is_refused
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_line_that_fits_no_segment_is_refused
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_fifth_segment_is_refused
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_fifth_segment_is_refused
+=== RUN   TestReviewDataSegmentsPackCutAndBound/prompt_byte_fit_includes_both_headers
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/prompt_byte_fit_includes_both_headers
+=== CONT  TestReviewDataSegmentsPackCutAndBound/small_files_share_one_segment
+=== CONT  TestReviewDataSegmentsPackCutAndBound/prompt_byte_fit_includes_both_headers
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_line_that_fits_no_segment_is_refused
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_fifth_segment_is_refused
+--- PASS: TestReviewDataSegmentsPackCutAndBound (0.00s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/small_files_share_one_segment (0.11s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_line_that_fits_no_segment_is_refused (0.12s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/prompt_byte_fit_includes_both_headers (0.14s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines (0.17s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_fifth_segment_is_refused (0.10s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines (0.12s)
+=== RUN   TestReviewSendsADataPathApart/codex/code_segments
+=== RUN   TestReviewSendsADataPathApart/claude/code_segments
+--- PASS: TestReviewOmissionWinsOverADataPath (0.36s)
+=== RUN   TestReviewSplitsALargeDataFileAtLineBoundaries/blocked_answer_0
+--- PASS: TestReviewReadsADataPathApartInRoundTwo (0.58s)
+--- PASS: TestReviewBlocksDataNeedingMoreThanFourDataSegments (0.60s)
+=== RUN   TestReviewSplitsALargeDataFileAtLineBoundaries/blocked_answer_1
+--- PASS: TestReviewSplitsALargeDataFileAtLineBoundaries (0.86s)
+    --- PASS: TestReviewSplitsALargeDataFileAtLineBoundaries/blocked_answer_0 (0.24s)
+    --- PASS: TestReviewSplitsALargeDataFileAtLineBoundaries/blocked_answer_1 (0.21s)
+=== RUN   TestReviewSendsADataPathApart/claude/data_uses_the_token_budget
+--- PASS: TestReviewSendsADataPathApart (0.00s)
+    --- PASS: TestReviewSendsADataPathApart/codex (0.90s)
+        --- PASS: TestReviewSendsADataPathApart/codex/code_segments (0.55s)
+    --- PASS: TestReviewSendsADataPathApart/claude (1.09s)
+        --- PASS: TestReviewSendsADataPathApart/claude/code_segments (0.54s)
+        --- PASS: TestReviewSendsADataPathApart/claude/data_uses_the_token_budget (0.19s)
+PASS
+suiteguard: guard cost: measured 2976 paths; fingerprint took 142.781792ms before and 131.925542ms after
+ok  	roundfix/internal/cli	1.809s
+
+EXIT: 0

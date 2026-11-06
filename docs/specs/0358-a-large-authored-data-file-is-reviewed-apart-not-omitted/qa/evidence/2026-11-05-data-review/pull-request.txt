@@ -1,0 +1,10 @@
+Pull Request row.
+Environment: no open Pull Request (Daemon assignment).
+Target: roundfix/deliver-0358-a-large-authored-data-file-is-reviewed-apart-not-omitted-0491fb48f9c213cd
+Run branch is never pushed and has no PR.
+Authority: _authorization.md approved grant already present at aa1048d1071264f2605fe6cea2a5a1d32dd2d5f8, unchanged at audited head.
+Checks: Daemon make verify-changed passed, exit 0.
+Unresolved threads: none, because no PR exists.
+Merge-Ready acceptance: not yet available.
+Candidate: 63bb974109f9c8ca603892c06fb4bda9f069ebd5.
+Unblocking action: after this gate, the delivery owner performs configured pre-PR review, publishes the Spec candidate, opens its PR and observes current-head required checks, review controls and Merge-Ready acceptance. This QA Agent does not publish.

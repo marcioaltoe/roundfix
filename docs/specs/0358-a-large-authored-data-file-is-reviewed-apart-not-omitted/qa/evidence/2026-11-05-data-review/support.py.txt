@@ -1,0 +1,25 @@
+import os,subprocess,shutil,re,json,sys
+from pathlib import Path
+ROOT=Path.cwd();SPEC=ROOT/'docs/specs/0358-a-large-authored-data-file-is-reviewed-apart-not-omitted';REPORT=SPEC/'qa/qa-report-2026-11-05.md';EV=SPEC/'qa/evidence/2026-11-05-data-review'
+def command(args,cwd=None,environment=None):
+ e=os.environ.copy();e.update(GOPROXY='off',GOSUMDB='off')
+ for k in list(e):
+  if k.endswith('API_KEY'): e.pop(k,None)
+ if environment:e.update(environment)
+ p=subprocess.run(args,cwd=cwd or ROOT,env=e,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ return p.returncode,'COMMAND: '+subprocess.list2cmdline(args)+'\n'+p.stdout+'\nEXIT: '+str(p.returncode)+'\n'
+def result(row,status,note,filename=None,transcript=None):
+ if '--defer' in sys.argv:
+  Path('/tmp/qa358-deferred-'+row+'.json').write_text(json.dumps([row,status,note,filename,transcript]))
+  print(row,status,note,'(report update deferred until package tests exit)',flush=True)
+  return
+ if transcript is not None:
+  assert filename.endswith('.txt')
+  ignored=subprocess.run(['git','check-ignore','--quiet',str((EV/filename).relative_to(ROOT))],cwd=ROOT)
+  assert ignored.returncode==1,'ignored evidence'
+  (EV/filename).write_text(transcript)
+ s=REPORT.read_text();s=re.sub(r'(?m)^\| '+row+r' \| [^|]+ \|', '| '+row+' | '+status+' |',s)
+ start=s.index('### '+row+'\n');end=s.find('\n### ',start+1);end=len(s) if end<0 else end
+ block=s[start:end];block=block.replace('Observation: pending.','Observation: '+note+(' Evidence: ['+filename+'](evidence/2026-11-05-data-review/'+filename+').' if filename else ''))
+ s=s[:start]+block+s[end:];REPORT.write_text(s)
+ print(row,status,note,flush=True)

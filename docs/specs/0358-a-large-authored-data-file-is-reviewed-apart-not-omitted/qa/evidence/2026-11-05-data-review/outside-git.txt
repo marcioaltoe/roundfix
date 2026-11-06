@@ -1,0 +1,24 @@
+Outside origin: local Git binary content, observed 2026-11-05; git-diff(1) passage published at https://git-scm.com/docs/git-diff and quoted in PRD Acceptance evidence on 2026-11-05: running git-diff with the -p option produces patch text. No network lookup performed.
+COMMAND: git --version
+git version 2.56.0
+
+EXIT: 0
+The two real-Git cut subtests build new-file and modified-file patches using git diff, then assertReviewDataCuts compares each added/context line and recomputed new coordinates against git show head:path (and removed/context lines against base:path), with order, multiplicity, counts and bound assertions. Thus Git object content supplies the oracle; no Spec-authored expected output substitutes for it.
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestReviewDataSegmentsPackCutAndBound$/^(a_new_file_is_cut_at_lines|a_modified_file_is_cut_at_hunks_and_lines)$ ./internal/cli
+=== RUN   TestReviewDataSegmentsPackCutAndBound
+=== PAUSE TestReviewDataSegmentsPackCutAndBound
+=== CONT  TestReviewDataSegmentsPackCutAndBound
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines
+--- PASS: TestReviewDataSegmentsPackCutAndBound (0.00s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines (0.19s)
+    --- PASS: TestReviewDataSegmentsPackCutAndBound/a_modified_file_is_cut_at_hunks_and_lines (0.21s)
+PASS
+suiteguard: guard cost: measured 2982 paths; fingerprint took 185.327958ms before and 256.290625ms after
+ok  	roundfix/internal/cli	1.035s
+
+EXIT: 0

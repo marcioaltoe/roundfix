@@ -1,0 +1,51 @@
+import sys,json,re,shutil,tempfile
+sys.path.insert(0,'/tmp')
+from qa358_support import *
+# This script is run only after every test process has exited.
+for file in sorted(Path('/tmp').glob('qa358-deferred-*.json')):
+ result(*json.loads(file.read_text()));file.unlink()
+result('Q13','pass','Daemon supplied make verify-changed: pass, exit 0, at audited head; diagnostics removed on success. The Agent did not re-run repository Verification.','static-gate.txt','Source: QA assignment from the Daemon.\nCommand: make verify-changed\nVerdict: pass\nExit: 0\nDiagnostics: removed on success\nAudited head: 63bb974109f9c8ca603892c06fb4bda9f069ebd5\nRecorded only; not re-executed by the QA Agent.\n')
+result('Q14','blocked (environment: no open Pull Request)','The assignment confirms no open PR on the Spec target branch. Approval: operative prior delivery authority grants implement/commit/push/pull_request/merge/release; checks: Daemon repository Verification passed at audited head; unresolved threads: none because no PR exists; Merge-Ready acceptance: not yet available; claimed candidate: 63bb974109f9c8ca603892c06fb4bda9f069ebd5. No live PR control was asserted.','pull-request.txt','Pull Request row.\nEnvironment: no open Pull Request (Daemon assignment).\nTarget: roundfix/deliver-0358-a-large-authored-data-file-is-reviewed-apart-not-omitted-0491fb48f9c213cd\nRun branch is never pushed and has no PR.\nAuthority: _authorization.md approved grant already present at aa1048d1071264f2605fe6cea2a5a1d32dd2d5f8, unchanged at audited head.\nChecks: Daemon make verify-changed passed, exit 0.\nUnresolved threads: none, because no PR exists.\nMerge-Ready acceptance: not yet available.\nCandidate: 63bb974109f9c8ca603892c06fb4bda9f069ebd5.\nUnblocking action: after this gate, the delivery owner performs configured pre-PR review, publishes the Spec candidate, opens its PR and observes current-head required checks, review controls and Merge-Ready acceptance. This QA Agent does not publish.\n')
+# Required offline archive plan; it cannot contact the judge.
+caches={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+with tempfile.TemporaryDirectory(prefix='qa358-home-') as home,tempfile.TemporaryDirectory(prefix='qa358-tmp-') as tmp:
+ e=dict(caches,HOME=home,TMPDIR=tmp)
+ code,out=command(['./bin/roundfix','archive','0358-a-large-authored-data-file-is-reviewed-apart-not-omitted','--plan','--offline'],environment=e)
+ (EV/'archive-plan.txt').write_text('HOME and TMPDIR are fresh temporary directories, removed after the command. GOMODCACHE and GOCACHE preserved from go env.\nROUNDFIX_OPENROUTER_JUDGE_API_KEY not set\nROUNDFIX_OPENROUTER_API_KEY not set\nROUNDFIX_TYPESAFE_API_KEY not set\nTYPESAFE_API_KEY not set\n'+out)
+ print(out,flush=True)
+ assert code==0 and 'judge: skipped (offline)' in out
+s=REPORT.read_text();assert ' | pending |' not in s
+s=s.replace('verdict: pending','verdict: partial',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 1',1).replace('status: in-progress','status: closed',1)
+s=s.replace('status: closed\nsurfaces:', 'status: closed\nspec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted\ndate: 2026-11-05\nsurfaces:',1)
+s+='''
+## Findings
+
+None. All five independent sabotage copies made the named tests fail on their required behavioral assertions; no compilation or suite-guard error was counted as a successful sabotage. No product code was repaired during this gate.
+
+## Blocked and skipped
+
+Q14 alone is `blocked (environment: no open Pull Request)`. Its pre-PR equivalents prove authority, the supplied checks and the claimed candidate. Live PR and Merge-Ready acceptance remain unobserved; the delivery owner must observe them after opening the PR. No row is finding-blocked, declared-blocked or skipped. The seeded Mechanical skips table is preserved as detector metadata, not executed QA rows.
+
+## Coverage
+
+Declared coverage sources are Task 05 Requirements 2, 4 and 10 (the Requirements starting MUST verify or MUST run), plus the two outside-evidence sources, repository Verification and the Pull Request row. All seven sources appear in the Results provenance; no unrelated source is claimed. Q01/Q02/Q03/Q09 cover Requirement 2's five Success Metrics and five Invariants, including existing no-key/omission behavior. Q04–Q08 cover all five Requirement 4 sabotages. Q12 covers all four commits under Requirement 10. Q10 and Q11 independently observe the two dated external sources; Q13 records repository Verification; Q14 records the non-waivable Pull Request control.
+
+Task 05's other required actions were also performed: build and Daemon gate recording (Requirement 1); isolated binary config acceptance/refusal (3); every Task 01–04 Verification command (5); exact API Contract 6 wording (6); both outside sources offline (7); no Unreachable Acceptance, because the PRD says None, and zero declared-blocked rows (8); both glossary declarations, definitions and passing glossary contracts (9); pre-PR equivalent controls (11); isolated offline archive plan with Judge Key Variables and TYPESAFE_API_KEY unset (12). The quoted git-diff literature was supplied in the PRD; no web lookup or other repository access was needed.
+
+The Non-Goals with observable scope are checked in Q12: Makefile, CI, module files, init templates, Baseline modules, delivery/store and unrelated skills/ADRs did not change; existing review bounds and omission behavior remain covered by Q01/Q02. No frontend is declared. No Surface Transcript is authored. The report is based on one unchanged implementation head; only its report and text evidence were written.
+
+Counts: 14 rows, 13 passed, 1 environment-blocked, 0 failed, 0 finding-blocked, 0 declared-blocked, 0 skipped, 0 pending. No finding in any impact tier.
+
+## Outcome
+
+A declared authored catalog is now reviewed apart from code in bounded Data Review Segments, with valid file-line anchors and distinguishable findings in both providers' records and answers. All runnable checks and all five sabotage probes passed; the only unmet row is the pre-PR Pull Request row because no Pull Request is open. The offline archive plan [ran without judge access](evidence/2026-11-05-data-review/archive-plan.txt); reusable terminology and guidance already live in CONTEXT.md, the review/configuration guides and accepted ADR-0368, so this QA adds no knowledge promotion.
+
+## Final verdict
+
+**partial** — qualifying pre-PR partial: 13 rows passed and only Q14 is blocked by the absence of an open Pull Request. No product finding, skipped row or declared-unreachable criterion remains; live Pull Request acceptance stays with the delivery owner.
+'''
+REPORT.write_text(s)
+for name in ['support','sabotage','cli','packages','inspect','external','finish']:
+ path=Path('/tmp/qa358_'+name+'.py')
+ if path.exists():shutil.copyfile(path,EV/(name+'.py.txt'))
+print('REPORT CLOSED: partial; 13 passed; 1 environment blocked; 0 findings.',flush=True)

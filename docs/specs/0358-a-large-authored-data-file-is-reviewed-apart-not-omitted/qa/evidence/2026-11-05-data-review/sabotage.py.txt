@@ -1,0 +1,26 @@
+import sys,tempfile,tarfile,io,difflib
+sys.path.insert(0,'/tmp')
+from qa358_support import *
+archive=subprocess.check_output(['git','archive','HEAD'],cwd=ROOT)
+mutations=[
+ ('Q04','internal/config/pre_pr_review.go','return matchesReviewPath(review.DataPaths, name)','return false','^TestReviewSendsADataPathApart$', ['--- FAIL: TestReviewSendsADataPathApart/codex','--- FAIL: TestReviewSendsADataPathApart/claude']),
+ ('Q05','internal/cli/review.go','\t\tif reason == "" && declarations.PrePRReview.Omits(path) {\n\t\t\treason = "omit-path"\n\t\t}\n\t\tif reason == "" && declarations.PrePRReview.ReviewsApart(path) {\n\t\t\treason = "data-path"\n\t\t}', '\t\tif reason == "" && declarations.PrePRReview.ReviewsApart(path) {\n\t\t\treason = "data-path"\n\t\t}\n\t\tif reason == "" && declarations.PrePRReview.Omits(path) {\n\t\t\treason = "omit-path"\n\t\t}', '^TestReviewOmissionWinsOverADataPath$', ['--- FAIL: TestReviewOmissionWinsOverADataPath']),
+ ('Q06','internal/cli/review_data_segments.go','newLine += nc','// sabotage: newLine cursor does not advance','^TestReviewDataSegmentsPackCutAndBound$/^a_new_file_is_cut_at_lines$', ['--- FAIL: TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines']),
+ ('Q07','internal/cli/review_data_segments.go','if len(segments) > reviewSegmentLimit {','if false {','^(TestReviewDataSegmentsPackCutAndBound|TestReviewBlocksDataNeedingMoreThanFourDataSegments)$/^a_fifth_segment_is_refused$', ['--- FAIL: TestReviewDataSegmentsPackCutAndBound/a_fifth_segment_is_refused','--- FAIL: TestReviewBlocksDataNeedingMoreThanFourDataSegments']),
+ ('Q08','internal/cli/review.go','\t\tif path.Reason != "data-path" {\n\t\t\tfmt.Fprintf(&out, "%s (%s)\\n", path.Path, path.Reason)\n\t\t}', '\t\tfmt.Fprintf(&out, "%s (%s)\\n", path.Path, path.Reason)', '^TestReviewSendsADataPathApart$', ['--- FAIL: TestReviewSendsADataPathApart/codex','--- FAIL: TestReviewSendsADataPathApart/claude'])]
+for row,path,before,after,pattern,expected in mutations:
+ with tempfile.TemporaryDirectory(prefix='qa358-sabotage-') as name:
+  scratch=Path(name)
+  with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(scratch,filter='data')
+  for cmd in [['git','init','-q'],['git','add','.']]:
+   code,_=command(cmd,cwd=scratch)
+   assert code==0
+  target=scratch/path;old=target.read_text();assert old.count(before)==1,(row,old.count(before));new=old.replace(before,after);target.write_text(new)
+  # Q08 also puts data paths back into omission counts, while retaining the reviewed-apart banner.
+  if row=='Q08':
+   new=new.replace('dataPaths = append(dataPaths, path.Path)\n\t\t\tcontinue','dataPaths = append(dataPaths, path.Path)\n\t\t\tcounts[path.Reason]++\n\t\t\tcontinue');target.write_text(new)
+  patch=''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile=path,tofile=path))
+  code,out=command(['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./internal/cli'],cwd=scratch)
+  valid=code==1 and all(s in out for s in expected) and '[build failed]' not in out
+  result(row,'pass' if valid else 'fail','Mutation rejected on every required named case (test exit '+str(code)+'); failing assertion transcript inspected.','sabotage-'+row.lower()+'.txt','Scratch: independent git archive HEAD, initialized/staged Git metadata; deleted after run.\n'+patch+'\n'+out)
+  print(out[-9000:],flush=True)

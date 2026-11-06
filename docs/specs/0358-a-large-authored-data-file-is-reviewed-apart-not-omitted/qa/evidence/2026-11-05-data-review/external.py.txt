@@ -1,0 +1,17 @@
+import sys
+sys.path.insert(0,'/tmp')
+from qa358_support import *
+ref=SPEC/'references/2026-11-05-fiscus-the-delivery-queue-takes-days-and-a-large-data-catalog-is-omitted-from-review.md'
+source=ref.read_text();point=source.split('5. **Catálogos',1)[1].split('\n\n',1)[0];assert '~550 KB' in point and 'PR #263' in point
+code,out=command(['go','test','-count=1','-timeout','20m','-v','-run','^TestReviewSendsADataPathApart$/^(codex|claude)$','./internal/cli'])
+catalog='{\n'+''.join('"rule_%05d": {"rate": 18, "description": "authored value"}'%i+(',' if i<9000 else '')+'\n' for i in range(1,9001))+'}\n'
+text='Outside origin: fiscus message 01a1ab64-9074-7520-ad17-6f970973d186, 2026-11-05 08:07 BRT, quoted before this Spec was authored.\nPoint 5: Catálogos'+point+'\n\nComparison: the 9,000-entry catalog in TestReviewSendsADataPathApart is '+str(len(catalog.encode()))+' bytes (about 550 KB). Both provider command journeys assert two prompts, catalog absent from code and present in Data Review Segment 1, no omittedPaths, dataSegment=1, persisted record fields and verbatim answer headers. This addresses the sender\'s omission symptom without contacting Fiscus or its repository.\n'+out
+valid=code==0 and all('--- PASS: TestReviewSendsADataPathApart/'+x in out for x in ['codex','claude'])
+result('Q10','pass' if valid else 'fail','Offline Fiscus point 5 (2026-11-05) compared against a 549,003-byte authored catalog; both providers review it apart instead of omitting it.','outside-fiscus.txt',text)
+code,out=command(['go','test','-count=1','-timeout','20m','-v','-run','^TestReviewDataSegmentsPackCutAndBound$/^(a_new_file_is_cut_at_lines|a_modified_file_is_cut_at_hunks_and_lines)$','./internal/cli'])
+_,version=command(['git','--version'])
+prd=(SPEC/'_prd.md').read_text();assert 'with the `-p` option\n  produces patch text' in prd
+text='Outside origin: local Git binary content, observed 2026-11-05; git-diff(1) passage published at https://git-scm.com/docs/git-diff and quoted in PRD Acceptance evidence on 2026-11-05: running git-diff with the -p option produces patch text. No network lookup performed.\n'+version+'The two real-Git cut subtests build new-file and modified-file patches using git diff, then assertReviewDataCuts compares each added/context line and recomputed new coordinates against git show head:path (and removed/context lines against base:path), with order, multiplicity, counts and bound assertions. Thus Git object content supplies the oracle; no Spec-authored expected output substitutes for it.\n'+out
+valid=code==0 and all('--- PASS: TestReviewDataSegmentsPackCutAndBound/'+x in out for x in ['a_new_file_is_cut_at_lines','a_modified_file_is_cut_at_hunks_and_lines'])
+result('Q11','pass' if valid else 'fail','Both cut subtests passed against Git-stored base/head content, independently checking all lines and hunk coordinates; comparison with the quoted git-diff passage recorded offline.','outside-git.txt',text)
+print(out)

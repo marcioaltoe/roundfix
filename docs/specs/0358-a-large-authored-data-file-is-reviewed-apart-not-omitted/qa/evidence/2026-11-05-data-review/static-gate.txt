@@ -1,0 +1,7 @@
+Source: QA assignment from the Daemon.
+Command: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+Audited head: 63bb974109f9c8ca603892c06fb4bda9f069ebd5
+Recorded only; not re-executed by the QA Agent.

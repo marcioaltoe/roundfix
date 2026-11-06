@@ -1,0 +1,29 @@
+Scratch: independent git archive HEAD, initialized/staged Git metadata; deleted after run.
+--- internal/cli/review_data_segments.go
++++ internal/cli/review_data_segments.go
+@@ -190,7 +190,7 @@
+ 		oldCount += oc
+ 		newCount += nc
+ 		old += oc
+-		newLine += nc
++		// sabotage: newLine cursor does not advance
+ 		end = next
+ 	}
+ 	if end > start {
+
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestReviewDataSegmentsPackCutAndBound$/^a_new_file_is_cut_at_lines$ ./internal/cli
+=== RUN   TestReviewDataSegmentsPackCutAndBound
+=== PAUSE TestReviewDataSegmentsPackCutAndBound
+=== CONT  TestReviewDataSegmentsPackCutAndBound
+=== RUN   TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== PAUSE TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+=== CONT  TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines
+    review_data_segments_test.go:45: piece 1 new line 1="+rule 0181 value 0181" differs from Git
+--- FAIL: TestReviewDataSegmentsPackCutAndBound (0.00s)
+    --- FAIL: TestReviewDataSegmentsPackCutAndBound/a_new_file_is_cut_at_lines (0.06s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 147.151958ms before and 136.774292ms after
+FAIL	roundfix/internal/cli	0.799s
+FAIL
+
+EXIT: 1
