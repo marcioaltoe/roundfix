@@ -80,7 +80,7 @@ ADR-0281's rule from tests to the Delivery Queue.
   three times with an agent protocol error, which is why the bound exists.
 - **Splitting the diff by file or by bytes.** A commit range keeps each
   segment a change its author made, so a finding's anchor names a line of a
-  real intermediate tree.
+  real intermediate tree. ADR-0368 takes it for declared data files only.
 - **Reading derived declarations from the candidate.** A candidate could
   declare its own code generated and skip its review.
 - **Skipping the judge only when its key is absent.** ADR-0273 keeps the keys
@@ -108,3 +108,5 @@ ADR-0281's rule from tests to the Delivery Queue.
 **Amended by [ADR-0352](0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).** Claude round 1 is segmented too and `pre_pr_review.omit_paths` joins the base-commit omissions.
 
 **Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** Each Review Segment, and each commit within it, is measured from its Effective Base, so a commit cut from an older default branch or a conflict-free merge of the default branch no longer shows the default branch's work; a commit still above the bound measured that way still blocks.
+
+**Amended by [ADR-0368](0368-a-large-authored-data-file-is-reviewed-apart-in-data-review-segments.md) (2026-11-05).** Files declared in `pre_pr_review.data_paths` leave the Review Segments and are reviewed apart in Data Review Segments, which split their diff by file, hunk and line; Review Segments stay commit ranges.

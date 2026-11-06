@@ -1001,6 +1001,10 @@
       {
         "version": "0.1.192",
         "digest": "4fd8ff640805b12ec29c6f5ab134f460f1e9d4319ff9d884264a1fb68fd5f2ea"
+      },
+      {
+        "version": "0.1.193",
+        "digest": "e90c7ac1fefe016aca7c3de273655e15538855cd913bbe4de468e8e32f2e5288"
       }
     ],
     "setup-context-driven": [

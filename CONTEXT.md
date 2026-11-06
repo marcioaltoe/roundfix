@@ -982,6 +982,14 @@ _Avoid_: Segment base, merge base of the segment
 A Project Config path in `pre_pr_review.omit_paths` at the review base whose matching changed files the pre-PR review leaves out with reason `omit-path`, distinct from a Derived Path Declaration ([ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
 _Avoid_: Derived Path Declaration, generated path
 
+**Review Data Path**:
+A Project Config path in `pre_pr_review.data_paths` at the review base whose matching changed files, authored data such as rule catalogs, the pre-PR review takes out of the code diff with reason `data-path` and reviews apart in Data Review Segments, distinct from a Review Omit Path and a Derived Path Declaration ([ADR-0368](docs/adr/0368-a-large-authored-data-file-is-reviewed-apart-in-data-review-segments.md)).
+_Avoid_: Generated path, omitted data
+
+**Data Review Segment**:
+One of at most four prompts, sent after a review round's code prompts in the same session, that carries only the diff of the Review Data Paths, packed by file and cut at hunks and lines, each within the provider's bound; its findings join the round's Pre-PR Review Record ([ADR-0368](docs/adr/0368-a-large-authored-data-file-is-reviewed-apart-in-data-review-segments.md)).
+_Avoid_: Review Segment, data summary
+
 **Correction Review**:
 The one review of the fix after round 2 when every standing round-2 finding has exactly one valid fixed disposition, covering only the delta from the round-2 head. It belongs to round 2 and cannot open another Correction Review ([ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md)).
 _Avoid_: Third round, new review lineage

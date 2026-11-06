@@ -147,6 +147,7 @@ type PrePRReview struct {
 	Provider  string
 	Source    string
 	OmitPaths []string
+	DataPaths []string
 }
 
 type Delivery struct {
@@ -402,6 +403,7 @@ type reviewSourceOverlay struct {
 type prePRReviewOverlay struct {
 	Provider  *prePRReviewProviderValue `yaml:"provider"`
 	OmitPaths *[]string                 `yaml:"omit_paths"`
+	DataPaths *[]string                 `yaml:"data_paths"`
 }
 
 type prePRReviewProviderValue struct {
@@ -1164,6 +1166,9 @@ func Validate(config Config) error {
 	if err := validateReviewOmitPaths(config.PrePRReview.OmitPaths); err != nil {
 		return err
 	}
+	if err := validateReviewDataPaths(config.PrePRReview.DataPaths); err != nil {
+		return err
+	}
 	if err := validateItemBinary(config.Delivery.ItemBinary); err != nil {
 		return err
 	}
@@ -1812,13 +1817,15 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
 		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
 	}
-	if value, found := yamlValueAtPath(&document, []string{"pre_pr_review", "omit_paths"}); found {
-		if value.Kind != yaml.SequenceNode {
-			return fmt.Errorf("parse config %q: pre_pr_review.omit_paths must be a list of paths", label)
-		}
-		for _, entry := range value.Content {
-			if entry.Tag != "!!str" {
-				return fmt.Errorf("parse config %q: pre_pr_review.omit_paths has non-string path %q", label, entry.Value)
+	for _, key := range []string{"omit_paths", "data_paths"} {
+		if value, found := yamlValueAtPath(&document, []string{"pre_pr_review", key}); found {
+			if value.Kind != yaml.SequenceNode {
+				return fmt.Errorf("parse config %q: pre_pr_review.%s must be a list of paths", label, key)
+			}
+			for _, entry := range value.Content {
+				if entry.Tag != "!!str" {
+					return fmt.Errorf("parse config %q: pre_pr_review.%s has non-string path %q", label, key, entry.Value)
+				}
 			}
 		}
 	}
@@ -1846,6 +1853,11 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	}
 	if overlay.PrePRReview != nil && overlay.PrePRReview.OmitPaths != nil {
 		if err := validateReviewOmitPaths(*overlay.PrePRReview.OmitPaths); err != nil {
+			return fmt.Errorf("parse config %q: %w", label, err)
+		}
+	}
+	if overlay.PrePRReview != nil && overlay.PrePRReview.DataPaths != nil {
+		if err := validateReviewDataPaths(*overlay.PrePRReview.DataPaths); err != nil {
 			return fmt.Errorf("parse config %q: %w", label, err)
 		}
 	}
@@ -2019,6 +2031,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if overlay.PrePRReview != nil && overlay.PrePRReview.OmitPaths != nil {
 		config.PrePRReview.OmitPaths = *overlay.PrePRReview.OmitPaths
+	}
+	if overlay.PrePRReview != nil && overlay.PrePRReview.DataPaths != nil {
+		config.PrePRReview.DataPaths = *overlay.PrePRReview.DataPaths
 	}
 	if overlay.PrePRReview != nil && overlay.PrePRReview.Provider != nil {
 		config.PrePRReview.Provider = overlay.PrePRReview.Provider.value
