@@ -1,3 +1,0 @@
-gocache-bound: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-go-build-501: removed 618 idle entries (611042180 bytes)
-gocache-bound: warning: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-go-build-501 holds 11466309466 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=742348cb-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-06 16:11:39 -0300'" -o bin/roundfix ./cmd/roundfix

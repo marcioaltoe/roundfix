@@ -1,8 +1,0 @@
-Pull Request: none open, supplied by the Daemon; no remote query or mutation.
-Approval: approved _authorization.md granted 2026-11-06, delivery operations permitted, record byte-identical at base 4856fec3821707a7c21da756a4d4f363d4357982.
-Checks/status: Daemon make verify-changed pass, exit 0 at audited head; local build/tests/probes recorded.
-Unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: not obtained; no Review Source evidence.
-Candidate and evidence head: 742348cbfb325c5142af2edbb001f1f53696b7d3.
-Eventual PR belongs to the Spec target branch from the assignment, never this Run branch.
-Unblock: open the Spec target PR after QA settlement and establish checks, review/threads, candidate ancestry and Merge-Ready acceptance through authorized delivery. QA performs no delivery operation.

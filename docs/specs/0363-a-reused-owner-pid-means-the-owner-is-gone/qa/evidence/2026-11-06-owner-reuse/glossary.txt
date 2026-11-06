@@ -1,9 +1,0 @@
-$ /bin/sh -c 'go test -timeout 20m -count=1 -v -tags docscontract ./internal/docscontract -run '"'"'^TestGlossaryPhrasesAreDefinedTerms$'"'"''
-=== RUN   TestGlossaryPhrasesAreDefinedTerms
-=== PAUSE TestGlossaryPhrasesAreDefinedTerms
-=== CONT  TestGlossaryPhrasesAreDefinedTerms
---- PASS: TestGlossaryPhrasesAreDefinedTerms (0.06s)
-PASS
-ok  	roundfix/internal/docscontract	0.331s
-
-exit: 0

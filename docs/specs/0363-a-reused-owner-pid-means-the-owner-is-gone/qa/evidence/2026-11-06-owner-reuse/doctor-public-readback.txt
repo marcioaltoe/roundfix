@@ -1,4 +1,0 @@
-$ ./bin/roundfix migrate --check
-Run Database is at schema version 23, the version this binary supports: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0363-home-141b486k/.roundfix/roundfix.db
-
-exit: 0

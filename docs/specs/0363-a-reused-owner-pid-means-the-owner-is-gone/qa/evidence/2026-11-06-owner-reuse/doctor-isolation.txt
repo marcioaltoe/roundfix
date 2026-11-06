@@ -1,5 +1,0 @@
-Execution: ./bin/roundfix doctor, twice, then ./bin/roundfix migrate --check.
-The scratch bin/roundfix symlink resolves to the make-built Run worktree bin/roundfix.
-Scratch repository has no remote or user/project config. HOME and TMPDIR are fresh; GOMODCACHE and GOCACHE are preserved. Judge Key Variables and TYPESAFE_API_KEY are unset. PATH contains only system utilities, so Node/acpx/gh/adapters are unavailable; no provider, reviewer, remote or ACP session can be reached.
-Both Doctor exits are 1 for unrelated readiness failures; both residue lines are exactly residue: ok (no process residue found).
-The empty Run Database was initialized through Store.Open via a temporary Go test overlay, with no source written in the checkout. Independent migrate --check exits 0 and confirms the current schema. Persistent database bytes remain unchanged. The earlier absent-database diagnostic was a fixture setup error, preserved separately. Temporary directories and symlink removed after all foreground commands exited.
