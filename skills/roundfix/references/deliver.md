@@ -312,11 +312,42 @@ on matching lines. The two version fields in each owned `SKILL.md` are
 line-scoped for the record command, so a derived merge can take the default
 branch's version lines before the command raises and records the next version.
 
-During `checking`, Roundfix waits while GitHub reports the Pull Request merge
-state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. At the end of
-the Check Wait the item parks as `checks-timeout: current-head checks not
-settled within delivery.check_timeout <duration>`; only a mergeable state with
-passing checks proceeds to merge. If GitHub refuses that merge because
+During `checking`, Roundfix waits for the head's Head Check Set: every check
+run and commit status the Pull Request lists for its head, required or not;
+the latest GitHub Actions workflow run of each workflow file and event whose
+head commit is the head; and each Expected Workflow. An Expected Workflow is a
+file under `.github/workflows/` at the head whose `pull_request` or
+`pull_request_target` trigger has no path filter and no `branches-ignore`,
+whose `branches`, when present, names the base branch exactly and no `!`
+pattern, and whose `types`, when present, name both `opened` and
+`synchronize`, or whose `push` trigger has no filter. An Expected Workflow
+without a run for the head is pending as `<path> (no run yet)`, so a head whose
+workflows have not registered yet is never taken for a head with nothing to
+wait for. A filtered workflow is never expected, but its run must complete
+once GitHub creates it. Check suites are not read. The item moves to
+`merging` only when the set has a member, every member is completed, and GitHub
+reports the merge state as neither `BLOCKED` nor `UNKNOWN`; a `CLEAN` merge
+state alone never merges.
+
+A member that ends `success`, `neutral` or `skipped` passes. A failed check
+goes through the re-run rules below; any other member that ends `failure`,
+`timed_out`, `cancelled`, `action_required`, `startup_failure`, `stale` or
+another conclusion parks the item as `checks-failed: <check> (<conclusion>)
+<link>`, each failed member joined by `; `. `<check>` is `<workflow> / <name>`
+for a check of a workflow, the check name for any other check, and the
+workflow name for a run. While the item waits, the owner log names the members
+it waits for:
+
+```text
+roundfix: checks: Delivery Queue item <slug>: waiting for <n> check(s): <check>; <check>
+roundfix: checks: Delivery Queue item <slug>: <m> check(s) completed for <head>
+roundfix: checks: Delivery Queue item <slug>: read failed: <error>
+```
+
+At the end of the Check Wait the item parks as `checks-timeout: current-head
+checks not settled within delivery.check_timeout <duration>; pending: <check>;
+<check>`, or with `; merge state <state>` in place of the pending list when
+only the merge state was awaited. If GitHub refuses the merge because
 `base branch policy prohibits the merge`, Roundfix returns to `checking` once
 for that head. A second refusal for the same head parks `delivery-error`.
 
@@ -333,7 +364,7 @@ commit, then run `roundfix deliver retry <slug>`. Retry accepts a head descended
 from the candidate, records it, and resumes at `reviewing`.
 
 
-When a required Actions check fails on attempt one, the owner reads its Go
+When an Actions check fails on attempt one, the owner reads its Go
 package summaries and compares them with the item's change against the
 refreshed default branch. A failure entirely outside that change re-runs the
 failed jobs once and restarts the timeout once. A pass records
@@ -393,7 +424,8 @@ which it runs for up to its Review Capacity of items at once
 earlier item is between its Implement Run and its merge. For a live owner,
 status prints one `Turn:` line per item that is neither `merged` nor `parked`,
 after any `Warning:` lines and before any `Park:` lines, from the owner's Turn
-Record: `advancing at <stage>`, `reviewing; <held> of <capacity> review
+Record: `advancing at <stage>`, `advancing at checking; waiting for <n> check(s):
+<check>; <check>`, `reviewing; <held> of <capacity> review
 slot(s) held`, `waiting for a review slot (<n> of <m> waiting); <held> of
 <capacity> review slot(s) held`, `waiting for prerequisites: <slugs>`,
 `waiting for the owner's turn (<n> of <m> waiting)` or `waiting for the owner

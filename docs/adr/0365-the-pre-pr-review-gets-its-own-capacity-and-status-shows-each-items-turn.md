@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-05T12:00:00Z
-updated_at: 2026-11-05T12:00:00Z
+updated_at: 2026-11-06T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -56,6 +56,8 @@ not finished, its PID, start-time identity and Review Capacity to
 `turn.json` beside its console log whenever a turn changes and on every poll.
 Status reads it only for the owner it proves live and only when the PID and
 identity match, and writes nothing.
+
+**Amended by [ADR-0369](0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md) (2026-11-06).** The Turn Record of the item in `checking` also lists the members of its Head Check Set still pending, and its `Turn:` line reads `advancing at checking; waiting for <n> check(s): <check>; <check>`. Every other turn form, the file, its readers and the Review Capacity still hold.
 
 ## Considered Options
 

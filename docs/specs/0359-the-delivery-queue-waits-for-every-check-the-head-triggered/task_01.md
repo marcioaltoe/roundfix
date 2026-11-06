@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0359-the-delivery-queue-waits-for-every-check-the-head-triggered
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -194,3 +194,15 @@ Tasks that follow implement exactly the behavior these documents state.
 
 - `_prd.md` → Goals; Core Feature 6; Success Metric 5; Glossary
 - `_techspec.md` → ADR-0369; Amendment notices; API Contract 5; API Contract 6; Coverage Map; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+- Recorded ADR-0369 from the TechSpec, added the prescribed amendment notices and timestamps to ADR-0311 and ADR-0365, and updated `CONTEXT.md` with Head Check Set, Expected Workflow, Check Wait and Queue Turn terminology and links.
+- Replaced the checking-stage contract in the `deliver` and configuration guides and both Roundfix `deliver` references, including conclusions, log lines, blockers and the checking `Turn:` form. The protected `### QA settlement` section was not edited.
+- Ran `make skills-sync`: passed with exit 0; `cmp` confirms the canonical and mirrored `deliver` references match.
+- Ran `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed, 1 test in 1 package; the owned skill version record now contains Roundfix version `0.1.195`.
+- Ran `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` as the final required generation command: passed, 1 test in 1 package; `docs/references/behavior-surfaces.json` was re-recorded.
+- Focused checks after the final generation: `git diff --check` passed; the mirrored references compare equal; changed paths are limited to the assigned docs, the two owned skill copies and their sanctioned records, plus this Task Result and ADR-0369.
+- The Daemon must run the declared `## Verification` section; it was not run in this Agent turn.

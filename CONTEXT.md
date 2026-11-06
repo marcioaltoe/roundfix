@@ -863,7 +863,7 @@ The maximum number of pre-PR reviews one Queue Owner runs at the same time, besi
 _Avoid_: Verification Capacity, Task Capacity, review pool
 
 **Queue Turn**:
-Where a Delivery Queue item that is neither merged nor parked stands with its Queue Owner: advancing in the owner's turn, reviewing in one of the Review Capacity's slots, or waiting for the owner's turn, a review slot or its prerequisites, with its place in line. `roundfix deliver status` prints it on one `Turn:` line per item from the Turn Record ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+Where a Delivery Queue item that is neither merged nor parked stands with its Queue Owner: advancing in the owner's turn, with the members of its Head Check Set it still waits for while in `checking`, reviewing in one of the Review Capacity's slots, or waiting for the owner's turn, a review slot or its prerequisites, with its place in line. `roundfix deliver status` prints it on one `Turn:` line per item from the Turn Record ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md), [ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).
 _Avoid_: Queue position, waiting stage, capacity wait
 
 **Turn Record**:
@@ -1023,8 +1023,16 @@ The bounded wait of a running Delivery Queue item whose Implement step was refus
 _Avoid_: Waiting stage, admission reservation
 
 **Check Wait**:
-The bounded wait of a Delivery Queue item in `checking` for its current-head checks and a mergeable state, and of its publication for an existing pull request to report the candidate head. Each wait lasts `delivery.check_timeout` (User Config, 60 minutes by default) from its own start, restarts once after a check re-run, and ends in a `checks-timeout` park that names the key and the duration ([ADR-0311](docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md)).
+The bounded wait of a Delivery Queue item in `checking` for its Head Check Set and a mergeable state, and of its publication for an existing pull request to report the candidate head. Each wait lasts `delivery.check_timeout` (User Config, 60 minutes by default) from its own start, restarts once after a check re-run, and ends in a `checks-timeout` park that names the key, the duration and the members still pending ([ADR-0311](docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md), [ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).
 _Avoid_: CI timeout, check deadline
+
+**Head Check Set**:
+What a Delivery Queue item in `checking` waits for before it merges: every check run and commit status listed for its pull request head, required or not, the latest Actions workflow run of each workflow file and event of the head commit, and each Expected Workflow. It is complete when it has a member, every member is completed and every Expected Workflow has a run; a member that ends other than `success`, `neutral` or `skipped` parks the item as `checks-failed`, naming the member and its link ([ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).
+_Avoid_: Required checks, check suite, CI status
+
+**Expected Workflow**:
+A workflow file of the pull request head that GitHub runs for every pull request into the base branch: a `pull_request` or `pull_request_target` trigger with no path filter and no `branches-ignore`, whose `branches` and `types`, when present, name the base branch and both `opened` and `synchronize`, or a `push` trigger with no filter. The Head Check Set is not complete until each one has a workflow run for the head ([ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).
+_Avoid_: Required workflow, triggered workflow
 
 **Queue Token Ceiling**:
 An optional Delivery Queue Limit: once the queue's recorded Turn Usage reaches it, the next item parks and retries are refused, while a running Task is never stopped ([ADR-0199](docs/adr/0199-a-queue-token-ceiling-stops-new-starts-and-never-a-running-task.md)).

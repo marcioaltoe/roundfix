@@ -874,7 +874,7 @@ adapter binaries in acpx config so default adapters do not launch through
 ## Delivery Queue check wait
 
 `delivery.check_timeout` bounds each Check Wait of the Delivery Queue: the
-wait of an item in `checking` for its current-head checks and a mergeable
+wait of an item in `checking` for its Head Check Set and a mergeable
 state, and the wait for an existing Pull Request to report the candidate head.
 It is a Go duration, default `60m`, greater than `0` and at most `24h`. For
 example:
@@ -887,8 +887,9 @@ delivery:
 Each wait starts its own deadline, and a re-run of a failed check restarts it
 once. At the deadline of the `checking` wait the item parks as
 `checks-timeout: current-head checks not settled within
-delivery.check_timeout <duration>`, with the duration in Go's form such as
-`1h0m0s`. At the deadline of the Pull Request head wait, publication fails
+delivery.check_timeout <duration>; pending: <check>; <check>`, with the
+duration in Go's form such as `1h0m0s` and the members of the Head Check Set
+still pending. At the deadline of the Pull Request head wait, publication fails
 with `find or create pull request: PR Head Branch is at "<sha>", expected
 "<sha>"` instead of parking `checks-timeout`. `0`, a negative value or a
 value above `24h` fails configuration validation with
