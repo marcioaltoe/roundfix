@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -105,3 +105,80 @@ files and this repository's managed guide with their commands. It answers the me
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Success Metric 1; Success Metric 2
 - `_techspec.md` → API Contract 1; Testing Approach; Build Order 1
 - ADR-0372, ADR-0330
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, no-workarounds, setup-context-driven, roundfix, tech-writer, evidence-gate.
+
+The archive clause now uses API Contract 1's exact ai-memory destination.
+Its identity, mandatory enforcement and absence of `replaces` are preserved.
+`rule.spec.docs-layout` rose from 8 to 9; the sanctioned recorder raised the
+`spec-workflow` module from 23 to 24 and appended its version record.
+Every other byte of the module is unchanged, as checked against `HEAD`.
+Generated files were written only by their owning commands, in the required
+order. Initial status inspection found only this Task's Daemon-owned status
+change; that status and the authored Task body remain unchanged by the Agent.
+
+Acceptance evidence:
+
+1. The embedded clause and both rendered docs layout guides carry the new
+   sentence and reject `Secondbrain inbox`. The updated
+   `TestArchiveRecordClausesAreAppended` first failed with six diagnostics
+   covering the retired destination and missing replacement in all three
+   locations, then passed after source editing and regeneration.
+2. `TestTheArchiveClauseIsRetainedFromTheSourceBaseline` starts with
+   `t.Parallel()`, resolves the Standard TypeScript profile and classifies
+   Source Baseline `baseline.standard-typescript-monorepo-0.0.1`. It asserts
+   the clause's `retained` disposition and exactly one evidence entry with
+   mandatory enforcement and only its own identity as target. The focused
+   run passed. The second Managed Refresh reported `File changes: 0` and
+   `Idempotence: verified`; hashes of every declared interface and this Task
+   were identical before and after that invocation.
+3. The focused Baseline tests and sanctioned regeneration checks passed.
+   The complete Baseline package and Setup Manifest docscontract command
+   are reserved for Daemon Verification and were not run in this turn.
+   Managed Refresh itself verified its approved postimages and profile
+   alignment, and regenerated the Setup Manifest's catalog and guide digests.
+
+Commands and focused outcomes:
+
+- `go test ./internal/baseline -run '^TestArchiveRecordClausesAreAppended$' -count=1`
+  — exit 1 before changing the module, as expected for the new contract.
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+  — exit 0; only the declared module and module version record changed.
+- `make baseline-digests` — exit 0; reported `ok: true`, `changed: true`.
+  It rewrote exactly the nine declared derived outputs: the Standard
+  TypeScript docs layout golden and profile, three catalog files and four
+  plan characterization goldens.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  — executed twice, each at exit 0, with one temporary `HOME` removed in
+  cleanup. `GOMODCACHE` and `GOCACHE` retained their original `go env` values.
+  The first invocation reported two file changes, limited to
+  `docs/agents/docs-layout.md` and `docs/agents/setup-context.json`, with
+  approved Plan Digest
+  `sha256:282b78793acfc0c707a9893d81015a9d293c5b830ca7276abbf2f712afdc9426`.
+  The second reported zero file changes. Both reported `Retention evidence: 0`
+  and skipped skills and history as requested. Both retained the existing
+  warnings for the formatter-fixture and Source Baseline nested `AGENTS.md`
+  carriers, leaving those carriers untouched.
+- `go test ./internal/baseline -run '^(TestArchiveRecordClausesAreAppended|TestTheArchiveClauseIsRetainedFromTheSourceBaseline|TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestTheCancelClauseCarriesItsText|TestTheCancelClauseRendersInTheDocsLayoutGuide|TestSpecDocsLayoutClauseRoutesTheOverrideThroughTheCommand)$' -count=1`
+  — exit 0, covering the changed text, retention evidence and neighboring
+  cross-project, cancellation and QA override contracts.
+- Byte and JSON comparisons against `HEAD` confirmed that the source module
+  has only the exact sentence replacement, rule version increment and
+  recorder-owned module version, and that the module record only appends
+  the new `spec-workflow` entry. Scope checks after regeneration and each
+  refresh found no undeclared path; all 15 changed paths, including this
+  Task, are declared. `git diff --check` exited 0.
+
+The shell runner could not start with its configured symlinked writable
+root. Approved shell execution used the physical checkout for all work;
+no repository configuration was changed to address that environment limit.
+No other Task, Task Graph, Source Baseline, retention corpus, ADR, skill,
+production Go source or tooling configuration was changed. No commit,
+push or pull request was made. No additional follow-up was identified.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261106T174350Z_09865ccb421258be`
+- Source commit: `5c2f91c2ac7134852ed944db4ff8d0afbc72de9f`

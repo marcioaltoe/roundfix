@@ -241,6 +241,10 @@
       {
         "version": 23,
         "digest": "sha256:465c5438256ee13dcaddda14ff2265e7fcad36dd0fc6361dae35411f465ec9e5"
+      },
+      {
+        "version": 24,
+        "digest": "sha256:1e4c9ee20ed70783feafdeba94ae83286796f34830b8155e12077408275a1834"
       }
     ],
     "tui-surface": [
