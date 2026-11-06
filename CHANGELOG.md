@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.135.0] - 2026-11-06
+
+### A large authored data file is reviewed apart, not omitted
+
+- **Project Config gains `pre_pr_review.data_paths`**, a list of paths, directories ending in `/` and whole-path patterns, validated like `pre_pr_review.omit_paths` and read from the base commit. A changed file it matches leaves the code diff with the reason `data-path` and is reviewed apart instead of omitted. Before, a large authored data file (a ~550 KB catalog of fiscal rules) had to go into `delivery.derived_paths`, and the reviewer never read it (reported by fiscus; ADR-0368, which amends ADR-0282).
+- **The data diff goes into up to four Data Review Segments**, sent after the code prompts in the same session in every round. Whole files are packed in path order within the provider's bound; a file that does not fit is cut at its hunks, and a hunk at its lines, each piece keeping its file header and a recomputed hunk header so anchors stay valid. A fifth segment blocks the review with the actionable size refusal.
+- **The review record lists `dataSegments`, and a finding from one carries `dataSegment`.** `delivery.derived_paths` and `pre_pr_review.omit_paths` keep their meaning, and a review without the key sends the same bytes as before.
+
 ## [0.134.1] - 2026-11-05
 
 ### An external skill is checked only for presence
