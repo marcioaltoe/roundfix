@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -115,3 +115,79 @@ migration `0052`
 
 - `_prd.md` → Goal 2; User Story 2; User Story 4; User Story 5; Core Feature 3; Core Feature 4; Success Metric 2; Success Metric 4
 - `_techspec.md` → Current behavior 3; Current behavior 6; API Contract 8; Invariants 1; Invariants 2; Invariants 4; Testing Approach; Build Order 4
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented the seven-step numbered-file collector in the command workflow and
+called it after the premise comparison. Errors carry `check numbered files:`.
+The collector reads declarations from the default commit, refreshes only its
+remote-tracking ref, combines committed additions with pending non-QA Task
+claims absent at the merge base, and compares only earlier unmerged items.
+Earlier plans come from their recorded worktree when its manifest exists,
+otherwise the subject's Specs Root; an unreadable plan retains branch claims.
+Fetch disables tag following and FETCH_HEAD writes. No queue row, local branch,
+Task declaration or worktree file is changed by the collector.
+
+### Characterization and focused checks
+
+- Before changing code, `go test -count=1 -timeout 20m -run '^(TestRevalidate.*|TestDeliverStatus.*)$' ./internal/cli` passed (`ok`, 2.935s).
+  Inspection confirmed that `newDeliveryRevalidationGitFixture.workflow`
+  initializes `loaded` and `git` only and carries no Run Database (`store` is nil).
+- Tests were added before the collector. `go test -count=1 -timeout 5m -run '^TestRevalidateReportsANumberedFileCollision$' ./internal/cli` failed in
+  `ahead_branch`, `ahead_plan` and `default_branch`: each returned an empty
+  blocker instead of the expected collision.
+- With the collector, `go test -count=1 -timeout 5m -v -run '^(TestRevalidateReportsANumberedFileCollision|TestDeliverStatusNamesTheNumberedFileCollisionPark)$' ./internal/cli`
+  passed, including every required subtest and the added boundary cases.
+- After the final code and test edits, `go test -count=1 -timeout 20m -run '^(TestRevalidate|TestDeliver)' ./internal/cli` passed (`ok`, 17.004s).
+  This focused package run covers the existing `TestRevalidate*`,
+  `TestDeliverStatus*` and `TestDeliver*` tests without changing them.
+- `git diff --check` passed.
+
+### Acceptance evidence
+
+- Declared collisions: real bare origins, queue clones, linked item worktrees
+  and temporary Run Databases exercise `ahead_branch`, `ahead_plan` and
+  `default_branch`, asserting the exact blockers. `subject_branch` checks an
+  addition held only by HEAD; `recorded_plan`, `missing_plan` and
+  `missing_branch` check plan selection and fallback. `ahead_branch` also
+  commits an empty item configuration to prove it cannot disable the default
+  branch's declaration.
+- Ignored claims: `ignored` excludes the merged alpha branch, later gamma,
+  completed beta Task and unnumbered journal; `renumbered` reports nothing.
+  `ignored/completed` separately places a colliding file on the refreshed
+  default branch and changes beta's pending claim to 0003, so counting its
+  completed 0002 declaration is independently observable. `base_file`
+  excludes a declaration already present at the merge base. `absent_item`
+  proves that a subject missing from the queue has no earlier items.
+- Disabled behavior: `off` uses no configuration key and a nil workflow store;
+  it returns an empty report. The recording Git adapter verifies that the
+  last command reads the default configuration, with no subsequent Git call.
+  `cleared_after_fetch` proves the refreshed empty declaration also returns
+  before touching a nil store. Each initial revalidation leaves the queue,
+  local branch/tag refs and worktree unchanged.
+- Status: `TestDeliverStatusNamesTheNumberedFileCollisionPark` exits 0,
+  produces no stderr, and asserts both exact `Park: beta conflict: ...` and
+  `Answer: ...` lines for `/worktrees/beta` and the alpha collision blocker.
+
+### Required sabotages
+
+Each mutation ran separately on an initialized, staged temporary copy of HEAD
+plus this Task's three Go files; the Run checkout was not mutated. Logs are at
+`/private/tmp/roundfix-0357-sabotages-ahs_8j1u/sabotage-<number>.log`.
+The command for 9–11 was `go test -count=1 -timeout 5m -v -run '^TestRevalidateReportsANumberedFileCollision$/ignored$' ./internal/cli`;
+12 used the same command with `/off$`.
+
+| Sabotage | Observed named failure (each command exited 1) |
+| --- | --- |
+| 9: compare later items too | `TestRevalidateReportsANumberedFileCollision/ignored`: beta collides with `db/0002_gamma.sql (gamma)`. |
+| 10: compare merged items too | `TestRevalidateReportsANumberedFileCollision/ignored`: beta collides with `db/0002_alpha.sql (alpha)`. |
+| 11: count completed Task declarations | `TestRevalidateReportsANumberedFileCollision/ignored/completed`: `db/0002_done.sql` collides with `db/0002_main.sql (default branch)`. |
+| 12: read the store before checking the declaration | `TestRevalidateReportsANumberedFileCollision/off`: nil-pointer panic in the Run Database read. |
+
+Task status remains Daemon-owned. The authored Verification command, repository
+Verification, commits, pushes and pull requests were not run. No other Task,
+Task Graph, guide, skill, reference, config/delivery package, tooling or module
+file was changed. No follow-up implementation was included.
