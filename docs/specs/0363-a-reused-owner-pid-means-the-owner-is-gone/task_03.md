@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0363-a-reused-owner-pid-means-the-owner-is-gone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -110,3 +110,32 @@ it is (`_techspec.md` → System Architecture).
 - `_prd.md` → Goals; User Story 2; User Story 3; Core Feature 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → API Contract 3; API Contract 4; Interfaces; Testing Approach; Build Order 3
 - ADR-0373, ADR-0044, ADR-0279
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, no-workarounds, systematic-debugging, agentic-cli-design, golang-error-handling, golang-context, evidence-gate, tech-writer.
+
+Implementation:
+
+- CLI and store orphan reclamation now pass the recorded identity to `OwnerGone`. A proven mismatch uses exactly `owner process <pid> gone (pid reused); lock reclaimed`; absent owners retain `owner process <pid> not running; lock reclaimed`, including the store's default reason.
+- `RunSlots` excludes owners proven gone without reclaiming their Run records. No other function in `deliver_workflow.go` changed.
+- `runDeliverStart` calls the extracted `releaseGoneDeliveryQueueOwner` before queue creation. The helper uses `OwnerGone`, retains the existing compare-and-release operation, and preserves read/release errors and the owner-changed diagnostic.
+- Both new Unix test files have suite headers, use the live parent PID and real start identity, and skip with the unsupported-identity reason only for `ErrOwnerProcessUnsupported`. Tests use disposable homes and never signal the parent or any other process. Existing tests contain no calls to `orphanedActiveRunReason`; their absent-owner reason assertions remain byte-identical.
+
+Acceptance evidence:
+
+- Reused owner: the new store regression checks Failed state, completion time, released lock and the exact journal reason using the default reason argument. The CLI reclaim regression checks the released Spec lock, journal and exact stderr warning. The slot regression checks exclusion while the Run remains unchanged. The queue regression checks that only the owner record is cleared and that a matching owner can then claim it.
+- Present or unprovable owner: every new regression checks a matching identity and a foreign-platform identity; store reclaim, CLI reclaim and slots also check an empty identity. Reclaim keeps the record, lock and journal unchanged and prints nothing; slots retain the holder; queue start retains the entire queue. The existing `OwnerGone` unit matrix also covers unreadable/unsupported identities, process-table errors, the caller PID and nonpositive PIDs, with a signal callback that fails the test if invoked.
+- Signal and already-correct readers: production diff inspection confirms Force Stop, `deliver stop`, terminate/signal functions, reconcile inspection, owner status, retry/resume and `ProcessAlive` are unchanged. Focused compatibility tests below exercise those existing boundaries.
+
+Focused checks (all final checks exited 0):
+
+- Before the production edit: `rtk proxy go test -timeout 2m -count=1 -run '^TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused$' ./internal/store` exited 1 as expected: the reused-identity case left the Run Active with its lock present.
+- `rtk proxy go test -timeout 3m -count=1 -run '^(TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused|TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone)$' ./internal/store` passed.
+- `rtk proxy go test -timeout 3m -count=1 -run '^(TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused|TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused|TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused)$' ./internal/cli` passed. Its first attempt found a fixture API typo (`ActiveImplementRun`); the fixture now uses the existing `ActiveSpecRun` API.
+- `rtk proxy go test -timeout 3m -count=1 -run '^TestReclaimOrphanedRun(CompletesFailedReleasesLockAndJournalsReason|ConcurrentAttemptsJournalOnce)$' ./internal/store` passed, preserving absent-owner reasons and single-event concurrent reclaim.
+- `rtk proxy go test -timeout 5m -count=1 -run '^(TestRunForceStopOwnerPIDReuseFailsClosed|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion|TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner|TestRunSlotsExcludeAHolderWhoseOwnerIsGone|TestDeliverCommandStopsAndResumesPersistedQueue|TestResumeReleasesAStaleOwner|TestDeliverRetryStartsAnOwnerWhenNoneIsRunning|TestDeliverRetryHandsTheItemToALiveOwner|TestDeliverRetryReclaimsAStaleOwnerAndStartsOne|TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal|TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale|TestRunImplementReclaimsDeadOwnerActiveRun|TestRunSettleReclaimsDeadOwnerActiveRun|TestReviewFetchReclaimsDeadOwnerActiveRun|TestCancelReclaimsAnOrphanedRun)$' ./internal/cli` passed.
+- `GOOS=windows rtk proxy go build ./internal/store ./internal/cli` and `GOOS=linux rtk proxy go build ./internal/store ./internal/cli` succeeded.
+- `gofmt` applied to the six changed Go files; `rtk proxy git diff --check` passed.
+
+Declared Task Verification and repository Verification were not run; they remain Daemon-owned. The pre-existing `status: in_progress` is unchanged. No Task Graph, other Task, commit, push or pull request was changed or created. No follow-up work identified.
