@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0363-a-reused-owner-pid-means-the-owner-is-gone
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -86,3 +86,40 @@ Surface Record last.
 - `_prd.md` → Goals; Core Feature 4
 - `_techspec.md` → API Contracts 2-4; Build Order 1
 - ADR-0373
+
+## Result
+
+Skills loaded: implement-task, tech-writer
+
+Implemented the documentation slice: Doctor now says a terminal Run with a
+reused owner PID adds no residue; both deliver guides treat a reused owner PID
+as gone for Run slots and `deliver start`; and `deliver start`'s takeover rule
+leaves a proven-live owner in place. The canonical Roundfix skill was raised
+from `0.1.198` to `0.1.199` in both version fields, synchronized to its mirror,
+and its owned-skill version record was regenerated.
+
+Focused evidence:
+
+- `make skills-sync` — passed; canonical and mirror `SKILL.md`, setup, and
+  deliver references are byte-identical.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` — passed (`1 passed in 1 packages`).
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed
+  (`1 passed in 1 packages`); the Behavior Surface Record was regenerated after
+  the final guide and skill edits.
+- Focused phrase checks and diff inspection found the prescribed Doctor,
+  setup-reference, Run-slot, and `deliver start` wording in both canonical
+  surfaces.
+
+Acceptance evidence:
+
+- Doctor guide and setup reference: reused owner PID is described as gone and
+  contributes no residue; the full declared Verification remains for the
+  Daemon.
+- Deliver guide and reference: Run-slot holders and `deliver start` use the
+  owner-gone wording, including the reused-PID case; the full declared
+  Verification remains for the Daemon.
+- Skill/version and generated records: the sanctioned version recorder and
+  Behavior Surface recorder passed; the declared skill and documentation
+  contract Verification remains for the Daemon.

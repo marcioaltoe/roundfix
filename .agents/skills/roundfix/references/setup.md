@@ -103,6 +103,10 @@ evidence, and the next `roundfix profiles configure` or
 recommend model-managed reasoning. The command has no flags and mutates
 nothing.
 
+A terminal Run whose recorded owner PID is alive with a different start identity
+adds nothing: its owner is gone and the PID was reused, so `partial` is left for
+a process table Doctor cannot read.
+
 - `light-tier:` — printed after `recommendations:` only when
   `openrouter.light_models` is not empty and `defaults.agent_full_access` is
   `true`; `warn` with `DR-LIGHT-ACCESS-MODE` when no light runtime offers a
