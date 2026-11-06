@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.136.2] - 2026-11-06
+
+### The build cache stays within a bound, and a full disk is named
+
+- **`roundfix doctor` and the Delivery Queue warn under a Free-Space Floor of 10,240 MiB.** Doctor's `disk-space:` line also inspects the temporary directory beside the worktree location and each declared Shared Build Cache. Before an item's Implement Run and its repository gate, the queue inspects the same locations and, below the floor, adds a `low-disk` segment to the item's warning and one line to the owner's log; it never fails, parks or delays an item (reported by oraculum and the maintainer; ADR-0370, which amends ADR-0327 and ADR-0334).
+- **A full filesystem parks the item as `disk-full: <path>: <N> MiB free`** in the `environment` Park Class, when the item binary build or the repository gate fails with `ENOSPC` or its log says `no space left on device`; the path may hold spaces. Its retry is not counted. Before, the park was a generic `delivery-error`.
+- **This repository's Makefile holds its own Go build cache to a Build Cache Bound** (`GOCACHE_BOUND_MB`, default 10,240 MiB): before each target that builds or tests, it removes entries idle for at least two hours (`GOCACHE_BOUND_IDLE`), oldest first, and never clears the cache, because clearing it during a build can fail that build. It applies to Roundfix's own Makefile, not to adopters' build caches; on 2026-11-05 that cache reached 25 GB and filled the Mac mini's system volume twice.
+
 ## [0.136.1] - 2026-11-06
 
 ### The Delivery Queue waits for every check the head triggered
