@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0359-the-delivery-queue-waits-for-every-check-the-head-triggered
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -133,3 +133,118 @@ lines, and names the pending members in the `checks-timeout` blocker, as
 
 - `_prd.md` → Goals; Core Feature 3; Core Feature 4; Core Feature 5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior 2; Current behavior 3; API Contract 3; API Contract 4; API Contract 5; Invariants 1-5; Declared breaks; Testing Approach; Build Order 3; ADR-0369; ADR-0236; ADR-0311
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, systematic-debugging, evidence-gate, tech-writer.
+
+The checking stage now evaluates the Head Check Set after the existing check
+recovery loop. It waits for unregistered workflow jobs, missing Expected
+Workflows and an empty set, names all failed checks and runs with their
+links, logs changes in pending members and read errors, and records the last
+successful pending list or awaited merge state in the timeout blocker.
+
+The existing recovery loop retains its stale/outside-change decisions,
+re-run counts, poll interval and single deadline restart. Existing test
+changes replace only the expected blocker or log text. The GitHub reader,
+workflow discovery, Turn Record, Park Classes and database schema were not
+changed; recording pending members on the Queue Turn belongs to task_04.
+
+### Pre-edit characterization and regression signal
+
+Before changing code, ran:
+
+```sh
+go test -count=1 -timeout 20m -v -run '^(TestTheCheckWait.*|TestEachCheckWaitStartsItsOwnDeadline|TestChecksTimeoutParksTheItem|TestABlockedMergeStateParksAtTheChecksTimeout)$' ./internal/delivery
+```
+
+Exit 0; all five selected tests passed. The default wait still made 241
+polls over its fake-clock hour, and the configured duration, per-call
+deadline and blocked merge-state cases passed before the change.
+
+Added the five required regression tests before the implementation and ran:
+
+```sh
+go test -count=1 -timeout 5m -v -run '^(TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered|TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting|TestAFailedWorkflowRunWithoutAFailingCheckParks|TestTheChecksTimeoutNamesWhatItWaitedFor|TestAReadErrorIsLoggedOnce)$' ./internal/delivery
+```
+
+Exit 1 before implementation: all five top-level tests exposed the missing
+behavior. The Fluxus replay moved to `merging` on poll 1 instead of waiting
+through poll 3, the missing Expected Workflow was ignored, failing standalone
+runs merged, timeout details were absent and the read-error line was absent.
+The same focused command then exited 0 after implementation.
+
+### Focused checks and acceptance evidence
+
+After the final code and test edits, ran:
+
+```sh
+go test -count=1 -timeout 5m -v -run '^(TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered|TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting|TestAFailedWorkflowRunWithoutAFailingCheckParks|TestTheChecksTimeoutNamesWhatItWaitedFor|TestAReadErrorIsLoggedOnce|TestEveryFailedHeadMemberIsNamed|TestAWorkflowRunWaitsAfterItsCheckPasses|TestARequestedRerunWaitsForANewerWorkflowAttempt|TestCheckReadErrorsKeepTheLastSuccessfulWaitAndResetTheirLog)$' ./internal/delivery
+```
+
+Exit 0; all nine top-level tests and their subtests passed.
+
+- Acceptance criterion 1: the Fluxus replay waits for three polls (30 seconds
+  on the fake clock) even with `CLEAN`; its passing variant reaches `merging`
+  only after every check and run succeeds. The Expected Workflow case times
+  out with its missing path, or reaches `merging` when the run arrives at poll
+  3. The empty report waits through its deadline as `no check reported`.
+  `TestAWorkflowRunWaitsAfterItsCheckPasses` also keeps waiting after the
+  run's listed check passes, until the run itself completes.
+- Acceptance criterion 2: the Fluxus failure parks with the exact Backend
+  job name, lower-cased `failure` and job URL. All six failing workflow
+  conclusions park with the run name and URL; `neutral` and `skipped` reach
+  `merging`. `TestEveryFailedHeadMemberIsNamed` proves ordered aggregation
+  across failed/cancelled checks, a commit status without a link, and a run
+  named by its path; the run already named by failed jobs is not duplicated.
+  `TestARequestedRerunWaitsForANewerWorkflowAttempt` keeps the rerun's old
+  failed workflow attempt pending and parks a newer failed attempt.
+- Acceptance criterion 3: replay tests compare the complete ordered log,
+  including both waiting lines and the final `3 check(s) completed for
+  candidate` line. Timeout tests pin `no check reported`, `CI / verify`,
+  `merge state BLOCKED`, `merge state UNKNOWN`, and the missing workflow
+  path. Read-error tests prove one line for consecutive identical errors,
+  reset after a successful read, and preservation of the last successful
+  pending list when later reads fail.
+
+Also ran:
+
+```sh
+go test -count=1 -timeout 5m -v -run 'Check|Rerun|MergeState|Premise|Revalidation|ParksDeclaredBlockers' ./internal/delivery
+```
+
+Exit 0; 67 top-level tests passed. The unchanged recovery assertions include
+one outside-change rerun, stale reruns bounded per default-branch tip, no
+repeated deadline extension, no rerun for cancelled/unattributable failures,
+and the existing flaky-check warning and park. The original characterization
+cases pass with only their new expected timeout detail. Persistent read
+errors with no successful report retain the existing timeout text.
+
+### Required sabotage probes
+
+Built a temporary repository from `git archive HEAD`, overlaid this Task's
+Go files, initialized/staged its Git metadata without committing, and
+changed only that copy. Ran each probe with
+`go test -count=1 -timeout 5m -v -run '<selection>' ./internal/delivery`.
+All four returned exit 1 with test assertion failures, not build or fixture
+errors; the transcripts were inspected.
+
+| Sabotage | Selection | Input and observed assertion failure |
+| --- | --- | --- |
+| 1: omit workflow runs from evaluation | `^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$` | Poll 1: passing Conventions job beside Frontend and Backend runs `in_progress`; both variants report `polls=1 elapsed=0s`, item at `merging`. |
+| 2: omit Expected Workflows from evaluation | `^TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting$` | Passing `coverage` status and `.github/workflows/ci-verify.yml` without a run; both variants merge at poll 1 instead of waiting. |
+| 3: accept `action_required` as passing | `^TestAFailedWorkflowRunWithoutAFailingCheckParks$/action_required$` | Run 7 `CI | Verify` concludes `action_required` beside a passing check of another run; the item reaches `merging` instead of the exact named failure park. |
+| 6: park bare `checks-failed` | `^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$/backend_fails$` | Poll 3: Backend job 30 fails in a changed package; the assertion sees bare `checks-failed` instead of its required job name, conclusion and URL. |
+
+Probe logs and script remain outside the checkout at
+`/tmp/0359-task03-sabotage-pribcxw8/sabotage-{1,2,3,6}.log` and
+`/tmp/0359-task03-sabotages.py`. The copy's mutated Go files were restored
+after the probes. `git diff --check` exits 0.
+
+The initial worktree change was the Daemon-owned `task_03.md` status. This
+turn preserves that status and adds only this Result. No other Task, Task
+Graph, document, prohibited implementation file, or tooling configuration
+was changed. Declared Verification, CLI verification, platform builds and
+repository Verification are left to the Daemon; no commit, push or pull
+request was made.

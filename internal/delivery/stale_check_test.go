@@ -47,7 +47,7 @@ func TestAStaleRerunThatFailsOnTheCurrentTipGetsTheOutsideChangeRerun(t *testing
 func TestAStaleCheckWhoseRerunIsRefusedParksChecksFailed(t *testing.T) {
 	recovery := &fakeCheckRecovery{failures: []CheckFailure{staleFailure(2, "tip")}, rerunErr: errors.New("denied")}
 	item, log, _ := exerciseCheckRecovery(t, recovery, []CheckReport{recoveryReport("fail")})
-	if item.Blocker != BlockerChecksFailed || recovery.reruns != 1 || !strings.Contains(log, "roundfix: check recovery: Delivery Queue item example: denied") {
+	if item.Blocker != BlockerChecksFailed+": CI / verify (fail) "+recoveryLink || recovery.reruns != 1 || !strings.Contains(log, "roundfix: check recovery: Delivery Queue item example: denied") {
 		t.Fatalf("item=%+v reruns=%d log=%q", item, recovery.reruns, log)
 	}
 }
@@ -172,7 +172,7 @@ func TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce(t *testing.T) {
 		reports[i] = recoveryReport("fail")
 	}
 	item, _, polls := exerciseCheckRecovery(t, recovery, reports)
-	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s" || recovery.reruns != 3 || polls != 6 {
+	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s; pending: CI / verify (re-run requested)" || recovery.reruns != 3 || polls != 6 {
 		t.Fatalf("item=%+v reruns=%d polls=%d", item, recovery.reruns, polls)
 	}
 }

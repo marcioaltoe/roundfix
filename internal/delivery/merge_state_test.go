@@ -144,7 +144,7 @@ func TestABlockedMergeStateParksAtTheChecksTimeout(t *testing.T) {
 	f := newMergeStateFixture(t, []string{"BLOCKED"}, 0)
 	start := f.clock.Now()
 	item := f.run(t)
-	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 3s" || f.attempts != 0 || f.clock.Now().Sub(start) != 3*time.Second {
+	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 3s; merge state BLOCKED" || f.attempts != 0 || f.clock.Now().Sub(start) != 3*time.Second {
 		t.Fatalf("item=%+v attempts=%d elapsed=%s", item, f.attempts, f.clock.Now().Sub(start))
 	}
 }

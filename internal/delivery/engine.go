@@ -58,9 +58,16 @@ const (
 )
 
 // checksTimeoutBlocker is stored in the Run Database and printed by deliver
-// status. It contains only a config key and duration, never secret values.
-func checksTimeoutBlocker(timeout time.Duration) string {
-	return fmt.Sprintf("%s: current-head checks not settled within %s %s", BlockerChecksTimeout, config.DeliveryCheckTimeoutKey, timeout.String())
+// status. It names the last successfully read pending members or merge state.
+func checksTimeoutBlocker(timeout time.Duration, pending []string, mergeState string) string {
+	blocker := fmt.Sprintf("%s: current-head checks not settled within %s %s", BlockerChecksTimeout, config.DeliveryCheckTimeoutKey, timeout.String())
+	if len(pending) > 0 {
+		return blocker + "; pending: " + strings.Join(pending, "; ")
+	}
+	if mergeState == "BLOCKED" || mergeState == "UNKNOWN" {
+		return blocker + "; merge state " + mergeState
+	}
+	return blocker
 }
 
 type RunOutcome string
@@ -1677,9 +1684,13 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 	rerunChecks := make(map[string]bool)
 	timeoutRestarted := false
 	lastMergeState := ""
+	lastReadError := ""
+	var lastPending, lastWrittenPending []string
+	awaitedMergeState := ""
 	for {
 		report, err := pullRequests.CurrentHeadChecks(ctx, item.PullRequestNumber)
 		if err == nil {
+			lastReadError = ""
 			if report.HeadSHA != head {
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
@@ -1706,7 +1717,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
 				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
 			}
-			pending := len(report.Checks) == 0 || report.Mergeable == "UNKNOWN"
+			pending := report.Mergeable == "UNKNOWN"
 			for _, check := range report.Checks {
 				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
 				case "pass":
@@ -1726,7 +1737,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 				case "skipping":
 				case "fail":
 					if engine.checks == nil {
-						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 					}
 					remote := "origin"
 					if engine.publication != nil {
@@ -1740,7 +1751,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 							return fmt.Errorf("inspect failed check: %w", inspectErr)
 						}
 						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, inspectErr)
-						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 					}
 					if failure.Stale {
 						if stalePairs[[2]string{failure.RunID, failure.DefaultTip}] {
@@ -1757,10 +1768,10 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 							if failure.OutsideChange {
 								return engine.park(ctx, gitRoot, item, BlockerFlakyCheck+": "+strings.Join(failure.Packages, ", "))
 							}
-							return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+							return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 						}
 						if !failure.OutsideChange || (failure.Attempt != 1 && !staleRuns[failure.RunID]) || failure.RunID == "" {
-							return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+							return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 						}
 					}
 					if err := engine.checks.RerunFailedCheck(ctx, workDir, failure); err != nil {
@@ -1768,7 +1779,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 							return fmt.Errorf("re-run failed check: %w", err)
 						}
 						fmt.Fprintf(engine.log, "roundfix: check recovery: Delivery Queue item %s: %s\n", item.SpecSlug, err)
-						return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+						return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 					}
 					rerunAttempts[failure.RunID] = failure.Attempt
 					if failure.Stale {
@@ -1791,25 +1802,45 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 					}
 					pending = true
 				case "cancel", "cancelled":
-					return engine.park(ctx, gitRoot, item, BlockerChecksFailed)
+					return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
 				default:
 					pending = true
 				}
 			}
-			if report.MergeState == "BLOCKED" || report.MergeState == "UNKNOWN" {
+			set := evaluateHeadCheckSet(report, rerunAttempts)
+			if set.RunFailures > 0 {
+				return engine.park(ctx, gitRoot, item, checksFailedBlocker(report))
+			}
+			if len(set.Pending) > 0 && !slices.Equal(set.Pending, lastWrittenPending) {
+				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: waiting for %d check(s): %s\n", item.SpecSlug, len(set.Pending), strings.Join(set.Pending, "; "))
+				lastWrittenPending = set.Pending
+			}
+			lastPending = set.Pending
+			awaitedMergeState = report.MergeState
+			if report.Mergeable == "UNKNOWN" {
+				awaitedMergeState = "UNKNOWN"
+			}
+			if awaitedMergeState == "BLOCKED" || awaitedMergeState == "UNKNOWN" {
 				pending = true
 			}
-			if !pending {
+			if !pending && len(set.Pending) == 0 {
+				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: %d check(s) completed for %s\n", item.SpecSlug, set.Members, head)
 				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageMerging)
 			}
-		} else if ctx.Err() != nil {
-			return fmt.Errorf("read current-head checks: %w", err)
+		} else {
+			if ctx.Err() != nil {
+				return fmt.Errorf("read current-head checks: %w", err)
+			}
+			if err.Error() != lastReadError {
+				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: read failed: %s\n", item.SpecSlug, err)
+				lastReadError = err.Error()
+			}
 		}
 		remaining := deadline.Sub(engine.clock.Now())
 		if remaining <= 0 {
 			// Parking leaves the Pull Request, CI runs and branch as they are;
 			// this deadline neither abandons nor cancels external work.
-			return engine.park(ctx, gitRoot, item, checksTimeoutBlocker(engine.checkTimeout))
+			return engine.park(ctx, gitRoot, item, checksTimeoutBlocker(engine.checkTimeout, lastPending, awaitedMergeState))
 		}
 		wait := min(engine.checkInterval, remaining)
 		if err := engine.sleeper.Sleep(ctx, wait); err != nil {
