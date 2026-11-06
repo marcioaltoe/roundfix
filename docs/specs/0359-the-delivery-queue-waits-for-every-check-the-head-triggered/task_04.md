@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0359-the-delivery-queue-waits-for-every-check-the-head-triggered
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -101,3 +101,67 @@ Models, API Contract 6 and Surface Transcript 1 state.
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 4
 - `_techspec.md` → Current behavior 5; Data Models; API Contract 6; Surface Transcript 1; Testing Approach; Build Order 4; ADR-0365; ADR-0369
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-concurrency, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, evidence-gate, tech-writer.
+
+The advancing item's Turn Record now carries optional `checks`, with the
+pending list copied per slug under `turnMu`. Each waiting log write calls
+`checkTurn` with that list; a deferred call clears it on every return from
+`checkCandidate`, including early returns. Without a Turn Recorder,
+`checkTurn` returns before changing state, reading storage or writing a log.
+The checking `Turn:` line names the pending members with the specified count
+and separators. Existing Turn forms, status item lines, blockers and log
+texts are unchanged.
+
+Acceptance evidence:
+
+- Pending members and stage exit: `TestTheOwnerRecordsTheChecksAnItemWaitsFor`
+  passed with two pending polls followed by one passing poll. Its recorded
+  turns include the advancing item with `[CI / verify]`; the last turn has
+  no checks and its item and the stored item are at `merging`.
+- Exact status transcript: `TestDeliverStatusPrintsTheChecksAnItemWaitsFor`
+  passed through public `deliver status` dispatch with the live owner proof
+  and a serialized Turn Record. It asserts all stdout lines, empty stderr
+  and exit 0. `TestTurnLinesNameTheChecksAnItemWaitsFor` passed for both the
+  two-member checking line and its `no checks` subtest, including the other
+  item's unchanged owner-turn wait line.
+
+Focused checks (Go commands invoked through `rtk proxy`):
+
+- Before changing code,
+  `go test -count=1 -timeout 20m -v -run '^(TestDeliverStatusReproducesSurfaceTranscriptQueueTurns|TestDeliverStatusOrdersWarningsTurnsAndParks)$' ./internal/cli`
+  exited 0; both characterization tests passed.
+- After adding the tests and before implementation,
+  `go test -count=1 -timeout 2m -run '^TestTurnLinesNameTheChecksAnItemWaitsFor$' ./internal/delivery`
+  exited 1 because `ItemTurn.Checks` did not exist.
+- After implementation,
+  `go test -count=1 -timeout 3m -v -run '^(TestTurnLinesNameTheChecksAnItemWaitsFor|TestTheOwnerRecordsTheChecksAnItemWaitsFor|TestTurnLinesNameEachItemsTurn|TestTheOwnerRecordsEachItemsTurn)$' ./internal/delivery`
+  exited 0; all selected tests and subtests passed.
+- `go test -count=1 -timeout 3m -v -run '^(TestDeliverStatusPrintsTheChecksAnItemWaitsFor|TestDeliverStatusReproducesSurfaceTranscriptQueueTurns|TestDeliverStatusOrdersWarningsTurnsAndParks|TestDeliverStatusIgnoresATurnRecordOfAnotherOwner|TestTheTurnRecorderWritesBesideTheConsoleLog)$' ./internal/cli`
+  exited 0; all selected tests and subtests passed unchanged alongside the
+  new transcript test.
+- `go test -race -count=1 -timeout 3m -run '^(TestTurnLinesNameTheChecksAnItemWaitsFor|TestTheOwnerRecordsTheChecksAnItemWaitsFor|TestTheOwnerRecordsEachItemsTurn)$' ./internal/delivery`
+  exited 0, with no race report.
+- `go test -count=1 -timeout 3m -v -run '^(TestTheCheckWaitDefaultsToSixtyMinutes|TestTheCheckWaitUsesTheConfiguredDuration|TestEachCheckWaitStartsItsOwnDeadline|TestNilCheckRecoveryKeepsFailedCheckBehavior)$' ./internal/delivery`
+  exited 0; the selected existing check-wait and failed-check tests passed.
+- `git diff --check` exited 0.
+
+Sabotage 7 ran in a temporary copy at
+`/private/tmp/roundfix-task04-sabotage7-6o78h3j3`, with independent Git
+metadata. Removing only the checking suffix from `TurnLines`, then running
+`go test -count=1 -timeout 3m -v -run '^TestDeliverStatusPrintsTheChecksAnItemWaitsFor$' ./internal/cli`
+exited 1: `TestDeliverStatusPrintsTheChecksAnItemWaitsFor` failed because
+actual stdout contained `Turn: 0149-example advancing at checking`, while
+the expected line named the two pending checks. Exit 0 and empty stderr
+still matched, so the failure was the missing status text. The working
+tree retained the suffix.
+
+Only `internal/delivery/engine.go`, `internal/delivery/turn.go`,
+`internal/delivery/turn_test.go`, `internal/cli/deliver_turn_test.go` and
+this Result were edited. The initial dirty path was this Task's
+Daemon-owned status change. Task status and the Task Graph were left alone;
+the declared Verification, repository gates, full suites and cross-platform
+builds were not run, for the Daemon to execute after handoff. No commit,
+push or pull request was made.

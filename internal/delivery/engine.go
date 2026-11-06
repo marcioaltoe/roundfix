@@ -418,6 +418,7 @@ type Engine struct {
 	turnMu            sync.Mutex
 	advancing         string
 	prerequisiteWaits map[string][]string
+	checkWaits        map[string][]string
 	reviewCapacity    int
 	turnPollInterval  time.Duration
 	reviewSlots       *reviewSlots
@@ -868,6 +869,7 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 	engine.reviewSlots = slots
 	engine.advancing = ""
 	engine.prerequisiteWaits = make(map[string][]string)
+	engine.checkWaits = make(map[string][]string)
 	slots.start(ctx)
 	defer func() {
 		slots.stop()
@@ -1652,6 +1654,7 @@ func (engine *Engine) createPullRequest(
 }
 
 func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	defer engine.checkTurn(ctx, gitRoot, item.SpecSlug, nil)
 	workDir, err := itemWorkDir(*item)
 	if err != nil {
 		return err
@@ -1813,6 +1816,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 			}
 			if len(set.Pending) > 0 && !slices.Equal(set.Pending, lastWrittenPending) {
 				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: waiting for %d check(s): %s\n", item.SpecSlug, len(set.Pending), strings.Join(set.Pending, "; "))
+				engine.checkTurn(ctx, gitRoot, item.SpecSlug, set.Pending)
 				lastWrittenPending = set.Pending
 			}
 			lastPending = set.Pending

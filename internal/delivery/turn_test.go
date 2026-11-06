@@ -66,6 +66,81 @@ func TestTurnLinesNameEachItemsTurn(t *testing.T) {
 	})
 }
 
+func TestTurnLinesNameTheChecksAnItemWaitsFor(t *testing.T) {
+	t.Parallel()
+	queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{
+		{SpecSlug: "0149-example", Stage: store.DeliveryStageChecking, Position: 0},
+		{SpecSlug: "0150-other", Stage: store.DeliveryStageQueued, Position: 1},
+	}}
+	turn := Turn{Items: []ItemTurn{
+		{SpecSlug: "0149-example", Stage: store.DeliveryStageChecking, State: TurnAdvancing, Checks: []string{
+			"CI | Backend / Lint, Type Check, Test & Build",
+			".github/workflows/ci-frontends.yml (no run yet)",
+		}},
+		{SpecSlug: "0150-other", Stage: store.DeliveryStageQueued, State: TurnWait},
+	}}
+	want := []string{
+		"Turn: 0149-example advancing at checking; waiting for 2 check(s): CI | Backend / Lint, Type Check, Test & Build; .github/workflows/ci-frontends.yml (no run yet)",
+		"Turn: 0150-other waiting for the owner's turn (1 of 1 waiting)",
+	}
+	if got := TurnLines(queue, turn); !slices.Equal(got, want) {
+		t.Fatalf("lines = %q, want %q", got, want)
+	}
+	t.Run("no checks", func(t *testing.T) {
+		turn.Items[0].Checks = nil
+		want[0] = "Turn: 0149-example advancing at checking"
+		if got := TurnLines(queue, turn); !slices.Equal(got, want) {
+			t.Fatalf("lines = %q, want %q", got, want)
+		}
+	})
+}
+
+func TestTheOwnerRecordsTheChecksAnItemWaitsFor(t *testing.T) {
+	t.Parallel()
+	engine, runStore, item, _, boundary := newCheckWaitFixture(t, time.Minute)
+	var mu sync.Mutex
+	var turns []Turn
+	engine.turnRecorder = turnRecorderFunc(func(_ context.Context, turn Turn) error {
+		mu.Lock()
+		defer mu.Unlock()
+		turns = append(turns, turn)
+		return nil
+	})
+	polls := 0
+	boundary.currentHeadChecks = func(context.Context, string) (CheckReport, error) {
+		polls++
+		if polls <= 2 {
+			return recoveryReport("pending"), nil
+		}
+		return recoveryReport("pass"), nil
+	}
+	engine.advancingTurn(t.Context(), "/repo", item.SpecSlug)
+	if err := engine.checkCandidate(t.Context(), "/repo", item); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	found := false
+	for _, turn := range turns {
+		for _, entry := range turn.Items {
+			if entry.SpecSlug == item.SpecSlug && entry.State == TurnAdvancing && slices.Equal(entry.Checks, []string{"CI / verify"}) {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no advancing turn with pending checks: %+v", turns)
+	}
+	last := turns[len(turns)-1]
+	if len(last.Items) != 1 || last.Items[0].SpecSlug != item.SpecSlug || len(last.Items[0].Checks) != 0 {
+		t.Fatalf("last turn still has checks or lost the item: %+v", last)
+	}
+	stored := readDeliveryQueue(t, t.Context(), runStore, "/repo").Items[0]
+	if polls != 3 || stored.Stage != store.DeliveryStageMerging || last.Items[0].Stage != store.DeliveryStageMerging {
+		t.Fatalf("polls=%d item=%+v last=%+v", polls, stored, last)
+	}
+}
+
 func TestTheOwnerRecordsEachItemsTurn(t *testing.T) {
 	t.Parallel()
 	fixture := newReviewSlotFixture(t, "implementing", "reviewed", "waiting", "later")
