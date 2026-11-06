@@ -1,5 +1,0 @@
-command: ./bin/roundfix qa-report accept docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/qa/qa-report-2026-11-05.md
-exit: 0
-stdout:
-
-stderr:
