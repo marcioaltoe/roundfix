@@ -1,0 +1,21 @@
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.136.3 → 99.0.0 is available (update.mode auto).
+Changes since 0.136.3:
+- 99.0.0: The first fixture release
+- 98.0.0: The second fixture release; Its second title
+Baseline: not checked (outside a Git repository).
+Next: update.mode auto: apply it now with the Roundfix skill's --update mode.
+stderr:
+exit: 0
+
+Expected stdout:
+Roundfix <installed> → 99.0.0 is available (update.mode auto).
+Changes since <installed>:
+- 99.0.0: The first fixture release
+- 98.0.0: The second fixture release; Its second title
+Baseline: not checked (outside a Git repository).
+Next: update.mode auto: apply it now with the Roundfix skill's --update mode.
+Expected stderr:
+Expected exit: 0
+Full matching result: True

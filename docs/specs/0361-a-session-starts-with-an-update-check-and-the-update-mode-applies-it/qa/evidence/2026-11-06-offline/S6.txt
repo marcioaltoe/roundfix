@@ -1,0 +1,65 @@
+Isolated git archive c9aabac005715afc9e0b75be7420a2a27ac0ff99
+$ git diff --no-ext-diff
+stdout:
+diff --git a/internal/cli/update_check.go b/internal/cli/update_check.go
+index 472b696..d9a8572 100644
+--- a/internal/cli/update_check.go
++++ b/internal/cli/update_check.go
+@@ -201,7 +201,7 @@ func previewUpdateCheckBaseline(ctx context.Context, gitRoot string, environment
+ 		return updateCheckBaseline{State: "not_checked"}
+ 	}
+ 	var stdout bytes.Buffer
+-	runBaselineUpdateCommand(ctx, []string{"--repo", gitRoot, "--format", "json"}, &stdout, io.Discard, environment)
++	runBaselineUpdateCommand(ctx, []string{"--repo", gitRoot, "--format", "json", "--yes"}, &stdout, io.Discard, environment)
+ 	var result baselineUpdateResult
+ 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+ 		return updateCheckBaseline{State: "unknown", Message: updateCheckLine(fmt.Sprintf("decode Baseline preview: %v", err), 0)}
+stderr:
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestUpdateCheckSummarizesTheBaselinePreview$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/current
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/current
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/current
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== NAME  TestUpdateCheckSummarizesTheBaselinePreview/current
+    update_check_test.go:217: baseline = {State:verified FileChanges:0 HistoryUnits:0 SkillChanges:0 Message:refresh repository skills after guidance apply: inspect external Repository Skill Set: inspect skills lock "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckSummarizesTheBaselinePreviewcurrent561860547/001/skills-lock.json": statat skills-lock.json: no such file or directory}, want {State:current FileChanges:0 HistoryUnits:0 SkillChanges:0 Message:the repository already matches the current Baseline catalog}
+=== NAME  TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+    update_check_test.go:217: baseline = {State:verified FileChanges:2 HistoryUnits:0 SkillChanges:0 Message:refresh repository skills after guidance apply: inspect external Repository Skill Set: inspect skills lock "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckSummarizesTheBaselinePreviewwrites_nothing2063211524/001/skills-lock.json": statat skills-lock.json: no such file or directory}, want {State:plan_ready FileChanges:2 HistoryUnits:0 SkillChanges:0 Message:managed-refresh plan is ready; repository bytes are unchanged}
+=== NAME  TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+    update_check_test.go:217: baseline = {State:verified FileChanges:2 HistoryUnits:0 SkillChanges:0 Message:refresh repository skills after guidance apply: inspect external Repository Skill Set: inspect skills lock "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckSummarizesTheBaselinePreviewplan_ready3414039067/001/skills-lock.json": statat skills-lock.json: no such file or directory}, want {State:plan_ready FileChanges:2 HistoryUnits:0 SkillChanges:0 Message:managed-refresh plan is ready; repository bytes are unchanged}
+=== NAME  TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+    update_check_test.go:217: baseline = {State:verified FileChanges:2 HistoryUnits:1 SkillChanges:1 Message:approved Baseline Plan applied Status matrix: - Approved postimages: verified - Semantic retention: not run - Profile alignment: verified - Repository Verification: not run - Idempotence: not run}, want {State:plan_ready FileChanges:2 HistoryUnits:1 SkillChanges:3 Message:managed-refresh plan is ready; repository bytes are unchanged}
+--- FAIL: TestUpdateCheckSummarizesTheBaselinePreview (0.00s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/outside_repository (0.00s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/no_manifest (0.05s)
+    --- FAIL: TestUpdateCheckSummarizesTheBaselinePreview/current (1.68s)
+    --- FAIL: TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing (2.02s)
+    --- FAIL: TestUpdateCheckSummarizesTheBaselinePreview/plan_ready (2.02s)
+    --- FAIL: TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts (4.37s)
+FAIL
+suiteguard: guard cost: measured 2987 paths; fingerprint took 139.931542ms before and 127.669666ms after
+FAIL	roundfix/internal/cli	5.100s
+FAIL
+stderr:
+exit: 1
+Required failure: TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+Setup succeeded: True
+Named failure observed: True

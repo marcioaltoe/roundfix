@@ -1,0 +1,49 @@
+Offline external quotation: project .codex layer must be trusted; new or changed hooks skipped until trusted.
+$ git diff --name-only 497224da75d8952e399d4a6ef58eaf4ff9d3e3ef..c9aabac005715afc9e0b75be7420a2a27ac0ff99
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/modes.md
+.agents/skills/roundfix/references/setup.md
+CONTEXT.md
+docs/agents/agent-instructions.md
+docs/agents/setup-context.json
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/task_01.md
+docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/task_02.md
+docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/task_03.md
+docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/task_04.md
+docs/user-guide/commands.md
+docs/user-guide/commands/update.md
+docs/user-guide/configuration.md
+docs/user-guide/usage.md
+internal/app/release.go
+internal/app/release_test.go
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+internal/baseline/assets/modules/core.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/clause_characterization_test.go
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/baseline/update_check_clause_test.go
+internal/cli/cli.go
+internal/cli/cli_test.go
+internal/cli/update_check.go
+internal/cli/update_check_test.go
+internal/config/config.go
+internal/config/update_mode_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/modes.md
+skills/roundfix/references/setup.md
+skills/roundfix_modes_test.go
+skills/testdata/owned-skill-versions.json
+stderr:
+exit: 0
+Command guide hook paragraph:
+ the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.

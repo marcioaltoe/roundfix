@@ -1,0 +1,18 @@
+$ go test -count=1 -timeout 20m -v -run ^TestTheRoundfixSkillReadsItsModeFromTheRequest$ ./skills
+stdout:
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+--- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+PASS
+ok  	roundfix/skills	0.133s
+stderr:
+exit: 0

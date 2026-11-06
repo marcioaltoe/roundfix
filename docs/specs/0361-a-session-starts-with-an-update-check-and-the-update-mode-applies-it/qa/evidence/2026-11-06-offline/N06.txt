@@ -1,0 +1,35 @@
+$ go test -count=1 -timeout 20m -v -run ^TestUpdateCheckSummarizesTheBaselinePreview$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/current
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/current
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/current
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+--- PASS: TestUpdateCheckSummarizesTheBaselinePreview (0.00s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/outside_repository (0.00s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/no_manifest (0.06s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/current (1.74s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing (1.76s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/plan_ready (1.76s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts (1.99s)
+PASS
+suiteguard: guard cost: measured 2997 paths; fingerprint took 149.443334ms before and 134.447042ms after
+ok  	roundfix/internal/cli	2.598s
+stderr:
+exit: 0

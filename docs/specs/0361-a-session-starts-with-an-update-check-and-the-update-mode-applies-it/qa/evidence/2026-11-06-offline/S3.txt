@@ -1,0 +1,51 @@
+Isolated git archive c9aabac005715afc9e0b75be7420a2a27ac0ff99
+$ git diff --no-ext-diff
+stdout:
+diff --git a/internal/cli/update_check.go b/internal/cli/update_check.go
+index 472b696..b4b8dfd 100644
+--- a/internal/cli/update_check.go
++++ b/internal/cli/update_check.go
+@@ -123,7 +123,7 @@ func buildUpdateCheckReport(ctx context.Context, homeDir, mode string, refresh b
+ 	path := filepath.Join(homeDir, ".roundfix", updateCheckCacheFile)
+ 	cache, ok := readUpdateCheckCache(path, now)
+ 	report.Lookup.Source = "cache"
+-	if refresh || !ok {
++	if !ok {
+ 		report.Lookup.Source = "network"
+ 		cache = updateCheckCache{SchemaVersion: updateCheckCacheSchema, CheckedAt: now, Releases: []app.Release{}}
+ 		lookupCtx, cancel := context.WithTimeout(ctx, updateCheckTimeout)
+stderr:
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestUpdateCheckReadsTheNetworkAtMostOncePerDay$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== NAME  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+    update_check_test.go:150: lookup = {Source:cache CheckedAt:2026-11-06T15:00:00Z Error:}
+--- FAIL: TestUpdateCheckReadsTheNetworkAtMostOncePerDay (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later (0.00s)
+    --- FAIL: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh (0.00s)
+FAIL
+suiteguard: guard cost: measured 2987 paths; fingerprint took 138.577708ms before and 127.128417ms after
+FAIL	roundfix/internal/cli	0.723s
+FAIL
+stderr:
+exit: 1
+Required failure: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+Setup succeeded: True
+Named failure observed: True

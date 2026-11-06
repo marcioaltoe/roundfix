@@ -1,0 +1,17 @@
+API 10 exact glossary Update Check: True
+API 10 exact glossary Skill Mode: True
+_prd.md adds Update Check: True
+_prd.md changes Skill Mode: True
+_techspec.md adds Update Check: True
+_techspec.md changes Skill Mode: True
+$ go test -count=1 -timeout 20m -v -tags docscontract -run ^TestGlossaryPhrasesAreDefinedTerms$ ./internal/docscontract
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.04s)
+PASS
+ok  	roundfix/internal/docscontract	0.626s
+stderr:
+exit: 0
+Explicit glossary PASS: True

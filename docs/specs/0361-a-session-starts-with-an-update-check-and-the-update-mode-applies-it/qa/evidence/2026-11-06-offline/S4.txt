@@ -1,0 +1,31 @@
+Isolated git archive c9aabac005715afc9e0b75be7420a2a27ac0ff99
+$ git diff --no-ext-diff
+stdout:
+diff --git a/internal/app/release.go b/internal/app/release.go
+index 36d8b88..f17a58e 100644
+--- a/internal/app/release.go
++++ b/internal/app/release.go
+@@ -94,7 +94,7 @@ func ListReleases(ctx context.Context) ([]Release, error) {
+ 	}
+ 	releases := make([]Release, 0, len(payload))
+ 	for _, item := range payload {
+-		if item.Draft || item.Prerelease {
++		if item.Prerelease {
+ 			continue
+ 		}
+ 		titles := []string{}
+stderr:
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases$ ./internal/app
+stdout:
+=== RUN   TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases
+    release_test.go:116: releases = []app.Release{app.Release{Version:"3.0.0", Titles:[]string{"Draft"}, URL:""}, app.Release{Version:"2.0.0", Titles:[]string{"First title", "Second title"}, URL:"https://github.test/v2.0.0"}, app.Release{Version:"1.10.0", Titles:[]string{"Middle title"}, URL:"https://github.test/v1.10.0"}, app.Release{Version:"1.8.0", Titles:[]string{}, URL:"https://github.test/v1.8.0"}}, want []app.Release{app.Release{Version:"2.0.0", Titles:[]string{"First title", "Second title"}, URL:"https://github.test/v2.0.0"}, app.Release{Version:"1.10.0", Titles:[]string{"Middle title"}, URL:"https://github.test/v1.10.0"}, app.Release{Version:"1.8.0", Titles:[]string{}, URL:"https://github.test/v1.8.0"}}
+--- FAIL: TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases (0.00s)
+FAIL
+FAIL	roundfix/internal/app	0.235s
+FAIL
+stderr:
+exit: 1
+Required failure: TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases
+Setup succeeded: True
+Named failure observed: True

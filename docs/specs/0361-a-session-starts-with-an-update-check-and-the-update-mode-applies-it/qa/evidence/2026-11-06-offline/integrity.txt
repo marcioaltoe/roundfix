@@ -1,0 +1,15 @@
+One report/frontmatter; 46 rows and matching typed-input headings; zero pending; seeded auditor fields and mechanical skips preserved; 47 local evidence links resolve; 49 UTF-8 files and none Git-ignored.
+Secret Pattern matches: 0
+$ ./bin/roundfix qa-report accept docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/qa/qa-report-2026-11-06.md
+stdout:
+stderr:
+exit: 0
+$ git diff --check
+stdout:
+stderr:
+exit: 0
+$ git status --short
+stdout:
+?? docs/specs/0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it/qa/
+stderr:
+exit: 0

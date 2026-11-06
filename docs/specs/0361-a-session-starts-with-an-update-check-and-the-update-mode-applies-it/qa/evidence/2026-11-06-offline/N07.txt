@@ -1,0 +1,47 @@
+$ go test -count=1 -timeout 20m -v -run ^TestUpdateCheckUsage$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckUsage
+=== PAUSE TestUpdateCheckUsage
+=== CONT  TestUpdateCheckUsage
+=== RUN   TestUpdateCheckUsage/bare_group
+=== PAUSE TestUpdateCheckUsage/bare_group
+=== RUN   TestUpdateCheckUsage/unknown_subcommand
+=== PAUSE TestUpdateCheckUsage/unknown_subcommand
+=== RUN   TestUpdateCheckUsage/unexpected_argument
+=== PAUSE TestUpdateCheckUsage/unexpected_argument
+=== RUN   TestUpdateCheckUsage/invalid_format
+=== PAUSE TestUpdateCheckUsage/invalid_format
+=== RUN   TestUpdateCheckUsage/invalid_configuration
+=== PAUSE TestUpdateCheckUsage/invalid_configuration
+=== RUN   TestUpdateCheckUsage/help
+=== PAUSE TestUpdateCheckUsage/help
+=== RUN   TestUpdateCheckUsage/group_help
+=== PAUSE TestUpdateCheckUsage/group_help
+=== RUN   TestUpdateCheckUsage/short_help
+=== PAUSE TestUpdateCheckUsage/short_help
+=== RUN   TestUpdateCheckUsage/short_group_help
+=== PAUSE TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/bare_group
+=== CONT  TestUpdateCheckUsage/help
+=== CONT  TestUpdateCheckUsage/short_help
+=== CONT  TestUpdateCheckUsage/invalid_format
+=== CONT  TestUpdateCheckUsage/group_help
+=== CONT  TestUpdateCheckUsage/unexpected_argument
+=== CONT  TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/invalid_configuration
+=== CONT  TestUpdateCheckUsage/unknown_subcommand
+--- PASS: TestUpdateCheckUsage (0.00s)
+    --- PASS: TestUpdateCheckUsage/help (0.00s)
+    --- PASS: TestUpdateCheckUsage/group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/bare_group (0.00s)
+    --- PASS: TestUpdateCheckUsage/unexpected_argument (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/unknown_subcommand (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_format (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_configuration (0.00s)
+PASS
+suiteguard: guard cost: measured 2998 paths; fingerprint took 138.472083ms before and 133.6585ms after
+ok  	roundfix/internal/cli	0.579s
+stderr:
+exit: 0

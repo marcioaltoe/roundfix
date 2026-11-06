@@ -1,0 +1,61 @@
+API 1 exact configuration guide row: True
+.agents/skills/roundfix API 8 exact five-step mode: True
+.agents/skills/roundfix SKILL follow-up`, `status`, `unattended` or `update`: True
+.agents/skills/roundfix SKILL --update: True
+.agents/skills/roundfix SKILL --follow-up`, `--status`, `--unattended` and `--update` Skill Modes: True
+.agents/skills/roundfix setup ## Update check: True
+.agents/skills/roundfix setup update.mode: True
+.agents/skills/roundfix setup 24 hours: True
+.agents/skills/roundfix setup Baseline: True
+.agents/skills/roundfix setup --refresh: True
+skills/roundfix API 8 exact five-step mode: True
+skills/roundfix SKILL follow-up`, `status`, `unattended` or `update`: True
+skills/roundfix SKILL --update: True
+skills/roundfix SKILL --follow-up`, `--status`, `--unattended` and `--update` Skill Modes: True
+skills/roundfix setup ## Update check: True
+skills/roundfix setup update.mode: True
+skills/roundfix setup 24 hours: True
+skills/roundfix setup Baseline: True
+skills/roundfix setup --refresh: True
+Mirror bytes SKILL.md: True
+Mirror bytes references/setup.md: True
+Mirror bytes references/modes.md: True
+API 9 exact module guidance: True
+API 9 mandatory, no replaces, rule version 2: True
+API 9 guide exact once: True
+SEARCH commands.md
+46: | `update` | [command guide](commands/update.md) |
+113: edits, tests, verification commands, and assigned status updates. They must
+Guide commands.md names update: True
+SEARCH commands/update.md
+1: ### update check
+4: roundfix update check [--refresh] [--format <text|json>]
+7: The read-only Update Check compares the installed Roundfix with the latest
+13: It is shared across repositories through `~/.roundfix/update-check.json` for
+19: `update.mode` in Project Config overrides User Config: `notify` is the default,
+20: and `auto` asks the session to apply the update through the Roundfix skill's
+21: `--update` mode. The command reports the mode and applies nothing itself.
+26: Roundfix <installed> → <latest> is available (update.mode <mode>).
+27: Roundfix <installed> is current (latest release <latest>; update.mode <mode>).
+29: Roundfix <installed> is a development build; no release comparison (update.mode <mode>).
+50: check runs `roundfix baseline update --repo <git root> --format json` in
+71: Next: apply it with the Roundfix skill's --update mode; update.mode notify applies nothing on its own.
+72: Next: update.mode auto: apply it now with the Roundfix skill's --update mode.
+75: With `--format json`, standard output is one `roundfix/update-check/v1`
+80: | `schemaVersion` | `roundfix/update-check/v1` |
+81: | `mode` | Effective `update.mode`: `notify` or `auto` |
+83: | `state` | `update_available`, `current`, `unknown`, or `development` |
+94: A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.
+Guide commands/update.md names update: True
+SEARCH configuration.md
+448: | `update.mode` | `notify` | Selects what a session does with the report of `roundfix update check`: `notify` reports a newer release and this repository's Baseline plan and applies nothing; `auto` asks the session to apply them through the Roundfix skill's `--update` mode before its first task. Accepted in User and Project Config, with Project Config winning. |
+744: apply), and the history plan of `baseline update` read it as empty.
+Guide configuration.md names update: True
+SEARCH usage.md
+29:    update command and exits `1`. Doctor is offline and read-only: it never
+30:    updates or deletes skills, and it ignores unrelated extra installed skills
+384: names the check. Update a covering skill or record a Coverage Review in
+766: Task contract in the skill: it edits only assigned issue files, updates only
+903: | `update check` | Report a newer release and this repository's Baseline plan (read-only) |
+Guide usage.md names update: True
+ADR-0371 accepted: True

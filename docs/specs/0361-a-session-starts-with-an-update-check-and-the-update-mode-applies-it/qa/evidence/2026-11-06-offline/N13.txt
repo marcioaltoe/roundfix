@@ -1,0 +1,11 @@
+$ go test -count=1 -timeout 20m -v -run ^TestBaselineClauseForceIsCharacterized$ ./internal/baseline
+stdout:
+=== RUN   TestBaselineClauseForceIsCharacterized
+=== PAUSE TestBaselineClauseForceIsCharacterized
+=== CONT  TestBaselineClauseForceIsCharacterized
+--- PASS: TestBaselineClauseForceIsCharacterized (0.02s)
+PASS
+suiteguard: guard cost: measured 3004 paths; fingerprint took 148.176042ms before and 133.682166ms after
+ok  	roundfix/internal/baseline	0.470s
+stderr:
+exit: 0

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

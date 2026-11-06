@@ -1,0 +1,29 @@
+$ ./bin/roundfix update
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  expected subcommand "check"
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix update --help' for usage.
+exit: 2
+
+Expected stdout:
+Expected stderr:
+Preflight failed
+
+Reason:
+  expected subcommand "check"
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix update --help' for usage.
+Expected exit: 2
+Full matching result: True

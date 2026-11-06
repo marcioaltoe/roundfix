@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m -v -run ^TestListReleasesMapsGitHub404ToNoReleases$ ./internal/app
+stdout:
+=== RUN   TestListReleasesMapsGitHub404ToNoReleases
+=== RUN   TestListReleasesMapsGitHub404ToNoReleases/404
+=== RUN   TestListReleasesMapsGitHub404ToNoReleases/empty
+=== RUN   TestListReleasesMapsGitHub404ToNoReleases/only_unpublished
+--- PASS: TestListReleasesMapsGitHub404ToNoReleases (0.00s)
+    --- PASS: TestListReleasesMapsGitHub404ToNoReleases/404 (0.00s)
+    --- PASS: TestListReleasesMapsGitHub404ToNoReleases/empty (0.00s)
+    --- PASS: TestListReleasesMapsGitHub404ToNoReleases/only_unpublished (0.00s)
+PASS
+ok  	roundfix/internal/app	0.078s
+stderr:
+exit: 0

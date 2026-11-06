@@ -1,0 +1,6 @@
+make build: exit 0
+Cache bound warned above bound with no idle entries; build continued.
+roundfix 0.136.3 (c9aabac0-dirty, built 2026-11-06 19:42:23 -0300)
+./bin/roundfix spec check 0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it --strict: exit 0
+No findings. Authored Verification commands were not executed.
+make verify-changed: Daemon supplied pass (exit 0); diagnostics removed on success. Not rerun.

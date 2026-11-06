@@ -1,0 +1,50 @@
+Isolated git archive c9aabac005715afc9e0b75be7420a2a27ac0ff99
+$ git diff --no-ext-diff
+stdout:
+diff --git a/internal/cli/update_check.go b/internal/cli/update_check.go
+index 472b696..9c7d7a4 100644
+--- a/internal/cli/update_check.go
++++ b/internal/cli/update_check.go
+@@ -141,7 +141,7 @@ func buildUpdateCheckReport(ctx context.Context, homeDir, mode string, refresh b
+ 		} else {
+ 			cache.Releases = releases
+ 		}
+-		writeUpdateCheckCache(path, cache)
++		if err == nil { writeUpdateCheckCache(path, cache) }
+ 	}
+ 	report.Lookup.CheckedAt = cache.CheckedAt.Format(time.RFC3339)
+ 	report.Lookup.Error = cache.Error
+stderr:
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestUpdateCheckReadsTheNetworkAtMostOncePerDay$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+    update_check_test.go:128: open /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckReadsTheNetworkAtMostOncePerDayfailed_lookup533542145/001/.roundfix/update-check.json: no such file or directory
+--- FAIL: TestUpdateCheckReadsTheNetworkAtMostOncePerDay (0.00s)
+    --- FAIL: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh (0.00s)
+FAIL
+suiteguard: guard cost: measured 2987 paths; fingerprint took 145.697458ms before and 130.450959ms after
+FAIL	roundfix/internal/cli	0.745s
+FAIL
+stderr:
+exit: 1
+Required failure: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+Setup succeeded: True
+Named failure observed: True

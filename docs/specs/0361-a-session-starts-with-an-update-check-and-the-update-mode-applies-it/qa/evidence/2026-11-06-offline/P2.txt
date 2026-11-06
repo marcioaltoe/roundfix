@@ -1,0 +1,5 @@
+$ go test -count=1 -timeout 20m ./internal/app
+stdout:
+ok  	roundfix/internal/app	0.097s
+stderr:
+exit: 0
