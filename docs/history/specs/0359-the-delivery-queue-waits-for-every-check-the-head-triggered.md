@@ -28,9 +28,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "771"
 type: fix
 ---
 
 # The Delivery Queue waits for every check the head triggered
 
-The local checking-stage replay now waits for unregistered workflow jobs and missing Expected Workflows, names failed members and their links, and exposes pending members in the console log and status. All runnable rows passed, including the seven sabotage probes and the exact public CLI transcript. The released Fluxus journey remains unproven under its pre-run declaration, and the Pull Request journey awaits publication, so this report records a qualifying declared partial. Durable knowledge is already recorded in accepted ADR-0369, the glossary and the guides. The offline archive preview exited 0, skipped the judge, and listed the two adopted Fluxus reports as candidates; both are incident evidence already distilled into ADR-0369, so neither needs promotion.
+The local checking-stage replay now waits for unregistered workflow jobs and missing Expected Workflows, names failed members and their links, and exposes pending members in the console log and status. All runnable rows passed, including the seven sabotage probes and the exact public CLI transcript. The released Fluxus journey remains unproven under its pre-run declaration, and the Pull Request journey awaits publication, so this report records a qualifying declared partial. Durable knowledge is already recorded in accepted ADR-0369, the glossary and the guides.
