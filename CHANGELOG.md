@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.134.0] - 2026-11-05
+
+### A queue item shows its turn, and the pre-PR review gets its own capacity
+
+- **`roundfix deliver status` prints one `Turn:` line per item that is neither merged nor parked**, from the live owner's Turn Record: `advancing at <stage>`, `reviewing; <held> of <capacity> review slot(s) held`, `waiting for a review slot (<n> of <m> waiting)`, `waiting for prerequisites: <slugs>`, `waiting for the owner's turn (<n> of <m> waiting)` or `waiting for the owner to read it`. A stage keeps its meaning, the next step; the `Turn:` line says whether it runs or waits. Before, an item at `reviewing` looked like a running review while it waited for another item's whole delivery (reported by fiscus; ADR-0365).
+- **The pre-PR review runs in review slots beside the owner's item.** Up to `delivery.review_concurrency` reviews (User Config, default `2`, at least `1`; ignored with a warning in Project Config) run in read-only sessions on their own item worktrees, and a poller hands retried items at `reviewing` to the slots every 30 seconds. Order is kept: a queued item starts only when no earlier item is between its Implement Run and its merge; archive, gate, publication, check wait and merge stay one item at a time.
+- **The `Limits:` line names the review concurrency**: `concurrency 1, review concurrency <n>`. A script that matches the whole line sees the new field.
+
 ## [0.133.1] - 2026-11-05
 
 ### A main merge is a review delta, and a segment is measured from its Effective Base
