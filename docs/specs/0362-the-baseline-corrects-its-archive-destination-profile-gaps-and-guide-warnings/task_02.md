@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -138,3 +138,65 @@ It answers the message reported by sql-library
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contracts 2-5; Surface Transcript 1; Surface Transcript 2; Interfaces; Testing Approach; Build Order 2
 - ADR-0372
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, systematic-debugging, no-workarounds, testing-boss, tech-writer, evidence-gate.
+
+Implemented the profile decision gap helper and the plan and validate consumers.
+The helper computes transitive decision reachability without evaluating `when`,
+excludes optional decisions and replaceable templates, deduplicates bindings,
+and orders gaps by decision, template and artifact. The message and repair name
+the template, the portable profile path, the quoted entries and the flags.
+
+The shared plan branch checks after recorded decisions, flags and normalization,
+before rendering or the general missing-decision outcome. It filters normalized
+values and the existing artifact render defaults through `artifactRenderValues`;
+this preserves backend Profile Adaptations whose omitted authentication and HTTP
+tokens already render as empty strings. Validation checks every resolved profile
+after converting its path, including discovery and explicit-path input. Update
+uses its existing BuildPlan outcome mapping; no update or persisted schema changed.
+
+Acceptance evidence from focused checks:
+
+- Built-in profiles: `TestNoBuiltInProfileHasADecisionGap` and
+  `TestAProfileWithoutTheIncrementalDecisionHasOneGap` passed for every embedded
+  profile. Additional unit checks cover conditional transitive reachability,
+  cycles, optional decisions, duplicate bindings, template alternatives, root
+  blocks, ordering, suggestion/default precedence and absent suggestions.
+- Refusal and no writes: `TestBuildPlanRefusesAProfileDecisionGapBeforeRendering`,
+  `TestBaselineProfileValidateNamesADecisionGap`,
+  `TestBaselinePlanRefusesAProfileDecisionGap` and
+  `TestBaselineUpdateRefusesAProfileDecisionGap` passed. The CLI checks compare the
+  complete transcript streams and exit codes (2 for validate, 3 for plan/update),
+  JSON messages/category/nextAction, and repository tree snapshots before and after.
+  Transcript 2 passes the absolute temporary repository to `--repo` instead of
+  changing the process directory, preserving parallel test isolation; its output
+  is byte-identical to the authored transcript.
+- Listed decision: `TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt`
+  passed with exit 3 and exactly `verification.incremental` in `newDecisions`,
+  with unchanged repository bytes.
+- Compatibility: all six named baseline Profile Adaptation/Profile Draft checks,
+  all three named CLI adaptation checks, both existing profile-command checks,
+  and `TestBaselineUpdateNamesTheMissingIncrementalDecision` passed unchanged.
+
+Focused commands (all final runs exited 0):
+
+```sh
+rtk proxy go test ./internal/baseline -run '^(TestNoBuiltInProfileHasADecisionGap|TestAProfileWithoutTheIncrementalDecisionHasOneGap|TestProfileDecisionGap.*|TestBuildPlanRefusesAProfileDecisionGapBeforeRendering|TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities|TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs|TestProfileDraftPlanIncludesCanonicalRepositoryProfile|TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition|TestProfileDraftStaleTargetProducesNoMutation|TestProfileDraftRollbackRestoresMissingProfile)$' -count=1 -timeout=3m
+rtk proxy go test ./internal/cli -run '^(TestBaselineProfileValidateNamesADecisionGap|TestBaselinePlanRefusesAProfileDecisionGap|TestBaselineUpdateRefusesAProfileDecisionGap|TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt|TestBaselineProfileCommandInitShowAndValidate|TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles|TestBaselineUpdateNamesTheMissingIncrementalDecision|TestBaselineHumanProfileAdaptation|TestProfileAdaptationJourney|TestBaselinePlanProfileFile)$' -count=1 -timeout=3m
+rtk proxy go test ./internal/baseline -run '^TestProfileDecisionGap' -count=1 -timeout=3m
+rtk proxy git diff --check
+```
+
+The last baseline command also exercised the ordering/suggestion and existing
+render-value assertions added after the combined compatibility run. Before the
+consumer changes, the focused CLI probe reproduced validation reporting the gap
+profile valid and update failing with the missing render token error.
+
+`gofmt` was applied to the five changed Go files. Initial Git status contained
+only this Task file's Daemon-owned `in_progress` transition; that status is
+preserved. No other Task, Task Graph, catalog asset, guide or skill was edited.
+Declared Verification, the full suites and repository Verification were not run;
+they remain Daemon-owned. No commit, push or pull request was made.

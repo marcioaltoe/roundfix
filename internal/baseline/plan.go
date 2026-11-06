@@ -332,6 +332,16 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	var remaining []ProfileDecisionGap
+	for _, gap := range ProfileDecisionGaps(profile, catalog) {
+		if !profileDecisionGapHasRenderValue(gap, decisions, catalog) {
+			remaining = append(remaining, gap)
+		}
+	}
+	if len(remaining) != 0 {
+		return actionOutcome("decision", ProfileDecisionGapMessage(profile, remaining),
+			ProfileDecisionGapRepair(profile, remaining, "rerun with"), initial.Snapshot.Warnings), nil
+	}
 	parts := []string{}
 	nextAction := "answer every named decision with --decision or --decision-file and rerun"
 	if len(missing) != 0 {
