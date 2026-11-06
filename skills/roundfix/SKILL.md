@@ -1,14 +1,14 @@
 ---
 name: roundfix
-description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, run its `--follow-up`, `--status` and `--unattended` Skill Modes, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix for release planning, CodeRabbit feedback, runtime readiness, Spec Task Graphs, Run monitoring, storage GC, completed Spec archival, its `--follow-up`, `--status`, `--unattended` and `--update` Skill Modes, and daemon-assigned Batch resolution.
 metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.201
+  version: 0.1.203
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.201
+version: 0.1.203
 ---
 
 # Roundfix
@@ -22,11 +22,12 @@ Supervisor or script needs JSONL progress for one explicit Run.
 
 ## Modes
 
-A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status` or `unattended`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes.
+A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status`, `unattended` or `update`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes.
 
 - `--follow-up`: take the project's handoff, inventory pending work, plan, gather decisions, author and deliver the resulting work, and leave no handed-in message pending. The mode names where each listed Finding and Backlog Entry went.
 - `--status`: run a short read-only status report that accepts no handoff and consumes no message.
 - `--unattended`: gather every decision in calls of up to three questions.
+- `--update`: run the Update Check, show what a newer Roundfix and this repository's Baseline plan change, and apply them, asking before a step that deletes files.
 
 Read [Skill Modes](references/modes.md) before running a mode.
 
@@ -78,7 +79,7 @@ covers a topic that spans commands and owns none.
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
 | [implement](references/implement.md) | `implement` | Starting a Spec Run. |
-| [modes](references/modes.md) | — (the `--follow-up`, `--status` and `--unattended` Skill Modes; each command they run lives in its own reference) | Running a Skill Mode. |
+| [modes](references/modes.md) | — (the `--follow-up`, `--status`, `--unattended` and `--update` Skill Modes; each command they run lives in its own reference) | Running a Skill Mode. |
 | [profiles](references/profiles.md) | `profiles` | Selecting an Agent or managing Agent Selection Profiles. |
 | [reconcile](references/reconcile.md) | `reconcile` | Reconciling Run Worktrees. |
 | [release](references/release.md) | `release` | Planning a release. |

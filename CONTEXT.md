@@ -1512,7 +1512,7 @@ The external Claude Code role that authors Specs, starts and monitors Runs, and 
 _Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 
 **Skill Mode**:
-A way of running the Roundfix skill that the user's request selects with the first word after the skill's name, `follow-up`, `status` or `unattended`, with or without a leading `--`; the skill reads it from the request text in every harness, it is not the CLI command `roundfix follow-up`, and a request whose first word names no mode uses the skill as before. [ADR-0320](docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md)
+A way of running the Roundfix skill that the user's request selects with the first word after the skill's name, `follow-up`, `status`, `unattended` or `update`, with or without a leading `--`; the skill reads it from the request text in every harness, it is not the CLI command `roundfix follow-up`, and a request whose first word names no mode uses the skill as before ([ADR-0320](docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md)). The `update` mode runs the Update Check, upgrades the binary and applies the Baseline plan it showed by its Plan Digest, asking before a step that deletes files ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md)).
 _Avoid_: Command flag, CLI mode, Follow Mode
 
 **Follow Mode**:

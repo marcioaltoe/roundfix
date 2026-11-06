@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -101,3 +101,26 @@ say so.
 - `_prd.md` → Goal 3; Core Feature 3; Core Feature 5; Success Metric 5; Success Metric 7; Glossary
 - `_techspec.md` → Current behavior 6; API Contract 8; API Contract 10; Declared breaks; Testing Approach; Build Order 3
 - ADR-0371; ADR-0320
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, testing-boss, golang-testing, coding-guidelines, evidence-gate, systematic-debugging
+
+Implemented the fourth `update` Skill Mode in the canonical Roundfix skill and its `modes` reference, including the exact check, upgrade, preview, Plan Digest confirmation, deletion/uncommitted-change questions, and no-commit contract. Updated the mode contract tests for both layouts and changed the `CONTEXT.md` **Skill Mode** definition to include `update` and its Plan Digest behavior. After Verification feedback identified the 20,151-byte skill entry budget failure, shortened only the free-form frontmatter description while preserving the required mode names and contract text.
+
+Focused checks:
+
+- `make skills-sync`: passed after the budget repair; the mirror was generated from the canonical files.
+- `go test -count=1 ./skills -run '^TestRoundfixSkillEntryFileStaysWithinItsBudget$'`: passed, covering both layouts (3 passed in 1 package).
+- `go test -count=1 ./skills -run '^TestTheRoundfixSkillReadsItsModeFromTheRequest$'`: passed, covering both layouts (3 passed in 1 package).
+- `go test -count=1 ./skills -run '^TestTheUpdateModeAppliesOnlyThePlanItShowed$'`: passed, covering both layouts (3 passed in 1 package).
+- `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` and the corresponding `modes.md` copies: passed.
+- `git diff --check`: passed.
+
+Acceptance evidence:
+
+- `update` and `--update` are named by the canonical Modes paragraph, the mode bullet, the modes index row, the `How a mode is chosen` reference, and the focused contract test.
+- `TestTheUpdateModeAppliesOnlyThePlanItShowed` asserts the opening guard, five ordered items, all required commands and safety phrases for both layouts.
+- Canonical and mirror skill files match, the contract test pins the shared wording, and `CONTEXT.md` carries the API Contract 10 glossary text.
+
+The Daemon-owned `## Verification` commands were not rerun; the failure was the skill byte-budget check in the suite. The owned-skill version recorder is rerun as the final repair step after this Result update; Daemon Verification and Task settlement remain pending.
