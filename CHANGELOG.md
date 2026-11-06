@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.136.0] - 2026-11-06
+
+### A numbered-file collision between queued Specs parks before the Run
+
+- **Project Config gains `delivery.numbered_files`**, a list of path patterns in the `delivery.derived_paths` path grammar, empty (off) by default: files a repository numbers in sequence, such as `drizzle/*.sql` and `drizzle/meta/*_snapshot.json`. A matching file whose name starts with digits is a Numbered File. The queue reads the list from the fetched default-branch commit, with User Config beneath it.
+- **Delivery Revalidation parks an item whose Numbered File collides** before its first Run, and a retry of an item that has not run refuses while it collides: two files in the same directory with the same number, one added by the item (on its branch or declared by a pending Task's `creates:`) and one on the default branch or added by an earlier item still in the queue. The park is `numbered-file-collision`, in the `conflict` Park Class, and names each pair, the other item and the next free number. Before, queued Specs that each generated a migration from the same main collided at merge time and were renumbered by hand (reported by fiscus; ADR-0367). The queue does not renumber.
+- **A `watch.push_remote` that starts with `-` is refused at configuration load**, because Roundfix passes it to `git fetch` as a remote; a value such as `--upload-pack=<cmd>` would otherwise be read as a Git option.
+
 ## [0.135.0] - 2026-11-06
 
 ### A large authored data file is reviewed apart, not omitted
