@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -147,3 +147,112 @@ notice, and the setup manifest is regenerated after the Makefile change.
 - `_techspec.md` → Current behavior 1 and 2; Interfaces; API Contracts 1-3; API Contract 8; Invariants 1-3; Declared breaks; Testing Approach; Build Order 1
 - ADR-0370; ADR-0327
 - Source: [`references/2026-11-06-the-repository-build-cache-stays-within-a-size-bound.md`](references/2026-11-06-the-repository-build-cache-stays-within-a-size-bound.md) (2026-11-06) and [`references/2026-11-05-the-roundfix-build-cache-fills-the-mac-mini-internal-disk.md`](references/2026-11-05-the-roundfix-build-cache-fills-the-mac-mini-internal-disk.md) (2026-11-05)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-safety, golang-testing, testing-boss, crafting-effective-readmes, domain-modeling, tech-writer, evidence-gate, setup-context-driven, roundfix, systematic-debugging, no-workarounds.
+
+Implemented the Build Cache Bound through the existing `MeasureContext` and
+`ApplyContext` engine under one thirty-second context. The thin command validates
+its flags, reports removals and warnings on stderr, and preserves the build on
+runtime errors. The Makefile adds only the specified variables, prerequisite
+and fail-open recipe; the Project Config now declares 10240 MiB and two hours.
+The README, repository rule, glossary term and ADR-0327 amendment use the authored
+words and links. Task status and other Task files remain untouched.
+
+Focused evidence (every Agent-run Go command used the disposable
+`GOCACHE=/tmp/roundfix0360-nsx2q32o/gocache`, `GOPROXY=off`, `GOSUMDB=off`):
+
+- Criterion 1: the initial focused compile reported `undefined:
+  sharedcache.BoundMain`. After implementation,
+  `go test ./internal/sharedcache -run '^TestBoundMain' -count=1` exited 0.
+  The five cache rows assert exact output and surviving files: within bound,
+  idle entries removed, no idle entry, no cache README, and oldest-first
+  selection that stops with eligible entries left. Invalid-request rows assert
+  one exact stderr line, exit 2 and no measurement. A synthetic-time budget
+  test asserts the exact thirty-second warning and unchanged cache files.
+- Criteria 2 and 3:
+  `go test ./internal/verifyselect -run 'TestMakeBounds|TestMakeShares|TestVerifyDocsRuns|TestTheSkillsBump' -count=1`
+  exited 0. The nine new Makefile rows assert complete argument lists and
+  exact stderr, including `make vet test` running the bound once, the fallback,
+  skipped sub-make/explicit cache/zero bound, explicit opt-in, idle override,
+  and a bound failure followed by a successful test invocation and make exit 0.
+  Existing cache-sharing and documentation-contract count checks also pass.
+- Criterion 4: `.roundfixrc.yml` declares `max_size_mb: 10240` and `idle: 2h`.
+  As the final implementation step after the last Makefile edit,
+  `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  exited 0 and updated only `docs/agents/setup-context.json`; the second run
+  exited 0 with `File changes: 0` and `Idempotence: verified`. The manifest
+  diff changes only its two Makefile declaration digests. Both invocations
+  used a disposable HOME while retaining the existing module cache for offline
+  dependency reads. The two existing nested-carrier fixture warnings remained
+  unchanged; repository Verification was not run by the generator.
+- Criterion 5:
+  `go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1`
+  exited 0. A Python comparison against `HEAD` confirmed every pre-existing
+  Makefile recipe is byte-identical after removing only the authorized
+  additions, and ADR-0327 differs only by its timestamp and amendment.
+- Host and Windows builds of `./cmd/gocache-bound` with `-buildvcs=false` and
+  outputs under the disposable directory exited 0. Formatting inspection and
+  `git diff --check` passed.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon's `verification/batch-001-attempt-1.log`. Its failures
+identify the two other invocation-pinning tests anticipated in the earlier
+scope note: `TestVerifyContractsRunsEveryContract` and
+`TestVerifyChangedRunsTheSelectedContracts`. The Makefile now correctly runs
+the bound first, but their expectations still listed only contract-test calls;
+their inherited environment also made this observable only when `GOCACHE`
+was unset. No diagnostic log body is copied here.
+
+Following requirement 6 and the feedback's direction to repair this Task's
+consumers, updated `internal/verifyselect/full_contract_run_test.go` and
+`internal/verifyselect/contracts_repository_test.go`. Each child make now has
+an isolated environment containing only PATH and disposable TMPDIR/HOME paths,
+so it always exercises the default cache choice. The complete recorded-call
+assertions now require exactly one bound invocation followed by the original
+expected calls. Selector errors, empty selections, failure ordering and
+recursive make behavior keep their original assertions. These are the only
+two additional source files changed in this repair.
+
+Focused repair evidence:
+
+- With the disposable Go cache and offline dependency settings above,
+  `go test -c -o /tmp/roundfix0360-nsx2q32o/verifyselect.test ./internal/verifyselect`
+  exited 0.
+- From `internal/verifyselect`,
+  `env -u GOCACHE TMPDIR=/tmp/roundfix0360-nsx2q32o/probe /tmp/roundfix0360-nsx2q32o/verifyselect.test -test.run '^(TestVerifyContractsRunsEveryContract|TestVerifyChangedRunsTheSelectedContracts)$' -test.v`
+  exited 0. Both named tests and all twelve rows passed with the caller's
+  GOCACHE unset; every exercised cache path was disposable and every Go
+  invocation from make used a recording stub.
+- `gofmt` was applied only to the two repaired test files, and
+  `git diff --check` exited 0. No production code or Makefile byte changed
+  during the repair.
+
+The Task's declared Verification commands, repository Verification and full
+suites were not run by this Agent; the Daemon's attempt-1 failure above is
+recorded separately from focused evidence. Task status, the Task Graph and
+other Task files remain unchanged. No real cache was inspected or trimmed,
+no `go clean -cache` was run, and no commit, push or PR was made.
+
+Final repair postflight: sixteen changed files, consisting of the original
+fourteen paths and the two affected invocation-test consumers required by
+requirement 6. No other paths changed. The required Managed Refresh command
+was run twice again as the last implementation step; both runs exited 0 with
+`File changes: 0` and `Idempotence: verified`. No manifest or Makefile change
+was necessary for the test-only repair. The same two existing nested-carrier
+fixture warnings remained unchanged. Final `git diff --check` exited 0.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/verifyselect/build_cache_makefile_test.go`
+- `internal/verifyselect/contracts_repository_test.go`
+- `internal/verifyselect/full_contract_run_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261106T124109Z_e8f1e2ec3796cc65`
+- Source commit: `5d72f75423ae2516d6b52813acd4cfa74af07b21`

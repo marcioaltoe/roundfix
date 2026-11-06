@@ -1247,6 +1247,10 @@ first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md),
 [ADR-0334](docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md)).
 _Avoid_: global cache, Go cache cleanup, cache GC
 
+**Build Cache Bound**:
+The size, 10,240 MiB by default, to which this repository's Makefile holds the Go build cache it chose before each top-level make that builds or tests, removing with the Shared Build Cache rules only entries no build used for two hours; the cache stays above it while its entries are younger ([ADR-0370](docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md)).
+_Avoid_: cache limit, cache cleanup, gocache trim
+
 **Item Binary**:
 A copy of the Roundfix binary built by a Delivery Queue item for its own steps, retained while that item exists and is not merged. Its copies become reclaimable at merged release and through the GC Command when the item is merged or no longer queued ([ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)).
 _Avoid_: owner binary, shared binary

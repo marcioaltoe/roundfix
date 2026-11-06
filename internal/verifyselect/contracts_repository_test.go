@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode"
@@ -269,6 +270,9 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			}
 			command := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "verify-changed-contracts", "VERIFY_BASE=fixture-base", "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"))
 			command.Dir = dir
+			// Exercise the default bound with only disposable cache and home paths.
+			command.Env = []string{"PATH=" + os.Getenv("PATH"), "TMPDIR=" + dir, "HOME=" + dir}
+			bound := "run -buildvcs=false ./cmd/gocache-bound -dir " + filepath.Join(dir, "roundfix-go-build-"+strconv.Itoa(os.Getuid())) + " -max-mb 10240 -idle 2h\n"
 			output, err := command.CombinedOutput()
 			if (err != nil) != scenario.wantFailure {
 				t.Fatalf("make error = %v, want failure %t\n%s", err, scenario.wantFailure, output)
@@ -277,8 +281,8 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(calls) != scenario.want {
-				t.Fatalf("go invocations = %q, want %q\n%s", calls, scenario.want, output)
+			if want := bound + scenario.want; string(calls) != want {
+				t.Fatalf("go invocations = %q, want %q\n%s", calls, want, output)
 			}
 		})
 	}
@@ -306,6 +310,9 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			writeFile(t, dir, "prerequisites.mk", "fmt-check: ;\nvet: ;\nbuild: ;\n")
 			command := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "-f", filepath.Join(dir, "prerequisites.mk"), "verify-changed", "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"), "MAKE=make --no-print-directory -f "+makefile)
 			command.Dir = dir
+			// Exercise the default bound with only disposable cache and home paths.
+			command.Env = []string{"PATH=" + os.Getenv("PATH"), "TMPDIR=" + dir, "HOME=" + dir}
+			bound := "run -buildvcs=false ./cmd/gocache-bound -dir " + filepath.Join(dir, "roundfix-go-build-"+strconv.Itoa(os.Getuid())) + " -max-mb 10240 -idle 2h\n"
 			output, err := command.CombinedOutput()
 			if (err != nil) != fail {
 				t.Fatalf("make verify-changed error = %v, want failure %t\n%s", err, fail, output)
@@ -314,8 +321,8 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(calls) != first {
-				t.Fatalf("go invocations = %q, want %q\n%s", calls, first, output)
+			if want := bound + first; string(calls) != want {
+				t.Fatalf("go invocations = %q, want %q\n%s", calls, want, output)
 			}
 		})
 	}

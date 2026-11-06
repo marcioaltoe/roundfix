@@ -51,9 +51,11 @@ func TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			var docs, builds, repo, budget, spec int
+			var docs, builds, repo, budget, spec, bound int
 			for _, line := range strings.Split(strings.TrimSpace(string(calls)), "\n") {
 				switch {
+				case strings.HasPrefix(line, "run -buildvcs=false ./cmd/gocache-bound "):
+					bound++
 				case strings.HasPrefix(line, "build "):
 					builds++
 				case strings.HasPrefix(line, "test ") && strings.Contains(line, "./internal/docscontract"):
@@ -70,8 +72,8 @@ func TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped(t *testing.T) 
 					t.Errorf("unexpected invocation %q", line)
 				}
 			}
-			if docs != scenario.wantDocs || builds != 1 || repo != 1 || budget != 1 || spec != 1 {
-				t.Fatalf("invocations: docs=%d build=%d repo=%d budget=%d spec=%d; want %d/1/1/1/1\n%s", docs, builds, repo, budget, spec, scenario.wantDocs, calls)
+			if docs != scenario.wantDocs || builds != 1 || repo != 1 || budget != 1 || spec != 1 || bound != 1 {
+				t.Fatalf("invocations: docs=%d build=%d repo=%d budget=%d spec=%d bound=%d; want %d/1/1/1/1/1\n%s", docs, builds, repo, budget, spec, bound, scenario.wantDocs, calls)
 			}
 			if got := strings.Contains(string(output), skipMessage); got != scenario.skip {
 				t.Errorf("skip message present = %t, want %t\n%s", got, scenario.skip, output)

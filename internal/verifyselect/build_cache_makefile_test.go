@@ -29,6 +29,9 @@ import (
 	"os"
 )
 func main() {
+	if len(os.Args) > 3 && os.Args[1] == "run" && os.Args[3] == "./cmd/gocache-bound" {
+		return
+	}
 	if len(os.Args) < 2 || os.Args[1] != "test" {
 		os.Exit(2)
 	}
@@ -42,7 +45,7 @@ func main() {
 	for _, entry := range os.Environ() {
 		key, _, _ := strings.Cut(entry, "=")
 		switch key {
-		case "GOCACHE", "TMPDIR", "MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES", "ROUNDFIX_BUILD_CACHE_RECORD":
+		case "GOCACHE", "TMPDIR", "MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES", "MAKELEVEL", "GOCACHE_BOUND_MB", "GOCACHE_BOUND_IDLE", "ROUNDFIX_BUILD_CACHE_RECORD":
 			continue
 		}
 		environment = append(environment, entry)

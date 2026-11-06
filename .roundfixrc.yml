@@ -205,12 +205,12 @@ worktree:
   # Rebuildable output in ended worktrees, reported by Doctor and reclaimed by GC.
   caches:
     - .gocache
-  # The Makefile's shared Go build cache, trimmed by GC above its limit.
+  # The Makefile holds the same shared Go build cache to the same bound as GC.
   shared_caches:
     - path: "{tmpdir}/roundfix-go-build-{uid}"
       kind: go-build
-      max_size_mb: 20480
-      idle: 4h
+      max_size_mb: 10240
+      idle: 2h
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
   location: "~/.roundfix/worktrees"
   # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.

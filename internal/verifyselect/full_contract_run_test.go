@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -50,6 +51,9 @@ func TestVerifyContractsRunsEveryContract(t *testing.T) {
 			}
 			command := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "verify-contracts", "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"))
 			command.Dir = dir
+			// Exercise the default bound with only disposable cache and home paths.
+			command.Env = []string{"PATH=" + os.Getenv("PATH"), "TMPDIR=" + dir, "HOME=" + dir}
+			bound := "run -buildvcs=false ./cmd/gocache-bound -dir " + filepath.Join(dir, "roundfix-go-build-"+strconv.Itoa(os.Getuid())) + " -max-mb 10240 -idle 2h\n"
 			output, err := command.CombinedOutput()
 			if (err != nil) != scenario.wantFailure {
 				t.Fatalf("make error = %v, want failure %t\n%s", err, scenario.wantFailure, output)
@@ -58,8 +62,8 @@ func TestVerifyContractsRunsEveryContract(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(calls) != scenario.want {
-				t.Fatalf("go invocations = %q, want %q\n%s", calls, scenario.want, output)
+			if want := bound + scenario.want; string(calls) != want {
+				t.Fatalf("go invocations = %q, want %q\n%s", calls, want, output)
 			}
 		})
 	}

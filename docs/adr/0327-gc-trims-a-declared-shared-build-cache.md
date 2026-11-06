@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-24T12:00:00Z
-updated_at: 2026-10-24T12:00:00Z
+updated_at: 2026-11-06T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -42,6 +42,8 @@ removing it. It refuses a path that is a symbolic link or whose directory
 lacks the go command's cache README, and it never removes a file that is not
 a cache entry: a name of 64 hexadecimal digits and `-a` or `-d`, inside a
 two-digit shard directory.
+
+**Amended by [ADR-0370](0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md) (2026-11-06).** This repository's Makefile also applies these rules to the cache it chooses, before each top-level make that builds or tests, as the Build Cache Bound: the Makefile target this record's first Considered Option rejected now runs beside the product's trim, which adopters keep. Emptying the cache stays rejected.
 
 ## Considered Options
 
