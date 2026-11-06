@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-06
-spec: null
+spec: 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named
 reason: null
 ---
 
