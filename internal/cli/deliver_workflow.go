@@ -78,6 +78,7 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
 		Reviewer:       workflow,
 		Recorder:       workflow,
 		Archiver:       workflow,
+		FreeSpace:      commandFreeSpaceChecker{loaded: loaded},
 		Gate:           workflow,
 		Authorizer:     workflow,
 		Publication:    workflow,

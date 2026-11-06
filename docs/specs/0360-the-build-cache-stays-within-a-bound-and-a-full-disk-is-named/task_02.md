@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -143,3 +143,103 @@ describe the Free-Space Floor.
 - `_prd.md` → Goals 3 and 4; Core Features 2, 3 and 5; Success Metric 3; Success Metric 4; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 3 and 4; Interfaces; API Contracts 4 and 5; API Contract 8; Invariants 4 and 5; Declared breaks; Testing Approach; Build Order 2
 - ADR-0370; ADR-0334
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-safety, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+- Doctor: extracted `inspectFreeSpace`, retaining resolution errors and reading
+  the worktree location, each declared Shared Build Cache and `os.TempDir()`
+  in order through the injected capacity dependency at existing directories.
+  Doctor retains its finding text, threshold, next action and exit behavior,
+  with the additional `temporary directory` finding. Updated all pinned
+  disk-space output expectations found in the CLI tests. Before the production
+  change, the focused below-threshold test failed because it observed two
+  reads rather than the required three; afterward all eight Doctor table rows
+  passed, including unreadable, boundary and failed-exit cases.
+- Queue warnings: added `FreeSpaceChecker`, its optional dependency and command
+  implementation, and checks at the start of `runCandidate` and
+  `gateCandidate`. The helper replaces/removes the single low-disk segment,
+  stores changed warnings before the boundary runs, preserves the final lane
+  reason and writes the exact warning line for each low observation.
+  The six new engine rows exercise low space at both boundaries, recovery at
+  the gate, lane ordering with a semicolon-containing reason, healthy removal,
+  unchanged low space and a nil checker. Every row reaches `merged` through
+  the real queue store; assertions inspect persistence before the Run, gate
+  and publication and verify the exact PR body. `LaneSkipBody` and publication
+  code are unchanged. Existing lane-skip publication tests also passed.
+- Command checker: wired through `commandDeliveryEngineDependencies`; its
+  three table rows verify the ordered location messages below 10,240 MiB,
+  no warning at the floor, skipped unreadable observations and resolution to
+  existing ancestors. Every capacity read in these tests is injected.
+- Documentation: applied API Contract 8's Doctor bullet and finding-row text,
+  Delivery Queue paragraph and Free-Space Floor glossary definition beside
+  Build Cache Bound, with the accepted ADR link and required Avoid line.
+  Focused glossary and command-documentation contracts passed. A read-only
+  normalized-text check confirmed the Delivery paragraph word for word in
+  the guide, canonical reference and mirror, and byte comparisons confirmed
+  the canonical/mirrored skill files match.
+
+Focused checks (all exit 0 after implementation):
+
+- `go test ./internal/delivery ./internal/cli -run 'TestTheQueueWarns|TestDoctorWarnsWhen|TestCommandFreeSpace|TestAGateLaneSkip|TestAQuietGate' -count=1 -timeout 5m`
+- `go test ./internal/cli -run 'Test(RunDoctor|Doctor|CommandFreeSpace|DeliverStatus|DeliverCommand)' -count=1 -timeout 5m`
+- `go test -tags docscontract ./internal/docscontract -run 'TestGlossary|TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem|TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem' -count=1 -timeout 5m`
+- `git diff --check`
+
+Sanctioned regeneration (all exit 0, in this order after the final guide and
+reference edits):
+
+1. `make skills-sync`
+2. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+   raised both Roundfix skill copies from `0.1.195` to `0.1.196` and recorded
+   the version through its owner.
+3. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+   regenerated only the changed Doctor and Deliver guide fingerprints.
+
+The declared Verification commands, full package suites and Windows builds
+remain Daemon-owned and were not run. Task status, the Task Graph and other
+Task files were not edited; no commit, push or pull request was made.
+
+
+### Verification feedback, attempt 1
+
+Inspected the Daemon artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261106T150809Z_42a50d3dad874640/verification/batch-001-attempt-1.log`.
+The configured gate remains unresolved: its reported failure is the
+`internal/verifyselect` suite guard detecting a detached Git filesystem
+monitor after the test assertions passed. The supplied transcript also
+records the delivery package passing. No diagnostic log body is reproduced
+here.
+
+Investigation found a pre-existing launch route outside this Task's slice:
+`TestPartitionFollowsTheMakefileRecipes` calls `makeRecipeCLITests`, which
+runs the copied Makefile in the repository with an inherited environment.
+The Makefile's immediately evaluated `BUILD_COMMIT` calls unqualified Git
+status even for a dry run. A read-only query of the specific Git setting
+confirmed that user configuration enables fsmonitor. The owning test helper,
+Makefile expression and suite guard have no changes from this Task.
+
+A disposable Python/subprocess probe copied the Makefile, replaced recursive
+make as the existing test helper does, and supplied a recording Git stub,
+disposable HOME/TMPDIR/cache paths and a dry run. It exited 0 and asserted
+exactly the revision and status calls during Makefile parsing, without real
+Git, a build, a real cache or a daemon. This establishes the unisolated call
+route; the original artifact does not attribute the surviving helper to an
+individual test.
+
+Follow-up for the Supervisor: repair the verification fixture's inherited Git
+configuration at its subprocess boundary, using the existing isolated Git
+environment conventions in `internal/gittest`, and prove the owning suite
+leaves no monitor. This is outside task_02; no Makefile, verification-test,
+suite-guard or global Git configuration change was made, and no process was
+signalled. The failure was not suppressed or classified as a passing gate.
+
+Focused recheck:
+`go test ./internal/cli ./internal/delivery -run 'TestDoctorWarnsWhen|TestCommandFreeSpace|TestTheQueueWarns' -count=1 -timeout 5m`
+exited 0 for both packages. `git -c core.fsmonitor=false diff --check` also
+exited 0. Only this Result evidence changed during the feedback turn; the
+implementation, documentation and generated records retain their prior
+bytes. The full configured Verification and declared Verification were not
+rerun; Task status remains Daemon-owned.

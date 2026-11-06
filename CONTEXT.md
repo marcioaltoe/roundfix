@@ -1251,6 +1251,10 @@ _Avoid_: global cache, Go cache cleanup, cache GC
 The size, 10,240 MiB by default, to which this repository's Makefile holds the Go build cache it chose before each top-level make that builds or tests, removing with the Shared Build Cache rules only entries no build used for two hours; the cache stays above it while its entries are younger ([ADR-0370](docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md)).
 _Avoid_: cache limit, cache cleanup, gocache trim
 
+**Free-Space Floor**:
+The 10,240 MiB of free space below which `roundfix doctor` reports `DR-DISK-LOW` and the Delivery Queue records a `low-disk` warning for the filesystem of the worktree location, a declared Shared Build Cache or the temporary directory; it never fails a check or parks an item ([ADR-0370](docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md)).
+_Avoid_: disk threshold, low disk check
+
 **Item Binary**:
 A copy of the Roundfix binary built by a Delivery Queue item for its own steps, retained while that item exists and is not merged. Its copies become reclaimable at merged release and through the GC Command when the item is merged or no longer queued ([ADR-0290](docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md)).
 _Avoid_: owner binary, shared binary

@@ -739,6 +739,14 @@ trim removed entries, failed or stopped. The gate's result still comes only
 from its Verification and the Linux Lane, so a `deliver retry` that resumes at
 the gate trims first.
 
+Before an item's Implement Run and before its repository gate, the queue
+reads the free space where the worktree location, each declared Shared Build
+Cache and the temporary directory live. Below the Free-Space Floor of
+10,240 MiB it records a `low-disk: <label> <path> has <N> MiB free, below 10240 MiB` segment
+in the item's warning, which `roundfix deliver status` prints, and writes one
+warning line to the Queue Owner's log; at or above the floor the segment goes.
+The warning never parks or delays the item.
+
 ## Linux Lane
 
 With `delivery.linux_lane: true` (default `false`), the Delivery Queue runs the

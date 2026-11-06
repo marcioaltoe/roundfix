@@ -94,8 +94,9 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   read-only and never reports failed, so it does not change Doctor's exit
   code.
 - `disk-space:` — printed after `storage:` only when the filesystem holding
-  the worktree location (`worktree.location`) or a declared Shared Build Cache
-  has less than 10 GiB (10,240 MiB) free, or its free space cannot be read.
+  the worktree location (`worktree.location`), a declared Shared Build Cache
+  or the temporary directory has less than the Free-Space Floor of 10 GiB
+  (10,240 MiB) free, or its free space cannot be read.
   Each location is named on its own and read at its nearest existing
   directory: `DR-DISK-LOW` gives its free MiB with `next: roundfix gc`, and
   `DR-DISK-UNREAD` gives the read error. Findings are `warn` and never change
@@ -237,7 +238,7 @@ Child diagnostics are not forwarded, protecting credentials and identity values.
 | `DR-LANE-IMAGE-MISSING` | warn | The image is not local; `docker pull <image>`. |
 | `DR-LANE-IMAGE-UNKNOWN` | warn | The image cannot be resolved from `go.mod`; set `delivery.linux_lane_image`. |
 | `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |
-| `DR-DISK-LOW` | warn | Less than 10,240 MiB free where worktrees or a Shared Build Cache live; `roundfix gc`, then free space on that filesystem. |
+| `DR-DISK-LOW` | warn | Less than 10,240 MiB free where worktrees, a Shared Build Cache or the temporary directory live; `roundfix gc`, then free space on that filesystem. |
 | `DR-DISK-UNREAD` | warn | The free space could not be read; check the path, then re-run `roundfix doctor`. |
 
 An offline machine with otherwise ready checks prints warnings and exits `0`:
