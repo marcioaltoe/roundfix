@@ -426,11 +426,42 @@ on matching lines. The two version fields in each owned `SKILL.md` are
 line-scoped for the record command, so a derived merge can take the default
 branch's version lines before the command raises and records the next version.
 
-During `checking`, Roundfix waits while GitHub reports the Pull Request merge
-state as `BLOCKED` or `UNKNOWN`, even when the listed checks pass. At the end of
-the Check Wait the item parks as `checks-timeout: current-head checks not
-settled within delivery.check_timeout <duration>`; only a mergeable state with
-passing checks proceeds to merge. If GitHub refuses that merge because
+During `checking`, Roundfix waits for the head's Head Check Set: every check
+run and commit status the Pull Request lists for its head, required or not;
+the latest GitHub Actions workflow run of each workflow file and event whose
+head commit is the head; and each Expected Workflow. An Expected Workflow is a
+file under `.github/workflows/` at the head whose `pull_request` or
+`pull_request_target` trigger has no path filter and no `branches-ignore`,
+whose `branches`, when present, names the base branch exactly and no `!`
+pattern, and whose `types`, when present, name both `opened` and
+`synchronize`, or whose `push` trigger has no filter. An Expected Workflow
+without a run for the head is pending as `<path> (no run yet)`, so a head whose
+workflows have not registered yet is never taken for a head with nothing to
+wait for. A filtered workflow is never expected, but its run must complete
+once GitHub creates it. Check suites are not read. The item moves to
+`merging` only when the set has a member, every member is completed, and GitHub
+reports the merge state as neither `BLOCKED` nor `UNKNOWN`; a `CLEAN` merge
+state alone never merges.
+
+A member that ends `success`, `neutral` or `skipped` passes. A failed check
+goes through the re-run rules below; any other member that ends `failure`,
+`timed_out`, `cancelled`, `action_required`, `startup_failure`, `stale` or
+another conclusion parks the item as `checks-failed: <check> (<conclusion>)
+<link>`, each failed member joined by `; `. `<check>` is `<workflow> / <name>`
+for a check of a workflow, the check name for any other check, and the
+workflow name for a run. While the item waits, the owner log names the members
+it waits for:
+
+```text
+roundfix: checks: Delivery Queue item <slug>: waiting for <n> check(s): <check>; <check>
+roundfix: checks: Delivery Queue item <slug>: <m> check(s) completed for <head>
+roundfix: checks: Delivery Queue item <slug>: read failed: <error>
+```
+
+At the end of the Check Wait the item parks as `checks-timeout: current-head
+checks not settled within delivery.check_timeout <duration>; pending: <check>;
+<check>`, or with `; merge state <state>` in place of the pending list when
+only the merge state was awaited. If GitHub refuses the merge because
 `base branch policy prohibits the merge`, Roundfix returns to `checking` once
 for that head. A second refusal for the same head parks `delivery-error`.
 
@@ -481,6 +512,7 @@ before any `Park:` lines:
 
 ```text
 Turn: <slug> advancing at <stage>
+Turn: <slug> advancing at checking; waiting for <n> check(s): <check>; <check>
 Turn: <slug> reviewing; <held> of <capacity> review slot(s) held
 Turn: <slug> waiting for a review slot (<n> of <m> waiting); <held> of <capacity> review slot(s) held
 Turn: <slug> waiting for prerequisites: <slug>, <slug>
@@ -490,7 +522,8 @@ Turn: <slug> waiting for the owner to read it
 
 `<n> of <m> waiting` is the item's place in line: for a review slot by queue
 position, for the owner's turn in the order the owner will visit the items,
-starting after the item it advances. The last form names an item whose stage
+starting after the item it advances. The checking form names the members of the Head
+Check Set the owner still waits for. The last form names an item whose stage
 changed after the owner last wrote its record, such as one just retried. An
 owner that is not proven live, a record of another PID or identity, or no
 record prints no `Turn:` line; a record that cannot be read writes
@@ -564,7 +597,7 @@ across stale and outside-change re-runs; further default branch movement does
 not extend it again. Stale re-runs are remembered only during this check wait.
 An absent, malformed or ambiguous annotation keeps the previous rules.
 
-When a required GitHub Actions check fails on its first attempt, or on the
+When a GitHub Actions check fails on its first attempt, or on the
 first newer attempt after a stale re-run against the current tip, the owner
 reads its failed log and compares the failing Go package directories with the
 item's changed paths against the refreshed remote default branch. If every

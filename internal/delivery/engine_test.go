@@ -419,7 +419,7 @@ func TestDeliveryEngineParksDeclaredBlockersAndContinues(t *testing.T) {
 	}
 
 	queue := readDeliveryQueue(t, ctx, runStore, gitRoot)
-	for index, blocker := range []string{BlockerRunUnresolved, BlockerRunBudgetExceeded, BlockerReviewFindings, BlockerReviewBlocked + ": review unavailable", BlockerGateFailed, BlockerChecksFailed, BlockerChecksFailed} {
+	for index, blocker := range []string{BlockerRunUnresolved, BlockerRunBudgetExceeded, BlockerReviewFindings, BlockerReviewBlocked + ": review unavailable", BlockerGateFailed, BlockerChecksFailed + ": test (fail)", BlockerChecksFailed + ": test (cancel)"} {
 		if queue.Items[index].Stage != store.DeliveryStageParked || queue.Items[index].Blocker != blocker {
 			t.Fatalf("item %q = %+v, want parked as %q", queue.Items[index].SpecSlug, queue.Items[index], blocker)
 		}
@@ -660,7 +660,7 @@ func TestChecksTimeoutParksTheItem(t *testing.T) {
 	}
 
 	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
-	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 2s" {
+	if item.Stage != store.DeliveryStageParked || item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 2s; pending: verify" {
 		t.Fatalf("timed-out item = %+v, want parked as checks-timeout", item)
 	}
 }

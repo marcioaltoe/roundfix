@@ -83,6 +83,49 @@ func TestDeliverStatusReproducesSurfaceTranscriptQueueTurns(t *testing.T) {
 	}
 }
 
+func TestDeliverStatusPrintsTheChecksAnItemWaitsFor(t *testing.T) {
+	t.Parallel()
+	home, repo := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	writer, err := store.Open(t.Context(), home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	queue, err := writer.CreateDeliveryQueue(t.Context(), repo, []string{"0149-example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := queue.Items[0]
+	item.Stage = store.DeliveryStageChecking
+	item.Branch, item.Worktree = "roundfix/deliver-0149-example", "/worktrees/0149-example"
+	if _, _, _, err := writer.RecordDeliveryQueueItemWorktree(t.Context(), repo, item.SpecSlug, item.Branch, item.Worktree); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.UpdateDeliveryQueueItem(t.Context(), repo, item); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.ClaimDeliveryQueueOwner(t.Context(), repo, os.Getpid(), "recorded-owner-identity"); err != nil {
+		t.Fatal(err)
+	}
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) { dependencies.ownerProcesses = &fakeDeliveryOwnerProcesses{} })
+	writeTestTurnRecord(t, testTurnRecordPath(t, home, repo, os.Getpid()), deliveryTurnRecord{
+		Schema: deliveryTurnSchema, OwnerPID: os.Getpid(), OwnerIdentity: "recorded-owner-identity",
+		Turn: delivery.Turn{ReviewCapacity: 2, Items: []delivery.ItemTurn{{
+			SpecSlug: item.SpecSlug, Stage: item.Stage, State: delivery.TurnAdvancing,
+			Checks: []string{"CI | Backend / Lint, Type Check, Test & Build", ".github/workflows/ci-frontends.yml (no run yet)"},
+		}}},
+	})
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
+	want := "0149-example\tchecking\t-\t/worktrees/0149-example\n" +
+		"Turn: 0149-example advancing at checking; waiting for 2 check(s): CI | Backend / Lint, Type Check, Test & Build; .github/workflows/ci-frontends.yml (no run yet)\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
+		"Usage: no Runs recorded\n"
+	if code != exitOK || stdout.String() != want || stderr.Len() != 0 {
+		t.Fatalf("exit=%d stdout=%q stderr=%q; want stdout=%q", code, stdout.String(), stderr.String(), want)
+	}
+}
+
 func TestDeliverStatusOrdersWarningsTurnsAndParks(t *testing.T) {
 	t.Parallel()
 	home, repo := newDeliveryOwnerStatusQueue(t, os.Getpid(), "recorded-owner-identity", store.DeliveryStageChecking, store.DeliveryStageParked)

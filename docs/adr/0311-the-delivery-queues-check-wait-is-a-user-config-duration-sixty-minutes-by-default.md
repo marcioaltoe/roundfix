@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-22T12:00:00Z
-updated_at: 2026-10-22T12:00:00Z
+updated_at: 2026-11-06T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -53,6 +53,8 @@ an owner already running keeps the value it read.
 blocker `checks-timeout: current-head checks not settled within
 delivery.check_timeout <duration>`, the duration in Go's form such as
 `1h0m0s`. Its Park Class stays `environment`.
+
+**Amended by [ADR-0369](0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md) (2026-11-06).** The Check Wait of an item in `checking` waits for its Head Check Set: every check run and commit status of the head, the latest workflow run per workflow file and event of the head commit, and every Expected Workflow. The `checks-timeout` blocker adds `; pending: <check>; <check>` for the members still pending, or `; merge state <state>` when only the merge state was awaited. The key, its default, its bounds, its User Config scope and the one restart after a re-run still hold.
 
 ## Considered Options
 

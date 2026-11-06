@@ -88,7 +88,7 @@ func TestAChangedPremiseWarnsAndContinues(t *testing.T) {
 	if item.Warning != warning || item.Stage != store.DeliveryStageMerged || !slicesContain(workflow.events[slug], "run") {
 		t.Fatalf("warned item = %+v events=%v, want warning and completed Run path", item, workflow.events[slug])
 	}
-	wantLog := "roundfix: warning: Delivery Queue item warning-spec: " + warning + "\n"
+	wantLog := "roundfix: warning: Delivery Queue item warning-spec: " + warning + "\nroundfix: checks: Delivery Queue item warning-spec: 1 check(s) completed for archived-warning-spec\n"
 	if log.String() != wantLog {
 		t.Fatalf("warning log = %q, want %q", log.String(), wantLog)
 	}
@@ -117,8 +117,8 @@ func TestNoChangedPremiseRecordsNoWarning(t *testing.T) {
 	if item.Warning != "" || item.Stage != store.DeliveryStageMerged || !slicesContain(workflow.events[slug], "run") {
 		t.Fatalf("clean item = %+v events=%v, want merged without warning", item, workflow.events[slug])
 	}
-	if log.Len() != 0 {
-		t.Fatalf("clean revalidation log = %q, want empty", log.String())
+	if log.String() != "roundfix: checks: Delivery Queue item clean-spec: 1 check(s) completed for archived-clean-spec\n" {
+		t.Fatalf("clean revalidation log = %q, want completed checks line", log.String())
 	}
 }
 

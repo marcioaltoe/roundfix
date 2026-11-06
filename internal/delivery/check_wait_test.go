@@ -48,7 +48,7 @@ func TestTheCheckWaitDefaultsToSixtyMinutes(t *testing.T) {
 	}
 	stored := readDeliveryQueue(t, t.Context(), runStore, "/repo").Items[0]
 	elapsed := clock.Now().Sub(start)
-	if elapsed != config.DefaultDeliveryCheckTimeout || polls != 241 || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 1h0m0s" || ClassifyPark(store.DeliveryQueue{}, stored).Class != ParkClassEnvironment {
+	if elapsed != config.DefaultDeliveryCheckTimeout || polls != 241 || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 1h0m0s; pending: CI / verify" || ClassifyPark(store.DeliveryQueue{}, stored).Class != ParkClassEnvironment {
 		t.Fatalf("elapsed=%s polls=%d item=%+v", elapsed, polls, stored)
 	}
 }
@@ -62,7 +62,7 @@ func TestTheCheckWaitUsesTheConfiguredDuration(t *testing.T) {
 		t.Fatal(err)
 	}
 	stored := readDeliveryQueue(t, t.Context(), runStore, "/repo").Items[0]
-	if clock.Now().Sub(start) != 45*time.Minute || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 45m0s" {
+	if clock.Now().Sub(start) != 45*time.Minute || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 45m0s; pending: CI / verify" {
 		t.Fatalf("elapsed=%s item=%+v", clock.Now().Sub(start), stored)
 	}
 }
@@ -96,7 +96,7 @@ func TestEachCheckWaitStartsItsOwnDeadline(t *testing.T) {
 		t.Fatal(err)
 	}
 	stored = readDeliveryQueue(t, t.Context(), runStore, "/repo").Items[0]
-	if clock.Now().Sub(start) != 45*time.Minute || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 45m0s" {
+	if clock.Now().Sub(start) != 45*time.Minute || stored.Stage != store.DeliveryStageParked || stored.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 45m0s; pending: CI / verify" {
 		t.Fatalf("elapsed=%s item=%+v", clock.Now().Sub(start), stored)
 	}
 }

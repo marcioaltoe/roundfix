@@ -25,6 +25,7 @@ type ItemTurn struct {
 	Stage         store.DeliveryStage `json:"stage"`
 	State         TurnState           `json:"turn"`
 	Prerequisites []string            `json:"prerequisites,omitempty"`
+	Checks        []string            `json:"checks,omitempty"`
 }
 
 type Turn struct {
@@ -96,6 +97,9 @@ func TurnLines(queue store.DeliveryQueue, turn Turn) []string {
 			switch entry.State {
 			case TurnAdvancing:
 				text = fmt.Sprintf("advancing at %s", item.Stage)
+				if item.Stage == store.DeliveryStageChecking && len(entry.Checks) > 0 {
+					text += fmt.Sprintf("; waiting for %d check(s): %s", len(entry.Checks), strings.Join(entry.Checks, "; "))
+				}
 			case TurnReviewing:
 				text = fmt.Sprintf("reviewing; %d of %d review slot(s) held", held, turn.ReviewCapacity)
 			case TurnReviewSlotWait:
@@ -119,6 +123,23 @@ func (engine *Engine) advancingTurn(ctx context.Context, gitRoot, slug string) {
 	defer engine.turnMu.Unlock()
 	engine.advancing = slug
 	delete(engine.prerequisiteWaits, slug)
+	engine.recordTurnLocked(ctx, gitRoot)
+}
+
+func (engine *Engine) checkTurn(ctx context.Context, gitRoot, slug string, pending []string) {
+	if engine.turnRecorder == nil {
+		return
+	}
+	engine.turnMu.Lock()
+	defer engine.turnMu.Unlock()
+	if len(pending) == 0 {
+		delete(engine.checkWaits, slug)
+	} else {
+		if engine.checkWaits == nil {
+			engine.checkWaits = make(map[string][]string)
+		}
+		engine.checkWaits[slug] = slices.Clone(pending)
+	}
 	engine.recordTurnLocked(ctx, gitRoot)
 }
 
@@ -160,6 +181,7 @@ func (engine *Engine) recordTurnLocked(ctx context.Context, gitRoot string) {
 			switch {
 			case item.SpecSlug == engine.advancing:
 				entry.State = TurnAdvancing
+				entry.Checks = slices.Clone(engine.checkWaits[item.SpecSlug])
 			case state == reviewSlotInFlight:
 				entry.State = TurnReviewing
 			case state == reviewSlotWaiting:

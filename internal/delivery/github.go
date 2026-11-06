@@ -13,7 +13,7 @@ import (
 	"roundfix/internal/secretscan"
 )
 
-const pullRequestJSONFields = "number,url,state,headRefName,headRefOid,mergedAt,mergeCommit,mergeable,mergeStateStatus"
+const pullRequestJSONFields = "number,url,state,baseRefName,headRefName,headRefOid,mergedAt,mergeCommit,mergeable,mergeStateStatus"
 
 // PullRequestBoundary is the external publication surface used by the
 // delivery engine. Implementations must observe remote state before retrying
@@ -46,6 +46,7 @@ type PullRequest struct {
 	Number      string
 	URL         string
 	State       string
+	BaseBranch  string
 	HeadBranch  string
 	HeadSHA     string
 	MergedAt    string
@@ -58,10 +59,12 @@ type PullRequestResult struct {
 }
 
 type CheckReport struct {
-	MergeState string
-	Mergeable  string
-	HeadSHA    string
-	Checks     []PullRequestCheck
+	MergeState        string
+	Mergeable         string
+	HeadSHA           string
+	Checks            []PullRequestCheck
+	WorkflowRuns      []WorkflowRun
+	ExpectedWorkflows []string
 }
 
 type PullRequestCheck struct {
@@ -321,6 +324,15 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 		checks = []PullRequestCheck{}
 	}
 
+	runs, err := client.workflowRuns(ctx, before.HeadSHA)
+	if err != nil {
+		return CheckReport{}, err
+	}
+	expected, err := client.expectedWorkflows(ctx, before.HeadSHA, before.BaseBranch)
+	if err != nil {
+		return CheckReport{}, err
+	}
+
 	after, err := client.pullRequest(ctx, number)
 	if err != nil {
 		return CheckReport{}, fmt.Errorf("read pull request head after checks: %w", err)
@@ -332,7 +344,91 @@ func (client GitHubCLI) CurrentHeadChecks(ctx context.Context, number string) (C
 			after.HeadSHA,
 		)
 	}
-	return CheckReport{HeadSHA: before.HeadSHA, Mergeable: after.Mergeable, MergeState: after.MergeState, Checks: checks}, nil
+	return CheckReport{HeadSHA: before.HeadSHA, Mergeable: after.Mergeable, MergeState: after.MergeState, Checks: checks, WorkflowRuns: runs, ExpectedWorkflows: expected}, nil
+}
+
+func (client GitHubCLI) workflowRuns(ctx context.Context, head string) ([]WorkflowRun, error) {
+	result, err := client.run(ctx, "gh", "api", "repos/{owner}/{repo}/actions/runs?head_sha="+head+"&per_page=100")
+	if err != nil {
+		return nil, fmt.Errorf("read workflow runs: %w", err)
+	}
+	if result.ExitCode != 0 {
+		return nil, commandFailure("read workflow runs", result)
+	}
+	var payload struct {
+		TotalCount int `json:"total_count"`
+		Runs       []struct {
+			ID         int64  `json:"id"`
+			Name       string `json:"name"`
+			Path       string `json:"path"`
+			HeadSHA    string `json:"head_sha"`
+			Event      string `json:"event"`
+			Status     string `json:"status"`
+			Conclusion string `json:"conclusion"`
+			RunNumber  int64  `json:"run_number"`
+			Attempt    int    `json:"run_attempt"`
+			URL        string `json:"html_url"`
+		} `json:"workflow_runs"`
+	}
+	if err := json.Unmarshal([]byte(result.Stdout), &payload); err != nil {
+		return nil, fmt.Errorf("read workflow runs: %w", err)
+	}
+	if payload.TotalCount > len(payload.Runs) {
+		return nil, fmt.Errorf("read workflow runs: %d runs reported for %s, more than one page of %d", payload.TotalCount, head, len(payload.Runs))
+	}
+	type workflowEvent struct{ path, event string }
+	positions := make(map[workflowEvent]int)
+	var runs []WorkflowRun
+	var numbers []int64
+	for _, run := range payload.Runs {
+		if run.HeadSHA != head {
+			continue
+		}
+		key := workflowEvent{path: run.Path, event: run.Event}
+		index, found := positions[key]
+		if found && run.RunNumber <= numbers[index] {
+			continue
+		}
+		latest := WorkflowRun{
+			ID: strconv.FormatInt(run.ID, 10), Name: run.Name, Path: run.Path, Event: run.Event,
+			Status: strings.ToLower(run.Status), Conclusion: strings.ToLower(run.Conclusion),
+			Attempt: run.Attempt, URL: run.URL,
+		}
+		if found {
+			runs[index] = latest
+			numbers[index] = run.RunNumber
+		} else {
+			positions[key] = len(runs)
+			runs = append(runs, latest)
+			numbers = append(numbers, run.RunNumber)
+		}
+	}
+	return runs, nil
+}
+
+func (client GitHubCLI) expectedWorkflows(ctx context.Context, head, base string) ([]string, error) {
+	result, err := client.run(ctx, "git", "ls-tree", "-z", "--name-only", head, "--", ".github/workflows/")
+	if err != nil {
+		return nil, fmt.Errorf("list workflow files: %w", err)
+	}
+	if result.ExitCode != 0 {
+		return nil, commandFailure("list workflow files", result)
+	}
+	files := make(map[string][]byte)
+	for _, path := range strings.Split(result.Stdout, "\x00") {
+		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
+			continue
+		}
+		content, err := client.run(ctx, "git", "show", head+":"+path)
+		if err != nil {
+			return nil, fmt.Errorf("read workflow file: %w", err)
+		}
+		if content.ExitCode != 0 {
+			return nil, commandFailure("read workflow file", content)
+		}
+		files[path] = []byte(content.Stdout)
+	}
+	return ExpectedWorkflows(files, base), nil
 }
 
 func (client GitHubCLI) MergePullRequest(ctx context.Context, number, expectedHead string) (MergeResult, error) {
@@ -455,6 +551,7 @@ type pullRequestPayload struct {
 	Number      int    `json:"number"`
 	URL         string `json:"url"`
 	State       string `json:"state"`
+	BaseRefName string `json:"baseRefName"`
 	HeadRefName string `json:"headRefName"`
 	HeadRefOID  string `json:"headRefOid"`
 	Mergeable   string `json:"mergeable"`
@@ -498,6 +595,7 @@ func pullRequestFromPayload(payload pullRequestPayload) (PullRequest, error) {
 		Number:     strconv.Itoa(payload.Number),
 		URL:        strings.TrimSpace(payload.URL),
 		State:      strings.TrimSpace(payload.State),
+		BaseBranch: strings.TrimSpace(payload.BaseRefName),
 		HeadBranch: strings.TrimSpace(payload.HeadRefName),
 		HeadSHA:    strings.TrimSpace(payload.HeadRefOID),
 		MergedAt:   strings.TrimSpace(payload.MergedAt),

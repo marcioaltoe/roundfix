@@ -134,7 +134,7 @@ func TestACheckPastItsFirstAttemptIsNotRerun(t *testing.T) {
 }
 func TestNilCheckRecoveryKeepsFailedCheckBehavior(t *testing.T) {
 	item, _, _ := exerciseCheckRecovery(t, nil, []CheckReport{recoveryReport("fail")})
-	if item.Blocker != BlockerChecksFailed {
+	if item.Blocker != BlockerChecksFailed+": CI / verify (fail) "+recoveryLink {
 		t.Fatalf("item=%+v", item)
 	}
 }
@@ -147,7 +147,7 @@ func TestCheckInspectionErrorsDoNotRerun(t *testing.T) {
 func TestCheckRerunErrorsParkTheItem(t *testing.T) {
 	recovery := &fakeCheckRecovery{failures: []CheckFailure{outsideFailure(1)}, rerunErr: errors.New("denied")}
 	item, _, _ := exerciseCheckRecovery(t, recovery, []CheckReport{recoveryReport("fail")})
-	if item.Blocker != BlockerChecksFailed || recovery.reruns != 1 {
+	if item.Blocker != BlockerChecksFailed+": CI / verify (fail) "+recoveryLink || recovery.reruns != 1 {
 		t.Fatalf("item=%+v reruns=%d", item, recovery.reruns)
 	}
 }
@@ -156,14 +156,14 @@ func TestSecondCheckFailureInChangedPackageIsNotCalledFlaky(t *testing.T) {
 	second.OutsideChange = false
 	recovery := &fakeCheckRecovery{failures: []CheckFailure{outsideFailure(1), second}}
 	item, _, _ := exerciseCheckRecovery(t, recovery, []CheckReport{recoveryReport("fail"), recoveryReport("fail")})
-	if item.Blocker != BlockerChecksFailed || recovery.reruns != 1 {
+	if item.Blocker != BlockerChecksFailed+": CI / verify (fail) "+recoveryLink || recovery.reruns != 1 {
 		t.Fatalf("item=%+v reruns=%d", item, recovery.reruns)
 	}
 }
 func assertNoCheckRerun(t *testing.T, recovery *fakeCheckRecovery, bucket string) {
 	t.Helper()
 	item, _, _ := exerciseCheckRecovery(t, recovery, []CheckReport{recoveryReport(bucket)})
-	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerChecksFailed || recovery.reruns != 0 {
+	if item.Stage != store.DeliveryStageParked || item.Blocker != BlockerChecksFailed+": CI / verify ("+bucket+") "+recoveryLink || recovery.reruns != 0 {
 		t.Fatalf("item=%+v reruns=%d", item, recovery.reruns)
 	}
 }
@@ -280,7 +280,7 @@ func TestAnOldCheckAttemptCannotKeepResettingTheTimeout(t *testing.T) {
 	recovery := &fakeCheckRecovery{failures: []CheckFailure{outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1), outsideFailure(1)}}
 	reports := []CheckReport{recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail"), recoveryReport("fail")}
 	item, _, polls := exerciseCheckRecovery(t, recovery, reports)
-	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s" || polls != 6 || recovery.reruns != 1 {
+	if item.Blocker != "checks-timeout: current-head checks not settled within delivery.check_timeout 5s; pending: CI / verify (re-run requested)" || polls != 6 || recovery.reruns != 1 {
 		t.Fatalf("item=%+v polls=%d reruns=%d", item, polls, recovery.reruns)
 	}
 }
