@@ -240,6 +240,63 @@ func TestUpdateCheckReplacesAStaleLookupLock(t *testing.T) {
 	}
 }
 
+func TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"no cache", "expired cache"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			home := t.TempDir()
+			setCommandEnvironmentForTest(t, home, t.TempDir())
+			cachePath := filepath.Join(home, ".roundfix", updateCheckCacheFile)
+			if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if name == "expired cache" {
+				content, err := json.Marshal(updateCheckCache{SchemaVersion: updateCheckCacheSchema, CheckedAt: updateCheckTestTime().Add(-25 * time.Hour), Releases: []app.Release{{Version: "3.0.0", Titles: []string{}}}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(cachePath, content, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			synctest.Test(t, func(t *testing.T) {
+				// A live lock: its holder never finishes inside the wait.
+				lock := cachePath + ".lock"
+				if err := os.WriteFile(lock, nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chtimes(lock, time.Now(), time.Now()); err != nil {
+					t.Fatal(err)
+				}
+				calls := 0
+				configureUpdateCheckTest(t, "1.0.0", func(context.Context) ([]app.Release, error) {
+					calls++
+					return []app.Release{{Version: "2.0.0", Titles: []string{}}}, nil
+				})
+				started := time.Now()
+				output := runUpdateCheckTest(t, "update", "check", "--format", "json")
+				var report updateCheckReport
+				if err := json.Unmarshal([]byte(output), &report); err != nil {
+					t.Fatal(err)
+				}
+				if calls != 0 || time.Since(started) != updateCheckLockStale {
+					t.Fatalf("busy lookup: calls=%d after %s: %s", calls, time.Since(started), output)
+				}
+				if name == "no cache" && (report.Lookup.Source != "skipped" || report.Lookup.Error != updateCheckBusyError || report.State != "unknown") {
+					t.Fatalf("busy report without a cache = %s", output)
+				}
+				if name == "expired cache" && (report.Lookup.Source != "cache" || report.Latest != "3.0.0" || report.Lookup.Error != "") {
+					t.Fatalf("busy report with an expired cache = %s", output)
+				}
+				if _, err := os.Stat(lock); err != nil {
+					t.Fatalf("removed another session's lock: %v", err)
+				}
+			})
+		})
+	}
+}
+
 func TestUpdateCheckSummarizesTheBaselinePreview(t *testing.T) {
 	t.Parallel()
 	for _, name := range []string{"current", "plan ready", "no manifest", "outside repository", "writes nothing", "history and skill counts"} {

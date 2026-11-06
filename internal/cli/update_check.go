@@ -25,6 +25,7 @@ const (
 	// A lookup lock older than this was left by a session that died mid-lookup.
 	updateCheckLockStale = 2 * updateCheckTimeout
 	updateCheckLockPoll  = 50 * time.Millisecond
+	updateCheckBusyError = "another session's release lookup did not finish"
 )
 
 var updateCheckDeps = defaultUpdateCheckDependencies()
@@ -126,17 +127,33 @@ func buildUpdateCheckReport(ctx context.Context, homeDir, mode string, refresh b
 	path := filepath.Join(homeDir, ".roundfix", updateCheckCacheFile)
 	cache, ok := readUpdateCheckCache(path, now)
 	report.Lookup.Source = "cache"
+	busy := false
 	if refresh || !ok {
 		// Sessions that start together take turns, so only the first reads the
 		// network and the others report the cache it wrote.
-		if release := acquireUpdateCheckLock(ctx, path+".lock"); release != nil {
+		var release func()
+		release, busy = acquireUpdateCheckLock(ctx, path+".lock")
+		if release != nil {
 			defer release()
 		}
+		var fresh bool
+		cache, fresh = readUpdateCheckCache(path, now)
 		if !refresh {
-			cache, ok = readUpdateCheckCache(path, now)
+			ok = fresh
+		}
+		if busy {
+			// Another session still holds the lookup: report the cache it last
+			// wrote, even an expired one, instead of reading the network again.
+			ok = cache.SchemaVersion == updateCheckCacheSchema
+			if !ok {
+				report.Lookup.Source = "skipped"
+				report.Lookup.Error = updateCheckBusyError
+				report.State = "unknown"
+				return report
+			}
 		}
 	}
-	if refresh || !ok {
+	if (refresh && !busy) || !ok {
 		report.Lookup.Source = "network"
 		cache = updateCheckCache{SchemaVersion: updateCheckCacheSchema, CheckedAt: now, Releases: []app.Release{}}
 		lookupCtx, cancel := context.WithTimeout(ctx, updateCheckTimeout)
@@ -221,23 +238,25 @@ func writeUpdateCheckCache(path string, cache updateCheckCache) {
 }
 
 // acquireUpdateCheckLock creates the lookup lock beside the cache and returns
-// the function that removes it. It waits up to updateCheckTimeout for another
-// session's lock, replaces a stale one, and returns nil when the lock cannot
-// be taken, so a lock failure never holds up the session.
-func acquireUpdateCheckLock(ctx context.Context, path string) func() {
+// the function that removes it. It waits up to updateCheckLockStale for another
+// session's lock, which outlasts that session's bounded lookup, and replaces a
+// stale one. busy reports that another session still held the lock, so the
+// caller must not read the network. A lock that cannot be created at all
+// returns neither, because a cache beside it could not be written either.
+func acquireUpdateCheckLock(ctx context.Context, path string) (release func(), busy bool) {
 	if os.MkdirAll(filepath.Dir(path), 0o755) != nil {
-		return nil
+		return nil, false
 	}
-	deadline := time.NewTimer(updateCheckTimeout)
+	deadline := time.NewTimer(updateCheckLockStale)
 	defer deadline.Stop()
 	for {
 		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 		if err == nil {
 			_ = file.Close()
-			return func() { _ = os.Remove(path) }
+			return func() { _ = os.Remove(path) }, false
 		}
 		if !errors.Is(err, os.ErrExist) {
-			return nil
+			return nil, false
 		}
 		if info, statErr := os.Stat(path); statErr == nil {
 			if age := time.Since(info.ModTime()); age > updateCheckLockStale || age < -updateCheckLockStale {
@@ -247,9 +266,9 @@ func acquireUpdateCheckLock(ctx context.Context, path string) func() {
 		}
 		select {
 		case <-ctx.Done():
-			return nil
+			return nil, true
 		case <-deadline.C:
-			return nil
+			return nil, true
 		case <-time.After(updateCheckLockPoll):
 		}
 	}
