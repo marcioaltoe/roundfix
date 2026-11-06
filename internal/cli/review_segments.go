@@ -121,7 +121,7 @@ func reviewSegmentHeader(index, total int, base, head, candidateBase, candidateH
 	return header
 }
 
-func classifyReviewSegmentAnswers(record reviewRecord, answers []reviewSegmentAnswer) (reviewRecord, int) {
+func classifyReviewSegmentAnswers(record reviewRecord, answers []reviewSegmentAnswer, codePromptCount int) (reviewRecord, int) {
 	var findings []reviewFinding
 	var texts []string
 	permissionRefused := false
@@ -137,7 +137,11 @@ func classifyReviewSegmentAnswers(record reviewRecord, answers []reviewSegmentAn
 		}
 		for _, finding := range classified.FindingItems {
 			finding.ID = fmt.Sprintf("F%d", len(findings)+1)
-			finding.Segment = i + 1
+			if i >= codePromptCount {
+				finding.DataSegment = i - codePromptCount + 1
+			} else if len(record.Segments) > 0 {
+				finding.Segment = i + 1
+			}
 			findings = append(findings, finding)
 			texts = append(texts, "- "+finding.Text)
 		}
