@@ -452,6 +452,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | --- | --- | --- |
 | `pre_pr_review.provider` | `codex` | Selects the independent reviewer for a candidate before a Pull Request exists. Supported values are `codex`, `claude`, `coderabbit`, and `none`. Project Config takes precedence over User Config, which takes precedence over this built-in default; an absent key inherits and never means `none`. Declaring a provider invokes nothing by itself; `roundfix review` runs the selected policy over the current candidate. Publication and merge gating remain separate. |
 | `pre_pr_review.omit_paths` | `[]` | Leaves matching files out of the pre-PR review, recorded as `omit-path`. Accepts clean repository-relative files, directories ending in `/`, and whole-path Go `path.Match` patterns. Project Config replaces the User Config list; `[]` clears it. The review reads only Project Config at its base commit, so an item sees a new value once its merge base includes it. |
+| `pre_pr_review.data_paths` | `[]` | Reviews matching authored data files apart from the code diff, in Data Review Segments, recorded as `data-path`. Accepts the same paths as `pre_pr_review.omit_paths`; Project Config replaces the User Config list; `[]` clears it. The review reads only Project Config at its base commit, and an omission reason wins over it. |
 | `review_source.name` | `coderabbit` | Selects the legacy PR-feedback Review Source, read only by `fetch`, `watch`, and `resolve`; it never selects or requests a pre-PR reviewer. CodeRabbit is the only supported value. |
 | `review_source.include_nitpicks` | `false` | Excludes CodeRabbit findings whose severity is `nitpick`. Set `true` to include them. |
 | `watch.until_clean` | `true` | Continues the watch cycle until its clean-outcome contract or another bound ends the Run. |
@@ -994,6 +995,8 @@ A file the review should skip but nobody regenerates belongs in
 default branch's Project Config; the review reads the list from its base
 commit, so an item sees the value once its merge base includes that change.
 This list affects review scope and requires no regeneration command.
+
+An authored data file too large for the review, such as a rules catalog, belongs in `pre_pr_review.data_paths`, not in `delivery.derived_paths` or `pre_pr_review.omit_paths`: the review then reads it apart instead of skipping it.
 
 `delivery.item_binary` declares the Roundfix binary the Delivery Queue builds
 and can run for an item's `implement`, `archive` and `review` steps. It has two

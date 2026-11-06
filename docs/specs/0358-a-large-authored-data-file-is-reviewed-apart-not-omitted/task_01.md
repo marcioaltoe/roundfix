@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -87,3 +87,51 @@ Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 1; User Story 1
 - `_techspec.md` → Current behavior 1; API Contract 1; API Contract 6; Invariant 5; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+- Added `DataPaths` to resolved and overlay config, with Project-over-User
+  replacement and explicit empty-list clearing. The shared YAML-node check
+  refuses non-lists and non-string entries; `validateReviewDataPaths` delegates
+  to `validateDerivedPathPatterns` during parsing and in `Validate`.
+- Added `ReviewsApart` and extracted the existing omission matcher so both
+  methods retain exact-file, directory-prefix and whole-path pattern behavior,
+  including exact names that contain pattern metacharacters.
+- Added `TestPrePRReviewDataPathsLoadsAndValidates` through
+  `ResolveConfigProposal` only. It covers `absent`, `inherits user`, `project
+  replaces user`, `empty clears user`, all five required refusal rows with
+  exact errors in both config scopes, positive and negative matching, and that
+  declaring data alone does not omit it. Every test calls `t.Parallel()` first.
+- Added precisely the API Contract 6 row and sentence to the configuration
+  guide. Re-recorded the Behavior Surface Record after the guide edit as the
+  last implementation step; only `config keys` and the configuration guide
+  fingerprint changed. No generated record was hand-edited.
+
+Focused evidence (commands executed through `rtk proxy`):
+
+1. Before implementation,
+   `go test -count=1 -timeout 2m ./internal/config -run 'TestPrePRReview(Data|Omit)PathsLoadsAndValidates'`
+   exited 1 because `DataPaths` and `ReviewsApart` were undefined, establishing
+   the missing API before adding it.
+2. After implementation,
+   `go test -count=1 -timeout 2m -v ./internal/config -run 'TestPrePRReview(Data|Omit)PathsLoadsAndValidates|TestPrePRReviewPolicyResolution|TestPrePRReviewProviderRefusesNullValue|TestProjectConfigReadsDerivedPathDeclarations|TestDerivedPathDeclarationsRefuseUnsafeEntries|TestDerivedLineDeclarationsAreReadAndValidated'`
+   exited 0. The new test passed every precedence, refusal and matching row;
+   the unchanged omission, provider and derived-path tests also passed.
+3. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+   exited 0. The exact guide strings were checked against the TechSpec before
+   writing, and the resulting guide and generated-record diffs were inspected.
+4. `git diff --check` exited 0. Scope inspection found only the two declared
+   config sources, the new test, the configuration guide, its generated record
+   and this Task file. Existing tests, CLI code and init templates are unchanged.
+
+Acceptance evidence: item 1 is covered by the precedence and exact refusal
+rows plus inspection of both validation call sites; item 2 by the whole-path
+matching row and unchanged omission tests; item 3 by the exact guide additions
+and successful sanctioned recorder.
+
+Declared Verification and repository Verification were not run; the Daemon
+owns them and Task settlement. The initial Task change was its Daemon-written
+`in_progress` status, which this turn preserves. No other Task or Task Graph
+was edited. No follow-up work was added to this slice.
