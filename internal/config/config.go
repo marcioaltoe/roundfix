@@ -92,6 +92,7 @@ type Config struct {
 	Watch        Watch
 	Implement    Implement
 	Notify       Notify
+	Update       Update
 	Worktree     Worktree
 	Verification Verification
 	Budget       Budget
@@ -193,6 +194,10 @@ type Watch struct {
 
 type Implement struct {
 	AutoPush bool
+}
+
+type Update struct {
+	Mode string
 }
 
 type Notify struct {
@@ -364,6 +369,7 @@ type configOverlay struct {
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
 	Notify       *notifyOverlay       `yaml:"notify"`
+	Update       *updateOverlay       `yaml:"update"`
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Verification *verificationOverlay `yaml:"verification"`
 	Budget       *budgetOverlay       `yaml:"budget"`
@@ -466,6 +472,10 @@ type watchOverlay struct {
 
 type implementOverlay struct {
 	AutoPush *implementAutoPushValue `yaml:"auto_push"`
+}
+
+type updateOverlay struct {
+	Mode *string `yaml:"mode"`
 }
 
 type notifyOverlay struct {
@@ -850,6 +860,7 @@ func Builtin() Config {
 		Implement: Implement{
 			AutoPush: false,
 		},
+		Update: Update{Mode: "notify"},
 		Notify: Notify{
 			Enabled: true,
 		},
@@ -1281,6 +1292,13 @@ func Validate(config Config) error {
 	}
 	if config.Watch.AutoPush && !config.Defaults.AutoCommit {
 		return errors.New("watch.auto_push requires defaults.auto_commit to be true")
+	}
+	return validateUpdateMode(config.Update.Mode)
+}
+
+func validateUpdateMode(mode string) error {
+	if mode != "notify" && mode != "auto" {
+		return fmt.Errorf("update.mode must be notify or auto, got %q", mode)
 	}
 	return nil
 }
@@ -1861,6 +1879,11 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
+	if overlay.Update != nil && overlay.Update.Mode != nil {
+		if err := validateUpdateMode(*overlay.Update.Mode); err != nil {
+			return fmt.Errorf("parse config %q: %w", label, err)
+		}
+	}
 	if overlay.PrePRReview != nil && overlay.PrePRReview.OmitPaths != nil {
 		if err := validateReviewOmitPaths(*overlay.PrePRReview.OmitPaths); err != nil {
 			return fmt.Errorf("parse config %q: %w", label, err)
@@ -1964,6 +1987,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
+	if overlay.Update != nil && overlay.Update.Mode != nil {
+		config.Update.Mode = *overlay.Update.Mode
+	}
 	if source != ProfileSourceProject && overlay.OpenRouter != nil {
 		if overlay.OpenRouter.LightModels != nil {
 			config.OpenRouter.LightModels = append([]string{}, (*overlay.OpenRouter.LightModels)...)

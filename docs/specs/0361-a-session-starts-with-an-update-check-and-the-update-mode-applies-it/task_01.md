@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -77,3 +77,46 @@ re-recorded for the changed key set and guide.
 - `_prd.md` → Goal 4; Core Feature 1; Success Metric 4
 - `_techspec.md` → Current behavior 3; Interfaces; API Contract 1; Invariant 5; Declared breaks; Testing Approach; Build Order 1
 - ADR-0371
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented only Task 01: `Config.Update`, its `notify` default, the `update`
+YAML overlay and the shared validation used by `Validate` and each input file.
+The existing load order applies User Config first and Project Config last.
+Per-file validation retains the existing `parse config "<path>"` wrapper and
+refuses an invalid User Config even when Project Config supplies a valid mode.
+No other key's defaults, validators or messages changed.
+
+Focused evidence:
+
+- Before implementation, `go test -count=1 -timeout 2m ./internal/config -run
+  '^TestUpdateModeIsNotifyOrAuto/'` exited 1: `Config` had no `Update` field.
+- After implementation, `go test -count=1 -timeout 2m -v ./internal/config -run
+  '^TestUpdateModeIsNotifyOrAuto/'` exited 0. The required rows `absent`,
+  `project auto`, `user auto` and `project over user` passed, proving `notify`
+  inheritance and `auto` from either file. The additional `project notify over
+  user` row proves Project Config can also override User Config `auto`.
+- The `invalid project` and `invalid user` rows passed for `always`, an empty
+  string, `AUTO` and ` auto `. They assert the exact refusal from both
+  `Validate` and `Load`, including the offending file's path. The invalid-user
+  cases include a valid project override to prove invalid values are refused
+  before another file can hide them.
+- The `templates unchanged` row passed: neither init template has an `update:`
+  line. A Python comparison against `git show HEAD:internal/config/config.go`
+  confirmed byte-identical source for `DefaultConfigYAML`,
+  `DefaultProjectConfigYAML`, `defaultConfigYAML` and `renderBuiltinProfilesYAML`.
+  The new built-in field is not consumed by template rendering.
+- A Python comparison with API Contract 1 confirmed the new General settings
+  row is word-for-word identical and immediately follows `specs.root`.
+
+The last implementation step after the final guide edit was the sanctioned
+recorder: `go test -count=1 -tags docscontract ./internal/docscontract -run
+'^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0
+(`ok roundfix/internal/docscontract`). It regenerated
+`docs/references/behavior-surfaces.json`; the record was never hand-edited.
+
+Declared Task Verification and repository Verification remain for the Daemon;
+no Task status, Task Graph or other Task file was edited. No follow-up work
+was identified in this slice.
