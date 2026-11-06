@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -93,3 +93,57 @@ point 5 of the Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 2; Core Feature 3; Success Metric 2; Success Metric 3
 - `_techspec.md` → Current behavior 2 and 3; API Contract 2; API Contract 3; Invariants 2 and 4; Testing Approach; Build Order 2
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, evidence-gate, tech-writer.
+
+Task status remains Daemon-owned. The initial worktree change was the Daemon's
+`pending` to `in_progress` status transition; that field was preserved.
+
+- Acceptance criterion 1: `reviewScopedDiff` checks `ReviewsApart` only after
+  every existing reason, including `omit-path`, using the declaration base.
+  `appendReviewOmissions` separates these paths from the omission counts and
+  lines and appends the exact reviewed-apart wording with sorted paths.
+  `TestReviewDataPathScopeAndPrompt` exercises a real repository, overlapping
+  omit/data declarations, unsorted prompt inputs, and a later delta whose
+  earlier candidate cleared the lists. The unchanged
+  `TestReviewOmitsConfiguredPathsFromTheBaseCommit` and
+  `TestReviewOmissionSummaryKeepsItsBytesWithoutOmitPaths` also passed.
+- Acceptance criterion 2: the new planner retains whole file sections when
+  they fit, cuts oversized files at hunks and oversized hunks at lines, and
+  greedily packs pieces. It measures growing pieces through byte offsets,
+  line counts and header widths rather than rebuilding their body per line.
+  Cut hunks receive explicit recomputed old/new ranges; packed adjacent hunks
+  share their file header. Git's no-newline marker stays with its content line.
+  The required new-file and modified-file subtests passed against `git show`
+  for every added/context line, also checking old-side coordinates, hunk
+  counts, payload order/multiplicity, per-piece headers, paths and byte fits.
+  The modified fixture has 600 original lines, a replacement, a deletion and
+  200 inserted lines. An additional prompt-byte fit checks both prompt headers
+  are included in the measurement; the small-files case checks the complete
+  prompt, including the exact two-line data header.
+- Acceptance criterion 3: the oversized-line and fifth-segment subtests passed
+  with exact API Contract 3 refusal text and no partial returned plan.
+
+Focused checks:
+
+- Before implementation,
+  `rtk proxy go test ./internal/cli -run '^TestReviewDataSegmentsPackCutAndBound$/small_files_share_one_segment$' -count=1`
+  exited 1 because `planReviewDataSegments` and `reviewDataFit` did not exist.
+- After the final code edit,
+  `rtk proxy go test ./internal/cli -count=1 -timeout 5m -run '^TestReview(Data(SegmentsPackCutAndBound|PathScopeAndPrompt)|OmitsConfiguredPathsFromTheBaseCommit|OmissionSummaryKeepsItsBytesWithoutOmitPaths)$' -v`
+  exited 0; all selected tests and subtests passed.
+- Two disposable `go test -overlay` probes, each selecting only its affected
+  subtest, exited 1 as expected. Removing the new-line cursor advance failed
+  the new-file cut check on piece 1 (`rule 0181` was incorrectly placed at
+  line 1). Removing the segment-limit check failed the fifth-segment refusal
+  assertion with five returned segments and no error. The probes changed only
+  temporary overlay files, which were removed afterwards.
+- `rtk proxy git diff --check` exited 0, and `rtk proxy gofmt -l` on the three
+  changed/new Go files printed no paths.
+
+The declared Verification and repository gates were not run; the Daemon owns
+those checks. Session sending, record fields, classification and lineage were
+left for task_03. No existing test, config, other document, other Task or Task
+Graph was changed. No commit, push or pull request was created.

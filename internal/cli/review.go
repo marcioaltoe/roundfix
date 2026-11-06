@@ -552,6 +552,9 @@ func reviewScopedDiff(ctx context.Context, gitRoot, baseCommit, headCommit strin
 		if reason == "" && declarations.PrePRReview.Omits(path) {
 			reason = "omit-path"
 		}
+		if reason == "" && declarations.PrePRReview.ReviewsApart(path) {
+			reason = "data-path"
+		}
 		if reason != "" {
 			omitted = append(omitted, reviewOmittedPath{Path: path, Reason: reason})
 		}
@@ -578,7 +581,12 @@ func estimateReviewPromptTokens(prompt string) int {
 
 func appendReviewOmissions(prompt string, omitted []reviewOmittedPath) string {
 	counts := make(map[string]int)
+	var dataPaths []string
 	for _, path := range omitted {
+		if path.Reason == "data-path" {
+			dataPaths = append(dataPaths, path.Path)
+			continue
+		}
 		counts[path.Reason]++
 	}
 	var out strings.Builder
@@ -589,7 +597,16 @@ func appendReviewOmissions(prompt string, omitted []reviewOmittedPath) string {
 	}
 	out.WriteString(".\n")
 	for _, path := range omitted {
-		fmt.Fprintf(&out, "%s (%s)\n", path.Path, path.Reason)
+		if path.Reason != "data-path" {
+			fmt.Fprintf(&out, "%s (%s)\n", path.Path, path.Reason)
+		}
+	}
+	if len(dataPaths) > 0 {
+		sort.Strings(dataPaths)
+		fmt.Fprintf(&out, "Reviewed apart, after this diff, in Data Review Segments: %d path(s) of pre_pr_review.data_paths.\n", len(dataPaths))
+		for _, path := range dataPaths {
+			fmt.Fprintf(&out, "%s (data-path)\n", path)
+		}
 	}
 	return out.String()
 }
