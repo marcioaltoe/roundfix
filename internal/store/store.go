@@ -968,12 +968,20 @@ func (store *Store) ReclaimOrphanedRun(ctx context.Context, run Run, reason stri
 	if runID == "" {
 		return errors.New("reclaim orphaned Run: Run ID is required")
 	}
-	if run.OwnerPID == nil || *run.OwnerPID <= 0 || ProcessAlive(*run.OwnerPID) {
+	if run.OwnerPID == nil {
+		return nil
+	}
+	gone, reused := OwnerGone(ctx, *run.OwnerPID, run.OwnerIdentity)
+	if !gone {
 		return nil
 	}
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
-		reason = fmt.Sprintf("owner process %d not running; lock reclaimed", *run.OwnerPID)
+		if reused {
+			reason = fmt.Sprintf("owner process %d gone (pid reused); lock reclaimed", *run.OwnerPID)
+		} else {
+			reason = fmt.Sprintf("owner process %d not running; lock reclaimed", *run.OwnerPID)
+		}
 	}
 	now := store.now()
 

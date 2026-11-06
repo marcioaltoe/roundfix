@@ -479,6 +479,50 @@ func TestDoctorReportsProcessResidueUnreadable(t *testing.T) {
 	})
 }
 
+func TestDoctorReportsNoResidueForAReusedOwnerPID(t *testing.T) {
+	t.Parallel()
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs: []store.Run{doctorTerminalRun()},
+		readLineage: func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) {
+			return nil, fmt.Errorf("owner process 4242 failed step %q: %w", "prove owner process identity", store.ErrOwnerProcessIdentityMismatch)
+		},
+		wantLine:         "residue: ok (no process residue found)",
+		wantNoLine:       "partial",
+		wantResidueLines: []string{"residue: ok (no process residue found)"},
+		wantTableCalls:   1,
+	})
+}
+
+func TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne(t *testing.T) {
+	t.Parallel()
+	reused := doctorTerminalRun()
+	unreadable := doctorTerminalRun()
+	unreadable.ID = "run-unreadable"
+	pid := 4343
+	unreadable.OwnerPID = &pid
+	unreadable.OwnerIdentity = "test:unreadable-owner"
+	readErr := fmt.Errorf("owner process 4343 failed step %q: %w", "prove owner process identity", store.ErrOwnerIdentityUnreadable)
+	wantLine := fmt.Sprintf("residue: partial (could not read process table for Run %s: %v)", unreadable.ID, readErr)
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs: []store.Run{reused, unreadable},
+		readLineage: func(_ context.Context, lineage ProcessLineage) ([]store.OwnedProcess, error) {
+			switch lineage.OwnerPID {
+			case *reused.OwnerPID:
+				return nil, fmt.Errorf("owner process 4242 failed step %q: %w", "prove owner process identity", store.ErrOwnerProcessIdentityMismatch)
+			case *unreadable.OwnerPID:
+				return nil, readErr
+			default:
+				t.Fatalf("unexpected lineage: %#v", lineage)
+				return nil, nil
+			}
+		},
+		wantLine:         wantLine,
+		wantNoLine:       reused.ID,
+		wantResidueLines: []string{wantLine},
+		wantTableCalls:   2,
+	})
+}
+
 func TestDoctorReportsProcessResidueDoesNotWriteRunRecord(t *testing.T) {
 	t.Parallel()
 	homeDir := t.TempDir()
@@ -527,12 +571,13 @@ func TestDoctorReportsProcessResidueDoesNotWriteRunRecord(t *testing.T) {
 }
 
 type doctorResidueTestCase struct {
-	runs           []store.Run
-	readLineage    func(context.Context, ProcessLineage) ([]store.OwnedProcess, error)
-	wantLine       string
-	wantAlsoLine   string
-	wantNoLine     string
-	wantTableCalls int
+	runs             []store.Run
+	readLineage      func(context.Context, ProcessLineage) ([]store.OwnedProcess, error)
+	wantLine         string
+	wantAlsoLine     string
+	wantNoLine       string
+	wantResidueLines []string
+	wantTableCalls   int
 }
 
 func testDoctorReportsProcessResidueCase(t *testing.T, test doctorResidueTestCase) {
@@ -574,6 +619,17 @@ func testDoctorReportsProcessResidueCase(t *testing.T, test doctorResidueTestCas
 	}
 	if test.wantNoLine != "" && strings.Contains(stdout.String(), test.wantNoLine) {
 		t.Fatalf("Doctor output unexpectedly contains %q: %q", test.wantNoLine, stdout.String())
+	}
+	if test.wantResidueLines != nil {
+		var residueLines []string
+		for line := range strings.SplitSeq(stdout.String(), "\n") {
+			if strings.HasPrefix(line, "residue:") {
+				residueLines = append(residueLines, line)
+			}
+		}
+		if !reflect.DeepEqual(residueLines, test.wantResidueLines) {
+			t.Fatalf("Doctor residue lines = %q, want %q", residueLines, test.wantResidueLines)
+		}
 	}
 	if runStore.listCalls != 1 || runStore.query.States != store.StatesAll {
 		t.Fatalf("Run Database reads = %d with query %#v, want one all-state read", runStore.listCalls, runStore.query)

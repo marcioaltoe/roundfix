@@ -88,7 +88,10 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   `DR-SKILL-LOCK-STALE` warns when an installed owned skill has a `ref` or
   a `computedHash` that differs from its installed tree in `skills-lock.json`.
 - `residue:` — live processes from terminal Run lineages, or a partial result
-  when Doctor cannot inspect every lineage.
+  when Doctor cannot inspect every lineage. A terminal Run whose recorded owner
+  PID is alive with a different start identity adds nothing: its owner is gone
+  and the PID was reused, so `partial` is left for a process table Doctor
+  cannot read.
 - `storage:` — whether Run storage is reclaimable from terminal Runs or free
   Run Database pages, with the applicable `roundfix gc` next action. It is
   read-only and never reports failed, so it does not change Doctor's exit

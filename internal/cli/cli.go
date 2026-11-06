@@ -3548,10 +3548,14 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 		return active, false, nil
 	}
 	pid, ok := activeOwnerPID(active)
-	if !ok || store.ProcessAlive(pid) {
+	if !ok {
 		return active, false, nil
 	}
-	reason := orphanedActiveRunReason(pid)
+	gone, reused := store.OwnerGone(ctx, pid, active.OwnerIdentity)
+	if !gone {
+		return active, false, nil
+	}
+	reason := orphanedActiveRunReason(pid, reused)
 	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, runStore, active))
 	if err := runStore.ReclaimOrphanedRun(ctx, active, reason); err != nil {
 		return active, false, fmt.Errorf("reclaim orphaned Active Run %s: %w", active.ID, err)
@@ -3594,7 +3598,10 @@ func currentOwnerIdentity(ctx context.Context) string {
 	return identity
 }
 
-func orphanedActiveRunReason(pid int) string {
+func orphanedActiveRunReason(pid int, reused bool) string {
+	if reused {
+		return fmt.Sprintf("owner process %d gone (pid reused); lock reclaimed", pid)
+	}
 	return fmt.Sprintf("owner process %d not running; lock reclaimed", pid)
 }
 

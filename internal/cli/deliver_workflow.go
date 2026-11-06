@@ -984,8 +984,10 @@ func (workflow *commandDeliveryWorkflow) RunSlots(ctx context.Context) (delivery
 	}
 	slots := delivery.RunSlots{MaxActive: workflow.loaded.Config.Runs.MaxActive}
 	for _, run := range runs {
-		if run.OwnerPID != nil && *run.OwnerPID > 0 && !store.ProcessAlive(*run.OwnerPID) {
-			continue
+		if run.OwnerPID != nil {
+			if gone, _ := store.OwnerGone(ctx, *run.OwnerPID, run.OwnerIdentity); gone {
+				continue
+			}
 		}
 		slots.Holders = append(slots.Holders, delivery.RunSlotHolder{
 			RunID: run.ID, Repository: run.GitRoot, SpecSlug: run.SpecSlug,
