@@ -1,0 +1,66 @@
+Archive source: f63fc5586af7cffebb2b100413d487df9b1fd2ea
+Mutation (scratch only):
+--- internal/baseline/classification.go
++++ sabotaged
+@@ -1060,7 +1060,7 @@
+ var carrierMarkerLine = regexp.MustCompile(`(?m)^ {0,3}<!--\s*setup-context-driven:(?:begin|end)`)
+ 
+ func hasMarkerLine(content []byte) bool {
+-	return carrierMarkerLine.Match(content)
++	return false
+ }
+ 
+ func managedEntryMatchesManifest(
+
+COMMAND: go test -count=1 -timeout 20m -v -run '^TestARepositoryAuthoredGuideRaisesNoCarrierConflict$' ./internal/baseline
+STDOUT:
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/plain_guide
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/plain_guide
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_name_in_prose
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_name_in_prose
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_colon_form_in_prose
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_colon_form_in_prose
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/nested_instructions
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/nested_instructions
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/managed_guide_path_without_markers
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/managed_guide_path_without_markers
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unknown_managed_block
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unknown_managed_block
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/AGENTS_under_guides
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/AGENTS_under_guides
+=== RUN   TestARepositoryAuthoredGuideRaisesNoCarrierConflict/CLAUDE_under_guides
+=== PAUSE TestARepositoryAuthoredGuideRaisesNoCarrierConflict/CLAUDE_under_guides
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/plain_guide
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/AGENTS_under_guides
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unknown_managed_block
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/nested_instructions
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/managed_guide_path_without_markers
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/CLAUDE_under_guides
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_name_in_prose
+=== CONT  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_colon_form_in_prose
+=== NAME  TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line
+    classification_test.go:639: carrier "docs/agents/notes.md" warning = false, want true: []
+--- FAIL: TestARepositoryAuthoredGuideRaisesNoCarrierConflict (0.00s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/nested_instructions (0.15s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unknown_managed_block (0.16s)
+    --- FAIL: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_colon_form_in_prose (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/marker_name_in_prose (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/plain_guide (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/AGENTS_under_guides (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/CLAUDE_under_guides (0.16s)
+    --- PASS: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/managed_guide_path_without_markers (0.16s)
+FAIL
+suiteguard: guard cost: measured 3003 paths; fingerprint took 154.830417ms before and 139.062292ms after
+FAIL	roundfix/internal/baseline	0.768s
+FAIL
+STDERR:
+EXIT: 1
+
+EXPECTED ASSERTION FAILURE: True

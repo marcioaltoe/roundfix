@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

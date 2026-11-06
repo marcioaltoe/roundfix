@@ -1,0 +1,52 @@
+from qa0362_runner import *
+pre=Path('/tmp/roundfix-0362-qa-preflight.txt').read_text(); version=re.search(r'^roundfix .+$',pre,re.M)[0]
+t=report.read_text(); t=re.sub(r'^user_flow_binary:.*\n','',t,flags=re.M); t=t.replace('status: in-progress','user_flow_binary: '+json.dumps(version)+'\nstatus: in-progress',1);report.write_text(t)
+record('QA-STATIC','pass','Daemon-supplied make verify-changed: pass, exit 0, diagnostics removed on success; not rerun. Fresh make build: exit 0. User-flow identity recorded from ./bin/roundfix --version.','Repository Verification (supplied by Daemon): make verify-changed\nVERDICT: pass\nEXIT: 0\nDiagnostics removed on success. Command was not rerun by the QA Agent.\n\nFresh build: rtk proxy make build\nEXIT: 0\nBuild included a shared-cache bound warning and continued.\n\n'+pre)
+p,l=run(['go','test','-timeout','20m','-count=1','-v','./internal/baseline','-run','^TestAMarkerLineIsACommentThatStartsALine$'])
+quote='The block begins with a line that meets a start condition (after up to three optional spaces of indentation).'
+assert quote in ' '.join((spec/'_prd.md').read_text().split())
+ok=p.returncode==0 and '/three_spaces' in p.stdout and '/four_spaces' in p.stdout
+record('QA-OUTSIDE','pass' if ok else 'fail','CommonMark 0.31.2, section 4.6 HTML blocks (https://spec.commonmark.org/0.31.2/), passage recorded 2026-11-06 in PRD Acceptance evidence, checked offline. The published three-space condition agrees with the executed begin/end three-space=true and four-space=false cases. No network lookup or Spec-authored substitute source.','External source: CommonMark 0.31.2, section 4.6 HTML blocks\nURL: https://spec.commonmark.org/0.31.2/\nDate recorded in source quotation provenance: 2026-11-06\nQuoted passage (offline copy supplied in PRD): '+quote+'\n\n'+l)
+# Pull Request absence is an authoritative prompt fact; do not query or mutate external services.
+record('QA-PR','blocked (environment: no open Pull Request)','No open Pull Request is the supplied Run fact. Approval: operative approved authorization at '+base+' grants delivery operations. Checks: Daemon make verify-changed passed at audited head. Threads: none exist because no PR exists. Merge-Ready acceptance: not yet available; no full equivalent evidence for that control. Claimed candidate: '+head+'. Unblock by opening the Spec target branch PR after normal delivery prerequisites, then verifying approval, current-head checks, unresolved threads, Merge-Ready acceptance and candidate ancestry. This pre-PR row alone permits a qualifying partial.','Pull Request fact: none open (supplied by Daemon).\nTarget branch: roundfix/deliver-0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings-ce34ff6b990ad3d6\nCandidate: '+head+'\nApproval: _authorization.md status approved and delivery operations granted before Task commits.\nChecks: make verify-changed, pass, exit 0, supplied by Daemon for audited head.\nUnresolved threads: none; no PR exists.\nMerge-Ready acceptance: not yet available.\nNo PR lookup, creation or mutation performed.\n')
+assert re.search(r'^## Unreachable Acceptance\n\nNone\.',(spec/'_prd.md').read_text(),re.M)
+t=report.read_text();assert not re.search(r'^\| QA-[^|]+ \| pending \|',t,re.M)
+t=t.replace('verdict: pending','verdict: partial',1).replace('status: in-progress','status: closed',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 1',1)
+t+='''
+## Static gate
+
+`make build` passed; the fresh binary identity is recorded in `user_flow_binary`. [Strict precondition](evidence/2026-11-06-gate/preflight.txt) passed with no findings. The skipped authoring detectors concern absent Finding/rollup/archive artifacts and a Vocabulary Contract; no applicable authoring rule was waived. `make verify-changed` passed outside the sandbox under the Daemon (exit 0, diagnostics removed on success); the QA Agent did not rerun it.
+
+The required focused Baseline and CLI checks, the full Baseline and skills packages, full docscontract package, and dedicated glossary test all exited 0 with explicit timeouts. The retained verbose test output contains no failed or skipped tests. Task 01's archive-clause/retention/version/force/setup-manifest checks, Task 02's profile and incremental-decision tests, Task 03's carrier and marker tests and unchanged nested-carrier regressions, and Task 04's skills, glossary and coverage-map checks all ran. The guide and skill phrases were also asserted directly.
+
+## Findings
+
+None. All seven intentional sabotages failed on the exact required product assertion; they are successful negative probes, not findings against the audited build.
+
+## Blocked and skipped
+
+QA-PR is the sole environment block: no open Pull Request. Recorded delivery authority, candidate identity and Daemon checks supply the available pre-PR controls. Merge-Ready acceptance remains unavailable, so the gate closes partial. The target branch PR must supply the later approval/check/thread/acceptance controls. No row is finding-blocked, declared-blocked, skipped or pending. The preserved Mechanical skips section records the Daemon's pre-gate artifacts, not skipped QA journeys.
+
+## Coverage
+
+Declared verification sources are Requirements 2, 4, 5, 6 and 11. QA-TESTS and the two independent public confirmations QA-T1/QA-T2 cover Requirement 2's named command regressions; QA-REFRESH covers Requirement 4; QA-INVARIANT covers Requirement 5; QA-S1 through QA-S7 cover Requirement 6; QA-SCOPE covers Requirement 11. Surface Transcripts 1 and 2 have separate exact-stream rows, as Requirement 3 and the gate protocol require. Non-waivable sources are represented by QA-STATIC (repository Verification), QA-OUTSIDE (outside-evidence row) and QA-PR (Pull Request row). The PRD declares surfaces cli and docs; there is no frontend sweep and no Unreachable Acceptance criterion. Rows name no unrelated coverage source.
+
+Requirements 1, 3, 7, 8, 9, 10, 12 and 13 also constrain execution: the build and supplied gate fact are recorded, every non-QA named Verification test ran, the external passage was checked offline, both Glossary declarations are None., the range leaves CONTEXT.md unchanged, the dedicated glossary test passed, and the pre-PR controls are explicit. The offline archive preview is recorded below. The history audit confirms every prohibited Non-Goal path is unchanged. Exit/JSON and no-write cases are also observed in the required CLI tests; marker cases exercise both the three non-warning guide forms and the retained warnings at managed/marked/instruction paths.
+
+16 rows: 15 pass; 1 blocked by environment; 0 failed, finding-blocked, declared-blocked, skipped or pending. 742 top-level passes were recorded across required test runs (including repeated focused/full-package coverage); all seven sabotage probes detected their mutation. No reusable vocabulary was introduced and no glossary mutation was needed.
+
+## Final verdict
+
+Qualifying partial: every runnable row passed, and only the pre-PR Pull Request row remains environment-blocked. The report leaves the Daemon to settle the QA Task; later delivery must establish the live PR controls.
+'''
+report.write_text(t)
+with tempfile.TemporaryDirectory(prefix='qa0362-home-') as h,tempfile.TemporaryDirectory(prefix='qa0362-tmp-') as temp:
+ e=cli_env(h,temp); p,l=cli(['archive',spec.name,'--plan','--offline'],root,e)
+ (ev/'archive-preview.txt').write_text('Judge Key Variables and TYPESAFE_API_KEY unset for this invocation; HOME and TMPDIR disposable; GOMODCACHE and GOCACHE preserved. No environment values recorded.\n\n'+l)
+ print('Archive preview exit',p.returncode,flush=True)
+ print(p.stdout[-3500:]+p.stderr[-1500:],flush=True)
+ t=report.read_text(); t+='\n## Outcome\n\nThe Baseline now routes archive knowledge through ai-memory to the project that owns the Secondbrain, names a repository profile’s missing template decision with repair instructions, and leaves repository-authored guides without false carrier warnings while retaining real-conflict warnings. All runnable authored QA checks and seven sabotage probes passed; only live Pull Request controls remain unproven before a PR exists. The [offline archive preview](evidence/2026-11-06-gate/archive-preview.txt) exited '+str(p.returncode)+' and did not contact a Judge or mutate the Spec; the existing ADR and maintained command/skill guides already hold the reusable decisions, so this gate promotes no additional reference.\n'; report.write_text(t)
+# Preserve reproducible runnable evidence under non-compiled names.
+for path in ['/tmp/qa0362_runner.py','/tmp/qa0362_sabotage.py','/tmp/qa0362_scope.py','/tmp/qa0362_finish.py']:
+ (ev/(Path(path).name+'.txt')).write_text(Path(path).read_text())
+print('Report closed partial with 15 pass / 1 environment block.',flush=True)

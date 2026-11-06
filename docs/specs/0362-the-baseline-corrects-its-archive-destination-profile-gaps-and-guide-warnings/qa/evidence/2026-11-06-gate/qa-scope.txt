@@ -1,0 +1,152 @@
+COMMIT de46d0b0b007b165987e17f19b8c72e68abc51c5
+feat: the archive clause sends knowledge to the project that owns the Secondbrain
+
+Roundfix-Spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
+Roundfix-Task: task_01
+
+PATHS
+docs/agents/docs-layout.md
+docs/agents/setup-context.json
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_01.md
+internal/baseline/archive_record_clause_test.go
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+DECLARED SCOPE task_01: True
+
+COMMIT d0e804b18f309decf23cbac0c4c355a0e44537b1
+docs: 0362 refuses a profile decision gap only when the decision has no value
+
+The first Run checked the static gap set before the plan's decisions were
+known, so profiles whose unlisted decisions get values from the Setup
+Manifest, a flag or a default were refused, and nine Baseline tests failed
+in both attempts of task_02. plan and update now keep only the gaps whose
+decision has no value in the set rendering receives, which is exactly the
+render failure sql-library reported; profile validate keeps reporting the
+static set of the profile alone.
+
+Claude-Session: https://claude.ai/code/session_01Fb86sYRhzDE2vU5JkcvwiJ
+
+PATHS
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/_techspec.md
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_02.md
+
+COMMIT a4bcf60726238a600fe02f64df180e004e61e12a
+feat: a repository profile that lacks a template decision is refused with the decision, the line and the flag
+
+Roundfix-Spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
+Roundfix-Task: task_02
+
+PATHS
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_02.md
+internal/baseline/plan.go
+internal/baseline/profile_decision_gap.go
+internal/baseline/profile_decision_gap_test.go
+internal/cli/baseline_profile.go
+internal/cli/baseline_profile_decision_gap_test.go
+
+DECLARED SCOPE task_02: True
+
+COMMIT 9ba269bb84a6bee27934315cba1d83045c62792d
+feat: a guide the repository wrote under docs/agents raises no nested-carrier conflict
+
+Roundfix-Spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
+Roundfix-Task: task_03
+
+PATHS
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_03.md
+internal/baseline/classification.go
+internal/baseline/classification_test.go
+
+DECLARED SCOPE task_03: True
+
+COMMIT f63fc5586af7cffebb2b100413d487df9b1fd2ea
+docs: the baseline guide and the skills describe the gap refusal and the guide rule
+
+Roundfix-Spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
+Roundfix-Task: task_04
+
+PATHS
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/setup-context-driven/SKILL.md
+docs/references/behavior-surfaces.json
+docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_04.md
+docs/user-guide/commands/baseline.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/baseline.md
+skills/setup-context-driven/SKILL.md
+skills/testdata/owned-skill-versions.json
+
+DECLARED SCOPE task_04: True
+
+Authorization exists before task_01 and is byte-identical to the operative approved grant.
+
+Authorization exists before task_02 and is byte-identical to the operative approved grant.
+
+Authorization exists before task_03 and is byte-identical to the operative approved grant.
+
+Authorization exists before task_04 and is byte-identical to the operative approved grant.
+
+COMMAND: go test -timeout 20m -count=1 -v -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0362-audit-c_w55rng/overlay.json ./internal/speccheck -run '^TestQA0362GovernedScope$'
+STDOUT:
+=== RUN   TestQA0362GovernedScope
+=== PAUSE TestQA0362GovernedScope
+=== CONT  TestQA0362GovernedScope
+    qa0362_scope_probe_test.go:8: .agents/skills/roundfix/SKILL.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: .agents/skills/roundfix/references/baseline.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: .agents/skills/setup-context-driven/SKILL.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: docs/agents/docs-layout.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: docs/agents/setup-context.json governed=true authorized=true
+    qa0362_scope_probe_test.go:8: docs/references/behavior-surfaces.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/_techspec.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_01.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_02.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_03.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/task_04.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: docs/user-guide/commands/baseline.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/archive_record_clause_test.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: internal/baseline/assets/modules/spec-workflow.json governed=true authorized=true
+    qa0362_scope_probe_test.go:8: internal/baseline/assets/profiles/standard-typescript-monorepo.json governed=true authorized=true
+    qa0362_scope_probe_test.go:8: internal/baseline/classification.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/classification_test.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/module-versions.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/plan.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/profile_decision_gap.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/profile_decision_gap_test.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/catalog.diagnostics.golden.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/catalog.digest governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/catalog.normalized.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/plan-characterization/clean-adoption.golden.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/cli/baseline_profile.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: internal/cli/baseline_profile_decision_gap_test.go governed=false authorized=false
+    qa0362_scope_probe_test.go:8: skills/roundfix/SKILL.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: skills/roundfix/references/baseline.md governed=false authorized=false
+    qa0362_scope_probe_test.go:8: skills/setup-context-driven/SKILL.md governed=true authorized=true
+    qa0362_scope_probe_test.go:8: skills/testdata/owned-skill-versions.json governed=false authorized=false
+--- PASS: TestQA0362GovernedScope (0.00s)
+PASS
+suiteguard: guard cost: measured 3021 paths; fingerprint took 578.774625ms before and 135.873875ms after
+ok  	roundfix/internal/speccheck	1.035s
+STDERR:
+EXIT: 0
+
+
+Task commits inspected: 4; unique changed paths: 35; prohibited path changes: 0
+
+All Task paths are declared; no Recorded paths extensions were required. CONTEXT.md and prohibited module/template/retention/source-baseline/ADR/tooling/release paths are unchanged.
+
+Current delta: ?? docs/specs/0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings/qa/

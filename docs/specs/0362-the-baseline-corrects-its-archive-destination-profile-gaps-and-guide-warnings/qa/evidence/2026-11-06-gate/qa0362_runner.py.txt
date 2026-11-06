@@ -1,0 +1,130 @@
+import os,sys,subprocess,tempfile,json,re,shlex,hashlib,tarfile,io,traceback
+from pathlib import Path
+state=json.loads(Path('/tmp/qa0362_state.json').read_text()); root=Path(state['root']); os.chdir(root); spec=Path(state['spec']); report=Path(state['report']); ev=Path(state['evidence'])
+head=state['head']; base=state['base']
+def record(rid,status,detail,log=None):
+ t=report.read_text(); t=re.sub(r'(\| '+re.escape(rid)+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],t)
+ start=t.index('### '+rid+'\n'); end=t.find('\n### ',start+1); end=len(t) if end<0 else end
+ block=t[start:end]; block=block.replace('Observation: pending.',detail)
+ if log:
+  name=rid.lower()+'.txt'; (ev/name).write_text(log); block+='\nEvidence: [command output](evidence/2026-11-06-gate/'+name+').\n'
+ t=t[:start]+block+t[end:]; report.write_text(t); print(rid,status,detail[:240],flush=True)
+def run(args,cwd=None,env=None):
+ p=subprocess.run(args,cwd=cwd or root,env=env,text=True,capture_output=True)
+ return p,'COMMAND: '+shlex.join([str(x) for x in args])+'\nSTDOUT:\n'+p.stdout+'STDERR:\n'+p.stderr+'EXIT: '+str(p.returncode)+'\n'
+def must(args,cwd=None,env=None):
+ p,l=run(args,cwd,env)
+ if p.returncode: raise RuntimeError(l)
+ return p.stdout
+
+def test_group():
+ logs=[]; bad=[]
+ focused={}
+ for p in sorted(spec.glob('task_0[1-4].md')):
+  section=re.search(r'^## Verification\n(.*?)(?=^## |\Z)',p.read_text(),re.M|re.S)[1]
+  for pat,pkg in re.findall(r"-run '([^']+)' (\./[\w/]+)",section):
+   if pkg in ['./internal/baseline','./internal/cli']: focused.setdefault(pkg,[]).append(pat)
+ for pkg,pats in focused.items():
+  pattern='|'.join('(?:'+x+')' for x in pats)
+  p,l=run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg]); logs.append(l)
+  print(pkg,'focused exit',p.returncode,flush=True)
+  if p.returncode: bad.append(pkg+' focused')
+ for args in [['./internal/baseline'],['./skills'],['-tags','docscontract','./internal/docscontract']]:
+  p,l=run(['go','test','-count=1','-timeout','20m','-v']+args); logs.append(l)
+  print(' '.join(args),'exit',p.returncode,flush=True)
+  if p.returncode: bad.append(' '.join(args))
+ p,l=run(['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$']); logs.append(l)
+ if p.returncode: bad.append('glossary')
+ for source in ['_prd.md','_techspec.md']:
+  assert re.search(r'^## Glossary\n\nNone\.',(spec/source).read_text(),re.M)
+ assert 'CONTEXT.md' not in must(['git','diff','--name-only',base+'..'+head]).splitlines()
+ for source in ['docs/user-guide/commands/baseline.md','.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md']:
+  s=' '.join(Path(source).read_text().split()); assert 'A repository profile must list every decision a template it renders requires.' in s; assert 'belongs to the repository and raises no' in s
+ for source in ['.agents/skills/setup-context-driven/SKILL.md','skills/setup-context-driven/SKILL.md']:
+  assert 'A repository-owned Baseline Profile that does not list a decision a template it renders requires is refused first' in ' '.join(Path(source).read_text().split())
+ log='\n'.join(logs); (ev/'required-tests.txt').write_text(log)
+ count=len(re.findall(r'^--- PASS:',log,re.M)); detail=f'{count} top-level test passes observed across required runs. All named non-QA Verification tests executed; full Baseline, skills and docscontract packages executed. Glossary declarations are None.; CONTEXT.md unchanged; dedicated glossary check and documented phrases checked. Failures: '+(', '.join(bad) if bad else 'none')+'.'
+ record('QA-TESTS','fail' if bad else 'pass',detail,log)
+
+def cli_env(h,t):
+ e=os.environ.copy()
+ for name in json.loads(Path('internal/judge/questions.json').read_text()).get('providers',[]): pass
+ # Bound cleanup includes every configured Judge Key Variable and generic names.
+ def walk(x):
+  if isinstance(x,dict):
+   for k,v in x.items():
+    if k=='key_variable' and isinstance(v,str): e.pop(v,None)
+    else: walk(v)
+  elif isinstance(x,list):
+   for y in x: walk(y)
+ walk(json.loads(Path('internal/judge/questions.json').read_text()))
+ for key in ['TYPESAFE_API_KEY','OPENROUTER_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']: e.pop(key,None)
+ e.update(HOME=h,TMPDIR=t,GOMODCACHE=must(['go','env','GOMODCACHE']).strip(),GOCACHE=must(['go','env','GOCACHE']).strip(),GOPROXY='off',GOSUMDB='off')
+ return e
+
+def cli(args,cwd,env):
+ # Public entrypoint is always the Run-built ./bin/roundfix. Scratch repo cwd uses a symlink to this exact binary.
+ return run(['./bin/roundfix']+args,cwd,env)
+
+def init_cli_link(repo):
+ (repo/'bin').mkdir(); (repo/'bin/roundfix').symlink_to(root/'bin/roundfix')
+ # Local-only exclusion keeps status concerned with the fixture's profile alone.
+ with (repo/'.git/info/exclude').open('a') as f:f.write('\n/bin/\n')
+
+def snapshot(repo):
+ return {str(p.relative_to(repo)):hashlib.sha256(p.read_bytes()).hexdigest() for p in repo.rglob('*') if p.is_file() and '.git' not in p.relative_to(repo).parts and 'bin' not in p.relative_to(repo).parts}
+
+def transcripts():
+ with tempfile.TemporaryDirectory(prefix='qa0362-flow-') as temp,tempfile.TemporaryDirectory(prefix='qa0362-home-') as h,tempfile.TemporaryDirectory(prefix='qa0362-tmp-') as t:
+  repo=Path(temp); e=cli_env(h,t); must(['git','init','-q',str(repo)]); (repo/'Makefile').write_text('verify:\n\t@true\nverify-incremental:\n\t@true\n'); must(['git','add','Makefile'],repo); must(['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','seed'],repo); init_cli_link(repo)
+  p,setup=cli(['baseline','profile','init','--id','sqllib','--from','go-cli-tui'],repo,e); assert p.returncode==0,setup
+  profile=repo/'.roundfix/baseline/profiles/sqllib.json'; data=json.loads(profile.read_text()); data['decisions'].remove('verification.incremental'); profile.write_text(json.dumps(data,indent=2)+'\n')
+  expected_status='?? .roundfix/\n'; before=snapshot(repo); status=must(['git','status','--porcelain','--untracked-files=all'],repo); assert status=='?? .roundfix/baseline/profiles/sqllib.json\n',status
+  blocks=re.findall(r'```transcript\n(.*?)\n\s*```',(spec/'_techspec.md').read_text(),re.S)
+  for index,block in enumerate(blocks):
+   lines=[line[3:] if line.startswith('   ') else line for line in block.splitlines()]; cmd=lines[0].removeprefix('$ '); stdout=lines.index('stdout:'); stderr=lines.index('stderr:'); exit_at=next(i for i,v in enumerate(lines) if v.startswith('exit: '))
+   wanted_out='\n'.join(lines[stdout+1:stderr]); wanted_err='\n'.join(lines[stderr+1:exit_at]); wanted_out+= '\n' if wanted_out else ''; wanted_err+='\n' if wanted_err else ''
+   p,log=cli(shlex.split(cmd)[1:],repo,e); after_status=must(['git','status','--porcelain','--untracked-files=all'],repo)
+   ok=p.stdout==wanted_out and p.stderr==wanted_err and p.returncode==int(lines[exit_at][6:]) and snapshot(repo)==before and after_status==status
+   log=setup+'\nBefore status:\n'+status+log+'After status:\n'+after_status+'EXACT TRANSCRIPT MATCH: '+str(ok)+'\nALL FILE HASHES UNCHANGED: '+str(snapshot(repo)==before)+'\n'
+   rid='QA-T'+str(index+1)
+   if index==0:
+    data['decisions'].append('verification.incremental'); profile.write_text(json.dumps(data,indent=2)+'\n'); pp,ll=cli(['baseline','profile','validate','sqllib'],repo,e); log+='\nAfter adding decision:\n'+ll; ok=ok and pp.returncode==0 and 'sqllib: valid (repository)' in pp.stdout; data['decisions'].remove('verification.incremental'); profile.write_text(json.dumps(data,indent=2)+'\n')
+   record(rid,'pass' if ok else 'fail','Exact stdout, stderr and exit comparison '+('passed' if ok else 'FAILED')+'; only the profile file appears in git status before and after; file hashes preserved. '+('Adding the decision restores validation exit 0.' if index==0 else ''),log)
+
+def refresh():
+ logs=[]; ok=True
+ with tempfile.TemporaryDirectory(prefix='qa0362-clones-') as d,tempfile.TemporaryDirectory(prefix='qa0362-home-') as h,tempfile.TemporaryDirectory(prefix='qa0362-tmp-') as t:
+  e=cli_env(h,t)
+  for label,rev in [('delivery-base',base),('audited-head',head)]:
+   dest=Path(d)/label; p,l=run(['git','clone','--shared','--quiet',str(root),str(dest)]); logs.append(l); assert p.returncode==0,l; logs.append(run(['git','checkout','--detach',rev],dest)[1])
+   before=must(['git','status','--porcelain'],dest); p,l=cli(['baseline','update','--repo',str(dest),'--no-skills','--no-history','--format','text'],root,e); logs.append(l)
+   expected='- update docs/agents/docs-layout.md' if label=='delivery-base' else 'File changes: 0'; found=expected in p.stdout; logs.append('ASSERT '+expected+': '+str(found)+'\n')
+   ok=ok and found and before==must(['git','status','--porcelain'],dest)
+ record('QA-REFRESH','pass' if ok else 'fail','Both shared-clone preview assertions '+('passed' if ok else 'FAILED')+'; clone working trees unchanged; clones and disposable CLI state removed. Only the specified output lines decide this requirement.','\n'.join(logs))
+
+def invariant():
+ path='internal/baseline/assets/modules/spec-workflow.json'; old=json.loads(must(['git','show',base+':'+path])); new=json.loads(Path(path).read_text()); logs=[]
+ assert int(new['version'])==int(old['version'])+1; logs.append('Module version: '+str(old['version'])+' -> '+str(new['version']))
+ new['version']=old['version']
+ oldtext='so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary, an agent guide or the Secondbrain inbox before or at archive.'
+ newtext='so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary or an agent guide before or at archive, or send its knowledge in an ai-memory message to the project that owns the Secondbrain for its ingestion.'
+ def visit(o,n):
+  if isinstance(o,dict):
+   if o.get('id')=='rule.spec.docs-layout':
+    assert int(n['version'])==int(o['version'])+1; logs.append('Docs-layout rule version: '+str(o['version'])+' -> '+str(n['version'])); n['version']=o['version']
+   if o.get('id')=='clause.spec.keep-artifacts-in-spec-folder':
+    assert n['guidance']==o['guidance'].replace(oldtext,newtext) and oldtext in o['guidance']; n['guidance']=o['guidance']; logs.append('Exact API Contract 1 sentence replacement; identity/enforcement/replaces preserved.')
+   assert o.keys()==n.keys()
+   for k in o:visit(o[k],n[k])
+  elif isinstance(o,list):
+   assert len(o)==len(n)
+   for a,b in zip(o,n): visit(a,b)
+ visit(old,new); assert old==new; logs.append('Every other decoded JSON value is identical.'); record('QA-INVARIANT','pass','Module 23 -> 24; docs-layout rule 8 -> 9; exact sentence substitution only. Every other decoded JSON value equals the Delivery Base.','\n'.join(logs))
+
+if __name__=='__main__':
+ action=sys.argv[1]
+ if action=='tests': test_group()
+ elif action=='transcripts':transcripts()
+ elif action=='refresh':refresh()
+ elif action=='invariant':invariant()

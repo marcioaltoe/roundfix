@@ -1,0 +1,57 @@
+from qa0362_runner import *
+import difflib
+
+def body_replace(text,signature,newbody):
+ start=text.index(signature); opening=text.index('{',start); depth=1; pos=opening+1
+ while depth:
+  if text[pos]=='{':depth+=1
+  elif text[pos]=='}':depth-=1
+  pos+=1
+ return text[:opening+1]+'\n'+newbody+'\n'+text[pos-1:]
+def replace_once(text,a,b):
+ assert text.count(a)==1,(a,text.count(a));return text.replace(a,b,1)
+
+def sabotage(which):
+ rid='QA-S'+str(which); logs=[]
+ with tempfile.TemporaryDirectory(prefix='qa0362-s'+str(which)+'-') as temp:
+  copy=Path(temp); archive=subprocess.check_output(['git','archive',head]); tarfile.open(fileobj=io.BytesIO(archive)).extractall(copy,filter='data')
+  path=copy/('internal/baseline/assets/modules/spec-workflow.json' if which==1 else 'internal/baseline/profile_decision_gap.go' if which in [2,3] else 'internal/cli/baseline_profile.go' if which==4 else 'internal/baseline/classification.go')
+  old=path.read_text(); changed=old
+  if which==1:
+   newend='so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary or an agent guide before or at archive, or send its knowledge in an ai-memory message to the project that owns the Secondbrain for its ingestion.'
+   oldend='so copy every file a later reader needs to `docs/references/`, an accepted ADR, the glossary, an agent guide or the Secondbrain inbox before or at archive.'
+   changed=replace_once(old,newend,oldend)
+   jobs=[('./internal/baseline','^TestArchiveRecordClausesAreAppended$',r'--- FAIL: TestArchiveRecordClausesAreAppended')]
+  elif which==2:
+   sig='func ProfileDecisionGaps(profile ResolvedProfile, catalog *Catalog) []ProfileDecisionGap {'; changed=replace_once(old,sig,sig+'\n\treturn nil')
+   jobs=[('./internal/baseline','^TestAProfileWithoutTheIncrementalDecisionHasOneGap$',r'--- FAIL: TestAProfileWithoutTheIncrementalDecisionHasOneGap'),('./internal/cli','^TestBaselinePlanRefusesAProfileDecisionGap$',r'--- FAIL: TestBaselinePlanRefusesAProfileDecisionGap')]
+  elif which==3:
+   start=old.index('\tpending := append([]string(nil), profile.Decisions...)'); end=old.index('\n\ttype binding',start); changed=old[:start]+old[end:]
+   jobs=[('./internal/baseline','^TestNoBuiltInProfileHasADecisionGap$',r'--- FAIL: TestNoBuiltInProfileHasADecisionGap')]
+  elif which==4:
+   start=old.index('\t\tif gaps := baseline.ProfileDecisionGaps(',old.index('func runBaselineProfileValidateCommand')); end=old.index('\n\t\t}',start)+len('\n\t\t}'); changed=old[:start]+old[end:]
+   jobs=[('./internal/cli','^TestBaselineProfileValidateNamesADecisionGap$',r'--- FAIL: TestBaselineProfileValidateNamesADecisionGap')]
+  elif which==5:
+   changed=replace_once(old,'return carrierMarkerLine.Match(content)','return false')
+   jobs=[('./internal/baseline','^TestARepositoryAuthoredGuideRaisesNoCarrierConflict$',r'--- FAIL: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/unclosed_marker_line')]
+  elif which==6:
+   changed=replace_once(old,'!hasMarkerLine(content) && len(source) == 0 && len(current) == 0 {','!hasMarkerLine(content) {')
+   start=changed.index('\t\tfor _, managedPath := range knownPaths {',changed.index('func classifyMarkedCarrier')); end=changed.index('\n\t\tif !managed {',start); changed=changed[:start]+changed[end:]
+   jobs=[('./internal/baseline','^TestARepositoryAuthoredGuideRaisesNoCarrierConflict$',r'--- FAIL: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/managed_guide_path_without_markers')]
+  elif which==7:
+   changed=replace_once(old,'case carrierCurrentManaged, carrierStaleManaged, carrierRepositoryExtension, carrierRepositoryAuthoredGuide:','case carrierCurrentManaged, carrierStaleManaged, carrierRepositoryExtension:')
+   jobs=[('./internal/baseline','^TestARepositoryAuthoredGuideRaisesNoCarrierConflict$',r'--- FAIL: TestARepositoryAuthoredGuideRaisesNoCarrierConflict/plain_guide')]
+  assert changed!=old;path.write_text(changed)
+  logs.append('Archive source: '+head+'\nMutation (scratch only):\n'+''.join(difflib.unified_diff(old.splitlines(True),changed.splitlines(True),fromfile=str(path.relative_to(copy)),tofile='sabotaged')))
+  # Suiteguard needs staged Git provenance; archive has no metadata.
+  must(['git','init','-q',str(copy)]); must(['git','add','-A'],copy)
+  ok=True
+  for pkg,pattern,expected in jobs:
+   p,l=run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg],copy); logs.append(l)
+   named=p.returncode!=0 and re.search(expected,p.stdout+p.stderr) is not None and '[build failed]' not in p.stdout+p.stderr
+   if which==3:named=named and 'runtime.backend' in p.stdout+p.stderr and 'runtime.design' in p.stdout+p.stderr
+   if which==4:named=named and 'sqllib: valid (repository)' in p.stdout+p.stderr
+   logs.append('EXPECTED ASSERTION FAILURE: '+str(named)+'\n'); ok=ok and named
+   print(rid,pkg,'exit',p.returncode,'expected assertion',named,flush=True)
+  record(rid,'pass' if ok else 'fail','Isolated sabotage '+('was detected by the required named assertion(s).' if ok else 'did NOT satisfy its required named assertion failure; inspect evidence.')+' The audited checkout was unchanged and the archive copy was removed.','\n'.join(logs))
+if __name__=='__main__':sabotage(int(sys.argv[1]))

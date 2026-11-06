@@ -1,0 +1,43 @@
+from qa0362_runner import *
+log=[]; failures=[]; task_commits={}; changes=[]
+commits=must(['git','rev-list','--reverse',base+'..'+head]).splitlines()
+for commit in commits:
+ body=must(['git','show','-s','--format=%B',commit]); paths=must(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines(); changes+=paths
+ log.append('COMMIT '+commit+'\n'+body+'PATHS\n'+'\n'.join(paths))
+ m=re.search(r'^Roundfix-Task: (task_\d+)$',body,re.M)
+ if not m:continue
+ task=m[1]; task_commits[task]=commit; text=(spec/(task+'.md')).read_text()
+ declared=set(re.findall(r'^- (?:creates|interface): `([^`]+)`',text,re.M)); declared.add(str(spec/(task+'.md')))
+ recorded=re.search(r'^## Recorded paths\n(.*?)(?=^## |\Z)',text,re.M|re.S)
+ if recorded:declared.update(re.findall(r'`([^`]+)`',recorded[1]))
+ unexpected=sorted(set(paths)-declared);log.append('DECLARED SCOPE '+task+': '+str(not unexpected))
+ failures += [task+' undeclared: '+p for p in unexpected]
+for p in sorted(set(changes)):
+ denied=p in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md'] or p.startswith(('.github/workflows/','docs/adr/','internal/baseline/assets/source-baselines/','internal/baseline/assets/retention/','internal/baseline/assets/templates/')) or p=='internal/baseline/assets/decisions.json' or (p.startswith('internal/baseline/assets/modules/') and p!='internal/baseline/assets/modules/spec-workflow.json') or (p.startswith('docs/agents/') and p not in ['docs/agents/docs-layout.md','docs/agents/setup-context.json'])
+ if denied:failures.append('prohibited: '+p)
+auth=spec/'_authorization.md'; authorization=auth.read_text(); paths_block=authorization.split('\npaths:\n',1)[1].split('\noperations:',1)[0]; allowed=re.findall(r'^  - (.*)$',paths_block,re.M)
+assert len(task_commits)==4
+for task,commit in task_commits.items():
+ parent=must(['git','rev-parse',commit+'^']).strip(); prior=must(['git','show',parent+':'+str(auth)]); assert prior==authorization
+ p,l=run(['git','merge-base','--is-ancestor',base,commit]);assert p.returncode==0;log.append('Authorization exists before '+task+' and is byte-identical to the operative approved grant.')
+with tempfile.TemporaryDirectory(prefix='qa0362-audit-') as d:
+ temp=Path(d); data=temp/'paths.json';data.write_text(json.dumps({'paths':sorted(set(changes)),'allowed':allowed}))
+ code='''package speccheck
+import ("encoding/json"; "os"; "testing")
+func TestQA0362GovernedScope(t *testing.T) {
+ t.Parallel()
+ data,err:=os.ReadFile(DATA_PATH);if err!=nil {t.Fatal(err)}
+ var v struct { Paths []string `json:"paths"`; Allowed []string `json:"allowed"` };if err:=json.Unmarshal(data,&v);err!=nil{t.Fatal(err)}
+ allowed:=map[string]bool{};for _,p:=range v.Allowed{allowed[p]=true}
+ for _,p:=range v.Paths{g:=GovernedPath(p);t.Logf("%s governed=%t authorized=%t",p,g,allowed[p]);if g&&!allowed[p]{t.Errorf("governed path lacks authorization: %s",p)}}
+}
+'''.replace('DATA_PATH',json.dumps(str(data)))
+ source=temp/'scope.go.txt';source.write_text(code); overlay=temp/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(root/'internal/speccheck/qa0362_scope_probe_test.go'):str(source)}}))
+ p,l=run(['go','test','-timeout','20m','-count=1','-v','-overlay',str(overlay),'./internal/speccheck','-run','^TestQA0362GovernedScope$']);log.append(l)
+ if p.returncode:failures.append('canonical GovernedPath probe failed')
+ # Write only after the test has exited.
+ (ev/'scope-probe.go.txt').write_text(code.replace(str(data),'<temporary-path-input.json>'))
+log.append('Task commits inspected: '+str(len(task_commits))+'; unique changed paths: '+str(len(set(changes)))+'; prohibited path changes: '+str(sum(x.startswith('prohibited:') for x in failures)))
+log.append('All Task paths are declared; no Recorded paths extensions were required. CONTEXT.md and prohibited module/template/retention/source-baseline/ADR/tooling/release paths are unchanged.')
+log.append('Current delta: '+must(['git','status','--short']))
+record('QA-SCOPE','fail' if failures else 'pass','Four Task commits audited against exact Context interfaces/creates plus each Task file; all governed changes are granted by the prior authorization; no prohibited range mutation. '+('Failures: '+', '.join(failures) if failures else 'No scope findings.'),'\n\n'.join(log))
