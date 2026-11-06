@@ -564,6 +564,123 @@ func TestCarrierClassification(t *testing.T) {
 	})
 }
 
+func TestARepositoryAuthoredGuideRaisesNoCarrierConflict(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		path        string
+		content     string
+		wantWarning bool
+	}{
+		{
+			name:    "plain guide",
+			path:    "docs/agents/sql.md",
+			content: "Keep SQL queries readable.\n",
+		},
+		{
+			name:    "marker name in prose",
+			path:    "docs/agents/sql.md",
+			content: "The `setup-context-driven` marker names managed content.\n",
+		},
+		{
+			name:    "marker colon form in prose",
+			path:    "docs/agents/sql.md",
+			content: "The `setup-context-driven:begin` marker opens managed content.\n",
+		},
+		{
+			name:        "nested instructions",
+			path:        "services/payments/AGENTS.md",
+			content:     "Keep payment policies here.\n",
+			wantWarning: true,
+		},
+		{
+			name:        "managed guide path without markers",
+			path:        "docs/agents/docs-layout.md",
+			content:     "Keep documentation organized.\n",
+			wantWarning: true,
+		},
+		{
+			name:        "unknown managed block",
+			path:        "docs/agents/sql.md",
+			content:     "<!-- setup-context-driven:begin id=unknown.guide version=1 -->\n\nUnknown guide.\n\n<!-- setup-context-driven:end id=unknown.guide -->\n",
+			wantWarning: true,
+		},
+		{
+			name:        "unclosed marker line",
+			path:        "docs/agents/notes.md",
+			content:     "<!-- setup-context-driven:begin id=unknown.guide version=1 -->\n\nUnclosed guide.\n",
+			wantWarning: true,
+		},
+		{
+			name:        "AGENTS under guides",
+			path:        "docs/agents/AGENTS.md",
+			content:     "Keep agent instructions here.\n",
+			wantWarning: true,
+		},
+		{
+			name:        "CLAUDE under guides",
+			path:        "docs/agents/CLAUDE.md",
+			content:     "Keep agent instructions here.\n",
+			wantWarning: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newPlanRepository(t)
+			writeInspectionFile(t, repo, test.path, test.content)
+			commitInspectionRepository(t, repo, "seed guide carrier")
+
+			plan := buildTestPlan(t, repo)
+			gotWarning := hasRepositoryFinding(plan.Warnings, "baseline.inventory.nested-carrier-conflict", test.path)
+			if gotWarning != test.wantWarning {
+				t.Fatalf("carrier %q warning = %t, want %t: %+v", test.path, gotWarning, test.wantWarning, plan.Warnings)
+			}
+		})
+	}
+}
+
+func TestAMarkerLineIsACommentThatStartsALine(t *testing.T) {
+	t.Parallel()
+
+	for _, marker := range []string{"begin", "end"} {
+		t.Run(marker, func(t *testing.T) {
+			t.Parallel()
+
+			comment := "<!-- setup-context-driven:" + marker + " id=unknown.guide -->"
+			tests := []struct {
+				name    string
+				content string
+				want    bool
+			}{
+				{"line start", comment, true},
+				{"later line start", "Prose.\n" + comment, true},
+				{"one space", "Prose.\n " + comment, true},
+				{"two spaces", "Prose.\n  " + comment, true},
+				{"three spaces", "Prose.\n   " + comment, true},
+				{"four spaces", "Prose.\n    " + comment, false},
+				{"tab indentation", "\t" + comment, false},
+				{"no comment whitespace", "<!--setup-context-driven:" + marker + " -->", true},
+				{"tab after comment opener", "<!--\tsetup-context-driven:" + marker + " -->", true},
+				{"code span in sentence", "The `" + comment + "` marker is prose.", false},
+				{"inline comment", "Prose " + comment, false},
+				{"bare name", "setup-context-driven", false},
+			}
+			for _, test := range tests {
+				t.Run(test.name, func(t *testing.T) {
+					t.Parallel()
+
+					if got := hasMarkerLine([]byte(test.content)); got != test.want {
+						t.Fatalf("hasMarkerLine(%q) = %t, want %t", test.content, got, test.want)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestUnclassifiableCarrierStillWarns(t *testing.T) {
 	t.Parallel()
 

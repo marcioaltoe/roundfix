@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,40 @@ marker name, and drops its warning. It answers the second defect reported by sql
 - `_prd.md` → Goals; User Story 3; Core Feature 3; Success Metric 5; Acceptance evidence
 - `_techspec.md` → API Contract 6; Testing Approach; Build Order 3
 - ADR-0372
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Added `carrierRepositoryAuthoredGuide` and `hasMarkerLine`. Classification
+recognizes an unmarked guide under `docs/agents/` only when it contains no
+managed block, is neither `AGENTS.md` nor `CLAUDE.md`, and its path is absent
+from the catalog, Setup Manifest artifacts and current plan artifacts. This
+branch precedes the existing substring checks. The warning filter drops only
+the nested-carrier warning for this new kind; inventory and warning text are
+unchanged.
+
+Focused evidence:
+
+- Before the production change,
+  `rtk proxy go test -timeout 5m -count=1 -run '^TestARepositoryAuthoredGuideRaisesNoCarrierConflict$' ./internal/baseline`
+  exited 1: plain prose, the marker name in backticks and the colon form in
+  backticks each retained the false warning.
+- After the change,
+  `rtk proxy go test -timeout 5m -count=1 -run '^(TestARepositoryAuthoredGuide|TestAMarkerLine|TestCarrierClassification|TestNestedCarrier|TestUnclassifiableCarrier)' ./internal/baseline`
+  exited 0 (`ok roundfix/internal/baseline`). This exercises both new tests,
+  the existing carrier classification tests and all four required unchanged
+  nested-carrier regressions.
+- `rtk proxy git diff --check` exited 0. The implementation changes are
+  limited to `classification.go`, `classification_test.go` and this Result.
+
+Acceptance evidence:
+
+| Criterion | Evidence |
+| --- | --- |
+| An unmanaged guide without a marker line raises no warning regardless of marker prose | The three prose shapes pass through `buildTestPlan` in separate temporary repositories. |
+| Nested instructions, managed paths and real markers still warn | The new test retains warnings for nested `AGENTS.md`, unmarked `docs-layout.md`, an unknown managed block and an unclosed begin marker; it also checks `AGENTS.md` and `CLAUDE.md` under `docs/agents/`. The marker test checks begin and end comments at zero to three spaces, four spaces, tabs, inline prose and code spans. |
+| The Baseline package passes | The focused Baseline checks above exited 0. The full package suite and declared Verification remain for the Daemon; this turn makes no package-wide verdict. |
+
+Task status was already `in_progress` on entry and was left unchanged. The
+Task Graph is unchanged. No follow-up work identified.
