@@ -855,8 +855,20 @@ A Linux Lane failure attributed to the candidate: its Go test run, or the `go li
 _Avoid_: container failure, generic gate failure
 
 **Queue Owner**:
-The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
+The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, one item at a time through every stage except the pre-PR review, which it runs for up to its Review Capacity of items at once. It waits on each Prerequisite Spec and starts a queued item only when no earlier item is between its Implement Run and its merge; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one, and a live owner finds a retried item within 30 seconds ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)). When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Scheduler, daemon, deliver loop
+
+**Review Capacity**:
+The maximum number of pre-PR reviews one Queue Owner runs at the same time, beside the one item it advances through every other stage. It is set by `delivery.review_concurrency` in User Config and is `2` by default; each review reads only its own item worktree in a read-only session, so it never waits for the Implement Run of another item ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Verification Capacity, Task Capacity, review pool
+
+**Queue Turn**:
+Where a Delivery Queue item that is neither merged nor parked stands with its Queue Owner: advancing in the owner's turn, reviewing in one of the Review Capacity's slots, or waiting for the owner's turn, a review slot or its prerequisites, with its place in line. `roundfix deliver status` prints it on one `Turn:` line per item from the Turn Record ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Queue position, waiting stage, capacity wait
+
+**Turn Record**:
+The file `turn.json` beside a Queue Owner's console log, in which a live owner records the Queue Turn of every item it has not finished with its PID, start-time identity and Review Capacity. `roundfix deliver status` reads it only for a Queue Owner it proves live, and the Run Database gains no column for it ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Turn column, owner log
 
 **Delivery Plan**:
 The read-only account of which Specs have delivery authority, what blocks the others and which production premises ordered Specs share. It reports a prepared queue without recording or running one.

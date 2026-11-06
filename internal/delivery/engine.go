@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/config"
@@ -51,8 +52,9 @@ const cleanupWarningPrefix = "warning: cleanup failed"
 var ErrItemWorktreeMissing = errors.New("item worktree and branch are missing")
 
 const (
-	defaultCheckTimeout  = config.DefaultDeliveryCheckTimeout
-	defaultCheckInterval = 15 * time.Second
+	defaultCheckTimeout     = config.DefaultDeliveryCheckTimeout
+	defaultCheckInterval    = 15 * time.Second
+	defaultTurnPollInterval = 30 * time.Second
 )
 
 // checksTimeoutBlocker is stored in the Run Database and printed by deliver
@@ -369,6 +371,10 @@ type ConflictResolution struct {
 }
 
 type EngineDependencies struct {
+	TurnRecorder     TurnRecorder
+	ReviewCapacity   int
+	TurnPollInterval time.Duration
+
 	Merges         MergeObserver
 	Corrections    ReviewCorrectionProver
 	SecretRewrites SecretRewriteProver
@@ -400,6 +406,16 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	turnRecorder      TurnRecorder
+	turnMu            sync.Mutex
+	advancing         string
+	prerequisiteWaits map[string][]string
+	reviewCapacity    int
+	turnPollInterval  time.Duration
+	reviewSlots       *reviewSlots
+	queuedTurnHeld    bool
+	prerequisiteWait  bool
+
 	merges         MergeObserver
 	policyRefusals map[string]bool
 
@@ -462,7 +478,16 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 	if runSlotPollInterval <= 0 {
 		runSlotPollInterval = 30 * time.Second
 	}
+	reviewCapacity := max(1, dependencies.ReviewCapacity)
+	turnPollInterval := dependencies.TurnPollInterval
+	if turnPollInterval <= 0 {
+		turnPollInterval = defaultTurnPollInterval
+	}
 	return &Engine{
+		turnRecorder:     dependencies.TurnRecorder,
+		reviewCapacity:   reviewCapacity,
+		turnPollInterval: turnPollInterval,
+
 		merges:         dependencies.Merges,
 		corrections:    dependencies.Corrections,
 		secretRewrites: dependencies.SecretRewrites,
@@ -828,76 +853,174 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 		return EngineResult{}, fmt.Errorf("run Delivery Engine: Delivery Queue for repository %q does not exist", gitRoot)
 	}
 
-	if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
-		return EngineResult{}, err
-	}
-	for index := range queue.Items {
-		item := queue.Items[index]
-		if item.Stage == store.DeliveryStageParked {
-			continue
+	slots := newReviewSlots(engine, gitRoot)
+	engine.reviewSlots = slots
+	engine.advancing = ""
+	engine.prerequisiteWaits = make(map[string][]string)
+	slots.start(ctx)
+	defer func() {
+		slots.stop()
+		engine.reviewSlots = nil
+	}()
+	firstPass := true
+	// Preserve prerequisite waits and releases for the next Run call, as
+	// before: internal passes exist only to drain this Run's review slots.
+	deferredPrerequisites := make(map[string]bool)
+	for {
+		busyAtStart, _, generation, slotErr := slots.snapshot()
+		if slotErr != nil {
+			return EngineResult{}, slotErr
 		}
-		if item.Stage == store.DeliveryStageQueued &&
-			!queue.Limits.Deadline.IsZero() &&
-			!engine.clock.Now().Before(queue.Limits.Deadline) {
-			if err := engine.park(ctx, gitRoot, &item, BlockerQueueDeadline); err != nil {
-				return EngineResult{}, fmt.Errorf("park Spec %q at queue deadline: %w", item.SpecSlug, err)
-			}
-			queue.Items[index] = item
-			continue
+		if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+			return EngineResult{}, err
 		}
-		if item.Stage == store.DeliveryStageQueued && queue.Limits.MaxTokens > 0 {
-			usage, err := engine.store.DeliveryQueueTokenUsage(ctx, gitRoot)
-			if err != nil {
-				return EngineResult{}, fmt.Errorf("start Spec %q: read queue token usage: %w", item.SpecSlug, err)
+		engine.queuedTurnHeld = false
+		for index := range queue.Items {
+			if err := ctx.Err(); err != nil {
+				return EngineResult{}, fmt.Errorf("run Delivery Engine: %w", err)
 			}
-			if usage.Total.Tokens != nil && *usage.Total.Tokens >= queue.Limits.MaxTokens {
-				if err := engine.park(ctx, gitRoot, &item, BlockerQueueTokenCeiling); err != nil {
-					return EngineResult{}, fmt.Errorf("park Spec %q at queue token ceiling: %w", item.SpecSlug, err)
+			item := queue.Items[index]
+			if deferredPrerequisites[item.SpecSlug] && (item.Stage == store.DeliveryStageQueued || item.Stage == store.DeliveryStageParked) {
+				continue
+			}
+			item, resumed, held := slots.claimForPass(item)
+			if held {
+				continue
+			}
+			if !resumed && item.Stage == store.DeliveryStageReviewing {
+				// A review may have ended after this pass read its queue.
+				fresh, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+				if err != nil {
+					return EngineResult{}, fmt.Errorf("read claimed review: %w", err)
+				}
+				for _, candidate := range fresh.Items {
+					if candidate.SpecSlug == item.SpecSlug {
+						item = candidate
+					}
+				}
+				if item.Stage != store.DeliveryStageReviewing {
+					slots.release(item.SpecSlug)
+				}
+			}
+			if !firstPass && !resumed && item.Stage == store.DeliveryStageMerged {
+				continue
+			}
+			if item.Stage == store.DeliveryStageParked {
+				deferredPrerequisites[item.SpecSlug] = prerequisitePark(item.Blocker)
+				continue
+			}
+			if item.Stage == store.DeliveryStageQueued &&
+				!queue.Limits.Deadline.IsZero() &&
+				!engine.clock.Now().Before(queue.Limits.Deadline) {
+				if err := engine.park(ctx, gitRoot, &item, BlockerQueueDeadline); err != nil {
+					return EngineResult{}, fmt.Errorf("park Spec %q at queue deadline: %w", item.SpecSlug, err)
 				}
 				queue.Items[index] = item
 				continue
 			}
-		}
-		if item.Stage != store.DeliveryStageMerged {
-			priorMerges := mergedCommitsBefore(queue.Items, index)
-			if err := engine.advanceItem(ctx, gitRoot, &item, priorMerges); err != nil {
-				if ctx.Err() != nil {
-					return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+			if item.Stage == store.DeliveryStageQueued && queue.Limits.MaxTokens > 0 {
+				usage, err := engine.store.DeliveryQueueTokenUsage(ctx, gitRoot)
+				if err != nil {
+					return EngineResult{}, fmt.Errorf("start Spec %q: read queue token usage: %w", item.SpecSlug, err)
 				}
-				reason := BlockerDeliveryError + ": " + err.Error()
-				if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
-					return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
+				if usage.Total.Tokens != nil && *usage.Total.Tokens >= queue.Limits.MaxTokens {
+					if err := engine.park(ctx, gitRoot, &item, BlockerQueueTokenCeiling); err != nil {
+						return EngineResult{}, fmt.Errorf("park Spec %q at queue token ceiling: %w", item.SpecSlug, err)
+					}
+					queue.Items[index] = item
+					continue
+				}
+			}
+			if item.Stage != store.DeliveryStageMerged {
+				priorMerges := mergedCommitsBefore(queue.Items, index)
+				engine.prerequisiteWait = false
+				engine.advancingTurn(ctx, gitRoot, item.SpecSlug)
+				var advanceErr error
+				if resumed {
+					advanceErr = engine.advanceStages(ctx, gitRoot, &item)
+				} else {
+					advanceErr = engine.advanceItem(ctx, gitRoot, &item, priorMerges)
+				}
+				engine.advancingTurn(ctx, gitRoot, "")
+				if engine.prerequisiteWait {
+					deferredPrerequisites[item.SpecSlug] = true
+				}
+				if err := advanceErr; err != nil {
+					if ctx.Err() != nil {
+						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
+					}
+					reason := BlockerDeliveryError + ": " + err.Error()
+					if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
+						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
+					}
+				}
+			}
+			if item.Stage != store.DeliveryStageReviewing {
+				slots.release(item.SpecSlug)
+			}
+			if item.Stage == store.DeliveryStageMerged {
+				releaseErr := engine.workspace.ReleaseMergedRuns(ctx, gitRoot, item)
+				removeErr := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
+				if cleanupErr := errors.Join(releaseErr, removeErr); cleanupErr != nil {
+					item.Blocker = cleanupWarningPrefix + ": " + cleanupErr.Error()
+					if persistErr := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); persistErr != nil {
+						return EngineResult{}, fmt.Errorf(
+							"record cleanup warning for merged Spec %q after %v: %w",
+							item.SpecSlug,
+							cleanupErr,
+							persistErr,
+						)
+					}
+				} else if strings.HasPrefix(item.Blocker, cleanupWarningPrefix) {
+					item.Blocker = ""
+					if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
+						return EngineResult{}, fmt.Errorf("clear cleanup warning for merged Spec %q: %w", item.SpecSlug, err)
+					}
+				}
+			}
+			queue.Items[index] = item
+			if item.Stage == store.DeliveryStageMerged {
+				if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
+					return EngineResult{}, err
 				}
 			}
 		}
-		if item.Stage == store.DeliveryStageMerged {
-			releaseErr := engine.workspace.ReleaseMergedRuns(ctx, gitRoot, item)
-			removeErr := engine.workspace.RemoveItemBranch(ctx, gitRoot, item.Branch, item.Worktree)
-			if cleanupErr := errors.Join(releaseErr, removeErr); cleanupErr != nil {
-				item.Blocker = cleanupWarningPrefix + ": " + cleanupErr.Error()
-				if persistErr := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); persistErr != nil {
-					return EngineResult{}, fmt.Errorf(
-						"record cleanup warning for merged Spec %q after %v: %w",
-						item.SpecSlug,
-						cleanupErr,
-						persistErr,
-					)
-				}
-			} else if strings.HasPrefix(item.Blocker, cleanupWarningPrefix) {
-				item.Blocker = ""
-				if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
-					return EngineResult{}, fmt.Errorf("clear cleanup warning for merged Spec %q: %w", item.SpecSlug, err)
-				}
+		busy, returned, after, slotErr := slots.snapshot()
+		if slotErr != nil {
+			return EngineResult{}, slotErr
+		}
+		if err := ctx.Err(); err != nil {
+			return EngineResult{}, fmt.Errorf("run Delivery Engine: %w", err)
+		}
+		if !busyAtStart && !busy && !returned && generation == after {
+			fresh, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+			if err != nil {
+				return EngineResult{}, fmt.Errorf("read final Delivery Queue: %w", err)
+			}
+			return EngineResult{Items: fresh.Items}, nil
+		}
+		if busy && !returned {
+			select {
+			case <-ctx.Done():
+				return EngineResult{}, fmt.Errorf("run Delivery Engine: %w", ctx.Err())
+			case <-slots.changed:
 			}
 		}
-		queue.Items[index] = item
-		if item.Stage == store.DeliveryStageMerged {
-			if err := engine.releasePrerequisites(ctx, gitRoot, &queue); err != nil {
-				return EngineResult{}, err
-			}
+		queue, _, err = engine.store.DeliveryQueue(ctx, gitRoot)
+		if err != nil {
+			return EngineResult{}, fmt.Errorf("read Delivery Queue pass: %w", err)
 		}
+		firstPass = false
 	}
-	return EngineResult{Items: queue.Items}, nil
+}
+
+// reviewSlotsChanged is the single engine boundary for slot and poll events.
+func (engine *Engine) reviewSlotsChanged() {
+	engine.recordTurn(engine.reviewSlots.ctx, engine.reviewSlots.gitRoot)
+	select {
+	case engine.reviewSlots.changed <- struct{}{}:
+	default:
+	}
 }
 
 func (engine *Engine) validate() error {
@@ -958,11 +1081,30 @@ func (engine *Engine) advanceItem(
 					waiting = waiting && found
 				}
 				if waiting {
+					engine.prerequisiteWait = true
+					engine.prerequisiteTurn(ctx, gitRoot, item.SpecSlug, unmet)
 					fmt.Fprintf(engine.log, "roundfix: prerequisite wait: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(unmet, ", "))
 					return nil
 				}
 				return engine.park(ctx, gitRoot, item, BlockerPrerequisiteUnmerged+": "+strings.Join(unmet, ", "))
 			}
+		}
+		queue, _, err := engine.store.DeliveryQueue(ctx, gitRoot)
+		if err != nil {
+			return fmt.Errorf("read queued start order: %w", err)
+		}
+		for _, earlier := range queue.Items {
+			if earlier.Position >= item.Position {
+				continue
+			}
+			switch earlier.Stage {
+			case store.DeliveryStageRunning, store.DeliveryStageReviewing, store.DeliveryStageArchiving,
+				store.DeliveryStageGating, store.DeliveryStagePublishing, store.DeliveryStageChecking, store.DeliveryStageMerging:
+				engine.queuedTurnHeld = true
+			}
+		}
+		if engine.queuedTurnHeld {
+			return nil
 		}
 		branch, itemWorktree, err := engine.workspace.CreateItemBranch(ctx, gitRoot, item.SpecSlug)
 		if err != nil {
@@ -1053,6 +1195,10 @@ func (engine *Engine) advanceItem(
 		}
 		item.WorktreeProvisioned = true
 	}
+	return engine.advanceStages(ctx, gitRoot, item)
+}
+
+func (engine *Engine) advanceStages(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
 	for item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
 		switch item.Stage {
 		case store.DeliveryStageRunning:
@@ -1060,9 +1206,8 @@ func (engine *Engine) advanceItem(
 				return err
 			}
 		case store.DeliveryStageReviewing:
-			if err := engine.reviewCandidate(ctx, gitRoot, item); err != nil {
-				return err
-			}
+			engine.reviewSlots.take(*item)
+			return nil
 		case store.DeliveryStageArchiving:
 			if err := engine.archiveCandidate(ctx, gitRoot, item); err != nil {
 				return err
