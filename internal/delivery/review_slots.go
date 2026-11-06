@@ -171,7 +171,7 @@ func (slots *reviewSlots) review(item store.DeliveryQueueItem) {
 	slots.engine.reviewSlotsChanged()
 	err := slots.engine.reviewCandidate(slots.ctx, slots.gitRoot, &item)
 	if err != nil && slots.ctx.Err() == nil {
-		if parkErr := slots.engine.park(slots.ctx, slots.gitRoot, &item, BlockerDeliveryError+": "+err.Error()); parkErr != nil {
+		if parkErr := slots.engine.park(slots.ctx, slots.gitRoot, &item, stepErrorBlocker(err)); parkErr != nil {
 			slots.mu.Lock()
 			slots.err = fmt.Errorf("deliver Spec %q: park review: %w", item.SpecSlug, parkErr)
 			slots.mu.Unlock()

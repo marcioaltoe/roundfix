@@ -54,6 +54,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 	case BlockerRuntimeInfrastructure:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "run roundfix deliver retry " + item.SpecSlug + "; a retry from runtime-infrastructure is not counted"
+	case BlockerDiskFull:
+		classification.Class = ParkClassEnvironment
+		classification.Next = "free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry " + item.SpecSlug + "; a retry from disk-full is not counted"
 	case BlockerLinuxLaneContainer:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "repair the Linux Lane container cause in the blocker (Docker, the image, or delivery.linux_lane_image on the default branch), then run roundfix deliver retry " + item.SpecSlug

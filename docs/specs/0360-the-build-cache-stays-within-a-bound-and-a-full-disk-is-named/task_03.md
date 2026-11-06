@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -163,3 +163,81 @@ contract, `CONTEXT.md` and ADR-0334 describe the Disk-Full Park.
 - `_prd.md` → Goal 5; Core Features 4 and 5; Success Metric 5; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 5 to 7; Interfaces; API Contracts 6 and 7; API Contract 8; Invariant 6; Declared breaks; Testing Approach; Build Order 3
 - ADR-0370; ADR-0334
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented the Task slice; Task status and declared Verification remain
+Daemon-owned.
+
+- The build and gate detect ENOSPC or the case-insensitive signature in the
+  last 64 KiB of their retained log. The build preserves its complete error
+  text and chain; the gate preserves its reason and supplies the disk-full
+  blocker. Run and review-slot errors share one blocker helper.
+- The exact blocker, environment classification and next action are covered
+  by the Run, concurrent review and gate rows of
+  TestAFullDiskParksTheItemAsDiskFull and the new Park Class table row.
+  TestTheItemBuildOnAFullDiskIsADiskFullFailure and
+  TestTheRepositoryGateOnAFullDiskParksDiskFull exercise real fake commands
+  printing the signature, with injected capacity rather than a host capacity
+  read.
+- The build's no-path row selects the inspected location with the least
+  injected free space. Additional detector rows exercise the last matching
+  path, case folding, error-path fallback, wrapped ENOSPC, an absent log and
+  a signature outside the retained tail; the selected path is measured at
+  its nearest existing directory through the command dependency.
+- Non-disk Run and review errors keep their existing operation prefixes and
+  exact delivery-error text; the ordinary gate failure keeps an empty gate
+  blocker (the engine parks gate-failed). The build's other-failure row pins
+  its complete pre-existing error text. Existing generic park answers and
+  ordinary build/gate tests were included in focused checks.
+- TestADiskFullRetryIsNotCounted covers unchanged retry counts below and at
+  the limit, including evidence-based re-entry at reviewing or gating.
+  TestTheStoreDoesNotCountADiskFullRetry covers bare and detailed disk-full,
+  acceptance at the limit, counted delivery-error, refusal at its limit and
+  a similar prefix that must still be counted. The existing
+  runtime-infrastructure retry check also retains its behavior.
+- The user guide, canonical deliver reference and generated mirror contain
+  the specified park paragraph, disk-full environment row, exact next action
+  once and uncounted retry sentence. Their general repository-gate wording
+  now acknowledges the full-filesystem exception. The documentation action
+  contract includes BlockerDiskFull. Domain-modeling added only Disk-Full
+  Park beside Free-Space Floor, with the specified definition, Avoid line
+  and ADR link. ADR-0334 changes only its updated_at and amendment notice.
+
+Focused evidence:
+
+- Initial red check:
+  `go test ./internal/delivery ./internal/store ./internal/cli -run 'DiskFull|FullDisk' -count=1 -timeout 5m`
+  exposed the missing types/detector and store retries that incremented or
+  were refused at the limit.
+- After implementation:
+  `go test ./internal/delivery ./internal/store ./internal/cli -run 'DiskFull|FullDisk|TestParkClassesAndNextActions|TestExistingGenericParkAnswersAreUnchanged|TestGateParksWithTheBlockerItNames|TestDeliveryStepParksWhenTheItemBuildFails' -count=1 -timeout 5m`
+  exited 0 in all three packages. Two initially incorrect new assertions
+  were corrected to include the existing Run and review operation prefixes,
+  after checking the engine's wrapping sites.
+- `go test ./internal/delivery -run '^(TestEveryBlockerHasAParkClass|TestRuntimeInfrastructureRetryIsNotCounted)$' -count=1 -timeout 3m`
+  exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem|TestTheParkActionContract.*|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$'`
+  exited 0.
+- A read-only documentation audit confirmed disk-full follows
+  runtime-infrastructure in each environment row, the exact action appears
+  once, the retry wording is present, and both generated mirrors equal
+  their canonical files.
+- `go test ./skills -run '^(TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$' -count=1`
+  exited 0; `git diff --check` reported no whitespace errors.
+- Sanctioned regeneration, after the final guide edit:
+  `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0. The recorder raised both Roundfix version fields to 0.1.198;
+  no mirror, version or record was hand-edited.
+- Last implementation regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and changed only the deliver guide's Behavior Surface fingerprint.
+
+The pre-existing working-tree change was the Daemon's in_progress status in
+this Task file. No other Task, manifest or unrelated path was changed.
+Declared Verification, full suites and Windows builds were not run in this
+Agent turn; they remain with the Daemon. No commit, push or pull request.

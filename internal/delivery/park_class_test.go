@@ -77,6 +77,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		class   ParkClass
 	}{
 		{BlockerNumberedFileCollision, ParkClassConflict},
+		{BlockerDiskFull, ParkClassEnvironment},
 		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven
@@ -96,6 +97,9 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				}
 				if tt.blocker == BlockerSecretFound && park.Next != "in /worktrees/example, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry example" {
 					t.Fatalf("secret-found next action = %q", park.Next)
+				}
+				if tt.blocker == BlockerDiskFull && park.Next != "free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry example; a retry from disk-full is not counted" {
+					t.Fatalf("disk-full next action = %q", park.Next)
 				}
 				if tt.blocker == BlockerLinuxLaneContainer && park.Next != "repair the Linux Lane container cause in the blocker (Docker, the image, or delivery.linux_lane_image on the default branch), then run roundfix deliver retry example" {
 					t.Fatalf("linux-lane-container next action = %q", park.Next)

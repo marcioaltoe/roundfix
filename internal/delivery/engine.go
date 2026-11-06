@@ -635,7 +635,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			queue.Limits.Deadline.UTC().Format(time.RFC3339),
 		)
 	}
-	if !blockerMatches(item.Blocker, BlockerRuntimeInfrastructure) && queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
+	if !blockerMatches(item.Blocker, BlockerRuntimeInfrastructure) && !blockerMatches(item.Blocker, BlockerDiskFull) && queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
 		return RetryResult{}, fmt.Errorf(
 			"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
 			specSlug,
@@ -973,7 +973,7 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 					if ctx.Err() != nil {
 						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
 					}
-					reason := BlockerDeliveryError + ": " + err.Error()
+					reason := stepErrorBlocker(err)
 					if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
 						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
 					}
