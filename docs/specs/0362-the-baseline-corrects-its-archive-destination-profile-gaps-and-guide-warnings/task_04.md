@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0362-the-baseline-corrects-its-archive-destination-profile-gaps-and-guide-warnings
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -87,3 +87,33 @@ the Behavior Surface Record is re-recorded last.
 - `_prd.md` → Goals; User Story 2; User Story 3; Core Feature 4
 - `_techspec.md` → API Contracts 4-6; Build Order 4
 - ADR-0372
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+Implementation:
+
+- Added the exact profile-gap refusal and repository-authored guide paragraphs to the baseline command guide and canonical Roundfix baseline reference.
+- Added the exact repository-profile refusal paragraph to the canonical setup skill.
+- Raised Roundfix from `0.1.198` to `0.1.199` and setup-context-driven from `0.0.7` to `0.0.8` in both version fields, then ran `make skills-sync` and the sanctioned owned-skill version recorder.
+- Re-recorded the Behavior Surface Record after the final guide and skill edits.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed, 1 test.
+- Canonical/mirror `cmp` checks for both skills and the Roundfix baseline reference: passed.
+- `git diff --check`: passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed, 1 test; this was the last regeneration step.
+- Phrase and version scans confirmed the required text in the guide and both skill copies, and the recorded versions in `skills/testdata/owned-skill-versions.json`.
+
+Acceptance evidence:
+
+- The guide and Roundfix reference contain both required paragraphs, including exits `2` and `3`, the decision category, the repair entry and flag, and the repository-authored guide warning rule.
+- The setup skill contains the required repository-profile repair and rerun instructions.
+- Both owned skills have synchronized next patch versions; the sanctioned version and Behavior Surface recorders passed.
+
+Not run:
+
+- The Task's declared `## Verification` commands and repository Verification were left for the Daemon, as required for a Daemon-assigned Task.

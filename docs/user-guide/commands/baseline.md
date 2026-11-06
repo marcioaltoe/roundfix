@@ -105,6 +105,10 @@ ID, one direct profile path, or every repository-owned profile. Repository
 profiles can use embedded entry IDs only and cannot compose profiles or load
 remote executable content.
 
+A repository profile must list every decision a template it renders requires. When it does not, `baseline profile validate` exits `2` with `custom.profile.decision.template-required`, and `baseline plan` and `baseline update` exit `3` with category `decision`. Each names the decision, the template, the entry to add to the profile's `decisions` and a `--decision` flag with the suggested value, and none writes a byte or edits the profile. Once the profile lists the decision, `baseline update` asks for it as a new decision.
+
+A guide under `docs/agents/` that has no `setup-context-driven` marker line and sits at a path the Baseline does not manage belongs to the repository and raises no `baseline.inventory.nested-carrier-conflict`; naming the marker in its prose changes nothing. A nested `AGENTS.md` or `CLAUDE.md`, an unmarked guide at a managed path and a guide with an unknown marker still warn.
+
 `baseline skills restore` is a separate confirmation-gated Repository Skill
 Set operation. Its non-empty preview exits `3` with a current Plan Digest;
 `--confirm-plan` applies only that exact preview. `--source-dir` selects an
