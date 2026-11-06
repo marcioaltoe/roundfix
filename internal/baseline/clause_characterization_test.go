@@ -174,6 +174,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.python.keep-entry-points-thin":                        "mandatory",
 		"clause.secondbrain.research-to-the-knowledge-owner":          "mandatory",
 		"clause.core.consume-messages-after-recording":                "mandatory",
+		"clause.core.check-for-updates-at-session-start":              "mandatory",
 		"clause.core.messages-are-self-contained":                     "mandatory",
 		"clause.core.message-the-owning-project":                      "mandatory",
 		"clause.core.ai-memory-is-optional":                           "mandatory",
