@@ -1,7 +1,0 @@
-Assigned Run context: no open Pull Request for the Spec target branch; Run branch is never pushed.
-Approval: approved Spec _authorization.md, granted 2026-11-06, implement/commit/push/pull_request/merge/release, patch ceiling.
-Checks: Daemon supplied make verify-changed pass, exit 0, at audited head ab0dd07ce78accc20c1c92ffdaff1e55ecdf509a.
-Threads: none can be unresolved because no Pull Request exists.
-Merge-Ready: no acceptance yet; current-head hosting checks and review acceptance remain for delivery.
-Claimed candidate: ab0dd07ce78accc20c1c92ffdaff1e55ecdf509a.
-No forge query or mutation performed under the offline grant.

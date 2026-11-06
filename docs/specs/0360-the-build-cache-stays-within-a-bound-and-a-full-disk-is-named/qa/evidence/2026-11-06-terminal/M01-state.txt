@@ -1,7 +1,0 @@
-Initial sentinel entries: 3 x 614400 bytes, all younger than two hours.
-First make: exit 0, over-bound warning; every pre-existing entry kept with identical SHA-256.
-Before second make: 2075 files. touch -t makes only two sentinel -d entries three hours old.
-Second make: removed exactly 2 idle entries, 1228800 bytes; actual missing set equals aged set.
-Every other pre-existing -d entry retains its content hash; young sentinel retained.
-make vet with explicit GOCACHE and no GOCACHE_BOUND_MB: exit 0, no gocache-bound line.
-Disposable repository and cache removed.

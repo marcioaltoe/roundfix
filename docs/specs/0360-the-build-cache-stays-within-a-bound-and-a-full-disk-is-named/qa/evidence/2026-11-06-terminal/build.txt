@@ -1,4 +1,0 @@
-command: make build (fresh temporary GOCACHE; explicit GOCACHE_BOUND_MB)
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=ab0dd07c-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-06 13:20:56 -0300'" -o bin/roundfix ./cmd/roundfix
-
-exit: 0
