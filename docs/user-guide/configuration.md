@@ -462,7 +462,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.check_grace_period` | `5m` | Bounds the final wait for Review Source evidence on the pushed head. |
 | `watch.quiet_period` | `30s` | Requires this quiet interval before Roundfix fetches a settled review. |
 | `watch.auto_push` | `true` | Runs Final Push after no Unresolved Review Issues remain. |
-| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
+| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. A value that starts with `-` is refused, because Roundfix passes it to `git fetch` as a remote. |
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
@@ -1021,6 +1021,25 @@ commit, so an item sees the value once its merge base includes that change.
 This list affects review scope and requires no regeneration command.
 
 An authored data file too large for the review, such as a rules catalog, belongs in `pre_pr_review.data_paths`, not in `delivery.derived_paths` or `pre_pr_review.omit_paths`: the review then reads it apart instead of skipping it.
+
+`delivery.numbered_files` declares the files a repository numbers in
+sequence, such as database migrations. It defaults to `[]`, which turns the
+check off; Project Config replaces the User Config list, and an explicit
+empty list disables it.
+
+```yaml
+delivery:
+  numbered_files: [drizzle/*.sql, drizzle/meta/*_snapshot.json]
+```
+
+Entries use the path grammar of `delivery.derived_paths[].paths`; an unsafe
+path or an invalid pattern is refused with a `delivery.numbered_files`
+config error. A matching file whose name starts with digits is a Numbered
+File; a matching `drizzle/meta/_journal.json` is not. The queue reads the
+list from the fetched default-branch commit, with User Config beneath it,
+and Delivery Revalidation parks an item whose Numbered File collides; see
+[deliver](commands/deliver.md). Declare only directories numbered in
+sequence, because names that start with a date also start with digits.
 
 `delivery.item_binary` declares the Roundfix binary the Delivery Queue builds
 and can run for an item's `implement`, `archive` and `review` steps. It has two

@@ -59,6 +59,10 @@ func (workflow *commandDeliveryWorkflow) Revalidate(
 		result.ChangedPremises = append(result.ChangedPremises, path)
 	}
 	sort.Strings(result.ChangedPremises)
+	result.NumberedFiles, err = workflow.numberedFileReport(ctx, workDir, specsRoot.Path, specSlug, graph)
+	if err != nil {
+		return delivery.Revalidation{}, fmt.Errorf("check numbered files: %w", err)
+	}
 	return result, nil
 }
 

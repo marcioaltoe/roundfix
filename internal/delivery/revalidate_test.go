@@ -377,3 +377,108 @@ func slicesContain(values []string, target string) bool {
 	}
 	return false
 }
+
+func TestRevalidationParksANumberedFileCollisionBeforeTheRun(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot, slug = "/repo-numbered-file-collision", "collision-spec"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{slug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	report := NumberedFileReport{
+		Collisions: []NumberedFileCollision{{Path: "drizzle/0052_b.sql", Other: "drizzle/0052_a.sql", Owner: "alpha"}},
+		NextFree:   []string{"drizzle/0053"},
+	}
+	workflow := newFakeDeliveryWorkflow()
+	workflow.recordWorkspace = func(branch, worktree string) error {
+		if _, _, _, err := runStore.RecordDeliveryQueueItemWorktree(ctx, gitRoot, slug, branch, worktree); err != nil {
+			return err
+		}
+		return runStore.SetDeliveryQueueItemWorktreeProvisioned(ctx, gitRoot, slug, true)
+	}
+	revalidator := &recordingItemRevalidator{results: map[string]Revalidation{
+		slug: {NumberedFiles: report, ChangedPremises: []string{"internal/a.go"}, ChangedBy: []string{"merge-one"}, OwnerWarning: "owner-older-than-main: owner"},
+	}}
+	var log bytes.Buffer
+	engine := newRevalidationTestEngine(runStore, workflow, revalidator, &log)
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Stage != store.DeliveryStageParked || item.Blocker != report.Blocker() {
+		t.Fatalf("item = %+v, want parked with %q; events=%v", item, report.Blocker(), workflow.events[slug])
+	}
+	if item.Branch != "roundfix/deliver-"+slug || item.Worktree != "/worktrees/"+slug || !item.WorktreeProvisioned {
+		t.Fatalf("park lost item workspace: %+v", item)
+	}
+	if item.RunID != "" || workflow.runs[slug].RunID != "" || slicesContain(workflow.events[slug], "run") {
+		t.Fatalf("collision started a Run: item=%+v events=%v", item, workflow.events[slug])
+	}
+	const warning = "premise-changed: internal/a.go (merge merge-one); owner-older-than-main: owner"
+	if item.Warning != warning || log.String() != "roundfix: warning: Delivery Queue item collision-spec: "+warning+"\n" {
+		t.Fatalf("collision warnings: item=%q log=%q", item.Warning, log.String())
+	}
+}
+
+func TestStrictFindingsParkBeforeANumberedFileCollision(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot, slug = "/repo-numbered-file-findings", "findings-first"
+	if _, err := runStore.CreateDeliveryQueue(ctx, gitRoot, []string{slug}); err != nil {
+		t.Fatalf("create Delivery Queue: %v", err)
+	}
+	workflow := newFakeDeliveryWorkflow()
+	revalidator := &recordingItemRevalidator{results: map[string]Revalidation{
+		slug: {
+			Findings: []string{"SC-REF-UNRESOLVED", "SC-TRACE-MISSING"},
+			NumberedFiles: NumberedFileReport{
+				Collisions: []NumberedFileCollision{{Path: "drizzle/0052_b.sql", Other: "drizzle/0052_a.sql", Owner: "alpha"}},
+				NextFree:   []string{"drizzle/0053"},
+			},
+		},
+	}}
+	engine := newRevalidationTestEngine(runStore, workflow, revalidator, &bytes.Buffer{})
+	if _, err := engine.Run(ctx, gitRoot); err != nil {
+		t.Fatalf("run Delivery Engine: %v", err)
+	}
+	item := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	if item.Stage != store.DeliveryStageParked || item.Blocker != "revalidation-failed: SC-REF-UNRESOLVED, SC-TRACE-MISSING" {
+		t.Fatalf("findings lost precedence: %+v", item)
+	}
+	if slicesContain(workflow.events[slug], "run") {
+		t.Fatalf("findings started a Run: %v", workflow.events[slug])
+	}
+}
+
+func TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openDeliveryEngineStore(t, ctx)
+	const gitRoot = "/repo-numbered-file-retry"
+	item := seedNoRunRetryItem(t, ctx, runStore, gitRoot, "retry-collision")
+	report := NumberedFileReport{
+		Collisions: []NumberedFileCollision{{Path: "drizzle/0052_b.sql", Other: "drizzle/0052_a.sql", Owner: "alpha"}},
+		NextFree:   []string{"drizzle/0053"},
+	}
+	item.Blocker = report.Blocker()
+	if err := runStore.UpdateDeliveryQueueItem(ctx, gitRoot, item); err != nil {
+		t.Fatalf("seed collision blocker: %v", err)
+	}
+	before := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]
+	recovery := &fakeItemRecovery{states: []ItemState{{UnfinishedTasks: []string{"task_01"}, Head: "candidate"}}}
+	revalidator := &recordingItemRevalidator{results: map[string]Revalidation{item.SpecSlug: {NumberedFiles: report}}}
+	engine := newRetryRevalidationTestEngine(runStore, recovery, revalidator)
+	_, err := engine.Retry(ctx, gitRoot, item.SpecSlug)
+	const want = "retry Delivery Queue item \"retry-collision\": numbered file collision: drizzle/0052_b.sql collides with drizzle/0052_a.sql (alpha); next free number: drizzle/0053"
+	if err == nil || err.Error() != want {
+		t.Fatalf("retry error = %v, want %q", err, want)
+	}
+	if got := readDeliveryQueue(t, ctx, runStore, gitRoot).Items[0]; !reflect.DeepEqual(got, before) {
+		t.Fatalf("refusal changed item:\n got: %#v\nwant: %#v", got, before)
+	}
+	if slicesContain(recovery.events, "carry-forward") {
+		t.Fatalf("refusal carried tasks forward: %v", recovery.events)
+	}
+}

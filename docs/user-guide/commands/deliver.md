@@ -241,6 +241,24 @@ Roundfix runs the strict Spec Consistency Check in the worktree. A finding
 parks the item as `revalidation-failed: <code>, <code>` before any Run starts.
 An item resumed from an item branch that already archives its Spec is not revalidated.
 
+Revalidation also looks for a Numbered File Collision when the default
+branch's Project Config declares `delivery.numbered_files`. The Numbered
+Files an item adds are those its branch adds since its merge base with the
+default branch, and those that a Task of its Spec not yet completed declares
+under `creates:` while its merge base does not hold them. One that shares a
+directory and a number, read by value, with a file on the default branch,
+or with a file that an earlier item of the same queue adds while it is not
+merged, parks the item before any Run as
+`numbered-file-collision: <path> collides with <other> (<slug or default branch>), ...; next free number: <directory>/<digits>, ...`.
+The next free number is one above the highest number that the default
+branch and the earlier unmerged items hold in that directory, with the item's
+own number of digits. Later items, merged items and an Archived Item Resume
+are not compared. A Delivery Retry of an item that has not run repeats the
+check and refuses with `numbered file collision: <detail>` while a collision
+remains; a retry of an item whose Run started is not checked. Declare
+migration files under `creates:` in the plan: a number a Run generates
+without a declaration is seen only once a branch holds it.
+
 Revalidation also compares the Spec's declared production Go `interface:`
 paths with the merge commits of earlier queue items. An overlap records
 `premise-changed: <path>, <path> (merge <sha>, <sha>)` as a warning and the item
@@ -493,7 +511,7 @@ The Park Class identifies the reason and the next action:
 | Class | Blockers |
 | --- | --- |
 | `dependency` | `prerequisite-unmerged` |
-| `conflict` | `pull-request-conflict` |
+| `conflict` | `pull-request-conflict`, `numbered-file-collision` |
 | `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found` |
@@ -513,6 +531,8 @@ items adds no `Park:` line.
 An `archived-item-unproven` park's next action is `in <worktree>, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry <slug>`.
 
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
+
+A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
 
 A `run-unresolved` park names each Task the Run settled `failed`, with its
 reason cut to 300 characters, and the Tasks the Run skipped:

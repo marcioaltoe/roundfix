@@ -154,6 +154,7 @@ type Delivery struct {
 	CheckTimeout      time.Duration
 	ReviewConcurrency int
 	DerivedPaths      []DerivedPathDeclaration
+	NumberedFiles     []string
 	ItemBinary        ItemBinaryDeclaration
 	LinuxLane         bool
 	LinuxLaneImage    string
@@ -445,6 +446,7 @@ type deliveryOverlay struct {
 	CheckTimeout      *durationValue            `yaml:"check_timeout"`
 	ReviewConcurrency *int                      `yaml:"review_concurrency"`
 	DerivedPaths      *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	NumberedFiles     *[]string                 `yaml:"numbered_files"`
 	ItemBinary        *ItemBinaryDeclaration    `yaml:"item_binary"`
 	LinuxLane         *bool                     `yaml:"linux_lane"`
 	LinuxLaneImage    *string                   `yaml:"linux_lane_image"`
@@ -1157,10 +1159,18 @@ func Validate(config Config) error {
 	if config.Delivery.ReviewConcurrency < 1 {
 		return errors.New("delivery.review_concurrency must be greater than 0")
 	}
+	// The remote is passed to git fetch as an operand; a value that starts
+	// with "-" would be read as a Git option such as --upload-pack.
+	if strings.HasPrefix(strings.TrimSpace(config.Watch.PushRemote), "-") {
+		return fmt.Errorf("watch.push_remote %q must name a remote and must not start with -", config.Watch.PushRemote)
+	}
 	if config.Defaults.ProfileProofSetupTimeout <= 0 || config.Defaults.ProfileProofSetupTimeout > MaxProfileProofSetupTimeout {
 		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
 	}
 	if err := validateDerivedPaths(config.Delivery.DerivedPaths); err != nil {
+		return err
+	}
+	if err := validateDerivedPathPatterns("delivery.numbered_files", config.Delivery.NumberedFiles); err != nil {
 		return err
 	}
 	if err := validateReviewOmitPaths(config.PrePRReview.OmitPaths); err != nil {
@@ -1973,6 +1983,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths
+	}
+	if overlay.Delivery != nil && overlay.Delivery.NumberedFiles != nil {
+		config.Delivery.NumberedFiles = *overlay.Delivery.NumberedFiles
 	}
 	if overlay.Delivery != nil && overlay.Delivery.LinuxLane != nil {
 		config.Delivery.LinuxLane = *overlay.Delivery.LinuxLane

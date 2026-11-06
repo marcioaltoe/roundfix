@@ -233,6 +233,29 @@ func TestTheParkActionContractReportsAnActionInTheClassTable(t *testing.T) {
 	}
 }
 
+func TestTheParkActionContractRequiresTheNumberedFileCollision(t *testing.T) {
+	t.Parallel()
+
+	documents := parkActionDocuments(t, baselineDocumentationRepoRoot())
+	if err := checkParkActionDocumentation(documents); err != nil {
+		t.Fatal(err)
+	}
+	doc := documents[0]
+	withoutAction := documentedText{path: doc.path, content: strings.Replace(doc.content, parkActionSentence(delivery.BlockerNumberedFileCollision), "", 1)}
+	if err := checkParkActionDocumentation([]documentedText{withoutAction}); err == nil || !strings.Contains(err.Error(), doc.path) {
+		t.Fatalf("missing numbered-file-collision action must be rejected for %s, got %v", doc.path, err)
+	}
+
+	row, found := parkConflictRow(doc.content)
+	if !found {
+		t.Fatalf("%s: conflict row is missing", doc.path)
+	}
+	withoutBlocker := documentedText{path: doc.path, content: strings.Replace(doc.content, row, strings.Replace(row, ", `"+delivery.BlockerNumberedFileCollision+"`", "", 1), 1)}
+	if err := checkParkActionDocumentation([]documentedText{withoutBlocker}); err == nil || !strings.Contains(err.Error(), doc.path) {
+		t.Fatalf("missing numbered-file-collision conflict blocker must be rejected for %s, got %v", doc.path, err)
+	}
+}
+
 func parkActionDocuments(t *testing.T, root string) []documentedText {
 	t.Helper()
 	var documents []documentedText
@@ -259,9 +282,13 @@ func checkParkActionDocumentation(documents []documentedText) error {
 		if got, want := strings.TrimSpace(cells[2]), parkFindingBlockerCell(); got != want {
 			return fmt.Errorf("%s: finding row lists %q; want blocker names only %q", document.path, got, want)
 		}
+		conflictRow, found := parkConflictRow(document.content)
+		if !found || !strings.Contains(conflictRow, "`"+delivery.BlockerNumberedFileCollision+"`") {
+			return fmt.Errorf("%s: conflict row does not list %q: %q", document.path, delivery.BlockerNumberedFileCollision, conflictRow)
+		}
 
 		normalized := strings.Join(strings.Fields(document.content), " ")
-		for _, blocker := range []string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound} {
+		for _, blocker := range []string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound, delivery.BlockerNumberedFileCollision} {
 			want := parkActionSentence(blocker)
 			if count := strings.Count(normalized, want); count != 1 {
 				return fmt.Errorf("%s: documented action for %q occurred %d times; want exactly once: %q", document.path, blocker, count, want)
@@ -275,6 +302,16 @@ func parkFindingRow(content string) (string, bool) {
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "| `"+string(delivery.ParkClassFinding)+"` |") {
+			return line, true
+		}
+	}
+	return "", false
+}
+
+func parkConflictRow(content string) (string, bool) {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "| `"+string(delivery.ParkClassConflict)+"` |") {
 			return line, true
 		}
 	}
