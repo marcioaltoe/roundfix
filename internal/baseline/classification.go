@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -29,10 +31,11 @@ const (
 type carrierClassificationKind string
 
 const (
-	carrierCurrentManaged      carrierClassificationKind = "current-managed-artifact"
-	carrierStaleManaged        carrierClassificationKind = "stale-managed-artifact"
-	carrierRepositoryExtension carrierClassificationKind = "recognized-repository-extension"
-	carrierUnmanagedNested     carrierClassificationKind = "unmanaged-nested-carrier"
+	carrierCurrentManaged          carrierClassificationKind = "current-managed-artifact"
+	carrierStaleManaged            carrierClassificationKind = "stale-managed-artifact"
+	carrierRepositoryExtension     carrierClassificationKind = "recognized-repository-extension"
+	carrierRepositoryAuthoredGuide carrierClassificationKind = "repository-authored-guide"
+	carrierUnmanagedNested         carrierClassificationKind = "unmanaged-nested-carrier"
 )
 
 type carrierClassification struct {
@@ -977,6 +980,26 @@ func classifyMarkedCarrier(
 	current map[string]plannedArtifact,
 ) carrierClassificationKind {
 	entries := partitionRootSource(carrierPath, content)
+	if strings.HasPrefix(carrierPath, "docs/agents/") &&
+		path.Base(carrierPath) != "AGENTS.md" && path.Base(carrierPath) != "CLAUDE.md" &&
+		!hasMarkerLine(content) && len(source) == 0 && len(current) == 0 {
+		managed := false
+		for _, entry := range entries {
+			if entry.Kind == "managed-block" {
+				managed = true
+				break
+			}
+		}
+		for _, managedPath := range knownPaths {
+			if managedPath == carrierPath {
+				managed = true
+				break
+			}
+		}
+		if !managed {
+			return carrierRepositoryAuthoredGuide
+		}
+	}
 	seen := make(map[string]struct{})
 	managedCount := 0
 	stale := false
@@ -1034,6 +1057,12 @@ func classifyMarkedCarrier(
 	return carrierCurrentManaged
 }
 
+var carrierMarkerLine = regexp.MustCompile(`(?m)^ {0,3}<!--[ \t]*setup-context-driven:(?:begin|end)`)
+
+func hasMarkerLine(content []byte) bool {
+	return carrierMarkerLine.Match(content)
+}
+
 func managedEntryMatchesManifest(
 	entry ReadoptionSourceEntry,
 	artifact ManifestArtifact,
@@ -1065,7 +1094,7 @@ func warningsForCarrierClassifications(
 	for _, warning := range warnings {
 		if warning.Code == "baseline.inventory.nested-carrier-conflict" {
 			switch byPath[warning.Path] {
-			case carrierCurrentManaged, carrierStaleManaged, carrierRepositoryExtension:
+			case carrierCurrentManaged, carrierStaleManaged, carrierRepositoryExtension, carrierRepositoryAuthoredGuide:
 				continue
 			}
 		}

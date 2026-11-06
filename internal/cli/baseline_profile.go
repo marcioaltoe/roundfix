@@ -776,6 +776,13 @@ func runBaselineProfileValidateCommand(args []string, stdout, stderr io.Writer, 
 	}
 	for index := range profiles {
 		profiles[index].Path = baselineProfileOutputPath(repoRoot, profiles[index].Path)
+		if gaps := baseline.ProfileDecisionGaps(profiles[index], catalog); len(gaps) != 0 {
+			err := fmt.Errorf("custom.profile.decision.template-required: %s; %s",
+				baseline.ProfileDecisionGapMessage(profiles[index], gaps),
+				baseline.ProfileDecisionGapRepair(profiles[index], gaps, "run roundfix baseline update"))
+			printBaselineProfileFailure("profile.validate", err, jsonOutput, stdout, stderr)
+			return exitPreflight
+		}
 	}
 	if jsonOutput {
 		if profiles == nil {

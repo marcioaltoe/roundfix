@@ -4,10 +4,10 @@ description: Adopt, update, or verify a repository's Context-Driven Baseline thr
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.7
+  version: 0.0.8
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.7
+version: 0.0.8
 ---
 
 # Setup Context-Driven
@@ -116,6 +116,8 @@ Repositories select their fast local command through
 incremental decision, and writes nothing. After the repository declares the
 suggested `make verify-incremental` command locally, rerun update with
 `--adopt-suggested`; later updates use the recorded decision without that flag.
+
+A repository-owned Baseline Profile that does not list a decision a template it renders requires is refused first: `baseline update` exits `3` and names the decision, the entry to add to the profile's `decisions` and a `--decision` flag, and `baseline profile validate` reports the same gap with exit `2`. Add the entry to the profile, then rerun the update with `--adopt-suggested` or that flag.
 
 ## Human adoption or profile change
 
