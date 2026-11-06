@@ -1157,6 +1157,11 @@ func Validate(config Config) error {
 	if config.Delivery.ReviewConcurrency < 1 {
 		return errors.New("delivery.review_concurrency must be greater than 0")
 	}
+	// The remote is passed to git fetch as an operand; a value that starts
+	// with "-" would be read as a Git option such as --upload-pack.
+	if strings.HasPrefix(strings.TrimSpace(config.Watch.PushRemote), "-") {
+		return fmt.Errorf("watch.push_remote %q must name a remote and must not start with -", config.Watch.PushRemote)
+	}
 	if config.Defaults.ProfileProofSetupTimeout <= 0 || config.Defaults.ProfileProofSetupTimeout > MaxProfileProofSetupTimeout {
 		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
 	}

@@ -461,7 +461,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `watch.check_grace_period` | `5m` | Bounds the final wait for Review Source evidence on the pushed head. |
 | `watch.quiet_period` | `30s` | Requires this quiet interval before Roundfix fetches a settled review. |
 | `watch.auto_push` | `true` | Runs Final Push after no Unresolved Review Issues remain. |
-| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
+| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. A value that starts with `-` is refused, because Roundfix passes it to `git fetch` as a remote. |
 | `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
 | `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |

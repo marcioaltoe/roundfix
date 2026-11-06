@@ -80,3 +80,22 @@ func TestIsNumberedFileNeedsAMatchAndALeadingDigit(t *testing.T) {
 		})
 	}
 }
+
+func TestPushRemoteStartingWithADashIsRefused(t *testing.T) {
+	t.Parallel()
+	for _, value := range []string{"--upload-pack=touch injected", "-o", " -x"} {
+		config := Builtin()
+		config.Watch.PushRemote = value
+		err := Validate(config)
+		if err == nil || !strings.Contains(err.Error(), "watch.push_remote") || !strings.Contains(err.Error(), "must not start with -") {
+			t.Fatalf("Validate(push_remote=%q) = %v, want the leading-dash refusal", value, err)
+		}
+	}
+	for _, value := range []string{"", "origin", "upstream-fork"} {
+		config := Builtin()
+		config.Watch.PushRemote = value
+		if err := Validate(config); err != nil {
+			t.Fatalf("Validate(push_remote=%q) = %v, want nil", value, err)
+		}
+	}
+}
