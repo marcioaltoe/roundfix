@@ -1,0 +1,82 @@
+$ /bin/sh -c 'for t in TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused; do grep -q "func $t(" internal/cli/owner_pid_reused_unix_test.go || { printf '"'"'missing %s\n'"'"' "$t" >&2; exit 1; }; done; go test -v -timeout 20m -count=1 -run '"'"'^(TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused|TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused|TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused|TestRunImplementReclaimsDeadOwnerActiveRun|TestRunSettleReclaimsDeadOwnerActiveRun|TestReviewFetchReclaimsDeadOwnerActiveRun|TestRunSlotsExcludeAHolderWhoseOwnerIsGone|TestCancelReclaimsAnOrphanedRun)$'"'"' ./internal/cli'
+=== RUN   TestCancelReclaimsAnOrphanedRun
+=== PAUSE TestCancelReclaimsAnOrphanedRun
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== RUN   TestRunImplementReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunImplementReclaimsDeadOwnerActiveRun
+=== RUN   TestRunSettleReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunSettleReclaimsDeadOwnerActiveRun
+=== RUN   TestReviewFetchReclaimsDeadOwnerActiveRun
+=== PAUSE TestReviewFetchReclaimsDeadOwnerActiveRun
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== CONT  TestCancelReclaimsAnOrphanedRun
+=== CONT  TestReviewFetchReclaimsDeadOwnerActiveRun
+=== CONT  TestRunImplementReclaimsDeadOwnerActiveRun
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== CONT  TestRunSettleReclaimsDeadOwnerActiveRun
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+--- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused (0.00s)
+    --- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching (0.02s)
+    --- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused (0.03s)
+    --- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity (0.03s)
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+--- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused (0.00s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity (0.03s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused (0.03s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity (0.02s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching (0.02s)
+--- PASS: TestReviewFetchReclaimsDeadOwnerActiveRun (0.05s)
+--- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused (0.00s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity (0.02s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused (0.02s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity (0.02s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching (0.01s)
+--- PASS: TestRunSlotsExcludeAHolderWhoseOwnerIsGone (0.08s)
+--- PASS: TestCancelReclaimsAnOrphanedRun (0.15s)
+--- PASS: TestRunSettleReclaimsDeadOwnerActiveRun (0.24s)
+--- PASS: TestRunImplementReclaimsDeadOwnerActiveRun (0.30s)
+PASS
+suiteguard: guard cost: measured 3013 paths; fingerprint took 148.698709ms before and 132.40225ms after
+ok  	roundfix/internal/cli	0.902s
+
+exit: 0

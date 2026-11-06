@@ -1,0 +1,34 @@
+$ /bin/sh -c 'grep -q '"'"'func TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused('"'"' internal/store/reclaim_reused_owner_unix_test.go || exit 1; go test -v -timeout 20m -count=1 -run '"'"'^(TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused|TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason|TestReclaimOrphanedRunConcurrentAttemptsJournalOnce)$'"'"' ./internal/store'
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== RUN   TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason
+=== PAUSE TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason
+=== RUN   TestReclaimOrphanedRunConcurrentAttemptsJournalOnce
+=== PAUSE TestReclaimOrphanedRunConcurrentAttemptsJournalOnce
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== CONT  TestReclaimOrphanedRunConcurrentAttemptsJournalOnce
+=== CONT  TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+--- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused (0.00s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity (0.02s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching (0.02s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity (0.02s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused (0.02s)
+--- PASS: TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason (0.02s)
+--- PASS: TestReclaimOrphanedRunConcurrentAttemptsJournalOnce (0.02s)
+PASS
+suiteguard: guard cost: measured 3012 paths; fingerprint took 143.871667ms before and 132.057917ms after
+ok  	roundfix/internal/store	0.457s
+
+exit: 0

@@ -1,0 +1,678 @@
+$ /bin/sh -c 'go test -count=1 -timeout 20m -v -run '"'"'^Test.*(ForceStop|Deliver.*(Stop|Retry|Resume)|Resume|Reconcile|Reclaim|RunSlots)'"'"' ./internal/cli'
+=== RUN   TestBaselineSkillsReconcileExampleParses
+=== PAUSE TestBaselineSkillsReconcileExampleParses
+=== RUN   TestBaselineSkillsReconcilePreviewThenConfirm
+=== PAUSE TestBaselineSkillsReconcilePreviewThenConfirm
+=== RUN   TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== PAUSE TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== RUN   TestBaselineSkillsReconcileRejectsAMutableRevision
+=== PAUSE TestBaselineSkillsReconcileRejectsAMutableRevision
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== RUN   TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== PAUSE TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== PAUSE TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== RUN   TestCancelReclaimsAnOrphanedRun
+=== PAUSE TestCancelReclaimsAnOrphanedRun
+=== RUN   TestDeliverRetryRefusesACancelledSpec
+=== PAUSE TestDeliverRetryRefusesACancelledSpec
+=== RUN   TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout
+=== PAUSE TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout
+=== RUN   TestReconcileCarryForwardOfACarriedRunCarriesNothing
+=== PAUSE TestReconcileCarryForwardOfACarriedRunCarriesNothing
+=== RUN   TestRunReconcileDryRunReadOnly
+=== PAUSE TestRunReconcileDryRunReadOnly
+=== RUN   TestRunReconcileDryRunOutputFailure
+=== PAUSE TestRunReconcileDryRunOutputFailure
+=== RUN   TestRunReconcileJSONMatchesTextFields
+=== PAUSE TestRunReconcileJSONMatchesTextFields
+=== RUN   TestRunReconcileEmptyJSONNamesRunsCollection
+=== PAUSE TestRunReconcileEmptyJSONNamesRunsCollection
+=== RUN   TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== PAUSE TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== RUN   TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== PAUSE TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== RUN   TestRunReconcileReportsAmbiguousDebrisPreserved
+=== PAUSE TestRunReconcileReportsAmbiguousDebrisPreserved
+=== RUN   TestRunReconcileSupersededJSONAndApply
+=== PAUSE TestRunReconcileSupersededJSONAndApply
+=== RUN   TestRunReconcileRepositoryScopeNewestFirst
+=== PAUSE TestRunReconcileRepositoryScopeNewestFirst
+=== RUN   TestRunReconcileInvalidSelectorsMutateNothing
+=== PAUSE TestRunReconcileInvalidSelectorsMutateNothing
+=== RUN   TestRunReconcileApplyMixedResults
+=== PAUSE TestRunReconcileApplyMixedResults
+=== RUN   TestRunReconcileApplyFailureNamesNextSafeAction
+=== PAUSE TestRunReconcileApplyFailureNamesNextSafeAction
+=== RUN   TestRunReconcileIdempotentApply
+=== PAUSE TestRunReconcileIdempotentApply
+=== RUN   TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext
+=== PAUSE TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext
+=== RUN   TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease
+=== PAUSE TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease
+=== RUN   TestForceStopProvesTheTree
+=== PAUSE TestForceStopProvesTheTree
+=== RUN   TestForceStopProvesTheTreeWhenTreeExits
+=== PAUSE TestForceStopProvesTheTreeWhenTreeExits
+=== RUN   TestRunForceStopAcceptsFlagsInAnyPosition
+=== PAUSE TestRunForceStopAcceptsFlagsInAnyPosition
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== PAUSE TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== RUN   TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock
+=== PAUSE TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock
+=== RUN   TestRunForceStopOwnerProofFailurePreservesAgentSessions
+=== PAUSE TestRunForceStopOwnerProofFailurePreservesAgentSessions
+=== RUN   TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings
+=== PAUSE TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings
+=== RUN   TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions
+=== PAUSE TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks
+=== PAUSE TestResumeAcceptsAnArchiveCommitWithRewrittenLinks
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges
+=== PAUSE TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== PAUSE TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestMergedReleaseReclaimsTheItemBinaries
+=== PAUSE TestMergedReleaseReclaimsTheItemBinaries
+=== RUN   TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+=== PAUSE TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+=== PAUSE TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+=== RUN   TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+=== PAUSE TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+=== RUN   TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+=== PAUSE TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+=== RUN   TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+=== PAUSE TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+=== RUN   TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+=== PAUSE TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+=== RUN   TestDeliverRetryPrintsOneLinePerCarriedRun
+=== PAUSE TestDeliverRetryPrintsOneLinePerCarriedRun
+=== RUN   TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+=== PAUSE TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+=== RUN   TestDeliverRetryHandsTheItemToALiveOwner
+=== PAUSE TestDeliverRetryHandsTheItemToALiveOwner
+=== RUN   TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+=== PAUSE TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+=== RUN   TestDeliverRetryRequiresOneSlug
+=== PAUSE TestDeliverRetryRequiresOneSlug
+=== RUN   TestDeliverRetryRefusesAnEmptySlug
+=== PAUSE TestDeliverRetryRefusesAnEmptySlug
+=== RUN   TestDeliverRetryRefusesAnExtraArgument
+=== PAUSE TestDeliverRetryRefusesAnExtraArgument
+=== RUN   TestDeliverRetryRefusesUnknownFlag
+=== PAUSE TestDeliverRetryRefusesUnknownFlag
+=== RUN   TestDeliverRetryRefusalStartsNoOwner
+=== PAUSE TestDeliverRetryRefusalStartsNoOwner
+=== RUN   TestTopLevelUsageNamesDeliverRetry
+=== PAUSE TestTopLevelUsageNamesDeliverRetry
+=== RUN   TestDeliverRetryPrintsARefusalWithoutUsage
+=== PAUSE TestDeliverRetryPrintsARefusalWithoutUsage
+=== RUN   TestDeliverRetryKeepsUsageForAnArgumentError
+=== PAUSE TestDeliverRetryKeepsUsageForAnArgumentError
+=== RUN   TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== PAUSE TestDeliverRetryRefusalOmitsAnUnreadableItem
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== RUN   TestDeliverCommandStopsAndResumesPersistedQueue
+=== PAUSE TestDeliverCommandStopsAndResumesPersistedQueue
+=== RUN   TestResumeReleasesAStaleOwner
+=== PAUSE TestResumeReleasesAStaleOwner
+=== RUN   TestResumeReusesTheRecordedItemBranch
+=== PAUSE TestResumeReusesTheRecordedItemBranch
+=== RUN   TestResumeUsesTheRecordedItemWorktree
+=== PAUSE TestResumeUsesTheRecordedItemWorktree
+=== RUN   TestResumeRecreatesAMissingItemWorktree
+=== PAUSE TestResumeRecreatesAMissingItemWorktree
+=== RUN   TestResumeParksWhenTheItemBranchIsGone
+=== PAUSE TestResumeParksWhenTheItemBranchIsGone
+=== RUN   TestMigratedMergedItemDoesNotBlockResume
+=== PAUSE TestMigratedMergedItemDoesNotBlockResume
+=== RUN   TestResumeAcceptsARealArchiveCommit
+=== PAUSE TestResumeAcceptsARealArchiveCommit
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges
+=== PAUSE TestResumeRefusesAnArchiveCommitWithExtraChanges
+=== RUN   TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== PAUSE TestDeliverRetryIsRefusedAtTheTokenCeiling
+=== RUN   TestDoctorStorageReportsReclaimableRunsAndNamesGC
+=== PAUSE TestDoctorStorageReportsReclaimableRunsAndNamesGC
+=== RUN   TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+=== PAUSE TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+=== RUN   TestGCDryRunListsReclaimableItemBinaries
+=== PAUSE TestGCDryRunListsReclaimableItemBinaries
+=== RUN   TestRetentionReclaimableKeepsCandidateOrder
+=== PAUSE TestRetentionReclaimableKeepsCandidateOrder
+=== RUN   TestRetentionReclaimableReturnsArtifactInspectionError
+=== PAUSE TestRetentionReclaimableReturnsArtifactInspectionError
+=== RUN   TestGCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents
+=== PAUSE TestGCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents
+=== RUN   TestRetentionSweepIsSilentWhenNothingIsReclaimed
+=== PAUSE TestRetentionSweepIsSilentWhenNothingIsReclaimed
+=== RUN   TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout
+=== PAUSE TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout
+=== RUN   TestRunImplementResumesStaleInProgressTask
+=== PAUSE TestRunImplementResumesStaleInProgressTask
+=== RUN   TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion
+=== PAUSE TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion
+=== RUN   TestRunForceStopOwnerPIDReuseFailsClosed
+=== PAUSE TestRunForceStopOwnerPIDReuseFailsClosed
+=== RUN   TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner
+=== PAUSE TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner
+=== RUN   TestCLIForceStopOwnerProcessHelper
+--- PASS: TestCLIForceStopOwnerProcessHelper (0.00s)
+=== RUN   TestRunImplementReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunImplementReclaimsDeadOwnerActiveRun
+=== RUN   TestRunCeilingReclaimsADeadHolder
+=== PAUSE TestRunCeilingReclaimsADeadHolder
+=== RUN   TestRunSettleReclaimsDeadOwnerActiveRun
+=== PAUSE TestRunSettleReclaimsDeadOwnerActiveRun
+=== RUN   TestReopenRefusesAnActiveRunWithoutReclaimingIt
+=== PAUSE TestReopenRefusesAnActiveRunWithoutReclaimingIt
+=== RUN   TestReviewFetchReclaimsDeadOwnerActiveRun
+=== PAUSE TestReviewFetchReclaimsDeadOwnerActiveRun
+=== RUN   TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+=== PAUSE TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== RUN   TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+=== PAUSE TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+=== RUN   TestReconcileKeepsTheItemBranchOfALiveQueueItem
+=== PAUSE TestReconcileKeepsTheItemBranchOfALiveQueueItem
+=== RUN   TestReconcileWithARunIDOmitsItemBranchCandidates
+=== PAUSE TestReconcileWithARunIDOmitsItemBranchCandidates
+=== RUN   TestReconcileItemBranchSafety
+=== PAUSE TestReconcileItemBranchSafety
+=== RUN   TestReconcileEmptyFullScanIncludesItemBranches
+=== PAUSE TestReconcileEmptyFullScanIncludesItemBranches
+=== RUN   TestReconcileReportsALegacyRunKeyedFromItsRunWorktree
+=== PAUSE TestReconcileReportsALegacyRunKeyedFromItsRunWorktree
+=== RUN   TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater
+=== PAUSE TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater
+=== RUN   TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== PAUSE TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+=== RUN   TestReconcileDryRunLeavesAMergedSpecRunInPlace
+=== PAUSE TestReconcileDryRunLeavesAMergedSpecRunInPlace
+=== RUN   TestReconcileIgnoresAMergeRecordForAnotherSpec
+=== PAUSE TestReconcileIgnoresAMergeRecordForAnotherSpec
+=== RUN   TestReconcilePreservesARunTheMergeRecordDoesNotRepresent
+=== PAUSE TestReconcilePreservesARunTheMergeRecordDoesNotRepresent
+=== RUN   TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition
+=== PAUSE TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition
+=== RUN   TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== PAUSE TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== RUN   TestReconcileReadsMergeRecordFromTheLoadedCheckoutPath
+=== PAUSE TestReconcileReadsMergeRecordFromTheLoadedCheckoutPath
+=== RUN   TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== PAUSE TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+=== PAUSE TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== PAUSE TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== RUN   TestReconcileDryRunReportsStaleStagingWithoutRemovingIt
+=== PAUSE TestReconcileDryRunReportsStaleStagingWithoutRemovingIt
+=== RUN   TestReconcileApplyReleasesStaleStaging
+=== PAUSE TestReconcileApplyReleasesStaleStaging
+=== RUN   TestReconcileCarryForwardReleasesStaleStagingFirst
+=== PAUSE TestReconcileCarryForwardReleasesStaleStagingFirst
+=== RUN   TestReconcileKeepsALiveStagingAsPreserved
+=== PAUSE TestReconcileKeepsALiveStagingAsPreserved
+=== RUN   TestReconcileClassifiesARunUnderASymlinkedWorktreeRoot
+=== PAUSE TestReconcileClassifiesARunUnderASymlinkedWorktreeRoot
+=== RUN   TestReconcileApplyReleasesARunUnderASymlinkedWorktreeRoot
+=== PAUSE TestReconcileApplyReleasesARunUnderASymlinkedWorktreeRoot
+=== RUN   TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout
+=== PAUSE TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout
+=== RUN   TestReconcileFromMainAfterALinkedWorktreeIsRemoved
+=== PAUSE TestReconcileFromMainAfterALinkedWorktreeIsRemoved
+=== RUN   TestReconcileRefusesAnotherRepositorysRun
+=== PAUSE TestReconcileRefusesAnotherRepositorysRun
+=== RUN   TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath
+=== PAUSE TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath
+=== RUN   TestReconcileDiscardWritesTheRecordBeforeRemoving
+=== PAUSE TestReconcileDiscardWritesTheRecordBeforeRemoving
+=== RUN   TestReconcileDiscardRefusesAnUnreachableCommit
+=== PAUSE TestReconcileDiscardRefusesAnUnreachableCommit
+=== RUN   TestReconcileDiscardKeepsSurfaceWhenRecordCannotBeWritten
+=== PAUSE TestReconcileDiscardKeepsSurfaceWhenRecordCannotBeWritten
+=== RUN   TestReconcileWithoutTheFlagRemovesNothing
+=== PAUSE TestReconcileWithoutTheFlagRemovesNothing
+=== RUN   TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt
+=== PAUSE TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt
+=== RUN   TestRunRetentionStopsOnItsBudgetAndResumes
+=== PAUSE TestRunRetentionStopsOnItsBudgetAndResumes
+=== RUN   TestRunRetentionKeepsTheRunReconcileReads
+=== PAUSE TestRunRetentionKeepsTheRunReconcileReads
+=== CONT  TestBaselineSkillsReconcileExampleParses
+=== CONT  TestResumeReusesTheRecordedItemBranch
+=== CONT  TestReconcileItemBranchSafety
+=== CONT  TestRunImplementResumesStaleInProgressTask
+=== RUN   TestReconcileItemBranchSafety/dirty
+=== CONT  TestDoctorStorageReportsReclaimableRunsAndNamesGC
+=== CONT  TestReviewFetchReclaimsDeadOwnerActiveRun
+=== CONT  TestReconcileWithARunIDOmitsItemBranchCandidates
+=== CONT  TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+=== CONT  TestGCDryRunListsReclaimableItemBinaries
+--- PASS: TestBaselineSkillsReconcileExampleParses (0.00s)
+=== CONT  TestRunImplementReclaimsDeadOwnerActiveRun
+=== CONT  TestRetentionReclaimableReturnsArtifactInspectionError
+--- PASS: TestRetentionReclaimableReturnsArtifactInspectionError (0.00s)
+=== CONT  TestReconcileKeepsTheItemBranchOfALiveQueueItem
+=== RUN   TestReconcileKeepsTheItemBranchOfALiveQueueItem/queued
+--- PASS: TestDoctorStorageIsOKWhenNothingIsLeftToReclaim (0.02s)
+=== CONT  TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+--- PASS: TestDoctorStorageReportsReclaimableRunsAndNamesGC (0.02s)
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout
+--- PASS: TestGCDryRunListsReclaimableItemBinaries (0.05s)
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== RUN   TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== PAUSE TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestRetentionSweepIsSilentWhenNothingIsReclaimed
+--- PASS: TestReviewFetchReclaimsDeadOwnerActiveRun (0.05s)
+=== CONT  TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan
+--- PASS: TestRetentionSweepIsSilentWhenNothingIsReclaimed (0.01s)
+=== CONT  TestGCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents
+--- PASS: TestGCReclaimsARunWhoseArtifactDirectoryOutlivedItsEvents (0.03s)
+=== CONT  TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock
+=== RUN   TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock/permission
+--- PASS: TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan (0.05s)
+=== CONT  TestResumeReleasesAStaleOwner
+=== RUN   TestResumeReleasesAStaleOwner/reused_PID
+=== RUN   TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock/deadline
+--- PASS: TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock (0.05s)
+    --- PASS: TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock/permission (0.03s)
+    --- PASS: TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock/deadline (0.01s)
+=== CONT  TestDeliverCommandStopsAndResumesPersistedQueue
+--- PASS: TestGCSanitizeReclaimsAPreKeyDefaultRootInABareLayout (0.15s)
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerIsGone
+=== RUN   TestResumeReleasesAStaleOwner/unreadable_identity
+--- PASS: TestDeliverCommandStopsAndResumesPersistedQueue (0.12s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+=== RUN   TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+=== PAUSE TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+=== CONT  TestDeliverRetryIsRefusedAtTheTokenCeiling
+--- PASS: TestRunSlotsExcludeAHolderWhoseOwnerIsGone (0.12s)
+=== CONT  TestDeliverRetryRefusalOmitsAnUnreadableItem
+--- PASS: TestDeliverRetryIsRefusedAtTheTokenCeiling (0.04s)
+=== CONT  TestResumeRefusesAnArchiveCommitWithExtraChanges
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges/unrelated_path
+--- PASS: TestDeliverRetryRefusalOmitsAnUnreadableItem (0.01s)
+=== CONT  TestDeliverRetryKeepsUsageForAnArgumentError
+--- PASS: TestResumeReleasesAStaleOwner (0.23s)
+    --- PASS: TestResumeReleasesAStaleOwner/reused_PID (0.10s)
+    --- PASS: TestResumeReleasesAStaleOwner/unreadable_identity (0.13s)
+=== CONT  TestResumeAcceptsARealArchiveCommit
+=== CONT  TestDeliverRetryPrintsARefusalWithoutUsage
+--- PASS: TestResumeReusesTheRecordedItemBranch (0.33s)
+--- PASS: TestDeliverRetryKeepsUsageForAnArgumentError (0.10s)
+=== CONT  TestMigratedMergedItemDoesNotBlockResume
+--- PASS: TestDeliverRetryPrintsARefusalWithoutUsage (0.12s)
+=== CONT  TestTopLevelUsageNamesDeliverRetry
+--- PASS: TestTopLevelUsageNamesDeliverRetry (0.00s)
+=== CONT  TestResumeParksWhenTheItemBranchIsGone
+--- PASS: TestRunImplementResumesStaleInProgressTask (0.65s)
+=== CONT  TestDeliverRetryRefusalStartsNoOwner
+--- PASS: TestRunImplementReclaimsDeadOwnerActiveRun (0.67s)
+=== CONT  TestResumeRecreatesAMissingItemWorktree
+=== RUN   TestResumeRefusesAnArchiveCommitWithExtraChanges/changed_record_title
+--- PASS: TestResumeAcceptsARealArchiveCommit (0.39s)
+=== CONT  TestDeliverRetryRefusesUnknownFlag
+--- PASS: TestDeliverRetryRefusalStartsNoOwner (0.11s)
+=== CONT  TestResumeUsesTheRecordedItemWorktree
+--- PASS: TestResumeParksWhenTheItemBranchIsGone (0.33s)
+=== CONT  TestRunForceStopOwnerPIDReuseFailsClosed
+--- PASS: TestDeliverRetryRefusesUnknownFlag (0.08s)
+=== CONT  TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner
+--- PASS: TestResumeRecreatesAMissingItemWorktree (0.35s)
+=== CONT  TestRunSettleReclaimsDeadOwnerActiveRun
+--- PASS: TestResumeUsesTheRecordedItemWorktree (0.27s)
+=== CONT  TestReopenRefusesAnActiveRunWithoutReclaimingIt
+--- PASS: TestRunForceStopOwnerPIDReuseFailsClosed (0.28s)
+=== CONT  TestReconcileCarryForwardReleasesStaleStagingFirst
+--- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges (0.77s)
+    --- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges/unrelated_path (0.41s)
+    --- PASS: TestResumeRefusesAnArchiveCommitWithExtraChanges/changed_record_title (0.36s)
+=== CONT  TestRunRetentionKeepsTheRunReconcileReads
+--- PASS: TestMigratedMergedItemDoesNotBlockResume (0.68s)
+=== CONT  TestRunRetentionStopsOnItsBudgetAndResumes
+--- PASS: TestRunRetentionStopsOnItsBudgetAndResumes (0.04s)
+=== CONT  TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt
+=== CONT  TestDeliverRetryRefusesAnExtraArgument
+--- PASS: TestReopenRefusesAnActiveRunWithoutReclaimingIt (0.12s)
+--- PASS: TestDeliverRetryRefusesAnExtraArgument (0.08s)
+=== CONT  TestReconcileWithoutTheFlagRemovesNothing
+suiteguard: guard cost: measured 3046 paths; fingerprint took 211.291709ms before and 319.376292ms after
+--- PASS: TestRunSettleReclaimsDeadOwnerActiveRun (0.44s)
+=== CONT  TestDeliverRetryRefusesAnEmptySlug
+--- PASS: TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner (0.68s)
+=== CONT  TestReconcileDiscardKeepsSurfaceWhenRecordCannotBeWritten
+--- PASS: TestDeliverRetryRefusesAnEmptySlug (0.09s)
+=== CONT  TestDeliverRetryRequiresOneSlug
+--- PASS: TestDeliverRetryRequiresOneSlug (0.08s)
+=== CONT  TestReconcileDiscardRefusesAnUnreachableCommit
+--- PASS: TestReviewRoundTwoRetriesAResumedPromptBeforeSessionPrompt (0.54s)
+=== CONT  TestDeliverRetryReclaimsAStaleOwnerAndStartsOne
+--- PASS: TestRunRetentionKeepsTheRunReconcileReads (0.68s)
+=== CONT  TestReconcileDiscardWritesTheRecordBeforeRemoving
+--- PASS: TestDeliverRetryReclaimsAStaleOwnerAndStartsOne (0.08s)
+=== CONT  TestDeliverRetryHandsTheItemToALiveOwner
+--- PASS: TestDeliverRetryHandsTheItemToALiveOwner (0.10s)
+=== CONT  TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath
+--- PASS: TestReconcileWithoutTheFlagRemovesNothing (0.81s)
+=== CONT  TestDeliverRetryStartsAnOwnerWhenNoneIsRunning
+--- PASS: TestReconcileTrustsTheRecordedKeyOverTheCheckoutPath (0.26s)
+=== CONT  TestReconcileRefusesAnotherRepositorysRun
+--- PASS: TestDeliverRetryStartsAnOwnerWhenNoneIsRunning (0.09s)
+=== CONT  TestDeliverRetryPrintsOneLinePerCarriedRun
+--- PASS: TestDeliverRetryPrintsOneLinePerCarriedRun (0.00s)
+=== CONT  TestReconcileFromMainAfterALinkedWorktreeIsRemoved
+=== RUN   TestReconcileFromMainAfterALinkedWorktreeIsRemoved/all_terminal_Runs
+--- PASS: TestReconcileRefusesAnotherRepositorysRun (0.11s)
+=== CONT  TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore
+--- PASS: TestReconcileDiscardKeepsSurfaceWhenRecordCannotBeWritten (0.82s)
+=== CONT  TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout
+=== CONT  TestDeliverRetryRefusesAPullRequestClosedWithoutMerging
+--- PASS: TestReconcileDiscardRefusesAnUnreachableCommit (0.97s)
+--- PASS: TestReconcileCarryForwardReleasesStaleStagingFirst (1.54s)
+=== CONT  TestReconcileApplyReleasesARunUnderASymlinkedWorktreeRoot
+--- PASS: TestReconcileAcceptsALinkedWorktreeRunFromTheMainCheckout (0.35s)
+=== CONT  TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest
+--- PASS: TestDeliverRetryWithAnOpenPullRequestAndNoMergeEvidenceRetriesAsBefore (0.51s)
+=== CONT  TestReconcileClassifiesARunUnderASymlinkedWorktreeRoot
+=== RUN   TestReconcileFromMainAfterALinkedWorktreeIsRemoved/explicit_Run
+--- PASS: TestReconcileDiscardWritesTheRecordBeforeRemoving (1.16s)
+=== CONT  TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone
+--- PASS: TestDeliverRetryRefusesAPullRequestClosedWithoutMerging (0.51s)
+=== CONT  TestReconcileKeepsALiveStagingAsPreserved
+--- PASS: TestDeliverRetryRecordsASpecArchivedOnTheDefaultBranchWithoutARecordedPullRequest (0.65s)
+=== CONT  TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout
+--- PASS: TestReconcileKeepsALiveStagingAsPreserved (0.23s)
+=== CONT  TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/resume
+=== RUN   TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/stop
+--- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout (0.15s)
+    --- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/resume (0.01s)
+    --- PASS: TestDeliverResumeAndStopInAnItemWorktreeNameTheOwningCheckout/stop (0.00s)
+=== CONT  TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript
+=== RUN   TestReconcileFromMainAfterALinkedWorktreeIsRemoved/apply
+--- PASS: TestDeliverRetryInAnItemWorktreeReproducesSurfaceTranscript (0.14s)
+=== CONT  TestMergedReleaseReclaimsTheItemBinaries
+--- PASS: TestDeliverRetryRecordsAPullRequestMergedByHandAfterTheItemBranchIsGone (0.76s)
+=== CONT  TestResumeAcceptsAnArchiveCommitWithRewrittenLinks
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md
+suiteguard: guard cost: measured 3046 paths; fingerprint took 239.104833ms before and 233.957041ms after
+=== RUN   TestReconcileKeepsTheItemBranchOfALiveQueueItem/running
+--- PASS: TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion (0.54s)
+=== CONT  TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions
+--- PASS: TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions (0.02s)
+=== CONT  TestDeliverStartResumesAnArchivedItemBranchAtReview
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec
+--- PASS: TestReconcileClassifiesARunUnderASymlinkedWorktreeRoot (1.17s)
+=== CONT  TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md
+=== RUN   TestReconcileItemBranchSafety/unmerged
+--- PASS: TestReconcileApplyReleasesARunUnderASymlinkedWorktreeRoot (1.51s)
+=== CONT  TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings
+--- PASS: TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings (0.03s)
+=== CONT  TestRunCeilingReclaimsADeadHolder
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md
+--- PASS: TestReconcileFromMainAfterALinkedWorktreeIsRemoved (2.41s)
+    --- PASS: TestReconcileFromMainAfterALinkedWorktreeIsRemoved/all_terminal_Runs (0.72s)
+    --- PASS: TestReconcileFromMainAfterALinkedWorktreeIsRemoved/explicit_Run (0.73s)
+    --- PASS: TestReconcileFromMainAfterALinkedWorktreeIsRemoved/apply (0.96s)
+=== CONT  TestRunForceStopOwnerProofFailurePreservesAgentSessions
+--- PASS: TestRunForceStopOwnerProofFailurePreservesAgentSessions (0.02s)
+=== CONT  TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte
+--- PASS: TestRunCeilingReclaimsADeadHolder (0.60s)
+=== CONT  TestRunReconcileIdempotentApply
+=== RUN   TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md
+--- PASS: TestMergedReleaseReclaimsTheItemBinaries (1.39s)
+=== CONT  TestRunReconcileApplyFailureNamesNextSafeAction
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target
+--- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks (1.56s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md (0.36s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/task_01.md (0.40s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/qa/links.md (0.38s)
+    --- PASS: TestResumeAcceptsAnArchiveCommitWithRewrittenLinks/_prd.md+task_01.md+qa/links.md (0.41s)
+=== CONT  TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_permits_supervised_stop
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/readable_matching_identity_refuses_supervised_flag
+=== RUN   TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/proven_mismatch_refuses_supervised_flag
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_without_flag_fails_closed
+=== RUN   TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/supervised_flag_requires_Force_Stop
+--- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof (0.09s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_permits_supervised_stop (0.02s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/readable_matching_identity_refuses_supervised_flag (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/proven_mismatch_refuses_supervised_flag (0.02s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/unreadable_identity_without_flag_fails_closed (0.01s)
+    --- PASS: TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof/supervised_flag_requires_Force_Stop (0.02s)
+=== CONT  TestRunReconcileApplyMixedResults
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file
+--- PASS: TestRunReconcileIdempotentApply (1.18s)
+=== CONT  TestRunForceStopAcceptsFlagsInAnyPosition
+=== RUN   TestRunForceStopAcceptsFlagsInAnyPosition/run_id_then_flag
+=== RUN   TestRunForceStopAcceptsFlagsInAnyPosition/flag_then_run_id
+--- PASS: TestRunForceStopAcceptsFlagsInAnyPosition (0.04s)
+    --- PASS: TestRunForceStopAcceptsFlagsInAnyPosition/run_id_then_flag (0.02s)
+    --- PASS: TestRunForceStopAcceptsFlagsInAnyPosition/flag_then_run_id (0.02s)
+=== CONT  TestRunReconcileInvalidSelectorsMutateNothing
+=== CONT  TestForceStopProvesTheTreeWhenTreeExits
+--- PASS: TestRunReconcileApplyFailureNamesNextSafeAction (0.99s)
+--- PASS: TestForceStopProvesTheTreeWhenTreeExits (0.02s)
+=== CONT  TestRunReconcileRepositoryScopeNewestFirst
+=== RUN   TestRunReconcileInvalidSelectorsMutateNothing/active
+--- PASS: TestReconcileWithARunIDOmitsItemBranchCandidates (6.06s)
+=== CONT  TestForceStopProvesTheTree
+--- PASS: TestForceStopProvesTheTree (0.02s)
+=== CONT  TestRunReconcileSupersededJSONAndApply
+=== RUN   TestRunReconcileInvalidSelectorsMutateNothing/review
+=== RUN   TestRunReconcileInvalidSelectorsMutateNothing/missing
+=== RUN   TestRunReconcileInvalidSelectorsMutateNothing/cross_repository
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file
+--- PASS: TestRunReconcileInvalidSelectorsMutateNothing (0.23s)
+    --- PASS: TestRunReconcileInvalidSelectorsMutateNothing/active (0.02s)
+    --- PASS: TestRunReconcileInvalidSelectorsMutateNothing/review (0.02s)
+    --- PASS: TestRunReconcileInvalidSelectorsMutateNothing/missing (0.03s)
+    --- PASS: TestRunReconcileInvalidSelectorsMutateNothing/cross_repository (0.03s)
+=== CONT  TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease
+--- PASS: TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease (0.02s)
+=== CONT  TestRunReconcileReportsAmbiguousDebrisPreserved
+=== RUN   TestReconcileItemBranchSafety/wrong-path
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode
+--- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview (2.60s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/another_active_Spec (1.36s)
+    --- PASS: TestDeliverStartResumesAnArchivedItemBranchAtReview/only_active_Spec (1.24s)
+=== CONT  TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext
+--- PASS: TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext (0.04s)
+=== CONT  TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type
+--- PASS: TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven (0.32s)
+=== CONT  TestCancelReclaimsAnOrphanedRun
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite
+=== CONT  TestRetentionReclaimableKeepsCandidateOrder
+--- PASS: TestCancelReclaimsAnOrphanedRun (0.24s)
+--- PASS: TestRetentionReclaimableKeepsCandidateOrder (0.00s)
+=== CONT  TestRunReconcileEmptyJSONNamesRunsCollection
+--- PASS: TestRunReconcileReportsAmbiguousDebrisPreserved (0.93s)
+=== CONT  TestRunReconcileJSONMatchesTextFields
+=== CONT  TestRunReconcileDryRunOutputFailure
+--- PASS: TestRunReconcileEmptyJSONNamesRunsCollection (0.13s)
+--- PASS: TestRunReconcileRepositoryScopeNewestFirst (1.34s)
+=== CONT  TestRunReconcileDryRunReadOnly
+--- PASS: TestRunReconcileDryRunOutputFailure (0.14s)
+=== CONT  TestReconcileCarryForwardOfACarriedRunCarriesNothing
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query
+--- PASS: TestRunReconcileSupersededJSONAndApply (1.52s)
+=== CONT  TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout
+=== RUN   TestReconcileKeepsTheItemBranchOfALiveQueueItem/parked
+=== RUN   TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment
+=== CONT  TestDeliverRetryRefusesACancelledSpec
+--- PASS: TestRunReconcileJSONMatchesTextFields (0.77s)
+=== RUN   TestDeliverRetryRefusesACancelledSpec/parked_queue
+=== RUN   TestDeliverRetryRefusesACancelledSpec/absent
+--- PASS: TestRunReconcileDryRunReadOnly (0.83s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheConfirmationContract (0.00s)
+=== CONT  TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== RUN   TestDeliverRetryRefusesACancelledSpec/malformed
+--- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges (4.31s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_Task_byte (0.37s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_link_target (0.38s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/extra_PRD_byte (0.38s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/another_PRD_link_target (0.38s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/frontmatter_link_rewrite (0.38s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/added_file (0.34s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/removed_file (0.31s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_mode (0.30s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_type (0.34s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/non-Markdown_rewrite (0.36s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_query (0.38s)
+    --- PASS: TestResumeRefusesALinkRewritingArchiveCommitWithExtraChanges/changed_fragment (0.38s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal (0.00s)
+=== CONT  TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+--- PASS: TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit (0.00s)
+=== CONT  TestBaselineSkillsReconcilePreviewThenConfirm
+--- PASS: TestDeliverRetryRefusesACancelledSpec (0.43s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/parked_queue (0.16s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/absent (0.12s)
+    --- PASS: TestDeliverRetryRefusesACancelledSpec/malformed (0.15s)
+=== CONT  TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills
+--- PASS: TestRunReconcileApplyMixedResults (3.05s)
+=== CONT  TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition
+--- PASS: TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan (0.35s)
+=== CONT  TestReconcileApplyReleasesStaleStaging
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills
+--- PASS: TestReconcileApplyReleasesStaleStaging (0.26s)
+=== CONT  TestBaselineSkillsReconcileRejectsAMutableRevision
+--- PASS: TestBaselineSkillsReconcileRejectsAMutableRevision (0.00s)
+=== CONT  TestReconcileDryRunReportsStaleStagingWithoutRemovingIt
+--- PASS: TestBaselineSkillsReconcilePreviewThenConfirm (0.80s)
+=== CONT  TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unreadable_read_failure
+--- PASS: TestReconcileDryRunReportsStaleStagingWithoutRemovingIt (0.29s)
+=== CONT  TestReconcileReleasesARunProvenByTheDeliveryMergeRecord
+--- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision (1.09s)
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills (0.48s)
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills (0.40s)
+=== CONT  TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal
+--- PASS: TestReconcileCarryForwardSkipsATaskCompletedOnTheCheckout (1.77s)
+=== CONT  TestReconcilePreservesARunTheMergeRecordDoesNotRepresent
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/uncomparable_token
+--- PASS: TestReconcileCarryForwardOfACarriedRunCarriesNothing (2.52s)
+=== CONT  TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead
+--- PASS: TestReconcileKeepsTheApplyActionForAMergedRunWithASupersededDisposition (1.82s)
+=== CONT  TestReconcileIgnoresAMergeRecordForAnotherSpec
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/bare_unproven
+--- PASS: TestReconcileFailsWhenDeliveryMergeRecordsCannotBeRead (0.33s)
+=== CONT  TestReconcileReadsMergeRecordFromTheLoadedCheckoutPath
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/changed_identity
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/missing_Run
+=== RUN   TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/database_open_failure
+--- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal (1.07s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/changed_identity (0.00s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/missing_Run (0.00s)
+    --- PASS: TestRunReconcileReleasesAStaleRunOwnerRecordWithoutASignal/database_open_failure (0.00s)
+=== CONT  TestReconcileDryRunLeavesAMergedSpecRunInPlace
+=== RUN   TestReconcileItemBranchSafety/live-after-proof
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unsupported
+--- PASS: TestReconcilePreservesARunTheMergeRecordDoesNotRepresent (1.47s)
+=== CONT  TestReconcileReleasesAnArchivedSpecRunWithoutARecord
+=== RUN   TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/without_identity
+--- PASS: TestReconcileKeepsTheItemBranchOfALiveQueueItem (11.45s)
+    --- PASS: TestReconcileKeepsTheItemBranchOfALiveQueueItem/queued (3.86s)
+    --- PASS: TestReconcileKeepsTheItemBranchOfALiveQueueItem/running (3.76s)
+    --- PASS: TestReconcileKeepsTheItemBranchOfALiveQueueItem/parked (3.83s)
+=== CONT  TestReconcileReportsALegacyRunKeyedFromItsRunWorktree
+--- PASS: TestReconcileIgnoresAMergeRecordForAnotherSpec (1.48s)
+=== CONT  TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater
+--- PASS: TestReconcileReleasesARunProvenByTheDeliveryMergeRecord (2.47s)
+=== CONT  TestReconcileEmptyFullScanIncludesItemBranches
+--- PASS: TestReconcileEmptyFullScanIncludesItemBranches (0.14s)
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+--- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused (0.00s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused (0.01s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity (0.01s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity (0.01s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching (0.01s)
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching
+--- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale (2.92s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unreadable_read_failure (0.60s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/uncomparable_token (0.59s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/bare_unproven (0.58s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/unsupported (0.57s)
+    --- PASS: TestRunReconcilePreservesARunOwnerRecordWhoseIdentityIsNotProvenStale/without_identity (0.58s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head
+--- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused (0.00s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/reused (0.01s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/foreign_identity (0.01s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/empty_identity (0.02s)
+    --- PASS: TestImplementReclaimsAnActiveRunWhoseOwnerPIDWasReused/matching (0.01s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner
+--- PASS: TestReconcileReadsMergeRecordFromTheLoadedCheckoutPath (1.92s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation
+--- PASS: TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches (7.65s)
+=== CONT  TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch
+--- PASS: TestReconcileDryRunLeavesAMergedSpecRunInPlace (1.91s)
+--- PASS: TestReconcileReportsALegacyRunKeyedFromItsRunWorktree (0.83s)
+--- PASS: TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec (12.55s)
+--- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage (0.00s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/rewritten_head (0.42s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/live_owner (0.42s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/returns_to_implementation (0.29s)
+    --- PASS: TestDeliverRetryNamesAReviewThatOpensANewLineage/conflict-free_merge_of_the_default_branch (0.40s)
+--- PASS: TestReconcileReleasesAnArchivedSpecRunWithoutARecord (2.06s)
+=== RUN   TestReconcileItemBranchSafety/merged-item
+--- PASS: TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater (3.33s)
+=== RUN   TestReconcileItemBranchSafety/moved-head
+--- PASS: TestReconcileItemBranchSafety (16.79s)
+    --- PASS: TestReconcileItemBranchSafety/dirty (4.05s)
+    --- PASS: TestReconcileItemBranchSafety/unmerged (2.40s)
+    --- PASS: TestReconcileItemBranchSafety/wrong-path (4.15s)
+    --- PASS: TestReconcileItemBranchSafety/live-after-proof (2.50s)
+    --- PASS: TestReconcileItemBranchSafety/merged-item (2.06s)
+    --- PASS: TestReconcileItemBranchSafety/moved-head (1.63s)
+PASS
+suiteguard: guard cost: measured 3046 paths; fingerprint took 148.037083ms before and 140.304584ms after
+ok  	roundfix/internal/cli	17.736s
+
+exit: 0

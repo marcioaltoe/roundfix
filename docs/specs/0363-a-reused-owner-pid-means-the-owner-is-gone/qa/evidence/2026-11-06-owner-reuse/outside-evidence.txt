@@ -1,0 +1,7 @@
+Outside source: POSIX.1-2017, The Open Group Base Specifications Issue 7, Base Definitions, section 4.14 Process ID Reuse.
+URL: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html
+Publication: 2017; planning retrieval: 2026-11-06; QA comparison: 2026-11-06, offline.
+Quoted passage: A process ID shall not be reused by the system until the process lifetime ends.
+
+Observed comparison: owner-gone.txt records PASS for comparable_mismatch. The controller reports a live PID with a comparable live start identity different from the recorded one; OwnerGone returns gone=true, reused=true. POSIX forbids reuse before the old lifetime ends, so the difference establishes that the recorded lifetime ended. The unreadable_identity case passes with gone=false/reused=false, respecting the absence of proof. sabotage-reuse-bit.txt confirms losing the reuse bit fails the mismatch assertion.
+The normative source is external literature, not the Spec-authored test. No network lookup was needed; the committed PRD quotes this passage.

@@ -1,0 +1,5 @@
+package speccheck
+import ("testing"; "fmt")
+func TestQAOwnerScope(t *testing.T) {
+ for _, p := range []string{".agents/skills/roundfix/SKILL.md",".agents/skills/roundfix/references/deliver.md",".agents/skills/roundfix/references/setup.md","docs/references/behavior-surfaces.json","docs/specs/0363-a-reused-owner-pid-means-the-owner-is-gone/task_01.md","docs/specs/0363-a-reused-owner-pid-means-the-owner-is-gone/task_02.md","docs/specs/0363-a-reused-owner-pid-means-the-owner-is-gone/task_03.md","docs/user-guide/commands/deliver.md","docs/user-guide/commands/doctor.md","internal/cli/cli.go","internal/cli/deliver.go","internal/cli/deliver_workflow.go","internal/cli/doctor.go","internal/cli/doctor_test.go","internal/cli/owner_pid_reused_unix_test.go","internal/store/process.go","internal/store/process_owner_gone_test.go","internal/store/reclaim_reused_owner_unix_test.go","internal/store/store.go","skills/roundfix/SKILL.md","skills/roundfix/references/deliver.md","skills/roundfix/references/setup.md","skills/testdata/owned-skill-versions.json"} { fmt.Printf("GOVERNED %s %t\n", p, GovernedPath(p)) }
+}

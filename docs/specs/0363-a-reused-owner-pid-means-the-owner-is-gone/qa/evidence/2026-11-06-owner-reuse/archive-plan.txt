@@ -1,0 +1,9 @@
+$ ./bin/roundfix archive 0363-a-reused-owner-pid-means-the-owner-is-gone --plan --offline
+archive plan for 0363-a-reused-owner-pid-means-the-owner-is-gone: removes 45 file(s) (377517 bytes) and writes docs/history/specs/0363-a-reused-owner-pid-means-the-owner-is-gone.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-06.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 34 file(s) (283363 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-06-doctor-residue-stays-partial-when-an-owner-pid-is-reused.md 2161 bytes: no advice (offline)
+promote with: roundfix archive 0363-a-reused-owner-pid-means-the-owner-is-gone --promote <path>
+
+exit: 0

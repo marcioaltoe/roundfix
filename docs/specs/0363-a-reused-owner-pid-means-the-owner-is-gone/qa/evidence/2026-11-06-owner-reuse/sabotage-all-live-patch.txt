@@ -1,0 +1,11 @@
+--- a/internal/store/process.go
++++ b/internal/store/process.go
+@@ -108,7 +108,7 @@
+ 	if errors.Is(err, ErrOwnerProcessIdentityMismatch) {
+ 		return true, true
+ 	}
+-	return err == nil && absent, false
++	return (err == nil && absent) || pid > 0, false
+ }
+ 
+ // proveOwner is the single implementation of the ownership rule. It reports

@@ -1,0 +1,11 @@
+--- a/internal/cli/deliver.go
++++ b/internal/cli/deliver.go
+@@ -394,7 +394,7 @@
+ 	if !found {
+ 		return nil
+ 	}
+-	if gone, _ := store.OwnerGone(ctx, existing.OwnerPID, existing.OwnerIdentity); !gone {
++	if existing.OwnerPID <= 0 || store.ProcessAlive(existing.OwnerPID) {
+ 		return nil
+ 	}
+ 	released, err := runStore.ReleaseDeliveryQueueOwner(ctx, gitRoot, existing.OwnerPID, existing.OwnerIdentity)

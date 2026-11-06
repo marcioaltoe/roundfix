@@ -1,0 +1,10 @@
+$ go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0363-init-ce913u2p/overlay.json -count=1 -timeout 20m -v -run '^TestQAInitializeEmptyStore$' ./internal/store
+=== RUN   TestQAInitializeEmptyStore
+=== PAUSE TestQAInitializeEmptyStore
+=== CONT  TestQAInitializeEmptyStore
+--- PASS: TestQAInitializeEmptyStore (0.00s)
+PASS
+suiteguard: guard cost: measured 3035 paths; fingerprint took 151.216625ms before and 133.383959ms after
+ok  	roundfix/internal/store	0.725s
+
+exit: 0

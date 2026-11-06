@@ -1,0 +1,12 @@
+--- a/internal/store/process.go
++++ b/internal/store/process.go
+@@ -107,6 +107,9 @@
+ 	absent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+ 	if errors.Is(err, ErrOwnerProcessIdentityMismatch) {
+ 		return true, true
++	}
++	if errors.Is(err, ErrOwnerIdentityUnreadable) {
++		return true, false
+ 	}
+ 	return err == nil && absent, false
+ }

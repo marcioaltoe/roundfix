@@ -1,0 +1,3 @@
+package store
+import "testing"
+func TestQAInitializeEmptyStore(t *testing.T) { t.Parallel(); db, err := Open(t.Context(), "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0363-home-141b486k"); if err != nil { t.Fatal(err) }; if err := db.Close(); err != nil { t.Fatal(err) } }

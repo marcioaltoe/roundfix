@@ -1,0 +1,76 @@
+$ /bin/sh -c 'grep -q '"'"'func TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone('"'"' internal/store/process_owner_gone_test.go || exit 1; go test -v -timeout 20m -count=1 -run '"'"'^(TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone|TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity)$'"'"' ./internal/store'
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== PAUSE TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== CONT  TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+=== RUN   TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read
+--- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/comparable_mismatch (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/own_PID (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/PID_zero (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/read_failure (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/unsupported_read (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/foreign_token (0.00s)
+    --- PASS: TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity/absent_on_second_read (0.00s)
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+--- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero (0.00s)
+PASS
+suiteguard: guard cost: measured 3010 paths; fingerprint took 196.086625ms before and 131.706333ms after
+ok  	roundfix/internal/store	0.788s
+
+exit: 0

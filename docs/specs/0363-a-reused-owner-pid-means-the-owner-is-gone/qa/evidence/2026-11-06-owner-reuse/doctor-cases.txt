@@ -1,0 +1,34 @@
+$ /bin/sh -c 'for t in TestDoctorReportsNoResidueForAReusedOwnerPID TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne; do grep -q "func $t(" internal/cli/doctor_test.go || { printf '"'"'missing %s\n'"'"' "$t" >&2; exit 1; }; done; go test -v -timeout 20m -count=1 -run '"'"'^(TestDoctorReportsNoResidueForAReusedOwnerPID|TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne|TestDoctorReportsProcessResidueReported|TestDoctorReportsProcessResidueExcludesLiveRun|TestDoctorReportsProcessResidueEmpty|TestDoctorReportsProcessResidueUnreadable|TestDoctorReportsProcessResidueDoesNotWriteRunRecord)$'"'"' ./internal/cli'
+=== RUN   TestDoctorReportsProcessResidueReported
+=== PAUSE TestDoctorReportsProcessResidueReported
+=== RUN   TestDoctorReportsProcessResidueExcludesLiveRun
+=== PAUSE TestDoctorReportsProcessResidueExcludesLiveRun
+=== RUN   TestDoctorReportsProcessResidueEmpty
+=== PAUSE TestDoctorReportsProcessResidueEmpty
+=== RUN   TestDoctorReportsProcessResidueUnreadable
+=== PAUSE TestDoctorReportsProcessResidueUnreadable
+=== RUN   TestDoctorReportsNoResidueForAReusedOwnerPID
+=== PAUSE TestDoctorReportsNoResidueForAReusedOwnerPID
+=== RUN   TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== PAUSE TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== RUN   TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+=== PAUSE TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+=== CONT  TestDoctorReportsProcessResidueReported
+=== CONT  TestDoctorReportsNoResidueForAReusedOwnerPID
+=== CONT  TestDoctorReportsProcessResidueEmpty
+=== CONT  TestDoctorReportsProcessResidueUnreadable
+=== CONT  TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+=== CONT  TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== CONT  TestDoctorReportsProcessResidueExcludesLiveRun
+--- PASS: TestDoctorReportsProcessResidueExcludesLiveRun (0.00s)
+--- PASS: TestDoctorReportsProcessResidueUnreadable (0.00s)
+--- PASS: TestDoctorReportsNoResidueForAReusedOwnerPID (0.00s)
+--- PASS: TestDoctorReportsProcessResidueReported (0.01s)
+--- PASS: TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne (0.00s)
+--- PASS: TestDoctorReportsProcessResidueEmpty (0.01s)
+--- PASS: TestDoctorReportsProcessResidueDoesNotWriteRunRecord (0.01s)
+PASS
+suiteguard: guard cost: measured 3011 paths; fingerprint took 149.511709ms before and 132.831208ms after
+ok  	roundfix/internal/cli	0.745s
+
+exit: 0

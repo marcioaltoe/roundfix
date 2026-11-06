@@ -1,0 +1,25 @@
+$ go test -count=1 -timeout 20m -v -run '^TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused$' ./internal/cli
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== RUN   TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== PAUSE TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity
+=== CONT  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching
+=== NAME  TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused
+    owner_pid_reused_unix_test.go:163: Delivery Queue after release={GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartReleasesAQueueOwnerWhosePIDWasReusedreused3784769495/001/repository OwnerPID:49026 OwnerIdentity:darwin:0.0 Limits:{Deadline:0001-01-01 00:00:00 +0000 UTC MaxRetries:0 MaxTokens:0} Items:[{SpecSlug:0001-reused-owner Position:0 Stage:queued Blocker: Branch: Worktree: WorktreeProvisioned:false RunID: CandidateCommits:[] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}]}, want {GitRoot:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverStartReleasesAQueueOwnerWhosePIDWasReusedreused3784769495/001/repository OwnerPID:0 OwnerIdentity: Limits:{Deadline:0001-01-01 00:00:00 +0000 UTC MaxRetries:0 MaxTokens:0} Items:[{SpecSlug:0001-reused-owner Position:0 Stage:queued Blocker: Branch: Worktree: WorktreeProvisioned:false RunID: CandidateCommits:[] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}]}
+--- FAIL: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused (0.00s)
+    --- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/matching (0.01s)
+    --- PASS: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/foreign_identity (0.01s)
+    --- FAIL: TestDeliverStartReleasesAQueueOwnerWhosePIDWasReused/reused (0.01s)
+FAIL
+suiteguard: guard cost: measured 3003 paths; fingerprint took 152.229833ms before and 140.733417ms after
+FAIL	roundfix/internal/cli	0.757s
+FAIL
+
+exit: 1

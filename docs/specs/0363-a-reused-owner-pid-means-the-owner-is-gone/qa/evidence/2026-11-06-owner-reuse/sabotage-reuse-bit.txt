@@ -1,0 +1,82 @@
+$ go test -count=1 -timeout 20m -v -run '^(TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone|TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused)$' ./internal/store
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== RUN   TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== PAUSE TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure
+=== RUN   TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity
+=== PAUSE TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch
+    process_owner_gone_test.go:57: OwnerGone = (true, false), want (true, true)
+=== CONT  TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity
+--- FAIL: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/empty_recorded_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/PID_zero (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/negative_PID (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/own_PID (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/process_table_failure (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/absent_after_identity_read_failure (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/foreign_token (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unreadable_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/unsupported_identity (0.00s)
+    --- PASS: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/matching (0.00s)
+    --- FAIL: TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone/comparable_mismatch (0.00s)
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching
+=== CONT  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity
+=== NAME  TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused
+    reclaim_reused_owner_unix_test.go:63: unexpected reclamation payload: struct { State string "json:\"state\""; Reason string "json:\"reason\""; OwnerPID int "json:\"owner_pid\"" }{State:"Failed", Reason:"owner process 48766 not running; lock reclaimed", OwnerPID:48766}
+--- FAIL: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused (0.00s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/matching (0.01s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/foreign_identity (0.01s)
+    --- PASS: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/empty_identity (0.01s)
+    --- FAIL: TestReclaimOrphanedRunReclaimsAnOwnerWhosePIDWasReused/reused (0.01s)
+FAIL
+suiteguard: guard cost: measured 3003 paths; fingerprint took 166.34625ms before and 138.685417ms after
+FAIL	roundfix/internal/store	0.614s
+FAIL
+
+exit: 1

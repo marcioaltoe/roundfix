@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0363-a-reused-owner-pid-means-the-owner-is-gone
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

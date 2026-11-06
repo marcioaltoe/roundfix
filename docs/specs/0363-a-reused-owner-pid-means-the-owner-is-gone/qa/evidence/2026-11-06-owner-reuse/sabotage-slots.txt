@@ -1,0 +1,29 @@
+$ go test -count=1 -timeout 20m -v -run '^TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused$' ./internal/cli
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== RUN   TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== PAUSE TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity
+=== CONT  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity
+=== NAME  TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused
+    owner_pid_reused_unix_test.go:111: reused PID retained a Run slot: [{RunID:run_20261106T191631Z_c7e2c5993082dd8d Repository:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReusedreused2937726494/001/repository SpecSlug:0001-reused-owner}]
+--- FAIL: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused (0.00s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/empty_identity (0.01s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/matching (0.01s)
+    --- PASS: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/foreign_identity (0.01s)
+    --- FAIL: TestRunSlotsExcludeAHolderWhoseOwnerPIDWasReused/reused (0.01s)
+FAIL
+suiteguard: guard cost: measured 3003 paths; fingerprint took 154.508125ms before and 152.987541ms after
+FAIL	roundfix/internal/cli	0.770s
+FAIL
+
+exit: 1

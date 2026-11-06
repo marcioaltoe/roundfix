@@ -1,0 +1,13 @@
+$ ./bin/roundfix spec check 0363-a-reused-owner-pid-means-the-owner-is-gone --strict
+stdout:
+Spec 0363-a-reused-owner-pid-means-the-owner-is-gone
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0363-a-reused-owner-pid-means-the-owner-is-gone/_techspec.md Vocabulary Contract
+
+stderr:
+
+exit: 0
