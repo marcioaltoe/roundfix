@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.136.3] - 2026-11-06
+
+### A reused owner PID means the owner is gone
+
+- **`roundfix doctor` no longer ends with `residue: partial` when the recorded owner of a terminal Run died and the system gave its PID to another process.** A proven start-identity mismatch now means the owner is gone; `partial` again means only an inspection that could not finish (reported by argus; ADR-0373).
+- **The same rule frees what a dead owner held:** the orphan reclaim of an Active Run's lock, the Delivery Queue's Run-slot holders and `roundfix deliver start` treat a proven reused PID as a dead owner. A matching or unprovable identity still keeps the owner present.
+
 ## [0.136.2] - 2026-11-06
 
 ### The build cache stays within a bound, and a full disk is named
