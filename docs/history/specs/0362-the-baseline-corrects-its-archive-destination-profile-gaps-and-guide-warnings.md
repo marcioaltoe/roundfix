@@ -40,9 +40,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "778"
 type: fix
 ---
 
 # The Baseline corrects its archive destination, profile gaps and guide warnings
 
-The Baseline now routes archive knowledge through ai-memory to the project that owns the Secondbrain, names a repository profile’s …
+The Baseline now routes archive knowledge through ai-memory to the project that owns the Secondbrain, names a rep…
