@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.134.1] - 2026-11-05
+
+### An external skill is checked only for presence
+
+- **`roundfix doctor` and `roundfix baseline update` check a required external skill only for presence**: an entry in `skills-lock.json` and its folder. A copy that differs from the Setup Snapshot raises no warning, `DR-SKILL-DIFFERS-FROM-SNAPSHOT` is gone, and `baseline update` neither lists it nor restores it. A missing required external skill is still reported and restored. Before, a copy installed from the skills catalog that differed from the snapshot was flagged and offered for restore, which would have replaced the catalog copy (reported by fluxus and vortex; ADR-0364, which amends ADR-0221, ADR-0224, ADR-0241 and ADR-0264).
+- **The JSON output of `roundfix baseline update` no longer has the `skills.differing` field.** A script that reads it must stop expecting it.
+- **The twelve Roundfix-owned skills keep their check**: the installed copy passes when its digest equals the binary's copy or its version is equal or higher, with no network. `roundfix baseline skills restore` still restores an external skill when asked explicitly.
+- **A skills lock entry must still be well formed**: every entry is a JSON object or `null`, and a required entry is an object; any other value is refused, naming the entry.
+
 ## [0.134.0] - 2026-11-05
 
 ### A queue item shows its turn, and the pre-PR review gets its own capacity
