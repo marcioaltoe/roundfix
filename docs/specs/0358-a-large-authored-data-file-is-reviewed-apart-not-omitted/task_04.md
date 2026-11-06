@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0358-a-large-authored-data-file-is-reviewed-apart-not-omitted
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -87,3 +87,23 @@ point 5 of the Fiscus report adopted as
 
 - `_prd.md` → Goals; Core Feature 5; Success Metric 5; Glossary
 - `_techspec.md` → API Contract 6; ADR Alternatives; Glossary; Build Order 4
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+- Added the API Contract 6 Review Data Path and Data Review Segment paragraphs
+  to the canonical Roundfix review reference and the review guide. `make
+  skills-sync` exited 0 and the canonical and mirror review references have
+  identical SHA-256 hashes.
+- Added both API Contract 6 glossary entries to `CONTEXT.md`, with the ADR-0368
+  Markdown link, and amended ADR-0282's rejected alternative and final ADR
+  amendment paragraph. The focused inspection found both terms and both ADR
+  sentences at their required locations.
+- Ran `git diff --check`: passed.
+- Ran `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions`: 1 test passed; both `roundfix` SKILL.md copies are
+  version `0.1.191` and `skills/testdata/owned-skill-versions.json` records it.
+- The Task's declared Verification commands and final Behavior Surface record
+  command were not run; they remain for Daemon Verification. Task status was
+  left Daemon-owned and unchanged.
