@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFindNumberedFileCollisions$/^other_directory$' ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestFindNumberedFileCollisions
+=== PAUSE TestFindNumberedFileCollisions
+=== CONT  TestFindNumberedFileCollisions
+=== RUN   TestFindNumberedFileCollisions/other_directory
+=== PAUSE TestFindNumberedFileCollisions/other_directory
+=== CONT  TestFindNumberedFileCollisions/other_directory
+    numbered_files_test.go:106: report = delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:"drizzle/meta/0052_snapshot.json", Other:"drizzle/0052_a.sql", Owner:"alpha"}}, NextFree:[]string{"drizzle/meta/0001"}}, want delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision(nil), NextFree:[]string(nil)}
+--- FAIL: TestFindNumberedFileCollisions (0.00s)
+    --- FAIL: TestFindNumberedFileCollisions/other_directory (0.00s)
+FAIL
+suiteguard: guard cost: measured 2972 paths; fingerprint took 136.73375ms before and 125.369ms after
+FAIL	roundfix/internal/delivery	0.568s
+FAIL
+
+stderr:

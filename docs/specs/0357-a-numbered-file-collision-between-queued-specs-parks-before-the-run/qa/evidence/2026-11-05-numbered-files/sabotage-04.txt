@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFindNumberedFileCollisions$/^next_free_above_every_claim$' ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestFindNumberedFileCollisions
+=== PAUSE TestFindNumberedFileCollisions
+=== CONT  TestFindNumberedFileCollisions
+=== RUN   TestFindNumberedFileCollisions/next_free_above_every_claim
+=== PAUSE TestFindNumberedFileCollisions/next_free_above_every_claim
+=== CONT  TestFindNumberedFileCollisions/next_free_above_every_claim
+    numbered_files_test.go:106: report = delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:"drizzle/0052_b.sql", Other:"drizzle/0052_a.sql", Owner:"alpha"}}, NextFree:[]string{"drizzle/0052"}}, want delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:"drizzle/0052_b.sql", Other:"drizzle/0052_a.sql", Owner:"alpha"}}, NextFree:[]string{"drizzle/0054"}}
+--- FAIL: TestFindNumberedFileCollisions (0.00s)
+    --- FAIL: TestFindNumberedFileCollisions/next_free_above_every_claim (0.00s)
+FAIL
+suiteguard: guard cost: measured 2972 paths; fingerprint took 136.190125ms before and 125.710458ms after
+FAIL	roundfix/internal/delivery	0.563s
+FAIL
+
+stderr:

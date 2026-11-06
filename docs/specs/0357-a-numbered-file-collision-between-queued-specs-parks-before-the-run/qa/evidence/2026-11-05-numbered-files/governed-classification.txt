@@ -1,0 +1,32 @@
+command: go run /private/tmp/roundfix-0357-governed.go .agents/skills/roundfix/SKILL.md .agents/skills/roundfix/references/deliver.md CONTEXT.md docs/adr/0367-a-numbered-file-collision-with-an-earlier-queue-item-parks-before-the-run.md docs/references/behavior-surfaces.json docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_01.md docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_02.md docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_03.md docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_04.md docs/user-guide/commands/deliver.md docs/user-guide/configuration.md internal/cli/deliver_numbered_files.go internal/cli/deliver_numbered_files_test.go internal/cli/deliver_revalidate.go internal/config/config.go internal/config/delivery.go internal/config/numbered_files_test.go internal/delivery/engine.go internal/delivery/numbered_files.go internal/delivery/numbered_files_test.go internal/delivery/park_class.go internal/delivery/park_class_test.go internal/delivery/revalidate_test.go internal/docscontract/command_documentation_test.go skills/roundfix/SKILL.md skills/roundfix/references/deliver.md skills/testdata/owned-skill-versions.json
+exit: 0
+stdout:
+.agents/skills/roundfix/SKILL.md	true
+.agents/skills/roundfix/references/deliver.md	true
+CONTEXT.md	false
+docs/adr/0367-a-numbered-file-collision-with-an-earlier-queue-item-parks-before-the-run.md	false
+docs/references/behavior-surfaces.json	false
+docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_01.md	false
+docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_02.md	false
+docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_03.md	false
+docs/specs/0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run/task_04.md	false
+docs/user-guide/commands/deliver.md	false
+docs/user-guide/configuration.md	false
+internal/cli/deliver_numbered_files.go	false
+internal/cli/deliver_numbered_files_test.go	false
+internal/cli/deliver_revalidate.go	false
+internal/config/config.go	false
+internal/config/delivery.go	false
+internal/config/numbered_files_test.go	false
+internal/delivery/engine.go	false
+internal/delivery/numbered_files.go	false
+internal/delivery/numbered_files_test.go	false
+internal/delivery/park_class.go	false
+internal/delivery/park_class_test.go	false
+internal/delivery/revalidate_test.go	false
+internal/docscontract/command_documentation_test.go	false
+skills/roundfix/SKILL.md	true
+skills/roundfix/references/deliver.md	false
+skills/testdata/owned-skill-versions.json	false
+
+stderr:

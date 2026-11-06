@@ -1,0 +1,183 @@
+[
+  {
+    "sabotage": 1,
+    "title": "drop leading-digit guard",
+    "exit": 1,
+    "named_failures": [
+      "TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_journal"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "numbered_files_test.go:78: IsNumberedFile(\"drizzle/meta/_journal.json\") with [drizzle/] = true, want false",
+      "--- FAIL: TestIsNumberedFileNeedsAMatchAndALeadingDigit (0.00s)",
+      "--- FAIL: TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_journal (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 2,
+    "title": "omit overlay merge",
+    "exit": 1,
+    "named_failures": [
+      "TestNumberedFileDeclarationsAreReadAndValidated/project_replaces_user"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "numbered_files_test.go:30: numbered files = []string(nil), want []string{\"drizzle/*.sql\"}",
+      "--- FAIL: TestNumberedFileDeclarationsAreReadAndValidated (0.00s)",
+      "--- FAIL: TestNumberedFileDeclarationsAreReadAndValidated/project_replaces_user (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 3,
+    "title": "compare raw digit strings",
+    "exit": 1,
+    "named_failures": [
+      "TestFindNumberedFileCollisions/by_value"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "numbered_files_test.go:106: report = delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision(nil), NextFree:[]string(nil)}, want delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:\"drizzle/052_b.sql\", Other:\"drizzle/0052_a.sql\", Owner:\"alpha\"}}, NextFree:[]string{\"drizzle/053\"}}",
+      "--- FAIL: TestFindNumberedFileCollisions (0.00s)",
+      "--- FAIL: TestFindNumberedFileCollisions/by_value (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 4,
+    "title": "default-only next free",
+    "exit": 1,
+    "named_failures": [
+      "TestFindNumberedFileCollisions/next_free_above_every_claim"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "numbered_files_test.go:106: report = delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:\"drizzle/0052_b.sql\", Other:\"drizzle/0052_a.sql\", Owner:\"alpha\"}}, NextFree:[]string{\"drizzle/0052\"}}, want delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:\"drizzle/0052_b.sql\", Other:\"drizzle/0052_a.sql\", Owner:\"alpha\"}}, NextFree:[]string{\"drizzle/0054\"}}",
+      "--- FAIL: TestFindNumberedFileCollisions (0.00s)",
+      "--- FAIL: TestFindNumberedFileCollisions/next_free_above_every_claim (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 5,
+    "title": "ignore directory",
+    "exit": 1,
+    "named_failures": [
+      "TestFindNumberedFileCollisions/other_directory"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "numbered_files_test.go:106: report = delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision{delivery.NumberedFileCollision{Path:\"drizzle/meta/0052_snapshot.json\", Other:\"drizzle/0052_a.sql\", Owner:\"alpha\"}}, NextFree:[]string{\"drizzle/meta/0001\"}}, want delivery.NumberedFileReport{Collisions:[]delivery.NumberedFileCollision(nil), NextFree:[]string(nil)}",
+      "--- FAIL: TestFindNumberedFileCollisions (0.00s)",
+      "--- FAIL: TestFindNumberedFileCollisions/other_directory (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 6,
+    "title": "omit engine collision park",
+    "exit": 1,
+    "named_failures": [
+      "TestRevalidationParksANumberedFileCollisionBeforeTheRun"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "revalidate_test.go:410: item = {SpecSlug:collision-spec Position:0 Stage:merged Blocker: Branch:roundfix/deliver-collision-spec Worktree:/worktrees/collision-spec WorktreeProvisioned:true RunID:run-collision-spec CandidateCommits:[reviewed-collision-spec archived-collision-spec] PullRequestNumber:1 MergeCommit:merge-1 RetryCount:0 Warning:premise-changed: internal/a.go (merge merge-one); owner-older-than-main: owner}, want parked with \"numbered-file-collision: drizzle/0052_b.sql collides with drizzle/0052_a.sql (alpha); next free number: drizzle/0053\"; events=[create-branch run policy review archive gate authorization publication push pull-request checks authorization merge]",
+      "--- FAIL: TestRevalidationParksANumberedFileCollisionBeforeTheRun (0.01s)"
+    ]
+  },
+  {
+    "sabotage": 7,
+    "title": "omit retry collision refusal",
+    "exit": 1,
+    "named_failures": [
+      "TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "revalidate_test.go:476: retry error = <nil>, want \"retry Delivery Queue item \\\"retry-collision\\\": numbered file collision: drizzle/0052_b.sql collides with drizzle/0052_a.sql (alpha); next free number: drizzle/0053\"",
+      "--- FAIL: TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides (0.01s)"
+    ]
+  },
+  {
+    "sabotage": 8,
+    "title": "omit conflict classification",
+    "exit": 1,
+    "named_failures": [
+      "TestEveryBlockerHasAParkClass",
+      "TestParkClassesAndNextActions/numbered-file-collision"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "--- FAIL: TestEveryBlockerHasAParkClass (0.01s)",
+      "--- FAIL: TestParkClassesAndNextActions (0.00s)",
+      "--- FAIL: TestParkClassesAndNextActions/numbered-file-collision (0.00s)"
+    ]
+  },
+  {
+    "sabotage": 9,
+    "title": "include later queue items",
+    "exit": 1,
+    "named_failures": [
+      "TestRevalidateReportsANumberedFileCollision/ignored"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "deliver_numbered_files_test.go:187: blocker = \"numbered-file-collision: db/0002_beta.sql collides with db/0002_gamma.sql (gamma); next free number: db/0003\", want \"\"",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision (0.00s)",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision/ignored (0.42s)"
+    ]
+  },
+  {
+    "sabotage": 10,
+    "title": "include merged items",
+    "exit": 1,
+    "named_failures": [
+      "TestRevalidateReportsANumberedFileCollision/ignored"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "deliver_numbered_files_test.go:187: blocker = \"numbered-file-collision: db/0002_beta.sql collides with db/0002_alpha.sql (alpha); next free number: db/0003\", want \"\"",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision (0.00s)",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision/ignored (0.48s)"
+    ]
+  },
+  {
+    "sabotage": 11,
+    "title": "include completed Task declarations",
+    "exit": 1,
+    "named_failures": [
+      "TestRevalidateReportsANumberedFileCollision/ignored/completed"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "deliver_numbered_files_test.go:233: completed Task claims a number: numbered-file-collision: db/0002_done.sql collides with db/0002_main.sql (default branch); next free number: db/0003",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision (0.00s)",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision/ignored (0.58s)",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision/ignored/completed (0.16s)"
+    ]
+  },
+  {
+    "sabotage": 12,
+    "title": "read store before declaration",
+    "exit": 1,
+    "named_failures": [
+      "TestRevalidateReportsANumberedFileCollision/off"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision (0.28s)",
+      "--- FAIL: TestRevalidateReportsANumberedFileCollision/off (0.28s)",
+      "panic: runtime error: invalid memory address or nil pointer dereference [recovered, repanicked]"
+    ]
+  },
+  {
+    "sabotage": 13,
+    "title": "omit collision action contract",
+    "exit": 1,
+    "named_failures": [
+      "TestTheParkActionContractRequiresTheNumberedFileCollision"
+    ],
+    "expected_failure_observed": true,
+    "details": [
+      "command_documentation_test.go:246: missing numbered-file-collision action must be rejected for docs/user-guide/commands/deliver.md, got <nil>",
+      "--- FAIL: TestTheParkActionContractRequiresTheNumberedFileCollision (0.00s)"
+    ]
+  }
+]

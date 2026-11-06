@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0357-a-numbered-file-collision-between-queued-specs-parks-before-the-run
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

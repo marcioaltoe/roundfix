@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestEveryBlockerHasAParkClass|TestParkClassesAndNextActions)$/^numbered-file-collision$' ./internal/delivery
+exit: 1
+stdout:
+=== RUN   TestEveryBlockerHasAParkClass
+    park_class_test.go:62: unclassified exported blockers: [BlockerNumberedFileCollision BlockerNumberedFileCollision: details]
+--- FAIL: TestEveryBlockerHasAParkClass (0.01s)
+=== RUN   TestParkClassesAndNextActions
+=== RUN   TestParkClassesAndNextActions/numbered-file-collision
+    park_class_test.go:92: numbered-file-collision next action = "resolve the blocker, then run roundfix deliver retry example"
+--- FAIL: TestParkClassesAndNextActions (0.00s)
+    --- FAIL: TestParkClassesAndNextActions/numbered-file-collision (0.00s)
+FAIL
+suiteguard: guard cost: measured 2972 paths; fingerprint took 136.271459ms before and 142.971416ms after
+FAIL	roundfix/internal/delivery	0.548s
+FAIL
+
+stderr:

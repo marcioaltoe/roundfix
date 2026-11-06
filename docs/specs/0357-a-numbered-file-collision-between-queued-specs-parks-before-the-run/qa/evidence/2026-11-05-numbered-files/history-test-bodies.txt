@@ -1,0 +1,9 @@
+command: go run /private/tmp/roundfix-0357-history.go
+exit: 0
+stdout:
+internal/cli/deliver_revalidate_test.go: 6 pre-existing top-level test bodies compared byte-for-byte; 0 added
+internal/cli/deliver_owner_staleness_test.go: 6 pre-existing top-level test bodies compared byte-for-byte; 0 added
+internal/delivery/revalidate_test.go: 9 pre-existing top-level test bodies compared byte-for-byte; 3 added
+TestParkClassesAndNextActions: only new row and exact next-action assertion; entire remaining file byte-identical
+
+stderr:

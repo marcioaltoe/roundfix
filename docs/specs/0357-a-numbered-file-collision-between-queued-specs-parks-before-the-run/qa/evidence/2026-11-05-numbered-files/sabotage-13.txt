@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 20m -v -tags docscontract -run '^TestTheParkActionContractRequiresTheNumberedFileCollision$' ./internal/docscontract
+exit: 1
+stdout:
+=== RUN   TestTheParkActionContractRequiresTheNumberedFileCollision
+=== PAUSE TestTheParkActionContractRequiresTheNumberedFileCollision
+=== CONT  TestTheParkActionContractRequiresTheNumberedFileCollision
+    command_documentation_test.go:246: missing numbered-file-collision action must be rejected for docs/user-guide/commands/deliver.md, got <nil>
+--- FAIL: TestTheParkActionContractRequiresTheNumberedFileCollision (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.407s
+FAIL
+
+stderr:

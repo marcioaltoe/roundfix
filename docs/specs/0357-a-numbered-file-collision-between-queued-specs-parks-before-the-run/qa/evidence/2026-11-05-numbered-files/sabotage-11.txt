@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 20m -v -run '^TestRevalidateReportsANumberedFileCollision$/^ignored$/^completed$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestRevalidateReportsANumberedFileCollision
+=== PAUSE TestRevalidateReportsANumberedFileCollision
+=== CONT  TestRevalidateReportsANumberedFileCollision
+=== RUN   TestRevalidateReportsANumberedFileCollision/ignored
+=== PAUSE TestRevalidateReportsANumberedFileCollision/ignored
+=== CONT  TestRevalidateReportsANumberedFileCollision/ignored
+=== RUN   TestRevalidateReportsANumberedFileCollision/ignored/completed
+    deliver_numbered_files_test.go:233: completed Task claims a number: numbered-file-collision: db/0002_done.sql collides with db/0002_main.sql (default branch); next free number: db/0003
+--- FAIL: TestRevalidateReportsANumberedFileCollision (0.00s)
+    --- FAIL: TestRevalidateReportsANumberedFileCollision/ignored (0.58s)
+        --- FAIL: TestRevalidateReportsANumberedFileCollision/ignored/completed (0.16s)
+FAIL
+suiteguard: guard cost: measured 2972 paths; fingerprint took 136.837583ms before and 125.423792ms after
+FAIL	roundfix/internal/cli	1.304s
+FAIL
+
+stderr:

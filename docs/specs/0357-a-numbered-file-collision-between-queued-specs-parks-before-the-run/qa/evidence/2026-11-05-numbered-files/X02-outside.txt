@@ -1,0 +1,14 @@
+drizzle-orm discussion 1104
+Source and date: https://github.com/drizzle-team/drizzle-orm/discussions/1104; retrieved 2026-11-05, as recorded in PRD Acceptance evidence; publication date not recorded in the offline excerpt.
+
+Offline comparison: Externally authored passage: both branches created migrations numbered 0007, with both added db/migrations/meta/0007_snapshot.json. TestFindNumberedFileCollisions/several and /same_path passed: identical snapshot names in the same directory collide. /other_directory passed: the SQL directory and meta directory remain separate sequences. TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_nested_file passed for a directory pattern covering snapshots, while /glob_nested_file excluded a snapshot for an SQL-only glob. These observations require the snapshot directory to be declared, as the published conflict does.
+
+Observed pass lines:
+config: --- PASS: TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_nested_file (0.00s)
+config: --- PASS: TestIsNumberedFileNeedsAMatchAndALeadingDigit/glob_nested_file (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/other_directory (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/same_path (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/several (0.00s)
+delivery: --- PASS: TestRevalidationParksANumberedFileCollisionBeforeTheRun (0.02s)
+cli: --- PASS: TestRevalidateReportsANumberedFileCollision/ahead_plan (0.85s)
+cli: --- PASS: TestRevalidateReportsANumberedFileCollision/ahead_branch (0.73s)

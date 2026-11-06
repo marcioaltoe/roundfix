@@ -1,0 +1,14 @@
+drizzle-orm discussion 5522
+Source and date: https://github.com/drizzle-team/drizzle-orm/discussions/5522; retrieved 2026-11-05, as recorded in PRD Acceptance evidence; publication date not recorded in the offline excerpt.
+
+Offline comparison: Externally authored passage describes two developers generating the same sequence number and the second merge breaking migration history. TestRevalidationParksANumberedFileCollisionBeforeTheRun passed with persisted parked state and no run event; sabotage 6 removed that park and the same test failed after a run event. The check therefore catches declared/committed claims before implementation, earlier than the merge conflict described by the source; an undeclared future generated number remains outside its reach.
+
+Observed pass lines:
+config: --- PASS: TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_nested_file (0.00s)
+config: --- PASS: TestIsNumberedFileNeedsAMatchAndALeadingDigit/glob_nested_file (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/other_directory (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/same_path (0.00s)
+delivery: --- PASS: TestFindNumberedFileCollisions/several (0.00s)
+delivery: --- PASS: TestRevalidationParksANumberedFileCollisionBeforeTheRun (0.02s)
+cli: --- PASS: TestRevalidateReportsANumberedFileCollision/ahead_plan (0.85s)
+cli: --- PASS: TestRevalidateReportsANumberedFileCollision/ahead_branch (0.73s)

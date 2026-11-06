@@ -1,0 +1,59 @@
+import sys,importlib.util,subprocess,tempfile,pathlib,tarfile,io,shutil,json
+spec=importlib.util.spec_from_file_location('qa','/private/tmp/roundfix-0357-qa-run.py');q=importlib.util.module_from_spec(spec);spec.loader.exec_module(q)
+def replace(root,name,old,new):
+ p=root/name;s=p.read_text();assert s.count(old)==1,(name,s.count(old),old);p.write_text(s.replace(old,new))
+config='internal/config/delivery.go'; engine='internal/delivery/engine.go'; numbers='internal/delivery/numbered_files.go'; collector='internal/cli/deliver_numbered_files.go'
+cases={
+1:('drop leading-digit guard','./internal/config','^TestIsNumberedFileNeedsAMatchAndALeadingDigit$/^directory_journal$', ['TestIsNumberedFileNeedsAMatchAndALeadingDigit/directory_journal']),
+2:('omit overlay merge','./internal/config','^TestNumberedFileDeclarationsAreReadAndValidated$/^project_replaces_user$', ['TestNumberedFileDeclarationsAreReadAndValidated/project_replaces_user']),
+3:('compare raw digit strings','./internal/delivery','^TestFindNumberedFileCollisions$/^by_value$', ['TestFindNumberedFileCollisions/by_value']),
+4:('default-only next free','./internal/delivery','^TestFindNumberedFileCollisions$/^next_free_above_every_claim$', ['TestFindNumberedFileCollisions/next_free_above_every_claim']),
+5:('ignore directory','./internal/delivery','^TestFindNumberedFileCollisions$/^other_directory$', ['TestFindNumberedFileCollisions/other_directory']),
+6:('omit engine collision park','./internal/delivery','^TestRevalidationParksANumberedFileCollisionBeforeTheRun$', ['TestRevalidationParksANumberedFileCollisionBeforeTheRun']),
+7:('omit retry collision refusal','./internal/delivery','^TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides$', ['TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides']),
+8:('omit conflict classification','./internal/delivery','^(TestEveryBlockerHasAParkClass|TestParkClassesAndNextActions)$/^numbered-file-collision$', ['TestEveryBlockerHasAParkClass','TestParkClassesAndNextActions/numbered-file-collision']),
+9:('include later queue items','./internal/cli','^TestRevalidateReportsANumberedFileCollision$/^ignored$', ['TestRevalidateReportsANumberedFileCollision/ignored']),
+10:('include merged items','./internal/cli','^TestRevalidateReportsANumberedFileCollision$/^ignored$', ['TestRevalidateReportsANumberedFileCollision/ignored']),
+11:('include completed Task declarations','./internal/cli','^TestRevalidateReportsANumberedFileCollision$/^ignored$/^completed$', ['TestRevalidateReportsANumberedFileCollision/ignored/completed']),
+12:('read store before declaration','./internal/cli','^TestRevalidateReportsANumberedFileCollision$/^off$', ['TestRevalidateReportsANumberedFileCollision/off']),
+13:('omit collision action contract','./internal/docscontract','^TestTheParkActionContractRequiresTheNumberedFileCollision$', ['TestTheParkActionContractRequiresTheNumberedFileCollision'])}
+def mutate(i,r):
+ if i==1:replace(r,config,"base := path.Base(name)\n\treturn matchesDerivedPath(delivery.NumberedFiles, name) && base[0] >= '0' && base[0] <= '9'","return matchesDerivedPath(delivery.NumberedFiles, name)")
+ if i==2:replace(r,'internal/config/config.go','\tif overlay.Delivery != nil && overlay.Delivery.NumberedFiles != nil {\n\t\tconfig.Delivery.NumberedFiles = *overlay.Delivery.NumberedFiles\n\t}\n','')
+ if i==3:
+  replace(r,numbers,'number    uint64\n','number    uint64\n\t\tdigits string\n')
+  replace(r,numbers,'directory, number, _, ok := numberedFileNumber(name)','directory, number, width, ok := numberedFileNumber(name)')
+  p=r/numbers;s=p.read_text();assert s.count('numberKey{directory: directory, number: number}')==2;p.write_text(s.replace('numberKey{directory: directory, number: number}','numberKey{directory: directory, number: number, digits: path.Base(name)[:width]}'))
+ if i==4:replace(r,numbers,'\n\tvar report NumberedFileReport','\n\tmaxNumber = make(map[string]uint64)\n\tfor _, name := range defaultFiles {\n\t\tdirectory, number, _, ok := numberedFileNumber(name)\n\t\tif ok { maxNumber[directory] = max(maxNumber[directory], number) }\n\t}\n\n\tvar report NumberedFileReport')
+ if i==5:
+  p=r/numbers;s=p.read_text();assert s.count('numberKey{directory: directory, number: number}')==2;p.write_text(s.replace('numberKey{directory: directory, number: number}','numberKey{number: number}'))
+ if i==6:replace(r,engine,'\t\t\tif len(revalidation.NumberedFiles.Collisions) > 0 {\n\t\t\t\treturn engine.park(ctx, gitRoot, item, revalidation.NumberedFiles.Blocker())\n\t\t\t}\n','')
+ if i==7:replace(r,engine,'\t\t\tif len(revalidation.NumberedFiles.Collisions) > 0 {\n\t\t\t\treturn RetryResult{}, fmt.Errorf("retry Delivery Queue item %q: numbered file collision: %s", specSlug, revalidation.NumberedFiles.Detail())\n\t\t\t}\n','')
+ if i==8:
+  p=r/'internal/delivery/park_class.go';s=p.read_text();start=s.index('\tcase BlockerNumberedFileCollision:');end=s.index('\tcase BlockerPullRequestConflict:',start);p.write_text(s[:start]+s[end:])
+ if i==9:replace(r,collector,'queue.Items[:subjectIndex] {','append(queue.Items[:subjectIndex:subjectIndex], queue.Items[subjectIndex+1:]...) {')
+ if i==10:
+  replace(r,collector,'\t\tif item.Stage == store.DeliveryStageMerged {\n\t\t\tcontinue\n\t\t}\n','')
+  replace(r,collector,'\n\t"roundfix/internal/store"','')
+ if i==11:replace(r,collector,'task.Status == spec.StatusCompleted || task.Type == spec.TaskTypeQA','task.Type == spec.TaskTypeQA')
+ if i==12:replace(r,collector,'\tempty := delivery.NumberedFileReport{}','\t_, _, _ = workflow.store.DeliveryQueue(ctx, workflow.loaded.GitRoot)\n\tempty := delivery.NumberedFileReport{}')
+ if i==13:replace(r,'internal/docscontract/command_documentation_test.go','[]string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound, delivery.BlockerNumberedFileCollision}','[]string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound}')
+archive=subprocess.check_output(['git','archive',q.HEAD],cwd=q.ROOT)
+results=[]
+for i,(title,pkg,selector,names) in cases.items():
+ with tempfile.TemporaryDirectory(prefix=f'rf357-s{i:02}-',dir='/private/tmp') as tmp:
+  root=pathlib.Path(tmp)
+  with tarfile.open(fileobj=io.BytesIO(archive)) as t:t.extractall(root,filter='data')
+  mutate(i,root)
+  for args in [['git','init','-q'],['git','add','--all']]:subprocess.run(args,cwd=root,env=q.ENV,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+  args=['go','test','-count=1','-timeout','20m','-v']+(['-tags','docscontract'] if i==13 else [])+['-run',selector,pkg]
+  r=q.run(f'sabotage-{i:02}',args,cwd=root)
+  text=r.stdout+r.stderr
+  observed=all(any('--- FAIL: '+name+' ' in line for line in text.splitlines()) for name in names)
+  good=r.returncode==1 and observed and '[build failed]' not in text
+  details=[line.strip() for line in text.splitlines() if '--- FAIL:' in line or 'panic:' in line or 'collides with' in line or 'want' in line or 'must be rejected' in line]
+  q.update(f'S{i:02}','pass' if good else 'fail',f'Mutation: {title}. Separate `git archive {q.HEAD}` fixture, initialized and staged, removed after the foreground command. Exit {r.returncode}; expected failure(s): '+', '.join('`'+n+'`' for n in names)+f'. [Transcript](evidence/2026-11-05-numbered-files/sabotage-{i:02}.txt). Observed: '+'; '.join(details[:8]))
+  results.append({'sabotage':i,'title':title,'exit':r.returncode,'named_failures':names,'expected_failure_observed':good,'details':details})
+  print('sabotage '+str(i)+': '+('expected failure' if good else 'UNEXPECTED')+'; '+'; '.join(details[:2]),flush=True)
+(q.E/'sabotage-summary.txt').write_text(json.dumps(results,indent=2))
+shutil.copyfile(__file__,q.E/'sabotage-runner.py.txt')

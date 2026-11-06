@@ -1,0 +1,23 @@
+{
+  "config": {
+    "pass_lines": 45,
+    "skip_lines": 0
+  },
+  "delivery": {
+    "pass_lines": 56,
+    "skip_lines": 0
+  },
+  "cli": {
+    "pass_lines": 156,
+    "skip_lines": 0
+  },
+  "docs-contract": {
+    "pass_lines": 5,
+    "skip_lines": 0
+  },
+  "skill-versions": {
+    "pass_lines": 1,
+    "skip_lines": 0
+  }
+}
+All required pass names present; 13/13 named sabotage failures confirmed.

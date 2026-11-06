@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run '^TestRevalidateReportsANumberedFileCollision$/^ignored$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestRevalidateReportsANumberedFileCollision
+=== PAUSE TestRevalidateReportsANumberedFileCollision
+=== CONT  TestRevalidateReportsANumberedFileCollision
+=== RUN   TestRevalidateReportsANumberedFileCollision/ignored
+=== PAUSE TestRevalidateReportsANumberedFileCollision/ignored
+=== CONT  TestRevalidateReportsANumberedFileCollision/ignored
+    deliver_numbered_files_test.go:187: blocker = "numbered-file-collision: db/0002_beta.sql collides with db/0002_alpha.sql (alpha); next free number: db/0003", want ""
+--- FAIL: TestRevalidateReportsANumberedFileCollision (0.00s)
+    --- FAIL: TestRevalidateReportsANumberedFileCollision/ignored (0.48s)
+FAIL
+suiteguard: guard cost: measured 2972 paths; fingerprint took 126.363375ms before and 128.989084ms after
+FAIL	roundfix/internal/cli	1.144s
+FAIL
+
+stderr:
