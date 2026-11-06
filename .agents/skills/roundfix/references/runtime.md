@@ -106,7 +106,8 @@ skills or holds them to a version Roundfix invented for them. The required
 external set comes from the repository's Setup Manifest at
 `docs/agents/setup-context.json`: Doctor unions the `requiredSkills` declared
 by its selected modules, removes Roundfix-owned names, and checks each
-remaining skill against its `computedHash` in `skills-lock.json`. The external
+remaining skill only for presence: its `skills-lock.json` entry and its folder.
+The external
 count therefore follows the repository's selected modules instead of a fixed
 Roundfix development list.
 
@@ -120,8 +121,8 @@ line with `Setup Manifest is absent or unreadable`, and includes
 
 Surface a failed `skills:` line and its printed `next:` remediation before
 work continues. Owned failures print
-`roundfix skills install --target project`. Each named missing or outdated
-external skill prints its own
+`roundfix skills install --target project`. Each named missing external skill
+prints its own
 `bunx skills add marcioaltoe/skills@<skill>` command. When an external failure
 does not identify specific skill names, Doctor instead prints
 `bunx skills experimental_install && bunx skills update -p -y`; a mixed named

@@ -50,7 +50,7 @@ func TestBaselineUpdateReachesCurrentWithARepositoryProfile(t *testing.T) {
 	}
 }
 
-func TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile(t *testing.T) {
+func TestBaselineUpdatePreviewIgnoresADifferenceWithARepositoryProfile(t *testing.T) {
 	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
@@ -63,14 +63,8 @@ func TestBaselineUpdatePreviewListsADifferenceWithARepositoryProfile(t *testing.
 	if code != exitOK || stderr != "" || result.State != "current" {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
 	}
-	found := false
-	for _, difference := range result.Skills.Differing {
-		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile "+baselineRepositoryProfileTestID+" --skill testing-boss" {
-			found = true
-		}
-	}
-	if !found || len(result.Skills.Drifted) != 0 {
-		t.Fatalf("differing skill absent from preview: %s", out)
+	if strings.Contains(out, `"differing"`) || len(result.Skills.Drifted) != 0 {
+		t.Fatalf("snapshot difference affected preview: %s", out)
 	}
 	if before != baselinePlanTestTree(t, root) {
 		t.Fatal("preview changed repository bytes")
@@ -91,13 +85,12 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 	result, err := runBaselineUpdateSkillsStageWith(t.Context(), baselineUpdateSkillsRequest{
 		Repository: root, ProfileID: baselineRepositoryProfileTestID,
 	}, baselineUpdateSkillsDependencies{
-		recordLock:          baseline.RecordInstalledOwnedSkills,
-		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
-		install:             skills.Install,
-		ownedNames:          skills.Names,
-		resolveExternal:     resolveExternalSkillRequirement,
-		checkRepository:     skills.CheckRepositoryWithExternal,
-		snapshotDifferences: baseline.SetupSnapshotDifferences,
+		recordLock:         baseline.RecordInstalledOwnedSkills,
+		resolveProjectRoot: defaultResolveSkillsProjectRoot,
+		install:            skills.Install,
+		ownedNames:         skills.Names,
+		resolveExternal:    resolveExternalSkillRequirement,
+		checkRepository:    skills.CheckRepositoryWithExternal,
 		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
 			t.Fatalf("restore called for a lock-matching difference: %+v", request)
 			return baseline.SkillsRestorePayload{}, nil
@@ -107,7 +100,7 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 	slices.Sort(wantInstalled)
 	if err != nil || result.Status != baselineUpdateSkillsVerified ||
 		result.InstalledCount != len(wantInstalled) || !slices.Equal(result.Installed, wantInstalled) ||
-		len(result.Restored) != 0 || len(result.Differing) != 1 || result.Differing[0].Skill != "testing-boss" || len(result.Drifted) != 0 {
+		len(result.Restored) != 0 || len(result.Drifted) != 0 {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 	if !bytes.Equal(beforeSkill, mustReadBytes(t, filepath.Join(root, ".agents", "skills", "testing-boss", "SKILL.md"))) {
@@ -119,43 +112,32 @@ func TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile(t *testi
 	}
 }
 
-func TestDoctorComparesARepositoryProfileWithItsSnapshot(t *testing.T) {
+func TestDoctorChecksARepositoryProfileSkillOnlyForPresence(t *testing.T) {
 	t.Parallel()
 	root := newBaselineRepositoryProfileFixture(t, true)
 	editRepositoryProfileTestSkill(t, root)
 	before := baselinePlanTestTree(t, root)
 	result := repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
-	if result.Status != CheckStatusOK || result.NextAction != "" || !strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: testing-boss") ||
+	if result.Status != CheckStatusOK || result.NextAction != "" || strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT") ||
 		strings.Contains(result.Detail, "snapshot comparison unavailable") {
 		t.Fatalf("Doctor skills=%+v", result)
 	}
 	if before != baselinePlanTestTree(t, root) {
 		t.Fatal("Doctor changed repository bytes")
 	}
-	path := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
-	var manifest map[string]any
-	if err := json.Unmarshal(mustReadBytes(t, path), &manifest); err != nil {
-		t.Fatal(err)
-	}
-	manifest["profile"] = "missing-profile"
-	data, err := json.Marshal(manifest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	mustWrite(t, path, string(data))
+	setDoctorTestManifestProfile(t, root, "missing-profile")
 	before = baselinePlanTestTree(t, root)
 	result = repositorySkillsCheck(t.Context(), defaultDoctorDependencies(), root)
-	if result.Status != CheckStatusOK || !strings.Contains(result.Detail, "snapshot comparison unavailable") ||
-		!strings.Contains(result.Detail, "neither built-in nor resolvable at .roundfix/baseline/profiles/missing-profile.json") ||
-		strings.Contains(result.Detail, "built-in Baseline Profile") {
+	if result.Status != CheckStatusOK || result.NextAction != "" || strings.Contains(result.Detail, "DR-SKILL-DIFFERS-FROM-SNAPSHOT") ||
+		strings.Contains(result.Detail, "snapshot comparison unavailable") {
 		t.Fatalf("Doctor missing-profile skills=%+v", result)
 	}
 	if before != baselinePlanTestTree(t, root) {
-		t.Fatal("unavailable comparison changed repository bytes")
+		t.Fatal("Doctor with an unresolvable profile changed repository bytes")
 	}
 }
 
-func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
+func TestBaselineUpdatePreviewIgnoresASetupSnapshotDifference(t *testing.T) {
 	t.Parallel()
 	root := newBaselineUpdateRepository(t)
 	source, err := filepath.Abs("../..")
@@ -192,30 +174,31 @@ func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
 	if code != exitOK || result.State != "current" || stderr != "" {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
 	}
-	found := false
-	for _, difference := range result.Skills.Differing {
-		if difference.Skill == "testing-boss" && difference.Reason == "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss" {
-			found = true
-		}
-	}
-	if !found || len(result.Skills.Drifted) != 0 {
-		t.Fatalf("differing skill absent from preview: %s", out)
+	if strings.Contains(out, `"differing"`) || len(result.Skills.Drifted) != 0 || len(result.Skills.Restored) != 0 {
+		t.Fatalf("snapshot difference affected preview: %s", out)
 	}
 	_, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
-	if code != exitOK || stderr != "" || !strings.Contains(out, "Skills drifted: 0\nSkills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n") {
+	if code != exitOK || stderr != "" || !strings.Contains(out, "Skills drifted: 0\n") || strings.Contains(out, "Skills differing") || strings.Contains(out, "- differs ") || strings.Contains(out, `"differing"`) || strings.Contains(out, "- restored ") {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, out, stderr)
 	}
 	if baselinePlanTestTree(t, root) != before {
 		t.Fatal("preview changed repository bytes")
 	}
 	result, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--no-skills", "--format=json")
-	if code != exitOK || stderr != "" || result.Skills.Differing == nil || len(result.Skills.Differing) != 0 || !strings.Contains(out, `"differing":[]`) {
+	if code != exitOK || stderr != "" || strings.Contains(out, `"differing"`) || len(result.Skills.Restored) != 0 {
 		t.Fatalf("--no-skills exit=%d stdout=%s stderr=%s", code, out, stderr)
+	}
+	_, out, stderr, code = runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--no-skills", "--format=text")
+	if code != exitOK || stderr != "" || strings.Contains(out, "Skills differing") || strings.Contains(out, "- differs ") || strings.Contains(out, `"differing"`) || strings.Contains(out, "- restored ") {
+		t.Fatalf("--no-skills text exit=%d stdout=%s stderr=%s", code, out, stderr)
+	}
+	if baselinePlanTestTree(t, root) != before {
+		t.Fatal("--no-skills preview changed repository bytes")
 	}
 	beforeSkill := mustReadBytes(t, path)
 	result, out, stderr, code = runBaselineUpdateTestCommandWithSkillsStage(t, t.Context(), runBaselineUpdateSkillsStage,
 		"baseline", "update", "--repo", root, "--yes", "--format=json")
-	if code != exitOK || stderr != "" || result.Skills.Status != baselineUpdateSkillsVerified || len(result.Skills.Restored) != 0 || len(result.Skills.Differing) != 1 {
+	if code != exitOK || stderr != "" || result.Skills.Status != baselineUpdateSkillsVerified || len(result.Skills.Restored) != 0 || strings.Contains(out, `"differing"`) || strings.Contains(out, "Skills differing") {
 		t.Fatalf("--yes exit=%d stdout=%s stderr=%s", code, out, stderr)
 	}
 	if !bytes.Equal(beforeSkill, mustReadBytes(t, path)) {
@@ -236,8 +219,7 @@ func TestBaselineUpdatePreviewListsASetupSnapshotDifference(t *testing.T) {
 		_, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", root, "--format=text")
 		wantOwned := fmt.Sprintf("Skills drifted: 0\nSkills outdated: 1\n- outdated qa-gate: found %s, requires %s\n", found, required)
 		wantRetired := "Skills retired: 1\n- retired council: kept, skills-lock.json records no computedHash to prove its copy unedited; delete .agents/skills/council by hand if the repository no longer uses it\n"
-		wantDifference := "Skills differing: 1\n- differs testing-boss: differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile go-cli-tui --skill testing-boss\n"
-		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired+wantDifference) {
+		if code != exitUnverified || stderr != "" || !strings.Contains(out, wantOwned+wantRetired) || strings.Contains(out, "Skills differing") || strings.Contains(out, "- differs ") {
 			t.Fatalf("combined preview exit=%d stdout=%s stderr=%s", code, out, stderr)
 		}
 		if baselinePlanTestTree(t, root) != beforePreview {

@@ -72,7 +72,6 @@ type baselineUpdateSkillsResult struct {
 	Installed      []string                         `json:"installed"`
 	Restored       []string                         `json:"restored"`
 	Drifted        []baselineUpdateSkillDrift       `json:"drifted"`
-	Differing      []baselineUpdateSkillDrift       `json:"differing"`
 }
 
 type baselineUpdateSkillsStage func(
@@ -81,14 +80,13 @@ type baselineUpdateSkillsStage func(
 ) (baselineUpdateSkillsResult, error)
 
 type baselineUpdateSkillsDependencies struct {
-	recordLock          func(context.Context, string, []string) (baseline.OwnedSkillsLockUpdate, error)
-	resolveProjectRoot  func(context.Context, string) (string, error)
-	install             func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error)
-	ownedNames          func() []string
-	resolveExternal     func(string) ([]string, bool, error)
-	checkRepository     func(context.Context, string, []string) (roundskills.RepositoryReadiness, error)
-	snapshotDifferences func(string, string, []string) ([]string, error)
-	restore             func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error)
+	recordLock         func(context.Context, string, []string) (baseline.OwnedSkillsLockUpdate, error)
+	resolveProjectRoot func(context.Context, string) (string, error)
+	install            func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error)
+	ownedNames         func() []string
+	resolveExternal    func(string) ([]string, bool, error)
+	checkRepository    func(context.Context, string, []string) (roundskills.RepositoryReadiness, error)
+	restore            func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error)
 }
 
 type baselineUpdateResult struct {
@@ -339,12 +337,6 @@ func runBaselineUpdateCommandWithSkillsStage(
 				if len(result.Skills.Missing) != 0 {
 					result.Skills.Status = baselineUpdateSkillsMissing
 				}
-
-				differing, err := baseline.SetupSnapshotDifferences(request.repo, input.Manifest.Profile, snapshotComparableSkills(external, readiness, checkErr))
-				if err != nil {
-					return writeBaselineUpdateFailure(result, err, "execution", "repair snapshot comparison and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
-				}
-				result.Skills.Differing = baselineUpdateSnapshotDifferences(input.Manifest.Profile, differing)
 			}
 		}
 		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
@@ -369,7 +361,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 				}
 				result.State = "plan_ready"
 				result.Category = "approval"
-				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d required skill(s) are missing or no longer match skills-lock.json: %s", len(names), strings.Join(names, ", "))
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d required skill(s) are missing: %s", len(names), strings.Join(names, ", "))
 				result.NextAction = "rerun with --yes to restore them from the Setup Snapshot, or restore one with roundfix baseline skills restore --profile " + input.Manifest.Profile + " --skill " + names[0]
 				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 			}
@@ -527,7 +519,6 @@ func newBaselineUpdateResult() baselineUpdateResult {
 			Installed: []string{},
 			Restored:  []string{},
 			Drifted:   []baselineUpdateSkillDrift{},
-			Differing: []baselineUpdateSkillDrift{},
 		},
 	}
 }
@@ -537,14 +528,13 @@ func runBaselineUpdateSkillsStage(
 	request baselineUpdateSkillsRequest,
 ) (baselineUpdateSkillsResult, error) {
 	return runBaselineUpdateSkillsStageWith(ctx, request, baselineUpdateSkillsDependencies{
-		resolveProjectRoot:  defaultResolveSkillsProjectRoot,
-		install:             roundskills.Install,
-		recordLock:          baseline.RecordInstalledOwnedSkills,
-		ownedNames:          roundskills.Names,
-		resolveExternal:     resolveExternalSkillRequirement,
-		checkRepository:     roundskills.CheckRepositoryWithExternal,
-		snapshotDifferences: baseline.SetupSnapshotDifferences,
-		restore:             baseline.RestoreSkills,
+		resolveProjectRoot: defaultResolveSkillsProjectRoot,
+		install:            roundskills.Install,
+		recordLock:         baseline.RecordInstalledOwnedSkills,
+		ownedNames:         roundskills.Names,
+		resolveExternal:    resolveExternalSkillRequirement,
+		checkRepository:    roundskills.CheckRepositoryWithExternal,
+		restore:            baseline.RestoreSkills,
 	})
 }
 
@@ -558,7 +548,6 @@ func runBaselineUpdateSkillsStageWith(
 		Installed: []string{},
 		Restored:  []string{},
 		Drifted:   []baselineUpdateSkillDrift{},
-		Differing: []baselineUpdateSkillDrift{},
 	}
 	root, err := dependencies.resolveProjectRoot(ctx, request.Repository)
 	if err != nil {
@@ -599,15 +588,6 @@ func runBaselineUpdateSkillsStageWith(
 	}
 
 	readiness, checkErr := dependencies.checkRepository(ctx, root, external)
-	var differing []string
-	if dependencies.snapshotDifferences != nil {
-		differing, err = dependencies.snapshotDifferences(root, request.ProfileID, snapshotComparableSkills(external, readiness, checkErr))
-		if err != nil {
-			result.Status = baselineUpdateSkillsFailed
-			return result, fmt.Errorf("compare external skills with Setup Snapshot: %w", err)
-		}
-	}
-	result.Differing = baselineUpdateSnapshotDifferences(request.ProfileID, differing)
 	drifted, err := baselineUpdateExternalDrift(readiness, checkErr)
 	if err != nil {
 		result.Status = baselineUpdateSkillsFailed
@@ -645,26 +625,12 @@ func runBaselineUpdateSkillsStageWith(
 	return result, nil
 }
 
-func baselineUpdateSnapshotDifferences(profile string, names []string) []baselineUpdateSkillDrift {
-	differing := make([]baselineUpdateSkillDrift, 0, len(names))
-	for _, name := range names {
-		differing = append(differing, baselineUpdateSkillDrift{
-			Skill:  name,
-			Reason: "differs from its Setup Snapshot, newer or older unknown; kept; restore deliberately with roundfix baseline skills restore --profile " + profile + " --skill " + name,
-		})
-	}
-	return differing
-}
-
 func baselineUpdateExternalDrift(
 	readiness roundskills.RepositoryReadiness,
 	checkErr error,
 ) ([]string, error) {
 	names := make(map[string]struct{})
 	for _, name := range readiness.MissingExternal {
-		names[name] = struct{}{}
-	}
-	for _, name := range readiness.OutdatedExternal {
 		names[name] = struct{}{}
 	}
 	if checkErr != nil {
@@ -814,9 +780,6 @@ func writeBaselineUpdateOutcome(
 }
 
 func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, stdout io.Writer) error {
-	if result.Skills.Differing == nil {
-		result.Skills.Differing = []baselineUpdateSkillDrift{}
-	}
 	if jsonOutput {
 		return json.NewEncoder(stdout).Encode(result)
 	}
@@ -982,10 +945,6 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 			}
 			fmt.Fprintf(stdout, "- retired %s: kept, %s; delete %s by hand if the repository no longer uses it\n", retired.Skill, reason, retiredSkillTargets(retired))
 		}
-	}
-	fmt.Fprintf(stdout, "Skills differing: %d\n", len(result.Skills.Differing))
-	for _, difference := range result.Skills.Differing {
-		fmt.Fprintf(stdout, "- differs %s: %s\n", difference.Skill, difference.Reason)
 	}
 	if result.PlanDigest != "" {
 		printBaselineUpdateHistory(stdout, result.History)

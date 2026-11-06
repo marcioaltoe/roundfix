@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-06T00:00:00Z
-updated_at: 2026-10-06T00:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -37,6 +37,8 @@ is not a valid adaptation of any built-in profile, because the
 profile that keeps only shared modules ties between profiles. Adding a
 `setup` field to the repository profile would change the strict schema every
 adopted profile already passes.
+
+**Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).** The snapshot comparison of ADR-0221 no longer runs, so Doctor never reports it unavailable for a repository profile; skill restore and lock reconciliation still read a repository profile's contracts as this record decides.
 
 ## Consequences
 

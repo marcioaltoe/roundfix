@@ -466,7 +466,7 @@ func TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill(t *testing.T
 		},
 		checkRepository: func(context.Context, string, []string) (roundskills.RepositoryReadiness, error) {
 			return roundskills.RepositoryReadiness{
-				OutdatedExternal: []string{unreachableSkill, restorableSkill},
+				MissingExternal: []string{unreachableSkill, restorableSkill},
 			}, nil
 		},
 		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {

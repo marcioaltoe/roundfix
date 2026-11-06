@@ -189,7 +189,7 @@ func TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable(t *testing.T) 
 	}
 }
 
-func TestDoctorOwnedLockWarningKeepsSnapshotDetailAndNextActions(t *testing.T) {
+func TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -206,9 +206,8 @@ func TestDoctorOwnedLockWarningKeepsSnapshotDetailAndNextActions(t *testing.T) {
 				content := regexp.MustCompile(`(?m)^[ \t]*version:.*$`).ReplaceAllString(string(mustReadBytes(t, filename)), "")
 				mustWrite(t, filename, content)
 			} else {
-				dependencies.resolveExternal = func(string) ([]string, bool, error) { return []string{"testing-boss"}, true, nil }
+				dependencies.resolveExternal = func(string) ([]string, bool, error) { return []string{"testing-boss", "agentic-cli-design"}, true, nil }
 			}
-			dependencies.snapshotDifferences = func(string, []string) ([]string, error) { return []string{"external-snapshot"}, nil }
 			external, _, err := dependencies.resolveExternal(root)
 			if err != nil {
 				t.Fatal(err)
@@ -219,7 +218,7 @@ func TestDoctorOwnedLockWarningKeepsSnapshotDetailAndNextActions(t *testing.T) {
 			if got.Status != want.Status || (test.unversioned && got.Status != CheckStatusUnversioned) || (!test.unversioned && got.Status != CheckStatusFailed) {
 				t.Fatalf("status = %q, readiness status = %q", got.Status, want.Status)
 			}
-			if !strings.Contains(got.Detail, "; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: external-snapshot; DR-SKILL-LOCK-STALE:") {
+			if !strings.Contains(got.Detail, "; DR-SKILL-LOCK-STALE:") {
 				t.Fatalf("detail suffix order = %q", got.Detail)
 			}
 			if want.NextAction != "" {

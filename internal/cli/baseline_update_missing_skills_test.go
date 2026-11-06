@@ -90,20 +90,19 @@ func TestBaselineUpdatePreviewNamesAMissingRequiredSkill(t *testing.T) {
 				removeInstalledSkill(t, repository, name, false)
 			case "folder no longer matches its lock entry":
 				mustWrite(t, filepath.Join(repository, ".agents", "skills", name, "SKILL.md"), "changed fixture\n")
-				reason = "required by the Baseline and no longer matches its skills-lock.json entry; restore with roundfix baseline skills restore --profile go-cli-tui --skill " + name
 			}
 			if shape != "every required skill installed" {
 				commitBaselinePlanTestRepository(t, repository)
 			}
 			before := baselinePlanTestTree(t, repository)
 			result, out, stderr, code := runBaselineUpdateTestCommand(t, t.Context(), "baseline", "update", "--repo", repository, "--no-history", "--format=json")
-			if shape == "every required skill installed" {
+			if shape == "every required skill installed" || shape == "folder no longer matches its lock entry" {
 				if code != exitOK || stderr != "" || result.State != "current" || strings.Contains(out, `"missing"`) {
 					t.Fatalf("complete preview exit=%d stdout=%s stderr=%s", code, out, stderr)
 				}
 			} else {
 				want := []baselineUpdateSkillDrift{{Skill: name, Reason: reason}}
-				message := "guidance matches the current Baseline catalog; 1 required skill(s) are missing or no longer match skills-lock.json: " + name
+				message := "guidance matches the current Baseline catalog; 1 required skill(s) are missing: " + name
 				action := "rerun with --yes to restore them from the Setup Snapshot, or restore one with roundfix baseline skills restore --profile go-cli-tui --skill " + name
 				// Decode the optional list independently so the regression also builds before implementation.
 				var payload struct {
@@ -175,9 +174,9 @@ func TestMissingRequiredSkillsCollectsNamedEvidence(t *testing.T) {
 		want      []baselineUpdateSkillDrift
 	}{
 		{name: "unnamed inspection error", err: errors.New("unreadable lock")},
-		{name: "sorted deduplicated evidence", readiness: skills.RepositoryReadiness{MissingExternal: []string{"zeta"}, OutdatedExternal: []string{"zeta", "beta", "alpha"}}, err: fmt.Errorf("inspect: %w", &skills.RepositoryReadinessError{MissingExternal: []string{"alpha"}}), want: []baselineUpdateSkillDrift{
+		{name: "sorted deduplicated evidence", readiness: skills.RepositoryReadiness{MissingExternal: []string{"zeta", "zeta", "beta", "alpha"}}, err: fmt.Errorf("inspect: %w", &skills.RepositoryReadinessError{MissingExternal: []string{"alpha"}}), want: []baselineUpdateSkillDrift{
 			{Skill: "alpha", Reason: "required by the Baseline and not installed; restore with roundfix baseline skills restore --profile fixture --skill alpha"},
-			{Skill: "beta", Reason: "required by the Baseline and no longer matches its skills-lock.json entry; restore with roundfix baseline skills restore --profile fixture --skill beta"},
+			{Skill: "beta", Reason: "required by the Baseline and not installed; restore with roundfix baseline skills restore --profile fixture --skill beta"},
 			{Skill: "zeta", Reason: "required by the Baseline and not installed; restore with roundfix baseline skills restore --profile fixture --skill zeta"},
 		}},
 	} {
