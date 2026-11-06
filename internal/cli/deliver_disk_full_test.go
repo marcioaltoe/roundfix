@@ -137,3 +137,18 @@ func TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError(t *testing.T) {
 		})
 	}
 }
+
+func TestADiskFullPathMayHoldSpaces(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ name, text, want string }{
+		{"spaces", "write /Users/me/Google Drive/repo/_pkg_.a: no space left on device", "/Users/me/Google Drive/repo/_pkg_.a"},
+		{"open with spaces", "open /Volumes/My Disk/go-build/x: no space left on device", "/Volumes/My Disk/go-build/x"},
+		{"no spaces", "write /tmp/x/_pkg_.a: no space left on device", "/tmp/x/_pkg_.a"},
+		{"last wins", "write /first one: no space left on device\nwrite /tmp/last: no space left on device", "/tmp/last"},
+		{"no path", "compile: writing output: write $WORK/b001/_pkg_.a: no space left on device", ""},
+	} {
+		if got := lastDiskFullPath(tc.text); got != tc.want {
+			t.Errorf("%s: lastDiskFullPath(%q) = %q, want %q", tc.name, tc.text, got, tc.want)
+		}
+	}
+}

@@ -17,6 +17,11 @@ const diskFullLogTailBytes int64 = 64 * 1024
 
 var diskFullPath = regexp.MustCompile(`(?i)(?:^|[\s"'(])((?:/|[a-z]:[\\/])[^\s]*): no space left on device`)
 
+// diskFullOperationPath reads the path after the file operation Go and the
+// shell name in an ENOSPC error, so a path that holds spaces, such as
+// "/Users/me/Google Drive/repo", is read whole.
+var diskFullOperationPath = regexp.MustCompile(`(?i)\b(?:write|open|mkdir|create|rename|link|symlink|truncate|sync|close|copy)\s+((?:/|[a-z]:[\\/])[^\n]*?): no space left on device`)
+
 // diskFullFailure reads only retained local diagnostics; it never changes the
 // original error text or measures capacity without the command dependency.
 func diskFullFailure(ctx context.Context, loaded roundconfig.Loaded, err error, logPath string) *delivery.DiskFullError {
@@ -50,11 +55,17 @@ func diskFullFailure(ctx context.Context, loaded roundconfig.Loaded, err error, 
 }
 
 func lastDiskFullPath(text string) string {
-	matches := diskFullPath.FindAllStringSubmatch(text, -1)
-	if len(matches) == 0 {
-		return ""
+	path, end := "", -1
+	// The last match in the text wins; at the same end, the operation form,
+	// which keeps spaces, wins over the token form.
+	for _, pattern := range []*regexp.Regexp{diskFullPath, diskFullOperationPath} {
+		for _, match := range pattern.FindAllStringSubmatchIndex(text, -1) {
+			if match[1] >= end {
+				path, end = text[match[2]:match[3]], match[1]
+			}
+		}
 	}
-	return matches[len(matches)-1][1]
+	return path
 }
 
 func diskFullLogTail(path string) string {
