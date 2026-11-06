@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.136.4] - 2026-11-06
+
+### The Baseline corrects its archive destination, profile gaps and guide warnings
+
+- **The docs layout guide's archive clause sends knowledge a later reader needs to the project that owns the Secondbrain, by ai-memory message,** instead of the Secondbrain inbox that ADR-0330 retired (reported by onioncry; ADR-0372).
+- **A repository Baseline Profile that does not list a decision a template needs is refused with the decision, the line to add and the `--decision` flag.** `baseline plan` and `baseline update` refuse only when the decision has no value from the Setup Manifest, a `--decision` flag or a default; `baseline profile validate` checks the profile alone. Before, `update` failed with an opaque render error while `validate` called the profile valid (reported by sql-library).
+- **A guide the repository wrote under `docs/agents/` no longer raises `baseline.inventory.nested-carrier-conflict`** because its prose names the marker. Only a marker line, a comment that starts a line, is evidence a guide is managed; every other nested carrier keeps its warning (reported by sql-library).
+
 ## [0.136.3] - 2026-11-06
 
 ### A reused owner PID means the owner is gone
