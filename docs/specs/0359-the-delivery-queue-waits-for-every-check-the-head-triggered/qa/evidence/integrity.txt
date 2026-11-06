@@ -1,0 +1,5 @@
+Shared report reader: verdict=partial environment=1 declared=1 finding=0
+Shared qualifying-partial eligibility: PASS
+Shared evidence-link resolver: PASS
+Secret Pattern scan: 27 files, 0 matches
+exit: 0

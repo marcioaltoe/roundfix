@@ -1,0 +1,30 @@
+from pathlib import Path
+import sys,io,tarfile,tempfile,subprocess,re,shutil,os
+sys.path.insert(0,'/private/tmp')
+import runpy,types
+h=types.SimpleNamespace(**runpy.run_path('/private/tmp/0359-qa-helper.py'))
+archive=subprocess.check_output(['git','archive','HEAD'],cwd=h.root)
+mutations={
+1:('internal/delivery/head_check_wait.go','\trunPaths := make(map[string]bool)','\treport.WorkflowRuns = nil\n\trunPaths := make(map[string]bool)','^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$','TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered'),
+2:('internal/delivery/head_check_wait.go','\tfor _, workflow := range report.ExpectedWorkflows {','\treport.ExpectedWorkflows = nil\n\tfor _, workflow := range report.ExpectedWorkflows {','^TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting$','TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting'),
+3:('internal/delivery/head_check_wait.go','return run.Conclusion == "success" ||','return run.Conclusion == "action_required" || run.Conclusion == "success" ||','^TestAFailedWorkflowRunWithoutAFailingCheckParks$/action_required$','TestAFailedWorkflowRunWithoutAFailingCheckParks/action_required'),
+4:('internal/delivery/head_check_set.go','\t\tdefault:\n\t\t\treturn false','\t\tcase "paths":\n\t\t\tcontinue\n\t\tdefault:\n\t\t\treturn false','^TestExpectedWorkflowsFollowTheTriggerRule$','TestExpectedWorkflowsFollowTheTriggerRule'),
+5:('internal/delivery/github.go','if found && run.RunNumber <= numbers[index] {','if found {','^TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead$','TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs'),
+6:('internal/delivery/head_check_wait.go','return BlockerChecksFailed + ": " + strings.Join(failed, "; ")','return BlockerChecksFailed','^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$/backend_fails$','TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails'),
+7:('internal/delivery/turn.go','item.Stage == store.DeliveryStageChecking && len(entry.Checks) > 0','false && item.Stage == store.DeliveryStageChecking && len(entry.Checks) > 0','^TestDeliverStatusPrintsTheChecksAnItemWaitsFor$','TestDeliverStatusPrintsTheChecksAnItemWaitsFor')}
+for i,(path,old,new,selector,named) in mutations.items():
+ with tempfile.TemporaryDirectory(prefix=f'0359-sabotage-{i}-',dir='/private/tmp') as tmp:
+  copy=Path(tmp)
+  with tarfile.open(fileobj=io.BytesIO(archive)) as tf:tf.extractall(copy,filter='data')
+  for args in [['git','init','-q','--initial-branch=main'],['git','add','-A']]:subprocess.run(args,cwd=copy,check=True,capture_output=True)
+  p=copy/path;text=p.read_text();assert text.count(old)==1,(i,text.count(old));p.write_text(text.replace(old,new,1))
+  env=os.environ.copy();env.update(GOPROXY='off',GOSUMDB='off')
+  # HOME and TMPDIR deliberately preserved for go test.
+  rc,body=h.run('S'+str(i),'sabotage-'+str(i),['go','test','-count=1','-timeout','3m','-v','-run',selector,'./internal/cli' if i==7 else './internal/delivery'],cwd=copy,env=env,expected=1)
+  valid=rc==1 and ('--- FAIL: '+named+' ') in body and '[build failed]' not in body and 'panic: test timed out' not in body
+  if not valid:
+   p=h.q/'qa-report-2026-11-06.md';p.write_text(p.read_text().replace('| S'+str(i)+' | pass |','| S'+str(i)+' | fail |'))
+  with (h.e/('sabotage-'+str(i)+'.txt')).open('a') as out:out.write('\nMutation '+path+'\nBEFORE: '+old+'\nAFTER: '+new+'\nNamed assertion failure: '+str(valid)+'\n')
+  print('ASSERTION',i,valid,flush=True)
+  for line in body.splitlines():
+   if '--- FAIL:' in line or '.go:' in line:print(line[:1200],flush=True)

@@ -1,0 +1,55 @@
+import runpy,types,subprocess,re,io,tarfile,tempfile,json
+from pathlib import Path
+h=types.SimpleNamespace(**runpy.run_path('/private/tmp/0359-qa-helper.py'));base=h.state['base'];head=h.state['head'];spec=h.state['spec'];sd=h.root/'docs/specs'/spec
+def git(*args):return subprocess.check_output(['git',*args],cwd=h.root,text=True)
+commits=git('rev-list','--reverse',base+'..'+head).splitlines();lines=['Delivery Base '+base,'Audited head '+head];ok=True
+for n,c in enumerate(commits,1):
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',c).splitlines()
+ task=sd/f'task_{n:02}.md';body=task.read_text();declared=set(re.findall(r'^- (?:creates|interface|instruction|deletes): `([^`]+)`',body,re.M));declared.add(str(task.relative_to(h.root)))
+ if '## Recorded paths' in body:declared.update(re.findall(r'`([^`]+)`',body.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ extra=[p for p in paths if p not in declared];ok &= not extra
+ lines+=['','Task '+str(n)+' '+c,*paths,'Outside declarations: '+str(extra)]
+ grant=git('rev-parse',base+':docs/specs/'+spec+'/_authorization.md');lines.append('Authorization blob at Delivery Base: '+grant)
+ assert subprocess.run(['git','merge-base','--is-ancestor',base,c],cwd=h.root).returncode==0
+ forbidden=[]
+ for p in paths:
+  if p.startswith(('docs/agents/','docs/history/','internal/store/','internal/baseline/','dist/','.github/workflows/')) or p in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','internal/delivery/park_class.go','docs/references/skill-coverage.json']:forbidden.append(p)
+  if p.startswith('docs/adr/') and not re.match(r'docs/adr/(0311|0365|0369)-',p):forbidden.append(p)
+ lines.append('Forbidden paths: '+str(forbidden));ok &= not forbidden
+# Changed governed sources match the authoritative measured set.
+author=(sd/'_authorization.md').read_text();allowed=set(re.findall(r'^  - (.+)$',author.split('paths:',1)[1].split('operations:',1)[0],re.M))
+changed=git('diff','--name-only',base,head).splitlines()
+governed=[p for p in changed if p.startswith('.agents/skills/') or (p.startswith('skills/') and p.endswith('/SKILL.md'))]
+lines+=['','Changed governed paths: '+str(governed),'Authorized exact paths: '+str(sorted(allowed))];ok &= set(governed)<=allowed
+# Protect the settlement section and prohibit unrelated skills/references.
+for p in changed:
+ if p.startswith(('.agents/skills/','skills/')):
+  valid=p in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/SKILL.md','skills/roundfix/references/deliver.md','skills/testdata/owned-skill-versions.json'];ok &= valid
+  before=git('show',base+':'+p);after=(h.root/p).read_text()
+  def settlement(x):
+   if '### QA settlement' not in x:return ''
+   return x.split('### QA settlement',1)[1].split('\n## ',1)[0].split('\n### ',1)[0]
+  same=settlement(before)==settlement(after);ok &= same;lines.append('QA settlement unchanged '+p+': '+str(same))
+# Enumerate every pre-existing top-level Test body in delivery and CLI.
+tech=(sd/'_techspec.md').read_text();declared_breaks=tech.split('## Declared breaks',1)[1].split('\n## ',1)[0];break_names=set(re.findall(r'`(Test\w+)`',declared_breaks))
+old_files=git('ls-tree','-r','--name-only',base,'--','internal/delivery','internal/cli').splitlines();changes=[];unchanged=0;removed=[]
+for path in old_files:
+ if not path.endswith('_test.go'):continue
+ old=git('show',base+':'+path);new=(h.root/path).read_text() if (h.root/path).exists() else ''
+ def functions(text):return dict(re.findall(r'(?ms)^func (Test\w+)\([^\n]*\).*?\{(.*?)^\}',text))
+ a,b=functions(old),functions(new)
+ for name,body in a.items():
+  if name not in b:removed.append(name)
+  elif body!=b[name]:changes.append((path,name,name in break_names))
+  else:unchanged+=1
+lines+=['','Existing Test body audit: unchanged='+str(unchanged),'Removed/renamed='+str(removed),*['Changed '+path+' '+name+' declared='+str(declared) for path,name,declared in changes]]
+ok &= not removed and all(declared for _,_,declared in changes)
+# Full test diff is retained for assertion-level review: only empty scripted reads,
+# expected blocker/log expressions and the explicitly added tests changed.
+test_paths=[p for p in changed if p.endswith('_test.go')]
+(h.e/'test-diff.txt').write_text(git('diff',base,head,'--',*test_paths))
+lines+=['','Manual diff review: poll, elapsed-time, stage, rerun-count expressions and existing test setup unchanged. Only declared scripted gh api/git ls-tree additions and expected blocker/log text changed; new top-level tests are additions. Shared assertNoCheckRerun changes only the expected blocker.','Current worktree delta: '+git('status','--short').strip()]
+(h.e/'history-audit.txt').write_text('\n'.join(lines)+'\n')
+h.update('R05','pass' if not removed and all(x[2] for x in changes) else 'fail','R05: enumerated every pre-existing top-level test body in both packages at Delivery Base and audited head; '+str(unchanged)+' unchanged and '+str(len(changes))+' changed, all named declared breaks. Reviewed all changed assertions and shared helper: only scripted reads and expected blocker/log text; no poll, elapsed time, stage or rerun count changes. Evidence: [history](evidence/history-audit.txt), [diff](evidence/test-diff.txt).')
+h.update('R08','pass' if ok else 'fail','R08: git diff-tree audited every Task commit against its Context/Recorded paths and the exact governed allowlist; authorization precedes all four Tasks. No prohibited path or QA settlement mutation. Seeded mechanical authorization audit preserved. Evidence: [history](evidence/history-audit.txt).')
+print('\n'.join(lines));print('AUDIT PASS',ok)

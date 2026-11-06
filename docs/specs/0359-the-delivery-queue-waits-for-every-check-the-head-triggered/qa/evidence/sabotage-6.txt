@@ -1,0 +1,19 @@
+$ go test -count=1 -timeout 3m -v -run '^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$/backend_fails$' ./internal/delivery
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== PAUSE TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== CONT  TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails
+    head_check_wait_test.go:84: item={SpecSlug:example Position:0 Stage:parked Blocker:checks-failed Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:} inspections=1 reruns=0
+--- FAIL: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered (0.01s)
+    --- FAIL: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails (0.01s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 141.014041ms before and 126.517292ms after
+FAIL	roundfix/internal/delivery	0.569s
+FAIL
+
+exit: 1
+
+Mutation internal/delivery/head_check_wait.go
+BEFORE: return BlockerChecksFailed + ": " + strings.Join(failed, "; ")
+AFTER: return BlockerChecksFailed
+Named assertion failure: True

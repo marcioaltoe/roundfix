@@ -1,0 +1,23 @@
+$ go test -count=1 -timeout 3m -v -run '^TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting$' ./internal/delivery
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== PAUSE TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== CONT  TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/no_run_yet
+    head_check_wait_test.go:127: item={SpecSlug:example Position:0 Stage:merging Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:} polls=1
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/the_run_arrives
+    head_check_wait_test.go:122: item={SpecSlug:example Position:0 Stage:merging Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:} polls=1
+--- FAIL: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting (0.01s)
+    --- FAIL: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/no_run_yet (0.01s)
+    --- FAIL: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/the_run_arrives (0.01s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 147.775708ms before and 155.192792ms after
+FAIL	roundfix/internal/delivery	0.616s
+FAIL
+
+exit: 1
+
+Mutation internal/delivery/head_check_wait.go
+BEFORE: 	for _, workflow := range report.ExpectedWorkflows {
+AFTER: 	report.ExpectedWorkflows = nil
+	for _, workflow := range report.ExpectedWorkflows {
+Named assertion failure: True

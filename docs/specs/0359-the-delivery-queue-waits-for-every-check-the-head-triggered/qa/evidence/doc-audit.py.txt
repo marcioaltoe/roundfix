@@ -1,0 +1,34 @@
+import runpy,types,re,subprocess,json
+h=types.SimpleNamespace(**runpy.run_path('/private/tmp/0359-qa-helper.py'));sd=h.root/'docs/specs'/h.state['spec'];task=(sd/'task_01.md').read_text();tech=(sd/'_techspec.md').read_text();context=(h.root/'CONTEXT.md').read_text();out=[]
+def norm(s):return ' '.join(s.split())
+def check(name,condition):
+ out.append(name+': '+('PASS' if condition else 'FAIL'))
+ if not condition:raise AssertionError(name)
+adr=next((h.root/'docs/adr').glob('0369-*.md'))
+expected=re.search(r'```markdown\n(.*?)\n```',tech.split('## ADR-0369',1)[1],re.S).group(1)
+check('ADR-0369 content equals TechSpec apart from wrapping',norm(adr.read_text())==norm(expected))
+notices=re.findall(r'```markdown\n(.*?)\n\s*```',tech.split('### Amendment notices',1)[1].split('\n## ',1)[0],re.S)
+for prefix,notice in zip(['0311','0365'],notices):
+ p=next((h.root/'docs/adr').glob(prefix+'-*.md'));check(prefix+' exact amendment and timestamp',norm(notice) in norm(p.read_text()) and 'updated_at: 2026-11-06T12:00:00Z' in p.read_text())
+ before=subprocess.check_output(['git','show',h.state['base']+':'+str(p.relative_to(h.root))],cwd=h.root,text=True)
+ # Remove the newly added notice, normalize timestamp, compare all remaining text.
+ after=p.read_text().replace(notice.strip(),'').replace('updated_at: 2026-11-06T12:00:00Z',re.search(r'^updated_at: .*$',before,re.M).group())
+ check(prefix+' no unrelated content changed',norm(after)==norm(before))
+blocks=re.findall(r'````markdown\n(.*?)\n\s*````',task,re.S)
+adr369='[ADR-0369](docs/adr/'+adr.name+')';adr311='[ADR-0311](docs/adr/'+next((h.root/'docs/adr').glob('0311-*.md')).name+')'
+for i in [0,1]:
+ b=blocks[i];b='\n'.join(line[5:] if line.startswith('     ') else line for line in b.splitlines()).replace('<ADR-0369 link>',adr369).replace('<ADR-0311 link>',adr311)
+ check('CONTEXT prescribed glossary block '+str(i+1)+' exact lines',b.strip() in context)
+for term in ['Check Wait','Head Check Set','Expected Workflow','Queue Turn']:
+ entry=context.split('**'+term+'**:',1)[1].split('\n\n',1)[0];check(term+' links ADR-0369',adr369 in entry)
+paragraph='\n'.join(line[5:] if line.startswith('     ') else line for line in blocks[2].splitlines())
+for p in ['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md']:
+ check(p+' prescribed checking paragraphs',norm(paragraph) in norm((h.root/p).read_text()))
+check('deliver reference byte equality',(h.root/'.agents/skills/roundfix/references/deliver.md').read_bytes()==(h.root/'skills/roundfix/references/deliver.md').read_bytes())
+check('Roundfix SKILL byte equality',(h.root/'.agents/skills/roundfix/SKILL.md').read_bytes()==(h.root/'skills/roundfix/SKILL.md').read_bytes())
+for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:check(p+' version fields 0.1.195',(h.root/p).read_text().count('version: 0.1.195')==2)
+config=norm((h.root/'docs/user-guide/configuration.md').read_text());check('configuration Head Check Set and pending detail','wait of an item in `checking` for its Head Check Set and a mergeable state,' in config and 'delivery.check_timeout <duration>; pending: <check>; <check>' in config)
+deliver=norm((h.root/'docs/user-guide/commands/deliver.md').read_text());check('checking Turn form and explanatory sentence','Turn: <slug> advancing at checking; waiting for <n> check(s): <check>; <check>' in deliver and 'The checking form names the members of the Head Check Set the owner still waits for.' in deliver)
+search=['docs/user-guide/','docs/adr/','CONTEXT.md','.agents/skills/roundfix/','skills/roundfix/']
+p=subprocess.run(['rg','-n','even when the listed checks pass|When a required GitHub Actions check fails',*search],cwd=h.root,text=True,capture_output=True);check('obsolete text absent in required scope',p.returncode==1)
+(h.e/'document-audit.txt').write_text('\n'.join(out)+'\n');print('\n'.join(out))

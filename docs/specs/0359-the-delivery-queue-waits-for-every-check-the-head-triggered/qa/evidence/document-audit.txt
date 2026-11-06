@@ -1,0 +1,21 @@
+ADR-0369 content equals TechSpec apart from wrapping: PASS
+0311 exact amendment and timestamp: PASS
+0311 no unrelated content changed: PASS
+0365 exact amendment and timestamp: PASS
+0365 no unrelated content changed: PASS
+CONTEXT prescribed glossary block 1 exact lines: PASS
+CONTEXT prescribed glossary block 2 exact lines: PASS
+Check Wait links ADR-0369: PASS
+Head Check Set links ADR-0369: PASS
+Expected Workflow links ADR-0369: PASS
+Queue Turn links ADR-0369: PASS
+docs/user-guide/commands/deliver.md prescribed checking paragraphs: PASS
+.agents/skills/roundfix/references/deliver.md prescribed checking paragraphs: PASS
+skills/roundfix/references/deliver.md prescribed checking paragraphs: PASS
+deliver reference byte equality: PASS
+Roundfix SKILL byte equality: PASS
+.agents/skills/roundfix/SKILL.md version fields 0.1.195: PASS
+skills/roundfix/SKILL.md version fields 0.1.195: PASS
+configuration Head Check Set and pending detail: PASS
+checking Turn form and explanatory sentence: PASS
+obsolete text absent in required scope: PASS

@@ -1,0 +1,23 @@
+$ go test -count=1 -timeout 3m -v -run '^TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered$' ./internal/delivery
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== PAUSE TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== CONT  TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails
+    head_check_wait_test.go:71: polls=1 elapsed=0s item={SpecSlug:example Position:0 Stage:merging Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:}
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/every_member_passes
+    head_check_wait_test.go:71: polls=1 elapsed=0s item={SpecSlug:example Position:0 Stage:merging Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID: CandidateCommits:[earlier candidate] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered (0.01s)
+    --- FAIL: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails (0.01s)
+    --- FAIL: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/every_member_passes (0.00s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 144.209375ms before and 126.573083ms after
+FAIL	roundfix/internal/delivery	0.755s
+FAIL
+
+exit: 1
+
+Mutation internal/delivery/head_check_wait.go
+BEFORE: 	runPaths := make(map[string]bool)
+AFTER: 	report.WorkflowRuns = nil
+	runPaths := make(map[string]bool)
+Named assertion failure: True

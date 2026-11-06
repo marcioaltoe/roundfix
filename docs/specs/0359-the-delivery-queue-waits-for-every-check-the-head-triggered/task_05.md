@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0359-the-delivery-queue-waits-for-every-check-the-head-triggered
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,21 @@
+$ go test -count=1 -timeout 3m -v -run '^TestExpectedWorkflowsFollowTheTriggerRule$' ./internal/delivery
+=== RUN   TestExpectedWorkflowsFollowTheTriggerRule
+=== PAUSE TestExpectedWorkflowsFollowTheTriggerRule
+=== CONT  TestExpectedWorkflowsFollowTheTriggerRule
+    head_check_set_test.go:34: ExpectedWorkflows = [a.yml b.yml c.yml e.yml f.yml g.yml h.yml k.yml], want [a.yml c.yml e.yml f.yml g.yml h.yml k.yml] (b.yml has paths: ['x/**'])
+--- FAIL: TestExpectedWorkflowsFollowTheTriggerRule (0.00s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 147.634833ms before and 128.401042ms after
+FAIL	roundfix/internal/delivery	0.566s
+FAIL
+
+exit: 1
+
+Mutation internal/delivery/head_check_set.go
+BEFORE: 		default:
+			return false
+AFTER: 		case "paths":
+			continue
+		default:
+			return false
+Named assertion failure: True
