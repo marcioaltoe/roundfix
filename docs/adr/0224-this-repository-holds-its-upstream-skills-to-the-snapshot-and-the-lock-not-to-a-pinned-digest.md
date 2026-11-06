@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-03T00:00:00Z
-updated_at: 2026-10-03T00:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -21,6 +21,8 @@ skills digest (`computedHash`), and every required external skill of this
 repository's Baseline Profile must match the `treeDigest` its Setup Snapshot
 pins, through the same comparison the Doctor Command uses. No constant names a
 skill tree's digest.
+
+**Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).** The Doctor Command no longer runs this comparison for any repository. This repository's contract tests keep both rules for its own skills: the vendored catalog test holds each tree to its Setup Snapshot, and the live Repository Skill Set test holds each required skill to its lock entry.
 
 ## Consequences
 

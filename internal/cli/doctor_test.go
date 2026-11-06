@@ -1131,11 +1131,10 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				Owned: []skills.OwnedSkillReadiness{{
 					Skill: "roundfix", Minimum: "1.2.3", Found: "1.2.2", State: skills.ReadinessBelow,
 				}},
-				OutdatedExternal: []string{"testing-boss"},
 			},
 			wantCode: exitRunFailed,
-			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; outdated: testing-boss; below minimum: skill \"roundfix\" requires 1.2.3, found 1.2.2; next: " +
-				ownedCommand + " && " + installAgenticCLIDesign + " && " + installTestingBoss + ")",
+			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; below minimum: skill \"roundfix\" requires 1.2.3, found 1.2.2; next: " +
+				ownedCommand + " && " + installAgenticCLIDesign + ")",
 		},
 		{
 			name: "symlinked lock keeps external remediation",

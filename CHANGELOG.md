@@ -2,6 +2,23 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.134.1] - 2026-11-05
+
+### An external skill is checked only for presence
+
+- **`roundfix doctor` and `roundfix baseline update` check a required external skill only for presence**: an entry in `skills-lock.json` and its folder. A copy that differs from the Setup Snapshot raises no warning, `DR-SKILL-DIFFERS-FROM-SNAPSHOT` is gone, and `baseline update` neither lists it nor restores it. A missing required external skill is still reported and restored. Before, a copy installed from the skills catalog that differed from the snapshot was flagged and offered for restore, which would have replaced the catalog copy (reported by fluxus and vortex; ADR-0364, which amends ADR-0221, ADR-0224, ADR-0241 and ADR-0264).
+- **The JSON output of `roundfix baseline update` no longer has the `skills.differing` field.** A script that reads it must stop expecting it.
+- **The twelve Roundfix-owned skills keep their check**: the installed copy passes when its digest equals the binary's copy or its version is equal or higher, with no network. `roundfix baseline skills restore` still restores an external skill when asked explicitly.
+- **A skills lock entry must still be well formed**: every entry is a JSON object or `null`, and a required entry is an object; any other value is refused, naming the entry.
+
+## [0.134.0] - 2026-11-05
+
+### A queue item shows its turn, and the pre-PR review gets its own capacity
+
+- **`roundfix deliver status` prints one `Turn:` line per item that is neither merged nor parked**, from the live owner's Turn Record: `advancing at <stage>`, `reviewing; <held> of <capacity> review slot(s) held`, `waiting for a review slot (<n> of <m> waiting)`, `waiting for prerequisites: <slugs>`, `waiting for the owner's turn (<n> of <m> waiting)` or `waiting for the owner to read it`. A stage keeps its meaning, the next step; the `Turn:` line says whether it runs or waits. Before, an item at `reviewing` looked like a running review while it waited for another item's whole delivery (reported by fiscus; ADR-0365).
+- **The pre-PR review runs in review slots beside the owner's item.** Up to `delivery.review_concurrency` reviews (User Config, default `2`, at least `1`; ignored with a warning in Project Config) run in read-only sessions on their own item worktrees, and a poller hands retried items at `reviewing` to the slots every 30 seconds. Order is kept: a queued item starts only when no earlier item is between its Implement Run and its merge; archive, gate, publication, check wait and merge stay one item at a time.
+- **The `Limits:` line names the review concurrency**: `concurrency 1, review concurrency <n>`. A script that matches the whole line sees the new field.
+
 ## [0.133.1] - 2026-11-05
 
 ### A main merge is a review delta, and a segment is measured from its Effective Base

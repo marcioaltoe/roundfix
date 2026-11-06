@@ -186,7 +186,7 @@ retries per item. Omitted limits are recorded as `none`. Start and status print
 the recorded values as:
 
 ```text
-Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, spend not measured
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, review concurrency <n>, tokens <n|none>
 ```
 
 At or after the deadline, the owner parks each item that has not started as
@@ -365,6 +365,23 @@ be checked, status adds no `Owner:` line and writes
 `roundfix: Delivery Queue owner PID <pid> could not be checked: <error>` to
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
+
+A stage is the step an item is at, not proof that the step is running: a
+Delivery Retry records `reviewing` before any review starts. The Queue Owner
+advances one item at a time through every stage except the pre-PR review,
+which it runs for up to its Review Capacity of items at once
+(`delivery.review_concurrency`, User Config, `2` by default, printed on the
+`Limits:` line as `review concurrency <n>`); a queued item starts only when no
+earlier item is between its Implement Run and its merge. For a live owner,
+status prints one `Turn:` line per item that is neither `merged` nor `parked`,
+after any `Warning:` lines and before any `Park:` lines, from the owner's Turn
+Record: `advancing at <stage>`, `reviewing; <held> of <capacity> review
+slot(s) held`, `waiting for a review slot (<n> of <m> waiting); <held> of
+<capacity> review slot(s) held`, `waiting for prerequisites: <slugs>`,
+`waiting for the owner's turn (<n> of <m> waiting)` or `waiting for the owner
+to read it`. Read the `Turn:` lines before acting on a stage that looks stuck:
+an item that waits for a review slot or the owner's turn needs no retry and no
+stop.
 
 When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the six the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
 

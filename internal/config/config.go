@@ -51,6 +51,12 @@ const (
 // DeliveryCheckTimeoutKey is an operator-only User Config setting.
 const DeliveryCheckTimeoutKey = "delivery.check_timeout"
 
+// DeliveryReviewConcurrencyKey is an operator-only User Config setting.
+const DeliveryReviewConcurrencyKey = "delivery.review_concurrency"
+
+// DefaultDeliveryReviewConcurrency bounds concurrent pre-PR reviews when unset.
+const DefaultDeliveryReviewConcurrency = 2
+
 // DefaultDeliveryCheckTimeout bounds each check wait when unset.
 const DefaultDeliveryCheckTimeout = 60 * time.Minute
 
@@ -145,11 +151,12 @@ type PrePRReview struct {
 }
 
 type Delivery struct {
-	CheckTimeout   time.Duration
-	DerivedPaths   []DerivedPathDeclaration
-	ItemBinary     ItemBinaryDeclaration
-	LinuxLane      bool
-	LinuxLaneImage string
+	CheckTimeout      time.Duration
+	ReviewConcurrency int
+	DerivedPaths      []DerivedPathDeclaration
+	ItemBinary        ItemBinaryDeclaration
+	LinuxLane         bool
+	LinuxLaneImage    string
 }
 
 // ItemBinaryDeclaration names the command that builds the repository's own
@@ -435,11 +442,12 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type deliveryOverlay struct {
-	CheckTimeout   *durationValue            `yaml:"check_timeout"`
-	DerivedPaths   *[]DerivedPathDeclaration `yaml:"derived_paths"`
-	ItemBinary     *ItemBinaryDeclaration    `yaml:"item_binary"`
-	LinuxLane      *bool                     `yaml:"linux_lane"`
-	LinuxLaneImage *string                   `yaml:"linux_lane_image"`
+	CheckTimeout      *durationValue            `yaml:"check_timeout"`
+	ReviewConcurrency *int                      `yaml:"review_concurrency"`
+	DerivedPaths      *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	ItemBinary        *ItemBinaryDeclaration    `yaml:"item_binary"`
+	LinuxLane         *bool                     `yaml:"linux_lane"`
+	LinuxLaneImage    *string                   `yaml:"linux_lane_image"`
 }
 
 type watchOverlay struct {
@@ -869,7 +877,10 @@ func Builtin() Config {
 		Specs: Specs{
 			Root: defaultSpecsRoot,
 		},
-		Delivery: Delivery{CheckTimeout: DefaultDeliveryCheckTimeout},
+		Delivery: Delivery{
+			CheckTimeout:      DefaultDeliveryCheckTimeout,
+			ReviewConcurrency: DefaultDeliveryReviewConcurrency,
+		},
 		Runs: Runs{
 			MaxActive: defaultRunsMaxActive,
 			SlotWait:  2 * time.Hour,
@@ -1142,6 +1153,9 @@ resolve:
 func Validate(config Config) error {
 	if config.Delivery.CheckTimeout <= 0 || config.Delivery.CheckTimeout > MaxDeliveryCheckTimeout {
 		return errors.New("delivery.check_timeout must be greater than 0 and at most 24h")
+	}
+	if config.Delivery.ReviewConcurrency < 1 {
+		return errors.New("delivery.review_concurrency must be greater than 0")
 	}
 	if config.Defaults.ProfileProofSetupTimeout <= 0 || config.Defaults.ProfileProofSetupTimeout > MaxProfileProofSetupTimeout {
 		return errors.New("defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m")
@@ -1759,6 +1773,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"delivery", "check_timeout"}) {
 		warnings.warnIgnoredProjectSetting(DeliveryCheckTimeoutKey)
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"delivery", "review_concurrency"}) {
+		warnings.warnIgnoredProjectSetting(DeliveryReviewConcurrencyKey)
+	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "slot_wait"}) {
 		warnings.warnIgnoredProjectSetting("runs.slot_wait")
 	}
@@ -1950,6 +1967,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if source != ProfileSourceProject && overlay.Delivery != nil && overlay.Delivery.CheckTimeout != nil {
 		config.Delivery.CheckTimeout = overlay.Delivery.CheckTimeout.value
+	}
+	if source != ProfileSourceProject && overlay.Delivery != nil && overlay.Delivery.ReviewConcurrency != nil {
+		config.Delivery.ReviewConcurrency = *overlay.Delivery.ReviewConcurrency
 	}
 	if overlay.Delivery != nil && overlay.Delivery.DerivedPaths != nil {
 		config.Delivery.DerivedPaths = *overlay.Delivery.DerivedPaths

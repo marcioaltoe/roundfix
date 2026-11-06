@@ -32,7 +32,7 @@ func TestDeliverStartRecordsAndPrintsTheTokenCeiling(t *testing.T) {
 	})
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "start", implementTestSlug, "--max-tokens", "5000000"}, &out, &diag)
-	want := "Limits: deadline none, retries per item none, concurrency 1, tokens 5000000\n"
+	want := "Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens 5000000\n"
 	if code != exitOK || diag.Len() != 0 || out.String() != want || started != 1 {
 		t.Fatalf("exit=%d starts=%d stdout=%q stderr=%q", code, started, out.String(), diag.String())
 	}
@@ -105,7 +105,7 @@ func TestDeliverStatusPrintsTheTokenCeilingQuestion(t *testing.T) {
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &out, &diag)
 	want := "0300-example\tmerged\t-\t-\n0301-example\tparked\tqueue-token-ceiling\t-\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens 5000000\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens 5000000\n" +
 		"Usage: 5639755 tokens from 1 of 1 prompt(s) across 1 Run(s); cost not reported\n" +
 		"Pending question: 0301-example parked queue-token-ceiling\n" +
 		"Answer: record a new queue for the remaining Specs with roundfix deliver start and a higher --max-tokens\n"
