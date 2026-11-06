@@ -900,6 +900,7 @@ Roundfix has no gateway transport setting.
 | `stop` | Request or force-stop an Active Run |
 | `gc` | Prune old terminal Run journals and artifacts |
 | `upgrade` | Upgrade the binary from GitHub Releases |
+| `update check` | Report a newer release and this repository's Baseline plan (read-only) |
 | `skills` | List, check, or install the bundled skills |
 
 Run `roundfix <command> --help` for the full flag list of any command, or read

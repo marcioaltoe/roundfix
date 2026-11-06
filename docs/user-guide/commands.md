@@ -43,6 +43,7 @@ installing, substitute `go run ./cmd/roundfix`.
 | `storage-report` | [command guide](commands/storage-report.md) |
 | `supersede` | [command guide](commands/supersede.md) |
 | `upgrade` | [command guide](commands/upgrade.md) |
+| `update` | [command guide](commands/update.md) |
 | `watch` | [command guide](commands/watch.md) |
 | `window` | [command guide](commands/window.md) |
 <!-- roundfix:command-index:end -->

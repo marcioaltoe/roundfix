@@ -260,11 +260,11 @@ func TestTheRoundfixSkillReadsItsModeFromTheRequest(t *testing.T) {
 			}
 			text := string(data)
 			modes := roundfixSection(text, "Modes")
-			want := "A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status` or `unattended`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes."
+			want := "A request names a Skill Mode with the first word after the skill's name: `follow-up`, `status`, `unattended` or `update`, with or without a leading `--`, in every harness: `/roundfix follow-up` or `/roundfix --follow-up` in Claude Code, `$roundfix status` or `$roundfix --status` in Codex, and `@roundfix unattended`, `@roundfix --unattended` or `/roundfix unattended` in OpenCode. A Skill Mode is not the CLI command `roundfix follow-up`, which the follow-up mode runs as one of its steps. Read the mode from the request text; a request whose first word after the skill's name is anything else, such as `/roundfix watch 123`, uses the skill as the rest of this file describes."
 			if !strings.HasPrefix(modes, want) {
 				t.Fatalf("Modes section does not start with required paragraph")
 			}
-			for _, mode := range []string{"--follow-up", "--status", "--unattended"} {
+			for _, mode := range []string{"--follow-up", "--status", "--unattended", "--update"} {
 				if !strings.Contains(modes, mode) {
 					t.Errorf("Modes section omits %s", mode)
 				}
@@ -287,12 +287,62 @@ func TestTheRoundfixSkillReadsItsModeFromTheRequest(t *testing.T) {
 			}
 			chosen := strings.Join(strings.Fields(roundfixSection(referenceText, "How a mode is chosen")), " ")
 			for _, phrase := range []string{
+				"`follow-up`, `status`, `unattended` or `update`",
 				"with or without a leading `--`",
 				"`/roundfix follow-up`, `/roundfix --follow-up`, `$roundfix status` and `@roundfix --unattended` each select a mode",
 				"This is the Skill Mode, not the CLI command `roundfix follow-up`",
 			} {
 				if !strings.Contains(chosen, phrase) {
 					t.Errorf("How a mode is chosen omits %q", phrase)
+				}
+			}
+		})
+	}
+}
+
+func TestTheUpdateModeAppliesOnlyThePlanItShowed(t *testing.T) {
+	t.Parallel()
+	for name, source := range roundfixLayoutSources() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			data, err := fs.ReadFile(source, "roundfix/references/modes.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			section := roundfixSection(string(data), "--update")
+			if !strings.HasPrefix(section, "Run this mode in the repository the session works in, never in a Daemon-assigned Run.") {
+				t.Fatal("update section has the wrong opening")
+			}
+			items := make([]string, 0, 5)
+			current := ""
+			for _, line := range strings.Split(section, "\n") {
+				if regexp.MustCompile(`^[1-5]\. `).MatchString(line) {
+					if current != "" {
+						items = append(items, current)
+					}
+					current = line
+				} else if current != "" {
+					current += "\n" + line
+				}
+			}
+			if current != "" {
+				items = append(items, current)
+			}
+			if len(items) != 5 {
+				t.Fatalf("update items = %d, want 5", len(items))
+			}
+			checks := map[int][]string{
+				1: {"roundfix update check --refresh --format json"},
+				2: {"roundfix upgrade", "without applying a Baseline plan"},
+				3: {"roundfix baseline update --repo <root> --format json", "never pass `--adopt-suggested` unasked"},
+				4: {"--confirm-plan <planDigest>", "history.units", "skills.retired", "git status --porcelain", "apply no Baseline plan over uncommitted changes"},
+				5: {"never commits, pushes or opens a pull request"},
+			}
+			for itemNumber, phrases := range checks {
+				for _, phrase := range phrases {
+					if !strings.Contains(items[itemNumber-1], phrase) {
+						t.Errorf("item %d omits %q", itemNumber, phrase)
+					}
 				}
 			}
 		})

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -61,6 +62,54 @@ func LatestRelease(ctx context.Context) (string, []ReleaseAsset, error) {
 		})
 	}
 	return payload.TagName, assets, nil
+}
+
+// Release holds the published headings of one stable release.
+type Release struct {
+	Version string   `json:"version"`
+	Titles  []string `json:"titles"`
+	URL     string   `json:"url"`
+}
+
+const ReleaseListingPageSize = 30
+
+// ListReleases reads one page of stable releases, newest first.
+func ListReleases(ctx context.Context) ([]Release, error) {
+	output, err := runGitHubAPI(ctx, fmt.Sprintf("repos/%s/releases?per_page=%d", ReleaseRepository, ReleaseListingPageSize))
+	if err != nil {
+		if isGitHubNotFound(err) {
+			return nil, ErrNoReleases
+		}
+		return nil, fmt.Errorf("list releases: %w", err)
+	}
+	var payload []struct {
+		TagName    string `json:"tag_name"`
+		Body       string `json:"body"`
+		Draft      bool   `json:"draft"`
+		Prerelease bool   `json:"prerelease"`
+		URL        string `json:"html_url"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		return nil, fmt.Errorf("list releases: %w", err)
+	}
+	releases := make([]Release, 0, len(payload))
+	for _, item := range payload {
+		if item.Draft || item.Prerelease {
+			continue
+		}
+		titles := []string{}
+		for _, line := range strings.Split(item.Body, "\n") {
+			if title, ok := strings.CutPrefix(line, "### "); ok {
+				titles = append(titles, strings.TrimSpace(title))
+			}
+		}
+		releases = append(releases, Release{Version: NormalizeVersion(item.TagName), Titles: titles, URL: item.URL})
+	}
+	if len(releases) == 0 {
+		return nil, ErrNoReleases
+	}
+	sort.SliceStable(releases, func(i, j int) bool { return CompareVersions(releases[i].Version, releases[j].Version) > 0 })
+	return releases, nil
 }
 
 func CompareVersions(left, right string) int {

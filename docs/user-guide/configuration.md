@@ -445,6 +445,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `defaults.profile_proof_setup_timeout` | `30s` | Bounds each disposable profile proof setup. A Go duration greater than zero and at most 10m; accepted in User and Project Config, with Project Config winning. |
 | `defaults.auto_commit` | `true` | Enables Daemon-owned review commits. `watch.auto_push: true` requires it. |
 | `specs.root` | `docs/specs` | Locates active and archived Specs. Relative paths resolve from the repository root. |
+| `update.mode` | `notify` | Selects what a session does with the report of `roundfix update check`: `notify` reports a newer release and this repository's Baseline plan and applies nothing; `auto` asks the session to apply them through the Roundfix skill's `--update` mode before its first task. Accepted in User and Project Config, with Project Config winning. |
 
 ### Review and Run settings
 

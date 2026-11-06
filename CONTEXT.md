@@ -1050,6 +1050,10 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
 
+**Update Check**:
+The read-only report of `roundfix update check` that a session runs before its first task: the installed Roundfix against the latest published release, the titles of each newer release from its published notes, and the repository's Baseline plan with the installed binary. It reads the release listing at most once a day per machine, reports a lookup that fails in one line, and changes nothing ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md)).
+_Avoid_: Release note, version freshness line, upgrade check
+
 **Release Set**:
 The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible before any one is published.
 _Avoid_: Package list, publish targets, artifact set
@@ -1508,7 +1512,7 @@ The external Claude Code role that authors Specs, starts and monitors Runs, and 
 _Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 
 **Skill Mode**:
-A way of running the Roundfix skill that the user's request selects with the first word after the skill's name, `follow-up`, `status` or `unattended`, with or without a leading `--`; the skill reads it from the request text in every harness, it is not the CLI command `roundfix follow-up`, and a request whose first word names no mode uses the skill as before. [ADR-0320](docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md)
+A way of running the Roundfix skill that the user's request selects with the first word after the skill's name, `follow-up`, `status`, `unattended` or `update`, with or without a leading `--`; the skill reads it from the request text in every harness, it is not the CLI command `roundfix follow-up`, and a request whose first word names no mode uses the skill as before ([ADR-0320](docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md)). The `update` mode runs the Update Check, upgrades the binary and applies the Baseline plan it showed by its Plan Digest, asking before a step that deletes files ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md)).
 _Avoid_: Command flag, CLI mode, Follow Mode
 
 **Follow Mode**:
