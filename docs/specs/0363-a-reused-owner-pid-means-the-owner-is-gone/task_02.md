@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0363-a-reused-owner-pid-means-the-owner-is-gone
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -89,3 +89,67 @@ mismatch as an owner that is gone. It answers the message reported by argus
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Core Feature 2; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → API Contract 1; API Contract 2; Interfaces; Testing Approach; Build Order 2
 - ADR-0373, ADR-0313, ADR-0127
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-testing, testing-boss, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+Added the controller method and package-level `OwnerGone`, using the existing
+`proveOwner` result. Only proven absence returns `(true, false)` and only an
+error matching `ErrOwnerProcessIdentityMismatch` returns `(true, true)`;
+every other result returns `(false, false)`. Neither entry point signals a
+process or writes state.
+
+Doctor now skips the entire terminal Run contribution when `ReadLineage`
+returns a wrapped identity mismatch. Other read failures, partial process
+results, and the existing unproven-record branch retain their behavior and
+text. The new tests use the existing Doctor command fixture and assert the
+complete list of residue lines, as well as absence of `partial` for reuse
+alone and absence of the reused Run's ID beside an unreadable owner.
+
+Acceptance evidence:
+
+- Criterion 1: `TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone` passes
+  all 12 cases: absent, comparable mismatch, matching, unreadable identity,
+  unsupported identity, foreign token, empty identity, zero PID, negative
+  PID, own PID, process-table failure, and absence after an identity-read
+  failure. Every case asserts both returned booleans. The default-controller
+  wrapper is also exercised for invalid and own PIDs. Fake signal and tree
+  enumeration functions fail immediately if called.
+- Criterion 2: the two new Doctor tests first reproduced the incorrect
+  `partial` output before the production change, then passed afterward.
+  Reuse alone prints exactly `residue: ok (no process residue found)`;
+  reuse beside an unreadable owner prints only the unreadable Run's exact
+  `partial` line. All five existing Doctor residue tests pass unchanged,
+  including partial readable results and the no-Run-record-write check.
+  Diff inspection confirms the unproven-record branch and all other Doctor
+  check output remain unchanged.
+
+Focused checks (all commands below used `rtk proxy`):
+
+- `go test -count=1 -timeout 5m -run '^TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone$' ./internal/store`
+  before production changes: exit 1, reporting the missing method and
+  package function.
+- `go test -count=1 -timeout 5m -run '^(TestDoctorReportsNoResidueForAReusedOwnerPID|TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne)$' ./internal/cli`
+  before production changes: exit 1; both tests showed the mismatch being
+  included in the `partial` diagnostic.
+- `go test -count=1 -timeout 5m -run '^TestOwnerGoneTreatsOnlyAProvenMismatchOrAbsenceAsGone$' -v ./internal/store`:
+  exit 0; all 12 subtests passed.
+- `go test -count=1 -timeout 5m -run '^TestDoctor(ReportsNoResidueForAReusedOwnerPID|KeepsPartialForAnUnreadableOwnerBesideAReusedOne|ReportsProcessResidue)' ./internal/cli`:
+  exit 0; the two new and five existing residue tests passed.
+- `go test -count=1 -timeout 5m -run '^TestOwnerProcessControllerTellsAProvenIdentityMismatchFromAnUnreadableIdentity$' ./internal/store`:
+  exit 0; the existing proof distinctions and mismatch termination refusal
+  remain exercised.
+- `git diff --check`: exit 0.
+
+Scope review: only `internal/store/process.go`, the new
+`internal/store/process_owner_gone_test.go`, `internal/cli/doctor.go`,
+`internal/cli/doctor_test.go`, and this Result were edited. The pre-existing
+Task status change to `in_progress` was preserved. No signal or termination
+path, `proveOwner`, `InspectTree`, or `InspectTreeProcesses` was changed.
+No follow-up work was added to this slice.
+
+Declared Task Verification and repository Verification were not run;
+Verification and Task settlement remain with the Daemon. No commit, push,
+or pull request was made.
