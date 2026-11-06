@@ -134,14 +134,23 @@ and `nextAction` fields.
    listing each distinct decision once in sorted order, where `<path>` is
    `profile.Path` as the command prints it and `<value>` is `Suggested`, or
    the literal `<value>` when it is empty.
-4. API Contract: `baseline plan` and `baseline update`. After the profile
-   resolves (by ID or draft) and before `normalizePlanDecisions`,
-   `buildPlanWithCatalog` returns
+4. API Contract: `baseline plan` and `baseline update`. After the plan's
+   decisions are known (the profile resolved by ID or draft, the Setup
+   Manifest's recorded decisions carried by `carryRecordedDecisions`, the
+   `--decision` values and `normalizePlanDecisions`) and before any template
+   renders, `buildPlanWithCatalog` keeps only the gaps whose decision has no
+   value in the decision set rendering receives, and returns
    `actionOutcome("decision", ProfileDecisionGapMessage(...), ProfileDecisionGapRepair(..., "rerun with"), warnings)`
-   when gaps exist. Both commands then exit 3, print
+   when any remain. A gap whose decision has a value there renders as today
+   and is not refused, so a repository profile that does not list a decision
+   but gets its value from the Setup Manifest, a flag or a default keeps
+   planning; the refused case is exactly the one that fails today with
+   `missing render value for token`. Both commands then exit 3, print
    `Category: decision`, and write nothing; JSON carries state
    `action_required`, category `decision`, the message and `nextAction`.
-5. API Contract: `baseline profile validate`. For each resolved profile with
+5. API Contract: `baseline profile validate`. It reads the profile alone,
+   with no decision values, so it reports the static gap set of API
+   Contract 2. For each resolved profile with
    gaps, the command fails as other invalid profiles do (exit 2, category
    `preflight` in JSON) with the message
    `custom.profile.decision.template-required: <ProfileDecisionGapMessage>; <ProfileDecisionGapRepair with "run roundfix baseline update">`.

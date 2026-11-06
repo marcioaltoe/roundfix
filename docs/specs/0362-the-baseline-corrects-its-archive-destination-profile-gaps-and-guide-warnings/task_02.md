@@ -31,11 +31,24 @@ It answers the message reported by sql-library
    `stringValue`. The helper reads only the catalog and the profile and
    writes nothing.
 2. MUST call it in `buildPlanWithCatalog` (`internal/baseline/plan.go`)
-   after the profile resolves, for both the profile ID and the profile draft
-   branch, and before `carryRecordedDecisions` and `normalizePlanDecisions`,
-   returning `actionOutcome("decision", ProfileDecisionGapMessage(profile, gaps), ProfileDecisionGapRepair(profile, gaps, "rerun with"), initial.Snapshot.Warnings)`
-   when gaps exist (API Contract 4). The profile path used is the portable
-   path the branch already computes.
+   for both the profile ID and the profile draft branch, after
+   `carryRecordedDecisions`, the `--decision` values and
+   `normalizePlanDecisions` and before any template renders, keep only the
+   gaps whose decision has no value in the decision set rendering receives,
+   and return
+   `actionOutcome("decision", ProfileDecisionGapMessage(profile, remaining), ProfileDecisionGapRepair(profile, remaining, "rerun with"), initial.Snapshot.Warnings)`
+   when any remain (API Contract 4). A profile draft or repository profile
+   whose unlisted decisions all get values from the Setup Manifest, a flag or
+   a default must keep planning: `TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities`,
+   `TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs`,
+   `TestProfileDraftPlanIncludesCanonicalRepositoryProfile`,
+   `TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition`,
+   `TestProfileDraftStaleTargetProducesNoMutation`,
+   `TestProfileDraftRollbackRestoresMissingProfile` (`./internal/baseline`)
+   and `TestBaselineHumanProfileAdaptation`, `TestProfileAdaptationJourney`,
+   `TestBaselinePlanProfileFile` (`./internal/cli`) pass unchanged; the
+   first Run refused them all by checking before the decisions were known.
+   The profile path used is the portable path the branch already computes.
 3. MUST make `runBaselineProfileValidateCommand`
    (`internal/cli/baseline_profile.go`) check every resolved profile after
    its `Path` is converted by `baselineProfileOutputPath`, and fail through
