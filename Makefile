@@ -15,7 +15,11 @@ GOCACHE := $(shell root="$${TMPDIR:-/tmp}"; cache="$${root%/}/roundfix-go-build-
 	else \
 		printf '%s' "$(CURDIR)/.gocache"; \
 	fi)
+GOCACHE_BOUND_MB ?= 10240
 endif
+# ADR-0370: bound only the cache make chose unless the caller opts in.
+GOCACHE_BOUND_MB ?= 0
+GOCACHE_BOUND_IDLE ?= 2h
 export GOCACHE
 
 APP := roundfix
@@ -36,7 +40,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: gocache-bound docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -55,6 +59,13 @@ deps: ## Download, tidy, and verify Go modules
 
 
 ##@ Quality & Testing
+
+gocache-bound: ## Trim the Makefile's Go build cache above GOCACHE_BOUND_MB, idle entries only
+	@if [ "$(MAKELEVEL)" = "0" ] && [ "$(GOCACHE_BOUND_MB)" != "0" ]; then \
+		$(GO) run $(RUN_FLAGS) ./cmd/gocache-bound -dir "$(GOCACHE)" -max-mb "$(GOCACHE_BOUND_MB)" -idle "$(GOCACHE_BOUND_IDLE)" || { \
+			status=$$?; printf 'gocache-bound: warning: the Build Cache Bound did not run (exit %s); the build continues\n' "$$status" >&2; :; \
+		}; \
+	fi
 
 # CI selects test-budget here, so the suite's wall clock is a live fitness
 # function there; the local default stays the plain cached test target.
@@ -75,7 +86,7 @@ verify-changed: fmt-check vet build ## Verify the test sets selected by changes 
 	done
 	@$(MAKE) --no-print-directory verify-changed-contracts
 
-verify-changed-contracts: ## Run the Repository Contract Tests selected by Contract Relevance
+verify-changed-contracts: gocache-bound ## Run the Repository Contract Tests selected by Contract Relevance
 	@invocations="$$( $(VERIFY_SELECT) -contracts -base "$(VERIFY_BASE)" )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
 		if [ -n "$$packages" ]; then \
@@ -85,7 +96,7 @@ verify-changed-contracts: ## Run the Repository Contract Tests selected by Contr
 
 # The Full Contract Run uses discovery rather than a list to decide the set.
 # CI runs it on every push to main and before every release (ADR-0253).
-verify-contracts: ## Run the Full Contract Run of every discovered Repository Contract Test
+verify-contracts: gocache-bound ## Run the Full Contract Run of every discovered Repository Contract Test
 	@invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
 		if [ -n "$$packages" ]; then \
@@ -93,7 +104,7 @@ verify-contracts: ## Run the Full Contract Run of every discovered Repository Co
 		fi; \
 	done
 
-verify-changed-core:
+verify-changed-core: gocache-bound
 	@packages="$$( $(VERIFY_SELECT) -packages core )" || exit $$?; \
 	non_cli_packages=; \
 	for package in $$packages; do \
@@ -107,7 +118,7 @@ verify-changed-core:
 	pattern="$$( $(VERIFY_SELECT) -baseline-cli-pattern )" || exit $$?; \
 	$(GO) test -parallel $(GO_TEST_PARALLEL) -skip "$$pattern" ./internal/cli
 
-verify-changed-baseline:
+verify-changed-baseline: gocache-bound
 	@packages="$$( $(VERIFY_SELECT) -packages baseline )" || exit $$?; \
 	if [ -n "$$packages" ]; then \
 		$(GO) test -parallel $(GO_TEST_PARALLEL) $$packages || exit $$?; \
@@ -123,7 +134,7 @@ verify-incremental: fmt-check vet test skills-sync-check skills-check build ## R
 VERIFY_DOCS_TEST ?= docs-test
 verify-docs: build $(VERIFY_DOCS_TEST) repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 
-docs-test: ## Run the repository-markdown contract tests
+docs-test: gocache-bound ## Run the repository-markdown contract tests
 	$(GO) test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
 
 docs-test-skipped:
@@ -135,13 +146,13 @@ docs-test-skipped:
 # pull request boundary instead of in every make verify.
 REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows
 
-repo-test: ## Run the repository-contract tests
+repo-test: gocache-bound ## Run the repository-contract tests
 	$(GO) test -count=1 -tags repocontract -run '^($(REPO_CONTRACT_TESTS))$$' ./...
 
 spec-check: ## Check Spec artifact consistency
 	$(BIN) spec check
 
-spec-budget: ## Prove the Spec corpus sweep stays within its budget
+spec-budget: gocache-bound ## Prove the Spec corpus sweep stays within its budget
 	$(GO) test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$$'
 
 fmt: ## Format Go files
@@ -154,7 +165,7 @@ fmt-check: ## Check Go formatting without changing files
 		exit 1; \
 	}
 
-vet: ## Run Go analyzer
+vet: gocache-bound ## Run Go analyzer
 	$(GO) vet $(PKGS)
 
 # -parallel decides how many tests may overlap inside one package. Go defaults
@@ -165,7 +176,7 @@ vet: ## Run Go analyzer
 # the curve is flat past that, and on a twelve-core machine it changes nothing.
 GO_TEST_PARALLEL ?= 16
 
-test: ## Run Go tests
+test: gocache-bound ## Run Go tests
 	$(GO) test -parallel $(GO_TEST_PARALLEL) $(PKGS)
 
 # The full suite's wall clock on a fresh run, in seconds. Derived from what the
@@ -177,7 +188,7 @@ test: ## Run Go tests
 # See docs/specs/_archived/0071-verification-cost/baseline/2026-08-03-after.md.
 SUITE_BUDGET_SECONDS ?= 360
 
-test-budget: ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
+test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
 	@start=$$(date +%s); \
 	$(GO) test -count=1 -parallel $(GO_TEST_PARALLEL) $(PKGS) || exit $$?; \
 	elapsed=$$(( $$(date +%s) - start )); \
@@ -188,7 +199,7 @@ test-budget: ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SEC
 	fi; \
 	echo "suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"
 
-test-race: ## Run Go tests with the race detector
+test-race: gocache-bound ## Run Go tests with the race detector
 	$(GO) test -race -parallel $(GO_TEST_PARALLEL) $(PKGS)
 
 DERIVED_DIGEST_PATHS := internal/baseline/assets/setups internal/baseline/testdata internal/baseline/assets/source-baselines internal/baseline/assets/formatter-fixtures internal/baseline/assets/profiles
@@ -231,17 +242,17 @@ baseline-digests: ## Regenerate derived Baseline digest artifacts
 
 ##@ Build & Run
 
-build: ## Build the CLI binary into bin/roundfix
+build: gocache-bound ## Build the CLI binary into bin/roundfix
 	@mkdir -p $(BIN_DIR)
 	$(GO) build $(BUILD_FLAGS) -o $(BIN) $(CMD)
 
 install: build ## Build and install roundfix into Go bin for local testing
 	$(GO) install $(BUILD_FLAGS) $(CMD)
 
-run: ## Run the CLI; pass ARGS="--help" or another command
+run: gocache-bound ## Run the CLI; pass ARGS="--help" or another command
 	$(GO) run $(RUN_FLAGS) $(CMD) $(ARGS)
 
-version: ## Print the CLI version
+version: gocache-bound ## Print the CLI version
 	$(GO_HUMAN) run $(RUN_FLAGS) $(CMD) --version
 
 

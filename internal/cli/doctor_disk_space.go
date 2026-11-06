@@ -12,32 +12,25 @@ import (
 
 const doctorDiskSpaceThreshold int64 = 10 * 1024 * 1024 * 1024
 
-func defaultDoctorDiskSpaceResults(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+type freeSpaceLocation struct {
+	label, path string
+	available   int64
+	err         error
+}
+
+func inspectFreeSpace(ctx context.Context, loaded roundconfig.Loaded) []freeSpaceLocation {
 	availableBytes := commandDependenciesForContext(ctx).availableBytes
-	var findings []readinessFinding
-	low := false
-	inspect := func(label, path string, resolveErr error) {
-		var available int64
-		err := resolveErr
-		if err == nil {
+	var locations []freeSpaceLocation
+	inspect := func(label, path string, err error) {
+		location := freeSpaceLocation{label: label, path: path, err: err}
+		if location.err == nil {
 			var ancestor string
-			ancestor, err = doctorDiskSpaceAncestor(path)
-			if err == nil {
-				available, err = availableBytes(ancestor)
+			ancestor, location.err = doctorDiskSpaceAncestor(path)
+			if location.err == nil {
+				location.available, location.err = availableBytes(ancestor)
 			}
 		}
-		if err != nil {
-			findings = append(findings, readinessFinding{
-				Code: "DR-DISK-UNREAD", Status: CheckStatusWarn,
-				Text: fmt.Sprintf("could not read free space for %s %s: %v", label, path, err),
-			})
-		} else if available < doctorDiskSpaceThreshold {
-			low = true
-			findings = append(findings, readinessFinding{
-				Code: "DR-DISK-LOW", Status: CheckStatusWarn,
-				Text: fmt.Sprintf("%s %s has %d MiB free, below 10240 MiB", label, path, available/(1024*1024)),
-			})
-		}
+		locations = append(locations, location)
 	}
 	path, err := roundconfig.ResolveWorktreeLocation(loaded.Config.Worktree.Location, loaded.GitRoot, loaded.HomeDir)
 	if err != nil {
@@ -51,6 +44,27 @@ func defaultDoctorDiskSpaceResults(ctx context.Context, loaded roundconfig.Loade
 		}
 		inspect("Shared Build Cache", path, err)
 	}
+	inspect("temporary directory", os.TempDir(), nil)
+	return locations
+}
+
+func defaultDoctorDiskSpaceResults(ctx context.Context, loaded roundconfig.Loaded) []CheckResult {
+	var findings []readinessFinding
+	low := false
+	for _, location := range inspectFreeSpace(ctx, loaded) {
+		if location.err != nil {
+			findings = append(findings, readinessFinding{
+				Code: "DR-DISK-UNREAD", Status: CheckStatusWarn,
+				Text: fmt.Sprintf("could not read free space for %s %s: %v", location.label, location.path, location.err),
+			})
+		} else if location.available < doctorDiskSpaceThreshold {
+			low = true
+			findings = append(findings, readinessFinding{
+				Code: "DR-DISK-LOW", Status: CheckStatusWarn,
+				Text: fmt.Sprintf("%s %s has %d MiB free, below 10240 MiB", location.label, location.path, location.available/(1024*1024)),
+			})
+		}
+	}
 	if len(findings) == 0 {
 		return nil
 	}
@@ -63,8 +77,10 @@ func defaultDoctorDiskSpaceResults(ctx context.Context, loaded roundconfig.Loade
 
 func doctorDiskSpaceAncestor(path string) (string, error) {
 	for {
-		if _, err := os.Stat(path); err == nil {
-			return path, nil
+		if info, err := os.Stat(path); err == nil {
+			if info.IsDir() {
+				return path, nil
+			}
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", fmt.Errorf("stat disk-space location %q: %w", path, err)
 		}

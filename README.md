@@ -147,6 +147,14 @@ and exit codes.
 make verify       # fmt-check -> test -> skills-sync-check -> skills-check -> build
 ```
 
+Every `make` target that builds or tests first holds the Makefile's Go
+build cache to its Build Cache Bound, `GOCACHE_BOUND_MB` (10240 MiB), by
+removing entries no build used for `GOCACHE_BOUND_IDLE` (2h); set
+`GOCACHE_BOUND_MB=0` to turn it off. To keep the cache off a small
+system disk, point `TMPDIR` or `GOCACHE` at another volume; Go's own
+user cache, which `go` commands outside `make` fill, can be declared in
+User Config under `worktree.shared_caches`.
+
 Project layout:
 
 ```text

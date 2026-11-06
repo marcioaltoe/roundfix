@@ -321,6 +321,15 @@ applicable. A read or copy failure is reported as `copy item binary: <error>`. A
 `delivery.item_binary`, including every repository that installs Roundfix from
 npm, is delivered as before with the owner's binary.
 
+When the item binary build or the repository gate fails because a filesystem is
+full, with the error `ENOSPC` or a retained log that says `no space left on
+device`, the item parks as `disk-full: <path>: <N> MiB free` in the environment
+Park Class instead of `delivery-error` or `gate-failed`. `<path>` is the last
+absolute path the log names before that text, or else the inspected location
+with the least free space, and `<N>` is its free space when the item parked.
+A Run whose Task Verification fills the disk still parks `run-unresolved`;
+`roundfix runs causes <run>` names its `disk-full` signature.
+
 A blocker parks its item with a reason and the queue continues with later
 items. On resume, the owner reconciles every recorded action without a receipt
 against observed state before retrying it, so a lost acknowledgement cannot
@@ -545,7 +554,7 @@ The Park Class identifies the reason and the next action:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged` |
 | `conflict` | `pull-request-conflict`, `numbered-file-collision` |
-| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure` |
+| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`, `disk-full` |
 | `flaky-check` | a check that failed again outside the item's changed packages |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -563,6 +572,8 @@ Each existing blocker keeps its previous next action. A queue without parked
 items adds no `Park:` line.
 An `archived-item-unproven` park's next action is `in <worktree>, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry <slug>`.
 
+A `disk-full` park's next action is `free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry <slug>; a retry from disk-full is not counted`.
+
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
 
 A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
@@ -579,6 +590,7 @@ Match to the Agent as Verification Feedback`.
 
 A Delivery Retry from `runtime-infrastructure` is not counted against the retry
 limit and re-enters as a `run-unresolved` retry does.
+A Delivery Retry from `disk-full` is not counted against the retry limit either.
 
 Before classifying a failed GitHub Actions check, the owner reads the failing
 job's `tested-base` notice annotation and fetches the delivery remote's default
@@ -764,6 +776,14 @@ trim removed entries, failed or stopped. The gate's result still comes only
 from its Verification and the Linux Lane, so a `deliver retry` that resumes at
 the gate trims first.
 
+Before an item's Implement Run and before its repository gate, the queue
+reads the free space where the worktree location, each declared Shared Build
+Cache and the temporary directory live. Below the Free-Space Floor of
+10,240 MiB it records a `low-disk: <label> <path> has <N> MiB free, below 10240 MiB` segment
+in the item's warning, which `roundfix deliver status` prints, and writes one
+warning line to the Queue Owner's log; at or above the floor the segment goes.
+The warning never parks or delays the item.
+
 #### Linux Lane
 
 With `delivery.linux_lane: true` (default `false`), the Delivery Queue runs the
@@ -898,8 +918,8 @@ Linux Lane passed on <image>; the lane script reported no package count
 For `linux-lane-container`, the next action is `repair the Linux Lane container
 cause in the blocker (Docker, the image, or delivery.linux_lane_image on the
 default branch), then run roundfix deliver retry <slug>`. A repository
-Verification failure still parks the bare `gate-failed` with its generic next
-action.
+Verification failure other than a full filesystem still parks the bare
+`gate-failed` with its generic next action.
 
 Cancelling the gate also removes the container and returns the context's error.
 With the setting off, the gate starts no Docker or Go process and emits no lane

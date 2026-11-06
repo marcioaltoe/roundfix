@@ -708,7 +708,7 @@ WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
 			)
 		}
 		retryIncrement := 1
-		if blocker, _, _ := strings.Cut(storedBlocker, ":"); blocker == "runtime-infrastructure" {
+		if blocker, _, _ := strings.Cut(storedBlocker, ":"); blocker == "runtime-infrastructure" || blocker == "disk-full" {
 			retryIncrement = 0
 		}
 		if retryIncrement != 0 && maxRetries != 0 && retryCount >= maxRetries {

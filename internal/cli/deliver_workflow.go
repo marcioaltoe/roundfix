@@ -78,6 +78,7 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
 		Reviewer:       workflow,
 		Recorder:       workflow,
 		Archiver:       workflow,
+		FreeSpace:      commandFreeSpaceChecker{loaded: loaded},
 		Gate:           workflow,
 		Authorizer:     workflow,
 		Publication:    workflow,
@@ -1715,8 +1716,13 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 	})
 	if err != nil {
 		var commandErr *daemon.VerificationCommandError
-		if errors.As(err, &commandErr) {
-			return delivery.GateResult{Passed: false, Reason: err.Error()}, nil
+		if errors.As(err, &commandErr) || errors.Is(err, syscall.ENOSPC) {
+			if full := diskFullFailure(ctx, workflow.loaded, err, outputPath); full != nil {
+				return delivery.GateResult{Passed: false, Reason: err.Error(), Blocker: full.Blocker()}, nil
+			}
+			if commandErr != nil {
+				return delivery.GateResult{Passed: false, Reason: err.Error()}, nil
+			}
 		}
 		return delivery.GateResult{}, err
 	}
@@ -1888,12 +1894,16 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 	if err != nil {
 		return "", err
 	}
+	outputPath := filepath.Join(artifactDir, "delivery", specSlug, "item-binary-build.log")
 	_, err = (daemon.ExecVerifier{}).Verify(ctx, daemon.VerifyRequest{
 		WorkDir:    workDir,
 		Command:    declaration.Build,
-		OutputPath: filepath.Join(artifactDir, "delivery", specSlug, "item-binary-build.log"),
+		OutputPath: outputPath,
 	})
 	if err != nil {
+		if full := diskFullFailure(ctx, workflow.loaded, err, outputPath); full != nil {
+			err = full
+		}
 		return "", fmt.Errorf("build item binary: %w", err)
 	}
 	executable, err := copyDeliveryItemBinary(filepath.Join(workDir, filepath.FromSlash(declaration.Path)), filepath.Join(artifactDir, "delivery", specSlug, "item-binary"))

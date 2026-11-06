@@ -89,9 +89,9 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 			if code != wantCode || code != baselineCode || stderr.String() != baselineErr.String() || stderr.Len() != 0 {
 				t.Fatalf("code=%d baseline=%d want=%d stderr=%q baseline stderr=%q", code, baselineCode, wantCode, stderr.String(), baselineErr.String())
 			}
-			expectedReads := []string{worktrees, cache}
+			expectedReads := []string{worktrees, cache, os.TempDir()}
 			if tc.missing {
-				expectedReads = []string{home, home}
+				expectedReads = []string{home, home, os.TempDir()}
 				for _, path := range []string{worktrees, cache} {
 					if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
 						t.Fatalf("missing location %q changed: %v", path, err)
@@ -103,9 +103,9 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 			}
 			line := ""
 			if tc.unreadable {
-				line = fmt.Sprintf("disk-space: warn (DR-DISK-UNREAD: could not read free space for worktree location %s: capacity denied; DR-DISK-UNREAD: could not read free space for Shared Build Cache %s: capacity denied)\n", worktrees, cache)
+				line = fmt.Sprintf("disk-space: warn (DR-DISK-UNREAD: could not read free space for worktree location %s: capacity denied; DR-DISK-UNREAD: could not read free space for Shared Build Cache %s: capacity denied; DR-DISK-UNREAD: could not read free space for temporary directory %s: capacity denied)\n", worktrees, cache, os.TempDir())
 			} else if tc.available < 10240*mib {
-				line = fmt.Sprintf("disk-space: warn (DR-DISK-LOW: worktree location %s has %d MiB free, below 10240 MiB; DR-DISK-LOW: Shared Build Cache %s has %d MiB free, below 10240 MiB; next: roundfix gc)\n", worktrees, tc.available/mib, cache, tc.available/mib)
+				line = fmt.Sprintf("disk-space: warn (DR-DISK-LOW: worktree location %s has %d MiB free, below 10240 MiB; DR-DISK-LOW: Shared Build Cache %s has %d MiB free, below 10240 MiB; DR-DISK-LOW: temporary directory %s has %d MiB free, below 10240 MiB; next: roundfix gc)\n", worktrees, tc.available/mib, cache, tc.available/mib, os.TempDir(), tc.available/mib)
 			}
 			const storageLine = "storage: ok (no Run Database)\n"
 			if !strings.Contains(baseline.String(), storageLine) {

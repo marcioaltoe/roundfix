@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-26T00:00:00Z
-updated_at: 2026-10-26T00:00:00Z
+updated_at: 2026-11-06T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -43,6 +43,8 @@ changes their outcome.**
   beyond the budget. An Implement Run records one `daemon.status` Run Event
   per declared cache with the outcome and its cause; the queue writes one
   line per cache to the Queue Owner's log.
+
+**Amended by [ADR-0370](0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md) (2026-11-06).** The Delivery Queue now reads free space before an item's Implement Run and its repository gate and warns below the Free-Space Floor, and a full filesystem during the Item Binary build or the gate parks the item as a Disk-Full Park. Neither refuses to start a Run, so the deferred floor of the Considered Options stays deferred.
 
 ## Considered Options
 

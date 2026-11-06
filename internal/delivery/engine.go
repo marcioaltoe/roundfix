@@ -42,6 +42,8 @@ const (
 	BlockerArchivedItemUnproven   = "archived-item-unproven"
 )
 
+const WarningLowDisk = "low-disk"
+
 const WarningPremiseChanged = "premise-changed"
 const WarningLinuxLaneSkipped = "linux-lane-skipped"
 
@@ -378,6 +380,12 @@ type ConflictResolution struct {
 	SourcePaths, Regenerated []string
 }
 
+type FreeSpaceChecker interface {
+	// LowFreeSpace names each inspected location below the Free-Space Floor,
+	// as "<label> <path> has <N> MiB free, below 10240 MiB".
+	LowFreeSpace(ctx context.Context) []string
+}
+
 type EngineDependencies struct {
 	TurnRecorder     TurnRecorder
 	ReviewCapacity   int
@@ -393,6 +401,7 @@ type EngineDependencies struct {
 	Reviewer       PrePRReviewer
 	Recorder       PullRequestRecorder
 	Archiver       CandidateArchiver
+	FreeSpace      FreeSpaceChecker
 	Gate           RepositoryGate
 	Authorizer     AuthorizationReader
 	Publication    PublicationPlanner
@@ -434,6 +443,7 @@ type Engine struct {
 	prerequisites  PrerequisiteReader
 	store          *store.Store
 	workspace      ItemWorkspace
+	freeSpace      FreeSpaceChecker
 	runner         CandidateRunner
 	reviewer       PrePRReviewer
 	recorder       PullRequestRecorder
@@ -504,6 +514,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		store:          runStore,
 		prerequisites:  dependencies.Prerequisites,
 		workspace:      dependencies.Workspace,
+		freeSpace:      dependencies.FreeSpace,
 		runner:         dependencies.Runner,
 		reviewer:       dependencies.Reviewer,
 		recorder:       dependencies.Recorder,
@@ -624,7 +635,7 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 			queue.Limits.Deadline.UTC().Format(time.RFC3339),
 		)
 	}
-	if !blockerMatches(item.Blocker, BlockerRuntimeInfrastructure) && queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
+	if !blockerMatches(item.Blocker, BlockerRuntimeInfrastructure) && !blockerMatches(item.Blocker, BlockerDiskFull) && queue.Limits.MaxRetries != 0 && item.RetryCount >= queue.Limits.MaxRetries {
 		return RetryResult{}, fmt.Errorf(
 			"retry Delivery Queue item %q: retry count %d reached queue limit %d: %w",
 			specSlug,
@@ -962,7 +973,7 @@ func (engine *Engine) Run(ctx context.Context, gitRoot string) (EngineResult, er
 					if ctx.Err() != nil {
 						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, err)
 					}
-					reason := BlockerDeliveryError + ": " + err.Error()
+					reason := stepErrorBlocker(err)
 					if parkErr := engine.park(ctx, gitRoot, &item, reason); parkErr != nil {
 						return EngineResult{}, fmt.Errorf("deliver Spec %q: %w", item.SpecSlug, errors.Join(err, parkErr))
 					}
@@ -1262,7 +1273,40 @@ func mergedCommitsBefore(items []store.DeliveryQueueItem, index int) []string {
 	return commits
 }
 
+func (engine *Engine) checkFreeSpace(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, phase string) error {
+	if engine.freeSpace == nil {
+		return nil
+	}
+	locations := engine.freeSpace.LowFreeSpace(ctx)
+	remaining, laneSkip := laneSkipWarning(item.Warning)
+	var segments []string
+	for _, segment := range strings.Split(remaining, "; ") {
+		if segment != "" && !strings.HasPrefix(segment, WarningLowDisk+":") {
+			segments = append(segments, segment)
+		}
+	}
+	if len(locations) != 0 {
+		warning := WarningLowDisk + ": " + strings.Join(locations, ", ")
+		segments = append(segments, warning)
+		fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s before its %s; the queue continues\n", item.SpecSlug, warning, phase)
+	}
+	if laneSkip != "" {
+		segments = append(segments, WarningLinuxLaneSkipped+": "+laneSkip)
+	}
+	warning := strings.Join(segments, "; ")
+	if warning != item.Warning {
+		item.Warning = warning
+		if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {
+			return fmt.Errorf("record low-disk warning: %w", err)
+		}
+	}
+	return nil
+}
+
 func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	if err := engine.checkFreeSpace(ctx, gitRoot, item, "Implement Run"); err != nil {
+		return err
+	}
 	workDir, err := itemWorkDir(*item)
 	if err != nil {
 		return err
@@ -1458,6 +1502,9 @@ func (engine *Engine) archiveCandidate(ctx context.Context, gitRoot string, item
 }
 
 func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
+	if err := engine.checkFreeSpace(ctx, gitRoot, item, "repository gate"); err != nil {
+		return err
+	}
 	workDir, err := itemWorkDir(*item)
 	if err != nil {
 		return err
