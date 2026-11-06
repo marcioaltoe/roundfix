@@ -204,7 +204,7 @@ retries per item. Omitted limits are recorded as `none`. Start and status print
 the recorded values as:
 
 ```text
-Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, tokens <n|none>
+Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, review concurrency <n>, tokens <n|none>
 ```
 
 `deliver start` prints the limits line after any continuation lines.
@@ -212,7 +212,7 @@ Limits: deadline <RFC 3339 UTC|none>, retries per item <n|none>, concurrency 1, 
 Runs from earlier retries:
 
 ```text
-Limits: deadline none, retries per item none, concurrency 1, tokens none
+Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none
 Usage: 5639755 tokens from 1 of 1 prompt(s) across 1 Run(s); cost not reported
 ```
 
@@ -222,6 +222,13 @@ across <k> Run(s); cost not reported`. A queue with no linked Runs prints
 recorded` across their Run count. A Run in progress contributes once the queue
 records it at Run end. Reported cost is grouped by currency; Roundfix computes
 no prices. See [Token usage](../usage.md#token-usage).
+
+`concurrency 1` is the one item the Queue Owner advances at a time through
+every stage except the pre-PR review. `review concurrency <n>` is the Review
+Capacity, `delivery.review_concurrency` in User Config (`2` by default): the
+owner reviews up to that many items in `reviewing` at once, beside that item.
+The owner reads the value when it starts; stop and resume the owner to apply a
+change.
 
 At or after the deadline, the owner parks each item that has not started as
 `queue-deadline`; an item that has started continues. A `queue-deadline` item
@@ -439,6 +446,41 @@ be checked, status adds no `Owner:` line and writes
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
 
+An item's stage is the step it is at, not proof that the step is running: a
+Delivery Retry records `reviewing` before any review starts. A queued item
+starts its Implement Run only when no earlier item is between its Implement Run
+and its merge, and never ahead of an earlier queued item; an earlier item that
+is parked, merged or waiting only for its prerequisites does not hold it. A
+live owner finds an item a retry returned to `reviewing` within 30 seconds and
+reviews it in a free review slot, even while it is inside another item's
+Implement Run; a reviewed item then waits for the owner's turn for its archive,
+gate, publication and merge.
+
+For a Queue Owner it proves live, status reads the owner's Turn Record,
+`turn.json` beside its console log, and prints one line per item that is
+neither `merged` nor `parked`, in queue order, after any `Warning:` lines and
+before any `Park:` lines:
+
+```text
+Turn: <slug> advancing at <stage>
+Turn: <slug> reviewing; <held> of <capacity> review slot(s) held
+Turn: <slug> waiting for a review slot (<n> of <m> waiting); <held> of <capacity> review slot(s) held
+Turn: <slug> waiting for prerequisites: <slug>, <slug>
+Turn: <slug> waiting for the owner's turn (<n> of <m> waiting)
+Turn: <slug> waiting for the owner to read it
+```
+
+`<n> of <m> waiting` is the item's place in line: for a review slot by queue
+position, for the owner's turn in the order the owner will visit the items,
+starting after the item it advances. The last form names an item whose stage
+changed after the owner last wrote its record, such as one just retried. An
+owner that is not proven live, a record of another PID or identity, or no
+record prints no `Turn:` line; a record that cannot be read writes
+`roundfix: Delivery Queue turn record <path> could not be read: <error>` to
+stderr, and status still exits `0`.
+
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the six the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+
 After any `Owner:` line and before `Limits:`, it prints one line per parked
 item in queue order, except `queue-token-ceiling` (see Token usage below):
 
@@ -619,6 +661,8 @@ missing item branch, a moved archived head without accepted recovery evidence,
 a refused carry-forward, a recorded Pull Request closed without merging, a failed
 merge observation, or an owner hand-off failure exits `2` and starts no owner.
 An item-level refusal leaves the stored item unchanged.
+
+When the retried item returns to `reviewing` and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver retry` prints the same `Review:` line right after `Retried <slug>: <blocker> -> reviewing`, before the owner runs the review.
 
 A recorded Pull Request closed without merging, with no merge evidence on the
 local default branch, refuses the retry with this reason:

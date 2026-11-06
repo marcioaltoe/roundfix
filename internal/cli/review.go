@@ -767,6 +767,17 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 				return code
 			}
 		}
+		if plan.Lineage.Round == 2 && plan.Lineage.PreviousHead != "" {
+			deltaBase, _, err := reviewMeasuredFrom(ctx, gitRunner, gitState.Root, baseCommit, plan.Lineage.PreviousHead, gitState.HEAD)
+			if err != nil {
+				printReviewCommandFailure(err, stderr)
+				return exitPreflight
+			}
+			plan.Lineage.DeltaBase = ""
+			if deltaBase != plan.Lineage.PreviousHead {
+				plan.Lineage.DeltaBase = deltaBase
+			}
+		}
 		if plan.Reuse && plan.Lineage.Correction && prior.Outcome == reviewOutcomeReviewed {
 			prior.Reused = true
 			return finishReviewCommand(stdout, stderr, artifactDir, *prior, exitOK)
@@ -1362,12 +1373,16 @@ func runConfiguredReviewSession(
 	measuredBase, measuredDiff := baseCommit, diff
 	prompt := buildReviewPrompt(baseCommit, headCommit, diff, omitted)
 	if plan.Lineage.Round == 2 {
-		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, plan.Lineage.PreviousHead, headCommit, specRoots, gitRunner, baseCommit)
+		deltaBase := plan.Lineage.PreviousHead
+		if plan.Lineage.DeltaBase != "" {
+			deltaBase = plan.Lineage.DeltaBase
+		}
+		delta, deltaOmitted, deltaErr := reviewScopedDiff(ctx, gitRoot, deltaBase, headCommit, specRoots, gitRunner, baseCommit)
 		if deltaErr != nil {
 			return agent.ExecuteResult{}, scope, false, deltaErr
 		}
 		scope.diffBytes, scope.omittedPaths = len(delta), deltaOmitted
-		measuredBase, measuredDiff = plan.Lineage.PreviousHead, delta
+		measuredBase, measuredDiff = deltaBase, delta
 		if plan.Lineage.Correction {
 			prompt = buildCorrectionReviewPrompt(plan, delta)
 		} else {

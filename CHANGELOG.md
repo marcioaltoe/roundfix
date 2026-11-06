@@ -2,6 +2,22 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.134.0] - 2026-11-05
+
+### A queue item shows its turn, and the pre-PR review gets its own capacity
+
+- **`roundfix deliver status` prints one `Turn:` line per item that is neither merged nor parked**, from the live owner's Turn Record: `advancing at <stage>`, `reviewing; <held> of <capacity> review slot(s) held`, `waiting for a review slot (<n> of <m> waiting)`, `waiting for prerequisites: <slugs>`, `waiting for the owner's turn (<n> of <m> waiting)` or `waiting for the owner to read it`. A stage keeps its meaning, the next step; the `Turn:` line says whether it runs or waits. Before, an item at `reviewing` looked like a running review while it waited for another item's whole delivery (reported by fiscus; ADR-0365).
+- **The pre-PR review runs in review slots beside the owner's item.** Up to `delivery.review_concurrency` reviews (User Config, default `2`, at least `1`; ignored with a warning in Project Config) run in read-only sessions on their own item worktrees, and a poller hands retried items at `reviewing` to the slots every 30 seconds. Order is kept: a queued item starts only when no earlier item is between its Implement Run and its merge; archive, gate, publication, check wait and merge stay one item at a time.
+- **The `Limits:` line names the review concurrency**: `concurrency 1, review concurrency <n>`. A script that matches the whole line sees the new field.
+
+## [0.133.1] - 2026-11-05
+
+### A main merge is a review delta, and a segment is measured from its Effective Base
+
+- **A conflict-free merge of the default branch keeps the pre-PR review's Reviewer Lineage.** When the head descends from the reviewed head, the new merge base descends from the recorded one, every merge since brings in only default-branch commits and the reviewed head carries onto the new base without conflict, the next round reads only the item's own delta, starting from that carried tree (`lineage.deltaBase`). Before, merging main into an item before a retry opened round 1 and reviewed everything again, with new findings (reported by fiscus; ADR-0366, which amends ADR-0197, ADR-0282, ADR-0286 and ADR-0352). A rebase or any other move of the merge base still starts round 1.
+- **Review Segments are measured from each commit's Effective Base**, its merge base with the current default branch. A commit cut from an old default branch shows only its own change instead of the default branch's work as reverted, so it no longer blocks the review by size; a segment measured elsewhere records `measuredFrom`. A single commit or a fifth segment that still exceeds its bound blocks as before.
+- **`roundfix deliver status` and `roundfix deliver retry` print a `Review:` line before a review that will restart at round 1**, naming the head and one of six reasons.
+
 ## [0.133.0] - 2026-11-05
 
 ### runs list reads as a table, and the Run Browser draws, at a terminal

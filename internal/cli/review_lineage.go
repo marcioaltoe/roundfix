@@ -14,6 +14,7 @@ type reviewLineage struct {
 	Round                int                        `json:"round"`
 	Correction           bool                       `json:"correction,omitempty"`
 	PreviousHead         string                     `json:"previousHead,omitempty"`
+	DeltaBase            string                     `json:"deltaBase,omitempty"`
 	PreviousFindings     []reviewFinding            `json:"previousFindings,omitempty"`
 	PreviousDispositions []reviewFindingDisposition `json:"previousDispositions,omitempty"`
 	ReviewedHead         string                     `json:"reviewedHead,omitempty"`
@@ -28,6 +29,7 @@ type reviewLineagePlan struct {
 	Lineage   reviewLineage
 	Reuse     bool
 	Ceiling   bool
+	Restart   string
 	prior     *reviewRecord
 	candidate reviewRecord
 	ctx       context.Context
@@ -35,17 +37,74 @@ type reviewLineagePlan struct {
 
 func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate reviewRecord, git preflight.GitRunner) (reviewLineagePlan, error) {
 	plan := reviewLineagePlan{Lineage: reviewLineage{Round: 1}, candidate: candidate, ctx: ctx}
-	if prior == nil || !sameReviewCheckout(prior.Repository, candidate.Repository) || prior.Provider != candidate.Provider || prior.BaseCommit != candidate.BaseCommit {
+	if prior == nil || !sameReviewCheckout(prior.Repository, candidate.Repository) {
 		return plan, nil
 	}
-	if prior.HeadCommit != candidate.HeadCommit {
-		if _, err := git.RunGit(ctx, candidate.Repository, "merge-base", "--is-ancestor", prior.HeadCommit, candidate.HeadCommit); err != nil {
+	if prior.Provider != candidate.Provider {
+		plan.Restart = fmt.Sprintf("the review provider changed from %s to %s", prior.Provider, candidate.Provider)
+		return plan, nil
+	}
+	isAncestor := func(from, to string) (bool, error) {
+		if _, err := git.RunGit(ctx, candidate.Repository, "merge-base", "--is-ancestor", from, to); err != nil {
 			// Exit 1 means non-ancestry. Other Git failures must not silently reset the ceiling.
 			var exitErr interface{ ExitCode() int }
 			if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-				return plan, nil
+				return false, nil
 			}
-			return plan, fmt.Errorf("check review lineage ancestry: %w", err)
+			return false, fmt.Errorf("check review lineage ancestry: %w", err)
+		}
+		return true, nil
+	}
+	if prior.HeadCommit != candidate.HeadCommit {
+		descends, err := isAncestor(prior.HeadCommit, candidate.HeadCommit)
+		if err != nil {
+			return plan, err
+		}
+		if !descends {
+			plan.Restart = fmt.Sprintf("the head does not descend from the reviewed head %s", prior.HeadCommit)
+			return plan, nil
+		}
+	}
+	if prior.BaseCommit != candidate.BaseCommit {
+		if prior.HeadCommit == candidate.HeadCommit {
+			plan.Restart = fmt.Sprintf("the merge base moved from %s to %s at the reviewed head", prior.BaseCommit, candidate.BaseCommit)
+			return plan, nil
+		}
+		descends, err := isAncestor(prior.BaseCommit, candidate.BaseCommit)
+		if err != nil {
+			return plan, err
+		}
+		if !descends {
+			plan.Restart = fmt.Sprintf("the merge base moved from %s to %s, which does not descend from it", prior.BaseCommit, candidate.BaseCommit)
+			return plan, nil
+		}
+		merges, err := git.RunGit(ctx, candidate.Repository, "rev-list", "--first-parent", "--merges", "--parents", "--reverse", prior.HeadCommit+".."+candidate.HeadCommit)
+		if err != nil {
+			return plan, fmt.Errorf("list review lineage merges: %w", err)
+		}
+		for _, merge := range strings.Split(strings.TrimSpace(merges), "\n") {
+			parents := strings.Fields(merge)
+			if len(parents) == 0 {
+				continue
+			}
+			for _, parent := range parents[2:] {
+				contained, err := isAncestor(parent, candidate.BaseCommit)
+				if err != nil {
+					return plan, err
+				}
+				if !contained {
+					plan.Restart = fmt.Sprintf("the merge base moved from %s to %s through merge %s of %s, which the default branch does not contain", prior.BaseCommit, candidate.BaseCommit, parents[0], parent)
+					return plan, nil
+				}
+			}
+		}
+		_, carried, err := reviewMeasuredFrom(ctx, git, candidate.Repository, candidate.BaseCommit, prior.HeadCommit, candidate.HeadCommit)
+		if err != nil {
+			return plan, err
+		}
+		if !carried {
+			plan.Restart = fmt.Sprintf("the merge base moved from %s to %s and the reviewed head %s conflicts with it", prior.BaseCommit, candidate.BaseCommit, prior.HeadCommit)
+			return plan, nil
 		}
 	}
 	plan.prior = prior
@@ -113,6 +172,9 @@ func buildCorrectionReviewPrompt(plan reviewLineagePlan, delta string) string {
 	var prompt strings.Builder
 	prompt.WriteString(header)
 	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review.\nThis is the Correction Review of this candidate: round 2 reviewed %s and raised the findings below, each fixed by the commit named. The diff below is the change since %s; it is reviewed once and no further review of this candidate follows.\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
+	if plan.Lineage.DeltaBase != "" {
+		fmt.Fprintf(&prompt, "The candidate merged the default branch since then; the diff starts from tree %s, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.\n", plan.Lineage.DeltaBase)
+	}
 	for _, finding := range plan.Lineage.PreviousFindings {
 		for _, d := range plan.Lineage.PreviousDispositions {
 			if d.Finding == finding.ID && d.Text == finding.Text {
@@ -135,7 +197,11 @@ func buildRoundTwoPrompt(plan reviewLineagePlan, delta string, previous []review
 	header, _, _ = strings.Cut(header, "\n\n--- BEGIN CANDIDATE DIFF ---")
 	var prompt strings.Builder
 	prompt.WriteString(header)
-	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review. The diff below is the change since round 1 reviewed %s.\nRound 1 findings:\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
+	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review. The diff below is the change since round 1 reviewed %s.\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
+	if plan.Lineage.DeltaBase != "" {
+		fmt.Fprintf(&prompt, "The candidate merged the default branch since then; the diff starts from tree %s, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.\n", plan.Lineage.DeltaBase)
+	}
+	prompt.WriteString("Round 1 findings:\n")
 	for _, finding := range previous {
 		validation := "stands"
 		if reviewFindingDismissedByValidation(finding) {

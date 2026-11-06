@@ -855,8 +855,20 @@ A Linux Lane failure attributed to the candidate: its Go test run, or the `go li
 _Avoid_: container failure, generic gate failure
 
 **Queue Owner**:
-The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, waiting on each Prerequisite Spec; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one. When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
+The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, one item at a time through every stage except the pre-PR review, which it runs for up to its Review Capacity of items at once. It waits on each Prerequisite Spec and starts a queued item only when no earlier item is between its Implement Run and its merge; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one, and a live owner finds a retried item within 30 seconds ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)). When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Scheduler, daemon, deliver loop
+
+**Review Capacity**:
+The maximum number of pre-PR reviews one Queue Owner runs at the same time, beside the one item it advances through every other stage. It is set by `delivery.review_concurrency` in User Config and is `2` by default; each review reads only its own item worktree in a read-only session, so it never waits for the Implement Run of another item ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Verification Capacity, Task Capacity, review pool
+
+**Queue Turn**:
+Where a Delivery Queue item that is neither merged nor parked stands with its Queue Owner: advancing in the owner's turn, reviewing in one of the Review Capacity's slots, or waiting for the owner's turn, a review slot or its prerequisites, with its place in line. `roundfix deliver status` prints it on one `Turn:` line per item from the Turn Record ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Queue position, waiting stage, capacity wait
+
+**Turn Record**:
+The file `turn.json` beside a Queue Owner's console log, in which a live owner records the Queue Turn of every item it has not finished with its PID, start-time identity and Review Capacity. `roundfix deliver status` reads it only for a Queue Owner it proves live, and the Run Database gains no column for it ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)).
+_Avoid_: Turn column, owner log
 
 **Delivery Plan**:
 The read-only account of which Specs have delivery authority, what blocks the others and which production premises ordered Specs share. It reports a prepared queue without recording or running one.
@@ -959,8 +971,12 @@ A line of a non-QA Task's `## Result` that reports the Task's status as `in_prog
 _Avoid_: Status contradiction, stale status, Result status claim
 
 **Review Segment**:
-One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound or, for Claude, whose prompt exceeds its token budget, each within the applicable bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md), [ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
+One of at most four consecutive first-parent commit ranges of a pre-PR review candidate whose diff exceeds the review bound or, for Claude, whose prompt exceeds its token budget, each measured from its Effective Base and within the applicable bound and reviewed in order in one review session, whose findings form one Pre-PR Review Record ([ADR-0282](docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md), [ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md), [ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md)).
 _Avoid_: Review round, independent review
+
+**Effective Base**:
+The merge base of one candidate commit with the Delivery Base: the commit of the default branch it was cut from or last merged. The pre-PR review measures each Review Segment and each round-2 delta from it, carrying the earlier commit's own change onto it, so neither shows the default branch's work as the candidate's ([ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md)).
+_Avoid_: Segment base, merge base of the segment
 
 **Review Omit Path**:
 A Project Config path in `pre_pr_review.omit_paths` at the review base whose matching changed files the pre-PR review leaves out with reason `omit-path`, distinct from a Derived Path Declaration ([ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
@@ -971,7 +987,7 @@ The one review of the fix after round 2 when every standing round-2 finding has 
 _Avoid_: Third round, new review lineage
 
 **Reviewer Lineage**:
-The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it. It may include one Correction Review when every standing round-2 finding was fixed ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md), [ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md)).
+The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it. A conflict-free merge of the default branch keeps it, and the delta then starts from the round-1 head carried onto the new merge base. It may include one Correction Review when every standing round-2 finding was fixed ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md), [ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md), [ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md)).
 _Avoid_: Review cache, third round
 
 **Turn Usage**:

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-17T00:00:00Z
-updated_at: 2026-10-20T09:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -106,3 +106,5 @@ ADR-0281's rule from tests to the Delivery Queue.
 **Amended by [ADR-0299](0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md) (2026-10-20).** The lineage line names a retired ADR whose file name is not `NNNN-<slug>.md` by that file name without `.md`, never by its leading digits, and the numeric forms of `superseded_by` and `supersedes` select only numbered ADRs. The line is dated with the day the ADR was superseded: its `updated_at` in UTC, else the committer date of the newest commit that changed it, and the planned `HEAD`'s committer date only when neither exists. The `live-links` unit leaves a link to a file a pending Task declares in `creates:`, and it resolves a missing link by its file name when exactly one removed history file has that name.
 
 **Amended by [ADR-0352](0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md) (2026-11-03).** Claude round 1 is segmented too and `pre_pr_review.omit_paths` joins the base-commit omissions.
+
+**Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** Each Review Segment, and each commit within it, is measured from its Effective Base, so a commit cut from an older default branch or a conflict-free merge of the default branch no longer shows the default branch's work; a commit still above the bound measured that way still blocks.

@@ -149,7 +149,8 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return nil
 	}
 
-	if _, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot); err != nil {
+	queue, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot)
+	if err != nil {
 		reason := fmt.Errorf("retry Delivery Queue item %q: read queue: %w", specSlug, err)
 		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, reason, stderr)
 	} else if !found {
@@ -167,6 +168,16 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return printDeliverRetryRefusal(ctx, runStore, loaded.GitRoot, specSlug, err, stderr)
 	}
 
+	var reviewNotice string
+	if result.Stage == store.DeliveryStageReviewing {
+		for _, item := range queue.Items {
+			if item.SpecSlug == specSlug {
+				reviewNotice = reviewLineageNotice(ctx, dependencies.reviewSpecGitRunner, loaded, specSlug, item.Worktree)
+				break
+			}
+		}
+	}
+
 	if result.OwnerPID > 0 {
 		ownerState := "is not running"
 		if store.ProcessAlive(result.OwnerPID) {
@@ -180,6 +191,9 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 					return printDeliverFailure("retry", err, stderr)
 				}
 				printDeliverRetryResult(stdout, specSlug, result)
+				if reviewNotice != "" {
+					fmt.Fprintln(stdout, reviewNotice)
+				}
 				fmt.Fprintf(stdout, "Handed %s to Delivery Queue owner PID %d.\n", specSlug, result.OwnerPID)
 				return exitOK
 			case proofErr == nil:
@@ -213,6 +227,9 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 		return printDeliverFailure("retry", err, stderr)
 	}
 	printDeliverRetryResult(stdout, specSlug, result)
+	if reviewNotice != "" {
+		fmt.Fprintln(stdout, reviewNotice)
+	}
 	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
 
@@ -374,7 +391,7 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 			fmt.Fprintf(stdout, "Continuing item branch %s for %s\n", branch, slug)
 		}
 	}
-	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
 }
 
@@ -416,8 +433,19 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stdout, "Warning: %s %s\n", item.SpecSlug, item.Warning)
 		}
 	}
-	if line := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr); line != "" {
-		fmt.Fprintln(stdout, line)
+	for _, item := range queue.Items {
+		if item.Stage == store.DeliveryStageParked || item.Stage == store.DeliveryStageReviewing {
+			if line := reviewLineageNotice(ctx, commandDependenciesForContext(ctx).reviewSpecGitRunner, loaded, item.SpecSlug, item.Worktree); line != "" {
+				fmt.Fprintln(stdout, line)
+			}
+		}
+	}
+	ownerLine, ownerLive := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr)
+	if ownerLine != "" {
+		fmt.Fprintln(stdout, ownerLine)
+	}
+	if ownerLive {
+		printDeliveryTurns(loaded, queue, stdout, stderr)
 	}
 	for _, item := range queue.Items {
 		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
@@ -429,7 +457,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return printDeliverFailure("status", err, stderr)
 	}
-	printDeliveryLimits(stdout, queue.Limits)
+	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	printDeliveryUsage(stdout, report.Total)
 	if question, found := delivery.PendingQuestionFor(queue); found {
 		fmt.Fprintf(stdout, "Pending question: %s parked %s\n", question.SpecSlug, question.Blocker)
@@ -441,9 +469,9 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	return exitOK
 }
 
-func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) string {
+func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) (string, bool) {
 	if queue.OwnerPID <= 0 {
-		return ""
+		return "", false
 	}
 	canAdvance := false
 	for _, item := range queue.Items {
@@ -453,7 +481,7 @@ func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controlle
 		}
 	}
 	if !canAdvance {
-		return ""
+		return "", false
 	}
 
 	state := "is not running"
@@ -466,20 +494,20 @@ func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controlle
 		}
 		switch {
 		case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
-			return ""
+			return "", true
 		case proofErr == nil:
 			// The process exited between the liveness check and identity proof.
 		case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
 			state = "has a different process identity"
 		default:
 			fmt.Fprintf(stderr, "roundfix: Delivery Queue owner PID %d could not be checked: %v\n", queue.OwnerPID, proofErr)
-			return ""
+			return "", false
 		}
 	}
-	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state)
+	return fmt.Sprintf("Owner: Delivery Queue owner PID %d %s; run roundfix deliver resume", queue.OwnerPID, state), false
 }
 
-func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
+func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits, reviewConcurrency int) {
 	deadline := "none"
 	if !limits.Deadline.IsZero() {
 		deadline = limits.Deadline.UTC().Format(time.RFC3339)
@@ -494,9 +522,10 @@ func printDeliveryLimits(output io.Writer, limits store.DeliveryQueueLimits) {
 	}
 	fmt.Fprintf(
 		output,
-		"Limits: deadline %s, retries per item %s, concurrency 1, tokens %s\n",
+		"Limits: deadline %s, retries per item %s, concurrency 1, review concurrency %d, tokens %s\n",
 		deadline,
 		retries,
+		reviewConcurrency,
 		tokens,
 	)
 }
