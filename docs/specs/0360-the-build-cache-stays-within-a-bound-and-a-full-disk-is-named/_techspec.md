@@ -169,9 +169,11 @@ strings carry the new `disk-full` blocker and `low-disk` segment.
      `test-budget`, `test-race`, `build`, `run`, `version`,
      `verify-changed-core`, `verify-changed-baseline`,
      `verify-changed-contracts`, `verify-contracts`, `docs-test`,
-     `repo-test`, `spec-budget` and `baseline-digests`; `install`, `verify`,
+     `repo-test` and `spec-budget`; `install`, `verify`,
      `verify-changed`, `verify-incremental` and `verify-docs` reach it
-     through those. Every other recipe keeps its bytes.
+     through those. `baseline-digests` is not bounded: it compiles nothing
+     heavy, and its contract test substitutes `GO`, which the bound would
+     run before the target takes its snapshot. Every other recipe keeps its bytes.
 2. API Contract: `gocache-bound`. Flags `-dir` (absolute, required),
    `-max-mb` (a positive MiB count whose bytes fit an `int64`) and `-idle`
    (a Go duration of at least `sharedcache.MinimumIdle`); any other argument,

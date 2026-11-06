@@ -212,7 +212,7 @@ BASELINE_DIGEST_STEPS := \
 	./internal/baseline:^TestCatalogDiagnosticCharacterization$$:-update-catalog-diagnostics \
 	./internal/baseline:TestBaselinePlanCharacterization:-update-baseline-plan-characterization
 
-baseline-digests: gocache-bound ## Regenerate derived Baseline digest artifacts
+baseline-digests: ## Regenerate derived Baseline digest artifacts
 	@raw=""; snapshot=""; \
 	err_code="temp_file_unavailable"; err_stage="snapshot-allocation"; err_retryable="true"; \
 	err_next="Free space in the temporary directory or point TMPDIR at a writable one, then rerun make baseline-digests."; \
