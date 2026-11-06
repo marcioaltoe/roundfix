@@ -1,9 +1,0 @@
-Outside source: Fluxus report, authored 2026-11-05 08:05 BRT before this Spec; ai-memory message 01a1ab62-5139-7dc3-9b92-472690a044f9, gesttione-solutions/fluxus, Roundfix 0.132.0, Fluxus PR #462. Retained offline adopted reference: docs/specs/0354-an-external-skill-is-checked-only-for-presence/references/2026-11-05-only-roundfix-owned-skills-are-checked-by-digest-or-version.md
-
-PASS external Fluxus source date and source message
-PASS original observed warning and field
-PASS assembled public CLI now omits warning/field
-PASS reproduction and JSON rows passed
-
-Prior observation: skills: ok (89 required: 12 Roundfix-owned, 77 external; DR-SKILL-DIFFERS-FROM-SNAPSHOT: ... systematic-debugging, ui-ux-pro-max); baseline listed skills.differing and restore advice.
-Current scratch repository uses its own profile and testing-boss, not the Fluxus repository: the same content-mismatch trigger now yields plain skills: ok, preview exit 0 and JSON with no differing member. This is local regression evidence against the externally measured report, not a claim that Fluxus was accessed.

@@ -1,8 +1,0 @@
-$ ./bin/roundfix baseline update --no-history --format json
-exit: 0
-stdout:
-{"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":true,"state":"current","message":"the repository already matches the current Baseline catalog","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a143bea7ff2eaf009fea9059ea9c0b7b8d8e1193d3c4e01fa176f4138a09c934"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:a143bea7ff2eaf009fea9059ea9c0b7b8d8e1193d3c4e01fa176f4138a09c934"},"fileChanges":[],"retention":[],"warnings":[{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"},{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"}],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:d16e7cfeb475425774f5d6935dc4cbdda0bebd2572e021dc4f7eb4d8aabde79e","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[]}}
-
-stderr:
-
-Parsed result: no differing member at any depth; testing-boss absent from missing; complete fixture unchanged.
