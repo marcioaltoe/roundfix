@@ -1057,7 +1057,7 @@ func classifyMarkedCarrier(
 	return carrierCurrentManaged
 }
 
-var carrierMarkerLine = regexp.MustCompile(`(?m)^ {0,3}<!--\s*setup-context-driven:(?:begin|end)`)
+var carrierMarkerLine = regexp.MustCompile(`(?m)^ {0,3}<!--[ \t]*setup-context-driven:(?:begin|end)`)
 
 func hasMarkerLine(content []byte) bool {
 	return carrierMarkerLine.Match(content)

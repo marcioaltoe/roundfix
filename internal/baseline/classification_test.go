@@ -664,6 +664,8 @@ func TestAMarkerLineIsACommentThatStartsALine(t *testing.T) {
 				{"tab indentation", "\t" + comment, false},
 				{"no comment whitespace", "<!--setup-context-driven:" + marker + " -->", true},
 				{"tab after comment opener", "<!--\tsetup-context-driven:" + marker + " -->", true},
+				{"comment opener on the previous line", "<!--\nsetup-context-driven:" + marker + " -->", false},
+				{"blank line after comment opener", "<!--\n\nsetup-context-driven:" + marker + " -->", false},
 				{"code span in sentence", "The `" + comment + "` marker is prose.", false},
 				{"inline comment", "Prose " + comment, false},
 				{"bare name", "setup-context-driven", false},
