@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0361-a-session-starts-with-an-update-check-and-the-update-mode-applies-it
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -147,3 +147,81 @@ indexes, the Skill Coverage Map and the glossary describe it.
 - `_prd.md` → Goals 1 and 2; Core Features 2 and 5; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 7; Acceptance evidence; Glossary
 - `_techspec.md` → Current behavior 1, 2 and 4; Interfaces; Data Models; API Contracts 2 to 7; API Contract 8; API Contract 10; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Invariants 1 to 4 and 6; Declared breaks; Testing Approach; Build Order 2
 - ADR-0371
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented the read-only Update Check through the command dependency context,
+with one stable-release listing, a schema-versioned daily cache, exact text
+transcripts and JSON output, and the existing Baseline preview called in
+process with only `--repo <git root> --format json`. The lookup has a
+five-second cancelling timeout; failed lookups are cached too. Development
+builds skip lookup and cache access. Usage and invalid configuration use the
+existing preflight failure contract.
+
+Acceptance-criterion evidence:
+
+- Newer releases: `TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases`
+  checks the endpoint, numeric version order, normalized versions, heading
+  extraction, URL fallback input, and excluded drafts/prereleases.
+  `TestUpdateCheckTranscripts` checks complete stdout, empty stderr and exit
+  `0` for every authored row, both modes, current/ahead, unknown, development,
+  truncation, untitled releases and JSON. Additional rows cover no releases,
+  an empty listing and the 300-character Unicode error bound.
+- Daily lookup: `TestUpdateCheckReadsTheNetworkAtMostOncePerDay` checks the
+  last nanosecond within a day, the exact 24-hour boundary, refresh, and a
+  cached failure, including lookup source, cache schema/time and `0644`
+  permissions. `TestUpdateCheckCacheFailuresAndDevelopmentIsolation` covers
+  malformed/wrong-schema/future caches, cache read/write errors, and a
+  development build leaving an existing cache untouched.
+  `TestUpdateCheckLookupTimeoutContinues` uses virtual time to prove the
+  lookup ends after five seconds and its cached timeout is not retried.
+- Baseline: `TestUpdateCheckSummarizesTheBaselinePreview` checks current,
+  plan-ready, no-manifest and outside-repository reports, resolves a nested
+  working directory to the Git root, and compares the summary against the
+  real preview. Its additional count fixture has one history unit and one
+  each of outdated, missing and retired skills. Repository tree bytes/modes
+  and Git status are unchanged after the JSON and text checks, including the
+  stale-repository `writes nothing` row.
+- Documentation: added the command guide, both indexes, the exact setup
+  paragraph and index cell, the two authored coverage entries, and the
+  exact Update Check glossary entry with its accepted ADR link. The mirror
+  was generated; both Roundfix skill copies now declare `0.1.201`, raised
+  and recorded by the sanctioned recorder. The Behavior Surface Record was
+  regenerated after the final guide/help/skill edit.
+
+Focused checks and regeneration:
+
+- Initial `go test ./internal/app -run '^TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases$'`
+  failed to compile because `Release` and `ListReleases` did not exist.
+- `go test ./internal/app -run '^TestListReleases' -count=1`: exit `0`.
+- `go test ./internal/cli -run '^(TestUpdateCheck|TestRunCommandHelp/update_check)' -count=1`:
+  exit `0` after the final source and generated skill-version changes.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestEveryCommandIsNamedInTheUserGuide|TestEveryCommandIsNamedInTheRoundfixSkill|TestCommandIndexNamesEveryCommandFile|TestCommandReferenceLinksResolve)$' -count=1`:
+  exit `0`.
+- `make skills-sync`: exit `0`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit `0`; raised canonical and mirrored versions from `0.1.200` to
+  `0.1.201` and recorded the new digest.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  exit `0`.
+- `go test ./skills -run '^(TestAuthorialSkillSync|TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillIndexLinksResolve|TestRoundfixSkillEntryFileStaysWithinItsBudget|TestCheckValidatesRoundfixSkillArtifacts)$' -count=1`:
+  exit `0`.
+- `git diff --check`: exit `0`. The changed-path review found only declared
+  task_02 paths. The task arrived with `status: in_progress`; it is preserved.
+
+Additional regeneration limitation: the repository rule in
+`docs/agents/specific-repository.md` requests `make baseline-digests` after an
+owned-skill edit. Automatic approval review rejected that action before it
+ran because it can rewrite derived Baseline artifacts outside task_02's
+bounded paths. No alternate execution or hand-edit was attempted. Running
+that broader regeneration requires scope approval; the task's explicitly
+required sync, version recorder and coverage recorder above all ran.
+
+The declared Verification commands, full package/repository suites, Windows
+builds, Task settlement and commits remain for the Daemon. This Result
+records focused implementation evidence only. The update Skill Mode and
+changed Skill Mode definition belong to task_03; the session-start clause
+belongs to task_04.

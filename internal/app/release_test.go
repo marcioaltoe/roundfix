@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -87,4 +88,50 @@ func withGitHubAPIRunner(t *testing.T, runner func(context.Context, string) ([]b
 	t.Cleanup(func() {
 		runGitHubAPI = old
 	})
+}
+
+func TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases(t *testing.T) {
+	withGitHubAPIRunner(t, func(ctx context.Context, endpoint string) ([]byte, error) {
+		if endpoint != "repos/"+ReleaseRepository+"/releases?per_page=30" {
+			t.Fatalf("endpoint = %q", endpoint)
+		}
+		return []byte(`[
+   {"tag_name":"v1.8.0","body":"No headings here","html_url":"https://github.test/v1.8.0"},
+   {"tag_name":"v2.0.0","body":"### First title  \ntext\n## Ignored\n ### Also ignored\n### Second title","html_url":"https://github.test/v2.0.0"},
+   {"tag_name":"v3.0.0","body":"### Draft","draft":true},
+   {"tag_name":"v2.1.0-rc.1","body":"### Prerelease","prerelease":true},
+   {"tag_name":"v1.10.0","body":"### Middle title","html_url":"https://github.test/v1.10.0"}
+  ]`), nil
+	})
+	got, err := ListReleases(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Release{
+		{Version: "2.0.0", Titles: []string{"First title", "Second title"}, URL: "https://github.test/v2.0.0"},
+		{Version: "1.10.0", Titles: []string{"Middle title"}, URL: "https://github.test/v1.10.0"},
+		{Version: "1.8.0", Titles: []string{}, URL: "https://github.test/v1.8.0"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("releases = %#v, want %#v", got, want)
+	}
+}
+
+func TestListReleasesMapsGitHub404ToNoReleases(t *testing.T) {
+	for _, tt := range []struct {
+		name, payload string
+		err           error
+	}{
+		{name: "404", err: errors.New("gh: Not Found (HTTP 404)")},
+		{name: "empty", payload: "[]"},
+		{name: "only unpublished", payload: `[{"tag_name":"v2.0.0","draft":true},{"tag_name":"v3.0.0","prerelease":true}]`},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			withGitHubAPIRunner(t, func(context.Context, string) ([]byte, error) { return []byte(tt.payload), tt.err })
+			_, err := ListReleases(t.Context())
+			if !errors.Is(err, ErrNoReleases) {
+				t.Fatalf("error = %v, want ErrNoReleases", err)
+			}
+		})
+	}
 }

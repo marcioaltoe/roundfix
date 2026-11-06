@@ -92,6 +92,7 @@ Usage:
   roundfix gc [--dry-run]
   roundfix storage report
   roundfix upgrade [--check]
+  roundfix update check [--refresh] [--format <text|json>]
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
   roundfix runs show <run-id> [--json]
@@ -131,6 +132,7 @@ Commands:
   gc         Prune old terminal Run journals and run artifacts
   storage    Report measured Run Database and Artifact Root storage
   upgrade    Upgrade the Roundfix binary from GitHub Releases
+  update     Report a newer release and this repository's Baseline plan
   runs       List Runs from the Run Database
   attach     Replay a Run's event timeline from the Run Database
   events     Replay or follow a Run's Supervisor event stream as JSONL
@@ -311,6 +313,7 @@ type commandDependencies struct {
 	attachSleep                     func(context.Context) error
 	upgrade                         upgradeDependencies
 	versionFreshness                versionFreshnessDependencies
+	updateCheck                     updateCheckDependencies
 	gc                              gcDependencies
 	releasePlanGitRunner            preflight.GitRunner
 	releasePlanGHRunner             preflight.GHRunner
@@ -389,6 +392,7 @@ func defaultCommandDependencies() commandDependencies {
 		attachSleep:                     attachSleep,
 		upgrade:                         upgradeDeps,
 		versionFreshness:                versionFreshnessDeps,
+		updateCheck:                     updateCheckDeps,
 		gc:                              gcDeps,
 		releasePlanGitRunner:            releasePlanCommandGitRunner,
 		releasePlanGHRunner:             releasePlanCommandGHRunner,
@@ -580,6 +584,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runStorageCommand(ctx, args[1:], stdout, stderr, environment)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr, environment)
+	case "update":
+		return runUpdateCommand(ctx, args[1:], stdout, stderr, environment)
 	case "runs":
 		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "stop":
@@ -5360,6 +5366,24 @@ Commands:
 The report is read-only, accepts no flags, and needs no Git repository. It
 reads the machine-wide Run Database and recorded Artifact Roots from Roundfix
 Home without migrating, locking for writes, or changing any byte.
+`
+	case "update", "update check":
+		return `Usage:
+  roundfix update check [--refresh] [--format <text|json>]
+
+Reports, read-only, whether a newer Roundfix release exists, the title of each
+release since the installed version, and this repository's Baseline plan with
+the installed binary. The release listing comes from the GitHub CLI and is
+cached for 24 hours in Roundfix Home; a lookup that fails is reported in one
+line. Every report exits 0. update.mode in Project Config or User Config
+selects notify (the default) or auto, which the Next: line names.
+
+Commands:
+  check  Report the latest release, what it changes, and this repository's Baseline plan
+
+Options:
+  --refresh  Read the release listing now instead of the cached one
+  --format   Output format: text (default) or json
 `
 	case "upgrade":
 		return `Usage:

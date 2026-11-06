@@ -1050,6 +1050,10 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
 
+**Update Check**:
+The read-only report of `roundfix update check` that a session runs before its first task: the installed Roundfix against the latest published release, the titles of each newer release from its published notes, and the repository's Baseline plan with the installed binary. It reads the release listing at most once a day per machine, reports a lookup that fails in one line, and changes nothing ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md)).
+_Avoid_: Release note, version freshness line, upgrade check
+
 **Release Set**:
 The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible before any one is published.
 _Avoid_: Package list, publish targets, artifact set

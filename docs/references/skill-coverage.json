@@ -735,6 +735,16 @@
       ]
     },
     {
+      "id": "command update check",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/update.md",
+        "internal/cli/update_check.go"
+      ]
+    },
+    {
       "id": "command upgrade",
       "skills": [
         ".agents/skills/roundfix/references/setup.md"
@@ -1132,6 +1142,15 @@
       ],
       "sources": [
         "docs/user-guide/commands/supersede.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/update.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/update.md"
       ]
     },
     {

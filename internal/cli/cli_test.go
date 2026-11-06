@@ -469,6 +469,11 @@ func TestRunCommandHelp(t *testing.T) {
 			contains: []string{"roundfix upgrade [--check]", "--check", "atomically"},
 		},
 		{
+			name:     "update check",
+			args:     []string{"update", "check", "--help"},
+			contains: []string{"roundfix update check [--refresh] [--format <text|json>]", "--refresh", "update.mode", "Every report exits 0"},
+		},
+		{
 			name:     "runs",
 			args:     []string{"runs", "--help"},
 			contains: []string{"roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]", "--all", "--state", "--limit"},
