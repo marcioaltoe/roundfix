@@ -424,6 +424,11 @@ be checked, status adds no `Owner:` line and writes
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
 
+`deliver start` releases the recorded owner of an existing queue whose owner is
+gone, because its PID is no longer alive or is alive with a different start
+identity, before it starts the new queue; a recorded owner proven live is left
+as it is.
+
 A stage is the step an item is at, not proof that the step is running: a
 Delivery Retry records `reviewing` before any review starts. The Queue Owner
 advances one item at a time through every stage except the pre-PR review,
@@ -1018,8 +1023,10 @@ roundfix: Delivery Queue item <spec>: a Run slot is free; starting the Implement
 ```
 
 Every 30 seconds it polls the Run Database without starting a child, reclaiming
-a Run or signalling a process. Only a holder whose recorded owner PID is no
-longer alive is excluded; a holder without a recorded PID still counts. When a
+a Run or signalling a process. Only a holder whose owner is gone is excluded:
+its recorded owner PID is no longer alive, or it is alive with a different start
+identity because the PID was reused; a holder without a recorded PID still
+counts. When a
 slot looks free, it clears the blocker and retries Implement. The child's
 preflight and the store's CreateRun transaction still decide admission. Losing
 the race keeps the original wait deadline.

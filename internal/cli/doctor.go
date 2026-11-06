@@ -334,6 +334,9 @@ func Residue(ctx context.Context, runStore RunStore, table ProcessTable) ([]Resi
 			OwnerPID:      *run.OwnerPID,
 			OwnerIdentity: run.OwnerIdentity,
 		})
+		if errors.Is(processErr, store.ErrOwnerProcessIdentityMismatch) {
+			continue
+		}
 		if processErr != nil {
 			readErrors = append(readErrors, fmt.Errorf("could not read process table for Run %s: %w", run.ID, processErr))
 		}

@@ -100,6 +100,17 @@ func (controller *OwnerProcessControl) ProveOwner(ctx context.Context, pid int, 
 	return err
 }
 
+// OwnerGone reports whether the recorded owner no longer runs: its PID is
+// absent, or alive with a proven different start identity (reused). It sends
+// no signal; any answer short of that proof reports the owner present.
+func (controller *OwnerProcessControl) OwnerGone(ctx context.Context, pid int, recordedIdentity string) (gone, reused bool) {
+	absent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	if errors.Is(err, ErrOwnerProcessIdentityMismatch) {
+		return true, true
+	}
+	return err == nil && absent, false
+}
+
 // proveOwner is the single implementation of the ownership rule. It reports
 // whether the owner is already absent, which every caller treats as success.
 //
@@ -500,6 +511,12 @@ func ProcessAlive(pid int) bool {
 	}
 	absent, err := processAbsent(pid)
 	return err != nil || !absent
+}
+
+// OwnerGone reports whether the recorded owner is absent or its PID was
+// proven reused, using the default process controller without sending a signal.
+func OwnerGone(ctx context.Context, pid int, recordedIdentity string) (gone, reused bool) {
+	return NewOwnerProcessController().OwnerGone(ctx, pid, recordedIdentity)
 }
 
 // OwnerProcessIdentity returns the opaque start-time identity token for pid.

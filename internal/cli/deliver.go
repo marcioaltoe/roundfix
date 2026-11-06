@@ -360,18 +360,9 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	if err != nil {
 		return printDeliverFailure("start", err, stderr)
 	}
-	if existing, found, readErr := runStore.DeliveryQueue(ctx, loaded.GitRoot); readErr != nil {
+	if err := releaseGoneDeliveryQueueOwner(ctx, runStore, loaded.GitRoot); err != nil {
 		_ = runStore.Close()
-		return printDeliverFailure("start", readErr, stderr)
-	} else if found && existing.OwnerPID > 0 && !store.ProcessAlive(existing.OwnerPID) {
-		released, releaseErr := runStore.ReleaseDeliveryQueueOwner(ctx, loaded.GitRoot, existing.OwnerPID, existing.OwnerIdentity)
-		if releaseErr != nil || !released {
-			_ = runStore.Close()
-			if releaseErr == nil {
-				releaseErr = errors.New("Delivery Queue owner changed while start was checking it")
-			}
-			return printDeliverFailure("start", releaseErr, stderr)
-		}
+		return printDeliverFailure("start", err, stderr)
 	}
 	limits := store.DeliveryQueueLimits{MaxRetries: options.MaxRetries, MaxTokens: options.MaxTokens}
 	if options.MaxDuration > 0 {
@@ -393,6 +384,27 @@ func runDeliverStart(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	return commandDependenciesForContext(ctx).startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+}
+
+func releaseGoneDeliveryQueueOwner(ctx context.Context, runStore *store.Store, gitRoot string) error {
+	existing, found, err := runStore.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return nil
+	}
+	if gone, _ := store.OwnerGone(ctx, existing.OwnerPID, existing.OwnerIdentity); !gone {
+		return nil
+	}
+	released, err := runStore.ReleaseDeliveryQueueOwner(ctx, gitRoot, existing.OwnerPID, existing.OwnerIdentity)
+	if err != nil {
+		return err
+	}
+	if !released {
+		return errors.New("Delivery Queue owner changed while start was checking it")
+	}
+	return nil
 }
 
 func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
