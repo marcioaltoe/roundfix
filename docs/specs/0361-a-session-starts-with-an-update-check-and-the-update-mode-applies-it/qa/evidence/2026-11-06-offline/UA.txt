@@ -1,5 +1,0 @@
-PRD Unreachable Acceptance
-criterion: after the release that carries this Spec, a session in an adopting repository on the operator's machine shows the Update Check before its first task, and the Roundfix skill's `update` mode upgrades the binary and applies that repository's Baseline plan.
-reason: needs published release, GitHub API, real Roundfix Home and another repository.
-satisfied-by: the operator's session evidence in an adopting repository after the release, recorded session evidence.
-Status: unproven; requires operator observation after release.

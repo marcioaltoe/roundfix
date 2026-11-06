@@ -1,6 +1,0 @@
-Source: assigned QA prompt: no open Pull Request.
-Recorded delivery authority: _authorization.md approved at 497224da75d8952e399d4a6ef58eaf4ff9d3e3ef.
-Candidate: c9aabac005715afc9e0b75be7420a2a27ac0ff99
-Checks: Daemon supplied make verify-changed pass, exit 0.
-No unresolved PR threads because no PR exists.
-No Merge-Ready acceptance or Review Source artifact yet.

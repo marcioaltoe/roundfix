@@ -1,8 +1,0 @@
-$ go test -count=1 -timeout 20m -v -run ^TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases$ ./internal/app
-stdout:
-=== RUN   TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases
---- PASS: TestListReleasesReadsTitlesAndSkipsDraftsAndPrereleases (0.00s)
-PASS
-ok  	roundfix/internal/app	0.206s
-stderr:
-exit: 0
