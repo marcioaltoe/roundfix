@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run ^TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped$ ./internal/verifyselect
+=== RUN   TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped
+=== PAUSE TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped
+=== CONT  TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped
+=== RUN   TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/default
+=== PAUSE TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/default
+=== RUN   TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/already_selected
+=== PAUSE TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/already_selected
+=== CONT  TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/default
+=== CONT  TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/already_selected
+--- PASS: TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped (0.00s)
+    --- PASS: TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/default (0.32s)
+    --- PASS: TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped/already_selected (0.33s)
+PASS
+suiteguard: guard cost: measured 2980 paths; fingerprint took 139.810416ms before and 134.787625ms after
+ok  	roundfix/internal/verifyselect	0.726s
+
+exit: 0
+elapsed seconds: 0.87

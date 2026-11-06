@@ -1,0 +1,5 @@
+command: make vet GOCACHE=/tmp/roundfix-0360-qa-hqzyzd5h/make-flow-p66nzaw6/cache
+go vet ./...
+
+exit: 0
+elapsed seconds: 3.76

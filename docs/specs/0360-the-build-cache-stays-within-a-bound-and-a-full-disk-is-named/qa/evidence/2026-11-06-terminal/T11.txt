@@ -1,0 +1,35 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate$ ./internal/delivery
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+--- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate (0.00s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk (0.02s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present (0.02s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker (0.02s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate (0.02s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate (0.02s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk (0.02s)
+PASS
+suiteguard: guard cost: measured 2987 paths; fingerprint took 138.369791ms before and 169.132792ms after
+ok  	roundfix/internal/delivery	0.594s
+
+exit: 0
+elapsed seconds: 1.25

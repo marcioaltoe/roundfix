@@ -1,0 +1,52 @@
+command: go test -count=1 -timeout 20m -v -run ^TestMakeBoundsItsOwnGoBuildCache$ ./internal/verifyselect
+=== RUN   TestMakeBoundsItsOwnGoBuildCache
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache
+=== CONT  TestMakeBoundsItsOwnGoBuildCache
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/default
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/default
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/once_per_invocation
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/once_per_invocation
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/fallback_cache
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/fallback_cache
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/sub-make
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/sub-make
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/explicit_cache
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/explicit_cache
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/explicit_cache_with_a_bound
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/explicit_cache_with_a_bound
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/turned_off
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/turned_off
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/idle_override
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/idle_override
+=== RUN   TestMakeBoundsItsOwnGoBuildCache/failing_bound
+=== PAUSE TestMakeBoundsItsOwnGoBuildCache/failing_bound
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/default
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/turned_off
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/failing_bound
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/idle_override
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/sub-make
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/fallback_cache
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/explicit_cache_with_a_bound
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/explicit_cache
+=== CONT  TestMakeBoundsItsOwnGoBuildCache/once_per_invocation
+=== NAME  TestMakeBoundsItsOwnGoBuildCache/failing_bound
+    build_cache_bound_makefile_test.go:102: make [test]: exit status 2
+        stdout: 
+        stderr: make: *** [gocache-bound] Error 1
+--- FAIL: TestMakeBoundsItsOwnGoBuildCache (0.11s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/explicit_cache (0.28s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/turned_off (0.28s)
+    --- FAIL: TestMakeBoundsItsOwnGoBuildCache/failing_bound (0.28s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/sub-make (0.28s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/fallback_cache (0.29s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/default (0.29s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/idle_override (0.29s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/explicit_cache_with_a_bound (0.29s)
+    --- PASS: TestMakeBoundsItsOwnGoBuildCache/once_per_invocation (0.29s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 158.224625ms before and 132.045917ms after
+FAIL	roundfix/internal/verifyselect	0.961s
+FAIL
+
+exit: 1
+elapsed seconds: 1.38

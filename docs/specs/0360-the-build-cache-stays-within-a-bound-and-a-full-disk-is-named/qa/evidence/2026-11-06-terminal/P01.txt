@@ -1,0 +1,110 @@
+command: go test -count=1 -timeout 20m -v ./internal/sharedcache
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound
+=== RUN   TestBoundMainRefusesAnInvalidRequest
+=== PAUSE TestBoundMainRefusesAnInvalidRequest
+=== RUN   TestBoundMainReportsItsBudgetAndKeepsTheCache
+=== PAUSE TestBoundMainReportsItsBudgetAndKeepsTheCache
+=== RUN   TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== PAUSE TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== RUN   TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== PAUSE TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== RUN   TestMeasureRefusesWhatIsNotAGoBuildCache
+=== PAUSE TestMeasureRefusesWhatIsNotAGoBuildCache
+=== RUN   TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== PAUSE TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== RUN   TestMeasureContextStopsWhenTheContextEnds
+=== PAUSE TestMeasureContextStopsWhenTheContextEnds
+=== RUN   TestApplyContextStopsBetweenEntries
+=== PAUSE TestApplyContextStopsBetweenEntries
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/within_its_bound
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/within_its_bound
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_idle_entries
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_idle_entries
+=== CONT  TestMeasureRefusesWhatIsNotAGoBuildCache
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_no_idle_entry
+=== CONT  TestBoundMainReportsItsBudgetAndKeepsTheCache
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_no_idle_entry
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/not_a_Go_build_cache
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/not_a_Go_build_cache
+=== RUN   TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/oldest_first_until_within_bound
+=== CONT  TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit
+=== CONT  TestBoundMainRefusesAnInvalidRequest
+=== RUN   TestBoundMainRefusesAnInvalidRequest/relative_dir
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/relative_dir
+=== RUN   TestBoundMainRefusesAnInvalidRequest/missing_dir
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/missing_dir
+=== RUN   TestBoundMainRefusesAnInvalidRequest/zero_bound
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/zero_bound
+=== RUN   TestBoundMainRefusesAnInvalidRequest/negative_bound
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/negative_bound
+=== RUN   TestBoundMainRefusesAnInvalidRequest/overflowing_bound
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/overflowing_bound
+=== RUN   TestBoundMainRefusesAnInvalidRequest/short_idle
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/short_idle
+=== RUN   TestBoundMainRefusesAnInvalidRequest/extra_argument
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/extra_argument
+=== RUN   TestBoundMainRefusesAnInvalidRequest/unknown_flag
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/unknown_flag
+=== RUN   TestBoundMainRefusesAnInvalidRequest/malformed_bound
+=== CONT  TestMeasureKeepsEveryEntryWithinTheLimitOrInUse
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/malformed_bound
+=== RUN   TestBoundMainRefusesAnInvalidRequest/malformed_idle
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/malformed_idle
+=== RUN   TestBoundMainRefusesAnInvalidRequest/missing_flag_value
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/missing_flag_value
+=== RUN   TestBoundMainRefusesAnInvalidRequest/help_is_a_usage_error
+=== PAUSE TestBoundMainRefusesAnInvalidRequest/help_is_a_usage_error
+=== CONT  TestBoundMainRefusesAnInvalidRequest/relative_dir
+=== CONT  TestMeasureContextStopsWhenTheContextEnds
+=== CONT  TestBoundMainRefusesAnInvalidRequest/short_idle
+=== CONT  TestApplyContextStopsBetweenEntries
+=== CONT  TestApplySkipsAnEntryUsedSinceItWasPlanned
+=== PAUSE TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/oldest_first_until_within_bound
+=== CONT  TestBoundMainRefusesAnInvalidRequest/extra_argument
+=== CONT  TestBoundMainRefusesAnInvalidRequest/help_is_a_usage_error
+=== CONT  TestBoundMainRefusesAnInvalidRequest/missing_flag_value
+=== CONT  TestBoundMainRefusesAnInvalidRequest/malformed_idle
+=== CONT  TestBoundMainRefusesAnInvalidRequest/malformed_bound
+=== CONT  TestBoundMainRefusesAnInvalidRequest/unknown_flag
+=== CONT  TestBoundMainRefusesAnInvalidRequest/negative_bound
+=== CONT  TestBoundMainRefusesAnInvalidRequest/overflowing_bound
+=== CONT  TestBoundMainRefusesAnInvalidRequest/zero_bound
+=== CONT  TestBoundMainRefusesAnInvalidRequest/missing_dir
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/within_its_bound
+--- PASS: TestBoundMainReportsItsBudgetAndKeepsTheCache (0.01s)
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/not_a_Go_build_cache
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/oldest_first_until_within_bound
+--- PASS: TestBoundMainRefusesAnInvalidRequest (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/relative_dir (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/short_idle (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/help_is_a_usage_error (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/extra_argument (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/missing_flag_value (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/malformed_idle (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/malformed_bound (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/unknown_flag (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/negative_bound (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/overflowing_bound (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/missing_dir (0.00s)
+    --- PASS: TestBoundMainRefusesAnInvalidRequest/zero_bound (0.00s)
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_no_idle_entry
+--- PASS: TestMeasureContextStopsWhenTheContextEnds (0.01s)
+=== CONT  TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_idle_entries
+--- PASS: TestMeasurePlansIdleEntriesOldestFirstUntilWithinTheLimit (0.01s)
+--- PASS: TestApplyContextStopsBetweenEntries (0.01s)
+--- PASS: TestMeasureRefusesWhatIsNotAGoBuildCache (0.02s)
+--- PASS: TestApplySkipsAnEntryUsedSinceItWasPlanned (0.02s)
+--- PASS: TestMeasureKeepsEveryEntryWithinTheLimitOrInUse (0.02s)
+--- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound (0.00s)
+    --- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/not_a_Go_build_cache (0.01s)
+    --- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_no_idle_entry (0.01s)
+    --- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/within_its_bound (0.01s)
+    --- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/above_its_bound_with_idle_entries (0.01s)
+    --- PASS: TestBoundMainTrimsOnlyIdleEntriesAboveTheBound/oldest_first_until_within_bound (0.01s)
+PASS
+ok  	roundfix/internal/sharedcache	0.099s
+
+exit: 0
+elapsed seconds: 0.22

@@ -1,0 +1,11 @@
+--- a/internal/store/delivery.go
++++ b/internal/store/delivery.go
+@@ -708,7 +708,7 @@
+ 			)
+ 		}
+ 		retryIncrement := 1
+-		if blocker, _, _ := strings.Cut(storedBlocker, ":"); blocker == "runtime-infrastructure" || blocker == "disk-full" {
++		if blocker, _, _ := strings.Cut(storedBlocker, ":"); blocker == "runtime-infrastructure" {
+ 			retryIncrement = 0
+ 		}
+ 		if retryIncrement != 0 && maxRetries != 0 && retryCount >= maxRetries {

@@ -1,0 +1,7 @@
+command: go test -count=1 -timeout 20m -v -run ^TestMakeBoundsItsOwnGoBuildCache$ ./internal/verifyselect
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/verifyselect	0.216s
+FAIL
+
+exit: 1
+elapsed seconds: 0.61

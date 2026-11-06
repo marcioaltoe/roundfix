@@ -1,0 +1,35 @@
+command: go test -count=1 -timeout 20m -v -run ^TestAFullDiskParksTheItemAsDiskFull$ ./internal/delivery
+=== RUN   TestAFullDiskParksTheItemAsDiskFull
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull
+=== CONT  TestAFullDiskParksTheItemAsDiskFull
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/Run
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/Run
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/review
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/review
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/gate
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/gate
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/Run
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/gate
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/review
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_review_error
+--- PASS: TestAFullDiskParksTheItemAsDiskFull (0.00s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/gate (0.02s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/Run (0.02s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_Run_error (0.02s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/review (0.02s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_gate_failure (0.02s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_review_error (0.02s)
+PASS
+suiteguard: guard cost: measured 2988 paths; fingerprint took 157.014834ms before and 144.39725ms after
+ok  	roundfix/internal/delivery	0.454s
+
+exit: 0
+elapsed seconds: 0.71

@@ -1,0 +1,11 @@
+--- a/internal/cli/deliver_disk_full.go
++++ b/internal/cli/deliver_disk_full.go
+@@ -20,7 +20,7 @@
+ // diskFullFailure reads only retained local diagnostics; it never changes the
+ // original error text or measures capacity without the command dependency.
+ func diskFullFailure(ctx context.Context, loaded roundconfig.Loaded, err error, logPath string) *delivery.DiskFullError {
+-	tail := diskFullLogTail(logPath)
++	tail := ""
+ 	if !errors.Is(err, syscall.ENOSPC) && !strings.Contains(strings.ToLower(tail), "no space left on device") {
+ 		return nil
+ 	}

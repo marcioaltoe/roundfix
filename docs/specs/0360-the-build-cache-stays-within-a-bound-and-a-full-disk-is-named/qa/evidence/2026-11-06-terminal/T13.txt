@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -run ^TestADiskFullRetryIsNotCounted$ ./internal/delivery
+=== RUN   TestADiskFullRetryIsNotCounted
+=== PAUSE TestADiskFullRetryIsNotCounted
+=== CONT  TestADiskFullRetryIsNotCounted
+=== RUN   TestADiskFullRetryIsNotCounted/below_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/below_limit
+=== RUN   TestADiskFullRetryIsNotCounted/at_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/at_limit
+=== RUN   TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== CONT  TestADiskFullRetryIsNotCounted/below_limit
+=== CONT  TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== CONT  TestADiskFullRetryIsNotCounted/at_limit
+--- PASS: TestADiskFullRetryIsNotCounted (0.00s)
+    --- PASS: TestADiskFullRetryIsNotCounted/below_limit (0.01s)
+    --- PASS: TestADiskFullRetryIsNotCounted/archived_gate_at_limit (0.02s)
+    --- PASS: TestADiskFullRetryIsNotCounted/at_limit (0.02s)
+PASS
+suiteguard: guard cost: measured 2989 paths; fingerprint took 168.014916ms before and 177.775167ms after
+ok  	roundfix/internal/delivery	0.496s
+
+exit: 0
+elapsed seconds: 0.77

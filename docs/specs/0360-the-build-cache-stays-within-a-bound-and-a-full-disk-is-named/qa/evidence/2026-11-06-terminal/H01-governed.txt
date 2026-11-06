@@ -1,0 +1,12 @@
+command: go run -overlay /tmp/roundfix-0360-qa-hqzyzd5h/governed-probe-2_v32va2/overlay.json ./cmd/gocache-bound .agents/skills/roundfix/SKILL.md .agents/skills/roundfix/references/deliver.md .agents/skills/roundfix/references/setup.md .roundfixrc.yml CONTEXT.md Makefile README.md cmd/gocache-bound/main.go docs/adr/0327-gc-trims-a-declared-shared-build-cache.md docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md docs/agents/setup-context.json docs/agents/specific-repository.md docs/references/behavior-surfaces.json docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/_techspec.md docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_01.md docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_02.md docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_03.md docs/user-guide/commands/deliver.md docs/user-guide/commands/doctor.md internal/cli/deliver_disk_full.go internal/cli/deliver_disk_full_test.go internal/cli/deliver_free_space.go internal/cli/deliver_free_space_test.go internal/cli/deliver_workflow.go internal/cli/doctor_disk_space.go internal/cli/doctor_disk_space_test.go internal/delivery/disk_full.go internal/delivery/disk_full_park_test.go internal/delivery/engine.go internal/delivery/low_disk_warning_test.go internal/delivery/park_class.go internal/delivery/park_class_test.go internal/delivery/review_slots.go internal/docscontract/command_documentation_test.go internal/sharedcache/bound.go internal/sharedcache/bound_test.go internal/store/delivery.go internal/store/delivery_disk_full_retry_test.go internal/verifyselect/build_cache_bound_makefile_test.go internal/verifyselect/build_cache_makefile_test.go internal/verifyselect/contracts_repository_test.go internal/verifyselect/full_contract_run_test.go internal/verifyselect/verify_docs_makefile_test.go skills/roundfix/SKILL.md skills/roundfix/references/deliver.md skills/roundfix/references/setup.md skills/testdata/owned-skill-versions.json
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+.agents/skills/roundfix/references/setup.md
+.roundfixrc.yml
+Makefile
+docs/agents/setup-context.json
+docs/agents/specific-repository.md
+skills/roundfix/SKILL.md
+
+exit: 0
+elapsed seconds: 0.59

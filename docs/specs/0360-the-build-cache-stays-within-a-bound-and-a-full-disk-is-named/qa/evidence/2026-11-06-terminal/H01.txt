@@ -1,0 +1,137 @@
+PASS task_01 c052879d722be9b1c6aa9daee3098bc38a518a48: 16 actual changed paths; undeclared=[]
+RECORDED task_01 internal/verifyselect/build_cache_makefile_test.go
+RECORDED task_01 internal/verifyselect/contracts_repository_test.go
+RECORDED task_01 internal/verifyselect/full_contract_run_test.go
+PASS task_01 parent grant byte-identical to current operative record
+PASS task_01 authorizing revision is earlier in ancestry
+PASS task_01 does not authorize itself
+PATH task_01 .roundfixrc.yml
+PATH task_01 CONTEXT.md
+PATH task_01 Makefile
+PATH task_01 README.md
+PATH task_01 cmd/gocache-bound/main.go
+PATH task_01 docs/adr/0327-gc-trims-a-declared-shared-build-cache.md
+PATH task_01 docs/agents/setup-context.json
+PATH task_01 docs/agents/specific-repository.md
+PATH task_01 docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_01.md
+PATH task_01 internal/sharedcache/bound.go
+PATH task_01 internal/sharedcache/bound_test.go
+PATH task_01 internal/verifyselect/build_cache_bound_makefile_test.go
+PATH task_01 internal/verifyselect/build_cache_makefile_test.go
+PATH task_01 internal/verifyselect/contracts_repository_test.go
+PATH task_01 internal/verifyselect/full_contract_run_test.go
+PATH task_01 internal/verifyselect/verify_docs_makefile_test.go
+PASS task_02 e32fa83597ffd157743f91cb2108230254dd4ea3: 19 actual changed paths; undeclared=[]
+PASS task_02 parent grant byte-identical to current operative record
+PASS task_02 authorizing revision is earlier in ancestry
+PASS task_02 does not authorize itself
+PATH task_02 .agents/skills/roundfix/SKILL.md
+PATH task_02 .agents/skills/roundfix/references/deliver.md
+PATH task_02 .agents/skills/roundfix/references/setup.md
+PATH task_02 CONTEXT.md
+PATH task_02 docs/references/behavior-surfaces.json
+PATH task_02 docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_02.md
+PATH task_02 docs/user-guide/commands/deliver.md
+PATH task_02 docs/user-guide/commands/doctor.md
+PATH task_02 internal/cli/deliver_free_space.go
+PATH task_02 internal/cli/deliver_free_space_test.go
+PATH task_02 internal/cli/deliver_workflow.go
+PATH task_02 internal/cli/doctor_disk_space.go
+PATH task_02 internal/cli/doctor_disk_space_test.go
+PATH task_02 internal/delivery/engine.go
+PATH task_02 internal/delivery/low_disk_warning_test.go
+PATH task_02 skills/roundfix/SKILL.md
+PATH task_02 skills/roundfix/references/deliver.md
+PATH task_02 skills/roundfix/references/setup.md
+PATH task_02 skills/testdata/owned-skill-versions.json
+PASS task_03 ab0dd07ce78accc20c1c92ffdaff1e55ecdf509a: 22 actual changed paths; undeclared=[]
+PASS task_03 parent grant byte-identical to current operative record
+PASS task_03 authorizing revision is earlier in ancestry
+PASS task_03 does not authorize itself
+PATH task_03 .agents/skills/roundfix/SKILL.md
+PATH task_03 .agents/skills/roundfix/references/deliver.md
+PATH task_03 CONTEXT.md
+PATH task_03 docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md
+PATH task_03 docs/references/behavior-surfaces.json
+PATH task_03 docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_03.md
+PATH task_03 docs/user-guide/commands/deliver.md
+PATH task_03 internal/cli/deliver_disk_full.go
+PATH task_03 internal/cli/deliver_disk_full_test.go
+PATH task_03 internal/cli/deliver_workflow.go
+PATH task_03 internal/delivery/disk_full.go
+PATH task_03 internal/delivery/disk_full_park_test.go
+PATH task_03 internal/delivery/engine.go
+PATH task_03 internal/delivery/park_class.go
+PATH task_03 internal/delivery/park_class_test.go
+PATH task_03 internal/delivery/review_slots.go
+PATH task_03 internal/docscontract/command_documentation_test.go
+PATH task_03 internal/store/delivery.go
+PATH task_03 internal/store/delivery_disk_full_retry_test.go
+PATH task_03 skills/roundfix/SKILL.md
+PATH task_03 skills/roundfix/references/deliver.md
+PATH task_03 skills/testdata/owned-skill-versions.json
+PASS separate repair commit bounds only baseline-digests prerequisite and setup digest plus TechSpec clarification
+PASS separate repair inherits operative grant before its change
+PASS consequent repair is a separate commit after task_01
+PASS protected scope .agents/skills/roundfix/SKILL.md
+PASS protected scope .agents/skills/roundfix/references/deliver.md
+PASS protected scope .agents/skills/roundfix/references/setup.md
+PASS protected scope .roundfixrc.yml
+PASS protected scope CONTEXT.md
+PASS protected scope Makefile
+PASS protected scope README.md
+PASS protected scope cmd/gocache-bound/main.go
+PASS protected scope docs/adr/0327-gc-trims-a-declared-shared-build-cache.md
+PASS protected scope docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md
+PASS protected scope docs/agents/setup-context.json
+PASS protected scope docs/agents/specific-repository.md
+PASS protected scope docs/references/behavior-surfaces.json
+PASS protected scope docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/_techspec.md
+PASS protected scope docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_01.md
+PASS protected scope docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_02.md
+PASS protected scope docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/task_03.md
+PASS protected scope docs/user-guide/commands/deliver.md
+PASS protected scope docs/user-guide/commands/doctor.md
+PASS protected scope internal/cli/deliver_disk_full.go
+PASS protected scope internal/cli/deliver_disk_full_test.go
+PASS protected scope internal/cli/deliver_free_space.go
+PASS protected scope internal/cli/deliver_free_space_test.go
+PASS protected scope internal/cli/deliver_workflow.go
+PASS protected scope internal/cli/doctor_disk_space.go
+PASS protected scope internal/cli/doctor_disk_space_test.go
+PASS protected scope internal/delivery/disk_full.go
+PASS protected scope internal/delivery/disk_full_park_test.go
+PASS protected scope internal/delivery/engine.go
+PASS protected scope internal/delivery/low_disk_warning_test.go
+PASS protected scope internal/delivery/park_class.go
+PASS protected scope internal/delivery/park_class_test.go
+PASS protected scope internal/delivery/review_slots.go
+PASS protected scope internal/docscontract/command_documentation_test.go
+PASS protected scope internal/sharedcache/bound.go
+PASS protected scope internal/sharedcache/bound_test.go
+PASS protected scope internal/store/delivery.go
+PASS protected scope internal/store/delivery_disk_full_retry_test.go
+PASS protected scope internal/verifyselect/build_cache_bound_makefile_test.go
+PASS protected scope internal/verifyselect/build_cache_makefile_test.go
+PASS protected scope internal/verifyselect/contracts_repository_test.go
+PASS protected scope internal/verifyselect/full_contract_run_test.go
+PASS protected scope internal/verifyselect/verify_docs_makefile_test.go
+PASS protected scope skills/roundfix/SKILL.md
+PASS protected scope skills/roundfix/references/deliver.md
+PASS protected scope skills/roundfix/references/setup.md
+PASS protected scope skills/testdata/owned-skill-versions.json
+PASS every actually changed GovernedPath is exactly in the eight-path authorization
+GOVERNED .agents/skills/roundfix/SKILL.md
+GOVERNED .agents/skills/roundfix/references/deliver.md
+GOVERNED .agents/skills/roundfix/references/setup.md
+GOVERNED .roundfixrc.yml
+GOVERNED Makefile
+GOVERNED docs/agents/setup-context.json
+GOVERNED docs/agents/specific-repository.md
+GOVERNED skills/roundfix/SKILL.md
+PASS Makefile byte projection equals delivery-base Makefile after removing only approved variables, comment, target and prerequisites
+PASS Makefile contains no go clean
+PASS QA settlement byte-identical .agents/skills/roundfix/SKILL.md
+PASS QA settlement byte-identical .agents/skills/roundfix/references/deliver.md
+PASS QA settlement byte-identical .agents/skills/roundfix/references/setup.md
+PASS current worktree delta limited to this Spec qa directory

@@ -1,0 +1,26 @@
+import os,pathlib,json,subprocess,shutil,re,time
+s=json.loads(pathlib.Path('/tmp/roundfix0360-qa-state.json').read_text())
+root=pathlib.Path(s['root']); scratch=pathlib.Path(s['scratch']); evidence=pathlib.Path(s['evidence']); report=pathlib.Path(s['report'])
+environment=os.environ.copy()
+for key in list(environment):
+ if key.endswith(('_API_KEY','_TOKEN','_PASSWORD','_SECRET')): environment.pop(key)
+for key in ['GOCACHE_BOUND_MB','GOCACHE_BOUND_IDLE','MAKEFLAGS','MAKELEVEL','MFLAGS','MAKEOVERRIDES']:
+ environment.pop(key,None)
+environment.update(GOCACHE=str(scratch/'gocache'),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_GLOBAL='/dev/null',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_COUNT='1',GIT_CONFIG_KEY_0='core.fsmonitor',GIT_CONFIG_VALUE_0='false')
+def update(row,status,observation):
+ text=report.read_text();text=re.sub(r'(?m)^\| '+re.escape(row)+r' \| [^|]+ \|', '| '+row+' | '+status+' |',text)
+ start=text.index('### '+row+'\n');end=text.find('\n### ',start+1)
+ if end<0:end=len(text)
+ part=text[start:end];part=re.sub(r'Observation:.*?(?=\n\n|$)','Observation: '+observation,part,flags=re.S)
+ report.write_text(text[:start]+part+text[end:])
+def run(name,args,cwd=root,extra=None,timeout=1300):
+ env=environment.copy();env.update(extra or {});path=scratch/(name+'.txt')
+ start=time.monotonic()
+ with path.open('w') as f:
+  f.write('command: '+subprocess.list2cmdline(args)+'\n');f.flush()
+  p=subprocess.run(args,cwd=cwd,env=env,stdout=f,stderr=subprocess.STDOUT,timeout=timeout)
+  f.write(f'\nexit: {p.returncode}\nelapsed seconds: {time.monotonic()-start:.2f}\n')
+ shutil.copyfile(path,evidence/path.name)
+ print(name,'exit',p.returncode,flush=True)
+ return p.returncode,path.read_text()
+def link(name):return f'[transcript](evidence/2026-11-06-terminal/{name}.txt)'

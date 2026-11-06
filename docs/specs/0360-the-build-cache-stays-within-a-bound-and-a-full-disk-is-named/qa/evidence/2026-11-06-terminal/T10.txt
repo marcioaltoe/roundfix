@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 20m -v -run ^TestDeliveryStepParksWhenTheItemBuildFails$ ./internal/cli
+=== RUN   TestDeliveryStepParksWhenTheItemBuildFails
+=== PAUSE TestDeliveryStepParksWhenTheItemBuildFails
+=== CONT  TestDeliveryStepParksWhenTheItemBuildFails
+--- PASS: TestDeliveryStepParksWhenTheItemBuildFails (0.16s)
+PASS
+suiteguard: guard cost: measured 2986 paths; fingerprint took 138.867167ms before and 146.518ms after
+ok  	roundfix/internal/cli	0.772s
+
+exit: 0
+elapsed seconds: 1.33

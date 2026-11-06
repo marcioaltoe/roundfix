@@ -1,0 +1,38 @@
+from roundfix0360_common import *
+import tarfile,tempfile
+cases=[
+('S01','Makefile','internal/verifyselect','TestMakeBoundsItsOwnGoBuildCache','sub-make'),
+('S02','Makefile','internal/verifyselect','TestMakeBoundsItsOwnGoBuildCache','explicit_cache'),
+('S03','Makefile','internal/verifyselect','TestMakeBoundsItsOwnGoBuildCache','failing_bound'),
+('S04','internal/sharedcache/bound.go','internal/sharedcache','TestBoundMainTrimsOnlyIdleEntriesAboveTheBound','within_its_bound'),
+('S05','internal/cli/doctor_disk_space.go','internal/cli','TestDoctorWarnsWhenALocationIsLowOnDisk','below_the_threshold'),
+('S06','internal/delivery/engine.go','internal/delivery','TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate','low_with_a_lane-skip_warning_present'),
+('S07','internal/cli/deliver_disk_full.go','internal/cli','TestTheItemBuildOnAFullDiskIsADiskFullFailure','path_in_the_log'),
+('S08','internal/store/delivery.go','internal/store','TestTheStoreDoesNotCountADiskFullRetry','')]
+for row,path,pkg,test,case in cases:
+ if row=='S04':continue
+ with tempfile.TemporaryDirectory(prefix=row+'-',dir=scratch) as directory:
+  copy=pathlib.Path(directory);archive=scratch/(row+'.tar')
+  with archive.open('wb') as f: subprocess.run(['git','archive',s['head']],cwd=root,env=environment,stdout=f,check=True)
+  with tarfile.open(archive) as f:f.extractall(copy,filter='data')
+  archive.unlink();subprocess.run(['git','init','-q',str(copy)],env=environment,check=True);file=copy/path;text=file.read_text();old=text
+  if row=='S01':text=text.replace('[ "$(MAKELEVEL)" = "0" ] && ','',1)
+  elif row=='S02':
+   text=text.replace('GOCACHE_BOUND_MB ?= 10240\n','',1).replace('# ADR-0370:','GOCACHE_BOUND_MB ?= 10240\n# ADR-0370:',1)
+  elif row=='S03':text=re.sub(r' \|\| \{ \\\n\t\t\tstatus=.*?\n\t\t\}; \\',r'; \\',text,count=1)
+  elif row=='S04':text=text.replace('MeasureContext(ctx, *dir, *maxMB*(1<<20),','MeasureContext(ctx, *dir, 0,',1)
+  elif row=='S05':text=text.replace('\tinspect("temporary directory", os.TempDir(), nil)\n','',1)
+  elif row=='S06':
+   block='\tif laneSkip != "" {\n\t\tsegments = append(segments, WarningLinuxLaneSkipped+": "+laneSkip)\n\t}\n'
+   assert text.count(block)==1;text=text.replace(block,'',1)
+   marker='\tif len(locations) != 0 {\n';assert text.count(marker)==1;text=text.replace(marker,block+marker,1)
+  elif row=='S07':text=text.replace('tail := diskFullLogTail(logPath)','tail := ""',1)
+  elif row=='S08':text=text.replace(' || blocker == "disk-full"','',1)
+  assert old!=text,(row,'mutation did not match');file.write_text(text)
+  import difflib
+  (evidence/(row+'-mutation.txt')).write_text(''.join(difflib.unified_diff(old.splitlines(True),text.splitlines(True),fromfile='a/'+path,tofile='b/'+path)))
+  code,out=run(row,['go','test','-count=1','-timeout','20m','-v','-run','^'+test+'$','./'+pkg],cwd=copy)
+  pattern=r'--- FAIL: '+re.escape(test+('/'+case if case else ''))+r'(?: |\n)'
+  killed=code!=0 and re.search(pattern,out) and '[build failed]' not in out and '[setup failed]' not in out
+  update(row,'pass' if killed else 'fail',f'Sabotage test exit {code}; required failing assertion {test}'+('/'+case if case else '')+(' confirmed' if killed else ' NOT confirmed')+'; '+link(row)+f'; [mutation](evidence/2026-11-06-terminal/{row}-mutation.txt). Temporary copy removed.')
+  print(row,'expected assertion confirmed:',bool(killed),flush=True)

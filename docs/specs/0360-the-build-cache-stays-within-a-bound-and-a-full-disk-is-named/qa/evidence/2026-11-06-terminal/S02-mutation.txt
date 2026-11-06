@@ -1,0 +1,12 @@
+--- a/Makefile
++++ b/Makefile
+@@ -15,8 +15,8 @@
+ 	else \
+ 		printf '%s' "$(CURDIR)/.gocache"; \
+ 	fi)
++endif
+ GOCACHE_BOUND_MB ?= 10240
+-endif
+ # ADR-0370: bound only the cache make chose unless the caller opts in.
+ GOCACHE_BOUND_MB ?= 0
+ GOCACHE_BOUND_IDLE ?= 2h

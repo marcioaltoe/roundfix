@@ -1,0 +1,6 @@
+command: make build GOCACHE=/tmp/roundfix-0360-qa-hqzyzd5h/make-flow-p66nzaw6/cache GOCACHE_BOUND_MB=1
+gocache-bound: warning: /tmp/roundfix-0360-qa-hqzyzd5h/make-flow-p66nzaw6/cache holds 48638265 bytes, above its 1048576-byte bound, and no other entry is idle for 2h0m0s; the build continues
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=' -X 'roundfix/internal/app.BuildTime=2026-11-06 13:31:34 -0300'" -o bin/roundfix ./cmd/roundfix
+
+exit: 0
+elapsed seconds: 9.77

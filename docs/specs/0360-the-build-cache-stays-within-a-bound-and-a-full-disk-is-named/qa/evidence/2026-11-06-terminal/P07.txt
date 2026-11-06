@@ -1,0 +1,845 @@
+command: go test -count=1 -timeout 20m -v ./skills
+=== RUN   TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== PAUSE TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== RUN   TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+=== PAUSE TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+=== RUN   TestBaselineDocumentationContractThinSkill
+=== PAUSE TestBaselineDocumentationContractThinSkill
+=== RUN   TestBaselineSkillContract
+=== PAUSE TestBaselineSkillContract
+=== RUN   TestNoPythonBaselineRuntime
+=== PAUSE TestNoPythonBaselineRuntime
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== PAUSE TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== RUN   TestThinSetupSkill
+=== PAUSE TestThinSetupSkill
+=== RUN   TestAuthorialSkillSync
+=== PAUSE TestAuthorialSkillSync
+=== RUN   TestAuthorialSkillSyncUpdateModeRoundTrip
+=== PAUSE TestAuthorialSkillSyncUpdateModeRoundTrip
+=== RUN   TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+=== PAUSE TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+=== RUN   TestWritePRDProjectConstraints
+=== PAUSE TestWritePRDProjectConstraints
+=== RUN   TestWriteTechSpecProjectConstraints
+=== PAUSE TestWriteTechSpecProjectConstraints
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== PAUSE TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== RUN   TestTaskTemplateStatesTheStatusPreservingVerificationForm
+=== PAUSE TestTaskTemplateStatesTheStatusPreservingVerificationForm
+=== RUN   TestTaskTemplateStatesTheWrapTolerantPhraseForm
+=== PAUSE TestTaskTemplateStatesTheWrapTolerantPhraseForm
+=== RUN   TestWriteTasksSkillStatesTheDeclaredPathRules
+=== PAUSE TestWriteTasksSkillStatesTheDeclaredPathRules
+=== RUN   TestAuthoringSkillsStateTheProofRules
+=== PAUSE TestAuthoringSkillsStateTheProofRules
+=== RUN   TestSpecReferenceLifecycleSkillContracts
+=== PAUSE TestSpecReferenceLifecycleSkillContracts
+=== RUN   TestProjectConstraintTaskGate
+=== PAUSE TestProjectConstraintTaskGate
+=== RUN   TestProjectConstraintImplementationGate
+=== PAUSE TestProjectConstraintImplementationGate
+=== RUN   TestReviewRequestContract
+=== PAUSE TestReviewRequestContract
+=== RUN   TestProjectConstraintPRDGate
+=== PAUSE TestProjectConstraintPRDGate
+=== RUN   TestProjectConstraintTechSpecGate
+=== PAUSE TestProjectConstraintTechSpecGate
+=== RUN   TestArchiveSpecContract
+=== PAUSE TestArchiveSpecContract
+=== RUN   TestProjectConstraintQAGate
+=== PAUSE TestProjectConstraintQAGate
+=== RUN   TestProjectConstraintJourney
+=== PAUSE TestProjectConstraintJourney
+=== RUN   TestToolingAuthorizationJourney
+=== PAUSE TestToolingAuthorizationJourney
+=== RUN   TestLegacySpecConstraintExemption
+=== PAUSE TestLegacySpecConstraintExemption
+=== RUN   TestAuthoringConstraintOwnership
+=== PAUSE TestAuthoringConstraintOwnership
+=== RUN   TestUpstreamADRFormatUnchanged
+=== PAUSE TestUpstreamADRFormatUnchanged
+=== RUN   TestUpstreamManagedSkillLockNamesAnEditedTree
+=== PAUSE TestUpstreamManagedSkillLockNamesAnEditedTree
+=== RUN   TestRepositoryCopyIncludesNewSourceFiles
+=== PAUSE TestRepositoryCopyIncludesNewSourceFiles
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+=== PAUSE TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+=== RUN   TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+=== PAUSE TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+=== RUN   TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+=== PAUSE TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+=== RUN   TestRecordingRaisesAVersionRecordedWithOtherContent
+=== PAUSE TestRecordingRaisesAVersionRecordedWithOtherContent
+=== RUN   TestRecordingRaisesAVersionBelowTheHighestRecorded
+=== PAUSE TestRecordingRaisesAVersionBelowTheHighestRecorded
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== PAUSE TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+=== PAUSE TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+=== RUN   TestAnUnrecordedOwnedSkillVersionIsRefused
+=== PAUSE TestAnUnrecordedOwnedSkillVersionIsRefused
+=== RUN   TestRecordingNeverReplacesARecordedVersion
+=== PAUSE TestRecordingNeverReplacesARecordedVersion
+=== RUN   TestCheckRepositoryMatchesRealRepository
+=== PAUSE TestCheckRepositoryMatchesRealRepository
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext
+=== PAUSE TestCheckRepositoryHonorsPreCanceledContext
+=== RUN   TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== PAUSE TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== RUN   TestCheckRepositoryWithExternalUsesExplicitRequirement
+=== PAUSE TestCheckRepositoryWithExternalUsesExplicitRequirement
+=== RUN   TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== PAUSE TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== RUN   TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+=== PAUSE TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+=== RUN   TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== PAUSE TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== PAUSE TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== PAUSE TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== RUN   TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+=== PAUSE TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+=== RUN   TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== PAUSE TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== PAUSE TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryWrapsFilesystemCauses
+=== PAUSE TestCheckRepositoryWrapsFilesystemCauses
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== PAUSE TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== RUN   TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+=== PAUSE TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+=== RUN   TestCouncilIsNotARoundfixOwnedSkill
+--- PASS: TestCouncilIsNotARoundfixOwnedSkill (0.00s)
+=== RUN   TestImplementSpecIsNotARoundfixOwnedSkill
+=== PAUSE TestImplementSpecIsNotARoundfixOwnedSkill
+=== RUN   TestRoundfixSkillIndexNamesEveryReference
+=== PAUSE TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexLinksResolve
+=== PAUSE TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== PAUSE TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestInstallWritesEveryRoundfixReference
+=== PAUSE TestInstallWritesEveryRoundfixReference
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestRoundfixWordingIsSatisfiedByAReferenceFile
+--- PASS: TestRoundfixWordingIsSatisfiedByAReferenceFile (0.00s)
+=== RUN   TestRoundfixWordingReportsAPhraseMissingFromEveryFile
+--- PASS: TestRoundfixWordingReportsAPhraseMissingFromEveryFile (0.00s)
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference/reference_project
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference/Reference_Project
+--- PASS: TestRoundfixWordingReportsBannedBrandingInAReference (0.00s)
+    --- PASS: TestRoundfixWordingReportsBannedBrandingInAReference/reference_project (0.00s)
+    --- PASS: TestRoundfixWordingReportsBannedBrandingInAReference/Reference_Project (0.00s)
+=== RUN   TestSettlementGuidanceIsOneTable
+--- PASS: TestSettlementGuidanceIsOneTable (0.00s)
+=== RUN   TestTaskAuthoringGuidanceNamesDeclarations
+--- PASS: TestTaskAuthoringGuidanceNamesDeclarations (0.00s)
+=== RUN   TestAnAgentMayStartTheSetupSkill
+=== PAUSE TestAnAgentMayStartTheSetupSkill
+=== RUN   TestSkillFolderHashMatchesExternalCompatibilityFixture
+=== PAUSE TestSkillFolderHashMatchesExternalCompatibilityFixture
+=== RUN   TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== PAUSE TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== PAUSE TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== RUN   TestSkillFolderHashWrapsMissingRootError
+=== PAUSE TestSkillFolderHashWrapsMissingRootError
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext
+=== PAUSE TestSkillFolderHashHonorsPreCanceledContext
+=== RUN   TestSkillFolderHashStopsAfterCancellationDuringRead
+=== PAUSE TestSkillFolderHashStopsAfterCancellationDuringRead
+=== RUN   TestCheckValidatesRoundfixSkillArtifacts
+=== PAUSE TestCheckValidatesRoundfixSkillArtifacts
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== PAUSE TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== PAUSE TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== RUN   TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+=== PAUSE TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+=== RUN   TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+=== PAUSE TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+=== RUN   TestFilesIncludeEveryOwnedSkill
+=== PAUSE TestFilesIncludeEveryOwnedSkill
+=== RUN   TestFrontmatterName
+=== PAUSE TestFrontmatterName
+=== RUN   TestRecommendedListsExternallyManagedSkills
+=== PAUSE TestRecommendedListsExternallyManagedSkills
+=== RUN   TestRecommendedSkillsMatchLock
+=== PAUSE TestRecommendedSkillsMatchLock
+=== RUN   TestCheckRejectsExecutableSetupEngineArtifacts
+=== PAUSE TestCheckRejectsExecutableSetupEngineArtifacts
+=== RUN   TestInstallCopiesSkillsToSupportedTargetDirectories
+=== PAUSE TestInstallCopiesSkillsToSupportedTargetDirectories
+=== RUN   TestInstallCopiesSkillsToProjectDirectoryByDefault
+=== PAUSE TestInstallCopiesSkillsToProjectDirectoryByDefault
+=== RUN   TestInstallRejectsUnsupportedTarget
+=== PAUSE TestInstallRejectsUnsupportedTarget
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== PAUSE TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestTheConcreteContractGuideShipsAtTheHorizonPath
+--- PASS: TestTheConcreteContractGuideShipsAtTheHorizonPath (0.00s)
+=== RUN   TestTheGuideExamplesAreReadByTheCheck
+--- PASS: TestTheGuideExamplesAreReadByTheCheck (0.00s)
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms
+=== PAUSE TestTheGlossaryGuidesStateTheDefinitionForms
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant
+=== CONT  TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== CONT  TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== CONT  TestArchiveSpecContract
+=== CONT  TestCheckRepositoryWithExternalUsesExplicitRequirement
+=== CONT  TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== CONT  TestCheckRepositoryHonorsPreCanceledContext
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext/canceled
+=== CONT  TestCheckRepositoryMatchesRealRepository
+=== CONT  TestRecordingNeverReplacesARecordedVersion
+=== RUN   TestRecordingNeverReplacesARecordedVersion/changed_digest
+=== RUN   TestRecordingNeverReplacesARecordedVersion/lower_unrecorded_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/descending_versions
+=== RUN   TestRecordingNeverReplacesARecordedVersion/duplicate_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/unchanged_digest
+=== RUN   TestRecordingNeverReplacesARecordedVersion/higher_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/no_longer_shipped
+--- PASS: TestRecordingNeverReplacesARecordedVersion (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/changed_digest (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/lower_unrecorded_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/descending_versions (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/duplicate_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/unchanged_digest (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/higher_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/no_longer_shipped (0.00s)
+=== CONT  TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== CONT  TestAnUnrecordedOwnedSkillVersionIsRefused
+=== CONT  TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+--- PASS: TestAChangedOwnedSkillUnderARecordedVersionIsRefused (0.00s)
+=== CONT  TestRecordingRaisesAVersionBelowTheHighestRecorded
+--- PASS: TestRecordingRaisesAVersionBelowTheHighestRecorded (0.00s)
+--- PASS: TestTheSettlementSkillsNameTheNetworkProhibitedRow (0.00s)
+=== CONT  TestRecordingRaisesAVersionRecordedWithOtherContent
+=== CONT  TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+--- PASS: TestRecordingRaisesAVersionRecordedWithOtherContent (0.00s)
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/colliding_version
+--- PASS: TestAnUnrecordedOwnedSkillVersionIsRefused (0.00s)
+=== CONT  TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+=== CONT  TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext/deadline_exceeded
+=== CONT  TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file
+--- PASS: TestCheckRepositoryHonorsPreCanceledContext (0.00s)
+    --- PASS: TestCheckRepositoryHonorsPreCanceledContext/canceled (0.00s)
+    --- PASS: TestCheckRepositoryHonorsPreCanceledContext/deadline_exceeded (0.00s)
+--- PASS: TestArchiveSpecContract (0.00s)
+=== CONT  TestRepositoryCopyIncludesNewSourceFiles
+--- PASS: TestCheckRepositoryMatchesRealRepository (0.01s)
+=== CONT  TestUpstreamManagedSkillLockNamesAnEditedTree
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/stale_version
+--- PASS: TestUpstreamManagedSkillLockNamesAnEditedTree (0.01s)
+=== CONT  TestUpstreamADRFormatUnchanged
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/different_version_lines
+--- PASS: TestTheOwnedSkillMinimumIsTheEmbeddedVersion (0.05s)
+=== CONT  TestAuthoringConstraintOwnership
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_body
+=== RUN   TestAuthoringConstraintOwnership/write-prd
+--- PASS: TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported (0.05s)
+=== CONT  TestLegacySpecConstraintExemption
+=== RUN   TestLegacySpecConstraintExemption/write-tasks
+=== RUN   TestAuthoringConstraintOwnership/write-techspec
+=== RUN   TestLegacySpecConstraintExemption/implement-task
+=== RUN   TestLegacySpecConstraintExemption/qa-gate
+--- PASS: TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow (0.06s)
+=== CONT  TestToolingAuthorizationJourney
+=== RUN   TestToolingAuthorizationJourney/exact_bounded_files_are_authorized
+=== RUN   TestToolingAuthorizationJourney/missing_express_authorization_refuses_decomposition
+=== RUN   TestToolingAuthorizationJourney/changed_path_outside_bounds_refuses_settlement
+=== RUN   TestToolingAuthorizationJourney/decomposition_contract
+--- PASS: TestUpstreamADRFormatUnchanged (0.03s)
+=== CONT  TestProjectConstraintJourney
+=== RUN   TestProjectConstraintJourney/_prd.md
+=== RUN   TestProjectConstraintJourney/_techspec.md
+--- PASS: TestProjectConstraintJourney (0.00s)
+    --- PASS: TestProjectConstraintJourney/_prd.md (0.00s)
+    --- PASS: TestProjectConstraintJourney/_techspec.md (0.00s)
+=== CONT  TestProjectConstraintQAGate
+--- PASS: TestLegacySpecConstraintExemption (0.01s)
+    --- PASS: TestLegacySpecConstraintExemption/write-tasks (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/implement-task (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/qa-gate (0.01s)
+=== CONT  TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel/PRD
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel/TechSpec
+--- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel (0.00s)
+    --- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel/PRD (0.00s)
+    --- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel/TechSpec (0.00s)
+=== CONT  TestProjectConstraintTechSpecGate
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_reference
+--- PASS: TestProjectConstraintTechSpecGate (0.00s)
+=== CONT  TestProjectConstraintPRDGate
+=== RUN   TestToolingAuthorizationJourney/execution_contract
+=== RUN   TestToolingAuthorizationJourney/QA_contract
+--- PASS: TestProjectConstraintQAGate (0.01s)
+=== CONT  TestReviewRequestContract
+=== CONT  TestProjectConstraintImplementationGate
+--- PASS: TestProjectConstraintPRDGate (0.01s)
+--- PASS: TestProjectConstraintImplementationGate (0.00s)
+=== CONT  TestProjectConstraintTaskGate
+--- PASS: TestToolingAuthorizationJourney (0.02s)
+    --- PASS: TestToolingAuthorizationJourney/exact_bounded_files_are_authorized (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/missing_express_authorization_refuses_decomposition (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/changed_path_outside_bounds_refuses_settlement (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/decomposition_contract (0.01s)
+    --- PASS: TestToolingAuthorizationJourney/execution_contract (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/QA_contract (0.01s)
+=== CONT  TestSpecReferenceLifecycleSkillContracts
+=== RUN   TestSpecReferenceLifecycleSkillContracts/archive_validation
+=== RUN   TestSpecReferenceLifecycleSkillContracts/PRD_adoption
+=== RUN   TestSpecReferenceLifecycleSkillContracts/idea_links
+=== RUN   TestSpecReferenceLifecycleSkillContracts/TechSpec_links
+=== RUN   TestSpecReferenceLifecycleSkillContracts/Task_links
+--- PASS: TestAuthoringConstraintOwnership (0.03s)
+    --- PASS: TestAuthoringConstraintOwnership/write-prd (0.00s)
+    --- PASS: TestAuthoringConstraintOwnership/write-techspec (0.00s)
+=== CONT  TestAuthoringSkillsStateTheProofRules
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_skill
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_template
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_skill
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_template
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/extra_mirror_file
+--- PASS: TestSpecReferenceLifecycleSkillContracts (0.01s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/archive_validation (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/PRD_adoption (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/idea_links (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/TechSpec_links (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/Task_links (0.00s)
+--- PASS: TestAuthoringSkillsStateTheProofRules (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_skill (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_template (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_skill (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_template (0.00s)
+=== CONT  TestTaskTemplateStatesTheWrapTolerantPhraseForm
+--- PASS: TestTaskTemplateStatesTheWrapTolerantPhraseForm (0.00s)
+=== CONT  TestTaskTemplateStatesTheStatusPreservingVerificationForm
+--- PASS: TestTaskTemplateStatesTheStatusPreservingVerificationForm (0.00s)
+=== CONT  TestThinSetupSkill
+=== CONT  TestWriteTasksSkillStatesTheDeclaredPathRules
+--- PASS: TestWriteTasksSkillStatesTheDeclaredPathRules (0.00s)
+=== CONT  TestWriteTechSpecProjectConstraints
+--- PASS: TestWriteTechSpecProjectConstraints (0.00s)
+=== CONT  TestWritePRDProjectConstraints
+--- PASS: TestWritePRDProjectConstraints (0.00s)
+=== CONT  TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+--- PASS: TestCheckRepositoryWithExternalUsesExplicitRequirement (0.09s)
+=== CONT  TestAuthorialSkillSyncUpdateModeRoundTrip
+    baseline_skill_contract_test.go:524: regenerated /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAuthorialSkillSyncUpdateModeRoundTrip3899271427/001/setup.json
+--- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror (0.09s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/colliding_version (0.01s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/stale_version (0.02s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/different_version_lines (0.02s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_body (0.02s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_reference (0.02s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/extra_mirror_file (0.01s)
+=== CONT  TestAuthorialSkillSync
+--- PASS: TestAuthorialSkillSyncUpdateModeRoundTrip (0.00s)
+=== CONT  TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== RUN   TestAuthorialSkillSync/roundfix
+--- PASS: TestThinSetupSkill (0.01s)
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+--- PASS: TestSkillFolderHashExcludesMetadataAndDependencyDirectories (0.00s)
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== CONT  TestTheGlossaryGuidesStateTheDefinitionForms
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md
+--- PASS: TestProjectConstraintTaskGate (0.02s)
+=== CONT  TestInstallRejectsUnsupportedTarget
+--- PASS: TestInstallRejectsUnsupportedTarget (0.00s)
+=== CONT  TestInstallCopiesSkillsToProjectDirectoryByDefault
+=== CONT  TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md
+--- PASS: TestCheckRepositoryWithExternalAcceptsEmptyRequirement (0.10s)
+=== CONT  TestInstallCopiesSkillsToSupportedTargetDirectories
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01
+--- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes (0.01s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01 (0.00s)
+=== CONT  TestCheckRejectsExecutableSetupEngineArtifacts
+--- PASS: TestCheckRejectsExecutableSetupEngineArtifacts (0.00s)
+=== CONT  TestRecommendedSkillsMatchLock
+--- PASS: TestRecommendedSkillsMatchLock (0.00s)
+=== CONT  TestRecommendedListsExternallyManagedSkills
+--- PASS: TestRecommendedListsExternallyManagedSkills (0.00s)
+=== CONT  TestFrontmatterName
+=== RUN   TestFrontmatterName/valid
+=== RUN   TestFrontmatterName/no_frontmatter
+=== RUN   TestFrontmatterName/unterminated
+=== RUN   TestFrontmatterName/missing_name
+--- PASS: TestFrontmatterName (0.00s)
+    --- PASS: TestFrontmatterName/valid (0.00s)
+    --- PASS: TestFrontmatterName/no_frontmatter (0.00s)
+    --- PASS: TestFrontmatterName/unterminated (0.00s)
+    --- PASS: TestFrontmatterName/missing_name (0.00s)
+=== CONT  TestFilesIncludeEveryOwnedSkill
+--- PASS: TestTheGlossaryGuidesStateTheDefinitionForms (0.01s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md (0.00s)
+=== CONT  TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+--- PASS: TestCheckOpenAIManifestAcceptsNestedRuntimeHints (0.00s)
+=== CONT  TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+--- PASS: TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand (0.00s)
+=== CONT  TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/satisfies
+--- PASS: TestFilesIncludeEveryOwnedSkill (0.00s)
+=== CONT  TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/missing_owned_skill
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/unexpected_owned_skill
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/below
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/duplicate_owned_skill
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/unversioned
+--- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/satisfies (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/below (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/unversioned (0.00s)
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/owned_version_below_minimum
+=== CONT  TestCheckValidatesRoundfixSkillArtifacts
+--- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/missing_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/unexpected_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/duplicate_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/owned_version_below_minimum (0.00s)
+=== CONT  TestSkillFolderHashStopsAfterCancellationDuringRead
+--- PASS: TestSkillFolderHashStopsAfterCancellationDuringRead (0.00s)
+=== CONT  TestSkillFolderHashHonorsPreCanceledContext
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext/canceled
+--- PASS: TestCharacterizationCorporaDoNotRecordOwnedSkillDigests (0.02s)
+=== CONT  TestSkillFolderHashWrapsMissingRootError
+=== RUN   TestAuthorialSkillSync/write-idea
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext/deadline_exceeded
+--- PASS: TestSkillFolderHashWrapsMissingRootError (0.00s)
+=== CONT  TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/root_is_regular_file
+=== RUN   TestAuthorialSkillSync/write-prd
+--- PASS: TestSkillFolderHashHonorsPreCanceledContext (0.00s)
+    --- PASS: TestSkillFolderHashHonorsPreCanceledContext/canceled (0.00s)
+    --- PASS: TestSkillFolderHashHonorsPreCanceledContext/deadline_exceeded (0.00s)
+=== CONT  TestBaselineSkillContract
+=== RUN   TestBaselineSkillContract/setup-context-driven
+=== RUN   TestBaselineSkillContract/roundfix
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/file_symlink
+--- PASS: TestRepositoryCopyIncludesNewSourceFiles (0.11s)
+=== CONT  TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regenerated_artifacts
+=== RUN   TestAuthorialSkillSync/write-techspec
+--- PASS: TestCheckValidatesRoundfixSkillArtifacts (0.01s)
+=== CONT  TestNoPythonBaselineRuntime
+--- PASS: TestBaselineSkillContract (0.00s)
+    --- PASS: TestBaselineSkillContract/setup-context-driven (0.00s)
+    --- PASS: TestBaselineSkillContract/roundfix (0.00s)
+=== CONT  TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== RUN   TestAuthorialSkillSync/write-tasks
+=== RUN   TestAuthorialSkillSync/setup-context-driven
+=== RUN   TestAuthorialSkillSync/implement-task
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/directory_symlink
+=== RUN   TestAuthorialSkillSync/brainstorming
+=== RUN   TestAuthorialSkillSync/business-analyst
+=== RUN   TestAuthorialSkillSync/archive-spec
+=== RUN   TestAuthorialSkillSync/qa-gate
+=== RUN   TestAuthorialSkillSync/evidence-gate
+--- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes (0.02s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/root_is_regular_file (0.00s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/file_symlink (0.00s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/directory_symlink (0.00s)
+=== CONT  TestImplementSpecIsNotARoundfixOwnedSkill
+--- PASS: TestImplementSpecIsNotARoundfixOwnedSkill (0.00s)
+=== CONT  TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json
+=== RUN   TestAuthorialSkillSync/go.json
+--- PASS: TestInstallCopiesSkillsToProjectDirectoryByDefault (0.03s)
+=== CONT  TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents
+=== RUN   TestAuthorialSkillSync/python.json
+--- PASS: TestNoPythonBaselineRuntime (0.02s)
+=== CONT  TestCheckRepositoryWrapsFilesystemCauses
+=== RUN   TestAuthorialSkillSync/rust.json
+=== RUN   TestAuthorialSkillSync/typescript.json
+--- PASS: TestCheckRepositoryWrapsFilesystemCauses (0.00s)
+=== CONT  TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock
+--- PASS: TestCheckRepositoryReportsReadyRequiredSetWithoutMutation (0.14s)
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== CONT  TestSkillFolderHashMatchesExternalCompatibilityFixture
+--- PASS: TestSkillFolderHashMatchesExternalCompatibilityFixture (0.00s)
+=== CONT  TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/canonical
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/embedded
+--- PASS: TestRoundfixSkillIndexNamesEveryReference (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/canonical (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/embedded (0.00s)
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestInstallWritesEveryRoundfixReference
+--- PASS: TestReviewRequestContract (0.08s)
+=== CONT  TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded
+--- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded (0.00s)
+=== CONT  TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillIndexLinksResolve/embedded
+=== RUN   TestRoundfixSkillIndexLinksResolve/canonical
+--- PASS: TestRoundfixSkillIndexLinksResolve (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/embedded (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/canonical (0.00s)
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestBaselineDocumentationContractThinSkill
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== PAUSE TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== RUN   TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== PAUSE TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== RUN   TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+=== PAUSE TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+=== RUN   TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== PAUSE TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== CONT  TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_owned
+--- PASS: TestAuthorialSkillSync (0.06s)
+    --- PASS: TestAuthorialSkillSync/roundfix (0.01s)
+    --- PASS: TestAuthorialSkillSync/write-idea (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-prd (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- PASS: TestAuthorialSkillSync/implement-task (0.00s)
+    --- PASS: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- PASS: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- PASS: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- PASS: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/go.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/python.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/rust.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/typescript.json (0.00s)
+=== CONT  TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link
+--- PASS: TestInstallWritesEveryRoundfixReference (0.07s)
+=== CONT  TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock
+--- PASS: TestInstallCopiesSkillsToSupportedTargetDirectories (0.14s)
+=== CONT  TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+--- PASS: TestWriteTasksComparesByteInvariantsWithTheDeliveryBase (0.00s)
+=== CONT  TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== CONT  TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+--- PASS: TestRepositoryReadinessNeverComparesThirdPartySkillVersions (0.14s)
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_external
+--- PASS: TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries (0.16s)
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestAnAgentMayStartTheSetupSkill
+=== RUN   TestAnAgentMayStartTheSetupSkill/canonical
+=== PAUSE TestAnAgentMayStartTheSetupSkill/canonical
+=== RUN   TestAnAgentMayStartTheSetupSkill/shipped
+=== PAUSE TestAnAgentMayStartTheSetupSkill/shipped
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+--- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md (0.00s)
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents/skills
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+--- PASS: TestNoOwnedSkillNamesAPersonalAssistant (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix (0.02s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix (0.02s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst (0.00s)
+--- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry (0.00s)
+    --- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline (0.00s)
+    --- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup (0.00s)
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+--- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded (0.00s)
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+--- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/embedded
+--- PASS: TestTheFollowUpModeRunsItsStepsInOrder (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/embedded (0.00s)
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== CONT  TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes/setup-context-driven
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes/roundfix
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents/skills
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+--- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+=== CONT  TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+--- PASS: TestCheckRepositoryWithExternalKeepsOwnedValidation (0.17s)
+=== CONT  TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== CONT  TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+--- PASS: TestBaselineDocumentationContractThinSkill (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes (0.00s)
+        --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes/setup-context-driven (0.00s)
+        --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes/roundfix (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/executable_engine_rejection (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees (0.01s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/no_Python_fallback (0.01s)
+=== CONT  TestAnAgentMayStartTheSetupSkill/canonical
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestAnAgentMayStartTheSetupSkill/shipped
+--- PASS: TestAnAgentMayStartTheSetupSkill (0.00s)
+    --- PASS: TestAnAgentMayStartTheSetupSkill/canonical (0.00s)
+    --- PASS: TestAnAgentMayStartTheSetupSkill/shipped (0.00s)
+--- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/canonical (0.01s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/embedded (0.00s)
+--- PASS: TestCheckRepositoryMatchesExternalCompatibilityEntryPoint (0.18s)
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/unversioned_owned_SKILL
+--- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories (0.24s)
+    --- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents (0.13s)
+    --- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents/skills (0.11s)
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory
+--- PASS: TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering (0.35s)
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/owned_version_below_minimum
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_skills-lock.json
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_owned_content_does_not_gate_compatibility
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/removed_non-identity_owned_content_does_not_gate_compatibility
+--- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets (0.46s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents (0.28s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents/skills (0.11s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_skills-lock.json (0.07s)
+--- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence (0.58s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file (0.10s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file (0.11s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link (0.14s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash (0.12s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory (0.05s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry (0.03s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link (0.04s)
+--- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames (0.46s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock (0.10s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock (0.13s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version (0.10s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry (0.04s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry (0.04s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape (0.03s)
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/changed_external_file
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_external_file
+--- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills (0.49s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_owned (0.14s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_external (0.16s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/unversioned_owned_SKILL (0.05s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/owned_version_below_minimum (0.04s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_owned_content_does_not_gate_compatibility (0.04s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/removed_non-identity_owned_content_does_not_gate_compatibility (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/changed_external_file (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_external_file (0.02s)
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_unchanged_artifacts
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regeneration_errors
+--- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes (0.76s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regenerated_artifacts (0.58s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_unchanged_artifacts (0.10s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regeneration_errors (0.08s)
+PASS
+ok  	roundfix/skills	1.156s
+
+exit: 0
+elapsed seconds: 2.44

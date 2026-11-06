@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

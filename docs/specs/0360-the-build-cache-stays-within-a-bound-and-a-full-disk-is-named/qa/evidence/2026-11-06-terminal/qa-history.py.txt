@@ -1,0 +1,60 @@
+from roundfix0360_common import *
+import tempfile,difflib
+base='c052879d722be9b1c6aa9daee3098bc38a518a48^'
+commits={'task_01':'c052879d722be9b1c6aa9daee3098bc38a518a48','task_02':'e32fa83597ffd157743f91cb2108230254dd4ea3','task_03':s['head']}
+def git(*args):return subprocess.check_output(['git',*args],cwd=root,env=environment,text=True)
+checks=[];allpaths=set()
+def check(ok,label):checks.append(('PASS ' if ok else 'FAIL ')+label)
+grantpath=str(pathlib.Path(s['spec']).relative_to(root)/'_authorization.md');grant=readgrant=(root/grantpath).read_text();paths=set(re.search(r'(?m)^paths:\n(.*?)(?=^[^ ])',grant,re.S).group(1).replace('  - ','').split())
+for task,commit in commits.items():
+ changed=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();allpaths.update(changed)
+ taskpath=str(pathlib.Path(s['spec']).relative_to(root)/(task+'.md'));text=(root/taskpath).read_text()
+ declared=set(re.findall(r'(?m)^- (?:instruction|interface|creates|deletes): `([^`]+)`',text));recorded=text.split('## Recorded paths',1)[1].split('\n## ',1)[0] if '## Recorded paths' in text else ''
+ declared.update(re.findall(r'(?m)^- `([^`]+)`',recorded));declared.add(taskpath)
+ extra=set(changed)-declared
+ check(not extra,f'{task} {commit}: {len(changed)} actual changed paths; undeclared='+repr(sorted(extra)))
+ for p in sorted(set(changed)&set(re.findall(r'(?m)^- `([^`]+)`',recorded))):checks.append('RECORDED '+task+' '+p)
+ # Mechanical audit already granted these commits; inspect scope and chronology without rerunning its refusal codes.
+ check(git('show',commit+'^:'+grantpath)==grant,task+' parent grant byte-identical to current operative record')
+ code=subprocess.run(['git','merge-base','--is-ancestor','e8a561fc65dac6b79ac735dc45213af08cd2b5a4',commit],cwd=root,env=environment).returncode
+ check(code==0,task+' authorizing revision is earlier in ancestry')
+ check(grantpath not in changed,task+' does not authorize itself')
+ checks.extend('PATH '+task+' '+p for p in changed)
+repair='d66b36544056a2f932ae752ebce0699b56e7792f';repairpaths=git('diff-tree','--no-commit-id','--name-only','-r',repair).splitlines();allpaths.update(repairpaths)
+check(set(repairpaths)=={'Makefile','docs/agents/setup-context.json',str(pathlib.Path(s['spec']).relative_to(root)/'_techspec.md')},'separate repair commit bounds only baseline-digests prerequisite and setup digest plus TechSpec clarification')
+check(git('show',repair+'^:'+grantpath)==grant,'separate repair inherits operative grant before its change')
+check(subprocess.run(['git','merge-base','--is-ancestor','c052879d',repair],cwd=root,env=environment).returncode==0,'consequent repair is a separate commit after task_01')
+changed=git('diff','--name-only',base,s['head']).splitlines()
+for p in changed:
+ forbidden=p in {'go.mod','go.sum','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/references/coverage-record.json'} or p.startswith(('.github/workflows/','internal/baseline/assets/'))
+ forbidden|=p.startswith('docs/agents/') and p not in {'docs/agents/setup-context.json','docs/agents/specific-repository.md'}
+ forbidden|=p.startswith(('.agents/skills/','skills/')) and p not in {'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/deliver.md','.agents/skills/roundfix/references/setup.md','skills/roundfix/SKILL.md','skills/roundfix/references/deliver.md','skills/roundfix/references/setup.md','skills/testdata/owned-skill-versions.json'}
+ check(not forbidden,'protected scope '+p)
+# Use the actual compiled GovernedPath predicate, through an overlay; no repository edit.
+with tempfile.TemporaryDirectory(prefix='governed-probe-',dir=scratch) as directory:
+ directory=pathlib.Path(directory);source=directory/'main.go.txt';overlay=directory/'overlay.json'
+ source.write_text('package main\nimport("fmt";"os";"roundfix/internal/speccheck")\nfunc main(){for _,p:=range os.Args[1:]{if speccheck.GovernedPath(p){fmt.Println(p)}}}\n')
+ overlay.write_text(json.dumps({'Replace':{str(root/'cmd/gocache-bound/main.go'):str(source)}}))
+ code,out=run('H01-governed',['go','run','-overlay',str(overlay),'./cmd/gocache-bound',*changed])
+ governed=[l for l in out.splitlines() if l in changed]
+ check(code==0 and set(governed)==paths,'every actually changed GovernedPath is exactly in the eight-path authorization')
+ checks+=['GOVERNED '+p for p in governed]
+old=git('show',base+':Makefile');current=(root/'Makefile').read_text();projection=current
+projection=projection.replace('GOCACHE_BOUND_MB ?= 10240\n','',1).replace('# ADR-0370: bound only the cache make chose unless the caller opts in.\nGOCACHE_BOUND_MB ?= 0\nGOCACHE_BOUND_IDLE ?= 2h\n','',1)
+projection=projection.replace('.PHONY: gocache-bound ','.PHONY: ',1)
+projection=re.sub(r'(?m)^gocache-bound: ##[^\n]*\n(?:\t[^\n]*\n)+\n','',projection,count=1)
+projection=re.sub(r'(?m)^([a-z][a-z-]*): gocache-bound(?= |$)',r'\1:',projection)
+check(projection==old,'Makefile byte projection equals delivery-base Makefile after removing only approved variables, comment, target and prerequisites')
+check('go clean' not in current,'Makefile contains no go clean')
+for p in changed:
+ if p.endswith('.md') and '/skills/' in p:
+  before=git('show',base+':'+p);after=(root/p).read_text()
+  section=lambda t:re.search(r'(?ms)^### QA settlement\n.*?(?=^## |^### |\Z)',t).group(0) if '### QA settlement\n' in t else ''
+  check(section(before)==section(after),'QA settlement byte-identical '+p)
+# The current worktree may add only QA report/evidence; retain other changes if found.
+delta=git('status','--porcelain','--untracked-files=all').splitlines();scope=str(pathlib.Path(s['spec']).relative_to(root)/'qa')+'/'
+check(all(line[3:].startswith(scope) for line in delta),'current worktree delta limited to this Spec qa directory')
+(evidence/'H01.txt').write_text('\n'.join(checks)+'\n')
+failed=[c for c in checks if c.startswith('FAIL')]
+update('H01','fail' if failed else 'pass',f'History range {base}..{s["head"]}; all three Task diffs, Recorded paths, operative ancestry, the separate consequent repair, protected scope and Makefile byte projection checked; '+str(len(failed))+' failures. Mechanical authorization table retained; no mechanical refusal code rerun. '+link('H01')+', '+link('H01-governed')+'.')
+print('history checks:',len(checks),'failed:',failed)

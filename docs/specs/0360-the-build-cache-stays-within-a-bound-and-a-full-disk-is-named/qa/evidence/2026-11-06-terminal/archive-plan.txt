@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named --plan --offline
+archive plan for 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named: removes 71 file(s) (1509070 bytes) and writes docs/history/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-06.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 59 file(s) (1352498 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-05-the-roundfix-build-cache-fills-the-mac-mini-internal-disk.md 2094 bytes: no advice (offline)
+candidate references/2026-11-06-the-repository-build-cache-stays-within-a-size-bound.md 1471 bytes: no advice (offline)
+promote with: roundfix archive 0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named --promote <path>
+
+exit: 0
+elapsed seconds: 1.05

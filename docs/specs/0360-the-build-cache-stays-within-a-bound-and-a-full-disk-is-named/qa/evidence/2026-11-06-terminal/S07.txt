@@ -1,0 +1,27 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheItemBuildOnAFullDiskIsADiskFullFailure$ ./internal/cli
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+    deliver_disk_full_test.go:55: error=build item binary: verification command "printf '%s\\n' 'compile: writing output: write $WORK/b001/_pkg_.a: no space left on device' >&2; exit 7" failed; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheItemBuildOnAFullDiskIsADiskFullFailureno_path_in_the_log3050632398/002/artifacts/delivery/widget/item-binary-build.log: exit status 7 full=<nil> want path=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheItemBuildOnAFullDiskIsADiskFullFailureno_path_in_the_log3050632398/002/home bytes=3145827
+=== NAME  TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+    deliver_disk_full_test.go:55: error=build item binary: verification command "printf '%s\\n' 'write /tmp/x/_pkg_.a: no space left on device' >&2; exit 7" failed; diagnostics: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheItemBuildOnAFullDiskIsADiskFullFailurepath_in_the_log3964831326/002/artifacts/delivery/widget/item-binary-build.log: exit status 7 full=<nil> want path=/tmp/x/_pkg_.a bytes=7340032
+--- FAIL: TestTheItemBuildOnAFullDiskIsADiskFullFailure (0.00s)
+    --- FAIL: TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log (0.19s)
+    --- PASS: TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure (0.19s)
+    --- FAIL: TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log (0.19s)
+FAIL
+suiteguard: guard cost: measured 2970 paths; fingerprint took 127.637875ms before and 133.167625ms after
+FAIL	roundfix/internal/cli	0.889s
+FAIL
+
+exit: 1
+elapsed seconds: 6.80

@@ -1,0 +1,9 @@
+command: go test -count=1 -timeout 20m -v -run ^TestEveryBlockerHasAParkClass$ ./internal/delivery
+=== RUN   TestEveryBlockerHasAParkClass
+--- PASS: TestEveryBlockerHasAParkClass (0.01s)
+PASS
+suiteguard: guard cost: measured 2990 paths; fingerprint took 141.956334ms before and 136.074708ms after
+ok  	roundfix/internal/delivery	0.419s
+
+exit: 0
+elapsed seconds: 0.76

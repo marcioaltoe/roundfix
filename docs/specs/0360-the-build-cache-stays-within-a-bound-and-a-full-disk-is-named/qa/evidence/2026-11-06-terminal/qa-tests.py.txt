@@ -1,0 +1,18 @@
+from roundfix0360_common import *
+import sys
+if sys.argv[1]=='named':
+ k=0
+ for pkg,names in s['named'].items():
+  for test in names:
+   k+=1;row=f'T{k:02}'
+   code,out=run(row,['go','test','-count=1','-timeout','20m','-v','-run','^'+test+'$','./internal/'+pkg])
+   passed=code==0 and re.search(r'--- PASS: '+test+r' ',out)
+   update(row,'pass' if passed else 'fail',f'{test}: exit {code}; named PASS '+('confirmed' if passed else 'missing or failed')+'; '+link(row)+'.')
+else:
+ for j,pkg in enumerate(['internal/sharedcache','internal/verifyselect','internal/cli','internal/delivery','internal/store','internal/docscontract','skills'],1):
+  row=f'P{j:02}';cmd=['go','test','-count=1','-timeout','20m','-v']
+  if j==6:cmd+=['-tags','docscontract']
+  cmd+=['./'+pkg]
+  code,out=run(row,cmd)
+  skips=re.findall(r'--- SKIP: ([^\n]+)',out)
+  update(row,'pass' if code==0 else 'fail',f'Whole {pkg}: exit {code}; {len(skips)} test skips (see transcript); '+link(row)+'.')

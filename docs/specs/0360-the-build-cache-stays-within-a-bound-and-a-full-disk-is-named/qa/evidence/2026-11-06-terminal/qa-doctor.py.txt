@@ -1,0 +1,18 @@
+from roundfix0360_common import *
+import tempfile
+# Public Doctor command with isolated home and no adapter/provider executables.
+with tempfile.TemporaryDirectory(prefix='doctor-',dir=scratch) as directory:
+ base=pathlib.Path(directory);repo=base/'repo';repo.mkdir();pathdir=base/'path';pathdir.mkdir();home=base/'home';home.mkdir();temp=base/'tmp';temp.mkdir()
+ (pathdir/'git').symlink_to(shutil.which('git'))
+ (repo/'bin').symlink_to(root/'bin',target_is_directory=True)
+ subprocess.run(['git','init','-q',str(repo)],env=environment,check=True)
+ (repo/'.roundfixrc.yml').write_text('worktree:\n  location: '+str(base/'worktrees')+'\n  shared_caches:\n    - path: '+str(base/'cache')+'\n      kind: go-build\n      max_size_mb: 10240\n      idle: 2h\ndelivery:\n  linux_lane: false\npre_pr_review:\n  provider: none\n')
+ extra=dict(s['native_go']);extra.update(HOME=str(home),TMPDIR=str(temp),PATH=str(pathdir),CODEX_PATH="")
+ # Doctor intentionally reports missing runtime tools; the disk-space observable is independent.
+ for name in ['D01-first','D01-fresh-read']:
+  code,out=run(name,['./bin/roundfix','doctor'],cwd=repo,extra=extra,timeout=120)
+  assert code==1 and 'node:' in out and 'acpx:' in out,out
+  lines=[line for line in out.splitlines() if 'disk-space:' in line]
+  print(name,'disk-space:',lines or 'absent (healthy locations)',flush=True)
+  assert not lines,'Host low-space observation needs explicit classification'
+ update('D01','pass','Two invocations of the built ./bin/roundfix doctor independently omit disk-space when these filesystems are healthy. Both exit 1 for intentionally unavailable node/acpx/gh/codex tools; no ACP adapter is available or started. Boundary/low-space wording and unchanged exit behavior are demonstrated by all eight Doctor cases in '+link('T06')+'. '+link('D01-first')+', '+link('D01-fresh-read')+'. Temporary repository, HOME and TMPDIR removed.')

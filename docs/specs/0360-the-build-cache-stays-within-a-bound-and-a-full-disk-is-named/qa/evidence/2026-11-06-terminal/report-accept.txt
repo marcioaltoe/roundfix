@@ -1,0 +1,4 @@
+command: ./bin/roundfix qa-report accept docs/specs/0360-the-build-cache-stays-within-a-bound-and-a-full-disk-is-named/qa/qa-report-2026-11-06.md
+
+exit: 0
+elapsed seconds: 0.06

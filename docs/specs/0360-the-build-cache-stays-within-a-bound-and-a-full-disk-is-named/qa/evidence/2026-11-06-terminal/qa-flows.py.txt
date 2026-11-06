@@ -1,0 +1,53 @@
+from roundfix0360_common import *
+import tempfile,tarfile,hashlib,datetime
+# Real Makefile over a fresh throwaway Go cache, with sentinel entries whose ages we control.
+with tempfile.TemporaryDirectory(prefix='make-flow-',dir=scratch) as directory:
+ base=pathlib.Path(directory);copy=base/'repo';copy.mkdir();cache=base/'cache';cache.mkdir()
+ archive=base/'head.tar'
+ with archive.open('wb') as f:subprocess.run(['git','archive',s['head']],cwd=root,env=environment,stdout=f,check=True)
+ with tarfile.open(archive) as f:f.extractall(copy,filter='data')
+ archive.unlink()
+ (cache/'README').write_text('This directory holds cached build artifacts from the Go build system.\n')
+ sentinels=[]
+ for n in range(3):
+  path=cache/'ff'/('%064x-d'%(100+n));path.parent.mkdir(exist_ok=True);path.write_bytes(bytes([n+1])*(600*1024));sentinels.append(path)
+ digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+ before={str(p.relative_to(cache)):digest(p) for p in cache.rglob('*') if p.is_file()}
+ code,out=run('M01-young',['make','build','GOCACHE='+str(cache),'GOCACHE_BOUND_MB=1'],cwd=copy,timeout=600)
+ assert code==0 and 'above its 1048576-byte bound, and no other entry is idle for 2h0m0s; the build continues' in out
+ assert all((cache/p).exists() and digest(cache/p)==v for p,v in before.items())
+ all_before={str(p.relative_to(cache)):digest(p) for p in cache.rglob('*') if p.is_file()}
+ stamp=(datetime.datetime.now()-datetime.timedelta(hours=3)).strftime('%Y%m%d%H%M.%S')
+ subprocess.run(['touch','-t',stamp,*map(str,sentinels[:2])],check=True,env=environment)
+ code,out=run('M01-idle',['make','build','GOCACHE='+str(cache),'GOCACHE_BOUND_MB=1'],cwd=copy,timeout=600)
+ assert code==0 and 'removed 2 idle entries (1228800 bytes)' in out
+ after={str(p.relative_to(cache)):digest(p) for p in cache.rglob('*') if p.is_file()}
+ removed=set(all_before)-set(after);expected={str(p.relative_to(cache)) for p in sentinels[:2]}
+ assert removed==expected,(removed,expected)
+ assert all(after[p]==v for p,v in all_before.items() if p not in expected and p.endswith('-d'))
+ code,out=run('M01-explicit',['make','vet','GOCACHE='+str(cache)],cwd=copy,timeout=600)
+ assert code==0 and 'gocache-bound:' not in out
+ (evidence/'M01-state.txt').write_text('Initial sentinel entries: 3 x 614400 bytes, all younger than two hours.\nFirst make: exit 0, over-bound warning; every pre-existing entry kept with identical SHA-256.\nBefore second make: '+str(len(all_before))+' files. touch -t makes only two sentinel -d entries three hours old.\nSecond make: removed exactly 2 idle entries, 1228800 bytes; actual missing set equals aged set.\nEvery other pre-existing -d entry retains its content hash; young sentinel retained.\nmake vet with explicit GOCACHE and no GOCACHE_BOUND_MB: exit 0, no gocache-bound line.\nDisposable repository and cache removed.\n')
+ update('M01','pass','Real archived-head Makefile builds exit 0. First warning names 1048576-byte bound and 2h0m0s; all pre-existing young entries remain. After touch -t, exactly the two aged entries disappear (1228800 bytes), every other pre-existing -d hash is unchanged. Explicit-cache vet exits 0 with no bound output. '+link('M01-young')+', '+link('M01-idle')+', '+link('M01-explicit')+', '+link('M01-state')+'.')
+# Public Doctor command with isolated home and no adapter/provider executables.
+with tempfile.TemporaryDirectory(prefix='doctor-',dir=scratch) as directory:
+ base=pathlib.Path(directory);repo=base/'repo';repo.mkdir();pathdir=base/'path';pathdir.mkdir();home=base/'home';home.mkdir();temp=base/'tmp';temp.mkdir()
+ (pathdir/'git').symlink_to(shutil.which('git'))
+ (repo/'bin').symlink_to(root/'bin',target_is_directory=True)
+ subprocess.run(['git','init','-q',str(repo)],env=environment,check=True)
+ (repo/'.roundfixrc.yml').write_text('worktree:\n  location: '+str(base/'worktrees')+'\n  shared_caches:\n    - path: '+str(base/'cache')+'\n      kind: go-build\n      max_size_mb: 10240\n      idle: 2h\ndelivery:\n  linux_lane: false\npre_pr_review:\n  provider: none\n')
+ extra=dict(s['native_go']);extra.update(HOME=str(home),TMPDIR=str(temp),PATH=str(pathdir))
+ # Doctor intentionally reports missing runtime tools; the disk-space observable is independent.
+ for name in ['D01-first','D01-fresh-read']:
+  code,out=run(name,['./bin/roundfix','doctor'],cwd=repo,extra=extra,timeout=120)
+  assert code==1 and 'node:' in out and 'acpx:' in out,out
+  lines=[line for line in out.splitlines() if 'disk-space:' in line]
+  print(name,'disk-space:',lines or 'absent (healthy locations)',flush=True)
+  assert not lines,'Host low-space observation needs explicit classification'
+ update('D01','pass','Two invocations of the built ./bin/roundfix doctor independently omit disk-space when these filesystems are healthy. Both exit 1 for intentionally unavailable node/acpx/gh/codex tools; no ACP adapter is available or started. Boundary/low-space wording and unchanged exit behavior are demonstrated by all eight Doctor cases in '+link('T06')+'. '+link('D01-first')+', '+link('D01-fresh-read')+'. Temporary repository, HOME and TMPDIR removed.')
+# Read-only archive plan; no judge or provider keys remain in this environment.
+with tempfile.TemporaryDirectory(prefix='archive-home-',dir=scratch) as home,tempfile.TemporaryDirectory(prefix='archive-tmp-',dir=scratch) as temp:
+ extra=dict(s['native_go']);extra.update(HOME=home,TMPDIR=temp)
+ code,out=run('archive-plan',['./bin/roundfix','archive',pathlib.Path(s['spec']).name,'--plan','--offline'],extra=extra,timeout=120)
+ assert code==0 and 'judge: skipped (offline)' in out,out
+ print('offline archive plan confirmed',flush=True)

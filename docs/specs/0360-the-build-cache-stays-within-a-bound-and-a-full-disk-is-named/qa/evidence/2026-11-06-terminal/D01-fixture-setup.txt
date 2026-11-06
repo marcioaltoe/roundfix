@@ -1,0 +1,6 @@
+command: ./bin/roundfix doctor
+roundfix: doctor failed: worktree.shared_caches kind "" must be go-build
+Run 'roundfix doctor --help' for usage.
+
+exit: 1
+elapsed seconds: 0.07

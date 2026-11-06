@@ -1,0 +1,43 @@
+PASS docs/user-guide/commands/deliver.md exact disk-full paragraph
+PASS docs/user-guide/commands/deliver.md exact low-disk paragraph
+PASS docs/user-guide/commands/deliver.md exact next action once
+PASS docs/user-guide/commands/deliver.md uncounted retry
+PASS docs/user-guide/commands/deliver.md environment Park Class ordering
+PASS .agents/skills/roundfix/references/deliver.md exact disk-full paragraph
+PASS .agents/skills/roundfix/references/deliver.md exact low-disk paragraph
+PASS .agents/skills/roundfix/references/deliver.md exact next action once
+PASS .agents/skills/roundfix/references/deliver.md uncounted retry
+PASS .agents/skills/roundfix/references/deliver.md environment Park Class ordering
+PASS skills/roundfix/references/deliver.md exact disk-full paragraph
+PASS skills/roundfix/references/deliver.md exact low-disk paragraph
+PASS skills/roundfix/references/deliver.md exact next action once
+PASS skills/roundfix/references/deliver.md uncounted retry
+PASS skills/roundfix/references/deliver.md environment Park Class ordering
+PASS docs/user-guide/commands/doctor.md exact disk-space floor phrase
+PASS docs/user-guide/commands/doctor.md DR-DISK-LOW location phrase
+PASS .agents/skills/roundfix/references/setup.md exact disk-space floor phrase
+PASS .agents/skills/roundfix/references/setup.md DR-DISK-LOW location phrase
+PASS skills/roundfix/references/setup.md exact disk-space floor phrase
+PASS skills/roundfix/references/setup.md DR-DISK-LOW location phrase
+PASS README exact Development paragraph
+PASS repository rule exact added sentence
+PASS _prd.md declares adds Build Cache Bound
+PASS _techspec.md declares adds Build Cache Bound
+PASS CONTEXT exact definition and Avoid Build Cache Bound
+PASS fresh glossary test PASS Build Cache Bound
+PASS _prd.md declares adds Free-Space Floor
+PASS _techspec.md declares adds Free-Space Floor
+PASS CONTEXT exact definition and Avoid Free-Space Floor
+PASS fresh glossary test PASS Free-Space Floor
+PASS _prd.md declares adds Disk-Full Park
+PASS _techspec.md declares adds Disk-Full Park
+PASS CONTEXT exact definition and Avoid Disk-Full Park
+PASS fresh glossary test PASS Disk-Full Park
+PASS docs/adr/0327-gc-trims-a-declared-shared-build-cache.md timestamp
+PASS docs/adr/0327-gc-trims-a-declared-shared-build-cache.md exact amendment
+PASS docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md timestamp
+PASS docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md exact amendment
+PASS canonical/mirror identical references/deliver.md
+PASS canonical/mirror identical references/setup.md
+PASS canonical/mirror identical SKILL.md
+PASS Project Config cache declaration

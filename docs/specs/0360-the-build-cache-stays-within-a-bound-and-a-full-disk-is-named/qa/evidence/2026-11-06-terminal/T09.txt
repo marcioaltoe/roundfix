@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheRepositoryGateOnAFullDiskParksDiskFull$ ./internal/cli
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+--- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull (0.00s)
+    --- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure (0.18s)
+    --- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk (0.18s)
+PASS
+suiteguard: guard cost: measured 2985 paths; fingerprint took 147.337334ms before and 140.85275ms after
+ok  	roundfix/internal/cli	0.757s
+
+exit: 0
+elapsed seconds: 1.31

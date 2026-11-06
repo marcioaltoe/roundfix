@@ -1,0 +1,47 @@
+from roundfix0360_common import *
+normalize=lambda t:' '.join(t.split())
+def read(p):return (root/p).read_text()
+tech=read(str(pathlib.Path(s['spec']).relative_to(root)/'_techspec.md'));context=read('CONTEXT.md')
+checks=[]
+def check(condition,label):
+ checks.append(('PASS' if condition else 'FAIL')+' '+label)
+ if not condition:print('FAIL',label,flush=True)
+action='free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry <slug>; a retry from disk-full is not counted'
+park='When the item binary build or the repository gate fails because a filesystem is full, with the error `ENOSPC` or a retained log that says `no space left on device`, the item parks as `disk-full: <path>: <N> MiB free` in the environment Park Class instead of `delivery-error` or `gate-failed`. `<path>` is the last absolute path the log names before that text, or else the inspected location with the least free space, and `<N>` is its free space when the item parked. A Run whose Task Verification fills the disk still parks `run-unresolved`; `roundfix runs causes <run>` names its `disk-full` signature.'
+low="Before an item's Implement Run and before its repository gate, the queue reads the free space where the worktree location, each declared Shared Build Cache and the temporary directory live. Below the Free-Space Floor of 10,240 MiB it records a `low-disk: <label> <path> has <N> MiB free, below 10240 MiB` segment in the item's warning, which `roundfix deliver status` prints, and writes one warning line to the Queue Owner's log; at or above the floor the segment goes. The warning never parks or delays the item."
+for p in ['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md']:
+ text=normalize(read(p));check(park in text,p+' exact disk-full paragraph');check(low in text,p+' exact low-disk paragraph')
+ check(text.count("A `disk-full` park's next action is `"+action+'`.')==1,p+' exact next action once')
+ check('A Delivery Retry from `disk-full` is not counted against the retry limit either.' in text,p+' uncounted retry')
+ line=next((l for l in read(p).splitlines() if l.startswith('| `environment` |')),'')
+ check('`runtime-infrastructure`' in line and '`disk-full`' in line and line.index('`runtime-infrastructure`')<line.index('`disk-full`'),p+' environment Park Class ordering')
+for p in ['docs/user-guide/commands/doctor.md','.agents/skills/roundfix/references/setup.md','skills/roundfix/references/setup.md']:
+ text=normalize(read(p));check('the worktree location (`worktree.location`), a declared Shared Build Cache or the temporary directory has less than the Free-Space Floor of 10 GiB (10,240 MiB) free' in text,p+' exact disk-space floor phrase')
+ check('where worktrees, a Shared Build Cache or the temporary directory live' in text,p+' DR-DISK-LOW location phrase')
+expected="Every `make` target that builds or tests first holds the Makefile's Go build cache to its Build Cache Bound, `GOCACHE_BOUND_MB` (10240 MiB), by removing entries no build used for `GOCACHE_BOUND_IDLE` (2h); set `GOCACHE_BOUND_MB=0` to turn it off. To keep the cache off a small system disk, point `TMPDIR` or `GOCACHE` at another volume; Go's own user cache, which `go` commands outside `make` fill, can be declared in User Config under `worktree.shared_caches`."
+check(expected in normalize(read('README.md')),'README exact Development paragraph')
+check('before it builds or tests, the top-level `make` holds the cache it chose to the Build Cache Bound with `cmd/gocache-bound` and never clears it (ADR-0370).' in normalize(read('docs/agents/specific-repository.md')),'repository rule exact added sentence')
+terms=['Build Cache Bound','Free-Space Floor','Disk-Full Park']
+for term in terms:
+ for name in ['_prd.md','_techspec.md']:
+  check('- adds: **'+term+'**' in pathlib.Path(s['spec'],name).read_text(),name+' declares adds '+term)
+ # TechSpec's fenced definitions are the authored oracle, with only its specified ADR Markdown link normalized.
+ expected=re.search(r'(?m)^     \*\*'+re.escape(term)+r'\*\*:\n(.*?)(?=\n\n|\n     ```)',tech,re.S).group(1)
+ expected=normalize(re.sub(r'^     ','',expected,flags=re.M))
+ actual=re.search(r'(?m)^\*\*'+re.escape(term)+r'\*\*:\n(.*?)(?=\n\n)',context,re.S).group(1)
+ actual=re.sub(r'\[ADR-0370\]\([^)]*\)','ADR-0370',actual)
+ check(normalize(actual)==expected,'CONTEXT exact definition and Avoid '+term)
+ check(bool(re.search(r'--- PASS: TestGlossaryPhrasesAreDefinedTerms ',(evidence/'P06.txt').read_text())),'fresh glossary test PASS '+term)
+for number in ['0327','0334']:
+ p=next((root/'docs/adr').glob(number+'-*.md'));text=p.read_text()
+ check('updated_at: 2026-11-06T12:00:00Z' in text,str(p.relative_to(root))+' timestamp')
+ expected=re.search(r'(?m)^       \*\*Amended by ADR-0370.*?\n',tech[tech.index('ADR-'+number+', after'):]).group(0).strip()
+ actual=next(l for l in text.splitlines() if l.startswith('**Amended by '));actual=re.sub(r'\[ADR-0370\]\([^)]*\)','ADR-0370',actual)
+ check(actual==expected,str(p.relative_to(root))+' exact amendment')
+for p in ['references/deliver.md','references/setup.md','SKILL.md']:
+ check(read('.agents/skills/roundfix/'+p)==read('skills/roundfix/'+p),'canonical/mirror identical '+p)
+check('max_size_mb: 10240' in read('.roundfixrc.yml') and 'idle: 2h' in read('.roundfixrc.yml'),'Project Config cache declaration')
+(evidence/'W01.txt').write_text('\n'.join(checks)+'\n')
+failed=[c for c in checks if c.startswith('FAIL')]
+update('W01','fail' if failed else 'pass',f'{len(checks)} exact normalized-text checks; {len(failed)} failures. Fresh full docscontract suite includes TestGlossaryPhrasesAreDefinedTerms, setup manifest and park-action contracts. '+link('W01')+'.')
+print('wording checks:',len(checks),'failed:',len(failed))

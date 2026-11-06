@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -run ^TestCommandFreeSpaceNamesEachLocationBelowTheFloor$ ./internal/cli
+=== RUN   TestCommandFreeSpaceNamesEachLocationBelowTheFloor
+=== PAUSE TestCommandFreeSpaceNamesEachLocationBelowTheFloor
+=== CONT  TestCommandFreeSpaceNamesEachLocationBelowTheFloor
+=== RUN   TestCommandFreeSpaceNamesEachLocationBelowTheFloor/below_the_floor
+=== PAUSE TestCommandFreeSpaceNamesEachLocationBelowTheFloor/below_the_floor
+=== RUN   TestCommandFreeSpaceNamesEachLocationBelowTheFloor/at_the_floor
+=== PAUSE TestCommandFreeSpaceNamesEachLocationBelowTheFloor/at_the_floor
+=== RUN   TestCommandFreeSpaceNamesEachLocationBelowTheFloor/unreadable
+=== PAUSE TestCommandFreeSpaceNamesEachLocationBelowTheFloor/unreadable
+=== CONT  TestCommandFreeSpaceNamesEachLocationBelowTheFloor/below_the_floor
+=== CONT  TestCommandFreeSpaceNamesEachLocationBelowTheFloor/unreadable
+=== CONT  TestCommandFreeSpaceNamesEachLocationBelowTheFloor/at_the_floor
+--- PASS: TestCommandFreeSpaceNamesEachLocationBelowTheFloor (0.00s)
+    --- PASS: TestCommandFreeSpaceNamesEachLocationBelowTheFloor/below_the_floor (0.00s)
+    --- PASS: TestCommandFreeSpaceNamesEachLocationBelowTheFloor/at_the_floor (0.00s)
+    --- PASS: TestCommandFreeSpaceNamesEachLocationBelowTheFloor/unreadable (0.00s)
+PASS
+suiteguard: guard cost: measured 2983 paths; fingerprint took 144.93725ms before and 142.721875ms after
+ok  	roundfix/internal/cli	0.585s
+
+exit: 0
+elapsed seconds: 1.15
