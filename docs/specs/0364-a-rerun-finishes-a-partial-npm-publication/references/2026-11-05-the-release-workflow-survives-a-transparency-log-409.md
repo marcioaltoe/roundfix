@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-05
-spec: null
+spec: 0364-a-rerun-finishes-a-partial-npm-publication
 reason: null
 ---
 
