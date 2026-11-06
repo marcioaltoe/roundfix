@@ -81,8 +81,8 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
 - `skills:` — the required Repository Skill Set matches its local
   authorities. The running binary's embedded artifacts are authoritative for
   the 13 Roundfix-owned skills, including the Roundfix Skill. Each required
-  external skill must hash to its `computedHash` in
-  `skills-lock.json`. The minimum version of an owned skill is the version
+  external skill must be present: named by `skills-lock.json` and installed under
+  `.agents/skills`. The minimum version of an owned skill is the version
   of that skill the running binary carries, so a copy installed by an older
   binary fails this line until it is refreshed.
   `DR-SKILL-LOCK-STALE` warns when an installed owned skill has a `ref` or
@@ -150,30 +150,12 @@ codex: ok
 
 The skills counts come from the repository's Repository Skill Set.
 
-Doctor also compares each installed required external skill that matches its
-lock with the `treeDigest` pinned by the Setup Snapshot for the Setup Manifest's
-profile. This offline comparison uses the restore command's portable tree
-digest. A Setup Snapshot Difference appends the exact detail suffix
-`; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <sorted names>`:
-
-```text
-skills: ok (<counts>; DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>)
-```
-
-When a required external skill matches its lock but differs from its Setup
-Snapshot, the `skills` line keeps its status and appends
-`DR-SKILL-DIFFERS-FROM-SNAPSHOT: differs from the Setup Snapshot, newer or older unknown: <names>`;
-nothing is restored. Doctor's exit code and the next action stay what readiness
-set. Missing and lock-mismatched skills are excluded from this comparison.
-When the manifest's profile cannot resolve, the line says
-`snapshot comparison unavailable` and keeps its readiness status. With no
-differences, Repository Skill Set readiness and its existing text stay
-unchanged.
-
-The comparison accepts repository-owned Baseline Profiles and uses their
-modules' external skill contracts from the embedded Setup Snapshots. An
-unresolvable profile's detail says "neither built-in nor resolvable" and
-names the searched `.roundfix/baseline/profiles/<id>.json` path.
+Roundfix checks a required external skill only for presence: an entry in
+`skills-lock.json` and a folder under `.agents/skills`. It reads neither the
+folder's files nor the entry's `computedHash`, never compares the skill with
+its Setup Snapshot, and never replaces a present copy unasked; `roundfix
+baseline skills restore --profile <id> --skill <name>` replaces one
+deliberately.
 
 With a Setup Manifest, Doctor also checks installed Roundfix-owned lock entries
 and appends the exact suffix
@@ -197,12 +179,12 @@ In the catalog's sync window right after a release, `skills update` over an
 unpinned entry can still install the previous copy. Doctor's version check
 reports that older installed copy, and one bundle install restores it.
 
-A missing or outdated required skill, or an invalid required lock declaration,
+A missing required skill, or an invalid required lock declaration,
 prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
 every other readiness result:
 
 ```text
-skills: failed (missing: handoff; outdated: roundfix; next: roundfix skills install --target project && bunx skills experimental_install && bunx skills update -p -y)
+skills: failed (missing: agentic-cli-design; next: bunx skills add marcioaltoe/skills@agentic-cli-design)
 ```
 
 For mixed ownership, Doctor joins the Roundfix-owned restore and external

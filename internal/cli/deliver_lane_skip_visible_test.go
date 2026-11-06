@@ -112,7 +112,7 @@ func TestDeliverStatusShowsTheLaneEnvironmentSkipTranscript(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
-	want := "0285-example\tmerged\t-\t-\nWarning: 0285-example linux-lane-skipped: image golang:1.26 is not present locally\nLimits: deadline none, retries per item none, concurrency 1, tokens none\nUsage: no Runs recorded\n"
+	want := "0285-example\tmerged\t-\t-\nWarning: 0285-example linux-lane-skipped: image golang:1.26 is not present locally\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("exit=%d stderr=%q stdout=%q want=%q", code, stderr.String(), stdout.String(), want)
 	}

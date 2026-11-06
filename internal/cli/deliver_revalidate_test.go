@@ -127,7 +127,7 @@ func TestDeliverStatusPrintsAnItemWarning(t *testing.T) {
 
 	want := implementTestSlug + "\tqueued\t-\t-\n" +
 		"Warning: " + implementTestSlug + " premise-changed: internal/delivery/engine.go (merge abc123)\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("deliver status exit=%d stdout=%q stderr=%q, want stdout %q", code, stdout.String(), stderr.String(), want)
@@ -153,7 +153,7 @@ func TestDeliverStatusPrintsNoWarningLineWithoutAWarning(t *testing.T) {
 	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
 
 	want := implementTestSlug + "\tqueued\t-\t-\n" +
-		"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("deliver status exit=%d stdout=%q stderr=%q, want unchanged stdout %q", code, stdout.String(), stderr.String(), want)

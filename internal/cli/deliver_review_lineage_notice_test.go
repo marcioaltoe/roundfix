@@ -36,7 +36,7 @@ func TestDeliverStatusNamesAReviewThatOpensANewLineage(t *testing.T) {
 				want += fmt.Sprintf("Review: 0356-example head %s opens a new Reviewer Lineage at round 1, a full review of the candidate: the head does not descend from the reviewed head %s\n", head, prior.HeadCommit)
 			}
 			want += "Park: 0356-example finding: resolve the blocker, then run roundfix deliver retry 0356-example\n" +
-				"Limits: deadline none, retries per item none, concurrency 1, tokens none\n" +
+				"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 				"Usage: no Runs recorded\n" +
 				"Pending question: 0356-example parked review-findings\n" +
 				"Answer: resolve the blocker, then run roundfix deliver retry 0356-example\n"

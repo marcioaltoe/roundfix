@@ -36,7 +36,7 @@ func TestThisRepositoryHoldsEveryRequiredExternalSkill(t *testing.T) {
 	}
 	readiness := checkThisRepositorySkillSet(t, root, true)
 	if !readiness.Ready() {
-		t.Fatalf("repository skill set is not ready: missing=%v outdated=%v owned=%v", readiness.MissingExternal, readiness.OutdatedExternal, readiness.MissingOwned)
+		t.Fatalf("repository skill set is not ready: missing=%v owned=%v", readiness.MissingExternal, readiness.MissingOwned)
 	}
 }
 
@@ -87,11 +87,8 @@ func checkThisRepositorySkillSet(t *testing.T, root string, wantReady bool) skil
 	for _, name := range readiness.MissingExternal {
 		t.Logf("missing external skill: %s", name)
 	}
-	for _, name := range readiness.OutdatedExternal {
-		t.Logf("outdated external skill: %s", name)
-	}
 	if wantReady && !readiness.Ready() {
-		t.Errorf("repository skill set is not ready: missing=%v outdated=%v", readiness.MissingExternal, readiness.OutdatedExternal)
+		t.Errorf("repository skill set is not ready: missing=%v", readiness.MissingExternal)
 	}
 
 	lockBytes, err := os.ReadFile(filepath.Join(root, "skills-lock.json"))
@@ -103,6 +100,23 @@ func checkThisRepositorySkillSet(t *testing.T, root string, wantReady bool) skil
 	}
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
+	}
+	if wantReady {
+		for _, name := range external {
+			var entry struct {
+				ComputedHash string `json:"computedHash"`
+			}
+			if err := json.Unmarshal(lock.Skills[name], &entry); err != nil {
+				t.Fatalf("decode external skill %s lock entry: %v", name, err)
+			}
+			hash, err := skills.SkillFolderHash(t.Context(), filepath.Join(root, ".agents", "skills", name))
+			if err != nil {
+				t.Fatalf("hash external skill %s: %v", name, err)
+			}
+			if hash != entry.ComputedHash {
+				t.Errorf("external skill %s no longer matches its skills-lock.json computedHash; run make skills-third-party-bump", name)
+			}
+		}
 	}
 	for _, name := range []string{"context7", "feature-systems-pattern", "rust", "review", "triage", "the-fool", "autoresearch", "council"} {
 		if _, exists := lock.Skills[name]; exists {

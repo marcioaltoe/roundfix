@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-02T00:00:00Z
-updated_at: 2026-10-12T00:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -24,6 +24,8 @@ snapshot, with the code `DR-SKILL-TRAILS-SNAPSHOT`. Trailing alone makes the
 `skills` line `warn`, not `failed`, and the managed refresh
 (`roundfix baseline update`) restores a trailing skill to its snapshot commit
 through the existing restore path.
+
+**Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).** Doctor and the managed refresh no longer compare a required external skill with its lock's `computedHash` or with its Setup Snapshot: an external skill is checked only for presence, a lock entry and a folder. This repository still holds its own Vendored Skills to the lock and the snapshot in its contract tests (ADR-0224).
 
 ## Consequences
 

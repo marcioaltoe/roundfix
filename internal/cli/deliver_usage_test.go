@@ -27,7 +27,7 @@ func TestDeliverStartPrintsTokensNone(t *testing.T) {
 	})
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "start", implementTestSlug}, &out, &diag)
-	if code != 0 || diag.Len() != 0 || out.String() != "Limits: deadline none, retries per item none, concurrency 1, tokens none\n" {
+	if code != 0 || diag.Len() != 0 || out.String() != "Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &diag)
 	}
 }
@@ -69,7 +69,7 @@ func TestDeliverStatusPrintsTheUsageLine(t *testing.T) {
 	}
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &out, &diag)
-	want := "Limits: deadline none, retries per item none, concurrency 1, tokens 5000000\nUsage: 9659850 tokens from 3 of 4 prompt(s) across 2 Run(s); cost 3.55 USD from 1 of 4 Agent Session(s)\n"
+	want := "Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens 5000000\nUsage: 9659850 tokens from 3 of 4 prompt(s) across 2 Run(s); cost 3.55 USD from 1 of 4 Agent Session(s)\n"
 	if code != 0 || diag.Len() != 0 || !strings.Contains(out.String(), want) {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &diag)
 	}
@@ -90,7 +90,7 @@ func TestDeliverStatusPrintsNoRunsRecorded(t *testing.T) {
 	}
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &out, &diag)
-	want := implementTestSlug + "\tqueued\t-\t-\nLimits: deadline none, retries per item none, concurrency 1, tokens none\nUsage: no Runs recorded\n"
+	want := implementTestSlug + "\tqueued\t-\t-\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n"
 	if code != 0 || diag.Len() != 0 || out.String() != want {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &diag)
 	}

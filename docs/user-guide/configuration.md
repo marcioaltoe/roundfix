@@ -467,6 +467,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `runs.max_active` | `3` | Limits Active Implement Runs across every repository in the Run Database. Only User Config can set it; Project Config is ignored with a warning. `0` disables the bound. |
 | `runs.slot_wait` | `2h` | How long the Delivery Queue waits for a Run slot, capped by the queue deadline. Go duration; `0` parks at once. User Config only; Project Config is ignored with a warning. |
 | `delivery.check_timeout` | `60m` | Bounds each Delivery Queue Check Wait for current-head checks. Go duration greater than 0 and at most 24h. User Config only; Project Config is ignored with a warning. |
+| `delivery.review_concurrency` | `2` | Sets the Review Capacity: how many Delivery Queue items the Queue Owner reviews at once, beside the one item it advances through every other stage. An integer of at least `1`. User Config only; Project Config is ignored with a warning. |
 | `jev.monthly_ceiling_usd` | `5` | Sets the shared monthly Jev ceiling in User Config, in US dollars. Project Config is ignored with a warning. |
 | `openrouter.light_models` | `[deepseek/deepseek-v4.1-flash]` | User Config list of `<author>/<slug>` OpenRouter models for light Tasks. An empty list turns the tier off; subscription-rule refusals fail validation. Project Config is ignored with a warning. |
 | `openrouter.implement_monthly_ceiling_usd` | `10` | Finite positive User Config ceiling in US dollars for light implementation spend. Project Config is ignored with a warning. |
@@ -899,6 +900,29 @@ delivery.check_timeout in User Config`. A Queue Owner or `roundfix deliver
 retry` reads the value when it starts; an owner already running keeps the
 value it read. An older Roundfix binary refuses a User Config that sets
 `delivery.check_timeout` as an unknown key; the default needs no setting.
+
+## Delivery Queue review concurrency
+
+`delivery.review_concurrency` sets the Review Capacity of a Queue Owner: the
+number of items in `reviewing` whose pre-PR review it runs at once, beside the
+one item it advances through every other stage. It is an integer, default
+`2`, at least `1`; `0` or a negative value fails configuration validation with
+`delivery.review_concurrency must be greater than 0`. For example:
+
+```yaml
+delivery:
+  review_concurrency: 3
+```
+
+Each review reads only its own item worktree in a read-only session, so the
+reviews and the owner's Implement Run never write the same files. Reviews
+count neither against `runs.max_active` nor a Run's `verification.concurrency`,
+and their tokens stay outside the queue's token ceiling. Only User Config can
+set it; a Project Config value is ignored with this warning:
+`config: delivery.review_concurrency in Project Config is ignored; set
+delivery.review_concurrency in User Config`. A Queue Owner reads the value
+when it starts, and `roundfix deliver start` and `roundfix deliver status`
+print it on their `Limits:` line.
 
 ## Linux Lane
 

@@ -142,7 +142,7 @@ func TestDeliverStatusShowsARunSlotWaitTranscript(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
-	want := "0291-example\trunning\trun-slot-wait: until 2026-10-21T00:00:00Z; 1 Run(s) hold 1 slot(s): run_holder in <holder repository> for 0001-holder\t<worktree>\nLimits: deadline none, retries per item none, concurrency 1, tokens none\nUsage: no Runs recorded\n"
+	want := "0291-example\trunning\trun-slot-wait: until 2026-10-21T00:00:00Z; 1 Run(s) hold 1 slot(s): run_holder in <holder repository> for 0001-holder\t<worktree>\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n"
 	if code != exitOK || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("exit=%d stderr=%q stdout=%q want=%q", code, stderr.String(), stdout.String(), want)
 	}

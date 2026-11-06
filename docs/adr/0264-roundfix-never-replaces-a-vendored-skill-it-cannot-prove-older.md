@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-12T00:00:00Z
-updated_at: 2026-10-12T00:00:00Z
+updated_at: 2026-11-05T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -31,6 +31,8 @@ because nothing the binary holds can prove a lock-matching copy behind. A
 missing skill, or one that no longer matches its lock, is restored as before.
 This repository still holds its own required skills to the snapshot
 (ADR-0224).
+
+**Amended by [ADR-0364](0364-a-required-external-skill-is-checked-only-for-presence.md) (2026-11-05).** Doctor no longer names a Setup Snapshot Difference and the managed refresh no longer lists `skills.differing`: neither compares an external skill with its Setup Snapshot, and a present copy is never restored unasked. `roundfix baseline skills restore` still replaces one deliberately, and the divergence order below still holds.
 
 **A divergence is corrected in this order.** A vendored skill is never edited
 locally, because the next sync replaces its folder. When it diverges from what

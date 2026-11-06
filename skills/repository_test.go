@@ -151,7 +151,7 @@ func TestCheckRepositoryWithExternalAcceptsEmptyRequirement(t *testing.T) {
 	if !got.Ready() {
 		t.Fatalf("empty external requirement changed readiness: %#v", got)
 	}
-	if got.ExternalRequired != 0 || len(got.MissingExternal) != 0 || len(got.OutdatedExternal) != 0 {
+	if got.ExternalRequired != 0 || len(got.MissingExternal) != 0 {
 		t.Fatalf("external readiness = %#v, want zero requirements and no failures", got)
 	}
 	if got.OwnedRequired != len(Names()) {
@@ -208,7 +208,6 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 		mutate           func(*testing.T, string)
 		wantMissingOwned []string
 		wantMissingExt   []string
-		wantOutdatedExt  []string
 		wantOwnedState   ReadinessState
 	}{
 		{
@@ -284,7 +283,6 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "agentic-cli-design"), "SKILL.md", "changed\n")
 			},
-			wantOutdatedExt: []string{"agentic-cli-design"},
 		},
 		{
 			name: "added external file",
@@ -292,7 +290,6 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "agentic-cli-design"), "unexpected.txt", "extra\n")
 			},
-			wantOutdatedExt: []string{"agentic-cli-design"},
 		},
 	}
 
@@ -306,8 +303,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 				t.Fatalf("check repository: %v", err)
 			}
 			if !reflect.DeepEqual(got.MissingOwned, test.wantMissingOwned) ||
-				!reflect.DeepEqual(got.MissingExternal, test.wantMissingExt) ||
-				!reflect.DeepEqual(got.OutdatedExternal, test.wantOutdatedExt) {
+				!reflect.DeepEqual(got.MissingExternal, test.wantMissingExt) {
 				t.Fatalf("readiness classifications = %#v", got)
 			}
 			if test.wantOwnedState != "" {
@@ -456,11 +452,47 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 			},
 		},
 		{
-			name: "invalid required hash",
+			name: "null required entry",
 			write: func(t *testing.T, root string) {
-				lock := readRepositoryLockFixture(t, root)
-				lock.Skills[Recommended()[0]] = repositoryLockSkillFixture{ComputedHash: strings.Repeat("A", 64)}
-				writeRepositoryLockFixture(t, root, lock)
+				path := filepath.Join(root, "skills-lock.json")
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var raw map[string]any
+				if err := json.Unmarshal(data, &raw); err != nil {
+					t.Fatal(err)
+				}
+				raw["skills"].(map[string]any)[Recommended()[0]] = nil
+				data, err = json.Marshal(raw)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, data, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "scalar unrelated entry",
+			write: func(t *testing.T, root string) {
+				path := filepath.Join(root, "skills-lock.json")
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var raw map[string]any
+				if err := json.Unmarshal(data, &raw); err != nil {
+					t.Fatal(err)
+				}
+				raw["skills"].(map[string]any)["unrelated-scalar"] = "not an entry"
+				data, err = json.Marshal(raw)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, data, 0o644); err != nil {
+					t.Fatal(err)
+				}
 			},
 		},
 		{
@@ -635,9 +667,9 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 	if err := os.Symlink(filepath.Join(externalRoot, "skills-lock.json"), externalPath); err != nil {
 		t.Skipf("create external symlink: %v", err)
 	}
-	_, err = CheckRepository(t.Context(), externalRoot)
-	if err == nil || !strings.Contains(err.Error(), externalPath) {
-		t.Fatalf("expected external symlink error naming %q, got %v", externalPath, err)
+	got, err = CheckRepository(t.Context(), externalRoot)
+	if err != nil || !got.Ready() {
+		t.Fatalf("external nested symlink changed readiness: %+v, error = %v", got, err)
 	}
 
 	// Keep the socket path below the Unix-domain socket limit on macOS.
@@ -661,9 +693,9 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 			t.Errorf("close special-entry listener: %v", err)
 		}
 	})
-	_, err = CheckRepository(t.Context(), specialRoot)
-	if err == nil || !strings.Contains(err.Error(), specialPath) {
-		t.Fatalf("expected external special-entry error naming %q, got %v", specialPath, err)
+	got, err = CheckRepository(t.Context(), specialRoot)
+	if err != nil || !got.Ready() {
+		t.Fatalf("external special entry changed readiness: %+v, error = %v", got, err)
 	}
 }
 
