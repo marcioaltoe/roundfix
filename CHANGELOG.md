@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.136.1] - 2026-11-06
+
+### The Delivery Queue waits for every check the head triggered
+
+- **The checking stage waits for the Head Check Set before it merges**: every check run and commit status listed for the head, every workflow run of the head commit (`actions/runs?head_sha=`), and every Expected Workflow, a workflow file at the head whose unfiltered `pull_request`, `pull_request_target` or `push` trigger always runs for a pull request into the base branch. While an Expected Workflow has no run or a check has not completed, the queue waits, within `delivery.check_timeout`. Before, the queue merged on one passing check and a `CLEAN` merge state while the job check runs of other workflows had not appeared yet, so pull requests merged with red or unfinished CI when the ruleset required no checks (reported by fluxus; ADR-0369, which amends ADR-0311 and ADR-0365).
+- **Any failing check parks the item, required or not**: `success`, `neutral` and `skipped` pass; `failure`, `timed_out`, `cancelled`, `action_required`, `startup_failure` and `stale` park as `checks-failed: <check> (<conclusion>) <link>`. A timeout adds `; pending: <checks>`. Park names and classes are unchanged.
+- **`roundfix deliver status` prints `Turn: <slug> advancing at checking; waiting for <n> check(s): <names>`**, and the console log names the waiting, completed and unreadable checks.
+
 ## [0.136.0] - 2026-11-06
 
 ### A numbered-file collision between queued Specs parks before the Run
