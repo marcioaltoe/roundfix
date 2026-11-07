@@ -1,0 +1,163 @@
+$ for t in TestReleaseCompareAcceptsOnlyTheSameContent TestReleaseRerunPublishesOnlyTheMissingCoordinates TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing; do grep -q "func $t(" internal/verifyselect/release_workflow_compare_test.go || { printf 'missing %s\n' "$t" >&2; exit 1; }; done; grep -qF -- 'name: Compare published packages' .github/workflows/release.yml || exit 1; go test -timeout 20m -count=1 ./internal/testfixture || exit 1; out="$(mktemp)"; go test -timeout 20m -count=1 -v -run '^(TestReleaseCompareAcceptsOnlyTheSameContent|TestReleaseRerunPublishesOnlyTheMissingCoordinates|TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing|TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne|TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry|TestMainAndReleaseRunEveryContract)$' ./internal/verifyselect > "$out" 2>&1; status=$?; cat "$out"; passed=0; grep -q -- '--- PASS: TestReleaseCompareAcceptsOnlyTheSameContent' "$out" && grep -q -- '--- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates' "$out" && passed=1; rm -f "$out"; test "$status" -eq 0 && test "$passed" -eq 1
+ok  	roundfix/internal/testfixture	1.092s
+=== RUN   TestMainAndReleaseRunEveryContract
+=== PAUSE TestMainAndReleaseRunEveryContract
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates
+=== RUN   TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing
+=== PAUSE TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== RUN   TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+=== PAUSE TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+=== CONT  TestMainAndReleaseRunEveryContract
+=== CONT  TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing
+=== CONT  TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/different_content_stops_before_publishing
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+--- PASS: TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing (0.00s)
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/different_content_stops_before_publishing
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/missing_tarball_stops_before_publishing
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/missing_tarball_stops_before_publishing
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/published_launcher_is_skipped_last
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/published_launcher_is_skipped_last
+=== RUN   TestReleaseRerunPublishesOnlyTheMissingCoordinates/all_eligible_publish_in_order
+--- PASS: TestMainAndReleaseRunEveryContract (0.00s)
+=== PAUSE TestReleaseRerunPublishesOnlyTheMissingCoordinates/all_eligible_publish_in_order
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/published_launcher_is_skipped_last
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/all_eligible_publish_in_order
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/missing_tarball_stops_before_publishing
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/different_content_stops_before_publishing
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== CONT  TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+--- PASS: TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry (0.42s)
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+--- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch (0.31s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push (0.31s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push (0.32s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch (0.33s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push (0.24s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch (0.24s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push (0.22s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch (0.22s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push (0.20s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch (0.22s)
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+    release_workflow_compare_test.go:113: step stderr: gzip: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmp.r2fuN1m1UG/registry/package.tgz: not in gzip format
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+    release_workflow_compare_test.go:113: step stderr: jq: parse error: Unfinished string at EOF at line 1, column 44
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+    release_workflow_compare_test.go:113: step stderr: gzip: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmp.6ylyAi95rV/local/package.tgz: not in gzip format
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+    release_workflow_compare_test.go:113: step stderr: jq: parse error: Unfinished string at EOF at line 1, column 44
+--- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates (0.00s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/published_launcher_is_skipped_last (0.40s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/all_eligible_publish_in_order (0.47s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/missing_tarball_stops_before_publishing (0.50s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/different_content_stops_before_publishing (0.54s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform (0.48s)
+    --- PASS: TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms (0.83s)
+--- PASS: TestReleaseCompareAcceptsOnlyTheSameContent (0.00s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball (0.17s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list (0.04s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes (0.23s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip (0.23s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields (0.22s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip (0.24s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields (0.18s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball (0.19s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body (0.18s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory (0.17s)
+PASS
+suiteguard: guard cost: measured 3027 paths; fingerprint took 136.775625ms before and 142.50375ms after
+ok  	roundfix/internal/verifyselect	1.271s
+
+exit: 0

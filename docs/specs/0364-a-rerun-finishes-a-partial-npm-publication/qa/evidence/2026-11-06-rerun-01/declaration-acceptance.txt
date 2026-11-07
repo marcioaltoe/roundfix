@@ -1,0 +1,6 @@
+$ ./bin/roundfix qa-report accept docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/qa/qa-report-2026-11-06-01.md
+stdout:
+
+stderr:
+
+exit: 0

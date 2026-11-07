@@ -1,0 +1,48 @@
+import pathlib,subprocess,tempfile,tarfile,io,json,re,os
+root=pathlib.Path.cwd();out=pathlib.Path('/tmp/qa0364');head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip();base='530fb22b58e879016f51bd51679df9236f08d251'
+workflow='.github/workflows/release.yml'
+pre='TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne';compare='TestReleaseCompareAcceptsOnlyTheSameContent';rerun='TestReleaseRerunPublishesOnlyTheMissingCoordinates'
+raw=subprocess.check_output(['git','archive',head])
+def changed(text,old,new):
+ assert text.count(old)==1,(old,text.count(old))
+ return text.replace(old,new)
+def log_overlay(directory):
+ source=directory/'internal/verifyselect/release_workflow_test.go'
+ text=source.read_text();text=changed(text,'return h.script(t, step.Run)',r'''output, code := h.script(t, step.Run)
+            t.Logf("QA step %s exit=%d stdout:\n%s", name, code, output)
+            t.Logf("QA publish.log:\n%s", h.read(t, "publish.log"))
+            return output, code''')
+ patched=directory.parent/'logged-harness.go.txt';patched.write_text(text)
+ overlay=directory.parent/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(source):str(patched)}}))
+ return overlay
+summary=[]
+mutants=[('delivery-base',pre),('versions-used',pre),('time-published',pre),('all-published-allowed',pre),('integrity-comparison',compare),('unconditional-complete',compare),('skip-removed',rerun)]
+for name,test in mutants:
+ print('START',name,flush=True)
+ with tempfile.TemporaryDirectory(prefix='qa0364-') as tmp:
+  d=pathlib.Path(tmp).resolve()/'repo';d.mkdir();tarfile.open(fileobj=io.BytesIO(raw)).extractall(d,filter='data')
+  path=d/workflow;text=path.read_text();before=text
+  if name=='delivery-base':text=subprocess.check_output(['git','show',base+':'+workflow],text=True)
+  elif name=='versions-used':text=changed(text,'elif (.versions | has($tag)) then "published" elif (.time | has($tag)) then "used"','elif (.versions | has($tag)) or (.time | has($tag)) then "used"')
+  elif name=='time-published':text=changed(text,'elif (.time | has($tag)) then "used"','elif (.time | has($tag)) then "published"')
+  elif name=='all-published-allowed':
+   start=text.index('          if [ "$published_count" -eq "$coordinate_count" ]; then');end=text.index('          fi',start)+len('          fi\n');text=text[:start]+text[end:]
+  elif name=='integrity-comparison':text=changed(text,'if cmp -s "$work/local.tar" "$work/registry.tar"; then','if [ "$local_integrity" = "$registry_integrity" ]; then')
+  elif name=='unconditional-complete':
+   start=text.index('      - name: Compare published packages');end=text.index('      - name: Publish to npm',start)
+   step=text[start:end];line='              printf \'%s\\n\' "$coordinate" >> "$COMPLETE"\n'
+   step=changed(step,line,'');needle='          while IFS= read -r coordinate; do\n';step=changed(step,needle,needle+'            printf \'%s\\n\' "$coordinate" >> "$COMPLETE"\n');text=text[:start]+step+text[end:]
+  elif name=='skip-removed':
+   start=text.index('            if [ -f "$COMPLETE" ] && grep -qxF -- "$2" "$COMPLETE"; then');end=text.index('            fi',start)+len('            fi\n');text=text[:start]+text[end:]
+  path.write_text(text)
+  for args in [['git','init','-q'],['git','add','.']]:subprocess.run(args,cwd=d,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+  overlay=log_overlay(d)
+  cmd=['go','test','-count=1','-timeout','20m','-v','-overlay',str(overlay),'-run','^'+test+'$','./internal/verifyselect']
+  p=subprocess.run(cmd,cwd=d,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+  import difflib
+  patch=''.join(difflib.unified_diff(before.splitlines(True),text.splitlines(True),fromfile='audited workflow',tofile=name))
+  (out/(name+'.txt')).write_text('git archive '+head+'; git init -q; git add .\nMutation (workflow only; overlay adds logs, assertions unchanged):\n'+patch+'\n$ '+' '.join(cmd)+'\n'+p.stdout+'\nexit: '+str(p.returncode)+'\n')
+  fails=re.findall(r'--- FAIL: ([^\n]+)',p.stdout)
+  summary.append({'name':name,'exit':p.returncode,'failed_cases':fails,'skip': '--- SKIP:' in p.stdout})
+  print('END',summary[-1],flush=True)
+(out/'probe-summary.json').write_text(json.dumps(summary,indent=2))

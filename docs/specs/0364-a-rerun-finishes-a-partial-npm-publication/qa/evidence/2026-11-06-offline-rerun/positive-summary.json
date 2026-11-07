@@ -1,0 +1,27 @@
+[
+  {
+    "name": "task01-verification",
+    "exit": 0,
+    "skips": 0
+  },
+  {
+    "name": "task02-verification",
+    "exit": 0,
+    "skips": 0
+  },
+  {
+    "name": "task03-verification",
+    "exit": 0,
+    "skips": 0
+  },
+  {
+    "name": "verifyselect-full",
+    "exit": 0,
+    "skips": 0
+  },
+  {
+    "name": "docscontract-full",
+    "exit": 0,
+    "skips": 0
+  }
+]

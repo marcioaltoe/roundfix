@@ -1,0 +1,16 @@
+$ ./bin/roundfix --version
+roundfix 0.137.0 (69f50bce-dirty, built 2026-11-06 22:04:54 -0300)
+
+exit: 0
+
+$ ./bin/roundfix spec check 0364-a-rerun-finishes-a-partial-npm-publication --strict
+Spec 0364-a-rerun-finishes-a-partial-npm-publication
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/_techspec.md Vocabulary Contract
+
+exit: 0

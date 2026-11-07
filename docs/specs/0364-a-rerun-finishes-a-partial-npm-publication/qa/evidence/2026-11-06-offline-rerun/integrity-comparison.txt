@@ -1,0 +1,126 @@
+git archive 69f50bce1aa0ac1e788e7ce34aa34138f2d5b8f5; git init -q; git add .
+Mutation (workflow only; overlay adds logs, assertions unchanged):
+--- audited workflow
++++ integrity-comparison
+@@ -290,7 +290,7 @@
+               blocked=1
+               continue
+             fi
+-            if cmp -s "$work/local.tar" "$work/registry.tar"; then
++            if [ "$local_integrity" = "$registry_integrity" ]; then
+               printf '%-36s %-12s %s\n' "$coordinate" "$TAG" "same content"
+               printf '%s\n' "$coordinate" >> "$COMPLETE"
+               printf -- '- `%s@%s`: same content as this build\n' "$coordinate" "$TAG" >> "$GITHUB_STEP_SUMMARY"
+
+$ go test -count=1 -timeout 20m -v -overlay /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0364-2_fxvtxy/overlay.json -run ^TestReleaseCompareAcceptsOnlyTheSameContent$ ./internal/verifyselect
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== RUN   TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== PAUSE TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+=== CONT  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=0 stdout:
+    release_workflow_compare_test.go:113: QA publish.log:
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields
+    release_workflow_compare_test.go:113: step stderr: jq: parse error: Unfinished string at EOF at line 1, column 44
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: this build could not be packed\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published with different content (registry sha512-1U5DwfAaMPcXkGwN1p4IdToNNb4RcvVPz/tqKcfLaJV2kDiPBYM1T4N1XiPmuS3SOxFneENarcb9RP70JHRG9Q==, this build sha512-NAo9aGeTjOifTvzMgE+5EZJgVY7GsExGocBsMFtgr3DFDQDqaq4k4xfeDG9RAmzBBDffZTfu3EAn7A568hrVNw==)
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 0; stdout = "::error::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published with different content (registry sha512-1U5DwfAaMPcXkGwN1p4IdToNNb4RcvVPz/tqKcfLaJV2kDiPBYM1T4N1XiPmuS3SOxFneENarcb9RP70JHRG9Q==, this build sha512-NAo9aGeTjOifTvzMgE+5EZJgVY7GsExGocBsMFtgr3DFDQDqaq4k4xfeDG9RAmzBBDffZTfu3EAn7A568hrVNw==)\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "@roundfix/cli-darwin-arm64           0.132.1      same content\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields
+    release_workflow_compare_test.go:113: step stderr: jq: parse error: Unfinished string at EOF at line 1, column 44
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: the published tarball could not be fetched\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published with different content (registry sha512-W5YXknjNpxv5ha0EU5ppUo+pi+h25zvFtZlO9phlH86JCfg8zzS0rjdfvEbUkChLbQCP4BmUNCtqxBgjdch2kg==, this build sha512-NAo9aGeTjOifTvzMgE+5EZJgVY7GsExGocBsMFtgr3DFDQDqaq4k4xfeDG9RAmzBBDffZTfu3EAn7A568hrVNw==)
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published with different content (registry sha512-W5YXknjNpxv5ha0EU5ppUo+pi+h25zvFtZlO9phlH86JCfg8zzS0rjdfvEbUkChLbQCP4BmUNCtqxBgjdch2kg==, this build sha512-NAo9aGeTjOifTvzMgE+5EZJgVY7GsExGocBsMFtgr3DFDQDqaq4k4xfeDG9RAmzBBDffZTfu3EAn7A568hrVNw==)\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published with different content (registry sha512-W5YXknjNpxv5ha0EU5ppUo+pi+h25zvFtZlO9phlH86JCfg8zzS0rjdfvEbUkChLbQCP4BmUNCtqxBgjdch2kg==, this build sha512-NAo9aGeTjOifTvzMgE+5EZJgVY7GsExGocBsMFtgr3DFDQDqaq4k4xfeDG9RAmzBBDffZTfu3EAn7A568hrVNw==)\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip
+    release_workflow_compare_test.go:113: step stderr: gzip: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmp.G4ZHsBRQxH/registry/package.tgz: not in gzip format
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip
+    release_workflow_compare_test.go:113: step stderr: gzip: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmp.wF4X8R46RE/local/package.tgz: not in gzip format
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 1; stdout = "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "::error::undetermined: @roundfix/cli-darwin-arm64@0.132.1: a tarball could not be decompressed\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+=== NAME  TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory
+    release_workflow_compare_test.go:113: QA step Compare published packages exit=1 stdout:
+        ::error::registry: roundfix@0.132.1 is already published with different content (registry sha512-vOFDSO+fg1p80gQRWyz0a7ewuQbE3aOkEdQ7+OZayGiq2gCpcdwgl7BGDPsL2rytQcAgtVdgMR6yQiJ3gGX+kQ==, this build sha512-qyo/9thjQNheIUBuDaUjQZRkF3+dsZYbtdt9gyXuhhnrXwZP07BKKGLpXgxW24E+hsrrkAjJ8StE65R6DCfOUQ==)
+        ::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)
+    release_workflow_compare_test.go:113: QA publish.log:
+    release_workflow_compare_test.go:115: compare exit = 1, want 0; stdout = "::error::registry: roundfix@0.132.1 is already published with different content (registry sha512-vOFDSO+fg1p80gQRWyz0a7ewuQbE3aOkEdQ7+OZayGiq2gCpcdwgl7BGDPsL2rytQcAgtVdgMR6yQiJ3gGX+kQ==, this build sha512-qyo/9thjQNheIUBuDaUjQZRkF3+dsZYbtdt9gyXuhhnrXwZP07BKKGLpXgxW24E+hsrrkAjJ8StE65R6DCfOUQ==)\n::error::registry: @roundfix/cli-darwin-x64@0.132.1 is already published with different content (registry sha512-Fjr4uSVrIKX0/bi841Dzc2KR+IwvEhuCyYyKjOZmRAzaPl7nkgQ01iycf++ygJtY3TBrZa626OL7M689CSbHoQ==, this build sha512-P7DOX7zciU+JUzI4FeWiS8TmudeHt0CIXoXk1CUuUd0Pdv+B8K3idqairWCtJFnHqeKOw/Ti0P0q8VEXG2iY7g==)\n", want "roundfix                             0.132.1      same content\n@roundfix/cli-darwin-x64             0.132.1      same content\n"
+--- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent (0.00s)
+    --- PASS: TestReleaseCompareAcceptsOnlyTheSameContent/empty_published_list (0.06s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball (0.17s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields (0.22s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball (0.24s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes (0.24s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields (0.25s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body (0.25s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip (0.25s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip (0.25s)
+    --- FAIL: TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory (0.26s)
+FAIL
+suiteguard: guard cost: measured 2989 paths; fingerprint took 150.462917ms before and 147.888792ms after
+FAIL	roundfix/internal/verifyselect	0.790s
+FAIL
+
+exit: 1

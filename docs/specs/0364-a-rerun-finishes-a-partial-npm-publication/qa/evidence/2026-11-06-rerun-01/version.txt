@@ -1,0 +1,4 @@
+$ ./bin/roundfix --version
+roundfix 0.137.0 (31f673ad-dirty, built 2026-11-06 22:33:34 -0300)
+
+exit: 0

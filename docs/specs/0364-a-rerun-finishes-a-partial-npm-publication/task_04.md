@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0364-a-rerun-finishes-a-partial-npm-publication
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,5 @@
+$ ./bin/roundfix qa-report accept docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/qa/qa-report-2026-11-06.md
+roundfix: QA Report eligibility refused: rows_blocked_declared is 1, but Spec declares 0 unreachable acceptances; shortfall is 1; no declaration names declared-blocked row 13 ("A real rerun of a failed release job on GitHub Actions against the npm registry")
+
+exit: 1
+Reproduced with candidate verdict partial; real-publication row declared-blocked, pre-PR row environment-blocked. No Task state or report is changed by this CLI.

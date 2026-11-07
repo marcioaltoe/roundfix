@@ -1,0 +1,57 @@
+exec(open('/tmp/qa0364-control.py').read())
+def git(*args):return subprocess.check_output(['git',*args],text=True)
+def show(rev,path):return git('show',rev+':'+path)
+notes=['History audit at '+head,'Delivery Base '+base]
+tasks={'task_01':'8d6a3e65d43f4f00ece77d90a6104f88491f0ec7','task_02':'97dfd3d266feeaff8e7479222f9c3bb352df327d','task_03':'0ae501fd2ea1a4eda4371fe6aa89770c1c2125fe'}
+actual=[]
+for task,commit in tasks.items():
+ task_path=str((spec/(task+'.md')).relative_to(root));text=show(commit,task_path)
+ declared=set(re.findall(r'^- (?:interface|creates|instruction|deletes): `([^`]+)`',text,re.M));declared.add(task_path)
+ if '## Recorded paths' in text:declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths')[1].split('\n## ')[0]))
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();assert set(paths)<=declared,(task,set(paths)-declared);actual+=paths
+ notes+=['$ git diff-tree --no-commit-id --name-only -r '+commit,*paths,'PASS: every actual Task path is declared or its own Task file.']
+authority=str((spec/'_authorization.md').relative_to(root));assert show(base,authority)==show(head,authority)
+assert '.github/workflows/release.yml' in show(base,authority)
+for commit in [tasks['task_02'],tasks['task_03']]:assert subprocess.run(['git','merge-base','--is-ancestor',base,commit],stdout=subprocess.PIPE).returncode==0
+notes+=['Operative authorization predates all consuming Tasks and is byte-identical at audited head. Seeded mechanical audit grants both consuming workflow commits; no unaudited tooling Task commit remains.']
+excluded=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go']
+for path in actual:
+ assert path not in excluded,path
+ assert not path.startswith(('dist/npm/','internal/baseline/','internal/suiteguardcontract/','docs/agents/','.agents/skills/','skills/')),path
+ assert not path.startswith('.github/workflows/') or path=='.github/workflows/release.yml'
+ assert not path.startswith('docs/adr/') or path=='docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md'
+notes+=['PASS: no excluded manifest, build, guide, skill, version, other workflow, suiteguard or other ADR changed. The only changed Governed Path is the authorized release workflow.']
+# The extra commit repairs the Spec declaration, outside the Task implementation range.
+extra=git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines();assert extra==[str((spec/'_prd.md').relative_to(root))],extra
+notes+=['Additional head commit changes only _prd.md, converting the existing Unreachable Acceptance to the fielded form.']
+adr='docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md';old=show(base,adr);new=show(head,adr)
+assert 'updated_at: 2026-11-06T23:30:00Z' in new
+amend=re.search(r'^\*\*Amended by \[ADR-0374\].*\n\n',new,re.M).group(0)
+restored=new.replace(amend,'');restored=re.sub(r'^updated_at:.*$',re.search(r'^updated_at:.*$',old,re.M).group(0),restored,flags=re.M);assert restored==old
+notes+=['PASS: reversing exactly the ADR amendment paragraph and updated_at restores Delivery Base bytes.']
+ctx=git('diff',tasks['task_01']+'^',tasks['task_01'],'--','CONTEXT.md');removed=[l[1:] for l in ctx.splitlines() if l.startswith('-') and not l.startswith('---')];added=[l[1:] for l in ctx.splitlines() if l.startswith('+') and not l.startswith('+++')];assert len(removed)==len(added)==2
+notes+=['PASS: CONTEXT diff changes exactly two definition lines, keeping the Release Set and Publication Preflight labels, Avoid lines and every other entry.',ctx]
+for name in ['_prd.md','_techspec.md']:
+ text=(spec/name).read_text();assert '- changes: **Release Set**' in text and '- changes: **Publication Preflight**' in text
+notes+=['PASS: PRD and TechSpec both declare both changed glossary terms.']
+wf='.github/workflows/release.yml';old=show(base,wf);new=show(head,wf)
+def block(text,name,end):return text[text.index('      - name: '+name):text.index(end,text.index('      - name: '+name))]
+start='      - name: Publication preflight';end='      # Cross-compile'
+restored=new.replace(block(new,'Publication preflight',end),block(old,'Publication preflight',end),1)
+a=restored.index('      # Accept an already published coordinate');b=restored.index('      # Publish the per-platform packages',a);restored=restored[:a]+restored[b:]
+add='          TAG="${GITHUB_REF_NAME#v}"\n          COMPLETE="$RUNNER_TEMP/roundfix-release-complete"\n\n';assert restored.count(add)==1;restored=restored.replace(add,'',1)
+skip='''            if [ -f "$COMPLETE" ] && grep -qxF -- "$2" "$COMPLETE"; then
+              coordinate="$2"
+              echo "skipping $coordinate@$TAG: already published with the same content"
+              return 0
+            fi
+''';assert restored.count(skip)==1;restored=restored.replace(skip,'',1);assert restored==old
+notes+=['PASS: reverting only the Publication preflight block, the new Compare block and task_03 TAG/COMPLETE/skip additions restores the entire Delivery Base workflow byte-for-byte. All other steps, identity/fallback, build and GitHub Release bytes unchanged.']
+assert block(show(tasks['task_03']+'^',wf),'Publication preflight',end)==block(new,'Publication preflight',end)
+assert not git('diff',tasks['task_03']+'^',tasks['task_03'],'--','internal/verifyselect/release_workflow_test.go')
+notes+=['PASS: Task 03 preserves Task 02 preflight and harness bytes.']
+status=git('status','--porcelain');assert all('docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/qa/' in l for l in status.splitlines()),status
+notes+=['Current worktree delta: only the inherited/updated Spec QA directory.',status]
+(evidence/'history-audit.txt').write_text('\n'.join(notes)+'\n');shutil.copyfile('/tmp/qa0364-history.py',evidence/'history-audit.py.txt')
+row(11,'pass','Audited every actual Task commit using `git diff-tree --no-commit-id --name-only -r <commit>` and compared paths with its Context/Recorded paths plus its own Task file. All are in scope; the only changed Governed Path is release.yml, authorized before both consuming commits and already covered by the seeded mechanical audit. No excluded file changed. Reversing the three allowed workflow regions restores the Delivery Base workflow byte-for-byte; Task 03 preserves Task 02 harness/preflight. Reversing only the ADR amendment and updated_at restores ADR-0146 base bytes. The additional head commit changes only the PRD declaration format. Current delta contains QA artifacts only. [Full audit](evidence/2026-11-06-rerun-01/history-audit.txt), [reproducible audit](evidence/2026-11-06-rerun-01/history-audit.py.txt).')
+print('\n'.join(notes[:20]));print('History and byte audit passed')

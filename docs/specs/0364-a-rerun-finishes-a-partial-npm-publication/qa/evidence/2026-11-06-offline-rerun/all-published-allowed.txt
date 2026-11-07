@@ -1,0 +1,275 @@
+git archive 69f50bce1aa0ac1e788e7ce34aa34138f2d5b8f5; git init -q; git add .
+Mutation (workflow only; overlay adds logs, assertions unchanged):
+--- audited workflow
++++ all-published-allowed
+@@ -204,10 +204,6 @@
+           done < "$RELEASE_SET"
+ 
+           if [ "$blocked" -ne 0 ]; then
+-            exit 1
+-          fi
+-          if [ "$published_count" -eq "$coordinate_count" ]; then
+-            echo "::error::registry: every coordinate of the Release Set is already published at $TAG"
+             exit 1
+           fi
+ 
+
+$ go test -count=1 -timeout 20m -v -overlay /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0364-wbmi96bu/overlay.json -run ^TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne$ ./internal/verifyselect
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== RUN   TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+=== PAUSE TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+=== CONT  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+    release_workflow_test.go:293: QA publish.log:
+    release_workflow_test.go:295: preflight exit = 0, want 1
+        stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+        want:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+        ::error::registry: every coordinate of the Release Set is already published at 0.132.1
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      eligible
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      eligible
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      eligible
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+    release_workflow_test.go:293: QA step Publication preflight exit=1 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      eligible
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      used
+        ::error::registry: roundfix@0.132.1 is already used
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push
+    release_workflow_test.go:293: QA step Publication preflight exit=1 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      cooldown
+        ::error::registry: roundfix@0.132.1 is in cooldown until 2026-11-07T00:00:00Z
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      eligible
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      eligible
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch
+    release_workflow_test.go:293: QA step Publication preflight exit=1 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      eligible
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      used
+        ::error::registry: roundfix@0.132.1 is already used
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      eligible
+    release_workflow_test.go:293: QA publish.log:
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch
+    release_workflow_test.go:293: QA step Publication preflight exit=0 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+    release_workflow_test.go:293: QA publish.log:
+    release_workflow_test.go:295: preflight exit = 0, want 1
+        stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+        want:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-arm64            0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-linux-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-win32-x64              0.132.1      published
+        ::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+        roundfix                             0.132.1      published
+        ::notice::registry: roundfix@0.132.1 is already published; a tag run compares it with its own build
+        ::error::registry: every coordinate of the Release Set is already published at 0.132.1
+=== NAME  TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch
+    release_workflow_test.go:293: QA step Publication preflight exit=1 stdout:
+        PACKAGE                              VERSION      STATE
+        @roundfix/cli-darwin-arm64           0.132.1      published
+        ::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+        @roundfix/cli-darwin-x64             0.132.1      eligible
+        @roundfix/cli-linux-arm64            0.132.1      eligible
+        @roundfix/cli-linux-x64              0.132.1      eligible
+        @roundfix/cli-win32-x64              0.132.1      eligible
+        roundfix                             0.132.1      cooldown
+        ::error::registry: roundfix@0.132.1 is in cooldown until 2026-11-07T00:00:00Z
+    release_workflow_test.go:293: QA publish.log:
+--- FAIL: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push (0.26s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch (0.27s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch (0.25s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push (0.27s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push (0.25s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch (0.27s)
+    --- FAIL: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published (0.00s)
+        --- FAIL: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push (0.24s)
+        --- FAIL: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch (0.27s)
+    --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown (0.00s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push (0.26s)
+        --- PASS: TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch (0.28s)
+FAIL
+suiteguard: guard cost: measured 2989 paths; fingerprint took 164.302375ms before and 140.741666ms after
+FAIL	roundfix/internal/verifyselect	0.839s
+FAIL
+
+exit: 1

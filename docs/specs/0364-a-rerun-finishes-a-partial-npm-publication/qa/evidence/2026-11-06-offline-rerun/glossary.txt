@@ -1,0 +1,4 @@
+$ go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract -run ^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs)$
+ok  	roundfix/internal/docscontract	0.343s
+
+exit: 0

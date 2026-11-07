@@ -1,0 +1,50 @@
+History audit at 31f673add77a8be65374abac81b7680ed6d7c912
+Delivery Base 530fb22b58e879016f51bd51679df9236f08d251
+$ git diff-tree --no-commit-id --name-only -r 8d6a3e65d43f4f00ece77d90a6104f88491f0ec7
+CONTEXT.md
+docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/task_01.md
+docs/user-guide/release-runbook.md
+PASS: every actual Task path is declared or its own Task file.
+$ git diff-tree --no-commit-id --name-only -r 97dfd3d266feeaff8e7479222f9c3bb352df327d
+.github/workflows/release.yml
+docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/task_02.md
+internal/verifyselect/release_workflow_test.go
+PASS: every actual Task path is declared or its own Task file.
+$ git diff-tree --no-commit-id --name-only -r 0ae501fd2ea1a4eda4371fe6aa89770c1c2125fe
+.github/workflows/release.yml
+docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/task_03.md
+internal/verifyselect/release_workflow_compare_test.go
+PASS: every actual Task path is declared or its own Task file.
+Operative authorization predates all consuming Tasks and is byte-identical at audited head. Seeded mechanical audit grants both consuming workflow commits; no unaudited tooling Task commit remains.
+PASS: no excluded manifest, build, guide, skill, version, other workflow, suiteguard or other ADR changed. The only changed Governed Path is the authorized release workflow.
+Additional head commit changes only _prd.md, converting the existing Unreachable Acceptance to the fielded form.
+PASS: reversing exactly the ADR amendment paragraph and updated_at restores Delivery Base bytes.
+PASS: CONTEXT diff changes exactly two definition lines, keeping the Release Set and Publication Preflight labels, Avoid lines and every other entry.
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 53944569..9e8f5a0e 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -1055,11 +1055,11 @@ The read-only report of `roundfix update check` that a session runs before its f
+ _Avoid_: Release note, version freshness line, upgrade check
+ 
+ **Release Set**:
+-The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible before any one is published.
++The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible, or already published with the same content as the tag run's build, before any one is published ([ADR-0374](docs/adr/0374-a-rerun-completes-a-release-set-from-the-same-content.md)).
+ _Avoid_: Package list, publish targets, artifact set
+ 
+ **Publication Preflight**:
+-A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible.
++A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible or already published at that version, and it stops when all of them are already published; a tag run then compares each already published coordinate with its own build before it publishes the rest.
+ _Avoid_: Publish dry run, identity check, release plan
+ 
+ **Lagging Surface**:
+
+PASS: PRD and TechSpec both declare both changed glossary terms.
+PASS: reverting only the Publication preflight block, the new Compare block and task_03 TAG/COMPLETE/skip additions restores the entire Delivery Base workflow byte-for-byte. All other steps, identity/fallback, build and GitHub Release bytes unchanged.
+PASS: Task 03 preserves Task 02 preflight and harness bytes.
+Current worktree delta: only the inherited/updated Spec QA directory.
+?? docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/qa/
+

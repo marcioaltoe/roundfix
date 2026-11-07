@@ -1,0 +1,140 @@
+PRD at audited head; unchanged by QA:
+163: ## Unreachable Acceptance
+164: 
+165: 1. A real rerun of a failed release job on GitHub Actions against the npm
+166:    registry: it would publish packages, which this Spec's authorization and
+167:    its QA forbid. The QA proves the same path on the workflow's own step
+168:    scripts with a stub registry and records this as one blocked row.
+169: 
+170: ## Validation
+
+Declaration parser at audited head:
+255: func Unreachable(specDir string) ([]UnreachableDeclaration, error) {
+256: 	prdPath := filepath.Join(specDir, "_prd.md")
+257: 	content, err := os.ReadFile(prdPath)
+258: 	if err != nil {
+259: 		return nil, fmt.Errorf("read Spec PRD %q: %w", prdPath, err)
+260: 	}
+261: 	return parseUnreachableDeclarations(content, prdPath)
+262: }
+263: 
+264: func parseUnreachableDeclarations(content []byte, prdPath string) ([]UnreachableDeclaration, error) {
+265: 	var declarations []UnreachableDeclaration
+266: 	var current *unreachableDeclarationBuilder
+267: 	inSection := false
+268: 	flush := func() error {
+269: 		if current == nil {
+270: 			return nil
+271: 		}
+272: 		declaration, err := current.finish(prdPath)
+273: 		if err != nil {
+274: 			return err
+275: 		}
+276: 		declarations = append(declarations, declaration)
+277: 		current = nil
+278: 		return nil
+279: 	}
+280: 
+281: 	for index, line := range strings.Split(string(content), "\n") {
+282: 		trimmed := strings.TrimSpace(line)
+283: 		if strings.HasPrefix(trimmed, "# ") || strings.HasPrefix(trimmed, "## ") {
+284: 			if inSection {
+285: 				if err := flush(); err != nil {
+286: 					return nil, err
+287: 				}
+288: 			}
+289: 			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Unreachable Acceptance"
+290: 			continue
+291: 		}
+292: 		if !inSection {
+293: 			continue
+294: 		}
+295: 
+296: 		if strings.HasPrefix(line, "- ") {
+297: 			if err := flush(); err != nil {
+298: 				return nil, err
+299: 			}
+300: 			current = &unreachableDeclarationBuilder{
+301: 				declaration: UnreachableDeclaration{Line: index + 1},
+302: 			}
+303: 			current.readField(strings.TrimSpace(strings.TrimPrefix(line, "- ")))
+304: 			continue
+305: 		}
+306: 		if current == nil || trimmed == "" {
+307: 			continue
+308: 		}
+309: 		if current.readField(trimmed) {
+310: 			continue
+311: 		}
+312: 		if strings.HasPrefix(line, "  ") || strings.HasPrefix(line, "\t") {
+313: 			current.appendContinuation(trimmed)
+314: 		}
+315: 	}
+316: 	if err := flush(); err != nil {
+317: 		return nil, err
+318: 	}
+319: 	return declarations, nil
+320: }
+321: 
+322: func (builder *unreachableDeclarationBuilder) readField(line string) bool {
+323: 	label, value, ok := strings.Cut(line, ":")
+324: 	if !ok {
+325: 		return false
+326: 	}
+327: 	field := strings.TrimSpace(label)
+328: 	switch field {
+329: 	case "criterion":
+330: 		builder.declaration.Criteria = append(builder.declaration.Criteria, strings.TrimSpace(value))
+331: 	case "reason":
+332: 		builder.declaration.Reason = strings.TrimSpace(value)
+333: 	case "satisfied-by":
+334: 		builder.declaration.SatisfiedBy = strings.TrimSpace(value)
+335: 	default:
+336: 		return false
+337: 	}
+338: 	builder.activeField = field
+339: 	return true
+340: }
+341: 
+342: func (builder *unreachableDeclarationBuilder) appendContinuation(line string) {
+343: 	appendValue := func(value *string) {
+344: 		if *value == "" {
+345: 			*value = line
+346: 			return
+347: 		}
+348: 		*value += " " + line
+349: 	}
+350: 	switch builder.activeField {
+351: 	case "criterion":
+352: 		appendValue(&builder.declaration.Criteria[len(builder.declaration.Criteria)-1])
+353: 	case "reason":
+354: 		appendValue(&builder.declaration.Reason)
+355: 	case "satisfied-by":
+356: 		appendValue(&builder.declaration.SatisfiedBy)
+357: 	}
+358: }
+359: 
+360: func (builder *unreachableDeclarationBuilder) finish(prdPath string) (UnreachableDeclaration, error) {
+361: 	missing := ""
+362: 	for _, criterion := range builder.declaration.Criteria {
+363: 		if criterion == "" {
+364: 			missing = "criterion"
+365: 		}
+366: 	}
+367: 	switch {
+368: 	case len(builder.declaration.Criteria) == 0 || missing != "":
+369: 		missing = "criterion"
+370: 	case builder.declaration.Reason == "":
+371: 		missing = "reason"
+372: 	case builder.declaration.SatisfiedBy == "":
+373: 		missing = "satisfied-by"
+374: 	}
+375: 	if missing != "" {
+376: 		return UnreachableDeclaration{}, UnreachableDeclarationError{
+377: 			Path:  prdPath,
+378: 			Line:  builder.declaration.Line,
+379: 			Field: missing,
+380: 		}
+381: 	}
+382: 	builder.declaration.Criterion = builder.declaration.Criteria[0]
+383: 	return builder.declaration, nil

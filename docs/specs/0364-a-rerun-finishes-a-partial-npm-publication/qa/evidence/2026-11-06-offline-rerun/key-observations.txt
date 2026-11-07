@@ -1,0 +1,268 @@
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+step Publication preflight exit=0 stdout:
+PACKAGE                              VERSION      STATE
+@roundfix/cli-darwin-arm64           0.132.1      eligible
+@roundfix/cli-darwin-x64             0.132.1      eligible
+@roundfix/cli-linux-arm64            0.132.1      eligible
+@roundfix/cli-linux-x64              0.132.1      eligible
+@roundfix/cli-win32-x64              0.132.1      eligible
+roundfix                             0.132.1      eligible
+
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+publish.log:
+
+
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `eligible` |
+| `roundfix` | `0.132.1` | `eligible` |
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+step Publication preflight exit=0 stdout:
+PACKAGE                              VERSION      STATE
+@roundfix/cli-darwin-arm64           0.130.0      published
+::notice::registry: @roundfix/cli-darwin-arm64@0.130.0 is already published; a tag run compares it with its own build
+@roundfix/cli-darwin-x64             0.130.0      eligible
+@roundfix/cli-linux-arm64            0.130.0      eligible
+@roundfix/cli-linux-x64              0.130.0      eligible
+@roundfix/cli-win32-x64              0.130.0      eligible
+roundfix                             0.130.0      eligible
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+publish.log:
+
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.130.0` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.130.0` | `eligible` |
+| `roundfix` | `0.130.0` | `eligible` |
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+step Publication preflight exit=0 stdout:
+PACKAGE                              VERSION      STATE
+@roundfix/cli-darwin-arm64           0.132.1      published
+::notice::registry: @roundfix/cli-darwin-arm64@0.132.1 is already published; a tag run compares it with its own build
+@roundfix/cli-darwin-x64             0.132.1      published
+::notice::registry: @roundfix/cli-darwin-x64@0.132.1 is already published; a tag run compares it with its own build
+@roundfix/cli-linux-arm64            0.132.1      published
+::notice::registry: @roundfix/cli-linux-arm64@0.132.1 is already published; a tag run compares it with its own build
+@roundfix/cli-linux-x64              0.132.1      published
+::notice::registry: @roundfix/cli-linux-x64@0.132.1 is already published; a tag run compares it with its own build
+@roundfix/cli-win32-x64              0.132.1      published
+::notice::registry: @roundfix/cli-win32-x64@0.132.1 is already published; a tag run compares it with its own build
+roundfix                             0.132.1      eligible
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+publish.log:
+
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `published` |
+| `roundfix` | `0.132.1` | `eligible` |
+
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+step Publish to npm exit=1 stdout:
+::error::publish: roundfix failed for a non-identity reason
+npm error code TLOG_CREATE_ENTRY_ERROR
+npm error error creating tlog entry - (409) an equivalent entry already exists in the transparency log
+
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+publish.log:
+cli-darwin-arm64 token=
+cli-darwin-x64 token=
+cli-linux-arm64 token=
+cli-linux-x64 token=
+cli-win32-x64 token=
+roundfix token=
+
+TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `eligible` |
+| `roundfix` | `0.132.1` | `eligible` |
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+step Compare published packages exit=0 stdout:
+@roundfix/cli-darwin-arm64           0.130.0      same content
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+publish.log:
+
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.130.0` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.130.0` | `eligible` |
+| `roundfix` | `0.130.0` | `eligible` |
+
+### Already published
+
+- `@roundfix/cli-darwin-arm64@0.130.0`: same content as this build
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+step Publish to npm exit=0 stdout:
+skipping @roundfix/cli-darwin-arm64@0.130.0: already published with the same content
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+publish.log:
+cli-darwin-x64 token=
+cli-linux-arm64 token=
+cli-linux-x64 token=
+cli-win32-x64 token=
+roundfix token=
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.130.0` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.130.0` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.130.0` | `eligible` |
+| `roundfix` | `0.130.0` | `eligible` |
+
+### Already published
+
+- `@roundfix/cli-darwin-arm64@0.130.0`: same content as this build
+### npm Trusted Publishing fallback
+
+No coordinates required the bounded token fallback.
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+step Compare published packages exit=0 stdout:
+@roundfix/cli-darwin-arm64           0.132.1      same content
+@roundfix/cli-darwin-x64             0.132.1      same content
+@roundfix/cli-linux-arm64            0.132.1      same content
+@roundfix/cli-linux-x64              0.132.1      same content
+@roundfix/cli-win32-x64              0.132.1      same content
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+publish.log:
+
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `published` |
+| `roundfix` | `0.132.1` | `eligible` |
+
+### Already published
+
+- `@roundfix/cli-darwin-arm64@0.132.1`: same content as this build
+- `@roundfix/cli-darwin-x64@0.132.1`: same content as this build
+- `@roundfix/cli-linux-arm64@0.132.1`: same content as this build
+- `@roundfix/cli-linux-x64@0.132.1`: same content as this build
+- `@roundfix/cli-win32-x64@0.132.1`: same content as this build
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+step Publish to npm exit=0 stdout:
+skipping @roundfix/cli-darwin-arm64@0.132.1: already published with the same content
+skipping @roundfix/cli-darwin-x64@0.132.1: already published with the same content
+skipping @roundfix/cli-linux-arm64@0.132.1: already published with the same content
+skipping @roundfix/cli-linux-x64@0.132.1: already published with the same content
+skipping @roundfix/cli-win32-x64@0.132.1: already published with the same content
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+publish.log:
+roundfix token=
+
+TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `published` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `published` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `published` |
+| `roundfix` | `0.132.1` | `eligible` |
+
+### Already published
+
+- `@roundfix/cli-darwin-arm64@0.132.1`: same content as this build
+- `@roundfix/cli-darwin-x64@0.132.1`: same content as this build
+- `@roundfix/cli-linux-arm64@0.132.1`: same content as this build
+- `@roundfix/cli-linux-x64@0.132.1`: same content as this build
+- `@roundfix/cli-win32-x64@0.132.1`: same content as this build
+### npm Trusted Publishing fallback
+
+No coordinates required the bounded token fallback.
+
+TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+step Publication preflight exit=1 stdout:
+PACKAGE                              VERSION      STATE
+@roundfix/cli-darwin-arm64           0.132.1      eligible
+@roundfix/cli-darwin-x64             0.132.1      eligible
+@roundfix/cli-linux-arm64            0.132.1      eligible
+@roundfix/cli-linux-x64              0.132.1      eligible
+@roundfix/cli-win32-x64              0.132.1      eligible
+roundfix                             0.132.1      used
+::error::registry: roundfix@0.132.1 is already used
+
+TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+publish.log:
+
+
+TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push
+summary:
+### Publication preflight
+
+| Package | Version | State |
+| --- | --- | --- |
+| `@roundfix/cli-darwin-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-darwin-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-arm64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-linux-x64` | `0.132.1` | `eligible` |
+| `@roundfix/cli-win32-x64` | `0.132.1` | `eligible` |
+| `roundfix` | `0.132.1` | `used` |

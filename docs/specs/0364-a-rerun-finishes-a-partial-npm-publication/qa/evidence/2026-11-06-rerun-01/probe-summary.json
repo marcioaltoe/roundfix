@@ -1,0 +1,113 @@
+[
+  {
+    "name": "workflow-observations",
+    "exit": 0,
+    "failed_cases": [],
+    "skip": false
+  },
+  {
+    "name": "delivery-base",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push (0.23s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch (0.24s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push (0.24s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch (0.25s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push (0.22s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch (0.26s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/push (0.24s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_eligible/workflow_dispatch (0.26s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch (0.24s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push (0.26s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "versions-used",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/workflow_dispatch (0.23s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/published_platform_does_not_hide_cooldown/push (0.25s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/push (0.21s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/five_published_platforms/workflow_dispatch (0.25s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push (0.24s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch (0.26s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "time-published",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/workflow_dispatch (0.25s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/launcher_version_only_under_time/push (0.26s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "all-published-allowed",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published (0.00s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/workflow_dispatch (0.25s)",
+      "TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne/all_published/push (0.26s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "integrity-comparison",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleaseCompareAcceptsOnlyTheSameContent (0.00s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball (0.20s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields (0.22s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields (0.23s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip (0.23s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball (0.23s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body (0.24s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/launcher_uses_its_own_package_directory (0.25s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip (0.25s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/same_tar_stream_with_different_gzip_bytes (0.25s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "unconditional-complete",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleaseCompareAcceptsOnlyTheSameContent (0.00s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/missing_local_tarball (0.18s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_local_pack_fields (0.20s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/missing_registry_tarball (0.22s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_local_gzip (0.24s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/unreadable_registry_pack_fields (0.24s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/different_file_body (0.25s)",
+      "TestReleaseCompareAcceptsOnlyTheSameContent/corrupt_registry_gzip (0.25s)"
+    ],
+    "skip": false
+  },
+  {
+    "name": "skip-removed",
+    "exit": 1,
+    "failed_cases": [
+      "TestReleaseRerunPublishesOnlyTheMissingCoordinates (0.00s)",
+      "TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.130.0_one_platform (0.33s)",
+      "TestReleaseRerunPublishesOnlyTheMissingCoordinates/published_launcher_is_skipped_last (0.33s)",
+      "TestReleaseRerunPublishesOnlyTheMissingCoordinates/v0.132.1_five_platforms (0.49s)"
+    ],
+    "skip": false
+  }
+]
