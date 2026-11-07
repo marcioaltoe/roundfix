@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.0] - 2026-11-06
+
+### A session starts with an Update Check, and the update mode applies it
+
+- **`roundfix update check` reports whether a newer Roundfix release exists and what it brings**: the installed version against the latest published release, each newer release's `### ` titles newest first, and this repository's Baseline plan with the installed binary. It is read-only and every report exits `0`; a failed lookup is one line and the session continues. The release listing is read through one GitHub CLI request with a five-second timeout and cached for 24 hours per machine in `~/.roundfix/update-check.json`; `--refresh` reads it now. Sessions that start together take turns: one reads the network and the others report the cache it wrote (requested by the maintainer through jarvis; ADR-0371).
+- **The Baseline's core instructions tell each session to run the check once before its first task** and relay its report in a few lines, unless the session already holds it; a Daemon-assigned turn skips it.
+- **Project Config gains `update.mode`**: `notify`, the default, reports and applies nothing; `auto` asks the session to apply the update before its first task. Project Config wins over User Config.
+- **The Roundfix skill gains the `--update` Skill Mode**, which applies the plan the check showed: it upgrades the binary and runs the repository's Baseline update, asking before a step that deletes files and never applying a Baseline plan over uncommitted changes. The release notes that were sent to each adopting project's ai-memory inbox stop.
+
 ## [0.136.4] - 2026-11-06
 
 ### The Baseline corrects its archive destination, profile gaps and guide warnings
