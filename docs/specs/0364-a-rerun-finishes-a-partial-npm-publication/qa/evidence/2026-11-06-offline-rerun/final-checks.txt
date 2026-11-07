@@ -1,7 +1,0 @@
-Final report structure: valid; 15 terminal rows.
-Counts: {"declared": 1, "environment": 1, "fail": 1, "finding": 0, "pass": 12, "pending": 0, "skipped": 0}
-Seeded auditor fields and mechanical skips preserved.
-All row input blocks present; all report links resolve; evidence contains text only and is not ignored.
-Tracked implementation, Spec artifacts and Task statuses unchanged.
-Built CLI acceptance refused the candidate partial as recorded in declaration-refusal.txt; final fail intentionally remains ineligible.
-git diff --check: exit 0.
