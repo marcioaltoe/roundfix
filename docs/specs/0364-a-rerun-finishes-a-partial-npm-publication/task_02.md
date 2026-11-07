@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0364-a-rerun-finishes-a-partial-npm-publication
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -158,3 +158,72 @@ comparison and the publish skip.
 - `_prd.md` → Goals; User Stories 1-2; Core Feature 1; Success Metric 4; Success Metric 5
 - `_techspec.md` → Interfaces; API Contracts 1 and 3; Testing Approach; Build Order 2
 - ADR-0374
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-context, golang-structs-interfaces, no-workarounds, tech-writer, evidence-gate.
+
+The preflight now classifies `versions` entries as `published` before checking
+`time`, truncates and writes `roundfix-release-published` in Release Set order,
+prints the specified notices, and refuses an entirely published Release Set
+only after checking the existing blocking states. The preflight keeps its
+position and both triggers. The build, publish and GitHub Release steps are
+unchanged.
+
+The new harness reads and executes the workflow's actual step scripts in a
+temporary repository with copied manifests, an explicit environment, resolved
+External Test Tools and absolute stub paths. Its `curl` serves fixture
+packuments; its `npm` serves local and registry pack fixtures and logs publish
+attempts with token presence. Stubs are written without executable permissions
+and then chmodded. Tests and subtests run in parallel; commands use the test
+context, with no additional time budgets, network access or real publication.
+
+Focused evidence by acceptance criterion:
+
+- Published coordinates pass and are listed: before changing the workflow,
+  `go test -timeout 20m -count=1 -v -run '^TestReleasePreflightClassifiesAPublishedVersionApartFromAUsedOne$/five_published_platforms/push$' ./internal/verifyselect`
+  exited 1, reproducing the five `used` errors instead of the expected
+  `published` rows. After the workflow change,
+  `go test -timeout 20m -count=1 -v -run '^TestRelease' ./internal/verifyselect`
+  exited 0 without skips. The five-platform case asserts the complete stdout,
+  five notices, summary and ordered published file for `push` and
+  `workflow_dispatch`; the eligible case also proves a stale published file
+  is emptied.
+- Blocking states remain blocking: the same focused run passes the
+  time-only-version, all-published and published-platform-plus-cooldown cases
+  for both triggers. Each asserts exit 1, the exact error line and full table,
+  summary and published file. Fixtures also exercise classifier precedence
+  when `time` holds an unpublish record.
+- A transparency-log 409 stops without a token retry: the same focused run
+  passes `TestReleasePublishStopsAtATransparencyLog409WithoutATokenRetry`.
+  After an eligible preflight, with the fallback window open, it asserts exit
+  1, the exact non-identity diagnostic and both npm error lines, the ordered
+  five platform attempts followed by exactly one launcher attempt, every
+  attempt without `NODE_AUTH_TOKEN`, and an empty fallback log.
+
+Additional focused checks:
+
+- The same release-focused run passes
+  `TestReleaseWorkflowHarnessPacksOnlyFixtureTarballs`: six cases cover local
+  and registry packs into explicit and default destinations, exact JSON and
+  copied tarball bytes, and missing fixtures exiting 1. Tarballs are built in
+  Go with `archive/tar` and `compress/gzip`, with SHA-512 integrity strings.
+- `go test -timeout 20m -count=1 ./internal/testfixture` — exit 0, as explicitly
+  required by Requirement 5; the new file satisfies the repository test rules.
+- `go test -timeout 20m -count=1 -run '^TestMainAndReleaseRunEveryContract$' ./internal/verifyselect`
+  — exit 0; the existing test remains unchanged.
+- `git diff --check` — exit 0. Changed-path inspection found only the declared
+  workflow, the new harness file and this Task file; the Task's existing
+  `in_progress` status was preserved.
+
+Task 03 can reuse `newReleaseWorkflowHarness`, `packument`, `step`, `script`
+and `releaseTarball`. Local pack fixtures live under
+`fixtures/local/<directory>/`; registry pack fixtures under
+`fixtures/registry/<coordinate>@<version>/`. Each contains `package.tgz` and
+`integrity`. Content comparison and publish skipping remain Task 03's slice.
+The declared Verification command and terminal settlement remain Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261107T002718Z_f5b7975ba1530c9f`
+- Source commit: `df8a62977b88c76618bf630b2d7fb5dbeb018201`

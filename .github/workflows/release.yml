@@ -90,8 +90,12 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${TARGET_VERSION#v}"
-          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) or (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
+          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) then "published" elif (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
           RELEASE_SET="$RUNNER_TEMP/roundfix-release-set"
+          PUBLISHED="$RUNNER_TEMP/roundfix-release-published"
+          : > "$PUBLISHED"
+          coordinate_count=0
+          published_count=0
           body="$(mktemp)"
           trap 'rm -f "$body"' EXIT
           blocked=0
@@ -121,6 +125,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           while IFS= read -r coordinate; do
+            coordinate_count=$((coordinate_count + 1))
             state=""
             reason=""
             encoded_coordinate="$(jq -nr --arg coordinate "$coordinate" '$coordinate | @uri')"
@@ -168,6 +173,11 @@ jobs:
             printf '| `%s` | `%s` | `%s` |\n' "$coordinate" "$TAG" "$state" >> "$GITHUB_STEP_SUMMARY"
 
             case "$state" in
+              published)
+                printf '%s\n' "$coordinate" >> "$PUBLISHED"
+                published_count=$((published_count + 1))
+                echo "::notice::registry: $coordinate@$TAG is already published; a tag run compares it with its own build"
+                ;;
               eligible)
                 ;;
               used)
@@ -194,6 +204,10 @@ jobs:
           done < "$RELEASE_SET"
 
           if [ "$blocked" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$published_count" -eq "$coordinate_count" ]; then
+            echo "::error::registry: every coordinate of the Release Set is already published at $TAG"
             exit 1
           fi
 
