@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0364-a-rerun-finishes-a-partial-npm-publication
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -135,3 +135,80 @@ so the comparison never uses the tarball integrity (ADR-0374).
 - `_prd.md` → Goals; User Stories 1-2; Core Features 2-3; Success Metrics 1-3
 - `_techspec.md` → Interfaces; API Contracts 2-3; Testing Approach; Build Order 3
 - ADR-0374
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-structs-interfaces, tech-writer, evidence-gate.
+
+The push-only "Compare published packages" step now sits directly between
+"Cross-compile and stage" and "Publish to npm". It truncates the complete
+list, packs each listed platform or launcher locally and from the registry,
+reads both filenames and integrities, decompresses the tarballs and compares
+the tar streams. Equal content records the coordinate and the required row
+and summary bullet. Pack, metadata and decompression failures and different
+content print their specified diagnostics, exclude that coordinate, continue
+checking the remaining coordinates and exit 1 after the loop. A temporary
+working directory is removed by an EXIT trap; an empty published list records
+the specified summary sentence and exits 0.
+
+The publish function's initial guard matches complete-file entries with
+`grep -qxF --`, prints the specified skip line and returns before any npm
+call. TAG and COMPLETE are set before the function. All existing publish
+lines, including platform-first order, identity matching, fallback window
+and fallback summary, retain their bytes. The preflight, build and GitHub
+Release steps and task_02's harness file are unchanged.
+
+Focused evidence by acceptance criterion:
+
+- Equal published content is skipped and only missing coordinates publish:
+  `go test -timeout 5m -count=1 -v -run '^TestRelease(Compare|Rerun)' ./internal/verifyselect`
+  exited 0 with no skips. The rerun table executes preflight, comparison and
+  publication against the same temporary repository and RUNNER_TEMP. Its
+  v0.132.1 case asserts exactly five skip lines and only `roundfix` in the
+  publish log; its v0.130.0 case asserts the four remaining platforms and
+  launcher in order. Additional cases cover a published launcher, an entirely
+  eligible set, exact whole-line matching and literal rather than regex
+  matching. Successful publication logs contain no token use.
+- Different or unreadable tarballs stop before publication: the same focused
+  run passes the exact different-content diagnostic with both integrities,
+  missing local/registry pack fixtures, unreadable local/registry JSON fields
+  and corrupt local/registry gzip. Every error case asserts exit 1, the
+  failing coordinate's absence from the complete file, and a later equal
+  coordinate's success row and complete-file entry. The rerun table stops on
+  different content or a missing registry tarball with an empty publish log.
+- Different gzip bytes compare equal: the same focused run packs identical
+  tar content with `gzip.BestSpeed` locally and `gzip.BestCompression` for
+  the registry, using task_02's `archive/tar` and `compress/gzip` builder.
+  Fixtures explicitly assert different compressed bytes and integrity
+  strings. The comparison asserts exit 0, exact same-content rows, the
+  complete file and summary. The empty-list case also proves a stale complete
+  file is truncated.
+
+Additional focused checks:
+
+- Before the workflow edit,
+  `go test -timeout 5m -count=1 -v -run '^TestReleaseComparesPublishedPackagesAfterTheBuildAndBeforePublishing$' ./internal/verifyselect`
+  exited 1 with `compare step count = 0, want 1`. Afterward the release-focused
+  run above passes that test, asserting exactly one comparison step directly
+  between build and publish and the exact push-only condition.
+- `go test -timeout 5m -count=1 -v -run '^Test(ReleasePreflight|ReleasePublish|ReleaseWorkflowHarness|MainAndRelease)' ./internal/verifyselect`
+  exited 0 with no skips. task_02's preflight, transparency-log 409 and
+  fixture-pack tests and the existing Full Contract Run wiring test remain
+  passing without changes to their file.
+- `go test -timeout 5m -count=1 -v -run '^(TestEveryExternalTestToolGoesThroughRequireTool|TestEveryTestInAParallelTestPackageRunsInParallel|TestNoTestWritesAnExecutableOutsideTheResidue|TestEveryRealTimeBudgetIsWithinItsFileCeiling|TestNoTestCreatesAHardLink|TestEverySignalGoesToAProvenProcess)$' ./internal/testfixture`
+  exited 0. The new tests reuse the harness's RequireTool paths, call
+  `t.Parallel()` first in every test and subtest, write no executable modes
+  and add no timers, process signaling or network access.
+- `git diff --check` exited 0. Changed-path inspection shows only the
+  authorized workflow, the new comparison test file and this Task file.
+  The pre-existing Daemon-owned `in_progress` status is preserved.
+
+The declared Verification, including the full `internal/testfixture` run,
+was not run; it and terminal settlement remain Daemon-owned. No commit,
+push, pull request, real npm publication or release was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261107T002718Z_f5b7975ba1530c9f`
+- Source commit: `69f50bce1aa0ac1e788e7ce34aa34138f2d5b8f5`
