@@ -1055,11 +1055,11 @@ The read-only report of `roundfix update check` that a session runs before its f
 _Avoid_: Release note, version freshness line, upgrade check
 
 **Release Set**:
-The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible before any one is published.
+The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible, or already published with the same content as the tag run's build, before any one is published ([ADR-0374](docs/adr/0374-a-rerun-completes-a-release-set-from-the-same-content.md)).
 _Avoid_: Package list, publish targets, artifact set
 
 **Publication Preflight**:
-A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible.
+A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible or already published at that version, and it stops when all of them are already published; a tag run then compares each already published coordinate with its own build before it publishes the rest.
 _Avoid_: Publish dry run, identity check, release plan
 
 **Lagging Surface**:

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0364-a-rerun-finishes-a-partial-npm-publication
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -108,3 +108,25 @@ last.
 - `_prd.md` → Goals; User Story 3; Core Feature 4
 - `_techspec.md` → System Architecture; Build Order 1
 - ADR-0374
+
+## Result
+
+Skills loaded: tech-writer
+
+- ADR-0146 now carries `updated_at: 2026-11-06T23:30:00Z` and, right after the paragraph ending "the identity gap cannot produce exactly the partial release the invariant forbids.", the one-line amendment notice naming ADR-0374 and keeping the bounded token fallback unchanged; no other byte of the ADR changed.
+- `CONTEXT.md` defines **Release Set** as eligible or already published with the same content as the tag run's build (citing ADR-0374), and **Publication Preflight** as stopping unless every coordinate is eligible or already published, still stopping when all are published, and leaving the content comparison to a tag run. Term lines, `_Avoid_` lines and the other entries are untouched.
+- The runbook's "Rehearsing the Publication Preflight" gains the `published`/no-stop sentence; a new "Finishing a partial publication" section explains "Re-run failed jobs", the `published` classification, the "Compare published packages" step (pack, `npm pack <coordinate>@<version>`, decompressed tar-stream comparison, `same content`, `skipping …`, platform packages first and launcher last) and the `different content` / Go patch-release case. The vocabulary table's two old rows are replaced by the three required rows (Preflight `registry:`, Compare published packages `registry:`, and the widened `undetermined:`).
+- Both Coverage Reviews (`command release plan`, `guide docs/user-guide/release-runbook.md`) carry the 2026-11-06 Spec 0364 task_01 review line; no skill changed.
+- Behavior Surface Record re-recorded last, after the final runbook edit, with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (ok, 0.477s); the diff touches only the runbook surface hash in `behavior-surfaces.json`.
+
+### Focused checks (this session)
+
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs)$'` → ok (0.327s).
+- Whitespace-normalized `grep -cF` probes for the ADR amendment sentence, the `COMPARES each already published coordinate` glossary phrase, the `## Finishing a partial publication` heading and the `skipping <coordinate>@<version>: already published with the same content` runbook text all return 1.
+- `python3 -c "json.load(...)"` on `skill-coverage.json` parses; `git status --short` shows only the five Spec-listed files plus this task file.
+- The declared `## Verification` commands were not run (Daemon-owned).
+
+## Carry-forward provenance
+
+- Source Run: `run_20261107T002718Z_f5b7975ba1530c9f`
+- Source commit: `90c3672dfa27de1a1b060a6f5da2669eed5b8e0e`

@@ -209,6 +209,9 @@ This rehearsal is publish-free. It validates the version, runs `make verify`,
 and checks registry eligibility for the full Release Set, then stops before
 cross-compilation, npm publication, or GitHub Release creation.
 
+A coordinate already published at the version shows `published` and does not
+stop the rehearsal; only a tag run compares its content with a build.
+
 ## Closing the fallback window
 
 The fallback window protects the first OIDC release from a trusted-publisher
@@ -247,6 +250,29 @@ reports token publication as disallowed. The window is not closed until all
 six confirmations pass. Then remove the bounded fallback branch from
 `release.yml` in a dedicated workflow change.
 
+## Finishing a partial publication
+
+When `npm publish` fails after some coordinates of the Release Set have
+published, finish the release by rerunning the failed job of the same workflow
+run ("Re-run failed jobs"); do not cut a new version for it. The Publication
+Preflight reports each coordinate already published at the target version as
+`published`. After the build, the step "Compare published packages" packs this
+run's build of each such coordinate, fetches the published tarball with `npm
+pack <coordinate>@<version>` and compares the two decompressed tar streams.
+When they are byte-identical it prints `same content`, and the publish step
+prints `skipping <coordinate>@<version>: already published with the same
+content` and publishes only the missing coordinates, platform packages first
+and the launcher last.
+
+The step compares the decompressed tar streams because the tarball integrity
+changes with the gzip output of the Node build that packs it, even when every
+packed byte is the same. A rerun rebuilds the binaries with the Go release
+that `actions/setup-go` resolves at that moment: if a newer Go patch release
+appeared after the first attempt, the rebuild differs and the step stops with
+`different content`. The version then cannot be completed, and the next patch
+version republishes the same changes, as it does for a version that was
+removed with `npm unpublish`.
+
 ## Release workflow failure vocabulary
 
 The prefix identifies the failing stage and the maintainer's first recovery
@@ -254,8 +280,9 @@ step:
 
 | Prefix | Emitting stage | Meaning | First recovery step |
 | --- | --- | --- | --- |
-| `registry:` | Publication Preflight | The named coordinate cannot accept the target version because it is already used, remains in the printed post-unpublish cooldown, or is absent. | Follow the named reason: choose an unused version, wait until the printed cooldown time, or restore the absent coordinate; then rerun the rehearsal. |
-| `undetermined:` | Publication Preflight | Registry eligibility could not be proven because the Release Set, transport, HTTP response, registry body, or cooldown timestamp could not be read. Nothing has published. | Inspect the named read or classification failure and rerun the rehearsal after registry access is reliable. |
+| `registry:` | Publication Preflight | The named coordinate cannot accept the target version because the version was published and then unpublished (`already used`), remains in the printed post-unpublish cooldown, or is absent; or every coordinate of the Release Set is already published at the version. | Follow the named reason: choose an unused version, wait until the printed cooldown time, or restore the absent coordinate; then rerun the rehearsal. A Release Set already published at the version has nothing left to publish. |
+| `registry:` | Compare published packages | The named coordinate is already published at the target version with content that differs from this run's build (`different content`); the line prints both tarball integrities. This run has published nothing. | Release the next patch version; a published version can never be replaced. |
+| `undetermined:` | Publication Preflight, Compare published packages | Registry eligibility could not be proven because the Release Set, transport, HTTP response, registry body, or cooldown timestamp could not be read, or because this run's build or the published tarball of a coordinate could not be packed, fetched or decompressed. This run has published nothing. | Inspect the named read or classification failure and rerun after registry access is reliable. |
 | `identity:` | Publish to npm | OIDC authentication failed for the named coordinate. During the open fallback window this can be a warning before the token retry; after the window closes it is fatal. | Compare that package's trusted-publisher owner, repository, and workflow filename with the table above and correct the mismatch. |
 | `publish:` | Publish to npm | The named coordinate failed for a reason that is **not** authentication — a network error, a validation rejection, or a registry fault. The underlying npm error is printed beneath the prefix, and the token fallback is never attempted. | Read the printed npm error and act on it directly. A `publish:` failure never means the trusted publisher is misconfigured, so do not change publisher settings in response to one. |
 | `runtime:` | Guard Trusted Publishing runtime | The resolved npm runtime is below the Trusted Publishing floor of `11.5.1`. | Restore the workflow's declared Node 24/npm runtime and rerun the workflow. |
