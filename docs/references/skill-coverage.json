@@ -528,7 +528,8 @@
       ],
       "sources": [
         "docs/user-guide/release-runbook.md"
-      ]
+      ],
+      "review": "2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
     },
     {
       "id": "command reopen",
@@ -1222,7 +1223,8 @@
       ],
       "sources": [
         "docs/user-guide/release-runbook.md"
-      ]
+      ],
+      "review": "2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
     },
     {
       "id": "guide docs/user-guide/run-database-lifecycle.md",

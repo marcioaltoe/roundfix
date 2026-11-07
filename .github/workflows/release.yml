@@ -90,8 +90,12 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${TARGET_VERSION#v}"
-          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) or (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
+          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) then "published" elif (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
           RELEASE_SET="$RUNNER_TEMP/roundfix-release-set"
+          PUBLISHED="$RUNNER_TEMP/roundfix-release-published"
+          : > "$PUBLISHED"
+          coordinate_count=0
+          published_count=0
           body="$(mktemp)"
           trap 'rm -f "$body"' EXIT
           blocked=0
@@ -121,6 +125,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           while IFS= read -r coordinate; do
+            coordinate_count=$((coordinate_count + 1))
             state=""
             reason=""
             encoded_coordinate="$(jq -nr --arg coordinate "$coordinate" '$coordinate | @uri')"
@@ -168,6 +173,11 @@ jobs:
             printf '| `%s` | `%s` | `%s` |\n' "$coordinate" "$TAG" "$state" >> "$GITHUB_STEP_SUMMARY"
 
             case "$state" in
+              published)
+                printf '%s\n' "$coordinate" >> "$PUBLISHED"
+                published_count=$((published_count + 1))
+                echo "::notice::registry: $coordinate@$TAG is already published; a tag run compares it with its own build"
+                ;;
               eligible)
                 ;;
               used)
@@ -194,6 +204,10 @@ jobs:
           done < "$RELEASE_SET"
 
           if [ "$blocked" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$published_count" -eq "$coordinate_count" ]; then
+            echo "::error::registry: every coordinate of the Release Set is already published at $TAG"
             exit 1
           fi
 
@@ -229,6 +243,67 @@ jobs:
             dist/npm/roundfix/package.json > dist/npm/roundfix/package.json.tmp
           mv dist/npm/roundfix/package.json.tmp dist/npm/roundfix/package.json
 
+      # Accept an already published coordinate only on byte-identical
+      # decompressed tar streams: integrity can differ with the Node build's
+      # gzip output even when the packed content is identical (ADR-0374).
+      - name: Compare published packages
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          COMPLETE="$RUNNER_TEMP/roundfix-release-complete"
+          : > "$COMPLETE"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          printf '\n### Already published\n\n' >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ! -s "$RUNNER_TEMP/roundfix-release-published" ]; then
+            echo "No coordinate was already published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          mkdir -p "$work/local" "$work/registry"
+          blocked=0
+
+          while IFS= read -r coordinate; do
+            if [ "$coordinate" = "roundfix" ]; then
+              pkgdir="dist/npm/roundfix"
+            else
+              pkgdir="dist/npm/packages/cli-${coordinate#@roundfix/cli-}"
+            fi
+            if ! local_pack="$( cd "$pkgdir" && npm pack --json --pack-destination "$work/local" )" \
+              || ! local_filename="$(printf '%s' "$local_pack" | jq -er '.[0].filename')" \
+              || ! local_integrity="$(printf '%s' "$local_pack" | jq -er '.[0].integrity')"; then
+              echo "::error::undetermined: $coordinate@$TAG: this build could not be packed"
+              blocked=1
+              continue
+            fi
+            if ! registry_pack="$( cd "$work/registry" && npm pack "$coordinate@$TAG" --json )" \
+              || ! registry_filename="$(printf '%s' "$registry_pack" | jq -er '.[0].filename')" \
+              || ! registry_integrity="$(printf '%s' "$registry_pack" | jq -er '.[0].integrity')"; then
+              echo "::error::undetermined: $coordinate@$TAG: the published tarball could not be fetched"
+              blocked=1
+              continue
+            fi
+            if ! gzip -dc "$work/local/$local_filename" > "$work/local.tar" \
+              || ! gzip -dc "$work/registry/$registry_filename" > "$work/registry.tar"; then
+              echo "::error::undetermined: $coordinate@$TAG: a tarball could not be decompressed"
+              blocked=1
+              continue
+            fi
+            if cmp -s "$work/local.tar" "$work/registry.tar"; then
+              printf '%-36s %-12s %s\n' "$coordinate" "$TAG" "same content"
+              printf '%s\n' "$coordinate" >> "$COMPLETE"
+              printf -- '- `%s@%s`: same content as this build\n' "$coordinate" "$TAG" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error::registry: $coordinate@$TAG is already published with different content (registry $registry_integrity, this build $local_integrity)"
+              blocked=1
+            fi
+          done < "$RUNNER_TEMP/roundfix-release-published"
+
+          if [ "$blocked" -ne 0 ]; then
+            exit 1
+          fi
+
       # Publish the per-platform packages first so the launcher's
       # optionalDependencies resolve the moment it goes live.
       - name: Publish to npm
@@ -249,7 +324,15 @@ jobs:
           FALLBACK_LOG="$RUNNER_TEMP/roundfix-npm-token-fallback"
           : > "$FALLBACK_LOG"
 
+          TAG="${GITHUB_REF_NAME#v}"
+          COMPLETE="$RUNNER_TEMP/roundfix-release-complete"
+
           publish_coordinate() {
+            if [ -f "$COMPLETE" ] && grep -qxF -- "$2" "$COMPLETE"; then
+              coordinate="$2"
+              echo "skipping $coordinate@$TAG: already published with the same content"
+              return 0
+            fi
             pkgdir="$1"
             coordinate="$2"
 
