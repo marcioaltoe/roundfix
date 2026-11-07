@@ -162,10 +162,13 @@ removed by `npm unpublish` can never be completed.
 
 ## Unreachable Acceptance
 
-1. A real rerun of a failed release job on GitHub Actions against the npm
-   registry: it would publish packages, which this Spec's authorization and
-   its QA forbid. The QA proves the same path on the workflow's own step
-   scripts with a stub registry and records this as one blocked row.
+- criterion: A real rerun of a failed release job on GitHub Actions against
+  the npm registry.
+  reason: it would publish packages, which this Spec's authorization and its
+  QA forbid.
+  satisfied-by: the QA proves the same path on the workflow's own step scripts
+  with a stub registry and records this as one blocked row; the first real
+  release after delivery is the live confirmation, recorded session evidence.
 
 ## Validation
 
