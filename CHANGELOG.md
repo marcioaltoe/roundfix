@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.1] - 2026-11-06
+
+### A rerun finishes a partial npm publication
+
+- **A rerun of a release job that stopped after publishing some npm packages now finishes the publication instead of failing on the packages already there.** For each package and version the workflow builds, it compares the published tarball's uncompressed content with its own build: an identical coordinate is skipped, a missing one is published, and different or unreadable content stops the job before anything is published. Before, the Publication Preflight refused any version already on npm, so a job that failed after a transparency-log 409 could only be finished by hand (ADR-0374, amending ADR-0146).
+- **The release runbook and the glossary describe the recovery**: rerun the failed job; the run publishes only what is missing.
+
 ## [0.137.0] - 2026-11-06
 
 ### A session starts with an Update Check, and the update mode applies it
