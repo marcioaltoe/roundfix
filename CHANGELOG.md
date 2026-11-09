@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.2] - 2026-11-09
+
+### The capability proof reads grouped select options
+
+- **Codex profiles pass the preflight again with codex-acp 2.6.0.** That adapter version advertises the `mode` select as ACP option groups (`sandbox-modes`, `permission-profiles`), and Roundfix read only a flat list, so every Codex tuple failed with `capability_evidence_invalid` (`invalid_current_value, invalid_select_option`) and no Run with a Codex profile could start. The capability projection now reads a grouped select as its groups' values in advertised order, with the same bounds as a flat list; a full-access request still selects its mode from those values. A payload outside the protocol's two shapes still fails the whole proof (ADR-0375).
+
 ## [0.137.1] - 2026-11-06
 
 ### A rerun finishes a partial npm publication
