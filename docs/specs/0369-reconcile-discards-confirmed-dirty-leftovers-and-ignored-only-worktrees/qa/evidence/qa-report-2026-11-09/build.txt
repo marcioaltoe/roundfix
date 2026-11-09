@@ -1,6 +1,0 @@
-command: make build
-exit: 0
-Observed output:
-gocache-bound: removed 4692 idle entries (1368140853 bytes) from the selected shared cache
-go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=0c8de3b7-dirty -X roundfix/internal/app.BuildTime=2026-11-09 20:10:00 -0300" -o bin/roundfix ./cmd/roundfix
-The version identity is recorded independently in version.txt.

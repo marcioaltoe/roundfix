@@ -1,5 +1,0 @@
-command: rg -n 'Three switches mutate|These three mutation switches are mutually exclusive|--apply` remains the only switch that releases Run Worktrees|roundfix reconcile \[run-id\] \[--apply \| --discard-superseded \| --carry-forward\]' docs/user-guide/commands/reconcile.md .agents/skills/roundfix/references/reconcile.md skills/roundfix/references/reconcile.md internal/cli/cli.go internal/cli/cli_test.go
-exit: 1 (no matches)
-stdout:
-
-stderr:

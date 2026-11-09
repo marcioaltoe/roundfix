@@ -1,2 +1,0 @@
-Parsed PRD Unreachable Acceptance: None.
-No declaration waives a criterion. No row is declared-blocked.

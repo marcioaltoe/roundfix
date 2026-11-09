@@ -1,9 +1,0 @@
-command: ./bin/roundfix reconcile --discard-dirty abc
-exit: 2
-stdout:
-
-stderr:
-roundfix: reconcile failed: --discard-dirty needs the 64-character digest that roundfix reconcile prints
-Run 'roundfix reconcile --help' for usage.
-
-exact stdout/stderr/exit comparison: True
