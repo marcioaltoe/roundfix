@@ -3017,6 +3017,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", false, fmt.Errorf("resolve audited head for run %q: %w", plan.RunID, err)
 	}
+	evidenceDir := filepath.ToSlash(filepath.Join(filepath.Dir(reportPath), "evidence", strings.TrimSuffix(filepath.Base(reportPath), ".md")))
 	if err := engine.publishAuditorStalenessWarning(ctx, plan, ordinal, reportPath, auditorEvidence); err != nil {
 		return "", "", false, fmt.Errorf("publish auditor staleness warning for run %q: %w", plan.RunID, err)
 	}
@@ -3071,6 +3072,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			return "", "", false, fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		prompt += fmt.Sprintf("Run Worktree: %s\nAudited head: %s\nEvidence directory: %s/\nBuild and run every executable a row exercises inside this Run Worktree, list their paths in user_flow_executables, write this pass's evidence under the evidence directory, and never copy, replay or cite evidence or an executable an earlier Run left.\n", plan.WorkDir, auditedHead, evidenceDir)
 		if auditorEvidence.SelfAudit {
 			prompt += "Self-audit: build roundfix from this Run Worktree with make build, run every public-CLI row with ./bin/roundfix and never a roundfix found on PATH, and record its --version line as user_flow_binary.\n"
 		}
@@ -3154,6 +3156,11 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		if linkErr != nil {
 			return "", "", false, linkErr
 		}
+		borrowedReport, borrowed, borrowedErr := borrowedQAEvidence(ctx, plan, prior, auditedHead)
+		if borrowedErr != nil {
+			return "", "", false, borrowedErr
+		}
+		var repairPrompt string
 		if len(links) > 0 {
 			message := fmt.Sprintf("QA evidence links unresolved: %d; returning the QA turn once.", len(links))
 			if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
@@ -3161,6 +3168,18 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				return "", "", false, err
 			}
 			fmt.Fprintln(engine.deps.Progress, message)
+			repairPrompt = qaEvidenceLinkRepairPrompt(newestReport, links)
+		}
+		if len(borrowed) > 0 {
+			message := fmt.Sprintf("QA evidence does not belong to this Run: %d item(s); returning the QA turn once.", len(borrowed))
+			if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+				message, qaBorrowedEvidencePayload("repair", borrowed)); err != nil {
+				return "", "", false, err
+			}
+			fmt.Fprintln(engine.deps.Progress, message)
+			repairPrompt += qaBorrowedEvidenceRepairPrompt(borrowedReport, plan.WorkDir, auditedHead, evidenceDir, borrowed)
+		}
+		if repairPrompt != "" {
 			agentCtx, cancelAgent := context.WithCancel(ctx)
 			turn, runErr := engine.runAgentSession(agentCtx, owner, agent.ExecuteRequest{
 				Runtime:     plan.Runtime,
@@ -3169,7 +3188,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 				Batch:       rounds.Batch{Number: ordinal},
 				LogPath:     logPath,
 				ArtifactDir: plan.ArtifactDir,
-				Prompt:      qaEvidenceLinkRepairPrompt(newestReport, links),
+				Prompt:      repairPrompt,
 				GitRoot:     plan.WorkDir,
 			})
 			cancelAgent()
@@ -3291,6 +3310,17 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			qaReason = spec.EvidenceLinksError{Links: unresolvedLinks}.Error()
 		}
 	}
+	var borrowed []spec.BorrowedEvidence
+	if len(matches) == 0 && len(binaryPaths) == 0 && len(unresolvedLinks) == 0 {
+		_, borrowed, err = borrowedQAEvidence(ctx, plan, prior, auditedHead)
+		if err != nil {
+			return "", "", false, err
+		}
+		if len(borrowed) > 0 {
+			qaStatus, accepted = spec.StatusFailed, false
+			qaReason = spec.BorrowedEvidenceError{Evidence: borrowed}.Error()
+		}
+	}
 
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", false, err
@@ -3328,10 +3358,69 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		return verdict, reportPath, false, nil
 	}
 
+	if len(borrowed) > 0 {
+		message := fmt.Sprintf("QA Report refused: %d borrowed evidence item(s)", len(borrowed))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			message, qaBorrowedEvidencePayload("refused", borrowed)); err != nil {
+			return "", "", false, err
+		}
+		fmt.Fprintln(engine.deps.Progress, message)
+		return verdict, reportPath, false, nil
+	}
+
 	if err := engine.commitPreparedQAReport(ctx, plan, ordinal, verdict, reportPath, qaTask, prepared); err != nil {
 		return "", "", false, err
 	}
 	return verdict, reportPath, accepted, nil
+}
+
+func borrowedQAEvidence(ctx context.Context, plan TaskPlan, prior priorQAPass, auditedHead string) (string, []spec.BorrowedEvidence, error) {
+	reportPath, err := spec.NewestQAReport(plan.Spec.Dir)
+	if errors.Is(err, spec.ErrNoQAReport) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("find QA Report for evidence binding check: %w", err)
+	}
+	if _, err := spec.ReadQAReportFile(reportPath); err != nil {
+		var pathErr *os.PathError
+		if errors.As(err, &pathErr) {
+			return "", nil, fmt.Errorf("read QA Report for evidence binding check: %w", err)
+		}
+		// An invalid report already settles unreadable with its parse diagnostic;
+		// evidence binding must not turn that refusal into an infrastructure error.
+		return reportPath, nil, nil
+	}
+	options := spec.BorrowedEvidenceOptions{
+		RunBranchPrefix: store.RunBranchPrefix,
+		RunBranch:       plan.RunWorktree.Branch,
+		AuditedHead:     auditedHead,
+		ImportCommit:    prior.Commit,
+		ImportedPaths:   prior.Files,
+	}
+	evidence, err := spec.FindBorrowedEvidence(ctx, reportPath, options)
+	if err != nil {
+		return "", nil, fmt.Errorf("check QA Report evidence binding: %w", err)
+	}
+	return reportPath, evidence, nil
+}
+
+func qaBorrowedEvidenceRepairPrompt(reportPath, workDir, auditedHead, evidenceDir string, evidence []spec.BorrowedEvidence) string {
+	var prompt strings.Builder
+	fmt.Fprintf(&prompt, "QA evidence does not belong to this Run.\nReport: %s\nRun Worktree: %s\nAudited head: %s\nEvidence directory: %s/\n", reportPath, workDir, auditedHead, evidenceDir)
+	for _, item := range evidence {
+		fmt.Fprintf(&prompt, "- %s (line %d, %s)\n", item.Subject, item.Line, item.Reason)
+	}
+	prompt.WriteString("Run each affected row again at the audited head with executables built in this Run Worktree, write its evidence under the evidence directory, update its links and user_flow_executables, and never copy, replay or cite evidence an earlier Run left; never change a verdict or a row the new evidence does not support.\n")
+	return prompt.String()
+}
+
+func qaBorrowedEvidencePayload(outcome string, evidence []spec.BorrowedEvidence) map[string]any {
+	items := make([]map[string]any, len(evidence))
+	for index, item := range evidence {
+		items[index] = map[string]any{"subject": item.Subject, "line": item.Line, "reason": item.Reason}
+	}
+	return map[string]any{"phase": "evidence_binding", "outcome": outcome, "items": items}
 }
 
 // A missing report keeps the existing missing-verdict settlement. Other read

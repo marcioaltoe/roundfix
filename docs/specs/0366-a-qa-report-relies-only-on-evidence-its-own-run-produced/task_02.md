@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0366-a-qa-report-relies-only-on-evidence-its-own-run-produced
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -159,3 +159,72 @@ the message reported by quaestor on 2026-11-06, whose Run parked
 - `_prd.md` → Goals; User Story 3; Core Feature 3; Core Feature 4; Success Metric 6; Success Metric 7; Success Metric 8
 - `_techspec.md` → Current behavior 3; API Contracts 6-8; Invariants 2, 3 and 5; Testing Approach; Risks & Considerations; Build Order 2
 - ADR-0376, ADR-0351
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate, agentic-cli-design.
+
+Implemented the Task 02 slice for Daemon Verification; Task status remains
+Daemon-owned. No Task Graph, sibling Task, commit, push or Pull Request was
+changed or created by this Agent.
+
+- Prompt facts: the initial QA prompt now appends the four API Contract 8
+  lines after the seeded-report instructions, using the seeded report's own
+  evidence directory. `TestQAPromptNamesTheRunWorktreeAuditedHeadAndEvidenceDirectory`
+  checks their exact text and order against the audited HEAD.
+- Repair and refusal: the newest report is checked with the Run Branch,
+  audited head and imported-pass provenance. Links and Borrowed Evidence share
+  one repair turn in the existing Agent Session. Remaining Borrowed Evidence
+  settles failed with the shared reason, emits `evidence_binding: refused`,
+  and returns before a QA Report commit. The regenerated and unrepaired tests
+  assert settlement, event payloads, progress text, retained files and commit
+  contents or absence. The additional
+  `TestQAEvidenceLinksAndBorrowedEvidenceShareOneRepairTurn` exercises both
+  problems together and verifies ordered prompts and committed repairs.
+- Import and compatibility: the imported-evidence test records a failed
+  prior pass, imports it into a new Run, observes the seeded re-run row,
+  cites its unchanged image-content `.bin`, and asserts `imported` and
+  byte-preserved copies. Existing link and carry-forward tests are unchanged.
+  Invalid report content retains the existing unreadable-verdict refusal;
+  filesystem read and Git failures still propagate as infrastructure errors.
+- Documentation: added the paragraph after the link rule in the implement
+  guide and canonical reference, synchronized the mirror, and generated the
+  Roundfix skill version `0.1.205` in both version fields and both copies.
+
+Focused implementation evidence:
+
+- Before the implementation,
+  `rtk proxy go test ./internal/daemon -run '^TestQABorrowedEvidenceAfterRepairSettlesFailed$' -count=1`
+  exited 1: `repair turns = 0, want 1`, reproducing the missing repair.
+- `rtk proxy go test ./internal/daemon -run 'TestQABorrowedEvidence|TestQAPromptNamesTheRunWorktree|TestQAEvidenceLink|TestQAReportWithResolvedLinks|TestQAGateCarriesARowFromAnUnintegratedFailedPass|TestPriorQAPassImportsTheNewestUnintegratedReportByteForByte' -count=1`
+  exited 0 after implementation, covering all four required new tests and
+  the named link and carry/import seams.
+- An expanded QA check exposed the existing empty-frontmatter refusal becoming
+  an infrastructure error. The helper now leaves invalid report content to the
+  existing unreadable settlement, preserving its diagnostic and failed status.
+- Final focused regression:
+  `rtk proxy go test ./internal/daemon -run 'QA|PriorQAPass' -count=1`
+  exited 0, including the combined repair and unchanged QA settlement tests.
+  A preceding run's assertions passed but suiteguard refused transient
+  catalog writes from concurrent digest regeneration; the final check ran
+  after that generator finished, with no concurrent repository writer.
+- `rtk make skills-sync` exited 0.
+- `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0 and recorded `0.1.205`.
+- `rtk make baseline-digests` exited 0 with `changed: false`; no Baseline
+  source or derived file remains changed.
+- `rtk proxy go test ./skills -run '^(TestEveryOwnedSkillVersionIsRecorded|TestAuthorialSkillSync)$' -count=1`
+  exited 0.
+- `rtk proxy git diff --check` exited 0.
+
+The Behavior Surface Record is regenerated last, after guide edits, sync and
+version recording. Its command outcome is recorded below. Declared Task
+Verification and repository Verification are reserved for the Daemon; no
+terminal Task verdict is claimed here. No follow-up scope was added.
+
+- Final regeneration:
+  `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and updated `docs/references/behavior-surfaces.json`. No guide or
+  skill content was edited afterward. Final diff inspection contains only
+  Task 02's declared paths, plus its Result and the Daemon-owned status
+  transition already present in the assigned Task.

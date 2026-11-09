@@ -249,6 +249,15 @@ the largest carriable Task set, breaking ties with the newest Run.
    `QA Report evidence links do not resolve in the committed tree: <link> (line <n>, <reason>)`,
    publishes the `evidence_links` event and creates no QA Report commit.
 
+   The QA prompt names the Run Worktree, the audited head and the evidence
+   directory `qa/evidence/<report name>/`. The Daemon then checks the newest
+   QA Report for Borrowed Evidence, counting the QA Report Import's unchanged
+   copies as `imported`. On Borrowed Evidence the Daemon returns the QA turn once,
+   in the same turn as an unresolved link. A remaining item settles the QA Task
+   `failed` with
+   `QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>)`,
+   publishes the `evidence_binding` event and creates no QA Report commit.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent
