@@ -211,3 +211,22 @@ stderr line, joining multiple links with `; `:
 ```text
 roundfix: QA Report eligibility refused: QA Report evidence links do not resolve in the committed tree: <destination> (line <n>, <reason>)
 ```
+
+Every evidence file the report relies on must belong to this Run. Borrowed
+Evidence is `reused` when a linked file under the Spec's `qa/evidence/` has
+the same bytes at that path in the audited head, or `imported` when it
+matches the QA Report Import's copy; it `names another Run Worktree <path>`
+when the report or linked evidence names a registered worktree of another
+Run, or is `outside the worktree` when a `user_flow_executables` entry lies
+outside this worktree, compared without resolving the executable's symbolic
+links. The optional key must be a list of strings; otherwise its reason is
+`not a list of paths`. The audited head is `HEAD` for an uncommitted report,
+otherwise the first parent of the commit that added it; an unborn head or
+root addition has no audited head for the `reused` check. A Carried Row's
+Results line and `### <row-id>` block are exempt. Outside Git nothing is
+checked. A refusal exits `1` with no stdout and this stderr line, joining
+multiple items with `; `:
+
+```text
+roundfix: QA Report eligibility refused: QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>)
+```

@@ -162,6 +162,76 @@ func writeQAReportTestFile(t *testing.T, path, content string) {
 	}
 }
 
+const borrowedQAReportContent = "---\nverdict: pass\n---\n\n## Results\n\n| # | Status | Evidence |\n| - | --- | --- |\n| 1 | pass | [run](evidence/2026-11-06-gate/head-exclusive.execution.txt) [replay](evidence/2026-11-06-gate/replay.py.txt) |\n"
+
+const borrowedQAReportRefusal = "QA Report evidence does not belong to this Run: evidence/2026-11-06-gate/head-exclusive.execution.txt (line 9, reused); evidence/2026-11-06-gate/replay.py.txt (line 9, reused)"
+
+func prepareBorrowedQAReport(t *testing.T) (string, string) {
+	t.Helper()
+	_, root := newImplementWorkspace(t, []implementSeed{implementQAGateSeed(string(spec.StatusFailed))})
+	reportRel := "docs/specs/" + implementTestSlug + "/qa/qa-report-2026-11-09.md"
+	for _, name := range []string{"head-exclusive.execution.txt", "replay.py.txt"} {
+		writeQAReportTestFile(t, filepath.Join(root, filepath.Dir(reportRel), "evidence/2026-11-06-gate", name), "earlier Run evidence\n")
+	}
+	gittest.Run(t, root, "add", ".")
+	gittest.Run(t, root, "commit", "-m", "record earlier evidence")
+	gittest.Run(t, root, "commit", "--allow-empty", "-m", "later audited head")
+	writeQAReportTestFile(t, filepath.Join(root, reportRel), borrowedQAReportContent)
+	return root, reportRel
+}
+
+func regenerateBorrowedQAReport(t *testing.T, root, reportRel string) {
+	t.Helper()
+	for _, name := range []string{"head-exclusive.execution.txt", "replay.py.txt"} {
+		writeQAReportTestFile(t, filepath.Join(root, filepath.Dir(reportRel), "evidence/qa-report-2026-11-09", name), "own Run evidence\n")
+	}
+	writeQAReportTestFile(t, filepath.Join(root, reportRel), strings.ReplaceAll(borrowedQAReportContent, "2026-11-06-gate", "qa-report-2026-11-09"))
+}
+
+func TestQAReportAcceptRefusesBorrowedEvidence(t *testing.T) {
+	t.Parallel()
+	root, reportRel := prepareBorrowedQAReport(t)
+	var stdout, stderr bytes.Buffer
+	args := []string{"qa-report", "accept", filepath.Join(root, reportRel)}
+	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+	want := "roundfix: QA Report eligibility refused: " + borrowedQAReportRefusal + "\n"
+	if code != exitRunFailed || stdout.Len() != 0 || stderr.String() != want {
+		t.Fatalf("accept = %d, stdout %q, stderr %q; want refusal %q", code, stdout.String(), stderr.String(), want)
+	}
+	regenerateBorrowedQAReport(t, root, reportRel)
+	stdout.Reset()
+	stderr.Reset()
+	if code := runCLIContext(t, t.Context(), args, &stdout, &stderr); code != exitOK || stdout.Len() != 0 || stderr.Len() != 0 {
+		t.Fatalf("regenerated accept = %d, stdout %q, stderr %q", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestSettleRefusesAQAReportWithBorrowedEvidence(t *testing.T) {
+	t.Parallel()
+	root, reportRel := prepareBorrowedQAReport(t)
+	taskPath := implementTaskPath(root, "task_qa")
+	before := mustRead(t, taskPath)
+	var stdout, stderr bytes.Buffer
+	args := []string{"settle", "--spec", implementTestSlug, "--task", "task_qa"}
+	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+	want := "Settle surface: " + root + "\nroundfix: settle QA Report is ineligible: " + borrowedQAReportRefusal + " (report " + reportRel + ")\n"
+	if code != exitRunFailed || stderr.String() != want {
+		t.Fatalf("settle = %d, stdout %q, stderr %q; want refusal %q", code, stdout.String(), stderr.String(), want)
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("refusal changed Task: %s", got)
+	}
+	regenerateBorrowedQAReport(t, root, reportRel)
+	stdout.Reset()
+	stderr.Reset()
+	if code := runCLIContext(t, t.Context(), args, &stdout, &stderr); code != exitOK || stderr.String() != "Settle surface: "+root+"\n" {
+		t.Fatalf("regenerated settle = %d, stdout %q, stderr %q", code, stdout.String(), stderr.String())
+	}
+	if got := mustRead(t, taskPath); !strings.Contains(got, "status: completed") {
+		t.Fatalf("regenerated fixture did not settle: %s", got)
+	}
+}
+
 func TestQAReportAcceptRefusesAnUnresolvedEvidenceLink(t *testing.T) {
 	t.Parallel()
 	_, root := newImplementWorkspace(t, []implementSeed{implementQAGateSeed(string(spec.StatusFailed))})

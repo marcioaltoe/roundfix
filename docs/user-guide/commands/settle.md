@@ -89,6 +89,15 @@ and names the report relative to the selected surface:
 roundfix: settle QA Report is ineligible: QA Report evidence links do not resolve in the committed tree: <destination> (line <n>, <reason>) (report <path>)
 ```
 
+For a `qa` Task, the Settle Command applies the same rule that every evidence
+file must belong to this Run as `qa-report accept`, after the evidence-link
+rule accepts. Borrowed Evidence refuses settlement, leaves the Task file
+unchanged, and names the report relative to the selected surface:
+
+```text
+roundfix: settle QA Report is ineligible: QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>) (report <path>)
+```
+
 If the newest report in the selected surface is ineligible, settle exits `1`
 and leaves the Task file unchanged. Its stderr refusal names that report with
 `(report <path>)`, relative to the surface's working tree:

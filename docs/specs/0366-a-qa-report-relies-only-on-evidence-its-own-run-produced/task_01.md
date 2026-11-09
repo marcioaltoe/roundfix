@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0366-a-qa-report-relies-only-on-evidence-its-own-run-produced
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -165,3 +165,66 @@ evidência de outro Run"
 - `_prd.md` → Goals; User Stories 1-2; Core Features 1, 2 and 4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 8; Glossary
 - `_techspec.md` → Current behavior 1-2 and 5; API Contracts 1-5; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
 - ADR-0376, ADR-0351
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the shared Borrowed Evidence check and connected it after the
+existing evidence-link check in `qa-report accept` and
+`requireSettleQAReportEligibility`. The check derives the audited head,
+compares evidence blobs through `archiveGitRead`, handles directory links,
+reads imported-path provenance, scans registered foreign Run worktrees,
+validates executable lists without resolving executable symlinks, exempts
+Carried Rows and returns items in report-line order. Git and read failures
+remain errors. No dependencies were added.
+
+Focused evidence by acceptance criterion:
+
+- Quaestor refusal and regeneration: before wiring the check,
+  `rtk proxy go test ./internal/cli -run '^TestQAReportAcceptRefusesBorrowedEvidence$' -count=1`
+  exited 1 because the command returned 0 with empty streams for the old
+  evidence. After implementation,
+  `rtk proxy go test ./internal/spec ./internal/cli -run 'BorrowedEvidence' -count=1`
+  exited 0. The two CLI tests assert the exact two-item refusal, empty
+  accept stdout, an unchanged Task on refused settlement, acceptance after
+  regeneration and `completed` on the isolated fixture's QA Task.
+- Exemptions and provenance: the eight new `internal/spec` tests cover
+  untracked and changed tracked evidence, report/evidence added together,
+  later report addition, modified reports, unborn and root commits,
+  directory links, Carried Row lines and blocks, `.venv/bin/python` linked
+  outside the worktree, own Task and non-Run worktrees, foreign paths in
+  evidence and the report, imports, malformed lists, empty Run prefix,
+  cancellation and read/Git failures. The focused command above exited 0.
+  `rtk proxy go test ./internal/spec ./internal/cli -run 'BorrowedEvidence|UnresolvedEvidenceLink|IgnoredEvidenceLink' -count=1`
+  also exited 0, retaining the existing evidence-link regressions unchanged.
+- Documentation and generated records: updated the qa-report guide, the
+  Settle guide, the canonical Roundfix settle reference and the two glossary
+  terms. `rtk proxy make skills-sync` exited 0, and
+  `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`
+  exited 0, generating Roundfix version `0.1.204` in both fields and copies
+  and recording its digest. `rtk proxy make baseline-digests` exited 0 with
+  `changed: false`. The focused contracts
+  `rtk proxy go test -tags docscontract ./internal/docscontract -run 'TestGlossary|TestUserGuideLinksResolve|TestCommandReferenceLinksResolve' -count=1`
+  and
+  `rtk proxy go test ./skills -run 'TestEveryOwnedSkillVersionIsRecorded|TestSettlementGuidanceIsOneTable|TestRoundfixSkillIndexLinksResolve' -count=1`
+  both exited 0. Direct byte comparisons confirmed the reference and
+  `SKILL.md` mirrors are identical and the QA settlement section is
+  unchanged. Inspection confirmed only the named eligibility function
+  changed in `settle.go`.
+  `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 after the final guide edits and regenerated only the two changed
+  guide fingerprints in `docs/references/behavior-surfaces.json`.
+
+The first Go invocation was blocked by sandbox access to the existing Go
+cache; the same focused reproduction then ran with escalated cache access.
+The canonical `.agents/skills` reference likewise required sandbox escalation
+for its authorized write. These environmental refusals were not treated as
+product test results.
+
+Only this Task's declared implementation paths and its Result were changed;
+the pre-existing Task status edit remains Daemon-owned. No Task status,
+Task Graph, sibling Task, commit, push or pull request was changed. The
+commands in `## Verification`, the repository Verification and terminal QA
+were not run; the Daemon owns them. No follow-up implementation was added.

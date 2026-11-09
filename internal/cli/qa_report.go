@@ -9,6 +9,7 @@ import (
 
 	"roundfix/internal/app"
 	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 const qaReportUsage = `Usage:
@@ -68,6 +69,10 @@ func runQAReportCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitRunFailed
 	}
 	if err := spec.RequireResolvedEvidenceLinks(ctx, reportPath); err != nil {
+		fmt.Fprintf(stderr, "%s: QA Report eligibility refused: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	if err := spec.RequireOwnRunEvidence(ctx, reportPath, spec.BorrowedEvidenceOptions{RunBranchPrefix: store.RunBranchPrefix}); err != nil {
 		fmt.Fprintf(stderr, "%s: QA Report eligibility refused: %v\n", app.Name, err)
 		return exitRunFailed
 	}
