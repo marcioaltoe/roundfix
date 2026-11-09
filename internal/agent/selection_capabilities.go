@@ -172,7 +172,9 @@ type acpSelectOptionPayload struct {
 }
 
 type acpSelectValuePayload struct {
-	Value string `json:"value"`
+	Value   string                   `json:"value"`
+	Group   *string                  `json:"group"`
+	Options *[]acpSelectValuePayload `json:"options"`
 }
 
 // ParseSessionConfigOptions validates and bounds the machine-readable ACPX
@@ -493,15 +495,15 @@ func projectSelectCapability(raw acpSelectOptionPayload, retention SelectionRete
 		issues.add(CapabilityIssueInvalidOption)
 		return SelectCapability{}, false
 	}
-	if len(*raw.Options) > maxAdvertisedCapabilityValues {
-		issues.add(CapabilityIssueTooManyValues)
+	entries, ok := flattenSelectValues(*raw.Options, issues)
+	if !ok {
 		return SelectCapability{}, false
 	}
 
-	advertised := make([]string, 0, len(*raw.Options))
-	seen := make(map[string]struct{}, len(*raw.Options))
+	advertised := make([]string, 0, len(entries))
+	seen := make(map[string]struct{}, len(entries))
 	currentAdvertised := false
-	for _, rawValue := range *raw.Options {
+	for _, rawValue := range entries {
 		value := strings.TrimSpace(rawValue.Value)
 		if !boundedCapabilityValue(value) {
 			issues.add(CapabilityIssueInvalidOption)
@@ -526,6 +528,50 @@ func projectSelectCapability(raw acpSelectOptionPayload, retention SelectionRete
 		Values:          retainAdvertisedValues(advertised, currentValue, retention),
 		AdvertisedCount: len(advertised),
 	}, true
+}
+
+// flattenSelectValues returns a select's value entries: the flat list as
+// given, or every group's values in advertised order. It records an issue
+// and returns false for a shape the protocol does not define.
+func flattenSelectValues(entries []acpSelectValuePayload, issues *capabilityIssueSet) ([]acpSelectValuePayload, bool) {
+	if len(entries) > maxAdvertisedCapabilityValues {
+		issues.add(CapabilityIssueTooManyValues)
+		return nil, false
+	}
+	grouped := false
+	for _, entry := range entries {
+		if entry.Options != nil {
+			grouped = true
+			break
+		}
+	}
+	if !grouped {
+		return entries, true
+	}
+
+	flattened := make([]acpSelectValuePayload, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Options == nil || entry.Group == nil || !boundedCapabilityID(*entry.Group) {
+			issues.add(CapabilityIssueInvalidOption)
+			return nil, false
+		}
+		if len(*entry.Options) > maxAdvertisedCapabilityValues-len(flattened) {
+			issues.add(CapabilityIssueTooManyValues)
+			return nil, false
+		}
+		for _, value := range *entry.Options {
+			if value.Group != nil || value.Options != nil {
+				issues.add(CapabilityIssueInvalidOption)
+				return nil, false
+			}
+			flattened = append(flattened, value)
+		}
+	}
+	if len(flattened) == 0 {
+		issues.add(CapabilityIssueInvalidOption)
+		return nil, false
+	}
+	return flattened, true
 }
 
 // retainAdvertisedValues bounds what the projection keeps rather than what the
