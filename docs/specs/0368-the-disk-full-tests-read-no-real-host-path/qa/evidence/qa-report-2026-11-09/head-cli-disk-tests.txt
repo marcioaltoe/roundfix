@@ -1,0 +1,124 @@
+$ go test -count=1 -timeout 20m -v -o <HOME>/.roundfix/worktrees/roundfix-deliver-0368-the-disk-full-tests-read-no-real-host-path-5754120c9d2ca867-d7ac2f4b-1d660d81/run_20261109T201141Z_3111268429c9cc8d/.qa-cli.test -run 'DiskFull|DiskSpace|LowOnDisk' ./internal/cli
+stdout:
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError
+=== RUN   TestADiskFullPathMayHoldSpaces
+=== PAUSE TestADiskFullPathMayHoldSpaces
+=== RUN   TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== PAUSE TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile
+=== PAUSE TestTheDiskSpaceAncestorWalksPastAFile
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== CONT  TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk
+=== CONT  TestADiskFullPathMayHoldSpaces
+=== CONT  TestTheDiskSpaceAncestorWalksPastAFile
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/last_path_wins
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+--- PASS: TestADiskFullPathMayHoldSpaces (0.00s)
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== RUN   TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== PAUSE TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/last_path_wins
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/error_path_fallback
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/error_path_fallback
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/wrapped_ENOSPC
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/wrapped_ENOSPC
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== CONT  TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/outside_tail
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/outside_tail
+=== RUN   TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/unreadable_log
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== PAUSE TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/unreadable_log
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== CONT  TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== RUN   TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/text_alone_is_not_ENOSPC
+=== PAUSE TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/text_alone_is_not_ENOSPC
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/last_path_wins
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/unreadable_log
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/existing_directory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/missing_child
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/file
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/below_a_file
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails
+--- PASS: TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory (0.00s)
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/wrapped_ENOSPC
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/outside_tail
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/error_path_fallback
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+--- PASS: TestTheDiskSpaceAncestorWalksPastAFile (0.01s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/existing_directory (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/missing_child (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/file (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/below_a_file (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails (0.00s)
+=== CONT  TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/text_alone_is_not_ENOSPC
+--- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError (0.00s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/wrapped_ENOSPC (0.00s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/unreadable_log (0.00s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/outside_tail (0.00s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/error_path_fallback (0.00s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/last_path_wins (0.01s)
+    --- PASS: TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError/text_alone_is_not_ENOSPC (0.00s)
+--- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold (0.01s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane (0.01s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/healthy (0.01s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable (0.01s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit (0.01s)
+--- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull (0.00s)
+    --- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull/full_disk (0.27s)
+    --- PASS: TestTheRepositoryGateOnAFullDiskParksDiskFull/other_failure (0.27s)
+--- PASS: TestTheItemBuildOnAFullDiskIsADiskFullFailure (0.00s)
+    --- PASS: TestTheItemBuildOnAFullDiskIsADiskFullFailure/no_path_in_the_log (0.28s)
+    --- PASS: TestTheItemBuildOnAFullDiskIsADiskFullFailure/other_failure (0.28s)
+    --- PASS: TestTheItemBuildOnAFullDiskIsADiskFullFailure/path_in_the_log (0.28s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3040 paths; fingerprint took 256.922417ms before and 220.081917ms after
+ok  	roundfix/internal/cli	1.048s
+
+stderr:
+
+exit: 0

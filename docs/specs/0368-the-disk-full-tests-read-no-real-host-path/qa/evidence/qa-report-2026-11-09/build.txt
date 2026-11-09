@@ -1,0 +1,6 @@
+Command: make build
+Exit: 0
+Built ./bin/roundfix from audited head 67482dec0f6bfd2fbcb75e8ae3880f697daa34f5.
+BuildCacheBound completed: removed 52 idle entries (145662521 bytes).
+Build includes only the untracked seeded QA artifact delta, identified by the -dirty suffix.
+roundfix 0.137.4 (67482dec-dirty, built 2026-11-09 17:42:50 -0300)

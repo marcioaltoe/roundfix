@@ -1,0 +1,9 @@
+Freshly compiled and exercised test binaries, all inside this Run Worktree; removed after completion:
+.qa-cli.test
+.qa-delivery.test
+.qa-store.test
+.qa-0368-baseline.3nCFFV/.qa-cli.test
+.qa-0368-baseline-probe.eL8ttE/.qa-cli.test
+.qa-0368-no-enotdir.qPHpQs/.qa-cli.test
+.qa-0368-all-errors.OG7e8B/.qa-cli.test
+The initial failed baseline compile and initial failed diagnostic compile produced no exercised test executable.

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0368-the-disk-full-tests-read-no-real-host-path
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

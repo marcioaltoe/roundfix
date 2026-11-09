@@ -1,0 +1,10 @@
+$ git log '--format=%H %s%n%b' 162646a0ee468584bce2633eb3a313a842918e1e..67482dec0f6bfd2fbcb75e8ae3880f697daa34f5
+stdout:
+67482dec0f6bfd2fbcb75e8ae3880f697daa34f5 feat: the disk-full tests use their own temporary paths and the lookup walks past a file
+Roundfix-Spec: 0368-the-disk-full-tests-read-no-real-host-path
+Roundfix-Task: task_01
+
+
+stderr:
+
+exit: 0

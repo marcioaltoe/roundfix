@@ -1,0 +1,4 @@
+Source revision: 67482dec0f6bfd2fbcb75e8ae3880f697daa34f5
+Temporary copy: inside this Run Worktree; removed after completion.
+Only the two audited test files were copied for baseline.
+Replaced stat error condition with false and removed unused imports.

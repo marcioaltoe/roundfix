@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 20m -v -o <HOME>/.roundfix/worktrees/roundfix-deliver-0368-the-disk-full-tests-read-no-real-host-path-5754120c9d2ca867-d7ac2f4b-1d660d81/run_20261109T201141Z_3111268429c9cc8d/.qa-0368-all-errors.OG7e8B/.qa-cli.test -run '^TestTheDiskSpaceAncestorWalksPastAFile$/^an_unreadable_directory_still_fails$' ./internal/cli
+stdout:
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile
+=== PAUSE TestTheDiskSpaceAncestorWalksPastAFile
+=== CONT  TestTheDiskSpaceAncestorWalksPastAFile
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails
+    doctor_disk_space_test.go:57: unreadable directory error=<nil>, want a stat error other than not-exist
+--- FAIL: TestTheDiskSpaceAncestorWalksPastAFile (0.00s)
+    --- FAIL: TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails (0.00s)
+FAIL
+suiteguard: guard cost: measured 3031 paths; fingerprint took 146.476083ms before and 136.455584ms after
+FAIL	roundfix/internal/cli	0.799s
+FAIL
+
+stderr:
+
+exit: 1

@@ -1,0 +1,7 @@
+Pull Request row: blocked (environment: no open Pull Request). Supplied environment fact; no gh or remote query.
+Approval: maintainer decision on 2026-11-09 recorded in the approved _authorization.md at Delivery Base, prior to task_01; implement/commit/push/pull_request/merge/release granted.
+Checks/status: supplied Daemon make verify-changed pass, exit 0 at 67482dec0f6bfd2fbcb75e8ae3880f697daa34f5; diagnostics removed on success.
+Unresolved review threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet; no review provider has accepted this candidate in the evidence supplied to this QA Agent.
+Review-artifact ancestry: candidate 67482dec0f6bfd2fbcb75e8ae3880f697daa34f5; no Review Source artifact or accepted review ancestry exists yet. The approval grants delivery authority, not review acceptance.
+Unblocking: delivery owner opens a Pull Request on the Spec target branch after current-candidate review and observes required checks, approval, thread resolution and accepted review ancestry.

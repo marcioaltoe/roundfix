@@ -1,0 +1,28 @@
+$ go test -count=1 -timeout 20m -v -o <HOME>/.roundfix/worktrees/roundfix-deliver-0368-the-disk-full-tests-read-no-real-host-path-5754120c9d2ca867-d7ac2f4b-1d660d81/run_20261109T201141Z_3111268429c9cc8d/.qa-cli.test -run '^(TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory|TestTheDiskSpaceAncestorWalksPastAFile)$' ./internal/cli
+stdout:
+=== RUN   TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== PAUSE TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile
+=== PAUSE TestTheDiskSpaceAncestorWalksPastAFile
+=== CONT  TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== CONT  TestTheDiskSpaceAncestorWalksPastAFile
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/existing_directory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/missing_child
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/file
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/below_a_file
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails
+--- PASS: TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory (0.00s)
+--- PASS: TestTheDiskSpaceAncestorWalksPastAFile (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/existing_directory (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/missing_child (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/file (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/below_a_file (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails (0.00s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3038 paths; fingerprint took 263.419083ms before and 146.306833ms after
+ok  	roundfix/internal/cli	0.911s
+
+stderr:
+
+exit: 0

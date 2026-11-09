@@ -1,0 +1,82 @@
+$ go test -count=1 -timeout 20m -v -o <HOME>/.roundfix/worktrees/roundfix-deliver-0368-the-disk-full-tests-read-no-real-host-path-5754120c9d2ca867-d7ac2f4b-1d660d81/run_20261109T201141Z_3111268429c9cc8d/.qa-delivery.test -run 'DiskFull|LowDisk' ./internal/delivery
+stdout:
+=== RUN   TestAFullDiskParksTheItemAsDiskFull
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull
+=== RUN   TestADiskFullRetryIsNotCounted
+=== PAUSE TestADiskFullRetryIsNotCounted
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== CONT  TestAFullDiskParksTheItemAsDiskFull
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== CONT  TestADiskFullRetryIsNotCounted
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/Run
+=== RUN   TestADiskFullRetryIsNotCounted/below_limit
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/Run
+=== PAUSE TestADiskFullRetryIsNotCounted/below_limit
+=== RUN   TestADiskFullRetryIsNotCounted/at_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/at_limit
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/review
+=== RUN   TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/review
+=== PAUSE TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== CONT  TestADiskFullRetryIsNotCounted/below_limit
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/gate
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/gate
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== CONT  TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== CONT  TestADiskFullRetryIsNotCounted/at_limit
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/Run
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/gate
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/review
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+--- PASS: TestAFullDiskParksTheItemAsDiskFull (0.00s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_gate_failure (0.05s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_review_error (0.05s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/review (0.05s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/Run (0.06s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/gate (0.06s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_Run_error (0.06s)
+--- PASS: TestADiskFullRetryIsNotCounted (0.00s)
+    --- PASS: TestADiskFullRetryIsNotCounted/below_limit (0.05s)
+    --- PASS: TestADiskFullRetryIsNotCounted/at_limit (0.06s)
+    --- PASS: TestADiskFullRetryIsNotCounted/archived_gate_at_limit (0.06s)
+--- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate (0.00s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk (0.06s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present (0.06s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate (0.06s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk (0.01s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3041 paths; fingerprint took 238.054ms before and 229.395625ms after
+ok  	roundfix/internal/delivery	0.830s
+
+stderr:
+
+exit: 0

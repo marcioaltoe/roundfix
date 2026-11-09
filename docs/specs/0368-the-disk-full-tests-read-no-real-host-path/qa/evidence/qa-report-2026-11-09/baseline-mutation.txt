@@ -1,0 +1,1 @@
+Delivery Base production code unchanged. Both audited test files copied byte for byte for the baseline run. A separate diagnostic run adds only t.Logf before the unchanged failing assertion: baseline capacity bytes=0 reads=[]. All temporary copies removed.

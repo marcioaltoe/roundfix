@@ -1,0 +1,6 @@
+$ grep -nE -- 'tm[p]/' internal/cli/deliver_disk_full_test.go
+stdout:
+
+stderr:
+
+exit: 1

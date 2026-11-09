@@ -1,0 +1,6 @@
+$ go vet ./internal/cli
+stdout:
+
+stderr:
+
+exit: 0

@@ -1,0 +1,32 @@
+$ go test -count=1 -timeout 20m -v -o <HOME>/.roundfix/worktrees/roundfix-deliver-0368-the-disk-full-tests-read-no-real-host-path-5754120c9d2ca867-d7ac2f4b-1d660d81/run_20261109T201141Z_3111268429c9cc8d/.qa-0368-baseline.3nCFFV/.qa-cli.test -run '^(TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory|TestTheDiskSpaceAncestorWalksPastAFile)$' ./internal/cli
+stdout:
+=== RUN   TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== PAUSE TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile
+=== PAUSE TestTheDiskSpaceAncestorWalksPastAFile
+=== CONT  TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+=== CONT  TestTheDiskSpaceAncestorWalksPastAFile
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/existing_directory
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/missing_child
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/file
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/below_a_file
+=== NAME  TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory
+    deliver_disk_full_test.go:188: full=build failed cause=build failed want path=<TMPDIR>TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory3114652160/001/x/_pkg_.a bytes=5242887
+=== NAME  TestTheDiskSpaceAncestorWalksPastAFile/below_a_file
+    doctor_disk_space_test.go:35: ancestor of "<TMPDIR>TestTheDiskSpaceAncestorWalksPastAFile703937895/001/file/x/_pkg_.a"="" err=stat disk-space location "<TMPDIR>TestTheDiskSpaceAncestorWalksPastAFile703937895/001/file/x/_pkg_.a": stat <TMPDIR>TestTheDiskSpaceAncestorWalksPastAFile703937895/001/file/x/_pkg_.a: not a directory want="<TMPDIR>TestTheDiskSpaceAncestorWalksPastAFile703937895/001"
+=== RUN   TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails
+--- FAIL: TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory (0.00s)
+--- FAIL: TestTheDiskSpaceAncestorWalksPastAFile (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/existing_directory (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/missing_child (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/file (0.00s)
+    --- FAIL: TestTheDiskSpaceAncestorWalksPastAFile/below_a_file (0.00s)
+    --- PASS: TestTheDiskSpaceAncestorWalksPastAFile/an_unreadable_directory_still_fails (0.00s)
+FAIL
+suiteguard: guard cost: measured 3031 paths; fingerprint took 144.095792ms before and 135.011292ms after
+FAIL	roundfix/internal/cli	0.787s
+FAIL
+
+stderr:
+
+exit: 1
