@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.3] - 2026-11-09
+
+### A QA Report relies only on evidence its own Run produced
+
+- **The QA gate refuses Borrowed Evidence.** `roundfix qa-report accept`, settle and the Daemon's QA commit now refuse a QA Report whose evidence another Run produced: evidence reused or imported from an earlier Run, an executable outside the current Run Worktree, or a path that names another Run Worktree. Before, a later Run of the same Spec could rerun an earlier Run's executable at an older head and fail (or pass) without observing the candidate.
+- **The QA prompt names the Run Worktree, the audited head and this pass's evidence directory**, and the Daemon gives the QA one repair turn before refusing. The qa-gate skill writes each pass's evidence in its own directory and lists the executables it ran in `user_flow_executables`. Archived reports are not re-judged (ADR-0376).
+
 ## [0.137.2] - 2026-11-09
 
 ### The capability proof reads grouped select options
