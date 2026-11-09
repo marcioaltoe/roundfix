@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-09
-spec: null
+spec: 0368-the-disk-full-tests-read-no-real-host-path
 reason: null
 ---
 
