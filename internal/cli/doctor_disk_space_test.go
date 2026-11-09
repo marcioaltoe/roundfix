@@ -9,11 +9,55 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
 	roundconfig "roundfix/internal/config"
 )
+
+func TestTheDiskSpaceAncestorWalksPastAFile(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	file := filepath.Join(root, "file")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, path string }{
+		{"existing directory", root},
+		{"missing child", filepath.Join(root, "absent", "child")},
+		{"file", file},
+		{"below a file", filepath.Join(file, "x", "_pkg_.a")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ancestor, err := doctorDiskSpaceAncestor(tc.path)
+			if err != nil || ancestor != root {
+				t.Fatalf("ancestor of %q=%q err=%v want=%q", tc.path, ancestor, err, root)
+			}
+		})
+	}
+	t.Run("an unreadable directory still fails", func(t *testing.T) {
+		if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+			t.Skip("directory modes do not deny lookups on Windows or for root")
+		}
+		locked := filepath.Join(root, "locked")
+		if err := os.Mkdir(locked, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := os.Chmod(locked, 0o700); err != nil {
+				t.Error(err)
+			}
+		})
+		if err := os.Chmod(locked, 0); err != nil {
+			t.Fatal(err)
+		}
+		_, err := doctorDiskSpaceAncestor(filepath.Join(locked, "child"))
+		if err == nil || errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("unreadable directory error=%v, want a stat error other than not-exist", err)
+		}
+	})
+}
 
 func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 	t.Parallel()
