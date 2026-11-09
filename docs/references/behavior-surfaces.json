@@ -92,7 +92,7 @@
     "guide docs/user-guide/commands/setup.md": "sha256:73fcdeef8a20c910798f4cd33967a5548545f6dea538e2d48692a02b244530ac",
     "guide docs/user-guide/commands/skills.md": "sha256:a3f470572b70dce80af4cb9341823d1551b5b7e7e17ceec28fab7f7775a55f73",
     "guide docs/user-guide/commands/spec-audit.md": "sha256:bf0a7bac7acfca7c69fcabe0756db5452e9d2bb77026903535814422bb9dd80c",
-    "guide docs/user-guide/commands/spec.md": "sha256:976681a0116492f85517be93ddf5e24af8b0ee6c93cd9c61115042d1332f0627",
+    "guide docs/user-guide/commands/spec.md": "sha256:e14717adc52abc7dd79105c612ca3e362de964221a75bfccae7526821208a2f3",
     "guide docs/user-guide/commands/stop.md": "sha256:49af0109d4ab0c31daf6ad1e26f8c12e4584f245d0cfb76d6d460d3ee06b6a94",
     "guide docs/user-guide/commands/storage-report.md": "sha256:ef49ea0282fe2a0a6c570ad5ea11e825f4f34f7df3fa11b849de846921199f73",
     "guide docs/user-guide/commands/supersede.md": "sha256:200fa30dfab0e06372da85c078fafc34101dee4fc8546d823fbc11217e8ec9f3",
@@ -101,7 +101,7 @@
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
     "guide docs/user-guide/configuration.md": "sha256:58ce3e75d838b7f76e78a87dd384f27ef1d15587195d8017cc5c810ef7527bd8",
-    "guide docs/user-guide/context-driven-development.md": "sha256:7d9a95615f30cdb10699c8b2e578545124f6bf308e3e777e88bb9dd4d21460f9",
+    "guide docs/user-guide/context-driven-development.md": "sha256:bb924a60806597ebd130635b6cf40e7f84920bddcf0f2e1827e32a3bc2aa91d6",
     "guide docs/user-guide/release-runbook.md": "sha256:bd524e7b398f252b606841e04d9431230b451276cf13516cf70c4fb2f3e51efe",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",
     "guide docs/user-guide/usage.md": "sha256:ec84c6455db9525059a198dbb4e6a7cb06454d8a33222351480e33ded49da637"

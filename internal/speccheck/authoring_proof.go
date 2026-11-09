@@ -16,9 +16,10 @@ const (
 )
 
 var (
-	techSpecProofCodes    = []string{CodeAbsenceUnproven, CodeADRAlternativesUnrelated, CodeCoverageUnread}
-	absenceProofPattern   = regexp.MustCompile("command:\\s*`([^`]+)`\\s*;\\s*result:\\s*(\\S[\\s\\S]*)")
-	adrAlternativePattern = regexp.MustCompile(`^\s*-\s+ADR-([0-9]{4}):\s*(\S.*)$`)
+	techSpecProofCodes           = []string{CodeAbsenceUnproven, CodeADRAlternativesUnrelated, CodeCoverageUnread}
+	absenceProofPattern          = regexp.MustCompile("command:\\s*`([^`]+)`\\s*;\\s*result:\\s*(\\S[\\s\\S]*)")
+	adrAlternativePattern        = regexp.MustCompile(`^\s*-\s+ADR-([0-9]{4}):\s*(\S.*)$`)
+	notApplicableRelationPattern = regexp.MustCompile(`(?i)^not applicable\b`)
 )
 
 // detectTechSpecProof reads declarations only; it never executes an authored command

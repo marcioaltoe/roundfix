@@ -84,7 +84,8 @@ Deviations from the PRD: None.
 ## ADR Alternatives
 
 <!-- One line for each ADR listed under Active ADR obligations. State how the design
-     relates to the alternatives that ADR rejected. -->
+     relates to the alternatives that ADR rejected. Begin the relation with
+     `not applicable` for an ADR the Spec lists only to record why it does not apply. -->
 
 - ADR-NNNN: <relation to the rejected alternatives>
 
