@@ -159,6 +159,12 @@ when a source pattern matches it.
   item lacks its search command or result. Runs from the TechSpec stage.
 - `SC-ADR-ALTERNATIVES-UNRELATED` — a listed ADR has no line relating the
   design to that ADR's rejected alternatives. Runs from the TechSpec stage.
+  A line whose relation begins with `not applicable` keeps the ADR listed,
+  and `SC-ADR-RELATED` reports no ADR that cites only ADRs marked that way.
+- `SC-UNREACHABLE-UNREAD` — the PRD's `## Unreachable Acceptance` section
+  holds text that no fielded declaration reads, or a declaration lacks one of
+  its fields; the fix shows the `- criterion:` form. An error from the PRD
+  stage.
 - `SC-COVERAGE-UNREAD` — a Coverage Map lacks its `Deviations from the PRD:`
   line or has a deviation that names no PRD unit. Runs from the TechSpec stage.
 - `SC-CONSUMERS-UNPROVEN` — a pending non-QA Task lacks a valid Consumer

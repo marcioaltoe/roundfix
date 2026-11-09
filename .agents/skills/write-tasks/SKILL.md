@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.30
+  version: 0.0.31
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.30
+version: 0.0.31
 ---
 
 # Write Tasks
@@ -494,8 +494,10 @@ omitting command execution.
 
 Treat every reported error as blocking: fix the artifact and re-run until it is
 clean, and do not report the breakdown while a finding stands. A `[gap]` is
-blocking too; account for the named ADR or record why it does not apply. Skipped
-checks are informational.
+blocking too; account for the named ADR or record why it does not apply, and
+begin a not-applying ADR's line under the TechSpec's `## ADR Alternatives` with
+`not applicable` so it draws in no ADR that cites only it. Skipped checks are
+informational.
 
 This is not a substitute for the list below, which covers what the checker does
 not: it catches unlisted and unaccounted ADRs, incomplete Project Constraints,
