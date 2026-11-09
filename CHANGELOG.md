@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.4] - 2026-11-09
+
+### The strict check reads Unreachable Acceptance and related ADRs as written
+
+- **`roundfix spec check --strict` names Unreachable Acceptance text the QA gate cannot read.** The new error `SC-UNREACHABLE-UNREAD` reports, at its first line, each run of lines in a PRD's `## Unreachable Acceptance` section that no declaration reads, and each declaration missing its `criterion:`, `reason:` or `satisfied-by:` field, before a Run starts. It uses the same reader as the QA gate and `roundfix archive`, so the check and the gate cannot disagree; a fully read section, an absent or empty section and a `None.` paragraph keep passing. Before, such text was silently ignored and the Spec lost its qualifying partial at the end of the Run (from the backlog).
+- **An ADR a Spec marks as not applying no longer draws in the ADRs that cite it.** `SC-ADR-RELATED` now seeds its candidates only with listed ADRs whose TechSpec `## ADR Alternatives` line does not begin with `not applicable`; without a TechSpec every listed ADR still seeds them. Before, a Spec that listed unrelated ADRs inherited a cascade of decisions it never touched (72 ADRs in one fiscus Spec). ADR-0377 amends ADR-0093 and ADR-0168, and the glossary, the `spec` guide and the authoring skills describe the marker.
+
 ## [0.137.3] - 2026-11-09
 
 ### A QA Report relies only on evidence its own Run produced
