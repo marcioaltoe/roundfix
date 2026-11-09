@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T17:30:00Z
-updated_at: 2026-10-18T17:30:00Z
+updated_at: 2026-11-09T15:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -52,6 +52,8 @@ first failing proof: the commit proof's own reason, or `<path> is outside the
 archived Spec's declared and recorded paths` for the first such path in byte
 order, bounded to the existing 160 bytes. A Run of a Spec that is not archived
 keeps the bare constant.
+
+**Amended by [ADR-0379](0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md) (2026-11-09).** A kept dirty Run whose only failing proof is a path outside the archived Spec's scope can now be removed by an operator-confirmed Dirty Discard; the first Considered Option, releasing every dirty Run of a merged Spec, stays rejected for every automatic path, because the confirmation is the judgement it asked for.
 
 ## Considered Options
 

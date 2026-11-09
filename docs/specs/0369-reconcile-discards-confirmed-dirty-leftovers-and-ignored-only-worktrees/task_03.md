@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -117,3 +117,14 @@ reported by fiscus), whose cleanup the reference forbade by hand.
 - `_prd.md` → Goals; Core Feature 5
 - `_techspec.md` → ADR Alternatives; Build Order 3
 - ADR-0379; ADR-0053; ADR-0289; ADR-0290
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+- Added the ADR-0379 amendment notices to ADR-0053, ADR-0289 and ADR-0290 and set each `updated_at` to `2026-11-09T15:00:00Z`. Focused inspection confirmed the required notice and timestamp in all three files.
+- Updated the canonical Roundfix `reconcile` reference with the Dirty Discard bounds, `discard-path:` output, digest JSON fields and refusal behavior, Branch Disposition ordering, ignored-only release, full-scan empty-directory sweep, four mutation switches and the manual-deletion rule. `git diff --check` passed.
+- Ran `make skills-sync`; `cmp -s .agents/skills/roundfix/references/reconcile.md skills/roundfix/references/reconcile.md` passed.
+- Ran `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` successfully with the required elevated filesystem permission after the sandbox denied the canonical skill write. The generated result raised both Roundfix `SKILL.md` copies to `0.1.207` and recorded the new digest in `skills/testdata/owned-skill-versions.json`.
+- Acceptance evidence: the three ADR notices/timestamps are present; the canonical and mirrored references are identical and contain `### Dirty Discard`, `These four mutation switches are mutually exclusive.`, `discardDirtyDigest` and `emptyDirectoriesRemoved`; the owned-skill version record is current.
+- Ran `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` successfully (1 passed); this re-record is repeated after this Result update as the final edit of the Task. Daemon Verification remains outside this turn.

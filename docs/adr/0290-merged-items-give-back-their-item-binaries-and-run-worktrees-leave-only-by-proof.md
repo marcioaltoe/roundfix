@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-18T17:30:00Z
-updated_at: 2026-10-18T17:30:00Z
+updated_at: 2026-11-09T15:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -32,6 +32,8 @@ This repository held no Run Worktree. The maintainer's standing rule of
 | Item Binary | its Delivery Queue item exists and is not `merged` | the Delivery Queue's release after a merge, and the GC Command |
 | Pre-PR Review Records, dispositions and delivery logs | always | nothing |
 | Archive evidence | always | nothing: it lives in Git |
+
+**Amended by [ADR-0379](0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md) (2026-11-09).** The Run Worktree and Run Branch row gains the Dirty Discard as a reclaimer that acts on an operator's confirmed digest, and a recorded Run Worktree that Git does not register and that holds only ignored files is reclaimed by `roundfix reconcile --apply` on proof; neither reclaims by age.
 
 **A merged item gives back its Item Binaries.** When the Delivery Queue
 releases a merged item's Runs, it also removes
