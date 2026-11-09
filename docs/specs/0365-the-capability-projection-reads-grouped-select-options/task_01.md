@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0365-the-capability-projection-reads-grouped-select-options
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -126,3 +126,52 @@ fixtures. It answers the operator record of 2026-11-09
 - `_prd.md` → Goals; User Stories 1 and 3; Core Features 1-3; Success Metrics 1, 2 and 4; Acceptance evidence
 - `_techspec.md` → Interfaces; API Contracts 1-3; Testing Approach; Build Order 1
 - ADR-0375, ADR-0105
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Added the group fields and `flattenSelectValues` before the existing value
+validation loop. Flat entries retain their existing path. Grouped entries
+flatten in advertised order, with bounded group identifiers, no mixed or
+nested entries, and the same outer-entry and flattened-value ceiling. Empty
+groups contribute nothing; an entirely empty grouped option is refused.
+Duplicate detection, current-value validation and retention still run in the
+existing loop. Issue constants and text, parser entry points, mode selection
+and full-access behavior were not edited.
+
+Focused evidence for the acceptance criteria:
+
+- Recorded payload projection: before the production edit,
+  `rtk proxy go test ./internal/agent -run '^TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads$' -count=1 -timeout=2m -v`
+  exited 1: `2.6.0` reproduced `invalid_current_value,
+  invalid_select_option`, while `2.5.0` passed.
+- After the edit,
+  `rtk proxy go test ./internal/agent -run '^(TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads|TestGroupedSelectOptionsKeepTheEvidenceBounds)$' -count=1 -timeout=2m -v`
+  exited 0. Both recorded payload subtests assert their exact mode
+  projections, including all five 2.6.0 values in order; `CurrentModel`,
+  `Models`, `ReasoningOption` and all non-mode options compare equal with
+  `reflect.DeepEqual`.
+- The same focused command passed all 15 bounds subtests: the ten required
+  cases plus empty/padded group identifiers, leaf entries carrying a group
+  field or options array, and an oversized grouped leaf value. Refusals
+  assert the typed evidence error and named issue. The grouped model case
+  advertises 71 values, retains exactly the bounded ordered values and
+  preserves the requested `gpt-test` from the last group in `Models`.
+- Flat behavior regression check:
+  `rtk proxy go test ./internal/agent -run '^(TestSelectionCapabilitiesOfficialAndLegacyFixtures|TestParseSessionConfigOptionsRejectsInvalidEvidence|TestSelectionCapabilitiesProjectsTheSessionModeOption|TestCharacterizationInvariant.*|TestRetention.*)$' -count=1 -timeout=2m -v`
+  exited 0. These existing tests were not edited.
+- Fixture preservation: `rtk proxy python3 -` with a `Path.read_bytes()`
+  equality assertion for each source/copy pair exited 0. The testdata copies
+  are byte-identical: 2.6.0 is 4,736 bytes (SHA-256
+  `fcd34a03ef3e228c567692441e7af33b4b0803eca9b49256b077a6c36e92762f`);
+  2.5.0 is 4,213 bytes (SHA-256
+  `0c8cef38871065ba5c593f5864c334d8d679968b21bc87d8ed0cfda146b34000`).
+  Tests read only `internal/agent/testdata`.
+
+The first sandboxed Go test attempt could not write the existing Go build
+cache. Subsequent focused checks used approved cache access without changing
+cache settings. `gofmt` was applied to both changed Go files. Declared Task
+Verification and repository Verification remain for the Daemon; neither was
+run in this turn. Task status and checkboxes remain Daemon-owned. No follow-up
+work was added to this slice.
