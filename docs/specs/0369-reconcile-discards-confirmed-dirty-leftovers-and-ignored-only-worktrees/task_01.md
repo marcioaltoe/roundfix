@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -282,3 +282,74 @@ It is read-only by default and carries four named mutation switches, none of whi
 - `_prd.md` → Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 5; User Experience; Success Metric 1; Success Metric 2; Glossary
 - `_techspec.md` → Interfaces; Data Models; API Contract 1; API Contract 2; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Testing Approach; Build Order 1
 - ADR-0379; ADR-0115; ADR-0212; ADR-0289
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented this Task's Dirty Discard slice. The pre-edit inspection found no
+Dirty Discard outcome list, discard paths, record writer, digest or switch.
+The only pre-existing changed path was this Task file (Daemon-owned status);
+its status and authored content remain untouched by this implementation.
+
+- Acceptance criterion 1: eligible ended Runs stay `dirty` with the original
+  reason, while carrying all parsed paths and immutable inspection evidence.
+  The CLI withholds live-process Runs, prints a stable digest, validates the
+  confirmation before mutations, writes the Branch Disposition, and re-proves
+  each Run before forced worktree removal and Run Branch deletion. The success
+  test also compares Run Database bytes before and after and checks that the
+  next scan reports `released`. Focused checks passed:
+  `go test -count=1 -timeout 4m ./internal/cli -run 'DirtyDiscard|DiscardDirty'`
+  and
+  `go test -count=1 -timeout 4m ./internal/worktree -run 'DirtyDiscard|DiscardDirty|MergedSpecRunWithAnUndeclaredLeftover'`.
+- Acceptance criterion 2: tests cover changed paths, changed Run/target/proof
+  heads, changed inspection metadata and merged records, a missing candidate,
+  malformed and absent digests, all mutation-switch pairs, failed commit proof,
+  absent default-branch archive, Clean outcomes, scoped leftovers, and both
+  live-process collections. Record-write failure preserves the Git surfaces.
+  The two initial focused-check failures were fixture errors (the CLI fixture
+  lacked archived `_prd.md`; the target-head fixture tried to move checked-out
+  `main`); those fixtures were corrected and their checks passed. Additional
+  focused checks passed:
+  `go test -count=1 -timeout 4m ./internal/worktree -run '^TestDirtyDiscard(KeepsTheDeliveryProofWhenDefaultHasAdvanced|ReportsALockedWorktreeRemovalFailure)$'`
+  and
+  `go test -count=1 -timeout 4m ./internal/daemon -run '^TestWrite(DirtyDiscardRecordNamesTheDiscardedPaths|BranchDispositionRecordSurvivesDiscard)$'`.
+  These prove a delivery proof remains pinned when the default branch advances,
+  a locked-worktree removal failure names both remaining surfaces, invalid
+  records write nothing, and the existing record-and-discard path still works.
+- Acceptance criterion 3: a new wire-contract test pins every text and JSON
+  byte of a report without Dirty Discard candidates. Existing report, help
+  and superseded-discard checks also passed:
+  `go test -count=1 -timeout 4m ./internal/cli -run '^TestRunCommandHelp$/^reconcile$|^TestRunReconcileDryRunReadOnly$|^TestRunReconcileJSONMatchesTextFields$|^TestReconcileDiscardWritesTheRecordBeforeRemoving$|^TestReconcileDiscardRefusesAnUnreachableCommit$'`.
+  Updated both usage synopses, the help option and test row, and only the
+  requested user-guide content. `CONTEXT.md` was checked against the Task's
+  own Markdown block and the base revision: its three requested replacements
+  match byte for byte, with no other line changed. Focused glossary checks
+  passed with
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossary(ClosedListsEqualTheirConstants|StatesEachRuleOnce|AvoidLinesArePlainLists)$'`
+  and
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs)$'`.
+
+Windows compilation passed without running Windows executables:
+`GOOS=windows go test -run '^$' -exec /usr/bin/true ./internal/worktree ./internal/daemon ./internal/cli`;
+the worktree package was compiled again after its last two additional tests.
+Every new top-level test starts with `t.Parallel()`. `git diff --check` passed.
+Go checks used `rtk proxy`; the first sandbox attempts could not write the
+host Go build cache, so subsequent checks used the approved cache access.
+
+Final derived-record edit, executed after this Result and every guide edit:
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+Its exit status is in the session execution evidence; the generated record is
+not edited by hand.
+
+Declared Task Verification, repository Verification, status settlement and
+committing remain Daemon-owned and were not run here. No commit, push, PR,
+Task Graph, other Task, ADR, skill, Delivery Queue release or ignored-only
+cleanup change is part of this diff. The latter documentation and cleanup
+slices remain with task_02 and task_03.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261109T214437Z_6567933336913b3f`
+- Source commit: `84ea7bea3d958484aa73f603a540685909cac1c9`

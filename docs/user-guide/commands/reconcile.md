@@ -1,7 +1,7 @@
 ### reconcile
 
 ```bash
-roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
+roundfix reconcile [run-id] [--apply | --discard-superseded | --discard-dirty <digest> | --carry-forward] [--format <text|json>]
 ```
 
 The Reconcile Command classifies one terminal spec Run in the current
@@ -84,6 +84,27 @@ An absent target branch also uses the merged-head proof before preserving a
 terminal Run Branch, including Runs recorded from linked repository worktrees.
 All proof comes from local Git; reconciliation does not read GitHub.
 
+A Dirty Discard is offered only for a Run that ended `Failed`, `Unresolved`,
+`Stopped`, `BudgetExceeded` or `TimedOut`, owns no live process tree, and has
+its Spec's Archive Record on the default branch head. Its porcelain status
+must parse, its commit proof at the chosen head must be `safe` or `superseded`,
+and inspection of the archived Spec's declared and recorded paths must name
+an outside uncommitted path. The Run stays `dirty` with the same reason.
+The dry run prints every uncommitted path as `  discard-path: <path>` and,
+after `Apply with:`, prints `Discard dirty leftovers with: <command>`.
+JSON adds `discardPaths` to each candidate and `discardDirtyDigest` and
+`discardDirtyCommand` to the report; these fields are absent without candidates.
+The SHA-256 digest binds the whole candidate set, including Run IDs, Run
+heads, worktrees and paths. `--discard-dirty <digest>` refuses a missing or
+malformed digest, another mutation switch, no candidate, or a changed digest
+with exit 2 and nothing on stdout; it writes and removes nothing on those
+refusals. For each confirmed Run, it writes
+`<artifact root>/runs/<run-id>/branch-disposition.json` with `discardedPaths`
+and `discardDigest` before re-proving the Run and removing its Run Worktree
+with `--force` and deleting its Run Branch. A record or removal failure
+preserves the remaining surfaces, reports the error and exits 1. The act
+writes nothing to the Run Database ([ADR-0379](../../adr/0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md)).
+
 Run Worktree Reconciliation uses six states:
 
 | State | Evidence and behavior |
@@ -107,12 +128,13 @@ the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
 and either target ancestry, QA supersession, or merged-head representation
 proof. Age and terminal outcome are also not cleanup evidence.
 
-Three switches mutate; every other invocation is a report. Each acts on a
+Four switches mutate; every other invocation is a report. Each acts on a
 different disposition, and none of them bypasses the proof above:
 
 ```bash
 roundfix reconcile <run-id> --apply               # release safe and superseded surfaces
 roundfix reconcile --apply
+roundfix reconcile --discard-dirty <digest>          # discard the dirty leftovers the dry run listed
 roundfix reconcile <run-id> --discard-superseded  # discard a Run Branch proven superseded
 roundfix reconcile <run-id> --carry-forward       # hand a Stopped or Unresolved Run's settled Tasks back
 ```
@@ -170,7 +192,7 @@ has the largest carriable set and uses the newest Run to break ties.
 
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout still receives the staged commits only through a fast-forward merge, and carry-forward does not change its Git configuration.
 
-`--apply` remains the only switch that releases Run Worktrees.
+`--apply` releases Run Worktrees on proof; `--discard-dirty` removes only the Runs the dry run listed under the confirmed digest.
 
 Reconcile also sweeps registered carry-forward staging worktrees whose path is
 `roundfix-carry-forward-*/worktree`. Dry-run reports every candidate without

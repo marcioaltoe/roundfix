@@ -228,6 +228,11 @@ var (
 	errRecordedRootVanished = errors.New("recorded Git root does not exist")
 )
 
+// DirtyDiscardOutcomes names the ended outcomes eligible for a confirmed discard.
+func DirtyDiscardOutcomes() []string {
+	return []string{store.StateFailed, store.StateUnresolved, store.StateStopped, store.StateBudgetExceeded, store.StateTimedOut}
+}
+
 type RunWorktreeReconciliation struct {
 	RunID             string
 	Outcome           string
@@ -237,6 +242,7 @@ type RunWorktreeReconciliation struct {
 	RunHead           string
 	TargetHead        string
 	SupersedingReport string
+	DiscardPaths      []string
 	Reason            string
 	State             ReconciliationState
 
@@ -945,6 +951,7 @@ type terminalRunReconciliationSnapshot struct {
 	supersedingReport string
 	reason            string
 	state             ReconciliationState
+	discardPaths      string
 }
 
 func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (RunWorktreeReconciliation, error) {
@@ -1041,6 +1048,7 @@ func inspectTerminalRunMerged(
 			return result, nil
 		}
 		if status != "" {
+			var discardProof *terminalRunReconciliationEvidence
 			dirtyPaths, parsed := terminalRunDirtyPaths(status)
 			source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged)
 			archived := found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug)
@@ -1076,6 +1084,11 @@ func inspectTerminalRunMerged(
 					detail = "archived Spec's declared and recorded paths could not be inspected"
 					if outside != "" {
 						detail = outside + " is outside the archived Spec's declared and recorded paths"
+						if slices.Contains(DirtyDiscardOutcomes(), run.State) {
+							if _, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot); resolved && specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, run.SpecSlug) {
+								discardProof = proof.evidence
+							}
+						}
 					}
 				}
 			}
@@ -1092,6 +1105,15 @@ func inspectTerminalRunMerged(
 				if err := archiveSourceUnavailable(ctx, runner, gitRoot, source.head, run.SpecSlug); err != nil {
 					result.Reason = boundedReconciliationReason(err.Error())
 				}
+			}
+			if discardProof != nil {
+				result.DiscardPaths = slices.Clone(dirtyPaths)
+				result.evidence = newTerminalRunReconciliationEvidence(run, gitRoot, result, worktreePresent, runBranchPresent)
+				result.evidence.proofHead = discardProof.proofHead
+				result.evidence.proofRef = discardProof.proofRef
+				result.evidence.merged = slices.Clone(discardProof.merged)
+				result.evidence.mergedSnapshot = slices.Clone(discardProof.mergedSnapshot)
+				result.evidence.dirtyPaths = slices.Clone(dirtyPaths)
 			}
 			return result, nil
 		}
@@ -1493,6 +1515,7 @@ func terminalRunSnapshot(result RunWorktreeReconciliation) terminalRunReconcilia
 		supersedingReport: result.SupersedingReport,
 		reason:            result.Reason,
 		state:             result.State,
+		discardPaths:      strings.Join(result.DiscardPaths, "\x00"),
 	}
 }
 
@@ -1531,6 +1554,38 @@ func (err *TerminalRunApplyError) Unwrap() error {
 
 type TerminalRunReconciliationStore interface {
 	ReconcileIntegration(context.Context, store.IntegrationReconciliation) (store.Run, error)
+}
+
+// DiscardDirtyTerminalRun re-proves an inspected Dirty Discard before removing
+// its Git surfaces. The caller must persist its Branch Disposition first.
+func DiscardDirtyTerminalRun(ctx context.Context, result RunWorktreeReconciliation) error {
+	evidence := result.evidence
+	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot || len(result.DiscardPaths) == 0 {
+		return errors.New("discard dirty terminal Run: result was not produced by inspection or recorded metadata changed")
+	}
+	if !mergedHeadRecordsEqual(evidence.merged, evidence.mergedSnapshot) {
+		return errors.New("discard dirty terminal Run: merged-head record changed after inspection")
+	}
+	runner := execGitRunner{}
+	fresh, err := inspectTerminalRunMerged(ctx, runner, evidence.run, evidence.merged)
+	if err != nil {
+		return fmt.Errorf("revalidate terminal Run before Dirty Discard: %w", err)
+	}
+	if fresh.State != ReconciliationDirty || fresh.RunHead != result.RunHead ||
+		fresh.TargetHead != result.TargetHead || fresh.evidence == nil ||
+		fresh.evidence.proofHead != evidence.proofHead || fresh.evidence.proofRef != evidence.proofRef ||
+		!slices.Equal(fresh.DiscardPaths, result.DiscardPaths) {
+		return errors.New("discard dirty terminal Run: evidence is stale")
+	}
+	if _, err := runWorktreeCommand(ctx, runner, evidence.gitRoot, "worktree", "remove", "--force", fresh.Path); err != nil {
+		return terminalRunApplyFailure(ctx, runner, evidence.gitRoot, fresh, fmt.Errorf("remove Run Worktree %q: %w", fresh.Path, err))
+	}
+	if fresh.evidence.runBranchPresent {
+		if err := deleteRunBranch(ctx, runner, evidence.gitRoot, fresh.Branch); err != nil {
+			return terminalRunApplyFailure(ctx, runner, evidence.gitRoot, fresh, err)
+		}
+	}
+	return nil
 }
 
 func ApplyTerminalRun(ctx context.Context, runStore TerminalRunReconciliationStore, result RunWorktreeReconciliation) error {
