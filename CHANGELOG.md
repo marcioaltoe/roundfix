@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.5] - 2026-11-09
+
+### The disk-full tests read no real host path
+
+- **The disk-full tests keep their paths inside each test's temporary directory.** They used the literal path `/tmp/x/_pkg_.a`, so a stray file at `/tmp/x` on the host (left there by any other process) made them fail, and the Delivery Queue parked a Spec as disk-full with 0 MiB free while the disk had room.
+- **The free-space lookup walks past a file in a path prefix.** When a component of the reported path is a file rather than a directory, the doctor and the disk-full park now measure the nearest existing directory instead of reporting 0 MiB; a permission error is still reported as before (ADR-0370).
+
 ## [0.137.4] - 2026-11-09
 
 ### The strict check reads Unreachable Acceptance and related ADRs as written
