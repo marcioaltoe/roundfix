@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.24
+  version: 0.0.25
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.24
+version: 0.0.25
 ---
 
 # QA Gate
@@ -72,6 +72,25 @@ ignored or missing target gets one repair turn; after that, the QA Task settles
 `missing`. `roundfix qa-report accept` and the Settle Command refuse the same
 report. Keep every verdict and row status the evidence supports; never change
 one to hide lost evidence.
+
+### Evidence belongs to this Run
+
+Each pass writes its evidence under a directory no earlier pass used:
+`qa/evidence/<report name>/`, where `<report name>` is the QA Report's file
+name without `.md`.
+
+Build and run every executable a row exercises inside your own Run Worktree,
+at the audited head, and list their paths, relative to the worktree or
+absolute inside it, in the `user_flow_executables` frontmatter list. For an
+interpreted entry point, list its script.
+
+Never copy, replay or cite evidence, a script or an executable an earlier Run left, even when it sits on your branch; regenerate it. Only a Carried Row keeps an earlier pass's evidence.
+
+Evidence that breaks this rule is Borrowed Evidence: a linked file the audited
+head or the QA Report Import already held byte for byte, an executable outside
+your worktree, or a path inside another Run's Run Worktree. It gets one repair
+turn; after that, the QA Task settles `failed`, and `roundfix qa-report accept`
+and the Settle Command refuse the same report.
 
 ### Declared rows name their criterion
 
@@ -515,7 +534,7 @@ For each matrix row, repeat this loop:
 1. Enter as the named actor through a real entry point.
 2. Act through the public surface and observe the product's user-facing response.
 3. Confirm the result through a fresh load, restart, deep link, second public endpoint/command, or another user-visible read path.
-4. Capture evidence at the goal state and every divergence. Store screenshots and focused text or image artifacts under `qa/evidence/<YYYY-MM-DD>-<run-slug>/`; keep exact commands and concise outputs in the report.
+4. Capture evidence at the goal state and every divergence. Store screenshots and focused text or image artifacts under `qa/evidence/<report name>/`; keep exact commands and concise outputs in the report.
 5. Update the row immediately. A stall, dead control, infinite spinner, or vanished state is a finding, not a reason to work around the product.
 
 When a row cannot reach its expected observable, compare the row and the
@@ -603,6 +622,7 @@ build: <audited-commit-or-artifact>
 auditing_binary: "<version-and-build-identity>"
 auditor_staleness: "<state>: <reason>" # state is current|stale|unknown; the reason names the signal that answered, such as commit ancestry or the declared tree version
 user_flow_binary: "<the --version line of the binary that ran public-CLI rows>"
+user_flow_executables: [] # paths, inside this Run Worktree, of the executables that ran user-flow rows
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

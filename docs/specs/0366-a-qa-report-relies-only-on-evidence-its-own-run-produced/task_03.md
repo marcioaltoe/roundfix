@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0366-a-qa-report-relies-only-on-evidence-its-own-run-produced
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -89,3 +89,36 @@ reported by quaestor on 2026-11-06, whose gate reused
 - `_prd.md` → Goals; Core Feature 4; Success Metric 4
 - `_techspec.md` → Current behavior 4; API Contract 9; Declared breaks; Build Order 3
 - ADR-0376
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate, ai-memory-handoff
+
+Implemented the `qa-gate` evidence contract in the canonical skill. Each pass
+now uses `qa/evidence/<report name>/`, records every user-flow executable from
+the Run Worktree in `user_flow_executables`, and rejects Borrowed Evidence with
+the required repair-and-settlement rule. The report template carries the new
+key immediately after `user_flow_binary`. `make skills-sync` regenerated the
+mirror, and the owned-skill recorder raised both skill version fields to
+`0.0.25` and recorded the new digest in
+`skills/testdata/owned-skill-versions.json`.
+
+Focused checks:
+
+- `make skills-sync`: passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`: passed; `1 passed`.
+- `cmp .agents/skills/qa-gate/SKILL.md skills/qa-gate/SKILL.md`: passed; mirror equal.
+- Settlement-section SHA-256 before and after: `ff016a0621700e5fd9e4b7da10e98edc417671b9df49d0416a62edee76de70a4` in both copies.
+- `git diff --check`: passed.
+
+Acceptance evidence:
+
+- Both skill copies contain `### Evidence belongs to this Run`, the verbatim
+  regeneration sentence, `qa/evidence/<report name>/`, and the
+  `user_flow_executables` template key; the settlement section remained byte
+  identical.
+- The canonical and mirror copies are equal, both carry version `0.0.25`, and
+  the owned-skill version record contains the regenerated digest.
+
+The Daemon-owned Task status and declared `## Verification` commands were not
+changed or run.

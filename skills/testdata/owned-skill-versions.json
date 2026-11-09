@@ -211,6 +211,10 @@
       {
         "version": "0.0.24",
         "digest": "c1894b512799b927f0e006aa0c0a588a33ce1ff3bfa62afae35ba3153256517e"
+      },
+      {
+        "version": "0.0.25",
+        "digest": "af00eb5c3d31dcccde48b550405bd4b4c4b289ee0f0a18d2951cfa3cead822cc"
       }
     ],
     "roundfix": [
