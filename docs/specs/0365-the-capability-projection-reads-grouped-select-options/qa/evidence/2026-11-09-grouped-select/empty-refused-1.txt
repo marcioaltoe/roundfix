@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run ^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^empty_group_beside_a_values_group$ ./internal/agent
+stdout:
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds/empty_group_beside_a_values_group
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds/empty_group_beside_a_values_group
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds/empty_group_beside_a_values_group
+    selection_capabilities_grouped_test.go:247: project grouped config options: capability evidence invalid: invalid_select_option
+--- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds (0.00s)
+    --- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds/empty_group_beside_a_values_group (0.00s)
+FAIL
+suiteguard: guard cost: measured 2997 paths; fingerprint took 150.9975ms before and 145.738334ms after
+FAIL	roundfix/internal/agent	0.553s
+FAIL
+stderr:
+
+exit: 1

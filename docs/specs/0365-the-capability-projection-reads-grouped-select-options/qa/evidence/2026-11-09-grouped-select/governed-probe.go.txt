@@ -1,0 +1,3 @@
+package speccheck
+import "testing"
+func TestQA0365NoGovernedPaths(t *testing.T) { t.Parallel(); for _, path := range []string{"docs/specs/0365-the-capability-projection-reads-grouped-select-options/task_01.md","docs/specs/0365-the-capability-projection-reads-grouped-select-options/task_02.md","internal/agent/selection_capabilities.go","internal/agent/selection_capabilities_grouped_test.go","internal/agent/selection_proof_grouped_mode_test.go","internal/agent/testdata/codex-acp-2.5.0-config-options.json","internal/agent/testdata/codex-acp-2.6.0-config-options.json"} { if GovernedPath(path) { t.Errorf("governed path: %s",path) } else { t.Logf("ordinary: %s",path) } } }

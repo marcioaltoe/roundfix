@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run ^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^flattened_count_above_the_ceiling$ ./internal/agent
+stdout:
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds/flattened_count_above_the_ceiling
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds/flattened_count_above_the_ceiling
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds/flattened_count_above_the_ceiling
+    selection_capabilities_grouped_test.go:242: error = <nil> <nil>, want issue "too_many_option_values"
+--- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds (0.00s)
+    --- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds/flattened_count_above_the_ceiling (0.00s)
+FAIL
+suiteguard: guard cost: measured 2997 paths; fingerprint took 154.491209ms before and 147.896125ms after
+FAIL	roundfix/internal/agent	0.575s
+FAIL
+stderr:
+
+exit: 1

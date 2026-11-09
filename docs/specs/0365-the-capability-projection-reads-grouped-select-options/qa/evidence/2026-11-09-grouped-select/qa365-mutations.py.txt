@@ -1,0 +1,52 @@
+import sys, tempfile, subprocess
+from pathlib import Path
+sys.path.insert(0,'/tmp')
+import importlib.util
+spec=importlib.util.spec_from_file_location('qa365','/tmp/qa365-run.py')
+helpers=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helpers)
+EVIDENCE=helpers.EVIDENCE.resolve()
+helpers.EVIDENCE=EVIDENCE
+helpers.REPORT=helpers.REPORT.resolve()
+source=Path('internal/agent/selection_capabilities.go').read_text()
+bypass=source.replace('entries, ok := flattenSelectValues(*raw.Options, issues)\n\tif !ok {\n\t\treturn SelectCapability{}, false\n\t}', 'entries := *raw.Options',1)
+duplicate=source.replace('for _, rawValue := range entries {','''for index, rawValue := range entries {
+        offset := 0
+        for _, group := range *raw.Options {
+            if group.Options != nil {
+                if index == offset { seen = make(map[string]struct{}) }
+                offset += len(*group.Options)
+            }
+        }''',1)
+mixed=source.replace('for _, entry := range entries {\n\t\tif entry.Options == nil || entry.Group == nil', 'for _, entry := range entries {\n        if entry.Options == nil { flattened = append(flattened, entry); continue }\n\t\tif entry.Options == nil || entry.Group == nil',1)
+ceiling=source.replace('maxAdvertisedCapabilityValues-len(flattened)','maxAdvertisedCapabilityValues',1)
+empty=source.replace('if len(*entry.Options) > maxAdvertisedCapabilityValues-len(flattened) {','if len(*entry.Options) == 0 { issues.add(CapabilityIssueInvalidOption); return nil, false }\n\t\tif len(*entry.Options) > maxAdvertisedCapabilityValues-len(flattened) {',1)
+reverse=source.replace('flattened := make([]acpSelectValuePayload, 0, len(entries))\n\tfor _, entry := range entries {','flattened := make([]acpSelectValuePayload, 0, len(entries))\n\tfor index := len(entries)-1; index >= 0; index-- {\n        entry := entries[index]',1)
+cases=[
+ ('Q05','bypass',bypass,['^TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads$/^2.6.0$','^TestProofOverTheRecordedCodexACPPayloads$/^2.6.0$/^full-access$'],'invalid_select_option'),
+ ('Q06','duplicate-reset',duplicate,['^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^value_repeated_across_groups$'],'want issue "duplicate_option_value"'),
+ ('Q07','mixed-accepted',mixed,['^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^values_and_groups_mixed$'],'want issue "invalid_select_option"'),
+ ('Q08','per-group-ceiling',ceiling,['^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^flattened_count_above_the_ceiling$'],'want issue "too_many_option_values"'),
+ ('Q09','empty-refused',empty,['^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^empty_group_beside_a_values_group$'],'invalid_select_option'),
+ ('Q10','reverse-groups',reverse,['^TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads$/^2.6.0$'],'modes ='),
+]
+for row,name,mutated,patterns,diagnostic in cases:
+ assert mutated!=source,name
+ with tempfile.TemporaryDirectory(prefix='qa365-'+name+'-') as temp:
+  root=Path(temp)/'tree'; root.mkdir()
+  archive=Path(temp)/'head.tar'
+  subprocess.run(['git','-c','core.fsmonitor=false','archive','--format=tar','HEAD','-o',str(archive)],check=True)
+  subprocess.run(['tar','-xf',str(archive),'-C',str(root)],check=True)
+  subprocess.run(['git','-C',str(root),'init','--quiet','--initial-branch=test/qa-sabotage'],check=True)
+  target=root/'internal/agent/selection_capabilities.go'; assert target.read_text()==source
+  target.write_text(mutated)
+  diff=subprocess.run(['diff','-u','--label','audited/selection_capabilities.go','--label',name+'/selection_capabilities.go','internal/agent/selection_capabilities.go',str(target)],capture_output=True,text=True)
+  (EVIDENCE/(name+'-mutation.txt')).write_text('Isolated git archive HEAD; git init --quiet --initial-branch=test/qa-sabotage supplies metadata required by suiteguard, with no commit or staging. Only production source mutated.\n'+diff.stdout)
+  links=[]
+  for i,pattern in enumerate(patterns,1):
+   logfile=name+'-'+str(i)
+   p=helpers.run(logfile,['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./internal/agent'],cwd=root)
+   assert p.returncode==1 and diagnostic in p.stdout and '--- FAIL:' in p.stdout,(name,p.returncode,p.stdout,p.stderr)
+   links.append('['+logfile+'](evidence/2026-11-09-grouped-select/'+logfile+'.txt)')
+  helpers.finish(row,'pass','On a separate temporary `git archive HEAD` tree, applied only the ['+name+' mutation](evidence/2026-11-09-grouped-select/'+name+'-mutation.txt), initialized temporary Git metadata for suiteguard (no staging or commit), then ran the exact named subtest(s) with `go test -count=1 -timeout 20m -v -run <pattern> ./internal/agent`. Each exited 1 with the expected assertion failure, including `'+diagnostic+'`; no build or infrastructure error substitutes for a failed assertion. Independent reproduction: '+', '.join(links)+'. The unsabotaged focused and package runs passed. Temporary archive, tree and any test state were removed after this case; audited checkout source was never changed.')
+ print('PASS '+row,flush=True)

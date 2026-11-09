@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run ^TestGroupedSelectOptionsKeepTheEvidenceBounds$/^value_repeated_across_groups$ ./internal/agent
+stdout:
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds
+=== RUN   TestGroupedSelectOptionsKeepTheEvidenceBounds/value_repeated_across_groups
+=== PAUSE TestGroupedSelectOptionsKeepTheEvidenceBounds/value_repeated_across_groups
+=== CONT  TestGroupedSelectOptionsKeepTheEvidenceBounds/value_repeated_across_groups
+    selection_capabilities_grouped_test.go:242: error = <nil> <nil>, want issue "duplicate_option_value"
+--- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds (0.00s)
+    --- FAIL: TestGroupedSelectOptionsKeepTheEvidenceBounds/value_repeated_across_groups (0.00s)
+FAIL
+suiteguard: guard cost: measured 2997 paths; fingerprint took 145.8745ms before and 149.828ms after
+FAIL	roundfix/internal/agent	0.549s
+FAIL
+stderr:
+
+exit: 1

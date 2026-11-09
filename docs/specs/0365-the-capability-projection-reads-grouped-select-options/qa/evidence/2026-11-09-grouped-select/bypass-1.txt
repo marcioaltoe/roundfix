@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 20m -v -run ^TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads$/^2.6.0$ ./internal/agent
+stdout:
+=== RUN   TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads
+=== PAUSE TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads
+=== CONT  TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads
+=== RUN   TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads/2.6.0
+    selection_capabilities_grouped_test.go:52: project recorded config options: capability evidence invalid: invalid_current_value, invalid_select_option
+--- FAIL: TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads (0.00s)
+    --- FAIL: TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads/2.6.0 (0.00s)
+FAIL
+suiteguard: guard cost: measured 2997 paths; fingerprint took 153.437333ms before and 141.610459ms after
+FAIL	roundfix/internal/agent	0.583s
+FAIL
+stderr:
+
+exit: 1

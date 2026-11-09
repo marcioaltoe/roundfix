@@ -1,0 +1,13 @@
+command: ./bin/roundfix archive 0365-the-capability-projection-reads-grouped-select-options --plan --offline
+stdout:
+archive plan for 0365-the-capability-projection-reads-grouped-select-options: removes 40 file(s) (307725 bytes) and writes docs/history/specs/0365-the-capability-projection-reads-grouped-select-options.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-09.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 28 file(s) (214575 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-09-codex-acp-2-6-0-grouped-select-options-break-the-capability-proof.md 2624 bytes: no advice (offline)
+candidate references/codex-acp-2.5.0-config-options.json 4213 bytes: no advice (offline)
+candidate references/codex-acp-2.6.0-config-options.json 4736 bytes: no advice (offline)
+promote with: roundfix archive 0365-the-capability-projection-reads-grouped-select-options --promote <path>
+stderr:
+
+exit: 0

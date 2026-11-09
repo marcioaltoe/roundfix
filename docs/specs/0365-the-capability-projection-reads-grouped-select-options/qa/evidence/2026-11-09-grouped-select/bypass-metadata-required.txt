@@ -1,0 +1,8 @@
+command: go test -count=1 -timeout 20m -v -run ^TestSelectionCapabilitiesProjectTheRecordedCodexACPPayloads$/^2.6.0$ ./internal/agent
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/agent	0.479s
+FAIL
+stderr:
+
+exit: 1

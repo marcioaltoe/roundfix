@@ -1,0 +1,72 @@
+import hashlib, importlib.util, json, os, re, subprocess, tempfile
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('qa365','/tmp/qa365-run.py'); h=importlib.util.module_from_spec(spec); spec.loader.exec_module(h)
+root=Path.cwd(); s=h.SPEC
+
+def git(*args):
+ p=subprocess.run(['git','-c','core.fsmonitor=false',*args],text=True,capture_output=True)
+ assert p.returncode==0,(args,p.stderr)
+ return p.stdout
+base=git('rev-parse','0d6b34aa').strip(); head=git('rev-parse','HEAD').strip()
+# Requirement 3: use cmp, then independently digest both copies.
+fixturelog=[]
+for version in ['2.6.0','2.5.0']:
+ a=Path('internal/agent/testdata/codex-acp-'+version+'-config-options.json'); b=s/'references'/a.name
+ p=subprocess.run(['cmp',str(a),str(b)],capture_output=True,text=True)
+ assert p.returncode==0,(p.stdout,p.stderr)
+ fixturelog.append(f'cmp {a} {b}: exit 0\n')
+ for path in [a,b]: fixturelog.append(f'SHA-256 {path}: {hashlib.sha256(path.read_bytes()).hexdigest()}\n')
+ payload=json.loads(a.read_text()); mode=next(x for x in payload if x['id']=='mode')
+ entries=mode['options']; grouped=any('options' in x for x in entries)
+ assert grouped==(version=='2.6.0')
+ if grouped: assert all('options' in x and 'group' in x for x in entries)
+ vals=[x['value'] for entry in entries for x in entry['options']] if grouped else [x['value'] for x in entries]
+ expected=['read-only','workspace-write','agent','agent-full-access']+(['permission-profile:localdev'] if grouped else [])
+ assert vals==expected
+ fixturelog.append(f'{version}: shape={"grouped" if grouped else "flat"}; values={vals}; current={mode["currentValue"]}\n')
+fixturelog.append('Outside source: operator measurement dated 2026-11-09, adopted unchanged from planning commit 0d6b34aa. ACP v1 Session Config Options passage quoted in PRD Acceptance evidence, retrieved 2026-11-09: flat or grouped union; values and groups must not mix. Offline comparison: recorded 2.6.0 projection passes and the values_and_groups_mixed refusal case passes in focused.txt; mixed-accepted-1.txt proves removal of that boundary is detected. No network retrieval.\n')
+(h.EVIDENCE/'fixtures-outside.txt').write_text(''.join(fixturelog))
+h.finish('Q04','pass','Both fixture/source pairs compare equal with `cmp` (exit 0); independent SHA-256 and JSON checks confirm their shapes and advertised order ([comparison](evidence/2026-11-09-grouped-select/fixtures-outside.txt)). 2.6.0: fcd34a03ef3e228c567692441e7af33b4b0803eca9b49256b077a6c36e92762f; 2.5.0: 0c8cef38871065ba5c593f5864c334d8d679968b21bc87d8ed0cfda146b34000. Origin is the operator\'s two captured adapter payloads dated 2026-11-09, not generated test input. ACP protocol v1 Session Config Options at https://agentclientprotocol.com/protocol/v1/session-config-options, passage quoted in PRD Acceptance evidence and retrieved during authoring on 2026-11-09, defines a flat/grouped union without mixed entries. Compared offline against the recorded 2.6.0 projection and values_and_groups_mixed refusal in [focused output](evidence/2026-11-09-grouped-select/focused.txt); [mixed-shape sabotage](evidence/2026-11-09-grouped-select/mixed-accepted-1.txt) independently confirms that boundary. No lookup, adapter startup or persistent external state is needed.')
+commits=git('rev-list','--reverse',base+'..'+head).splitlines()
+assert len(commits)==2
+log=[f'Audited range: {base}..{head}\n']; allpaths=[]
+for task,commit in zip(['task_01','task_02'],commits):
+ taskpath=s/(task+'.md'); text=taskpath.read_text()
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ declarations=re.findall(r'^- (?:creates|interface|instruction): `([^`]+)`',text,re.M)
+ recorded=text.split('## Recorded paths',1)[1] if '## Recorded paths' in text else ''
+ declarations+=re.findall(r'`([^`]+)`',recorded)
+ assert all(path==str(taskpath) or path in declarations for path in paths),(task,paths,declarations)
+ original=git('show',base+':'+str(taskpath))
+ def authored(content):return re.sub(r'^status:.*$','status: <daemon>',content.split('\n## Result',1)[0],flags=re.M).strip()
+ assert authored(original)==authored(text),task
+ sourcepaths=[x for x in paths if x!=str(taskpath)]
+ if task=='task_02':assert sourcepaths==['internal/agent/selection_proof_grouped_mode_test.go']
+ log.append(f'{task}: {commit}\ncommand: git diff-tree --no-commit-id --name-only -r {commit}\n'+''.join('  '+x+'\n' for x in paths))
+ log.append('scope: PASS; assigned Task file contains only Daemon status/Result bookkeeping; authored projection unchanged.\n')
+ allpaths+=paths
+prohibited=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md']
+prefixes=['.github/workflows/','docs/adr/','docs/agents/','docs/user-guide/','.agents/skills/','skills/','internal/cli/','internal/spec/','internal/speccheck/']
+assert not [x for x in allpaths if x in prohibited or any(x.startswith(p) for p in prefixes)]
+assert 'paths: []' in (s/'_authorization.md').read_text()
+assert not git('diff','--name-only',base,head,'--',str(s/'_authorization.md'))
+assert not git('diff','--name-only','HEAD','--',':(exclude)'+str(s/'qa'))
+log.append('Every prohibited scope path is unchanged; paths: [] is unchanged from delivery base. No tracked worktree delta outside QA.\n')
+for artifact in ['_prd.md','_techspec.md']:
+ assert re.search(r'## Glossary\s+None\.',(s/artifact).read_text())
+log.append('PRD Glossary=None.; TechSpec Glossary=None.; CONTEXT.md unchanged across Task range.\n')
+with tempfile.TemporaryDirectory(prefix='qa365-governed-') as temp:
+ probe=Path(temp)/'probe.go.txt'; overlay=Path(temp)/'overlay.json'
+ probe.write_text('package speccheck\nimport "testing"\nfunc TestQA0365NoGovernedPaths(t *testing.T) { t.Parallel(); for _, path := range []string{'+','.join(json.dumps(x) for x in sorted(set(allpaths)))+'} { if GovernedPath(path) { t.Errorf("governed path: %s",path) } else { t.Logf("ordinary: %s",path) } } }\n')
+ overlay.write_text(json.dumps({'Replace':{str(root/'internal/speccheck/qa0365_probe_test.go'):str(probe)}}))
+ (h.EVIDENCE/'governed-probe.go.txt').write_text(probe.read_text())
+ p=h.run('governed-paths',['go','test','-count=1','-timeout','20m','-v','-overlay',str(overlay),'-run','^TestQA0365NoGovernedPaths$','./internal/speccheck'])
+ assert p.returncode==0
+p=h.run('glossary',['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$'])
+assert p.returncode==0
+# Repeat the wording search declared by the gate without changing docs/skills.
+p=subprocess.run(['rg','-n','mode.*select|agent-full-access.*full-access|flat (list|array)|grouped select','docs/user-guide','docs/agents','.agents/skills/roundfix/references/profiles.md','skills/roundfix/references/profiles.md'],capture_output=True,text=True)
+assert p.returncode in [0,1]
+log.append('Documentation/guide/skill wording search:\n'+p.stdout+'\nexit: '+str(p.returncode)+'\nExisting advertised-mode wording remains valid; no stale flat-only public promise was found in the searched surfaces.\n')
+(h.EVIDENCE/'scope-audit.txt').write_text(''.join(log))
+h.finish('Q11','pass','Audited actual `git diff-tree --no-commit-id --name-only -r` output for commits 67a06fa0 and fcbe596d in the declared Task range ([scope and chronology](evidence/2026-11-09-grouped-select/scope-audit.txt)). Task 01 changes its declared source, test and two fixtures; Task 02 changes only selection_proof_grouped_mode_test.go as product content. Each assigned Task file is the sole extra path, with only Daemon status/Result bookkeeping and identical authored projection. No Recorded paths are needed. Authorization at the delivery base is approved and unchanged with paths: []; every changed path returns false from the actual current GovernedPath function through an ephemeral go-test overlay ([probe source](evidence/2026-11-09-grouped-select/governed-probe.go.txt), [result](evidence/2026-11-09-grouped-select/governed-paths.txt)). The grant precedes both Tasks and neither changes tooling or a prohibited path. PRD/TechSpec Glossary are None., CONTEXT.md is unchanged, and the required glossary command exited 0 ([output](evidence/2026-11-09-grouped-select/glossary.txt)). Independent current worktree diff confirms no tracked delta outside QA. Existing public advertised-mode wording remains correct across docs, guides and both skill copies. No persistent production state applies.')

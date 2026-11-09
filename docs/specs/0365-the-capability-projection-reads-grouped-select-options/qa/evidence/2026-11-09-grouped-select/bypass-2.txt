@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run ^TestProofOverTheRecordedCodexACPPayloads$/^2.6.0$/^full-access$ ./internal/agent
+stdout:
+=== RUN   TestProofOverTheRecordedCodexACPPayloads
+=== PAUSE TestProofOverTheRecordedCodexACPPayloads
+=== CONT  TestProofOverTheRecordedCodexACPPayloads
+=== RUN   TestProofOverTheRecordedCodexACPPayloads/2.6.0/full-access
+=== PAUSE TestProofOverTheRecordedCodexACPPayloads/2.6.0/full-access
+=== CONT  TestProofOverTheRecordedCodexACPPayloads/2.6.0/full-access
+    selection_proof_grouped_mode_test.go:50: prove exact selection: capability evidence invalid: invalid_current_value, invalid_select_option
+--- FAIL: TestProofOverTheRecordedCodexACPPayloads (0.00s)
+    --- FAIL: TestProofOverTheRecordedCodexACPPayloads/2.6.0/full-access (0.02s)
+FAIL
+suiteguard: guard cost: measured 2997 paths; fingerprint took 141.804292ms before and 140.166458ms after
+FAIL	roundfix/internal/agent	0.427s
+FAIL
+stderr:
+
+exit: 1

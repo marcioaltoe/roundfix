@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0365-the-capability-projection-reads-grouped-select-options
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,12 @@
+Isolated git archive HEAD; git init --quiet --initial-branch=test/qa-sabotage supplies metadata required by suiteguard, with no commit or staging. Only production source mutated.
+--- audited/selection_capabilities.go
++++ per-group-ceiling/selection_capabilities.go
+@@ -555,7 +555,7 @@
+ 			issues.add(CapabilityIssueInvalidOption)
+ 			return nil, false
+ 		}
+-		if len(*entry.Options) > maxAdvertisedCapabilityValues-len(flattened) {
++		if len(*entry.Options) > maxAdvertisedCapabilityValues {
+ 			issues.add(CapabilityIssueTooManyValues)
+ 			return nil, false
+ 		}
