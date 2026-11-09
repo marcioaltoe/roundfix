@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0368-the-disk-full-tests-read-no-real-host-path
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -117,3 +117,52 @@ stands where a directory is expected.
 - `_prd.md` → Goals; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Core Feature 3; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Interfaces; System Architecture; Testing Approach; Build Order 1
 - ADR-0370
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-testing, testing-boss, no-workarounds, systematic-debugging, brainstorming, tech-writer, evidence-gate.
+
+`doctorDiskSpaceAncestor` now walks past `syscall.ENOTDIR` as well as
+`os.ErrNotExist`. Its signature, other branches and both error texts are
+unchanged; its new comment describes the walk and propagation of other stat
+errors. The existing Spec supplies the approved design; no design or scope
+change was needed.
+
+- Acceptance criterion 1: added both required parallel regression tests.
+  The disk-full case creates a file under `t.TempDir()` and asserts the
+  original failing path, exactly 5,242,887 available bytes, the wrapped
+  cause and exactly one capacity read of the temporary root. The ancestor
+  test covers the existing root, absent descendants, a regular file and
+  descendants below that file. Its unreadable-directory subtest restores
+  mode 0700 in cleanup and skips only on Windows or for root.
+- Acceptance criterion 2: the existing build, gate and log-tail tests
+  expand path placeholders under each subtest's own temporary directory.
+  The wrapped ENOSPC cause uses that same directory. The parsing-only test
+  uses `/build` literals, and the outside-tail `/first` remains outside
+  the read tail. The four existing tests retain their assertions.
+
+Focused checks:
+
+- Before changing production code,
+  `rtk proxy go test ./internal/cli -run '^Test(ADiskFullPathBelow|TheDiskSpaceAncestor)' -count=1 -timeout=3m -v`
+  exited 1: both new top-level tests failed, including `not a directory`
+  for the ancestor below a file. The permission-denied subtest passed.
+  The first sandbox attempt could not write the Go build cache; the
+  rerun with cache access produced this regression evidence.
+- After the change,
+  `rtk proxy go test ./internal/cli -run '^Test(TheItemBuildOnAFullDisk|TheRepositoryGateOnAFullDisk|DiskFullFailureUsesOnly|ADiskFullPath|TheDiskSpaceAncestor)' -count=1 -timeout=3m -v`
+  exited 0. All six top-level tests and their subtests passed, including
+  `an unreadable directory still fails` without a skip on this host.
+- `rtk proxy rg -n -F '/tmp/' internal/cli/deliver_disk_full_test.go`
+  exited 1 with no matches, including comments.
+- `roundfix_0368_build_dir=$(mktemp -d /private/tmp/roundfix-0368-windows.XXXXXX)`
+  followed by
+  `GOOS=windows rtk proxy go test -c -o "$roundfix_0368_build_dir/cli.test.exe" ./internal/cli`
+  exited 0, compiling the package's tests for Windows without running them.
+- Ran `gofmt` on the three changed Go files and reviewed the diff: the
+  implementation stays within those files plus this Result. The task
+  file's pre-existing Daemon status change is preserved.
+
+The declared Verification commands, Windows vet and repository Verification
+were not run; the Daemon owns them and Task settlement. No follow-up work
+was identified. No commit, push or pull request was made.

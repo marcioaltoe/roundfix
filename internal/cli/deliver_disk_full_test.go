@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	"testing"
@@ -18,12 +19,15 @@ import (
 func TestTheItemBuildOnAFullDiskIsADiskFullFailure(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ name, output, path string }{
-		{"path in the log", "write /tmp/x/_pkg_.a: no space left on device", "/tmp/x/_pkg_.a"},
+		{"path in the log", "write {root}/x/_pkg_.a: no space left on device", "{root}/x/_pkg_.a"},
 		{"no path in the log", "compile: writing output: write $WORK/b001/_pkg_.a: no space left on device", ""},
 		{"other failure", "build failed", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			root := filepath.ToSlash(t.TempDir())
+			tc.output = strings.ReplaceAll(tc.output, "{root}", root)
+			tc.path = strings.ReplaceAll(tc.path, "{root}", root)
 			f := newDeliveryItemFixture(t)
 			f.workflow.loaded.Config.Worktree.Location = f.home
 			f.workflow.loaded.Config.Delivery.ItemBinary.Build = fmt.Sprintf("printf '%%s\\n' '%s' >&2; exit 7", tc.output)
@@ -71,11 +75,14 @@ func TestTheItemBuildOnAFullDiskIsADiskFullFailure(t *testing.T) {
 func TestTheRepositoryGateOnAFullDiskParksDiskFull(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ name, output, blocker string }{
-		{"full disk", "write /tmp/x/_pkg_.a: no space left on device", "disk-full: /tmp/x/_pkg_.a: 2 MiB free"},
+		{"full disk", "write {root}/x/_pkg_.a: no space left on device", "disk-full: {root}/x/_pkg_.a: 2 MiB free"},
 		{"other failure", "gate failed", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			root := filepath.ToSlash(t.TempDir())
+			tc.output = strings.ReplaceAll(tc.output, "{root}", root)
+			tc.blocker = strings.ReplaceAll(tc.blocker, "{root}", root)
 			f := newDeliveryItemFixture(t)
 			f.workflow.loaded.Config.Defaults.Verification = fmt.Sprintf("printf '%%s\\n' '%s' >&2; exit 9", tc.output)
 			deps := commandDependenciesForContext(commandContextForTest(t, t.Context()))
@@ -96,9 +103,9 @@ func TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError(t *testing.T) {
 		name, log, errorText, wantPath string
 		enospc, missing                bool
 	}{
-		{name: "last path wins", log: "write /first: no space left on device\nwrite /tmp/last: NO SPACE LEFT ON DEVICE", wantPath: "/tmp/last"},
-		{name: "error path fallback", log: "no space left on device", errorText: "write /tmp/error: no space left on device", wantPath: "/tmp/error"},
-		{name: "wrapped ENOSPC", errorText: "write /tmp/error: no space left on device", enospc: true, missing: true, wantPath: "/tmp/error"},
+		{name: "last path wins", log: "write {dir}/first: no space left on device\nwrite {dir}/last: NO SPACE LEFT ON DEVICE", wantPath: "{dir}/last"},
+		{name: "error path fallback", log: "no space left on device", errorText: "write {dir}/error: no space left on device", wantPath: "{dir}/error"},
+		{name: "wrapped ENOSPC", errorText: "write {dir}/error: no space left on device", enospc: true, missing: true, wantPath: "{dir}/error"},
 		{name: "outside tail", log: "write /first: no space left on device\n" + strings.Repeat("x", 64*1024)},
 		{name: "unreadable log", missing: true},
 		{name: "text alone is not ENOSPC", errorText: "no space left on device", missing: true},
@@ -106,6 +113,9 @@ func TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
+			tc.log = strings.ReplaceAll(tc.log, "{dir}", filepath.ToSlash(dir))
+			tc.errorText = strings.ReplaceAll(tc.errorText, "{dir}", filepath.ToSlash(dir))
+			tc.wantPath = strings.ReplaceAll(tc.wantPath, "{dir}", filepath.ToSlash(dir))
 			logPath := filepath.Join(dir, "failure.log")
 			if !tc.missing {
 				if err := os.WriteFile(logPath, []byte(tc.log), 0600); err != nil {
@@ -114,7 +124,7 @@ func TestDiskFullFailureUsesOnlyTheLogTailAndPreservesTheError(t *testing.T) {
 			}
 			cause := errors.New(tc.errorText)
 			if tc.enospc {
-				cause = fmt.Errorf("write /tmp/error: %w", syscall.ENOSPC)
+				cause = fmt.Errorf("write %s: %w", filepath.ToSlash(filepath.Join(dir, "error")), syscall.ENOSPC)
 			}
 			var reads []string
 			ctx := contextWithCommandDependencies(t.Context(), commandDependencies{
@@ -143,12 +153,41 @@ func TestADiskFullPathMayHoldSpaces(t *testing.T) {
 	for _, tc := range []struct{ name, text, want string }{
 		{"spaces", "write /Users/me/Google Drive/repo/_pkg_.a: no space left on device", "/Users/me/Google Drive/repo/_pkg_.a"},
 		{"open with spaces", "open /Volumes/My Disk/go-build/x: no space left on device", "/Volumes/My Disk/go-build/x"},
-		{"no spaces", "write /tmp/x/_pkg_.a: no space left on device", "/tmp/x/_pkg_.a"},
-		{"last wins", "write /first one: no space left on device\nwrite /tmp/last: no space left on device", "/tmp/last"},
+		{"no spaces", "write /build/x/_pkg_.a: no space left on device", "/build/x/_pkg_.a"},
+		{"last wins", "write /first one: no space left on device\nwrite /build/last: no space left on device", "/build/last"},
 		{"no path", "compile: writing output: write $WORK/b001/_pkg_.a: no space left on device", ""},
 	} {
 		if got := lastDiskFullPath(tc.text); got != tc.want {
 			t.Errorf("%s: lastDiskFullPath(%q) = %q, want %q", tc.name, tc.text, got, tc.want)
 		}
+	}
+}
+
+func TestADiskFullPathBelowAFileIsReadAtItsNearestDirectory(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "x"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "x", "_pkg_.a")
+	logPath := filepath.Join(root, "failure.log")
+	if err := os.WriteFile(logPath, []byte(fmt.Sprintf("write %s: no space left on device\n", path)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cause := errors.New("build failed")
+	const available int64 = 5*1024*1024 + 7
+	var reads []string
+	ctx := contextWithCommandDependencies(t.Context(), commandDependencies{
+		availableBytes: func(path string) (int64, error) {
+			reads = append(reads, path)
+			return available, nil
+		},
+	})
+	full := diskFullFailure(ctx, roundconfig.Loaded{}, cause, logPath)
+	if full == nil || full.Path != path || full.AvailableBytes != available || !errors.Is(full, cause) {
+		t.Fatalf("full=%+v cause=%v want path=%s bytes=%d", full, cause, path, available)
+	}
+	if !reflect.DeepEqual(reads, []string{root}) {
+		t.Fatalf("capacity reads=%q want=%q", reads, []string{root})
 	}
 }

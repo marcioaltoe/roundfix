@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	roundconfig "roundfix/internal/config"
 )
@@ -75,13 +76,16 @@ func defaultDoctorDiskSpaceResults(ctx context.Context, loaded roundconfig.Loade
 	return []CheckResult{result}
 }
 
+// doctorDiskSpaceAncestor returns the nearest existing directory of path.
+// A missing component or a file where a directory is expected walks to the
+// parent; any other stat error is returned.
 func doctorDiskSpaceAncestor(path string) (string, error) {
 	for {
 		if info, err := os.Stat(path); err == nil {
 			if info.IsDir() {
 				return path, nil
 			}
-		} else if !errors.Is(err, os.ErrNotExist) {
+		} else if !errors.Is(err, os.ErrNotExist) && !errors.Is(err, syscall.ENOTDIR) {
 			return "", fmt.Errorf("stat disk-space location %q: %w", path, err)
 		}
 		parent := filepath.Dir(path)
