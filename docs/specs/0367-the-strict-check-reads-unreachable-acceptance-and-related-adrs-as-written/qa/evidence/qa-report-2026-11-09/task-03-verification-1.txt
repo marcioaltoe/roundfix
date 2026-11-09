@@ -1,0 +1,8 @@
+command: /bin/sh -c 'grep -qE -- '"'"'^[|] .SC-UNREACHABLE-UNREAD. [|] The PRD'"'"' docs/user-guide/commands/spec.md || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/context-driven-development.md | grep -qF -- '"'"'Only an ADR the Spec applies or changes draws in the ADRs that cite it'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/context-driven-development.md | grep -qF -- '"'"'names, at its line, any text in it that no fielded declaration reads'"'"' || exit 1; grep -qE -- '"'"'^- .SC-UNREACHABLE-UNREAD. — the PRD'"'"' skills/roundfix/references/spec.md || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < skills/write-techspec/SKILL.md | grep -qF -- '"'"'does not ask for the ADRs that cite only it'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < skills/write-techspec/references/techspec-template.md | grep -qF -- '"'"'for an ADR the Spec lists only to record why it does not apply'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < skills/write-tasks/SKILL.md | grep -qF -- '"'"'so it draws in no ADR that cites only it'"'"' || exit 1; go test -count=1 -timeout 20m ./skills || exit 1; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract'
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
+exit: 0
+stdout:
+ok  	roundfix/skills	1.400s
+ok  	roundfix/internal/docscontract	30.580s
+
+stderr:

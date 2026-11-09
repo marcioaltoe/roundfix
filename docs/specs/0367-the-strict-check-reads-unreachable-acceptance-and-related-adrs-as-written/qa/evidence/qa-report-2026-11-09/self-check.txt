@@ -1,0 +1,7 @@
+command: ./bin/roundfix spec check 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written --strict --format json
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
+exit: 0
+stdout:
+{"schema":"roundfix-speccheck/v1","slug":"0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written","findings":[],"repairInputs":[],"skipped":[{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings Finding"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings rollup"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/_techspec.md Vocabulary Contract"}],"verification":{"executed":false,"commands":[],"uncommitted":[]}}
+
+stderr:

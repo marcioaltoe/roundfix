@@ -1,0 +1,10 @@
+--- internal/spec/spec.go
++++ internal/spec/spec.go
+@@ -367,6 +367,7 @@
+ 	}
+ 	if section.inComment || strings.HasPrefix(trimmed, "<!--") {
+ 		section.inComment = !strings.Contains(trimmed, "-->")
++		section.unread = append(section.unread, UnreachableUnreadLine{Line: number, Text: trimmed})
+ 		return
+ 	}
+ 	if !section.sawContent {

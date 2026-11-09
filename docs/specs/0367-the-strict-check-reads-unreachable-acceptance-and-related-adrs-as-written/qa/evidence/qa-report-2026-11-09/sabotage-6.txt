@@ -1,0 +1,68 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAnUnreachableSectionReadAsWrittenReportsNothing$' ./internal/speccheck
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8/.qa-0367/mutation-6
+exit: 1
+stdout:
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/none
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing/none
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/empty
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing/empty
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/absent
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing/absent
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment
+=== PAUSE TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing/empty
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing/absent
+=== CONT  TestAnUnreachableSectionReadAsWrittenReportsNothing/none
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage=
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage=
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage=
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage=
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage=prd
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage=prd
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage=prd
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage=prd
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage=techspec
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage=techspec
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage=techspec
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage=techspec
+=== NAME  TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=
+    unreachable_test.go:39: unread findings = [{Code:SC-UNREACHABLE-UNREAD Severity:error Summary:docs/specs/unreachable/_prd.md line 5 under ## Unreachable Acceptance is not part of a fielded declaration, so the QA gate does not read it: "<!-- Optional. One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label." Where:[{Path:docs/specs/unreachable/_prd.md Line:5}] Fix:Write each entry in the fielded form: a top-level "- criterion: <text the QA row repeats>" line, then indented "reason: <why no Verification or QA row can reach it>" and "satisfied-by: <evidence or follow-up that satisfies it>" lines; start the section with None. when no criterion is unreachable. Expected: declaredVocabularySpec:}]
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=prd
+    unreachable_test.go:39: unread findings = [{Code:SC-UNREACHABLE-UNREAD Severity:error Summary:docs/specs/unreachable/_prd.md line 5 under ## Unreachable Acceptance is not part of a fielded declaration, so the QA gate does not read it: "<!-- Optional. One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label." Where:[{Path:docs/specs/unreachable/_prd.md Line:5}] Fix:Write each entry in the fielded form: a top-level "- criterion: <text the QA row repeats>" line, then indented "reason: <why no Verification or QA row can reach it>" and "satisfied-by: <evidence or follow-up that satisfies it>" lines; start the section with None. when no criterion is unreachable. Expected: declaredVocabularySpec:}]
+=== RUN   TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=techspec
+    unreachable_test.go:39: unread findings = [{Code:SC-UNREACHABLE-UNREAD Severity:error Summary:docs/specs/unreachable/_prd.md line 5 under ## Unreachable Acceptance is not part of a fielded declaration, so the QA gate does not read it: "<!-- Optional. One Unreachable Acceptance declaration may name several criteria, one criterion line each, and each criterion becomes its own QA row; acceptance matches every declared-blocked row to a declaration that names its criterion, by its text or its leading label." Where:[{Path:docs/specs/unreachable/_prd.md Line:5}] Fix:Write each entry in the fielded form: a top-level "- criterion: <text the QA row repeats>" line, then indented "reason: <why no Verification or QA row can reach it>" and "satisfied-by: <evidence or follow-up that satisfies it>" lines; start the section with None. when no criterion is unreachable. Expected: declaredVocabularySpec:}]
+--- FAIL: TestAnUnreachableSectionReadAsWrittenReportsNothing (0.00s)
+    --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/none (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage= (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage=prd (0.00s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/none/stage=techspec (0.00s)
+    --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/empty (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage= (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage=prd (0.00s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/empty/stage=techspec (0.00s)
+    --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/absent (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage= (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage=prd (0.00s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/absent/stage=techspec (0.00s)
+    --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage= (0.01s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage=prd (0.00s)
+        --- PASS: TestAnUnreachableSectionReadAsWrittenReportsNothing/fielded/stage=techspec (0.00s)
+    --- FAIL: TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment (0.01s)
+        --- FAIL: TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage= (0.01s)
+        --- FAIL: TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=prd (0.00s)
+        --- FAIL: TestAnUnreachableSectionReadAsWrittenReportsNothing/template_comment/stage=techspec (0.00s)
+FAIL
+suiteguard: guard cost: measured 3043 paths; fingerprint took 154.904916ms before and 148.546625ms after
+FAIL	roundfix/internal/speccheck	0.617s
+FAIL
+
+stderr:

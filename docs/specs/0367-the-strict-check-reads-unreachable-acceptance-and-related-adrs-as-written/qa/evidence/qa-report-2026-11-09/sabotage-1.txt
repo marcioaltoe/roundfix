@@ -1,0 +1,26 @@
+command: go test -count=1 -timeout 20m -v -run '^TestANotApplicableADRDrawsInNoCitingADR$' ./internal/speccheck
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8/.qa-0367/mutation-1
+exit: 1
+stdout:
+=== RUN   TestANotApplicableADRDrawsInNoCitingADR
+=== PAUSE TestANotApplicableADRDrawsInNoCitingADR
+=== CONT  TestANotApplicableADRDrawsInNoCitingADR
+=== RUN   TestANotApplicableADRDrawsInNoCitingADR/not_applicable;_unchanged.
+=== PAUSE TestANotApplicableADRDrawsInNoCitingADR/not_applicable;_unchanged.
+=== RUN   TestANotApplicableADRDrawsInNoCitingADR/Not_applicable_—_unchanged.
+=== PAUSE TestANotApplicableADRDrawsInNoCitingADR/Not_applicable_—_unchanged.
+=== CONT  TestANotApplicableADRDrawsInNoCitingADR/not_applicable;_unchanged.
+=== CONT  TestANotApplicableADRDrawsInNoCitingADR/Not_applicable_—_unchanged.
+=== NAME  TestANotApplicableADRDrawsInNoCitingADR/not_applicable;_unchanged.
+    adr_related_seed_test.go:22: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== NAME  TestANotApplicableADRDrawsInNoCitingADR/Not_applicable_—_unchanged.
+    adr_related_seed_test.go:22: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+--- FAIL: TestANotApplicableADRDrawsInNoCitingADR (0.00s)
+    --- FAIL: TestANotApplicableADRDrawsInNoCitingADR/not_applicable;_unchanged. (0.02s)
+    --- FAIL: TestANotApplicableADRDrawsInNoCitingADR/Not_applicable_—_unchanged. (0.02s)
+FAIL
+suiteguard: guard cost: measured 3043 paths; fingerprint took 152.425334ms before and 144.88375ms after
+FAIL	roundfix/internal/speccheck	1.595s
+FAIL
+
+stderr:

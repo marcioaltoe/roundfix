@@ -1,0 +1,143 @@
+command: go test -count=1 -timeout 20m -v -run SpecCheck ./internal/cli
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
+exit: 0
+stdout:
+=== RUN   TestRunImplementHasNoSpecCheckPrecondition
+=== PAUSE TestRunImplementHasNoSpecCheckPrecondition
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone
+=== PAUSE TestSpecCheckLeavesCompletedTasksAlone
+=== RUN   TestSpecCheckNeverProbesTheQAGate
+=== PAUSE TestSpecCheckNeverProbesTheQAGate
+=== RUN   TestSpecCheckReportsAMalformedCommand
+=== PAUSE TestSpecCheckReportsAMalformedCommand
+=== RUN   TestSpecCheckNamesAnUncommittedVerificationSource
+=== PAUSE TestSpecCheckNamesAnUncommittedVerificationSource
+=== RUN   TestSpecCheckNamesNoSourceWhenCommitted
+=== PAUSE TestSpecCheckNamesNoSourceWhenCommitted
+=== RUN   TestRunSpecCheckCleanText
+=== PAUSE TestRunSpecCheckCleanText
+=== RUN   TestSpecCheckRunVerification
+=== PAUSE TestSpecCheckRunVerification
+=== RUN   TestRunSpecCheckErrorText
+=== PAUSE TestRunSpecCheckErrorText
+=== RUN   TestSpecCheckStageExitsNonZeroOnAFinding
+=== PAUSE TestSpecCheckStageExitsNonZeroOnAFinding
+=== RUN   TestSpecCheckStageExitsZeroWithoutAFinding
+=== PAUSE TestSpecCheckStageExitsZeroWithoutAFinding
+=== RUN   TestSpecCheckStageRejectsAnUnknownValue
+=== PAUSE TestSpecCheckStageRejectsAnUnknownValue
+=== RUN   TestSpecCheckWithoutStageIsUnchanged
+=== PAUSE TestSpecCheckWithoutStageIsUnchanged
+=== RUN   TestRunSpecCheckGapStrictPromotion
+=== PAUSE TestRunSpecCheckGapStrictPromotion
+=== RUN   TestSpecCheckClassifiesTheGateBoundary
+=== PAUSE TestSpecCheckClassifiesTheGateBoundary
+=== RUN   TestRunSpecCheckJSONWritesOneObjectPerSpec
+=== PAUSE TestRunSpecCheckJSONWritesOneObjectPerSpec
+=== RUN   TestRunSpecCheckUnknownSlugIsUsageError
+=== PAUSE TestRunSpecCheckUnknownSlugIsUsageError
+=== RUN   TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+=== PAUSE TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+=== RUN   TestRunSpecCheckUnreadableRootIsUsageError
+=== PAUSE TestRunSpecCheckUnreadableRootIsUsageError
+=== RUN   TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== PAUSE TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== RUN   TestRunSpecAuditPreservesSpecCheckBehavior
+=== PAUSE TestRunSpecAuditPreservesSpecCheckBehavior
+=== CONT  TestRunImplementHasNoSpecCheckPrecondition
+=== CONT  TestSpecCheckStageRejectsAnUnknownValue
+=== CONT  TestSpecCheckReportsAMalformedCommand
+=== CONT  TestSpecCheckStageExitsZeroWithoutAFinding
+=== CONT  TestRunSpecCheckCleanText
+=== CONT  TestSpecCheckNamesNoSourceWhenCommitted
+=== CONT  TestRunSpecCheckErrorText
+=== CONT  TestSpecCheckRunVerification
+=== CONT  TestSpecCheckNeverProbesTheQAGate
+=== RUN   TestSpecCheckNeverProbesTheQAGate/a_preserved_failed_QA_report_beside_an_honest_corrective_Task
+--- PASS: TestSpecCheckStageRejectsAnUnknownValue (0.00s)
+=== CONT  TestSpecCheckStageExitsNonZeroOnAFinding
+=== CONT  TestRunSpecAuditPreservesSpecCheckBehavior
+=== CONT  TestSpecCheckLeavesCompletedTasksAlone
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/a_resumed_Spec_probes_only_the_Tasks_still_to_run
+=== CONT  TestRunSpecCheckUnknownSlugIsUsageError
+=== RUN   TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec
+=== RUN   TestSpecCheckReportsAMalformedCommand/text
+--- PASS: TestSpecCheckStageExitsNonZeroOnAFinding (0.24s)
+=== CONT  TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+--- PASS: TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList (0.00s)
+=== CONT  TestRunSpecCheckUnreadableRootIsUsageError
+--- PASS: TestRunSpecCheckUnknownSlugIsUsageError (0.24s)
+=== CONT  TestRunSpecCheckWithoutSlugChecksEveryActiveSpec
+=== RUN   TestSpecCheckNamesNoSourceWhenCommitted/text
+--- PASS: TestSpecCheckStageExitsZeroWithoutAFinding (0.26s)
+=== CONT  TestSpecCheckClassifiesTheGateBoundary
+=== RUN   TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error
+--- PASS: TestRunSpecCheckErrorText (0.28s)
+=== CONT  TestRunSpecCheckJSONWritesOneObjectPerSpec
+--- PASS: TestRunSpecAuditPreservesSpecCheckBehavior (0.30s)
+=== CONT  TestRunSpecCheckGapStrictPromotion
+=== CONT  TestSpecCheckWithoutStageIsUnchanged
+--- PASS: TestRunSpecCheckCleanText (0.32s)
+--- PASS: TestRunSpecCheckUnreadableRootIsUsageError (0.18s)
+=== CONT  TestSpecCheckNamesAnUncommittedVerificationSource
+=== RUN   TestSpecCheckReportsAMalformedCommand/json
+=== RUN   TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input
+=== RUN   TestSpecCheckNamesNoSourceWhenCommitted/json
+--- PASS: TestRunSpecCheckWithoutSlugChecksEveryActiveSpec (0.28s)
+--- PASS: TestRunSpecCheckJSONWritesOneObjectPerSpec (0.29s)
+--- PASS: TestSpecCheckWithoutStageIsUnchanged (0.27s)
+=== RUN   TestSpecCheckNamesAnUncommittedVerificationSource/text
+=== RUN   TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD
+--- PASS: TestSpecCheckReportsAMalformedCommand (0.67s)
+    --- PASS: TestSpecCheckReportsAMalformedCommand/text (0.20s)
+    --- PASS: TestSpecCheckReportsAMalformedCommand/json (0.18s)
+--- PASS: TestSpecCheckNamesNoSourceWhenCommitted (0.69s)
+    --- PASS: TestSpecCheckNamesNoSourceWhenCommitted/text (0.22s)
+    --- PASS: TestSpecCheckNamesNoSourceWhenCommitted/json (0.18s)
+=== RUN   TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes
+--- PASS: TestSpecCheckClassifiesTheGateBoundary (0.43s)
+    --- PASS: TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error (0.20s)
+    --- PASS: TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input (0.23s)
+    --- PASS: TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes (0.00s)
+--- PASS: TestRunSpecCheckGapStrictPromotion (0.40s)
+=== RUN   TestSpecCheckNeverProbesTheQAGate/no_QA_report_yet
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/a_pending_vacuous_command_still_fails
+=== RUN   TestSpecCheckNamesAnUncommittedVerificationSource/json
+--- PASS: TestRunImplementHasNoSpecCheckPrecondition (0.83s)
+--- PASS: TestSpecCheckNamesAnUncommittedVerificationSource (0.45s)
+    --- PASS: TestSpecCheckNamesAnUncommittedVerificationSource/text (0.15s)
+    --- PASS: TestSpecCheckNamesAnUncommittedVerificationSource/json (0.09s)
+=== RUN   TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/a_pending_unknown_command_still_fails
+=== RUN   TestSpecCheckNeverProbesTheQAGate/a_vacuous_corrective_Task_beside_the_QA_gate_still_fails
+=== RUN   TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/a_pending_malformed_command_still_fails
+=== RUN   TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source
+--- PASS: TestSpecCheckNeverProbesTheQAGate (1.26s)
+    --- PASS: TestSpecCheckNeverProbesTheQAGate/a_preserved_failed_QA_report_beside_an_honest_corrective_Task (0.72s)
+    --- PASS: TestSpecCheckNeverProbesTheQAGate/no_QA_report_yet (0.28s)
+    --- PASS: TestSpecCheckNeverProbesTheQAGate/a_vacuous_corrective_Task_beside_the_QA_gate_still_fails (0.26s)
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/every_Task_completed
+=== RUN   TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/an_uncommitted_completed_Task_source_is_still_named
+--- PASS: TestSpecCheckRunVerification (1.56s)
+    --- PASS: TestSpecCheckRunVerification/executes_commands_for_every_requested_Spec (0.63s)
+    --- PASS: TestSpecCheckRunVerification/reports_vacuous_and_honest_commands_against_HEAD (0.26s)
+    --- PASS: TestSpecCheckRunVerification/exits_zero_when_every_command_honestly_fails (0.18s)
+    --- PASS: TestSpecCheckRunVerification/does_not_execute_commands_without_the_flag (0.12s)
+    --- PASS: TestSpecCheckRunVerification/executes_an_opted-in_command_from_an_edited_source (0.20s)
+    --- PASS: TestSpecCheckRunVerification/reports_a_command_that_cannot_run_as_unknown (0.17s)
+=== RUN   TestSpecCheckLeavesCompletedTasksAlone/without_a_completed_Task_the_JSON_has_no_notProbed_key
+--- PASS: TestSpecCheckLeavesCompletedTasksAlone (1.90s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/a_resumed_Spec_probes_only_the_Tasks_still_to_run (0.74s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/a_pending_vacuous_command_still_fails (0.18s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/a_pending_unknown_command_still_fails (0.17s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/a_pending_malformed_command_still_fails (0.17s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/every_Task_completed (0.24s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/an_uncommitted_completed_Task_source_is_still_named (0.23s)
+    --- PASS: TestSpecCheckLeavesCompletedTasksAlone/without_a_completed_Task_the_JSON_has_no_notProbed_key (0.16s)
+PASS
+suiteguard: guard cost: measured 3055 paths; fingerprint took 163.038166ms before and 151.52975ms after
+ok  	roundfix/internal/cli	2.734s
+
+stderr:

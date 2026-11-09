@@ -1,0 +1,279 @@
+import io
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[6]
+SPEC = '0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written'
+SD = ROOT / 'docs/specs' / SPEC
+EV = SD / 'qa/evidence/qa-report-2026-11-09'
+SCRATCH = ROOT / '.qa-0367'
+HEAD = '96ea2765a6f578b8519d197eeae2e5395dce968c'
+KEYS = {'TYPESAFE_API_KEY', 'OPENROUTER_API_KEY', 'ROUNDFIX_OPENROUTER_JUDGE_API_KEY'}
+KEYS.update(t['key_variable'] for t in json.loads((ROOT/'internal/judge/questions.json').read_text())['transports'])
+
+def cleanenv():
+    return {k:v for k,v in os.environ.items() if k not in KEYS and not k.endswith('_API_KEY')}
+
+def raw(args, cwd=ROOT):
+    return subprocess.check_output(args, cwd=cwd, env=cleanenv()).decode()
+
+def run(name, args, cwd=ROOT, isolated=False, expected=0):
+    e = cleanenv()
+    with tempfile.TemporaryDirectory(prefix='qah-') as h, tempfile.TemporaryDirectory(prefix='qat-') as t:
+        if isolated:
+            caches = json.loads(raw(['go','env','-json','GOMODCACHE','GOCACHE']))
+            e.update(caches)
+            e.update(HOME=h,TMPDIR=t)
+        p = subprocess.run(args, cwd=cwd, env=e, capture_output=True, text=True)
+    (EV/(name+'.txt')).write_text('command: '+shlex.join(map(str,args))+'\ncwd: '+str(cwd)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+    print(name, 'exit', p.returncode, flush=True)
+    if expected is not None:
+        assert p.returncode == expected, name
+    return p
+
+def cli(name, args, cwd=ROOT, base=False, expected=None):
+    a = ['./bin/roundfix-delivery-base' if base else './bin/roundfix']
+    if cwd != ROOT:
+        (cwd/'bin').mkdir(exist_ok=True)
+        link=cwd/'bin'/('roundfix-base' if base else 'roundfix')
+        if not link.exists():
+            link.symlink_to(ROOT/('bin/roundfix-delivery-base' if base else 'bin/roundfix'))
+        a=['./bin/roundfix-base' if base else './bin/roundfix']
+    return run(name, a+args, cwd=cwd, isolated=True, expected=expected)
+
+def setrow(row, status):
+    p = SD/'qa/qa-report-2026-11-09.md'
+    text = p.read_text()
+    text, n = re.subn(r'(?m)^\| '+str(row)+r' \| [^|]+ \|', '| '+str(row)+' | '+status+' |', text)
+    assert n == 1, (row,n)
+    p.write_text(text)
+
+if __name__ == '__main__':
+    if sys.argv[1] == 'precondition':
+        cli('version',['--version'],expected=0)
+        cli('precondition',['spec','check',SPEC,'--strict'],expected=0)
+    elif sys.argv[1] == 'suites':
+        names = [
+            'TestUnreachableUnreadReadsTheSectionAsUnreachableDoes',
+            'TestAnUnreachableSectionReadAsWrittenReportsNothing',
+            'TestANumberedUnreachableEntryIsReportedAtItsFirstLine',
+            'TestProseAfterADeclarationAndAMissingFieldAreReported',
+            'TestNoneBesideADeclarationAndAPlainBulletAreReported',
+            'TestANotApplicableADRDrawsInNoCitingADR',
+            'TestAnAppliedADRStillDrawsInItsCitingADR',
+            'TestWithoutATechSpecEveryListedADRSeeds',
+            'TestAnADRCitingAnAppliedADRIsStillRelated',
+        ]
+        p = run('named-tests',['go','test','-count=1','-timeout','20m','-v','-run','^('+'|'.join(names)+')$','./internal/spec','./internal/speccheck'])
+        assert all('--- PASS: '+n+' ' in p.stdout for n in names)
+        assert '--- SKIP:' not in p.stdout
+        for package in ['internal/spec','internal/speccheck','skills']:
+            run('suite-'+package.replace('/','-'),['go','test','-count=1','-timeout','20m','-v','./'+package])
+        run('suite-docs',['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','./internal/docscontract'])
+        run('suite-cli',['go','test','-count=1','-timeout','20m','-v','-run','SpecCheck','./internal/cli'])
+        setrow(2,'pass')
+    elif sys.argv[1] == 'base':
+        base = raw(['git','merge-base',HEAD,'main']).strip()
+        SCRATCH.mkdir(exist_ok=True)
+        target = SCRATCH/'base'
+        target.mkdir(exist_ok=True)
+        data = subprocess.check_output(['git','archive',base],cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+            archive.extractall(target,filter='data')
+        (target/'bin').mkdir(exist_ok=True)
+        run('build-base',['go','build','-buildvcs=false','-o',str(ROOT/'bin/roundfix-delivery-base'),'./cmd/roundfix'],cwd=target)
+        (EV/'delivery-base.txt').write_text('git merge-base '+HEAD+' main\n'+base+'\nFresh git archive extracted to .qa-0367/base inside this Run Worktree.\n')
+        cli('version-base',['--version'],base=True,expected=0)
+        setrow(3,'pass')
+    elif sys.argv[1] == 'task-verifications':
+        for task in ['01','02','03']:
+            text=(SD/('task_'+task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+            commands=re.findall(r'^- `(.*)` — expected:',text,re.M)
+            assert commands
+            for i,command in enumerate(commands,1):
+                run('task-'+task+'-verification-'+str(i),['/bin/sh','-c',command])
+        setrow(7,'pass')
+    elif sys.argv[1] == 'fixtures':
+        def write(path,text):
+            path.parent.mkdir(parents=True,exist_ok=True)
+            path.write_text(text)
+        def repo(name):
+            p=SCRATCH/name
+            p.mkdir(exist_ok=True)
+            raw(['git','init','-q'],p)
+            return p
+        def check(name,root,slug,code,base=False):
+            p=cli(name,['spec','check',slug,'--strict'],cwd=root,base=base)
+            assert p.returncode in (0,1), p.stderr
+            return [l for l in p.stdout.splitlines() if l.startswith('[') and code+':' in l],p.stdout
+        slug='0364-a-rerun-finishes-a-partial-npm-publication'
+        source=raw(['git','show','4dce106d:docs/specs/'+slug+'/_prd.md'])
+        root=repo('historical-fixture')
+        prd=root/'docs/specs'/slug/'_prd.md'
+        write(prd,source)
+        # Retain independently obtained historical text, not prior QA evidence.
+        (EV/'historical-source.txt').write_text('source: git show 4dce106d:docs/specs/'+slug+'/_prd.md\n'+source)
+        got,out=check('historical-current',root,slug,'SC-UNREACHABLE-UNREAD')
+        assert len(got)==1 and 'line 165 ' in got[0]
+        assert '1. A real rerun of a failed release job on GitHub Actions against the npm' in got[0]
+        assert '"- criterion: <text the QA row repeats>"' in out
+        got,_=check('historical-base',root,slug,'SC-UNREACHABLE-UNREAD',True)
+        assert not got
+        lines=source.splitlines()
+        assert lines[164].startswith('1. A real rerun')
+        replacement=['- criterion: A real rerun of a failed release job on GitHub Actions against the npm registry.',
+                     '  reason: it would publish packages, which this Spec\'s authorization and its QA forbid.',
+                     '  satisfied-by: The QA proves the same path on the workflow\'s own step scripts with a stub registry and records this as one blocked row.']
+        lines[164:168]=replacement
+        write(prd,'\n'.join(lines)+'\n')
+        (EV/'historical-fielded.txt').write_text('\n'.join(replacement)+'\n')
+        for base in [False,True]:
+            got,_=check('fielded-'+('base' if base else 'current'),root,slug,'SC-UNREACHABLE-UNREAD',base)
+            assert not got
+        got,_=check('fielded-restart',root,slug,'SC-UNREACHABLE-UNREAD')
+        assert not got
+        setrow(4,'pass')
+        root=repo('adr-fixture')
+        for source in ['agent-instructions','cli','domain']:
+            write(root/('docs/agents/'+source+'.md'),'# Fixture source\n')
+        for number,citation in [('0001',''),('0002','ADR-0001.'),('0003','ADR-0002.')]:
+            write(root/('docs/adr/'+number+'-fixture-decision.md'),'---\nstatus: accepted\n---\n\n# Fixture decision '+number+'\n\n'+citation+'\n')
+        slug='adr-related-seeds'
+        prd='---\nspec: '+slug+'\nstatus: active\n---\n\n# ADR related seeds\n\n## Project Constraints\n\n'
+        for label in ['Identifier strategy','Authentication and HTTP','Active ADR obligations','Tooling authority']:
+            reason='applicable — ADR-0001 and ADR-0002.' if label=='Active ADR obligations' else 'not applicable — fixture only.'
+            prd+='- '+label+': '+reason+' Source: `docs/agents/domain.md`.\n'
+        write(root/'docs/specs'/slug/'_prd.md',prd)
+        tech=root/'docs/specs'/slug/'_techspec.md'
+        for state,relation in [('marked','not applicable; unchanged.'),('applied','applied; kept.'),('absent',None),('uppercase','Not applicable — unchanged.'),('later','kept as recorded, though its alternatives are not applicable here.')]:
+            if relation is None:
+                tech.unlink()
+            else:
+                write(tech,'# ADR related seeds\n\n## ADR Alternatives\n\n- ADR-0001: applied; kept.\n- ADR-0002: '+relation+'\n')
+            for base in [False,True]:
+                got,out=check('adr-'+state+'-'+('base' if base else 'current'),root,slug,'SC-ADR-RELATED',base)
+                expected=0 if not base and state in ['marked','uppercase'] else 1
+                assert len(got)==expected,(state,base,got)
+                if expected:
+                    assert 'ADR-0003 ' in got[0] and 'cites listed ADR-0002 ' in got[0]
+                    if not base:
+                        assert 'begin its ADR Alternatives line in the TechSpec with "not applicable"' in out
+        (EV/'adr-fixture.txt').write_text('Accepted decisions: ADR-0001; ADR-0002 cites ADR-0001; ADR-0003 cites ADR-0002.\n'+prd+'\n## ADR Alternatives\n- ADR-0001: applied; kept.\n- ADR-0002: not applicable; unchanged.\nAll three required states and two marker boundary canaries matched expectations on both freshly built binaries.\n')
+        setrow(5,'pass')
+        shutil.rmtree(SCRATCH/'historical-fixture')
+        shutil.rmtree(SCRATCH/'adr-fixture')
+    elif sys.argv[1] == 'sabotages':
+        mutations=[
+            ('keep-seeds','internal/speccheck/citations.go','delete(seeds, match[1])','_ = match[1]','TestANotApplicableADRDrawsInNoCitingADR'),
+            ('lose-anchor','internal/speccheck/authoring_proof.go','(?i)^not applicable', '(?i)not applicable','TestAnAppliedADRStillDrawsInItsCitingADR'),
+            ('lose-case','internal/speccheck/authoring_proof.go','(?i)^not applicable','^not applicable','TestANotApplicableADRDrawsInNoCitingADR'),
+            ('lose-stage','internal/speccheck/coherence.go','\tif err := detectUnreachableDeclarations(&result, repoRoot, prdPath); err != nil {\n\t\treturn result, err\n\t}\n','','TestANumberedUnreachableEntryIsReportedAtItsFirstLine'),
+            ('lose-grouping','internal/speccheck/unreachable.go','if index > 0 && line.Line == unread[index-1].Line+1 {','if index < 0 {','TestANumberedUnreachableEntryIsReportedAtItsFirstLine'),
+            ('unread-comment','internal/spec/spec.go','section.inComment = !strings.Contains(trimmed, "-->")\n\t\treturn','section.inComment = !strings.Contains(trimmed, "-->")\n\t\tsection.unread = append(section.unread, UnreachableUnreadLine{Line: number, Text: trimmed})\n\t\treturn','TestAnUnreachableSectionReadAsWrittenReportsNothing'),
+            ('none-beside-declaration','internal/spec/spec.go','if !section.declaration {\n\t\treturn section.unread[section.noneLines:]','if section.noneLines > 0 || !section.declaration {\n\t\treturn section.unread[section.noneLines:]','TestNoneBesideADeclarationAndAPlainBulletAreReported'),
+            ('lose-missing-field','internal/speccheck/unreachable.go','if err != nil {\n\t\tresult.Findings = append','if err != nil && false {\n\t\tresult.Findings = append','TestProseAfterADeclarationAndAMissingFieldAreReported'),
+        ]
+        import difflib
+        for i,(name,path,old,new,test) in enumerate(mutations,1):
+            target=SCRATCH/('mutation-'+str(i))
+            target.mkdir()
+            data=subprocess.check_output(['git','archive',HEAD],cwd=ROOT)
+            with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+                archive.extractall(target,filter='data')
+            p=target/path
+            original=p.read_text()
+            assert original.count(old)==1,(name,original.count(old))
+            modified=original.replace(old,new)
+            p.write_text(modified)
+            (EV/('sabotage-'+str(i)+'-patch.txt')).write_text(''.join(difflib.unified_diff(original.splitlines(True),modified.splitlines(True),fromfile=path,tofile=path)))
+            result=run('sabotage-'+str(i),['go','test','-count=1','-timeout','20m','-v','-run','^'+test+'$','./internal/speccheck'],cwd=target,expected=1)
+            assert '--- FAIL: '+test+' ' in result.stdout,(name,result.stdout,result.stderr)
+            assert '[build failed]' not in result.stdout+result.stderr
+            shutil.rmtree(target)
+        setrow(6,'pass')
+    elif sys.argv[1] == 'audit':
+        base=raw(['git','merge-base',HEAD,'main']).strip()
+        commits=raw(['git','rev-list','--reverse',base+'..'+HEAD]).splitlines()
+        assert len(commits)==3
+        authpath='docs/specs/'+SPEC+'/_authorization.md'
+        auth=raw(['git','show',base+':'+authpath])
+        authorized=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+        governed=(ROOT/'internal/speccheck/governed.go').read_text()
+        patterns=[re.compile(x) for x in re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',governed)]
+        exact=set(re.findall(r'^\s*"([^"]+)",$',governed,re.M))
+        log=[]
+        allpaths=[]
+        for i,commit in enumerate(commits,1):
+            task='task_0'+str(i)+'.md'
+            text=raw(['git','show',commit+':docs/specs/'+SPEC+'/'+task])
+            declared=set(re.findall(r'^- (?:creates|interface|instruction|deletes): `([^`]+)`',text,re.M))
+            if '## Recorded paths' in text:
+                recorded=text.split('## Recorded paths',1)[1].split('\n## ',1)[0]
+                declared.update(re.findall(r'`([^`]+)`',recorded))
+            declared.add('docs/specs/'+SPEC+'/'+task)
+            paths=raw(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines()
+            log += ['git diff-tree --no-commit-id --name-only -r '+commit,*paths]
+            for path in paths:
+                assert path in declared,(task,'undeclared',path)
+                bound=path in exact or any(p.search(path) for p in patterns)
+                if bound:
+                    assert path in authorized,(task,'unauthorized',path)
+                log.append('PASS '+path+' — declared; '+('governed and granted at delivery base' if bound else 'ordinary path'))
+            if i in [1,3]:
+                assert raw(['git','show',commit+':'+authpath])==auth
+            allpaths+=paths
+        forbidden=re.compile(r'^(Makefile|go\.mod|go\.sum|\.roundfixrc\.yml|skills-lock\.json|CHANGELOG\.md|internal/app/version\.go)$|^\.github/workflows/|^dist/npm/|^internal/(baseline|agent|suiteguardcontract)/|^internal/spec/(qa[^/]*\.go|archive\.go)$|^docs/agents/')
+        for path in allpaths:
+            assert not forbidden.search(path),path
+            if path.startswith(('skills/','.agents/skills/')) and path!='skills/testdata/owned-skill-versions.json':
+                name=path.removeprefix('.agents/').split('/')[1]
+                assert name in ['roundfix','write-techspec','write-tasks'],path
+                if name=='roundfix':
+                    assert path.endswith(('roundfix/SKILL.md','roundfix/references/spec.md')),path
+                before=raw(['git','show',base+':'+path])
+                after=(ROOT/path).read_text()
+                def settlement(s):
+                    if '### QA settlement' not in s: return ''
+                    return re.split(r'\n#{1,3} ',s.split('### QA settlement',1)[1],maxsplit=1)[0]
+                assert settlement(before)==settlement(after),path
+            if path.startswith('docs/adr/'):
+                assert path.split('/')[-1].startswith(('0093-','0168-')),path
+        for number in ['0093','0168']:
+            path=next(p for p in set(allpaths) if p.startswith('docs/adr/'+number+'-'))
+            after=(ROOT/path).read_text()
+            assert 'updated_at: 2026-11-09T12:00:00Z' in after
+            assert '**Amended by [ADR-0377]' in after
+            log.append('PASS amendment and updated_at: '+path)
+        diff=raw(['git','diff',base+'..'+HEAD,'--','CONTEXT.md'])
+        removed=[l[1:] for l in diff.splitlines() if l.startswith('-') and not l.startswith('---')]
+        added=[l[1:] for l in diff.splitlines() if l.startswith('+') and not l.startswith('+++')]
+        assert len(removed)==len(added)==2
+        assert all(a.startswith(b) for a,b in zip(added,removed))
+        assert 'Each declaration is a top-level' in added[0]
+        assert 'Only an ADR the Spec applies or changes' in added[1]
+        for doc in ['_prd.md','_techspec.md']:
+            for term in ['Unreachable Acceptance','Spec Consistency Check']:
+                assert '- changes: **'+term+'**' in (SD/doc).read_text()
+        (EV/'scope-audit.txt').write_text('\n'.join(log)+'\nAll changed paths declared; all eleven changed Governed Paths authorized in an ancestor; no forbidden path or QA settlement change. No authorization or prerequisite/consequent fix folded into Task commits.\n')
+        (EV/'glossary-diff.txt').write_text(diff+'\nPASS: PRD and TechSpec both declare exactly the two changed terms.\n')
+        setrow(12,'pass')
+        run('glossary-tests',['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract','-run','^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce)$'])
+        setrow(11,'pass')
+    elif sys.argv[1] == 'public-final':
+        p=cli('self-check',['spec','check',SPEC,'--strict','--format','json'],expected=0)
+        parsed=json.loads(p.stdout)
+        assert 'SC-UNREACHABLE-UNREAD' not in p.stdout
+        setrow(9,'pass')
+        p=cli('archive-plan',['archive',SPEC,'--plan','--offline'],expected=0)
+        assert 'judge: skipped (offline)' in p.stdout
+        setrow(14,'pass')
+    elif sys.argv[1] == 'accept':
+        cli('report-accept',['qa-report','accept',str((SD/'qa/qa-report-2026-11-09.md').relative_to(ROOT))],expected=0)

@@ -1,0 +1,11 @@
+--- internal/speccheck/citations.go
++++ internal/speccheck/citations.go
+@@ -1208,7 +1208,7 @@
+ 	for _, line := range markdownSectionLines(content, "ADR Alternatives") {
+ 		match := adrAlternativePattern.FindStringSubmatch(line)
+ 		if len(match) == 3 && notApplicableRelationPattern.MatchString(match[2]) {
+-			delete(seeds, match[1])
++			_ = match[1]
+ 		}
+ 	}
+ 	return seeds, nil

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

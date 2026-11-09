@@ -1,0 +1,71 @@
+command: ./bin/roundfix spec check adr-related-seeds --strict
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8/.qa-0367/adr-fixture
+exit: 1
+stdout:
+Spec adr-related-seeds
+[error] SC-CONSTRAINT-MISSING: docs/specs/adr-related-seeds/_techspec.md omits Identifier strategy required by docs/specs/adr-related-seeds/_prd.md
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  at docs/specs/adr-related-seeds/_prd.md:10
+  fix: Add the Identifier strategy row to docs/specs/adr-related-seeds/_techspec.md with applicability, a reason, and an operative Source path.
+[error] SC-CONSTRAINT-MISSING: docs/specs/adr-related-seeds/_techspec.md omits Authentication and HTTP required by docs/specs/adr-related-seeds/_prd.md
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  at docs/specs/adr-related-seeds/_prd.md:11
+  fix: Add the Authentication and HTTP row to docs/specs/adr-related-seeds/_techspec.md with applicability, a reason, and an operative Source path.
+[error] SC-CONSTRAINT-MISSING: docs/specs/adr-related-seeds/_techspec.md omits Active ADR obligations required by docs/specs/adr-related-seeds/_prd.md
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  at docs/specs/adr-related-seeds/_prd.md:12
+  fix: Add the Active ADR obligations row to docs/specs/adr-related-seeds/_techspec.md with applicability, a reason, and an operative Source path.
+[error] SC-CONSTRAINT-MISSING: docs/specs/adr-related-seeds/_techspec.md omits Tooling authority required by docs/specs/adr-related-seeds/_prd.md
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  at docs/specs/adr-related-seeds/_prd.md:13
+  fix: Add the Tooling authority row to docs/specs/adr-related-seeds/_techspec.md with applicability, a reason, and an operative Source path.
+[error] SC-METRIC-UNDECLARED: docs/specs/adr-related-seeds/_prd.md has no declaration in its Success Metrics section
+  at docs/specs/adr-related-seeds/_prd.md:1
+  fix: Declare numbered Success Metrics in docs/specs/adr-related-seeds/_prd.md, or write None. followed by the reason none apply.
+[error] SC-CONTRACT-UNDECLARED: docs/specs/adr-related-seeds/_techspec.md has no declaration in its API Contracts section
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  fix: Declare numbered API Contracts in docs/specs/adr-related-seeds/_techspec.md, or write None. followed by the reason none apply.
+[error] SC-ABSENCE-UNPROVEN: docs/specs/adr-related-seeds/_techspec.md has no Absence Evidence declaration
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  fix: Add or repair ## Absence Evidence with None. and a reason, or numbered items with command: in backticks and result: text, following the write-techspec rule "Absence evidence".
+[error] SC-COVERAGE-UNREAD: docs/specs/adr-related-seeds/_techspec.md Coverage Map has no Deviations from the PRD: line
+  at docs/specs/adr-related-seeds/_techspec.md:1
+  fix: Add or repair the Deviations from the PRD: line in ## Coverage Map with None. or bullets naming PRD units, following the write-techspec rule "Coverage cross-read".
+Skipped:
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing docs/agents/autonomous-work.md
+  SC-LOOP-ORDER-DIVERGENT: missing internal/baseline/assets/modules/autonomous-work.json
+  SC-HISTORY-RETAINED: missing recorded guide.docs-layout region does not carry A retirement deletes the file
+  SC-FINDING-LIFECYCLE: missing docs/findings
+  SC-ROLLUP-MEMBER: missing docs/findings
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  SC-DECISIONS-UNRECORDED: missing a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md
+  vocabulary documentation detector: missing docs/specs/adr-related-seeds/_techspec.md Vocabulary Contract
+  SC-SKILLS-MALFORMED: missing docs/references/skill-coverage.json
+  SC-SKILLS-UNTASKED: missing docs/references/skill-coverage.json
+  SC-SURFACE-RECORD-UNTASKED: missing docs/references/behavior-surfaces.json
+  SC-SKILL-VERSION-UNTASKED: missing skills/testdata/owned-skill-versions.json
+  SC-VERIFY-PATH-UNDECLARED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-VERIFY-SUBSUMED-SELECTOR: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-GLOSSARY-UNDECLARED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-UNPLANNED: missing CONTEXT.md or GLOSSARY.md
+  SC-GLOSSARY-MISSING: missing CONTEXT.md or GLOSSARY.md
+  SC-TOOLING-UNDECLARED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-CLI-UNDOCUMENTED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-TRANSCRIPT-UNDECLARED: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-RECEIPT-MISSING: missing .agents/skills/write-techspec/references/concrete-contracts.md
+  SC-TRANSCRIPT-UNGATED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-COVERAGE-UNTASKED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-CONSUMERS-UNPROVEN: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-QA-BYTES-PINNED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-VERIFY-WRAP-FRAGILE: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-VERIFY-TRUNCATED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-ORDINAL-CLAIMED: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/adr-related-seeds/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/adr-related-seeds/references/_index.md
+
+stderr:

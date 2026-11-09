@@ -1,0 +1,13 @@
+command: ./bin/roundfix archive 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written --plan --offline
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
+exit: 0
+stdout:
+archive plan for 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written: removes 69 file(s) (1215850 bytes) and writes docs/history/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-09.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 57 file(s) (1110567 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-07-fiscus-sc-adr-related-grows-through-not-applicable-adrs.md 1737 bytes: no advice (offline)
+candidate references/2026-11-07-the-strict-check-names-an-unreachable-acceptance-it-cannot-read.md 2375 bytes: no advice (offline)
+promote with: roundfix archive 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written --promote <path>
+
+stderr:

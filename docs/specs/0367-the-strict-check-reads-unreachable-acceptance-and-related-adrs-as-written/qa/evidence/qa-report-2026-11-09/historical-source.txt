@@ -1,0 +1,252 @@
+source: git show 4dce106d:docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/_prd.md
+---
+spec: 0364-a-rerun-finishes-a-partial-npm-publication
+status: active
+created: 2026-11-06
+surfaces: [infra, docs]
+type: fix
+---
+
+# A rerun finishes a partial npm publication
+
+Twice the release workflow's npm publication stopped part way: v0.130.0 published one platform package and v0.132.1 published all five before `npm publish` failed with `(409) an equivalent entry already exists in the transparency log`. Each time, the rerun of the failed job refused in the Publication Preflight with `registry: <package>@<version> is already used` for every package the first attempt had published, so the version was abandoned and the next patch republished the same changes. After this Spec the preflight reads a package already published at the target version as `published`, the tag run compares its published content with its own build, and the rerun publishes only the packages that are missing; a package published with different content still stops the release before anything publishes.
+
+## Sources
+
+One Backlog Entry, adopted (see `references/_index.md`):
+
+1. [`references/2026-11-05-the-release-workflow-survives-a-transparency-log-409.md`](references/2026-11-05-the-release-workflow-survives-a-transparency-log-409.md),
+   recorded by the operator from the v0.130.0 and v0.132.1 release runs,
+   `type: fix`.
+
+At the authoring base `docs/backlog/` holds no other open entry and
+`docs/findings/` no unresolved Finding that shares this context.
+
+## Prerequisites
+
+None in `requires`. Authored against `cb3ed035` (v0.136.4). The queue
+delivers Spec 0361 first. Spec 0361 also changes `CONTEXT.md` (other
+entries), `docs/references/behavior-surfaces.json` and
+`docs/references/skill-coverage.json` (other surfaces). This Spec edits
+only the **Release Set** and **Publication Preflight** entries of
+`CONTEXT.md` and the two runbook surfaces of the coverage map, and
+re-records the Behavior Surface Record by its command, so a rebase reruns
+the command instead of merging bytes. No other file is shared with 0361.
+
+## Project Constraints
+
+- Identifier strategy: not applicable — no identifier, slug or record schema
+  is minted; the package coordinates and versions keep their names. Source:
+  `docs/agents/domain.md`.
+- Authentication and HTTP: applicable — the release workflow reads the
+  public npm registry over HTTPS (`curl` for the packument, `npm pack
+  <coordinate>@<version>` for a published tarball) and publishes with npm
+  Trusted Publishing; the OIDC identity, the token fallback and its window
+  are unchanged, and no credential is read by the new step. Source:
+  `docs/agents/agent-instructions.md`.
+- Active ADR obligations: applicable — ADR-0374 (new) records the rule.
+  ADR-0146: "no package publishes unless every coordinate is eligible for the
+  exact target version", which ADR-0374 amends to "eligible or already
+  published with the same content"; the bounded token fallback stays as it
+  is. The workflow's contract step keeps its place before the preflight, and
+  `TestMainAndReleaseRunEveryContract` keeps checking it. Source:
+  `docs/agents/domain.md`,
+  `docs/agents/spec-routing.md`.
+- Tooling authority: applicable — express maintainer authorization: the
+  cycle AZ batch 5 answers of 2026-11-06 quoted in the authorization record,
+  whose option text "Libera editar release.yml nesta Spec" grants the
+  workflow; no Makefile, Go module, lint or formatter change. Source:
+  `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`;
+  Spec-contained authorization record:
+  `docs/specs/0364-a-rerun-finishes-a-partial-npm-publication/_authorization.md`;
+  bounded files: `.github/workflows/release.yml`.
+
+## Goals
+
+- The rerun of a release job whose npm publication stopped part way
+  publishes only the packages that are missing and completes the release.
+- A package already published at the target version is accepted only when
+  its published content is byte-identical to this run's build; any other
+  answer stops the release before anything publishes.
+- A version that was published and then unpublished, a cooldown, an absent
+  package and an unreadable registry answer keep stopping the preflight as
+  today, and a release whose six packages are all published stops with its
+  own reason.
+- The release runbook tells the maintainer how to finish a partial
+  publication and what a refusal means.
+
+## User Stories
+
+1. As the maintainer, I want to rerun a failed release job after a
+   transparency-log 409 and see the release complete, so that I do not have
+   to cut and announce the next patch for the same changes.
+2. As the maintainer, I want a rerun to refuse when a published package does
+   not hold the same content as the rebuild, so that a release never mixes
+   two builds.
+3. As the maintainer reading the runbook, I want the recovery steps and the
+   meaning of each `registry:` refusal, so that I know when a rerun can
+   succeed and when only the next version can.
+
+## Core Features
+
+1. The Publication Preflight classifies a version listed under `versions` as
+   `published`, which does not stop it, and keeps `used` for a version listed
+   only under `time`; it stops when all six coordinates are `published`.
+2. A new tag-run step, after the build and before any publish, compares each
+   `published` coordinate's decompressed tarball with this run's packed
+   build and stops on a difference or an unreadable tarball.
+3. The publish step skips each coordinate that compared equal.
+4. Documentation: the release runbook gains the recovery procedure and the
+   new refusals; `CONTEXT.md` updates **Release Set** and **Publication
+   Preflight**; ADR-0146 carries the amendment notice.
+
+## User Experience
+
+On the rerun of a v0.132.1-shaped failure the job log shows the preflight
+table with five `published` rows and `roundfix ... eligible`, the step
+"Compare published packages" prints five `same content` rows, and the
+publish step prints `skipping <coordinate>@<version>: already published with
+the same content` five times and then publishes `roundfix`. The job summary
+gains an "Already published" section. A different build stops in "Compare
+published packages" with `registry: <coordinate>@<version> is already
+published with different content (registry <integrity>, this build
+<integrity>)`.
+
+## Non-Goals / Out of Scope
+
+- Retrying `npm publish` inside the job after a `TLOG_CREATE_ENTRY_ERROR`;
+  ADR-0374 records it as a considered option, and it needs its own
+  decision.
+- The Go and Node versions the workflow installs (`check-latest: true` on
+  setup-go stays); a rerun after a new Go patch release is refused as
+  different content.
+- The GitHub Release step, the token fallback and its window, the
+  `workflow_dispatch` rehearsal's place before the build, and any change to
+  `make verify`, `make verify-contracts`, the Makefile, `go.mod`, `go.sum`
+  or lint and formatter configuration.
+- Publishing anything to npm or creating a tag or a GitHub Release from this
+  Spec's Tasks or QA.
+
+## Success Metrics
+
+1. Success Metric: with the v0.132.1 shape (five platform packages
+   published with the same content, the launcher eligible) the preflight,
+   compare and publish steps exit 0 and `npm publish` runs once, for
+   `roundfix`; at `cb3ed035` the preflight exits 1 with five
+   `registry: <coordinate>@0.132.1 is already used` lines.
+2. Success Metric: with the v0.130.0 shape (one platform package published
+   with the same content) the publish step publishes the four other platform
+   packages and then `roundfix`, in that order.
+3. Success Metric: a published tarball whose decompressed content differs
+   stops "Compare published packages" with the `different content` line and
+   no `npm publish` runs; a published tarball that differs only in its gzip
+   bytes compares equal.
+4. Success Metric: a version listed only under `time` still stops the
+   preflight with `registry: <coordinate>@<version> is already used`; six
+   published coordinates stop it with `registry: every coordinate of the
+   Release Set is already published at <version>`; a cooldown keeps its
+   line.
+5. Success Metric: a `TLOG_CREATE_ENTRY_ERROR` from `npm publish` stops the
+   publish step under `publish:` after one attempt and never starts the
+   token fallback, as at `cb3ed035`.
+
+## Acceptance evidence
+
+The outside-evidence row rests on a source this Spec did not write: the npm
+CLI documentation for `npm publish`
+(https://docs.npmjs.com/cli/v11/commands/npm-publish/, read through Exa on
+2026-11-06): "Once a package is published with a given name and version,
+that specific name and version combination can never be used again, even if
+it is removed with `npm unpublish`." A rerun can therefore never republish a
+coordinate the first attempt published; it can only skip it, and a version
+removed by `npm unpublish` can never be completed.
+
+## Unreachable Acceptance
+
+1. A real rerun of a failed release job on GitHub Actions against the npm
+   registry: it would publish packages, which this Spec's authorization and
+   its QA forbid. The QA proves the same path on the workflow's own step
+   scripts with a stub registry and records this as one blocked row.
+
+## Validation
+
+The decisions were checked on 2026-11-06 against these sources.
+
+- Run logs: `gh run view 42056741468 --attempt 1 --log-failed` shows
+  `##[error]publish: roundfix failed for a non-identity reason`, `npm error
+  code TLOG_CREATE_ENTRY_ERROR` and `FALLBACK_WINDOW:` empty; the publish
+  began 15:53:30Z and failed 15:54:16Z. Attempt 2 and run 41750342366
+  attempt 2 refused with `registry: ... is already used`. Run 41750342366
+  attempt 1 failed the same way for `@roundfix/cli-darwin-x64` 46 seconds
+  after its publish began.
+- Reading at `cb3ed035`: `.github/workflows/release.yml` runs `npm publish`
+  once per coordinate in `publish_coordinate`, retries only after an
+  `ENEEDAUTH`, `E401` or `Unable to authenticate` output and only when
+  `FALLBACK_WINDOW` is `1`; the preflight's classifier returns `used` for a
+  version under `versions` or `time`.
+- Reproducibility: the v0.132.1 tree rebuilt with Go 1.26.10 (the CI
+  toolchain) on darwin/arm64 and packed with npm 11.20.0 gave the same file
+  digests and byte-identical decompressed tar streams as the five published
+  0.132.1 platform tarballs, but different `dist.integrity` values; the
+  launcher 0.136.4 showed the same. Two builds and packs on one machine
+  were byte-identical. A build with Go 1.26.5 differed.
+- Prototype: the planned preflight, compare and publish steps, run against
+  the real registry for 0.132.1 with the local Go 1.26.10 build (read only,
+  `npm publish` stubbed), reported five `same content` rows and would have
+  published only `roundfix`.
+- Published sources (Exa): the npm `publish` and unpublish policy pages;
+  `actions/attest-build-provenance` issue 110, where its maintainer
+  attributes the same 409 to a timed-out transparency-log request that was
+  retried; `sigstore-js` `packages/client/src/config.ts` (`DEFAULT_RETRY`,
+  `fetchOnConflict: false`).
+- Secondbrain, read only: `wiki/index.md`, then
+  `qmd query "npm release partial publication transparency log 409 provenance rerun" --all --files --min-score 0.3`;
+  it returned only this repository's mirrored CHANGELOG, backlog entry,
+  runbook and ADR-0146, so no page decides otherwise.
+- Pending ai-memory messages: none concerns this source.
+
+## Glossary
+
+- changes: **Release Set** — a coordinate already published with the same content counts toward the set.
+- changes: **Publication Preflight** — a coordinate already published at the target version no longer stops it.
+
+## Skills
+
+- unchanged: guide docs/user-guide/release-runbook.md — the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's new compare step; its covering release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so no skill text changes.
+- unchanged: command release plan — the release plan command does not change; its source list holds the runbook, whose new section concerns the release workflow, and the covering release reference needs no text change.
+
+## Decisions
+
+Autonomous route: no person present; decisions taken from the operator's cycle AZ batch 5 brief for Spec 0364 of 2026-11-06 and the maintainer's answers below.
+
+The maintainer's answers (AskUserQuestion, 2026-11-06 ~19:48 BRT),
+verbatim:
+
+- Question "O backlog 'release sobrevive a um 409 do transparency log' (npm
+  parou no meio em v0.130.0 e v0.132.1; a correção fica em
+  .github/workflows/release.yml) vira Spec agora, entregue depois da 0361?"
+  → "Spec agora (Recommended)" — option text: "Fix entregue logo depois da
+  0361: preflight aceita pacote já publicado com a mesma integridade e o
+  rerun publica só o que falta. Libera editar release.yml nesta Spec."
+- Question "Para a Spec do 409 (se sair agora), valem as mesmas regras do
+  ciclo AZ: push, merge pela Delivery Queue e release patch logo após o
+  merge, sem notas aos adotantes?" → "Mesmas do AZ (Recommended)" — option
+  text: "Push, merge pela fila e release patch após o merge; sem notas de
+  release nas caixas."
+
+Taken from those and the evidence, with no further interview:
+
+- "A mesma integridade" is proven by the decompressed tar stream, not by
+  the npm `dist.integrity`, because the measured integrity differs between
+  machines for identical content (ADR-0374).
+- The comparison runs after the build on a tag run; the preflight stays
+  before the build (ADR-0146) and only classifies.
+- The workflow never retried the failed publish, so no retry is removed;
+  an in-job retry stays out of scope.
+- ADR-0374 amends ADR-0146, and a non-QA Task writes the notice into it.
+- The release is the operator's patch right after the merge; no Task
+  releases or publishes.
+
+## Open Questions
+
+None.

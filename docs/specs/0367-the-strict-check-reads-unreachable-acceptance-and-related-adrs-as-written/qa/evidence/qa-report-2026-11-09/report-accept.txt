@@ -1,0 +1,6 @@
+command: ./bin/roundfix qa-report accept docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/qa/qa-report-2026-11-09.md
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
+exit: 0
+stdout:
+
+stderr:

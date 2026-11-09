@@ -1,0 +1,12 @@
+--- internal/speccheck/coherence.go
++++ internal/speccheck/coherence.go
+@@ -180,9 +180,6 @@
+ 		addStageSkips(&result, stage)
+ 		return result, nil
+ 	}
+-	if err := detectUnreachableDeclarations(&result, repoRoot, prdPath); err != nil {
+-		return result, err
+-	}
+ 	prdContent, err := os.ReadFile(prdPath)
+ 	if err != nil {
+ 		return result, fmt.Errorf("read Spec artifact %q: %w", prdPath, err)

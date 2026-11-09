@@ -1,0 +1,66 @@
+git diff-tree --no-commit-id --name-only -r 330f750d697d162adb1eb1e55340a3f3b56b8b9e
+CONTEXT.md
+docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_01.md
+internal/spec/spec.go
+internal/spec/unreachable_unread_test.go
+internal/speccheck/coherence.go
+internal/speccheck/constraints.go
+internal/speccheck/unreachable.go
+internal/speccheck/unreachable_test.go
+PASS CONTEXT.md — declared; ordinary path
+PASS docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_01.md — declared; ordinary path
+PASS internal/spec/spec.go — declared; ordinary path
+PASS internal/spec/unreachable_unread_test.go — declared; ordinary path
+PASS internal/speccheck/coherence.go — declared; governed and granted at delivery base
+PASS internal/speccheck/constraints.go — declared; governed and granted at delivery base
+PASS internal/speccheck/unreachable.go — declared; ordinary path
+PASS internal/speccheck/unreachable_test.go — declared; ordinary path
+git diff-tree --no-commit-id --name-only -r 8da21b5aa92c4a6f04f11e46d1a03ba614f04105
+CONTEXT.md
+docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md
+docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md
+docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_02.md
+internal/speccheck/adr_related_seed_test.go
+internal/speccheck/authoring_proof.go
+internal/speccheck/citations.go
+PASS CONTEXT.md — declared; ordinary path
+PASS docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md — declared; ordinary path
+PASS docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md — declared; ordinary path
+PASS docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_02.md — declared; ordinary path
+PASS internal/speccheck/adr_related_seed_test.go — declared; ordinary path
+PASS internal/speccheck/authoring_proof.go — declared; ordinary path
+PASS internal/speccheck/citations.go — declared; ordinary path
+git diff-tree --no-commit-id --name-only -r 96ea2765a6f578b8519d197eeae2e5395dce968c
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+.agents/skills/write-techspec/references/techspec-template.md
+docs/references/behavior-surfaces.json
+docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_03.md
+docs/user-guide/commands/spec.md
+docs/user-guide/context-driven-development.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+skills/write-techspec/references/techspec-template.md
+PASS .agents/skills/roundfix/SKILL.md — declared; governed and granted at delivery base
+PASS .agents/skills/roundfix/references/spec.md — declared; governed and granted at delivery base
+PASS .agents/skills/write-tasks/SKILL.md — declared; governed and granted at delivery base
+PASS .agents/skills/write-techspec/SKILL.md — declared; governed and granted at delivery base
+PASS .agents/skills/write-techspec/references/techspec-template.md — declared; governed and granted at delivery base
+PASS docs/references/behavior-surfaces.json — declared; ordinary path
+PASS docs/specs/0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written/task_03.md — declared; ordinary path
+PASS docs/user-guide/commands/spec.md — declared; ordinary path
+PASS docs/user-guide/context-driven-development.md — declared; ordinary path
+PASS skills/roundfix/SKILL.md — declared; governed and granted at delivery base
+PASS skills/roundfix/references/spec.md — declared; ordinary path
+PASS skills/testdata/owned-skill-versions.json — declared; ordinary path
+PASS skills/write-tasks/SKILL.md — declared; governed and granted at delivery base
+PASS skills/write-techspec/SKILL.md — declared; governed and granted at delivery base
+PASS skills/write-techspec/references/techspec-template.md — declared; governed and granted at delivery base
+PASS amendment and updated_at: docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md
+PASS amendment and updated_at: docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md
+All changed paths declared; all eleven changed Governed Paths authorized in an ancestor; no forbidden path or QA settlement change. No authorization or prerequisite/consequent fix folded into Task commits.

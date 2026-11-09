@@ -1,0 +1,22 @@
+command: go test -count=1 -timeout 20m -v -run '^TestANumberedUnreachableEntryIsReportedAtItsFirstLine$' ./internal/speccheck
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8/.qa-0367/mutation-4
+exit: 1
+stdout:
+=== RUN   TestANumberedUnreachableEntryIsReportedAtItsFirstLine
+=== PAUSE TestANumberedUnreachableEntryIsReportedAtItsFirstLine
+=== CONT  TestANumberedUnreachableEntryIsReportedAtItsFirstLine
+=== RUN   TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage=
+=== RUN   TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage=prd
+    unreachable_test.go:59: findings = [], want one
+=== RUN   TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage=techspec
+    unreachable_test.go:59: findings = [], want one
+--- FAIL: TestANumberedUnreachableEntryIsReportedAtItsFirstLine (0.01s)
+    --- PASS: TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage= (0.01s)
+    --- FAIL: TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage=prd (0.00s)
+    --- FAIL: TestANumberedUnreachableEntryIsReportedAtItsFirstLine/stage=techspec (0.00s)
+FAIL
+suiteguard: guard cost: measured 3043 paths; fingerprint took 155.000792ms before and 145.547166ms after
+FAIL	roundfix/internal/speccheck	0.603s
+FAIL
+
+stderr:
