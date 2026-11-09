@@ -1,0 +1,23 @@
+Archive: git archive 7fdf7208316e351f58c04395a423d1c2ad0a1eea
+Mutation file: internal/daemon/task_engine.go
+Before:
+if len(matches) == 0 && len(binaryPaths) == 0 && len(unresolvedLinks) == 0 {
+After:
+if false && len(matches) == 0 && len(binaryPaths) == 0 && len(unresolvedLinks) == 0 {
+$ go test -count=1 -timeout 20m -v -run '^TestQABorrowedEvidenceAfterRepairSettlesFailed$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestQABorrowedEvidenceAfterRepairSettlesFailed
+=== PAUSE TestQABorrowedEvidenceAfterRepairSettlesFailed
+=== CONT  TestQABorrowedEvidenceAfterRepairSettlesFailed
+    qa_evidence_binding_test.go:110: binding outcomes = [repair], want [repair refused]
+--- FAIL: TestQABorrowedEvidenceAfterRepairSettlesFailed (0.60s)
+FAIL
+suiteguard: guard cost: measured 3015 paths; fingerprint took 161.483708ms before and 155.391833ms after
+FAIL	roundfix/internal/daemon	1.229s
+FAIL
+
+stderr:
+
+
+Scratch copy removed after test exit.

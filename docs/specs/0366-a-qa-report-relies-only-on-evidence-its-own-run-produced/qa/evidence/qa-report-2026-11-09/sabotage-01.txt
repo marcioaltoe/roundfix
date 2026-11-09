@@ -1,0 +1,23 @@
+Archive: git archive 7fdf7208316e351f58c04395a423d1c2ad0a1eea
+Mutation file: internal/spec/qa_evidence_binding.go
+Before:
+if comparison.commit == "" ||
+After:
+if comparison.reason == BorrowedEvidenceReused || comparison.commit == "" ||
+$ go test -count=1 -timeout 20m -v -run '^TestBorrowedEvidenceRefusesAnEarlierRunsEvidenceDirectory$' ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestBorrowedEvidenceRefusesAnEarlierRunsEvidenceDirectory
+=== PAUSE TestBorrowedEvidenceRefusesAnEarlierRunsEvidenceDirectory
+=== CONT  TestBorrowedEvidenceRefusesAnEarlierRunsEvidenceDirectory
+    qa_evidence_binding_test.go:64: borrowed evidence = [], <nil>; want [{Line:4 Subject:evidence/2026-11-06-gate/head-exclusive.execution.txt Reason:reused} {Line:4 Subject:evidence/2026-11-06-gate/replay.py.txt Reason:reused}]
+--- FAIL: TestBorrowedEvidenceRefusesAnEarlierRunsEvidenceDirectory (0.07s)
+FAIL
+suiteguard: guard cost: measured 3015 paths; fingerprint took 151.161209ms before and 153.854666ms after
+FAIL	roundfix/internal/spec	0.620s
+FAIL
+
+stderr:
+
+
+Scratch copy removed after test exit.

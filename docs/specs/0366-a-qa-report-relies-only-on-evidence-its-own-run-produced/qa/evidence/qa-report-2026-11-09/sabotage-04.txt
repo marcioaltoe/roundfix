@@ -1,0 +1,25 @@
+Archive: git archive 7fdf7208316e351f58c04395a423d1c2ad0a1eea
+Mutation file: internal/spec/qa_evidence_binding.go
+Before:
+path := filepath.Clean(entry.Value)
+After:
+path := filepath.Clean(entry.Value)
+            if !filepath.IsAbs(path) { path = filepath.Join(root, path) }
+            if target, err := filepath.EvalSymlinks(path); err == nil { path = target }
+$ go test -count=1 -timeout 20m -v -run '^TestBorrowedEvidenceNamesAnExecutableOutsideTheWorktree$' ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestBorrowedEvidenceNamesAnExecutableOutsideTheWorktree
+=== PAUSE TestBorrowedEvidenceNamesAnExecutableOutsideTheWorktree
+=== CONT  TestBorrowedEvidenceNamesAnExecutableOutsideTheWorktree
+    qa_evidence_binding_test.go:161: borrowed evidence = [{Line:6 Subject:.venv/bin/python Reason:outside the worktree}], <nil>; want []
+--- FAIL: TestBorrowedEvidenceNamesAnExecutableOutsideTheWorktree (0.05s)
+FAIL
+suiteguard: guard cost: measured 3015 paths; fingerprint took 157.247291ms before and 154.317333ms after
+FAIL	roundfix/internal/spec	0.615s
+FAIL
+
+stderr:
+
+
+Scratch copy removed after test exit.

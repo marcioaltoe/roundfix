@@ -1,0 +1,25 @@
+Archive: git archive 7fdf7208316e351f58c04395a423d1c2ad0a1eea
+Mutation file: internal/daemon/task_engine.go
+Before:
+if len(borrowed) > 0 {
+			message :=
+After:
+if false && len(borrowed) > 0 {
+			message :=
+$ go test -count=1 -timeout 20m -v -run '^TestQABorrowedEvidenceRepairTurnRegeneratesTheEvidence$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestQABorrowedEvidenceRepairTurnRegeneratesTheEvidence
+=== PAUSE TestQABorrowedEvidenceRepairTurnRegeneratesTheEvidence
+=== CONT  TestQABorrowedEvidenceRepairTurnRegeneratesTheEvidence
+    qa_evidence_binding_test.go:88: regenerated evidence was not accepted: {IntegratedVerificationFailure: Completed:0 Failed:0 Skipped:0 QAVerdict:pass QAAccepted:false QAReportPath:docs/specs/0001-sample-feature/qa/qa-report-2026-01-01.md Outcomes:[] TerminalOutcome: TerminalReason: BudgetDeadline:0001-01-01 00:00:00 +0000 UTC BudgetRenewedBy:}
+--- FAIL: TestQABorrowedEvidenceRepairTurnRegeneratesTheEvidence (0.56s)
+FAIL
+suiteguard: guard cost: measured 3015 paths; fingerprint took 155.519875ms before and 165.191875ms after
+FAIL	roundfix/internal/daemon	1.200s
+FAIL
+
+stderr:
+
+
+Scratch copy removed after test exit.

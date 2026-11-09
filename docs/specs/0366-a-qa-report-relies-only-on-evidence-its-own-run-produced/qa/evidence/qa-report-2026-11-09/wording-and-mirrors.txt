@@ -1,0 +1,84 @@
+docs/user-guide/commands/qa-report.md: 'Every evidence file the report relies on must belong to this Run.': True
+docs/user-guide/commands/qa-report.md: '`reused`': True
+docs/user-guide/commands/qa-report.md: '`imported`': True
+docs/user-guide/commands/qa-report.md: '`outside the worktree`': True
+docs/user-guide/commands/qa-report.md: '`names another Run Worktree <path>`': True
+docs/user-guide/commands/qa-report.md: 'Carried Row': True
+docs/user-guide/commands/qa-report.md: 'Outside Git nothing is checked': True
+docs/user-guide/commands/qa-report.md: 'QA Report evidence does not belong to this Run': True
+.agents/skills/roundfix/references/settle.md: 'Every evidence file the report relies on must belong to this Run.': True
+.agents/skills/roundfix/references/settle.md: '`reused`': True
+.agents/skills/roundfix/references/settle.md: '`imported`': True
+.agents/skills/roundfix/references/settle.md: '`outside the worktree`': True
+.agents/skills/roundfix/references/settle.md: '`names another Run Worktree <path>`': True
+.agents/skills/roundfix/references/settle.md: 'Carried Row': True
+.agents/skills/roundfix/references/settle.md: 'Outside Git nothing is checked': True
+.agents/skills/roundfix/references/settle.md: 'QA Report evidence does not belong to this Run': True
+skills/roundfix/references/settle.md: 'Every evidence file the report relies on must belong to this Run.': True
+skills/roundfix/references/settle.md: '`reused`': True
+skills/roundfix/references/settle.md: '`imported`': True
+skills/roundfix/references/settle.md: '`outside the worktree`': True
+skills/roundfix/references/settle.md: '`names another Run Worktree <path>`': True
+skills/roundfix/references/settle.md: 'Carried Row': True
+skills/roundfix/references/settle.md: 'Outside Git nothing is checked': True
+skills/roundfix/references/settle.md: 'QA Report evidence does not belong to this Run': True
+docs/user-guide/commands/settle.md: 'roundfix: settle QA Report is ineligible: QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>) (report <path>)': True
+docs/user-guide/commands/implement.md: 'On Borrowed Evidence the Daemon returns the QA turn once': True
+docs/user-guide/commands/implement.md: 'no QA Report commit': True
+docs/user-guide/commands/implement.md: '`evidence_binding`': True
+docs/user-guide/commands/implement.md: 'qa/evidence/<report name>/': True
+docs/user-guide/commands/implement.md: 'QA Report evidence does not belong to this Run': True
+.agents/skills/roundfix/references/implement.md: 'On Borrowed Evidence the Daemon returns the QA turn once': True
+.agents/skills/roundfix/references/implement.md: 'no QA Report commit': True
+.agents/skills/roundfix/references/implement.md: '`evidence_binding`': True
+.agents/skills/roundfix/references/implement.md: 'qa/evidence/<report name>/': True
+.agents/skills/roundfix/references/implement.md: 'QA Report evidence does not belong to this Run': True
+skills/roundfix/references/implement.md: 'On Borrowed Evidence the Daemon returns the QA turn once': True
+skills/roundfix/references/implement.md: 'no QA Report commit': True
+skills/roundfix/references/implement.md: '`evidence_binding`': True
+skills/roundfix/references/implement.md: 'qa/evidence/<report name>/': True
+skills/roundfix/references/implement.md: 'QA Report evidence does not belong to this Run': True
+.agents/skills/qa-gate/SKILL.md: '### Evidence belongs to this Run': True
+.agents/skills/qa-gate/SKILL.md: 'user_flow_executables: []': True
+.agents/skills/qa-gate/SKILL.md: 'Never copy, replay or cite evidence, a script or an executable an earlier Run left, even when it sits on your branch; regenerate it.': True
+.agents/skills/qa-gate/SKILL.md: old run-slug present: False
+skills/qa-gate/SKILL.md: '### Evidence belongs to this Run': True
+skills/qa-gate/SKILL.md: 'user_flow_executables: []': True
+skills/qa-gate/SKILL.md: 'Never copy, replay or cite evidence, a script or an executable an earlier Run left, even when it sits on your branch; regenerate it.': True
+skills/qa-gate/SKILL.md: old run-slug present: False
+mirror equality roundfix/SKILL.md: True
+mirror equality qa-gate/SKILL.md: True
+mirror equality roundfix/references/implement.md: True
+mirror equality roundfix/references/settle.md: True
+$ rg -n 'Borrowed Evidence|Evidence belongs to this Run|On Borrowed|Every evidence file|user_flow_executables|run-slug' docs/user-guide .agents/skills/roundfix skills/roundfix .agents/skills/qa-gate skills/qa-gate
+exit: 0
+stdout:
+skills/roundfix/references/settle.md:215:Every evidence file the report relies on must belong to this Run. Borrowed
+skills/roundfix/references/settle.md:220:Run, or is `outside the worktree` when a `user_flow_executables` entry lies
+docs/user-guide/commands/implement.md:221:QA Report for Borrowed Evidence, counting the QA Report Import's unchanged
+docs/user-guide/commands/implement.md:222:copies as `imported`. On Borrowed Evidence the Daemon returns the QA turn once,
+docs/user-guide/commands/qa-report.md:46:Every evidence file the report relies on must belong to this Run. Borrowed
+docs/user-guide/commands/qa-report.md:51:Run, or is `outside the worktree` when a `user_flow_executables` entry lies
+skills/qa-gate/SKILL.md:76:### Evidence belongs to this Run
+skills/qa-gate/SKILL.md:84:absolute inside it, in the `user_flow_executables` frontmatter list. For an
+skills/qa-gate/SKILL.md:89:Evidence that breaks this rule is Borrowed Evidence: a linked file the audited
+skills/qa-gate/SKILL.md:625:user_flow_executables: [] # paths, inside this Run Worktree, of the executables that ran user-flow rows
+.agents/skills/qa-gate/SKILL.md:76:### Evidence belongs to this Run
+.agents/skills/qa-gate/SKILL.md:84:absolute inside it, in the `user_flow_executables` frontmatter list. For an
+.agents/skills/qa-gate/SKILL.md:89:Evidence that breaks this rule is Borrowed Evidence: a linked file the audited
+.agents/skills/qa-gate/SKILL.md:625:user_flow_executables: [] # paths, inside this Run Worktree, of the executables that ran user-flow rows
+.agents/skills/roundfix/references/settle.md:215:Every evidence file the report relies on must belong to this Run. Borrowed
+.agents/skills/roundfix/references/settle.md:220:Run, or is `outside the worktree` when a `user_flow_executables` entry lies
+skills/roundfix/references/implement.md:254:   QA Report for Borrowed Evidence, counting the QA Report Import's unchanged
+skills/roundfix/references/implement.md:255:   copies as `imported`. On Borrowed Evidence the Daemon returns the QA turn once,
+.agents/skills/roundfix/references/implement.md:254:   QA Report for Borrowed Evidence, counting the QA Report Import's unchanged
+.agents/skills/roundfix/references/implement.md:255:   copies as `imported`. On Borrowed Evidence the Daemon returns the QA turn once,
+docs/user-guide/commands/settle.md:94:rule accepts. Borrowed Evidence refuses settlement, leaves the Task file
+
+stderr:
+
+
+internal/cli/qa_report.go: 'RequireOwnRunEvidence(': True
+internal/cli/settle.go: 'RequireOwnRunEvidence(': True
+internal/daemon/task_engine.go: 'qaBorrowedEvidenceRepairPrompt(': True
+internal/daemon/task_engine.go: 'spec.BorrowedEvidenceError{': True

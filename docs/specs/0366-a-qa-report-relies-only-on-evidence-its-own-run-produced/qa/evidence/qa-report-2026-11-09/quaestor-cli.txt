@@ -1,0 +1,82 @@
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid init -b fix/fixture
+exit: 0
+stdout:
+Initialized empty Git repository in /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0366-yqdgfqkf/repo/.git/
+
+stderr:
+
+
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid commit --allow-empty -m 'test: empty fixture'
+exit: 0
+stdout:
+[fix/fixture (root-commit) c659346] test: empty fixture
+
+stderr:
+
+
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid worktree add -b roundfix/run-old /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0366-yqdgfqkf/run-old
+exit: 0
+stdout:
+HEAD is now at c659346 test: empty fixture
+
+stderr:
+Preparing worktree (new branch 'roundfix/run-old')
+
+
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid add .
+exit: 0
+stdout:
+
+stderr:
+
+
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid commit -m 'test: earlier evidence'
+exit: 0
+stdout:
+[fix/fixture 5719b49] test: earlier evidence
+ 2 files changed, 2 insertions(+)
+ create mode 100644 docs/specs/9001-fixture/qa/evidence/2026-11-06-gate/head.execution.txt
+ create mode 100644 docs/specs/9001-fixture/qa/evidence/2026-11-06-gate/replay.py.txt
+
+stderr:
+
+
+$ git -c core.fsmonitor=false -c commit.gpgsign=false -c user.name=QA -c user.email=qa@example.invalid commit --allow-empty -m 'test: later head'
+exit: 0
+stdout:
+[fix/fixture 3950c2e] test: later head
+
+stderr:
+
+
+$ /Users/marcio/.roundfix/worktrees/roundfix-deliver-0366-a-qa-report-relies-only-on-evidence-its-own-run-produced-b8fc2c4f09c436ea-ee489a49-5294e869/run_20261109T140215Z_53a6a91c37fa6622/bin/roundfix qa-report accept docs/specs/9001-fixture/qa/qa-report-2026-11-09.md
+exit: 1
+stdout:
+
+stderr:
+roundfix: QA Report eligibility refused: QA Report evidence does not belong to this Run: evidence/2026-11-06-gate/head.execution.txt (line 9, reused); evidence/2026-11-06-gate/replay.py.txt (line 9, reused)
+
+
+$ /Users/marcio/.roundfix/worktrees/roundfix-deliver-0366-a-qa-report-relies-only-on-evidence-its-own-run-produced-b8fc2c4f09c436ea-ee489a49-5294e869/run_20261109T140215Z_53a6a91c37fa6622/bin/roundfix qa-report accept docs/specs/9001-fixture/qa/qa-report-2026-11-09.md
+exit: 1
+stdout:
+
+stderr:
+roundfix: QA Report eligibility refused: QA Report evidence does not belong to this Run: evidence/qa-report-2026-11-09/head.execution.txt (line 9, names another Run Worktree /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0366-yqdgfqkf/run-old)
+
+
+$ /Users/marcio/.roundfix/worktrees/roundfix-deliver-0366-a-qa-report-relies-only-on-evidence-its-own-run-produced-b8fc2c4f09c436ea-ee489a49-5294e869/run_20261109T140215Z_53a6a91c37fa6622/bin/roundfix qa-report accept docs/specs/9001-fixture/qa/qa-report-2026-11-09.md
+exit: 0
+stdout:
+
+stderr:
+
+
+$ /Users/marcio/.roundfix/worktrees/roundfix-deliver-0366-a-qa-report-relies-only-on-evidence-its-own-run-produced-b8fc2c4f09c436ea-ee489a49-5294e869/run_20261109T140215Z_53a6a91c37fa6622/bin/roundfix qa-report accept docs/specs/9001-fixture/qa/qa-report-2026-11-09.md
+exit: 0
+stdout:
+
+stderr:
+
+
+All four invocations checked independently; acceptance persisted on a fresh invocation. Git HEAD unchanged. Fixture and temporary homes removed.

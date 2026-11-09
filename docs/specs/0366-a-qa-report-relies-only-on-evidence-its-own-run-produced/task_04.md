@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0366-a-qa-report-relies-only-on-evidence-its-own-run-produced
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

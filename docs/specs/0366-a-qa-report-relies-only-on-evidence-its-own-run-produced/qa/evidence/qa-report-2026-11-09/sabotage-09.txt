@@ -1,0 +1,25 @@
+Archive: git archive 7fdf7208316e351f58c04395a423d1c2ad0a1eea
+Mutation file: internal/daemon/task_engine.go
+Before:
+ImportCommit:    prior.Commit,
+		ImportedPaths:   prior.Files,
+After:
+ImportCommit:    "",
+		ImportedPaths:   nil,
+$ go test -count=1 -timeout 20m -v -run '^TestQABorrowedEvidenceNamesARerunRowCitingImportedEvidence$' ./internal/daemon
+exit: 1
+stdout:
+=== RUN   TestQABorrowedEvidenceNamesARerunRowCitingImportedEvidence
+=== PAUSE TestQABorrowedEvidenceNamesARerunRowCitingImportedEvidence
+=== CONT  TestQABorrowedEvidenceNamesARerunRowCitingImportedEvidence
+    qa_evidence_binding_test.go:141: repair turns = 0, want 1
+--- FAIL: TestQABorrowedEvidenceNamesARerunRowCitingImportedEvidence (0.78s)
+FAIL
+suiteguard: guard cost: measured 3015 paths; fingerprint took 165.958583ms before and 154.274375ms after
+FAIL	roundfix/internal/daemon	1.520s
+FAIL
+
+stderr:
+
+
+Scratch copy removed after test exit.

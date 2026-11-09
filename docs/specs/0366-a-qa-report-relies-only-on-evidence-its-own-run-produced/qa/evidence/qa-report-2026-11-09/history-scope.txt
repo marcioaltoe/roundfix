@@ -1,0 +1,81 @@
+Audited Task range: cfc08683f0e49ca1d167b46357d034995d623d35..7fdf7208316e351f58c04395a423d1c2ad0a1eea
+{
+  "task": 1,
+  "commit": "fda4f3bf3e3851adfa04d7f7fa389500502df94c",
+  "actual_paths_from_diff_tree": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "CONTEXT.md",
+    "docs/references/behavior-surfaces.json",
+    "docs/specs/0366-a-qa-report-relies-only-on-evidence-its-own-run-produced/task_01.md",
+    "docs/user-guide/commands/qa-report.md",
+    "docs/user-guide/commands/settle.md",
+    "internal/cli/qa_report.go",
+    "internal/cli/qa_report_test.go",
+    "internal/cli/settle.go",
+    "internal/spec/qa_evidence_binding.go",
+    "internal/spec/qa_evidence_binding_test.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/settle.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "outside_task": [],
+  "protected": [],
+  "other_skills": [],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/settle.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "outside_grant": []
+}
+{
+  "task": 2,
+  "commit": "829d72f7636b3f10ae3bd6561d0d42fc9cc69c04",
+  "actual_paths_from_diff_tree": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/implement.md",
+    "docs/references/behavior-surfaces.json",
+    "docs/specs/0366-a-qa-report-relies-only-on-evidence-its-own-run-produced/task_02.md",
+    "docs/user-guide/commands/implement.md",
+    "internal/daemon/qa_evidence_binding_test.go",
+    "internal/daemon/task_engine.go",
+    "skills/roundfix/SKILL.md",
+    "skills/roundfix/references/implement.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "outside_task": [],
+  "protected": [],
+  "other_skills": [],
+  "governed": [
+    ".agents/skills/roundfix/SKILL.md",
+    ".agents/skills/roundfix/references/implement.md",
+    "skills/roundfix/SKILL.md"
+  ],
+  "outside_grant": []
+}
+{
+  "task": 3,
+  "commit": "7fdf7208316e351f58c04395a423d1c2ad0a1eea",
+  "actual_paths_from_diff_tree": [
+    ".agents/skills/qa-gate/SKILL.md",
+    "docs/specs/0366-a-qa-report-relies-only-on-evidence-its-own-run-produced/task_03.md",
+    "skills/qa-gate/SKILL.md",
+    "skills/testdata/owned-skill-versions.json"
+  ],
+  "outside_task": [],
+  "protected": [],
+  "other_skills": [],
+  "governed": [
+    ".agents/skills/qa-gate/SKILL.md",
+    "skills/qa-gate/SKILL.md"
+  ],
+  "outside_grant": []
+}
+Approved grant is byte-identical at delivery base and current head, predates every Task, and none of the Task commits changes the authority record.
+QA settlement bytes unchanged .agents/skills/qa-gate/SKILL.md: True
+QA settlement bytes unchanged .agents/skills/roundfix/SKILL.md: True
+QA settlement bytes unchanged skills/qa-gate/SKILL.md: True
+QA settlement bytes unchanged skills/roundfix/SKILL.md: True
+Tracked worktree delta: []; untracked changes restricted to the QA directory.
+?? docs/specs/0366-a-qa-report-relies-only-on-evidence-its-own-run-produced/qa/
