@@ -1,7 +1,0 @@
-command: /bin/sh -c 'tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md | grep -qF -- '"'"'Amended by [ADR-0377](0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md) (2026-11-09).'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md | grep -qF -- '"'"'updated_at: 2026-11-09T12:00:00Z'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md | grep -qF -- '"'"'opens no gap for the ADRs that cite it. The horizon below is unchanged.'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md | grep -qF -- '"'"'updated_at: 2026-11-09T12:00:00Z'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'Only an ADR the Spec applies or changes draws in the ADRs that cite it'"'"' || exit 1; grep -F -- '"'"'**Spec Consistency Check**'"'"' < CONTEXT.md | grep -qE '"'"'^([-*+] )?\*\*Spec Consistency Check\*\*(:| —( |$))'"'"' || exit 1; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract'
-cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
-exit: 0
-stdout:
-ok  	roundfix/internal/docscontract	30.691s
-
-stderr:

@@ -1,3 +1,0 @@
-- criterion: A real rerun of a failed release job on GitHub Actions against the npm registry.
-  reason: it would publish packages, which this Spec's authorization and its QA forbid.
-  satisfied-by: The QA proves the same path on the workflow's own step scripts with a stub registry and records this as one blocked row.

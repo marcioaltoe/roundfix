@@ -1,7 +1,0 @@
-command: /bin/sh -c 'out="$(go test -count=1 -timeout 20m -v -run '"'"'^(TestAnUnreachableSectionReadAsWrittenReportsNothing|TestANumberedUnreachableEntryIsReportedAtItsFirstLine|TestProseAfterADeclarationAndAMissingFieldAreReported|TestNoneBesideADeclarationAndAPlainBulletAreReported)$'"'"' ./internal/speccheck 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestAnUnreachableSectionReadAsWrittenReportsNothing TestANumberedUnreachableEntryIsReportedAtItsFirstLine TestProseAfterADeclarationAndAMissingFieldAreReported TestNoneBesideADeclarationAndAPlainBulletAreReported; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./internal/speccheck'
-cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written-a0ce823202558812-9f08a871-ba88398e/run_20261109T162719Z_0de967207cc2baf8
-exit: 0
-stdout:
-ok  	roundfix/internal/speccheck	16.930s
-
-stderr:
