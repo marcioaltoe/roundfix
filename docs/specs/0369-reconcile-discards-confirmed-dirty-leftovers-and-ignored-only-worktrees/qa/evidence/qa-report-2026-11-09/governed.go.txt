@@ -1,0 +1,11 @@
+package main
+import (
+ "encoding/json"
+ "os"
+ "roundfix/internal/speccheck"
+)
+func main(){
+ paths:=[]string{}
+ for _,p:=range os.Args[1:] { if speccheck.GovernedPath(p) {paths=append(paths,p)} }
+ if err:=json.NewEncoder(os.Stdout).Encode(paths);err!=nil {panic(err)}
+}

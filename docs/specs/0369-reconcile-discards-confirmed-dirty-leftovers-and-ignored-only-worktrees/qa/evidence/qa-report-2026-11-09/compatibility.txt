@@ -1,0 +1,39 @@
+Delivery Base: aa1b53a2232719aba5ee2e5f55531334fd22ec72
+command: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/qa0369/base-roundfix reconcile
+exit: 0
+stdout:
+Repository: /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0369-compat-eeeiw2a5/repo
+Mode: dry-run
+Summary: total=0 safe=0 superseded=0 unintegrated=0 dirty=0 unknown=0 released=0 applied=0 preserved=0 operational-failures=0
+Debris summary: process-candidates=0 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=0 processes-applied=0 run-owner-records-released=0 run-branches-applied=0 item-branch-candidates=0 item-branches-applied=0
+Apply with: roundfix reconcile --apply
+
+stderr:
+
+command: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/roundfix reconcile
+exit: 0
+stdout:
+Repository: /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0369-compat-eeeiw2a5/repo
+Mode: dry-run
+Summary: total=0 safe=0 superseded=0 unintegrated=0 dirty=0 unknown=0 released=0 applied=0 preserved=0 operational-failures=0
+Debris summary: process-candidates=0 run-branch-candidates=0 staging-candidates=0 staging-applied=0 preserved=0 processes-applied=0 run-owner-records-released=0 run-branches-applied=0 item-branch-candidates=0 item-branches-applied=0
+Apply with: roundfix reconcile --apply
+
+stderr:
+
+byte-identical stdout, stderr, exit: True
+command: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/qa0369/base-roundfix reconcile --format json
+exit: 0
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"dry-run","repository":"/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0369-compat-eeeiw2a5/repo","applyCommand":"roundfix reconcile --apply","results":[],"runs":[],"summary":{"total":0,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":0,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":0,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":0,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+command: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/roundfix reconcile --format json
+exit: 0
+stdout:
+{"schemaVersion":"roundfix-reconcile/v1","mode":"dry-run","repository":"/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/qa0369-compat-eeeiw2a5/repo","applyCommand":"roundfix reconcile --apply","results":[],"runs":[],"summary":{"total":0,"safe":0,"superseded":0,"unintegrated":0,"dirty":0,"unknown":0,"released":0,"applied":0,"preserved":0,"operationalFailures":0},"processCandidates":[],"runBranchCandidates":[],"stagingCandidates":[],"itemBranchCandidates":[],"preservedCandidates":[],"debrisSummary":{"processCandidates":0,"runBranchCandidates":0,"stagingCandidates":0,"preserved":0,"processesApplied":0,"runOwnerRecordsReleased":0,"runBranchesApplied":0,"stagingApplied":0,"itemBranchCandidates":0,"itemBranchesApplied":0},"carryForwards":null}
+
+stderr:
+
+byte-identical stdout, stderr, exit: True

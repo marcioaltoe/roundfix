@@ -1,0 +1,22 @@
+temporary git archive of 0c8de3b79c85e0c35ffb4cc7eab5d90701d689eb
+mutation: internal/worktree/worktree.go
+replace:
+!entry.IsDir() || !repositoryDirectoryName.MatchString(entry.Name())
+with:
+!entry.IsDir()
+command: go test -count=1 -timeout 20m -v -run '^TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames$' ./internal/worktree
+exit: 1
+stdout:
+=== RUN   TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+=== PAUSE TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+=== CONT  TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+    unregistered_ignored_test.go:131: empty directories = [/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames3863032441/001/fiscus-0035-implementation-20260908-392a816f /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames3863032441/001/fiscus-2f7556b8 /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames3863032441/001/notes], <nil>; want [/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames3863032441/001/fiscus-0035-implementation-20260908-392a816f /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames3863032441/001/fiscus-2f7556b8]
+--- FAIL: TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames (0.00s)
+FAIL
+suiteguard: guard cost: measured 3026 paths; fingerprint took 154.753708ms before and 162.847334ms after
+FAIL	roundfix/internal/worktree	0.574s
+FAIL
+
+stderr:
+
+named behavioral failure observed: True

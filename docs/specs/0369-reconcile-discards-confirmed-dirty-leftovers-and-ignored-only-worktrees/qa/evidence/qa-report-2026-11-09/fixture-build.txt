@@ -1,0 +1,6 @@
+command: go build -buildvcs=false -o /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/qa0369/fixture /Users/marcio/.roundfix/worktrees/roundfix-deliver-0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees-bcdd6200a99bdd6f-93ed970f-9867c757/run_20261109T222546Z_e0cc5175abea6919/bin/qa0369/fixture.go
+exit: 0
+stdout:
+
+stderr:
+

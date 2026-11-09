@@ -1,0 +1,4 @@
+Origin: Fiscus project, ai-memory message 01a1c01f-7095, 2026-11-09 11:44 UTC, before this Spec.
+Committed adopted source: docs/specs/0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees/references/2026-11-09-fiscus-reconcile-leaves-abandoned-run-leftovers-without-a-path.md
+Reported shapes: summary dirty=11 unknown=1; only .storage/postgres/18/docker in the unregistered directory.
+Comparison: current public CLI Q24 removed an archived Stopped Run's outside leftovers only after fresh digest confirmation; Q25 removed an unregistered .storage/postgres/18/docker/base/1 directory only after ignored-only proof. These are fresh observations of both independently reported shapes.

@@ -1,0 +1,32 @@
+temporary git archive of 0c8de3b79c85e0c35ffb4cc7eab5d90701d689eb
+mutation: internal/worktree/worktree.go
+replace:
+if discardProof != nil {
+with:
+if discardProof == nil { result.DiscardPaths = slices.Clone(dirtyPaths) }; if discardProof != nil {
+command: go test -count=1 -timeout 20m -v -run '^TestADirtyDiscardIsNeverOfferedOutsideItsBounds$' ./internal/worktree
+exit: 1
+stdout:
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== PAUSE TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== CONT  TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/unrepresented_Task_commit
+    dirty_discard_test.go:61: out-of-bounds candidate = {RunID:dirty-discard-bounds Outcome:Stopped Path:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestADirtyDiscardIsNeverOfferedOutsideItsBoundsunrepresented_Ta3302197502/001/.roundfix/worktrees/002-7f318930/dirty-discard-bounds Branch:roundfix/run-dirty-discard-bounds TargetBranch:main RunHead:ebbcb2e4a366a3c8afeb44c345fae2037a95d010 TargetHead:641e6e1224c9d0d12400032a2f7467a1713cc3e3 SupersedingReport: DiscardPaths:[declared.txt docs/specs/0175-cleanup-after-a-squash-merge/_prd.md unrelated.txt] Reason:Run Worktree has tracked or untracked changes; Run commit ebbcb2e4a366 is not represented at default branch "main": Task task_02 is not completed State:dirty evidence:<nil>}
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/not_archived_on_default
+    dirty_discard_test.go:61: out-of-bounds candidate = {RunID:dirty-discard-bounds Outcome:Stopped Path:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestADirtyDiscardIsNeverOfferedOutsideItsBoundsnot_archived_on_2272139687/001/.roundfix/worktrees/002-581fa8ad/dirty-discard-bounds Branch:roundfix/run-dirty-discard-bounds TargetBranch:main RunHead:35573057ed63d2300565638713f79f498fe2bca5 TargetHead:5da4cf2db42e16b8b19ecd17c9b1153760c29773 SupersedingReport: DiscardPaths:[declared.txt docs/specs/0175-cleanup-after-a-squash-merge/_prd.md unrelated.txt] Reason:Run Worktree has tracked or untracked changes; unrelated.txt is outside the archived Spec's declared and recorded paths State:dirty evidence:<nil>}
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/Clean_outcome
+    dirty_discard_test.go:61: out-of-bounds candidate = {RunID:dirty-discard-bounds Outcome:Clean Path:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestADirtyDiscardIsNeverOfferedOutsideItsBoundsClean_outcome3335915577/001/.roundfix/worktrees/002-76e609c3/dirty-discard-bounds Branch:roundfix/run-dirty-discard-bounds TargetBranch:main RunHead:67f167c429307fdf043826b40fe2f21488bc5cc8 TargetHead:9f148b0b91088fb7a7dd1207e1db793695d50a0d SupersedingReport: DiscardPaths:[declared.txt docs/specs/0175-cleanup-after-a-squash-merge/_prd.md unrelated.txt] Reason:Run Worktree has tracked or untracked changes; unrelated.txt is outside the archived Spec's declared and recorded paths State:dirty evidence:<nil>}
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/scoped_leftovers
+--- FAIL: TestADirtyDiscardIsNeverOfferedOutsideItsBounds (1.52s)
+    --- FAIL: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/unrepresented_Task_commit (0.50s)
+    --- FAIL: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/not_archived_on_default (0.38s)
+    --- FAIL: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/Clean_outcome (0.33s)
+    --- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/scoped_leftovers (0.31s)
+FAIL
+suiteguard: guard cost: measured 3026 paths; fingerprint took 147.534667ms before and 143.590042ms after
+FAIL	roundfix/internal/worktree	2.086s
+FAIL
+
+stderr:
+
+named behavioral failure observed: True

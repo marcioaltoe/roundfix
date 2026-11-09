@@ -1,0 +1,9 @@
+command: ./bin/roundfix reconcile --apply --discard-dirty 0000000000000000000000000000000000000000000000000000000000000000
+exit: 2
+stdout:
+
+stderr:
+roundfix: reconcile failed: --apply, --discard-superseded, --discard-dirty, and --carry-forward are mutually exclusive
+Run 'roundfix reconcile --help' for usage.
+
+exact stdout/stderr/exit comparison: True

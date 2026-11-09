@@ -1,0 +1,96 @@
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths
+=== PAUSE TestWriteDirtyDiscardRecordNamesTheDiscardedPaths
+=== RUN   TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== PAUSE TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== RUN   TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== PAUSE TestQADeliveryBasePrefersTheRemoteTrackingBranch
+=== RUN   TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+=== PAUSE TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+=== RUN   TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+=== PAUSE TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+=== RUN   TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== PAUSE TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== RUN   TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+=== PAUSE TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+=== RUN   TestPriorQAPassSkipsAPrunedRunBranch
+=== PAUSE TestPriorQAPassSkipsAPrunedRunBranch
+=== RUN   TestClassifySupersededBranchUnderASymlinkedWorktreeRoot
+=== PAUSE TestClassifySupersededBranchUnderASymlinkedWorktreeRoot
+=== RUN   TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable
+=== PAUSE TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable
+=== RUN   TestSupersededBranchRefusesAnUnreachableCommit
+=== PAUSE TestSupersededBranchRefusesAnUnreachableCommit
+=== RUN   TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+=== PAUSE TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+=== RUN   TestWriteBranchDispositionRecordSurvivesDiscard
+=== PAUSE TestWriteBranchDispositionRecordSurvivesDiscard
+=== RUN   TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput
+=== PAUSE TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput
+=== RUN   TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues
+=== PAUSE TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues
+=== RUN   TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+=== PAUSE TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+=== RUN   TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch
+=== PAUSE TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch
+=== RUN   TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch
+=== PAUSE TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch
+=== RUN   TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+=== PAUSE TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+=== RUN   TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== PAUSE TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== CONT  TestWriteDirtyDiscardRecordNamesTheDiscardedPaths
+=== CONT  TestSupersededBranchRefusesAnUnreachableCommit
+=== CONT  TestRunDispositionCharacterizationStoppedRunLeavesTasksPending
+=== CONT  TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch
+=== CONT  TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch
+=== CONT  TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch
+=== CONT  TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable
+=== CONT  TestClassifySupersededBranchUnderASymlinkedWorktreeRoot
+=== CONT  TestPriorQAPassSkipsAPrunedRunBranch
+=== CONT  TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch
+=== CONT  TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput
+=== CONT  TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues
+--- PASS: TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput (0.01s)
+=== CONT  TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/superseded
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/no_paths
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/no_digest
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/inside_worktree
+=== RUN   TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/relative_path
+--- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths (0.02s)
+    --- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/superseded (0.00s)
+    --- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/no_paths (0.00s)
+    --- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/no_digest (0.00s)
+    --- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/inside_worktree (0.00s)
+    --- PASS: TestWriteDirtyDiscardRecordNamesTheDiscardedPaths/relative_path (0.00s)
+=== CONT  TestWriteBranchDispositionRecordSurvivesDiscard
+--- PASS: TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues (0.03s)
+=== CONT  TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch
+--- PASS: TestQADeliveryBaseIsUnresolvedWithoutADefaultBranch (0.15s)
+=== CONT  TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited
+--- PASS: TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch (0.23s)
+=== CONT  TestQADeliveryBasePrefersTheRemoteTrackingBranch
+--- PASS: TestRunDispositionCharacterizationStoppedRunLeavesTasksPending (0.45s)
+=== CONT  TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch
+--- PASS: TestPriorQAPassSkipsAPrunedRunBranch (0.52s)
+=== CONT  TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch
+=== CONT  TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks
+--- PASS: TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable (0.52s)
+--- PASS: TestClassifySupersededBranchUnderASymlinkedWorktreeRoot (0.54s)
+--- PASS: TestSupersededBranchRefusesAnUnreachableCommit (0.54s)
+--- PASS: TestQAMechanicalRequestRefusesAGrantWidenedOnTheSpecBranch (0.57s)
+--- PASS: TestQADeliveryBasePrefersTheRemoteTrackingBranch (0.33s)
+--- PASS: TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch (0.62s)
+--- PASS: TestQAMechanicalRequestAcceptsAGrantLandedOnTheDefaultBranch (0.63s)
+--- PASS: TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch (0.64s)
+--- PASS: TestQAMechanicalRequestLeavesDefaultBranchCommitsUnaudited (0.49s)
+--- PASS: TestWriteBranchDispositionRecordSurvivesDiscard (0.67s)
+--- PASS: TestQADeliveryBaseIsTheMergeBaseWithTheDefaultBranch (0.24s)
+--- PASS: TestSupersededBranchIsClassifiedWhenLaterIntegratedRunCoveredTasks (0.39s)
+--- PASS: TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch (2.11s)
+PASS
+suiteguard: guard cost: measured 3040 paths; fingerprint took 153.322708ms before and 140.948208ms after
+suiteguard: repository boundary violated:
+suiteguard: modified: docs/specs/0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees/qa/evidence/qa-report-2026-11-09/suite-daemon-full-access.txt
+FAIL	roundfix/internal/daemon	3.629s
+FAIL

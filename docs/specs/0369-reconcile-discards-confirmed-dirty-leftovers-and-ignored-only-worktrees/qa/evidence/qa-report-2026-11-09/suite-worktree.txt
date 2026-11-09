@@ -1,0 +1,1122 @@
+command: go test -count=1 -timeout 20m -v ./internal/worktree
+exit: 0
+stdout:
+=== RUN   TestNoProductionWorktreeAdministrationBypassesTheAdminLock
+=== PAUSE TestNoProductionWorktreeAdministrationBypassesTheAdminLock
+=== RUN   TestAdminLockGuardReportsADirectWorktreeCall
+=== PAUSE TestAdminLockGuardReportsADirectWorktreeCall
+=== RUN   TestConcurrentTaskWorktreeCreationIsSerialized
+=== PAUSE TestConcurrentTaskWorktreeCreationIsSerialized
+=== RUN   TestWorktreeAdministrationIsSerializedAcrossProcesses
+=== PAUSE TestWorktreeAdministrationIsSerializedAcrossProcesses
+=== RUN   TestWorktreeAdministrationWaitEndsWithTheContext
+=== PAUSE TestWorktreeAdministrationWaitEndsWithTheContext
+=== RUN   TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently
+=== PAUSE TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently
+=== RUN   TestWorktreeAdministrationLockHelperProcess
+=== PAUSE TestWorktreeAdministrationLockHelperProcess
+=== RUN   TestMergeEvidenceFromTheArchiveRecordAfterASquash
+=== PAUSE TestMergeEvidenceFromTheArchiveRecordAfterASquash
+=== RUN   TestTaskCompletionFollowsTheArchiveRecord
+=== PAUSE TestTaskCompletionFollowsTheArchiveRecord
+=== RUN   TestLeftoversReadTaskContextAtTheSourceRevision
+=== PAUSE TestLeftoversReadTaskContextAtTheSourceRevision
+=== RUN   TestLeftoversKeepTheWorktreeWithoutTheSourceRevision
+=== PAUSE TestLeftoversKeepTheWorktreeWithoutTheSourceRevision
+=== RUN   TestQASupersessionReadsTheArchiveRecord
+=== PAUSE TestQASupersessionReadsTheArchiveRecord
+=== RUN   TestLeftoversRecoverASquashDroppedRevision
+=== PAUSE TestLeftoversRecoverASquashDroppedRevision
+=== RUN   TestAnEndedRunOfAnArchivedSpecWithAnOutsideLeftoverOffersADirtyDiscard
+=== PAUSE TestAnEndedRunOfAnArchivedSpecWithAnOutsideLeftoverOffersADirtyDiscard
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== PAUSE TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== RUN   TestDiscardDirtyTerminalRunRemovesTheRunWorktreeAndRunBranch
+=== PAUSE TestDiscardDirtyTerminalRunRemovesTheRunWorktreeAndRunBranch
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet
+=== PAUSE TestDiscardDirtyTerminalRunRefusesAChangedPathSet
+=== RUN   TestDirtyDiscardKeepsTheDeliveryProofWhenDefaultHasAdvanced
+=== PAUSE TestDirtyDiscardKeepsTheDeliveryProofWhenDefaultHasAdvanced
+=== RUN   TestDirtyDiscardReportsALockedWorktreeRemovalFailure
+=== PAUSE TestDirtyDiscardReportsALockedWorktreeRemovalFailure
+=== RUN   TestRemoveRegisteredWorktreeWaitsForTheAdminLock
+=== PAUSE TestRemoveRegisteredWorktreeWaitsForTheAdminLock
+=== RUN   TestAddDetachedWorktreeWaitsForTheAdminLock
+=== PAUSE TestAddDetachedWorktreeWaitsForTheAdminLock
+=== RUN   TestRemoveRegisteredWorktreeKeepsADirtyWorktree
+=== PAUSE TestRemoveRegisteredWorktreeKeepsADirtyWorktree
+=== RUN   TestItemBranchOfAMergedSpecIsReleasable
+=== PAUSE TestItemBranchOfAMergedSpecIsReleasable
+=== RUN   TestItemBranchOfALiveItemIsPreserved
+=== PAUSE TestItemBranchOfALiveItemIsPreserved
+=== RUN   TestItemBranchOfAnUnmergedSpecIsPreserved
+=== PAUSE TestItemBranchOfAnUnmergedSpecIsPreserved
+=== RUN   TestItemBranchWithADirtyWorktreeIsPreserved
+=== PAUSE TestItemBranchWithADirtyWorktreeIsPreserved
+=== RUN   TestApplyItemBranchRemovesTheCleanWorktreeAndBranch
+=== PAUSE TestApplyItemBranchRemovesTheCleanWorktreeAndBranch
+=== RUN   TestApplyItemBranchRefusesAMovedHead
+=== PAUSE TestApplyItemBranchRefusesAMovedHead
+=== RUN   TestItemBranchSafetyBoundaries
+=== PAUSE TestItemBranchSafetyBoundaries
+=== RUN   TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree
+=== PAUSE TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree
+=== RUN   TestCleanupItemRemovesAHalfRemovedItemWithoutANestedWorktree
+=== PAUSE TestCleanupItemRemovesAHalfRemovedItemWithoutANestedWorktree
+=== RUN   TestMergeEvidenceSupersedesARunWhoseFilesDivergedAfterTheMerge
+=== PAUSE TestMergeEvidenceSupersedesARunWhoseFilesDivergedAfterTheMerge
+=== RUN   TestMergeEvidenceSupersedesADivergedRunWithAMergeRecord
+=== PAUSE TestMergeEvidenceSupersedesADivergedRunWithAMergeRecord
+=== RUN   TestMergeEvidenceKeepsARunWithAPendingTaskCommit
+=== PAUSE TestMergeEvidenceKeepsARunWithAPendingTaskCommit
+=== RUN   TestMergeEvidenceRequiresTheArchivedPRD
+=== PAUSE TestMergeEvidenceRequiresTheArchivedPRD
+=== RUN   TestMergeEvidenceKeepsARunThatHoldsTheDeliveryCommit
+=== PAUSE TestMergeEvidenceKeepsARunThatHoldsTheDeliveryCommit
+=== RUN   TestMergeEvidenceKeepsAnUndeclaredDirtyPath
+=== PAUSE TestMergeEvidenceKeepsAnUndeclaredDirtyPath
+=== RUN   TestMergeEvidenceApplyRefusesAMovedDefaultBranch
+=== PAUSE TestMergeEvidenceApplyRefusesAMovedDefaultBranch
+=== RUN   TestMergeEvidenceKeepsATaskCommitOfAnotherSpec
+=== PAUSE TestMergeEvidenceKeepsATaskCommitOfAnotherSpec
+=== RUN   TestMergeEvidenceSupersedesScopedDirtyPathsAtTheDefaultHead
+=== PAUSE TestMergeEvidenceSupersedesScopedDirtyPathsAtTheDefaultHead
+=== RUN   TestMergeEvidenceDoesNotRequireAnArchivedQAReport
+=== PAUSE TestMergeEvidenceDoesNotRequireAnArchivedQAReport
+=== RUN   TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation
+=== PAUSE TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation
+=== RUN   TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+=== PAUSE TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+=== RUN   TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== PAUSE TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+=== PAUSE TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+=== PAUSE TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+=== RUN   TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+=== PAUSE TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+=== RUN   TestMergedHeadRefusesAnUnrepresentedCommit
+=== PAUSE TestMergedHeadRefusesAnUnrepresentedCommit
+=== RUN   TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+=== PAUSE TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+=== RUN   TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== PAUSE TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== RUN   TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+=== PAUSE TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+=== RUN   TestMergedHeadIgnoresARecordForAnotherSpec
+=== PAUSE TestMergedHeadIgnoresARecordForAnotherSpec
+=== RUN   TestMergedHeadFallsBackWhenRecordsDisagree
+=== PAUSE TestMergedHeadFallsBackWhenRecordsDisagree
+=== RUN   TestMergedHeadFallsBackWhenRecordCommitIsMissing
+=== PAUSE TestMergedHeadFallsBackWhenRecordCommitIsMissing
+=== RUN   TestMergedHeadKeepsADirtyRunWorktree
+=== PAUSE TestMergedHeadKeepsADirtyRunWorktree
+=== RUN   TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== PAUSE TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== RUN   TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+=== PAUSE TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+=== RUN   TestMergedHeadApplyRefusesAChangedRecord
+=== PAUSE TestMergedHeadApplyRefusesAChangedRecord
+=== RUN   TestMergedHeadApplyRefusesAMovedFallbackHead
+=== PAUSE TestMergedHeadApplyRefusesAMovedFallbackHead
+=== RUN   TestApplyReleasesAMergedRunWhoseTargetBranchIsGone
+=== PAUSE TestApplyReleasesAMergedRunWhoseTargetBranchIsGone
+=== RUN   TestApplyKeepsAnUndeclaredLeftoverWhenTheTargetIsGone
+=== PAUSE TestApplyKeepsAnUndeclaredLeftoverWhenTheTargetIsGone
+=== RUN   TestApplyStillRefusesAnEmptyTargetHeadWithoutProof
+=== PAUSE TestApplyStillRefusesAnEmptyTargetHeadWithoutProof
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== PAUSE TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== PAUSE TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== RUN   TestMergedSpecRunNamesTheUnrepresentedCommit
+=== PAUSE TestMergedSpecRunNamesTheUnrepresentedCommit
+=== RUN   TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+=== PAUSE TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+=== RUN   TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+=== PAUSE TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== PAUSE TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== RUN   TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== PAUSE TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== RUN   TestApplyRefusesWhenTheLeftoverSetChanged
+=== PAUSE TestApplyRefusesWhenTheLeftoverSetChanged
+=== RUN   TestApplyRemovesASupersededLeftoverWorktree
+=== PAUSE TestApplyRemovesASupersededLeftoverWorktree
+=== RUN   TestAbsentTargetBranchIsReleasedOnTheMergedHead
+=== PAUSE TestAbsentTargetBranchIsReleasedOnTheMergedHead
+=== RUN   TestArchivedSpecLeftoverScopeKinds
+=== PAUSE TestArchivedSpecLeftoverScopeKinds
+=== RUN   TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== PAUSE TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== RUN   TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+=== PAUSE TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+=== RUN   TestArchivedSpecDirtyPathsKeepLiteralFilenames
+=== PAUSE TestArchivedSpecDirtyPathsKeepLiteralFilenames
+=== RUN   TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths
+=== PAUSE TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths
+=== RUN   TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+=== PAUSE TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+=== RUN   TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved
+=== PAUSE TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved
+=== RUN   TestPruneTerminalReportSkipsARunKeyedToAnotherRepository
+=== PAUSE TestPruneTerminalReportSkipsARunKeyedToAnotherRepository
+=== RUN   TestCountRetainedTerminalRunsReportsAGitLaunchFailure
+=== PAUSE TestCountRetainedTerminalRunsReportsAGitLaunchFailure
+=== RUN   TestCountRetainedTerminalRunsListsBranchesThroughTheKeyWhenTheCheckoutIsGone
+=== PAUSE TestCountRetainedTerminalRunsListsBranchesThroughTheKeyWhenTheCheckoutIsGone
+=== RUN   TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone
+=== PAUSE TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone
+=== RUN   TestCountRetainedTerminalRunsListsABareRepositoryKey
+=== PAUSE TestCountRetainedTerminalRunsListsABareRepositoryKey
+=== RUN   TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot
+=== PAUSE TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot
+=== RUN   TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotADirectory
+=== PAUSE TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotADirectory
+=== RUN   TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotTheRepositoryRoot
+=== PAUSE TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotTheRepositoryRoot
+=== RUN   TestCountRetainedTerminalRunsStillReportsARecordedRootGitFailure
+=== PAUSE TestCountRetainedTerminalRunsStillReportsARecordedRootGitFailure
+=== RUN   TestCountRetainedTerminalRunsReportsAnInvalidExistingRepositoryKey
+=== PAUSE TestCountRetainedTerminalRunsReportsAnInvalidExistingRepositoryKey
+=== RUN   TestCarryForwardStagingRecordsItsOwner
+=== PAUSE TestCarryForwardStagingRecordsItsOwner
+=== RUN   TestCarryForwardStagingWaitsForTheAdminLock
+=== PAUSE TestCarryForwardStagingWaitsForTheAdminLock
+=== RUN   TestCarryForwardStagingSweepReleasesADeadOwnersWorktree
+=== PAUSE TestCarryForwardStagingSweepReleasesADeadOwnersWorktree
+=== RUN   TestCarryForwardStagingSweepKeepsALiveOwnersWorktree
+=== PAUSE TestCarryForwardStagingSweepKeepsALiveOwnersWorktree
+=== RUN   TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree
+=== PAUSE TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree
+=== RUN   TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree
+=== PAUSE TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree
+=== RUN   TestCarryForwardStagingOwnerHelperProcess
+=== PAUSE TestCarryForwardStagingOwnerHelperProcess
+=== RUN   TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe
+=== PAUSE TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown
+=== PAUSE TestAnUnregisteredRunWorktreeKeepsTodaysUnknown
+=== RUN   TestApplyRefusesAnIgnoredOnlyWorktreeWhoseFilesChanged
+=== PAUSE TestApplyRefusesAnIgnoredOnlyWorktreeWhoseFilesChanged
+=== RUN   TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+=== PAUSE TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+=== RUN   TestIgnoredOnlyReleaseDoesNotFollowSymbolicLinks
+=== PAUSE TestIgnoredOnlyReleaseDoesNotFollowSymbolicLinks
+=== RUN   TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules
+=== PAUSE TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules
+=== RUN   TestCanonicalPathResolvesTheExistingPrefix
+=== PAUSE TestCanonicalPathResolvesTheExistingPrefix
+=== RUN   TestCleanupItemReleasesAGoneItemWorktreeUnderASymlinkedRoot
+=== PAUSE TestCleanupItemReleasesAGoneItemWorktreeUnderASymlinkedRoot
+=== RUN   TestUseItemRecreatesAGoneItemWorktreeUnderASymlinkedRoot
+=== PAUSE TestUseItemRecreatesAGoneItemWorktreeUnderASymlinkedRoot
+=== RUN   TestInspectTerminalRunResolvesASymlinkedWorktreeRoot
+=== PAUSE TestInspectTerminalRunResolvesASymlinkedWorktreeRoot
+=== RUN   TestApplyTerminalRunReleasesAWorktreeUnderASymlinkedRoot
+=== PAUSE TestApplyTerminalRunReleasesAWorktreeUnderASymlinkedRoot
+=== RUN   TestPruneTerminalReportPrunesUnderASymlinkedRoot
+=== PAUSE TestPruneTerminalReportPrunesUnderASymlinkedRoot
+=== RUN   TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot
+=== PAUSE TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot
+=== RUN   TestInspectTerminalRunTreatsAMissingWorktreeUnderASymlinkedRootAsAbsent
+=== PAUSE TestInspectTerminalRunTreatsAMissingWorktreeUnderASymlinkedRootAsAbsent
+=== RUN   TestCarryForwardAcceptsBudgetExceededRun
+=== PAUSE TestCarryForwardAcceptsBudgetExceededRun
+=== RUN   TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles
+--- PASS: TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles (0.09s)
+=== RUN   TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot
+=== PAUSE TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot
+=== RUN   TestCleanupKeepsARegisteredItemWorktreeOnAnotherBranch
+=== PAUSE TestCleanupKeepsARegisteredItemWorktreeOnAnotherBranch
+=== RUN   TestCleanupKeepsADetachedItemWorktree
+=== PAUSE TestCleanupKeepsADetachedItemWorktree
+=== RUN   TestCleanupRecoversAHalfRemovedItemWorktree
+=== PAUSE TestCleanupRecoversAHalfRemovedItemWorktree
+=== RUN   TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker
+=== PAUSE TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker
+=== RUN   TestCleanupPreservesAnUnregisteredPathWhileItsAdminDirectoryExists
+=== PAUSE TestCleanupPreservesAnUnregisteredPathWhileItsAdminDirectoryExists
+=== RUN   TestCleanupPreservesAPathNotDerivedForTheItem
+=== PAUSE TestCleanupPreservesAPathNotDerivedForTheItem
+=== RUN   TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot
+=== PAUSE TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot
+=== RUN   TestTaskWorktreeCreationFailureNamesItsContext
+=== PAUSE TestTaskWorktreeCreationFailureNamesItsContext
+=== RUN   TestBootstrapSerializesAcrossSiblings
+=== PAUSE TestBootstrapSerializesAcrossSiblings
+=== RUN   TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+=== PAUSE TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+=== RUN   TestBootstrapFailureAfterWorkIsClassifiedApart
+=== PAUSE TestBootstrapFailureAfterWorkIsClassifiedApart
+=== RUN   TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit
+=== PAUSE TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit
+=== RUN   TestTryWriteBootstrapReleaseReturnsWithoutAReader
+=== PAUSE TestTryWriteBootstrapReleaseReturnsWithoutAReader
+=== RUN   TestRunBootstrapReturnsBootstrapErrorOnTimeout
+=== PAUSE TestRunBootstrapReturnsBootstrapErrorOnTimeout
+=== RUN   TestRunBootstrapSkipsEmptyCommand
+=== PAUSE TestRunBootstrapSkipsEmptyCommand
+=== RUN   TestDeriveRootPathUsesReadableUniqueRepoSlug
+=== PAUSE TestDeriveRootPathUsesReadableUniqueRepoSlug
+=== RUN   TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick
+=== PAUSE TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick
+=== RUN   TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved
+=== PAUSE TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved
+=== RUN   TestCleanupTaskRemovesTaskWorktreeAndBranch
+=== PAUSE TestCleanupTaskRemovesTaskWorktreeAndBranch
+=== RUN   TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris
+=== PAUSE TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris
+=== RUN   TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches
+=== PAUSE TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches
+=== RUN   TestPriorChangedFilesReportsBothSidesOfARename
+=== PAUSE TestPriorChangedFilesReportsBothSidesOfARename
+=== RUN   TestListPendingRunWorkReportsAheadRunBranches
+=== PAUSE TestListPendingRunWorkReportsAheadRunBranches
+=== RUN   TestRunIDFromBranchName
+=== PAUSE TestRunIDFromBranchName
+=== RUN   TestIntegratePendingRunWorkFastForwardsBaseBranch
+=== PAUSE TestIntegratePendingRunWorkFastForwardsBaseBranch
+=== RUN   TestIntegratePendingRunWorkRefusesDivergedBranch
+=== PAUSE TestIntegratePendingRunWorkRefusesDivergedBranch
+=== RUN   TestIntegrateFastForwardsCleanCheckout
+=== PAUSE TestIntegrateFastForwardsCleanCheckout
+=== RUN   TestIntegrateFastForwardsPreservingNonOverlappingDirt
+=== PAUSE TestIntegrateFastForwardsPreservingNonOverlappingDirt
+=== RUN   TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt
+=== PAUSE TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt
+=== RUN   TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch
+=== PAUSE TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch
+=== RUN   TestIntegrateMovesBranchWhenTargetCheckedOutNowhere
+=== PAUSE TestIntegrateMovesBranchWhenTargetCheckedOutNowhere
+=== RUN   TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere
+=== PAUSE TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere
+=== RUN   TestCleanupCleanRemovesCleanRunWorktreeAndBranch
+=== PAUSE TestCleanupCleanRemovesCleanRunWorktreeAndBranch
+=== RUN   TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris
+=== PAUSE TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris
+=== RUN   TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof
+=== PAUSE TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof
+=== RUN   TestInspectTerminalRunSafe
+=== PAUSE TestInspectTerminalRunSafe
+=== RUN   TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== PAUSE TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence
+=== PAUSE TestInspectTerminalRunRequiresArchivedEvidence
+=== RUN   TestInspectTerminalRunConcurrentSafe
+=== PAUSE TestInspectTerminalRunConcurrentSafe
+=== RUN   TestCountRetainedTerminalRunsBatchesGitInspectionByRepository
+=== PAUSE TestCountRetainedTerminalRunsBatchesGitInspectionByRepository
+=== RUN   TestInspectTerminalRunUnintegrated
+=== PAUSE TestInspectTerminalRunUnintegrated
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+=== RUN   TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+=== PAUSE TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+=== RUN   TestQAReportOnlyBranch
+=== PAUSE TestQAReportOnlyBranch
+=== RUN   TestQAReportOnlyBranchAcceptsAPendingQACommit
+=== PAUSE TestQAReportOnlyBranchAcceptsAPendingQACommit
+=== RUN   TestSupersedingQAReportRecognisesAnArchivedCopy
+=== PAUSE TestSupersedingQAReportRecognisesAnArchivedCopy
+=== RUN   TestSupersedingQAReportRequiresTheSameContent
+=== PAUSE TestSupersedingQAReportRequiresTheSameContent
+=== RUN   TestSupersedingQAReportStillPrefersNewerReport
+=== PAUSE TestSupersedingQAReportStillPrefersNewerReport
+=== RUN   TestInspectTerminalRunBoundsSupersededReason
+=== PAUSE TestInspectTerminalRunBoundsSupersededReason
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport
+=== PAUSE TestInspectTerminalRunClassifiesSupersededQAReport
+=== RUN   TestClassifyRunBranchSetFourFailedCycles
+=== PAUSE TestClassifyRunBranchSetFourFailedCycles
+=== RUN   TestReconcileFallsBackToTheDefaultBranch
+=== PAUSE TestReconcileFallsBackToTheDefaultBranch
+=== RUN   TestReconcileFallbackRequiresArchivedEvidence
+=== PAUSE TestReconcileFallbackRequiresArchivedEvidence
+=== RUN   TestReconcilePresentTargetAcceptsEitherSpecPath
+=== PAUSE TestReconcilePresentTargetAcceptsEitherSpecPath
+=== RUN   TestReconcilePreservesWithoutDefaultBranchEvidence
+=== PAUSE TestReconcilePreservesWithoutDefaultBranchEvidence
+=== RUN   TestReconcileReasonNamesTheMissingProof
+=== PAUSE TestReconcileReasonNamesTheMissingProof
+=== RUN   TestReconcileReasonKeepsProofClauseForLongSlugs
+=== PAUSE TestReconcileReasonKeepsProofClauseForLongSlugs
+=== RUN   TestClassifyRunBranchSetPreservesAbsentTarget
+=== PAUSE TestClassifyRunBranchSetPreservesAbsentTarget
+=== RUN   TestClassifyRunBranchSetUsesOnlyOneTarget
+=== PAUSE TestClassifyRunBranchSetUsesOnlyOneTarget
+=== RUN   TestClassifyRunBranchSetPreservesUnintegratedImplementationWork
+=== PAUSE TestClassifyRunBranchSetPreservesUnintegratedImplementationWork
+=== RUN   TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof
+=== PAUSE TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof
+=== RUN   TestClassifyRunBranchSetPreservesActiveRunBranch
+=== PAUSE TestClassifyRunBranchSetPreservesActiveRunBranch
+=== RUN   TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence
+=== PAUSE TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence
+=== RUN   TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree
+=== PAUSE TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree
+=== RUN   TestApplyRunBranchCandidatePreservesStaleSupersedingProof
+=== PAUSE TestApplyRunBranchCandidatePreservesStaleSupersedingProof
+=== RUN   TestApplyRunBranchCandidateRejectsUninspectedBranch
+=== PAUSE TestApplyRunBranchCandidateRejectsUninspectedBranch
+=== RUN   TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree
+=== PAUSE TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree
+=== RUN   TestApplyTerminalRunSuperseded
+=== PAUSE TestApplyTerminalRunSuperseded
+=== RUN   TestApplyTerminalRunSupersededPreservesWhenFreshProofFails
+=== PAUSE TestApplyTerminalRunSupersededPreservesWhenFreshProofFails
+=== RUN   TestInspectTerminalRunDirty
+=== PAUSE TestInspectTerminalRunDirty
+=== RUN   TestInspectTerminalRunUnknownMissingTarget
+=== PAUSE TestInspectTerminalRunUnknownMissingTarget
+=== RUN   TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+=== PAUSE TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+=== RUN   TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+=== PAUSE TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+=== RUN   TestInspectTerminalRunUnknownAmbiguousRef
+=== PAUSE TestInspectTerminalRunUnknownAmbiguousRef
+=== RUN   TestInspectTerminalRunUnknownMissingRunBranch
+=== PAUSE TestInspectTerminalRunUnknownMissingRunBranch
+=== RUN   TestResolveLocalBranchTellsAbsentFromAmbiguous
+=== PAUSE TestResolveLocalBranchTellsAbsentFromAmbiguous
+=== RUN   TestInspectTerminalRunReleased
+=== PAUSE TestInspectTerminalRunReleased
+=== RUN   TestInspectTerminalRunSafeWithoutWorktree
+=== PAUSE TestInspectTerminalRunSafeWithoutWorktree
+=== RUN   TestApplyTerminalRunSafe
+=== PAUSE TestApplyTerminalRunSafe
+=== RUN   TestApplyTerminalRunSafeEvidenceOnly
+=== PAUSE TestApplyTerminalRunSafeEvidenceOnly
+=== RUN   TestApplyTerminalRunStaleHeads
+=== PAUSE TestApplyTerminalRunStaleHeads
+=== RUN   TestApplyTerminalRunStaleMetadata
+=== PAUSE TestApplyTerminalRunStaleMetadata
+=== RUN   TestApplyTerminalRunDirty
+=== PAUSE TestApplyTerminalRunDirty
+=== RUN   TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup
+=== PAUSE TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup
+=== RUN   TestApplyTerminalRunStoreFailureStartsNoCleanup
+=== PAUSE TestApplyTerminalRunStoreFailureStartsNoCleanup
+=== RUN   TestApplyTerminalRunOutcomeRemainsUnchanged
+=== PAUSE TestApplyTerminalRunOutcomeRemainsUnchanged
+=== RUN   TestApplyTerminalRunRemovalFailure
+=== PAUSE TestApplyTerminalRunRemovalFailure
+=== RUN   TestApplyTerminalRunDeletionFailure
+=== PAUSE TestApplyTerminalRunDeletionFailure
+=== RUN   TestApplyTerminalRunReleased
+=== PAUSE TestApplyTerminalRunReleased
+=== RUN   TestPruneTerminalReconciliationReachableChangedBranch
+=== PAUSE TestPruneTerminalReconciliationReachableChangedBranch
+=== RUN   TestPruneTerminalReportRequiresArchivedEvidence
+=== PAUSE TestPruneTerminalReportRequiresArchivedEvidence
+=== RUN   TestPruneTerminalReconciliationPreservesUniqueChangedBranch
+=== PAUSE TestPruneTerminalReconciliationPreservesUniqueChangedBranch
+=== RUN   TestInspectTerminalRunUnsafePath
+=== PAUSE TestInspectTerminalRunUnsafePath
+=== CONT  TestNoProductionWorktreeAdministrationBypassesTheAdminLock
+=== CONT  TestBootstrapSerializesAcrossSiblings
+=== CONT  TestApplyKeepsAnUndeclaredLeftoverWhenTheTargetIsGone
+=== CONT  TestClassifyRunBranchSetFourFailedCycles
+=== CONT  TestCarryForwardStagingWaitsForTheAdminLock
+=== CONT  TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent
+=== CONT  TestArchivedSpecDirtyPathsKeepLiteralFilenames
+=== CONT  TestIntegrateMovesBranchWhenTargetCheckedOutNowhere
+=== CONT  TestCleanupItemRemovesAHalfRemovedItemWithoutANestedWorktree
+=== CONT  TestInspectTerminalRunUnsafePath
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_worktree
+=== CONT  TestTaskWorktreeCreationFailureNamesItsContext
+=== CONT  TestDiscardDirtyTerminalRunRemovesTheRunWorktreeAndRunBranch
+--- PASS: TestCarryForwardStagingWaitsForTheAdminLock (0.00s)
+=== CONT  TestCarryForwardStagingRecordsItsOwner
+--- PASS: TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent (0.16s)
+=== CONT  TestCountRetainedTerminalRunsReportsAnInvalidExistingRepositoryKey
+--- PASS: TestCountRetainedTerminalRunsReportsAnInvalidExistingRepositoryKey (0.01s)
+=== CONT  TestCountRetainedTerminalRunsStillReportsARecordedRootGitFailure
+--- PASS: TestCountRetainedTerminalRunsStillReportsARecordedRootGitFailure (0.00s)
+=== CONT  TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotTheRepositoryRoot
+--- PASS: TestTaskWorktreeCreationFailureNamesItsContext (0.17s)
+=== CONT  TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotADirectory
+--- PASS: TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotADirectory (0.00s)
+=== CONT  TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot
+--- PASS: TestCountRetainedTerminalRunsStillReportsARecordedRootThatIsNotTheRepositoryRoot (0.01s)
+=== CONT  TestCountRetainedTerminalRunsListsABareRepositoryKey
+--- PASS: TestCountRetainedTerminalRunsStillReportsASymlinkedRecordedRoot (0.00s)
+=== CONT  TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone
+--- PASS: TestCarryForwardStagingRecordsItsOwner (0.18s)
+=== CONT  TestInspectTerminalRunClassifiesSupersededQAReport
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/newer_target_report_supersedes_QA-only_branch
+--- PASS: TestCountRetainedTerminalRunsListsABareRepositoryKey (0.01s)
+=== CONT  TestInspectTerminalRunBoundsSupersededReason
+--- PASS: TestCountRetainedTerminalRunsCountsOnlyAnExistingWorktreeWhenTheRepositoryIsGone (0.01s)
+=== CONT  TestSupersedingQAReportStillPrefersNewerReport
+=== RUN   TestSupersedingQAReportStillPrefersNewerReport/later_date
+=== PAUSE TestSupersedingQAReportStillPrefersNewerReport/later_date
+=== RUN   TestSupersedingQAReportStillPrefersNewerReport/later_sequence
+=== PAUSE TestSupersedingQAReportStillPrefersNewerReport/later_sequence
+=== CONT  TestSupersedingQAReportRequiresTheSameContent
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_worktree_parent
+--- PASS: TestCleanupItemRemovesAHalfRemovedItemWithoutANestedWorktree (0.26s)
+=== CONT  TestCountRetainedTerminalRunsListsBranchesThroughTheKeyWhenTheCheckoutIsGone
+--- PASS: TestCountRetainedTerminalRunsListsBranchesThroughTheKeyWhenTheCheckoutIsGone (0.00s)
+=== CONT  TestSupersedingQAReportRecognisesAnArchivedCopy
+--- PASS: TestIntegrateMovesBranchWhenTargetCheckedOutNowhere (0.31s)
+=== CONT  TestCountRetainedTerminalRunsReportsAGitLaunchFailure
+--- PASS: TestCountRetainedTerminalRunsReportsAGitLaunchFailure (0.00s)
+=== CONT  TestQAReportOnlyBranchAcceptsAPendingQACommit
+=== RUN   TestInspectTerminalRunUnsafePath/unclean_worktree_path
+--- PASS: TestQAReportOnlyBranchAcceptsAPendingQACommit (0.25s)
+=== CONT  TestPruneTerminalReportSkipsARunKeyedToAnotherRepository
+--- PASS: TestNoProductionWorktreeAdministrationBypassesTheAdminLock (0.60s)
+=== CONT  TestQAReportOnlyBranch
+=== RUN   TestQAReportOnlyBranch/active_Spec_QA_report_commit
+=== RUN   TestInspectTerminalRunUnsafePath/existing_unregistered_worktree_path
+--- PASS: TestSupersedingQAReportRequiresTheSameContent (0.48s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails
+--- PASS: TestSupersedingQAReportRecognisesAnArchivedCopy (0.46s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile
+--- PASS: TestPruneTerminalReportSkipsARunKeyedToAnotherRepository (0.22s)
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile
+=== CONT  TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile
+--- PASS: TestBootstrapSerializesAcrossSiblings (0.81s)
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_Git_root
+=== RUN   TestQAReportOnlyBranch/archived_Spec_QA_report_commit
+--- PASS: TestArchivedSpecDirtyPathsKeepLiteralFilenames (0.90s)
+=== CONT  TestInspectTerminalRunUnintegrated
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/newer_archived_target_report_supersedes_archived_QA-only_branch
+=== RUN   TestInspectTerminalRunUnsafePath/symlinked_Git_root_parent
+=== RUN   TestQAReportOnlyBranch/multiple_QA_report_commits
+--- PASS: TestInspectTerminalRunUnsafePath (1.17s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_worktree (0.22s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_worktree_parent (0.22s)
+    --- PASS: TestInspectTerminalRunUnsafePath/unclean_worktree_path (0.21s)
+    --- PASS: TestInspectTerminalRunUnsafePath/existing_unregistered_worktree_path (0.21s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_Git_root (0.16s)
+    --- PASS: TestInspectTerminalRunUnsafePath/symlinked_Git_root_parent (0.16s)
+=== CONT  TestCountRetainedTerminalRunsBatchesGitInspectionByRepository
+--- PASS: TestCountRetainedTerminalRunsBatchesGitInspectionByRepository (0.00s)
+=== CONT  TestInspectTerminalRunConcurrentSafe
+=== RUN   TestQAReportOnlyBranch/non_QA_commit_message
+--- PASS: TestInspectTerminalRunBoundsSupersededReason (1.30s)
+=== CONT  TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails (0.95s)
+=== CONT  TestInspectTerminalRunRequiresArchivedEvidence
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_active_Spec_evidence_preserves
+=== RUN   TestQAReportOnlyBranch/QA_commit_changes_a_non_QA_path
+=== CONT  TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance
+--- PASS: TestInspectTerminalRunUnintegrated (0.88s)
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile (1.08s)
+=== CONT  TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile (1.06s)
+=== CONT  TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/non_QA_commit_preserves_branch
+--- PASS: TestInspectTerminalRunConcurrentSafe (0.77s)
+=== CONT  TestInspectTerminalRunSafe
+--- PASS: TestClassifyRunBranchSetFourFailedCycles (2.04s)
+=== CONT  TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof
+--- PASS: TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile (1.22s)
+=== CONT  TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris
+--- PASS: TestDiscardDirtyTerminalRunRemovesTheRunWorktreeAndRunBranch (2.06s)
+=== CONT  TestCleanupCleanRemovesCleanRunWorktreeAndBranch
+=== RUN   TestQAReportOnlyBranch/empty_commit_range
+--- PASS: TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris (0.20s)
+=== CONT  TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere
+--- PASS: TestCleanupCleanRemovesCleanRunWorktreeAndBranch (0.18s)
+=== CONT  TestArchivedSpecLeftoverRenameKeepsAnOutsideSource
+--- PASS: TestQAReportOnlyBranch (1.68s)
+    --- PASS: TestQAReportOnlyBranch/active_Spec_QA_report_commit (0.27s)
+    --- PASS: TestQAReportOnlyBranch/archived_Spec_QA_report_commit (0.27s)
+    --- PASS: TestQAReportOnlyBranch/multiple_QA_report_commits (0.27s)
+    --- PASS: TestQAReportOnlyBranch/non_QA_commit_message (0.31s)
+    --- PASS: TestQAReportOnlyBranch/QA_commit_changes_a_non_QA_path (0.38s)
+    --- PASS: TestQAReportOnlyBranch/empty_commit_range (0.18s)
+=== CONT  TestArchivedSpecLeftoversRequireTheArchivedPRD
+=== CONT  TestArchivedSpecLeftoverScopeKinds
+--- PASS: TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof (0.30s)
+=== RUN   TestArchivedSpecLeftoverScopeKinds/created.txt
+--- PASS: TestInspectTerminalRunSafe (0.48s)
+=== CONT  TestAbsentTargetBranchIsReleasedOnTheMergedHead
+--- PASS: TestPruneTerminalReportReleasesARunWhoseCheckoutWasRemoved (0.98s)
+=== CONT  TestApplyRemovesASupersededLeftoverWorktree
+=== CONT  TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch
+--- PASS: TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere (0.32s)
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_archived_Spec_evidence_is_safe
+--- PASS: TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge (0.89s)
+=== CONT  TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/missing_target_report_preserves_branch
+--- PASS: TestArchivedSpecLeftoverRecordedBeforeCarryForwardProvenance (0.98s)
+=== CONT  TestIntegrateFastForwardsPreservingNonOverlappingDirt
+--- PASS: TestApplyKeepsAnUndeclaredLeftoverWhenTheTargetIsGone (2.81s)
+=== CONT  TestIntegrateFastForwardsCleanCheckout
+--- PASS: TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch (0.33s)
+=== CONT  TestIntegratePendingRunWorkRefusesDivergedBranch
+=== CONT  TestIntegratePendingRunWorkFastForwardsBaseBranch
+--- PASS: TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt (0.29s)
+--- PASS: TestIntegrateFastForwardsPreservingNonOverlappingDirt (0.28s)
+=== CONT  TestRunIDFromBranchName
+=== RUN   TestRunIDFromBranchName/canonical
+=== PAUSE TestRunIDFromBranchName/canonical
+=== RUN   TestRunIDFromBranchName/surrounding_whitespace
+=== PAUSE TestRunIDFromBranchName/surrounding_whitespace
+=== RUN   TestRunIDFromBranchName/foreign_branch
+=== PAUSE TestRunIDFromBranchName/foreign_branch
+=== RUN   TestRunIDFromBranchName/empty_Run_ID
+=== PAUSE TestRunIDFromBranchName/empty_Run_ID
+=== CONT  TestListPendingRunWorkReportsAheadRunBranches
+--- PASS: TestIntegrateFastForwardsCleanCheckout (0.26s)
+=== CONT  TestPriorChangedFilesReportsBothSidesOfARename
+--- PASS: TestIntegratePendingRunWorkRefusesDivergedBranch (0.23s)
+=== CONT  TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches
+--- PASS: TestArchivedSpecWithMergeEvidenceSupersedesOtherCommitPaths (1.36s)
+=== CONT  TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris
+--- PASS: TestArchivedSpecLeftoversRequireTheArchivedPRD (0.91s)
+=== CONT  TestCleanupTaskRemovesTaskWorktreeAndBranch
+--- PASS: TestPriorChangedFilesReportsBothSidesOfARename (0.13s)
+=== CONT  TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved
+=== RUN   TestArchivedSpecLeftoverScopeKinds/deleted.txt
+--- PASS: TestIntegratePendingRunWorkFastForwardsBaseBranch (0.21s)
+=== CONT  TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick
+=== CONT  TestDeriveRootPathUsesReadableUniqueRepoSlug
+--- PASS: TestArchivedSpecLeftoverRenameKeepsAnOutsideSource (1.08s)
+--- PASS: TestDeriveRootPathUsesReadableUniqueRepoSlug (0.01s)
+=== CONT  TestRunBootstrapSkipsEmptyCommand
+--- PASS: TestRunBootstrapSkipsEmptyCommand (0.00s)
+=== CONT  TestRunBootstrapReturnsBootstrapErrorOnTimeout
+=== RUN   TestInspectTerminalRunRequiresArchivedEvidence/present_target_without_archived_Spec_evidence_stays_safe
+--- PASS: TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris (0.30s)
+=== CONT  TestTryWriteBootstrapReleaseReturnsWithoutAReader
+=== CONT  TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit
+--- PASS: TestTryWriteBootstrapReleaseReturnsWithoutAReader (0.01s)
+--- PASS: TestListPendingRunWorkReportsAheadRunBranches (0.44s)
+=== CONT  TestBootstrapFailureAfterWorkIsClassifiedApart
+--- PASS: TestCleanupTaskRemovesTaskWorktreeAndBranch (0.32s)
+=== CONT  TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/older_target_report_preserves_branch
+=== CONT  TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree
+--- PASS: TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved (0.47s)
+=== CONT  TestItemBranchSafetyBoundaries
+--- PASS: TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick (0.42s)
+=== RUN   TestItemBranchSafetyBoundaries/wrong-path
+--- PASS: TestInspectTerminalRunRequiresArchivedEvidence (2.14s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_active_Spec_evidence_preserves (1.00s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/deleted_target_with_archived_Spec_evidence_is_safe (0.81s)
+    --- PASS: TestInspectTerminalRunRequiresArchivedEvidence/present_target_without_archived_Spec_evidence_stays_safe (0.33s)
+=== CONT  TestApplyItemBranchRefusesAMovedHead
+=== RUN   TestArchivedSpecLeftoverScopeKinds/recorded.txt
+--- PASS: TestCleanupItemRefusesAHalfRemovedItemHoldingARegisteredWorktree (0.18s)
+=== CONT  TestApplyItemBranchRemovesTheCleanWorktreeAndBranch
+--- PASS: TestApplyRemovesASupersededLeftoverWorktree (1.58s)
+=== CONT  TestItemBranchWithADirtyWorktreeIsPreserved
+=== RUN   TestInspectTerminalRunClassifiesSupersededQAReport/same_target_report_preserves_branch
+--- PASS: TestAbsentTargetBranchIsReleasedOnTheMergedHead (1.86s)
+=== CONT  TestItemBranchOfAnUnmergedSpecIsPreserved
+--- PASS: TestRunBootstrapReturnsBootstrapErrorOnTimeout (1.01s)
+=== CONT  TestItemBranchOfALiveItemIsPreserved
+--- PASS: TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit (0.88s)
+=== CONT  TestItemBranchOfAMergedSpecIsReleasable
+=== CONT  TestRemoveRegisteredWorktreeKeepsADirtyWorktree
+--- PASS: TestBootstrapFailureAfterWorkIsClassifiedApart (0.87s)
+--- PASS: TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches (1.26s)
+=== CONT  TestAddDetachedWorktreeWaitsForTheAdminLock
+--- PASS: TestBootstrapReleaseWriterOutlivingItsSiblingReachesNoOtherSibling (0.92s)
+=== CONT  TestRemoveRegisteredWorktreeWaitsForTheAdminLock
+--- PASS: TestArchivedSpecLeftoverScopeKinds (2.15s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/created.txt (0.89s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/deleted.txt (0.61s)
+    --- PASS: TestArchivedSpecLeftoverScopeKinds/recorded.txt (0.65s)
+=== CONT  TestDirtyDiscardReportsALockedWorktreeRemovalFailure
+=== CONT  TestDirtyDiscardKeepsTheDeliveryProofWhenDefaultHasAdvanced
+--- PASS: TestRemoveRegisteredWorktreeKeepsADirtyWorktree (0.18s)
+--- PASS: TestAddDetachedWorktreeWaitsForTheAdminLock (0.18s)
+=== CONT  TestDiscardDirtyTerminalRunRefusesAChangedPathSet
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/added_path
+=== RUN   TestItemBranchSafetyBoundaries/default-moved
+--- PASS: TestRemoveRegisteredWorktreeWaitsForTheAdminLock (0.24s)
+=== CONT  TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved
+--- PASS: TestItemBranchWithADirtyWorktreeIsPreserved (0.77s)
+=== CONT  TestInspectTerminalRunUnknownMissingTarget
+=== CONT  TestInspectTerminalRunDirty
+--- PASS: TestApplyItemBranchRefusesAMovedHead (1.08s)
+=== RUN   TestInspectTerminalRunDirty/tracked_change_with_missing_target_metadata
+--- PASS: TestApplyItemBranchRemovesTheCleanWorktreeAndBranch (1.12s)
+=== CONT  TestApplyTerminalRunSupersededPreservesWhenFreshProofFails
+--- PASS: TestItemBranchOfALiveItemIsPreserved (0.62s)
+=== CONT  TestApplyTerminalRunSuperseded
+--- PASS: TestItemBranchOfAnUnmergedSpecIsPreserved (0.71s)
+=== CONT  TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree
+--- PASS: TestInspectTerminalRunClassifiesSupersededQAReport (4.88s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/newer_target_report_supersedes_QA-only_branch (0.79s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/newer_archived_target_report_supersedes_archived_QA-only_branch (0.89s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/non_QA_commit_preserves_branch (0.90s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/missing_target_report_preserves_branch (0.78s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/older_target_report_preserves_branch (0.60s)
+    --- PASS: TestInspectTerminalRunClassifiesSupersededQAReport/same_target_report_preserves_branch (0.93s)
+=== CONT  TestApplyRunBranchCandidateRejectsUninspectedBranch
+--- PASS: TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved (0.42s)
+=== CONT  TestApplyRunBranchCandidatePreservesStaleSupersedingProof
+--- PASS: TestItemBranchOfAMergedSpecIsReleasable (0.87s)
+=== CONT  TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree
+--- PASS: TestInspectTerminalRunUnknownMissingTarget (0.43s)
+=== CONT  TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence
+=== RUN   TestInspectTerminalRunDirty/untracked_change
+=== RUN   TestItemBranchSafetyBoundaries/dirty-after-proof
+--- PASS: TestApplyRunBranchCandidateRejectsUninspectedBranch (0.93s)
+=== CONT  TestClassifyRunBranchSetPreservesActiveRunBranch
+--- PASS: TestInspectTerminalRunDirty (1.24s)
+    --- PASS: TestInspectTerminalRunDirty/tracked_change_with_missing_target_metadata (0.54s)
+    --- PASS: TestInspectTerminalRunDirty/untracked_change (0.71s)
+=== CONT  TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof
+--- PASS: TestApplyTerminalRunSuperseded (1.27s)
+=== CONT  TestClassifyRunBranchSetPreservesUnintegratedImplementationWork
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/not_a_candidate
+--- PASS: TestApplyTerminalRunSupersededPreservesWhenFreshProofFails (1.41s)
+=== CONT  TestClassifyRunBranchSetUsesOnlyOneTarget
+--- PASS: TestDirtyDiscardKeepsTheDeliveryProofWhenDefaultHasAdvanced (1.86s)
+=== CONT  TestClassifyRunBranchSetPreservesAbsentTarget
+=== CONT  TestReconcileReasonKeepsProofClauseForLongSlugs
+--- PASS: TestDirtyDiscardReportsALockedWorktreeRemovalFailure (2.02s)
+--- PASS: TestApplyRunBranchCandidatePreservesStaleSupersedingProof (1.69s)
+=== CONT  TestReconcileReasonNamesTheMissingProof
+=== RUN   TestReconcileReasonNamesTheMissingProof/default_branch_has_no_superseding_evidence
+--- PASS: TestClassifyRunBranchSetPreservesActiveRunBranch (0.83s)
+=== CONT  TestReconcilePreservesWithoutDefaultBranchEvidence
+=== RUN   TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_has_no_superseding_evidence
+--- PASS: TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof (0.84s)
+=== CONT  TestReconcilePresentTargetAcceptsEitherSpecPath
+=== RUN   TestReconcilePresentTargetAcceptsEitherSpecPath/active_Spec_path
+--- PASS: TestClassifyRunBranchSetPreservesUnintegratedImplementationWork (0.94s)
+=== CONT  TestADirtyDiscardIsNeverOfferedOutsideItsBounds
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/unrepresented_Task_commit
+--- PASS: TestApplyRunBranchCandidateRefusesACandidateWithoutEvidence (1.98s)
+=== CONT  TestAnEndedRunOfAnArchivedSpecWithAnOutsideLeftoverOffersADirtyDiscard
+--- PASS: TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree (2.32s)
+=== CONT  TestLeftoversRecoverASquashDroppedRevision
+=== RUN   TestLeftoversRecoverASquashDroppedRevision/record
+--- PASS: TestReconcileReasonKeepsProofClauseForLongSlugs (0.87s)
+=== CONT  TestQASupersessionReadsTheArchiveRecord
+=== RUN   TestQASupersessionReadsTheArchiveRecord/newer_report
+=== RUN   TestItemBranchSafetyBoundaries/worktree-removed
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_result
+=== RUN   TestReconcilePresentTargetAcceptsEitherSpecPath/archived_Spec_path
+--- PASS: TestClassifyRunBranchSetUsesOnlyOneTarget (1.15s)
+=== CONT  TestLeftoversKeepTheWorktreeWithoutTheSourceRevision
+=== RUN   TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/declared.txt
+=== RUN   TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_cannot_be_resolved
+=== RUN   TestReconcileReasonNamesTheMissingProof/default_branch_cannot_be_resolved
+--- PASS: TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree (2.51s)
+=== CONT  TestLeftoversReadTaskContextAtTheSourceRevision
+=== RUN   TestLeftoversReadTaskContextAtTheSourceRevision/declared.txt
+--- PASS: TestClassifyRunBranchSetPreservesAbsentTarget (1.59s)
+=== CONT  TestTaskCompletionFollowsTheArchiveRecord
+=== RUN   TestTaskCompletionFollowsTheArchiveRecord/override_status_none
+--- PASS: TestReconcilePresentTargetAcceptsEitherSpecPath (1.18s)
+    --- PASS: TestReconcilePresentTargetAcceptsEitherSpecPath/active_Spec_path (0.59s)
+    --- PASS: TestReconcilePresentTargetAcceptsEitherSpecPath/archived_Spec_path (0.59s)
+=== CONT  TestMergeEvidenceFromTheArchiveRecordAfterASquash
+=== RUN   TestMergeEvidenceFromTheArchiveRecordAfterASquash/source_present
+--- PASS: TestReconcilePreservesWithoutDefaultBranchEvidence (1.33s)
+    --- PASS: TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_has_no_superseding_evidence (0.81s)
+    --- PASS: TestReconcilePreservesWithoutDefaultBranchEvidence/default_branch_cannot_be_resolved (0.52s)
+=== CONT  TestWorktreeAdministrationLockHelperProcess
+--- PASS: TestWorktreeAdministrationLockHelperProcess (0.00s)
+=== CONT  TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently
+--- PASS: TestWorktreeAdministrationOfDifferentRepositoriesRunsConcurrently (0.00s)
+=== CONT  TestWorktreeAdministrationWaitEndsWithTheContext
+--- PASS: TestWorktreeAdministrationWaitEndsWithTheContext (0.00s)
+=== CONT  TestWorktreeAdministrationIsSerializedAcrossProcesses
+--- PASS: TestReconcileReasonNamesTheMissingProof (1.36s)
+    --- PASS: TestReconcileReasonNamesTheMissingProof/default_branch_has_no_superseding_evidence (0.84s)
+    --- PASS: TestReconcileReasonNamesTheMissingProof/default_branch_cannot_be_resolved (0.52s)
+=== CONT  TestConcurrentTaskWorktreeCreationIsSerialized
+--- PASS: TestConcurrentTaskWorktreeCreationIsSerialized (0.00s)
+=== CONT  TestAdminLockGuardReportsADirectWorktreeCall
+--- PASS: TestAdminLockGuardReportsADirectWorktreeCall (0.00s)
+=== CONT  TestApplyReleasesAMergedRunWhoseTargetBranchIsGone
+=== RUN   TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/clean
+=== RUN   TestQASupersessionReadsTheArchiveRecord/identical_report
+--- PASS: TestAnEndedRunOfAnArchivedSpecWithAnOutsideLeftoverOffersADirtyDiscard (1.02s)
+=== CONT  TestMergedHeadApplyRefusesAMovedFallbackHead
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_proof_head
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/not_archived_on_default
+=== RUN   TestItemBranchSafetyBoundaries/post-delivery
+=== RUN   TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/docs/specs/0175-cleanup-after-a-squash-merge/leftover.md
+=== RUN   TestLeftoversRecoverASquashDroppedRevision/adding_subject
+=== RUN   TestQASupersessionReadsTheArchiveRecord/different_report
+=== RUN   TestTaskCompletionFollowsTheArchiveRecord/override_status_
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/Clean_outcome
+=== RUN   TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/declared_leftovers
+=== RUN   TestItemBranchSafetyBoundaries/pending-task
+--- PASS: TestMergedHeadApplyRefusesAMovedFallbackHead (1.38s)
+=== CONT  TestMergedHeadApplyRefusesAChangedRecord
+--- PASS: TestLeftoversKeepTheWorktreeWithoutTheSourceRevision (2.16s)
+    --- PASS: TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/declared.txt (1.09s)
+    --- PASS: TestLeftoversKeepTheWorktreeWithoutTheSourceRevision/docs/specs/0175-cleanup-after-a-squash-merge/leftover.md (1.07s)
+=== CONT  TestMergedHeadApplyReleasesTheRunWorktreeAndBranch
+--- PASS: TestWorktreeAdministrationIsSerializedAcrossProcesses (1.56s)
+=== CONT  TestMergedHeadKeepsTheUnintegratedReasonWithoutASource
+=== RUN   TestQASupersessionReadsTheArchiveRecord/source_absent
+=== RUN   TestTaskCompletionFollowsTheArchiveRecord/override_status_pending
+=== RUN   TestADirtyDiscardIsNeverOfferedOutsideItsBounds/scoped_leftovers
+--- PASS: TestMergedHeadApplyRefusesAChangedRecord (0.66s)
+=== CONT  TestMergedHeadKeepsADirtyRunWorktree
+--- PASS: TestMergedHeadKeepsTheUnintegratedReasonWithoutASource (0.76s)
+=== CONT  TestMergedHeadFallsBackWhenRecordCommitIsMissing
+--- PASS: TestQASupersessionReadsTheArchiveRecord (3.26s)
+    --- PASS: TestQASupersessionReadsTheArchiveRecord/newer_report (0.83s)
+    --- PASS: TestQASupersessionReadsTheArchiveRecord/identical_report (0.81s)
+    --- PASS: TestQASupersessionReadsTheArchiveRecord/different_report (0.80s)
+    --- PASS: TestQASupersessionReadsTheArchiveRecord/source_absent (0.82s)
+=== CONT  TestMergedHeadFallsBackWhenRecordsDisagree
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_Run_head
+=== RUN   TestLeftoversRecoverASquashDroppedRevision/unreachable_forge
+=== RUN   TestLeftoversReadTaskContextAtTheSourceRevision/recorded.txt
+--- PASS: TestMergedHeadApplyReleasesTheRunWorktreeAndBranch (1.17s)
+=== CONT  TestMergedHeadIgnoresARecordForAnotherSpec
+=== RUN   TestMergeEvidenceFromTheArchiveRecordAfterASquash/source_absent
+=== CONT  TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede
+--- PASS: TestMergedHeadKeepsADirtyRunWorktree (0.65s)
+=== RUN   TestItemBranchSafetyBoundaries/other-spec-task
+--- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds (4.06s)
+    --- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/unrepresented_Task_commit (1.25s)
+    --- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/not_archived_on_default (0.91s)
+    --- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/Clean_outcome (0.93s)
+    --- PASS: TestADirtyDiscardIsNeverOfferedOutsideItsBounds/scoped_leftovers (0.97s)
+=== CONT  TestMergedHeadRefusesATaskCommitOfAnotherSpec
+=== RUN   TestTaskCompletionFollowsTheArchiveRecord/override_status_failed
+--- PASS: TestMergedHeadFallsBackWhenRecordCommitIsMissing (1.03s)
+=== CONT  TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead
+=== CONT  TestMergedHeadRefusesAnUnrepresentedCommit
+--- PASS: TestMergedHeadFallsBackWhenRecordsDisagree (0.97s)
+=== RUN   TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/present_target_keeps_its_request
+--- PASS: TestMergedHeadIgnoresARecordForAnotherSpec (0.77s)
+=== CONT  TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved
+--- PASS: TestMergedHeadRefusesATaskCommitOfAnotherSpec (0.84s)
+=== CONT  TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles
+--- PASS: TestMergedHeadRefusesAQAReportTheMergedHeadDoesNotSupersede (1.21s)
+=== CONT  TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport
+--- PASS: TestMergeEvidenceFromTheArchiveRecordAfterASquash (4.20s)
+    --- PASS: TestMergeEvidenceFromTheArchiveRecordAfterASquash/source_present (2.80s)
+    --- PASS: TestMergeEvidenceFromTheArchiveRecordAfterASquash/source_absent (1.40s)
+=== CONT  TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport
+=== RUN   TestItemBranchSafetyBoundaries/bare-branch
+--- PASS: TestLeftoversRecoverASquashDroppedRevision (5.08s)
+    --- PASS: TestLeftoversRecoverASquashDroppedRevision/record (1.64s)
+    --- PASS: TestLeftoversRecoverASquashDroppedRevision/adding_subject (1.71s)
+    --- PASS: TestLeftoversRecoverASquashDroppedRevision/unreachable_forge (1.73s)
+=== CONT  TestMergedHeadRecordReleasesARunContainedInTheMergedHead
+--- PASS: TestMergedHeadDefaultBranchReleasesAnArchivedSpecRunAfterMainMoved (0.82s)
+=== CONT  TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation
+=== RUN   TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation/newer-QA
+--- PASS: TestMergedHeadRefusesATaskNotCompletedAtTheMergedHead (0.97s)
+=== CONT  TestMergeEvidenceDoesNotRequireAnArchivedQAReport
+=== RUN   TestMergeEvidenceDoesNotRequireAnArchivedQAReport/ancestry-miss
+--- PASS: TestMergedHeadRefusesAnUnrepresentedCommit (0.90s)
+=== CONT  TestMergeEvidenceSupersedesScopedDirtyPathsAtTheDefaultHead
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_target_head
+--- PASS: TestTaskCompletionFollowsTheArchiveRecord (4.75s)
+    --- PASS: TestTaskCompletionFollowsTheArchiveRecord/override_status_none (1.07s)
+    --- PASS: TestTaskCompletionFollowsTheArchiveRecord/override_status_ (1.14s)
+    --- PASS: TestTaskCompletionFollowsTheArchiveRecord/override_status_pending (1.27s)
+    --- PASS: TestTaskCompletionFollowsTheArchiveRecord/override_status_failed (1.27s)
+=== CONT  TestMergeEvidenceKeepsATaskCommitOfAnotherSpec
+--- PASS: TestMergedHeadDefaultBranchComparesOnlyTheRunsChangedFiles (0.91s)
+=== CONT  TestMergeEvidenceApplyRefusesAMovedDefaultBranch
+--- PASS: TestMergedHeadRecordReleasesARunContainedInTheMergedHead (0.65s)
+=== CONT  TestMergeEvidenceKeepsAnUndeclaredDirtyPath
+--- PASS: TestMergedHeadDefaultBranchSupersedesARedoneTaskAndAFailedQAReport (1.11s)
+=== CONT  TestMergeEvidenceKeepsARunThatHoldsTheDeliveryCommit
+--- PASS: TestMergedHeadRecordSupersedesARedoneTaskAndAFailedQAReport (1.06s)
+=== CONT  TestMergeEvidenceRequiresTheArchivedPRD
+--- PASS: TestApplyReleasesAMergedRunWhoseTargetBranchIsGone (5.72s)
+    --- PASS: TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/clean (1.29s)
+    --- PASS: TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/declared_leftovers (2.17s)
+    --- PASS: TestApplyReleasesAMergedRunWhoseTargetBranchIsGone/present_target_keeps_its_request (2.26s)
+=== CONT  TestMergeEvidenceKeepsARunWithAPendingTaskCommit
+=== RUN   TestItemBranchSafetyBoundaries/unrelated-refs
+--- PASS: TestMergeEvidenceKeepsATaskCommitOfAnotherSpec (1.34s)
+=== CONT  TestMergeEvidenceSupersedesADivergedRunWithAMergeRecord
+=== RUN   TestLeftoversReadTaskContextAtTheSourceRevision/instruction.txt
+=== RUN   TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_merged_record
+--- PASS: TestMergeEvidenceKeepsAnUndeclaredDirtyPath (1.51s)
+=== CONT  TestMergeEvidenceSupersedesARunWhoseFilesDivergedAfterTheMerge
+--- PASS: TestMergeEvidenceKeepsARunThatHoldsTheDeliveryCommit (1.33s)
+=== CONT  TestApplyTerminalRunDirty
+--- PASS: TestMergeEvidenceRequiresTheArchivedPRD (1.28s)
+=== CONT  TestPruneTerminalReconciliationPreservesUniqueChangedBranch
+=== RUN   TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation/non-Task-Spec-trailers
+--- PASS: TestMergeEvidenceKeepsARunWithAPendingTaskCommit (1.37s)
+=== CONT  TestPruneTerminalReportRequiresArchivedEvidence
+=== RUN   TestMergeEvidenceDoesNotRequireAnArchivedQAReport/absent-target
+--- PASS: TestPruneTerminalReconciliationPreservesUniqueChangedBranch (0.73s)
+=== CONT  TestPruneTerminalReconciliationReachableChangedBranch
+--- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet (10.82s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/added_path (1.72s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/not_a_candidate (1.13s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_result (0.93s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_proof_head (2.30s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_Run_head (2.03s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_target_head (1.71s)
+    --- PASS: TestDiscardDirtyTerminalRunRefusesAChangedPathSet/changed_merged_record (1.01s)
+=== CONT  TestApplyTerminalRunReleased
+=== RUN   TestItemBranchSafetyBoundaries/ambiguous-short-ref
+--- PASS: TestMergeEvidenceApplyRefusesAMovedDefaultBranch (2.63s)
+=== CONT  TestApplyTerminalRunDeletionFailure
+=== CONT  TestApplyTerminalRunRemovalFailure
+--- PASS: TestApplyTerminalRunDirty (1.03s)
+=== RUN   TestLeftoversReadTaskContextAtTheSourceRevision/outside.txt
+=== CONT  TestApplyTerminalRunOutcomeRemainsUnchanged
+--- PASS: TestPruneTerminalReportRequiresArchivedEvidence (0.89s)
+=== RUN   TestApplyTerminalRunOutcomeRemainsUnchanged/Unresolved
+=== CONT  TestApplyTerminalRunStoreFailureStartsNoCleanup
+--- PASS: TestPruneTerminalReconciliationReachableChangedBranch (0.82s)
+=== CONT  TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup
+--- PASS: TestMergeEvidenceSupersedesScopedDirtyPathsAtTheDefaultHead (3.73s)
+--- PASS: TestApplyTerminalRunReleased (0.91s)
+=== CONT  TestInspectTerminalRunSafeWithoutWorktree
+--- PASS: TestApplyTerminalRunDeletionFailure (0.80s)
+=== CONT  TestApplyTerminalRunStaleMetadata
+--- PASS: TestApplyTerminalRunRemovalFailure (0.82s)
+=== CONT  TestApplyTerminalRunStaleHeads
+=== RUN   TestApplyTerminalRunStaleHeads/Run_head_changed
+--- PASS: TestMergeEvidenceSupersedesADivergedRunWithAMergeRecord (2.47s)
+=== CONT  TestApplyTerminalRunSafeEvidenceOnly
+=== RUN   TestItemBranchSafetyBoundaries/duplicate-worktree
+--- PASS: TestInspectTerminalRunSafeWithoutWorktree (0.46s)
+=== CONT  TestApplyTerminalRunSafe
+--- PASS: TestApplyTerminalRunStaleMetadata (0.52s)
+=== CONT  TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded
+--- PASS: TestApplyTerminalRunStoreFailureStartsNoCleanup (0.76s)
+=== CONT  TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated
+=== RUN   TestApplyTerminalRunOutcomeRemainsUnchanged/Failed
+--- PASS: TestLeftoversReadTaskContextAtTheSourceRevision (9.34s)
+    --- PASS: TestLeftoversReadTaskContextAtTheSourceRevision/declared.txt (3.07s)
+    --- PASS: TestLeftoversReadTaskContextAtTheSourceRevision/recorded.txt (3.39s)
+    --- PASS: TestLeftoversReadTaskContextAtTheSourceRevision/instruction.txt (1.52s)
+    --- PASS: TestLeftoversReadTaskContextAtTheSourceRevision/outside.txt (1.36s)
+=== CONT  TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/unrelated.txt
+--- PASS: TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup (0.95s)
+=== CONT  TestMergedSpecRunWithDeclaredLeftoversIsSuperseded
+--- PASS: TestApplyTerminalRunSafeEvidenceOnly (0.71s)
+=== CONT  TestResolveLocalBranchTellsAbsentFromAmbiguous
+=== RUN   TestResolveLocalBranchTellsAbsentFromAmbiguous/absent
+=== RUN   TestResolveLocalBranchTellsAbsentFromAmbiguous/ambiguous
+=== RUN   TestResolveLocalBranchTellsAbsentFromAmbiguous/resolvable
+--- PASS: TestResolveLocalBranchTellsAbsentFromAmbiguous (0.18s)
+    --- PASS: TestResolveLocalBranchTellsAbsentFromAmbiguous/absent (0.01s)
+    --- PASS: TestResolveLocalBranchTellsAbsentFromAmbiguous/ambiguous (0.05s)
+    --- PASS: TestResolveLocalBranchTellsAbsentFromAmbiguous/resolvable (0.04s)
+=== CONT  TestInspectTerminalRunReleased
+--- PASS: TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation (5.10s)
+    --- PASS: TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation/newer-QA (2.77s)
+    --- PASS: TestMergeEvidenceSupersedesNonTaskCommitsWithoutRepresentation/non-Task-Spec-trailers (2.33s)
+=== CONT  TestMergedSpecRunNamesTheLeftoverOutsideItsScope
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope/unrelated.txt
+=== RUN   TestApplyTerminalRunStaleHeads/target_head_changed
+=== CONT  TestMergedSpecRunNamesTheUnrepresentedCommit
+--- PASS: TestApplyTerminalRunSafe (0.85s)
+--- PASS: TestInspectTerminalRunReleased (0.26s)
+=== CONT  TestReconcileFallbackRequiresArchivedEvidence
+=== RUN   TestReconcileFallbackRequiresArchivedEvidence/archived_Spec_evidence_releases
+--- PASS: TestItemBranchSafetyBoundaries (14.16s)
+    --- PASS: TestItemBranchSafetyBoundaries/wrong-path (0.92s)
+    --- PASS: TestItemBranchSafetyBoundaries/default-moved (1.32s)
+    --- PASS: TestItemBranchSafetyBoundaries/dirty-after-proof (1.49s)
+    --- PASS: TestItemBranchSafetyBoundaries/worktree-removed (1.19s)
+    --- PASS: TestItemBranchSafetyBoundaries/post-delivery (1.03s)
+    --- PASS: TestItemBranchSafetyBoundaries/pending-task (1.39s)
+    --- PASS: TestItemBranchSafetyBoundaries/other-spec-task (1.32s)
+    --- PASS: TestItemBranchSafetyBoundaries/bare-branch (1.70s)
+    --- PASS: TestItemBranchSafetyBoundaries/unrelated-refs (1.36s)
+    --- PASS: TestItemBranchSafetyBoundaries/ambiguous-short-ref (1.16s)
+    --- PASS: TestItemBranchSafetyBoundaries/duplicate-worktree (1.27s)
+=== CONT  TestReconcileFallsBackToTheDefaultBranch
+=== RUN   TestApplyTerminalRunOutcomeRemainsUnchanged/Stopped
+--- PASS: TestMergeEvidenceDoesNotRequireAnArchivedQAReport (5.45s)
+    --- PASS: TestMergeEvidenceDoesNotRequireAnArchivedQAReport/ancestry-miss (2.88s)
+    --- PASS: TestMergeEvidenceDoesNotRequireAnArchivedQAReport/absent-target (2.57s)
+=== CONT  TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped
+=== RUN   TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/instruction.txt
+--- PASS: TestMergedSpecRunWithDeclaredLeftoversIsSuperseded (0.90s)
+=== CONT  TestApplyStillRefusesAnEmptyTargetHeadWithoutProof
+--- PASS: TestMergeEvidenceSupersedesARunWhoseFilesDivergedAfterTheMerge (3.70s)
+=== CONT  TestInspectTerminalRunUnknownMissingRunBranch
+--- PASS: TestMergedSpecRunWithSpecDirectoryCommitsIsSuperseded (1.36s)
+=== CONT  TestInspectTerminalRunUnknownAmbiguousRef
+--- PASS: TestApplyTerminalRunStaleHeads (1.99s)
+    --- PASS: TestApplyTerminalRunStaleHeads/Run_head_changed (1.12s)
+    --- PASS: TestApplyTerminalRunStaleHeads/target_head_changed (0.88s)
+=== CONT  TestInspectTerminalRunResolvesASymlinkedWorktreeRoot
+=== RUN   TestReconcileFallbackRequiresArchivedEvidence/active_Spec_evidence_preserves
+=== CONT  TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot
+--- PASS: TestInspectTerminalRunUnknownMissingRunBranch (0.31s)
+--- PASS: TestInspectTerminalRunUnknownAmbiguousRef (0.48s)
+=== CONT  TestCleanupPreservesAPathNotDerivedForTheItem
+--- PASS: TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot (0.24s)
+=== CONT  TestCleanupPreservesAnUnregisteredPathWhileItsAdminDirectoryExists
+=== RUN   TestApplyTerminalRunOutcomeRemainsUnchanged/TimedOut
+--- PASS: TestCleanupPreservesAPathNotDerivedForTheItem (0.04s)
+=== CONT  TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker
+--- PASS: TestCleanupPreservesAnUnregisteredPathWithoutThisRepositorysMarker (0.08s)
+=== CONT  TestCleanupRecoversAHalfRemovedItemWorktree
+--- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty (1.87s)
+    --- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/unrelated.txt (0.94s)
+    --- PASS: TestMergedSpecRunWithAnUndeclaredLeftoverStaysDirty/instruction.txt (0.93s)
+=== CONT  TestCleanupKeepsADetachedItemWorktree
+--- PASS: TestCleanupPreservesAnUnregisteredPathWhileItsAdminDirectoryExists (0.19s)
+=== CONT  TestCleanupKeepsARegisteredItemWorktreeOnAnotherBranch
+--- PASS: TestInspectTerminalRunResolvesASymlinkedWorktreeRoot (0.54s)
+=== CONT  TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot
+=== RUN   TestMergedSpecRunNamesTheLeftoverOutsideItsScope/ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé.txt
+=== CONT  TestCarryForwardAcceptsBudgetExceededRun
+=== CONT  TestInspectTerminalRunTreatsAMissingWorktreeUnderASymlinkedRootAsAbsent
+--- PASS: TestMergedSpecRunWithAnUnrepresentedTaskCommitStaysUnintegrated (2.23s)
+--- PASS: TestCarryForwardAcceptsBudgetExceededRun (0.00s)
+=== CONT  TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot
+=== RUN   TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/repository-directory-link
+=== PAUSE TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/repository-directory-link
+=== RUN   TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/worktree-directory-link
+=== PAUSE TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/worktree-directory-link
+=== RUN   TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/dangling-worktree-link
+=== PAUSE TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/dangling-worktree-link
+--- PASS: TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot (0.19s)
+=== CONT  TestPruneTerminalReportPrunesUnderASymlinkedRoot
+--- PASS: TestCleanupKeepsADetachedItemWorktree (0.26s)
+=== CONT  TestApplyTerminalRunReleasesAWorktreeUnderASymlinkedRoot
+--- PASS: TestCleanupKeepsARegisteredItemWorktreeOnAnotherBranch (0.21s)
+=== CONT  TestApplyRefusesAnIgnoredOnlyWorktreeWhoseFilesChanged
+--- PASS: TestCleanupRecoversAHalfRemovedItemWorktree (0.34s)
+=== CONT  TestUseItemRecreatesAGoneItemWorktreeUnderASymlinkedRoot
+--- PASS: TestReconcileFallbackRequiresArchivedEvidence (1.60s)
+    --- PASS: TestReconcileFallbackRequiresArchivedEvidence/archived_Spec_evidence_releases (0.79s)
+    --- PASS: TestReconcileFallbackRequiresArchivedEvidence/active_Spec_evidence_preserves (0.80s)
+=== CONT  TestCleanupItemReleasesAGoneItemWorktreeUnderASymlinkedRoot
+--- PASS: TestReconcileFallsBackToTheDefaultBranch (1.59s)
+=== CONT  TestCanonicalPathResolvesTheExistingPrefix
+=== RUN   TestCanonicalPathResolvesTheExistingPrefix/existing
+=== PAUSE TestCanonicalPathResolvesTheExistingPrefix/existing
+=== RUN   TestCanonicalPathResolvesTheExistingPrefix/missing-leaf
+=== PAUSE TestCanonicalPathResolvesTheExistingPrefix/missing-leaf
+=== RUN   TestCanonicalPathResolvesTheExistingPrefix/missing-parent
+=== PAUSE TestCanonicalPathResolvesTheExistingPrefix/missing-parent
+=== RUN   TestCanonicalPathResolvesTheExistingPrefix/no-existing-prefix
+=== PAUSE TestCanonicalPathResolvesTheExistingPrefix/no-existing-prefix
+=== CONT  TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules
+=== RUN   TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/metadata
+--- PASS: TestInspectTerminalRunTreatsAMissingWorktreeUnderASymlinkedRootAsAbsent (0.27s)
+=== CONT  TestIgnoredOnlyReleaseDoesNotFollowSymbolicLinks
+--- PASS: TestApplyRefusesAnIgnoredOnlyWorktreeWhoseFilesChanged (0.27s)
+=== CONT  TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames
+--- PASS: TestEmptyRepositoryDirectoriesListOnlyEmptyRepositoryShapedNames (0.03s)
+=== CONT  TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree
+--- PASS: TestCleanupItemReleasesAGoneItemWorktreeUnderASymlinkedRoot (0.27s)
+=== CONT  TestAnUnregisteredRunWorktreeKeepsTodaysUnknown
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/dangling_Git_metadata_symlink
+=== CONT  TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe
+--- PASS: TestUseItemRecreatesAGoneItemWorktreeUnderASymlinkedRoot (0.37s)
+=== RUN   TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe/ignored_files
+=== RUN   TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/branch
+=== CONT  TestCarryForwardStagingOwnerHelperProcess
+=== CONT  TestCarryForwardStagingSweepKeepsALiveOwnersWorktree
+--- PASS: TestCarryForwardStagingSweepKeepsAnUnlockedLegacyWorktree (0.15s)
+--- PASS: TestCarryForwardStagingOwnerHelperProcess (0.00s)
+=== CONT  TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree
+--- PASS: TestIgnoredOnlyReleaseDoesNotFollowSymbolicLinks (0.25s)
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Run_Branch
+--- PASS: TestApplyTerminalRunOutcomeRemainsUnchanged (3.56s)
+    --- PASS: TestApplyTerminalRunOutcomeRemainsUnchanged/Unresolved (0.85s)
+    --- PASS: TestApplyTerminalRunOutcomeRemainsUnchanged/Failed (0.92s)
+    --- PASS: TestApplyTerminalRunOutcomeRemainsUnchanged/Stopped (0.89s)
+    --- PASS: TestApplyTerminalRunOutcomeRemainsUnchanged/TimedOut (0.90s)
+=== CONT  TestCarryForwardStagingSweepReleasesADeadOwnersWorktree
+--- PASS: TestMergedSpecRunNamesTheUnrepresentedCommit (2.16s)
+=== CONT  TestApplyRefusesWhenTheLeftoverSetChanged
+--- PASS: TestCarryForwardStagingSweepKeepsALiveOwnersWorktree (0.20s)
+=== CONT  TestSupersedingQAReportStillPrefersNewerReport/later_date
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/tracked_path_matching_ignore
+--- PASS: TestApplyStillRefusesAnEmptyTargetHeadWithoutProof (1.80s)
+=== CONT  TestSupersedingQAReportStillPrefersNewerReport/later_sequence
+=== RUN   TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/ignore_rules
+=== RUN   TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe/empty
+--- PASS: TestCarryForwardStagingSweepReleasesALockedInitializingLegacyWorktree (0.19s)
+=== CONT  TestRunIDFromBranchName/canonical
+=== CONT  TestRunIDFromBranchName/foreign_branch
+=== CONT  TestRunIDFromBranchName/empty_Run_ID
+=== CONT  TestRunIDFromBranchName/surrounding_whitespace
+--- PASS: TestRunIDFromBranchName (0.00s)
+    --- PASS: TestRunIDFromBranchName/canonical (0.00s)
+    --- PASS: TestRunIDFromBranchName/foreign_branch (0.00s)
+    --- PASS: TestRunIDFromBranchName/empty_Run_ID (0.00s)
+    --- PASS: TestRunIDFromBranchName/surrounding_whitespace (0.00s)
+=== CONT  TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/repository-directory-link
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/wrong_directory_name
+--- PASS: TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules (0.68s)
+    --- PASS: TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/metadata (0.23s)
+    --- PASS: TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/branch (0.24s)
+    --- PASS: TestIgnoredOnlyApplyReprovesGitMetadataAndIgnoreRules/ignore_rules (0.21s)
+=== CONT  TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/dangling-worktree-link
+--- PASS: TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe (0.51s)
+    --- PASS: TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe/ignored_files (0.28s)
+    --- PASS: TestAnUnregisteredRunWorktreeHoldingOnlyIgnoredFilesIsSafe/empty (0.22s)
+=== CONT  TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/worktree-directory-link
+=== CONT  TestCanonicalPathResolvesTheExistingPrefix/existing
+=== CONT  TestCanonicalPathResolvesTheExistingPrefix/missing-parent
+--- PASS: TestApplyTerminalRunReleasesAWorktreeUnderASymlinkedRoot (0.97s)
+=== CONT  TestCanonicalPathResolvesTheExistingPrefix/no-existing-prefix
+=== CONT  TestCanonicalPathResolvesTheExistingPrefix/missing-leaf
+--- PASS: TestCanonicalPathResolvesTheExistingPrefix (0.01s)
+    --- PASS: TestCanonicalPathResolvesTheExistingPrefix/existing (0.00s)
+    --- PASS: TestCanonicalPathResolvesTheExistingPrefix/no-existing-prefix (0.00s)
+    --- PASS: TestCanonicalPathResolvesTheExistingPrefix/missing-parent (0.00s)
+    --- PASS: TestCanonicalPathResolvesTheExistingPrefix/missing-leaf (0.00s)
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/unignored_file
+--- PASS: TestPruneTerminalReportPrunesUnderASymlinkedRoot (1.07s)
+--- PASS: TestSupersedingQAReportStillPrefersNewerReport (0.00s)
+    --- PASS: TestSupersedingQAReportStillPrefersNewerReport/later_date (0.40s)
+    --- PASS: TestSupersedingQAReportStillPrefersNewerReport/later_sequence (0.40s)
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Git_metadata
+--- PASS: TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot (0.00s)
+    --- PASS: TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/repository-directory-link (0.28s)
+    --- PASS: TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/dangling-worktree-link (0.23s)
+    --- PASS: TestInspectTerminalRunRefusesAPathResolvingOutsideItsWorktreeRoot/worktree-directory-link (0.22s)
+--- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope (2.81s)
+    --- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope/unrelated.txt (1.48s)
+    --- PASS: TestMergedSpecRunNamesTheLeftoverOutsideItsScope/ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé.txt (1.33s)
+--- PASS: TestCarryForwardStagingSweepReleasesADeadOwnersWorktree (0.67s)
+=== RUN   TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Git_metadata_directory
+--- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown (0.88s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/dangling_Git_metadata_symlink (0.14s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Run_Branch (0.15s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/tracked_path_matching_ignore (0.23s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/wrong_directory_name (0.13s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/unignored_file (0.11s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Git_metadata (0.07s)
+    --- PASS: TestAnUnregisteredRunWorktreeKeepsTodaysUnknown/Git_metadata_directory (0.06s)
+--- PASS: TestApplyRefusesWhenTheLeftoverSetChanged (0.88s)
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md
+=== RUN   TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt
+--- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded (7.00s)
+    --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder (3.90s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/all_paths_scoped (2.71s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/docs/history/findings-other/keep.md (0.59s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/legacy_folder/recorded-other.txt (0.60s)
+    --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record (3.10s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/all_paths_scoped (1.67s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/docs/history/findings-other/keep.md (0.71s)
+        --- PASS: TestMergedSpecRunWithLeftoversBeneathADeclaredDirectoryIsSuperseded/archive_record/recorded-other.txt (0.71s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3033 paths; fingerprint took 410.3365ms before and 152.953709ms after
+ok  	roundfix/internal/worktree	26.065s
+
+stderr:
+

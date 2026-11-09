@@ -1,0 +1,12 @@
+Origin: Git project, git-check-ignore manual https://git-scm.com/docs/git-check-ignore; cited passage recorded by planning on 2026-11-09. Offline comparison; no network lookup.
+Tracked files are excluded from normal ignore reporting; no ignored input yields status 1.
+command: git check-ignore -z --stdin
+input: .storage/runtime NUL tracked.txt NUL
+exit: 0
+stdout escaped: b'.storage/runtime\x00'
+stderr: b''
+command: git check-ignore -z --stdin
+input: plain.txt NUL
+exit: 1
+stdout escaped: b''
+stderr: b''

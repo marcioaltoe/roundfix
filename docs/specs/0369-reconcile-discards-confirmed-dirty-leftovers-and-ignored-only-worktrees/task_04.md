@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

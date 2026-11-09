@@ -1,0 +1,9 @@
+command: ./bin/roundfix reconcile --discard-dirty
+exit: 2
+stdout:
+
+stderr:
+roundfix: reconcile failed: flag needs an argument: --discard-dirty
+Run 'roundfix reconcile --help' for usage.
+
+exact stdout/stderr/exit comparison: True
