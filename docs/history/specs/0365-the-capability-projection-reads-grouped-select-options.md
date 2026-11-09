@@ -22,6 +22,7 @@ sources:
   - codex-acp-2.5.0-config-options.json
 regeneration: []
 promoted: []
+pull_request: "789"
 type: fix
 ---
 
