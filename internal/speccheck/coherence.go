@@ -46,6 +46,7 @@ type stagedDetector struct {
 }
 
 var stagedDetectors = []stagedDetector{
+	{code: CodeUnreachableUnread, stage: StagePRD},
 	{code: CodeDecisionsUnrecorded, stage: StagePRD},
 	{code: CodeQABytesPinned, stage: StageTasks},
 	{code: CodeConsumersUnproven, stage: StageTasks},
@@ -155,6 +156,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		return result, err
 	}
 	if !present {
+		addSkip(&result, CodeUnreachableUnread, artifactDisplayPath(repoRoot, prdPath))
 		addSkip(&result, CodeGlossaryUndeclared, artifactDisplayPath(repoRoot, prdPath))
 		addSkip(&result, CodeSkillsMalformed, artifactDisplayPath(repoRoot, prdPath))
 		addSkip(&result, CodeSkillsUntasked, artifactDisplayPath(repoRoot, prdPath))
@@ -177,6 +179,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		}
 		addStageSkips(&result, stage)
 		return result, nil
+	}
+	if err := detectUnreachableDeclarations(&result, repoRoot, prdPath); err != nil {
+		return result, err
 	}
 	prdContent, err := os.ReadFile(prdPath)
 	if err != nil {

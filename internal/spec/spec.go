@@ -186,6 +186,12 @@ type UnreachableDeclaration struct {
 	Line        int
 }
 
+// UnreachableUnreadLine is a non-empty PRD line no fielded declaration reads.
+type UnreachableUnreadLine struct {
+	Line int    // 1-based line number in the PRD
+	Text string // the line, surrounding whitespace trimmed
+}
+
 type unreachableDeclarationBuilder struct {
 	declaration UnreachableDeclaration
 	activeField string
@@ -262,41 +268,61 @@ func Unreachable(specDir string) ([]UnreachableDeclaration, error) {
 }
 
 func parseUnreachableDeclarations(content []byte, prdPath string) ([]UnreachableDeclaration, error) {
+	declarations, _, err := walkUnreachableSection(content, prdPath)
+	return declarations, err
+}
+
+// UnreachableUnread returns unread section lines in file order and the same
+// declaration error as Unreachable, without refusing unread text itself.
+func UnreachableUnread(content []byte, prdPath string) ([]UnreachableUnreadLine, error) {
+	_, unread, err := walkUnreachableSection(content, prdPath)
+	return unread, err
+}
+
+func walkUnreachableSection(content []byte, prdPath string) ([]UnreachableDeclaration, []UnreachableUnreadLine, error) {
 	var declarations []UnreachableDeclaration
+	var unread []UnreachableUnreadLine
 	var current *unreachableDeclarationBuilder
+	var declarationErr error
+	var section unreachableUnreadSection
 	inSection := false
-	flush := func() error {
-		if current == nil {
-			return nil
+	flush := func() {
+		if current == nil || declarationErr != nil {
+			return
 		}
 		declaration, err := current.finish(prdPath)
 		if err != nil {
-			return err
+			declarationErr = err
+			return
 		}
 		declarations = append(declarations, declaration)
 		current = nil
-		return nil
 	}
 
 	for index, line := range strings.Split(string(content), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "# ") || strings.HasPrefix(trimmed, "## ") {
 			if inSection {
-				if err := flush(); err != nil {
-					return nil, err
-				}
+				flush()
+				unread = append(unread, section.finish()...)
 			}
+			section = unreachableUnreadSection{}
 			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Unreachable Acceptance"
 			continue
 		}
 		if !inSection {
 			continue
 		}
+		section.read(line, index+1)
+		// Keep the historical declaration interpretation, including its comment
+		// and two-space continuation behavior. Coverage has its own state so the
+		// new reading rule never changes a QA consumer's declarations or error.
+		if declarationErr != nil {
+			continue
+		}
 
 		if strings.HasPrefix(line, "- ") {
-			if err := flush(); err != nil {
-				return nil, err
-			}
+			flush()
 			current = &unreachableDeclarationBuilder{
 				declaration: UnreachableDeclaration{Line: index + 1},
 			}
@@ -313,27 +339,93 @@ func parseUnreachableDeclarations(content []byte, prdPath string) ([]Unreachable
 			current.appendContinuation(trimmed)
 		}
 	}
-	if err := flush(); err != nil {
-		return nil, err
+	flush()
+	if inSection {
+		unread = append(unread, section.finish()...)
 	}
-	return declarations, nil
+	if declarationErr != nil {
+		return nil, unread, declarationErr
+	}
+	return declarations, unread, nil
 }
 
-func (builder *unreachableDeclarationBuilder) readField(line string) bool {
+type unreachableUnreadSection struct {
+	unread      []UnreachableUnreadLine
+	inComment   bool
+	sawContent  bool
+	inNone      bool
+	noneLines   int
+	declaration bool
+	activeField bool
+}
+
+func (section *unreachableUnreadSection) read(line string, number int) {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" {
+		section.inNone = false
+		return
+	}
+	if section.inComment || strings.HasPrefix(trimmed, "<!--") {
+		section.inComment = !strings.Contains(trimmed, "-->")
+		return
+	}
+	if !section.sawContent {
+		section.sawContent = true
+		section.inNone = strings.HasPrefix(trimmed, "None.")
+	}
+	if strings.HasPrefix(line, "- ") {
+		section.declaration = true
+		_, _, section.activeField = unreachableField(strings.TrimSpace(strings.TrimPrefix(line, "- ")))
+		return
+	}
+	if section.declaration {
+		if _, _, ok := unreachableField(trimmed); ok {
+			section.activeField = true
+			return
+		}
+		if section.activeField && (strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t")) {
+			return
+		}
+	}
+	section.unread = append(section.unread, UnreachableUnreadLine{Line: number, Text: trimmed})
+	if section.inNone && !section.declaration {
+		section.noneLines++
+	}
+}
+
+func (section *unreachableUnreadSection) finish() []UnreachableUnreadLine {
+	if !section.declaration {
+		return section.unread[section.noneLines:]
+	}
+	return section.unread
+}
+
+func unreachableField(line string) (string, string, bool) {
 	label, value, ok := strings.Cut(line, ":")
 	if !ok {
-		return false
+		return "", "", false
 	}
 	field := strings.TrimSpace(label)
 	switch field {
-	case "criterion":
-		builder.declaration.Criteria = append(builder.declaration.Criteria, strings.TrimSpace(value))
-	case "reason":
-		builder.declaration.Reason = strings.TrimSpace(value)
-	case "satisfied-by":
-		builder.declaration.SatisfiedBy = strings.TrimSpace(value)
+	case "criterion", "reason", "satisfied-by":
+		return field, strings.TrimSpace(value), true
 	default:
+		return "", "", false
+	}
+}
+
+func (builder *unreachableDeclarationBuilder) readField(line string) bool {
+	field, value, ok := unreachableField(line)
+	if !ok {
 		return false
+	}
+	switch field {
+	case "criterion":
+		builder.declaration.Criteria = append(builder.declaration.Criteria, value)
+	case "reason":
+		builder.declaration.Reason = value
+	case "satisfied-by":
+		builder.declaration.SatisfiedBy = value
 	}
 	builder.activeField = field
 	return true

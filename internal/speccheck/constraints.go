@@ -168,7 +168,11 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		}
 		addSkip(&result, CodeToolingUndeclared, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		addSkip(&result, CodeCLIUndocumented, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
+		addSkip(&result, CodeUnreachableUnread, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		return result, nil
+	}
+	if err := detectUnreachableDeclarations(&result, repoRoot, filepath.Join(specDir, "_prd.md")); err != nil {
+		return result, err
 	}
 
 	artifacts := []constraintArtifact{prd}

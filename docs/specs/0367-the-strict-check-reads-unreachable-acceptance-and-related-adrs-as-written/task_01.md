@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -162,3 +162,25 @@ fielded form in its fix.
 - `_prd.md` → Goals; User Story 1; Core Feature 1; Core Feature 3; Success Metric 1; Success Metric 2
 - `_techspec.md` → Interfaces; API Contract 1; Testing Approach; Build Order 1
 - ADR-0094; ADR-0343
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+The shared section walk now returns unread lines beside the existing declarations. It retains the first declaration error while continuing to collect unread lines. Declaration parsing preserves its historical comment and two-space continuation behavior; the unread-line state applies the specified comment, one-space/tab continuation and initial `None.` paragraph rules without changing QA consumers' declarations.
+
+`SC-UNREACHABLE-UNREAD` runs immediately after PRD presence is established in both check entry points, is registered at `StagePRD`, and records a missing-PRD skip. It reports consecutive unread lines once per run, followed by the first missing-field error, with the exact summaries and fix required above.
+
+Acceptance evidence from focused checks:
+
+- Numbered entry: `TestANumberedUnreachableEntryIsReportedAtItsFirstLine` asserts exactly one error at the numbered line, the quoted first line, the complete fix and its fielded-form example through `Check`, `StagePRD` and `StageTechSpec`. `TestUnreadRunsKeepTheirFirstLines` checks separate unread runs; the prose/missing-field and plain-bullet tests check finding order and locations.
+- Readable sections and compatibility: all five existing unreachable fixtures are checked for declaration/error parity and zero unread lines. The readable-section test covers fielded declarations, repeated and wrapped criteria, a two-line `None.` paragraph, empty/absent sections and the literal write-prd template comment. Boundary tests cover comments, one-space/tab continuation, orphan fields/continuations, the paragraph's blank-line boundary, section headings, and unread text after a malformed declaration. The missing-PRD test checks exactly one path-specific skip at all three stages and no finding; present PRDs get no such skip.
+- Glossary: the exact required sentence was appended through `domain-modeling`. A Python comparison against `git show HEAD:CONTEXT.md` confirmed that removing that single suffix reproduces the original bytes; no other glossary content changed.
+
+Focused commands and outcomes:
+
+- Before implementation, `rtk proxy go test ./internal/spec ./internal/speccheck -run 'Test(UnreachableUnread|ANumberedUnreachable)' -count=1 -timeout=2m` failed to compile because `UnreachableUnread`, `UnreachableUnreadLine` and `CodeUnreachableUnread` did not exist. The first sandbox attempt could not access Go's existing build cache; the authorized retry reached these expected compiler diagnostics.
+- Final focused run: `rtk proxy go test -overlay /private/tmp/roundfix-unreachable-wm9784gt/overlay.json ./internal/spec ./internal/speccheck -run 'Test(Unreachable|AnUnreachable|ANumberedUnreachable|ProseAfterADeclaration|NoneBesideADeclaration|UnreadRuns|StageScope)' -count=1 -timeout=3m` exited 0 for both packages. The temporary overlay adds a compatibility probe without changing repository files: it compares the original parser and builder from `HEAD` against the shared walk on 10,000 deterministic inputs and checks identical declarations and errors, including `UnreachableUnread` errors. The regular focused tests also passed before adding the overlay.
+- `gofmt` was applied to the changed Go files; `rtk proxy git diff --check` exited 0.
+
+Declared Verification commands, repository Verification and the full package suites were not run; they remain Daemon-owned. The Task status, Task Graph, other Task files, guides, skills, ADRs, records and QA/archive consumers were not edited. No commit, push or pull request was made. No follow-up outside this slice was needed.
