@@ -59,7 +59,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
   roundfix supersede --spec <slug> --by <slug> --reason <text>
-  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
+  roundfix reconcile [run-id] [--apply | --discard-superseded | --discard-dirty <digest> | --carry-forward] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix qa-report accept <path>
@@ -5553,7 +5553,7 @@ Options:
 		return settleUsage
 	case "reconcile":
 		return `Usage:
-  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
+  roundfix reconcile [run-id] [--apply | --discard-superseded | --discard-dirty <digest> | --carry-forward] [--format <text|json>]
 
 Inspects one terminal spec Run in the current repository, or every terminal
 spec Run in the current repository when no Run ID is supplied. The default is
@@ -5564,6 +5564,7 @@ and already released entries remain successful preserved results.
 Options:
   --apply                 Release freshly revalidated safe and superseded Run Worktrees and Run Branches
   --discard-superseded    Discard Run Branches proven superseded
+  --discard-dirty         Discard the dirty leftovers the dry run listed under the given digest
   --carry-forward         Hand a Stopped or Unresolved Run's settled Tasks back to the checkout
   --format                Output format: text (default) or json
 `

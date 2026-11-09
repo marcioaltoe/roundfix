@@ -1,7 +1,7 @@
 ### reconcile
 
 ```bash
-roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
+roundfix reconcile [run-id] [--apply | --discard-superseded | --discard-dirty <digest> | --carry-forward] [--format <text|json>]
 ```
 
 The Reconcile Command classifies one terminal spec Run in the current
@@ -84,6 +84,60 @@ An absent target branch also uses the merged-head proof before preserving a
 terminal Run Branch, including Runs recorded from linked repository worktrees.
 All proof comes from local Git; reconciliation does not read GitHub.
 
+A Dirty Discard is offered only for a Run that ended `Failed`, `Unresolved`,
+`Stopped`, `BudgetExceeded` or `TimedOut`, owns no live process tree, and has
+its Spec's Archive Record on the default branch head. Its porcelain status
+must parse, its commit proof at the chosen head must be `safe` or `superseded`,
+and inspection of the archived Spec's declared and recorded paths must name
+an outside uncommitted path. The Run stays `dirty` with the same reason.
+The dry run prints every uncommitted path as `  discard-path: <path>` and,
+after `Apply with:`, prints `Discard dirty leftovers with: <command>`.
+JSON adds `discardPaths` to each candidate and `discardDirtyDigest` and
+`discardDirtyCommand` to the report; these fields are absent without candidates.
+The SHA-256 digest binds the whole candidate set, including Run IDs, Run
+heads, worktrees and paths. `--discard-dirty <digest>` refuses a missing or
+malformed digest, another mutation switch, no candidate, or a changed digest
+with exit 2 and nothing on stdout; it writes and removes nothing on those
+refusals. For each confirmed Run, it writes
+`<artifact root>/runs/<run-id>/branch-disposition.json` with `discardedPaths`
+and `discardDigest` before re-proving the Run and removing its Run Worktree
+with `--force` and deleting its Run Branch. A record or removal failure
+preserves the remaining surfaces, reports the error and exits 1. The act
+writes nothing to the Run Database ([ADR-0379](../../adr/0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md)).
+
+A recorded Run Worktree that Git does not register is `safe` when its directory
+is named after the Run, its Run Branch is absent and no registered worktree
+holds that branch, no `.git` entry of any type is at its top, and walking it
+without following symbolic links succeeds. Every non-directory entry must be
+reported by one `git check-ignore -z --stdin` command in the Git root, with
+slash-separated relative paths supplied as NUL-separated input; it uses the
+checkout's ignore rules without `--no-index`, so tracked paths never qualify.
+An empty directory qualifies without running that command.
+
+Any failed proof keeps `unknown` with `recorded Run Worktree is not registered in the Git root`.
+`--apply` re-lists the files and refuses a changed list, checks again for Git
+metadata, makes the tree owner-writable and removes the directory without a
+Git command and without a Run Database record.
+
+On a full scan only, the dry run lists empty real repository directories
+directly under the Worktree Root
+whose names match `^[a-z0-9]+(-[a-z0-9]+)*-[0-9a-f]{8}$`; symbolic links and
+other names stay. After the Run and other releases, `--apply` lists them again
+and removes each with an empty-directory removal, so a newly added entry
+prevents removal.
+
+JSON lists `emptyDirectoryCandidates` of kind
+`emptyRepositoryDirectory`, with the path in `worktree` and proof
+`repository directory under the Worktree Root holds nothing`, and counts
+removals in `debrisSummary.emptyDirectoriesRemoved`; both fields are omitted
+when empty or zero. Text prints `Empty repository directory: <path>` and
+`  action: <action>` before `Summary:`, adding
+`  refusal-reason: <reason>` on failure. Actions are `would remove with --apply`
+in a dry run, `remove after the Run releases` before apply, `removed` after
+removal, or `preserve` with the error on failure; a failure counts as an
+operational failure. A Run ID lists and removes no empty repository directory
+([ADR-0379](../../adr/0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md)).
+
 Run Worktree Reconciliation uses six states:
 
 | State | Evidence and behavior |
@@ -92,7 +146,7 @@ Run Worktree Reconciliation uses six states:
 | `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers. Eligible for cleanup after revalidation. |
 | `unintegrated` | The worktree cleanliness and ref evidence resolve, but the Run Branch tip is not an ancestor of the target tip. Roundfix preserves the worktree and branch. |
 | `dirty` | Tracked or untracked changes lack archived-Spec supersession proof, even after including paths beneath a declared or recorded path. For an archived Spec, `Run Worktree has tracked or untracked changes; <commit proof reason>` names the failed commit proof, or `Run Worktree has tracked or untracked changes; <path> is outside the archived Spec's declared and recorded paths` names the first outside path in byte order; the suffix is shortened in the middle to fit 160 bytes. An unarchived Spec keeps the bare constant; an unavailable archive source keeps its diagnostic. Roundfix preserves the worktree and branch. |
-| `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
+| `unknown` | Invalid or missing metadata, an unsafe worktree, an unregistered worktree unless it holds only files the repository ignores, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
 | `released` | Both the Run Worktree and Run Branch are absent. Repeated dry-run or apply is an idempotent no-op. |
 
 When `worktree.location` is a symbolic link, a recorded Run Worktree is
@@ -107,12 +161,13 @@ the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
 and either target ancestry, QA supersession, or merged-head representation
 proof. Age and terminal outcome are also not cleanup evidence.
 
-Three switches mutate; every other invocation is a report. Each acts on a
+Four switches mutate; every other invocation is a report. Each acts on a
 different disposition, and none of them bypasses the proof above:
 
 ```bash
 roundfix reconcile <run-id> --apply               # release safe and superseded surfaces
 roundfix reconcile --apply
+roundfix reconcile --discard-dirty <digest>          # discard the dirty leftovers the dry run listed
 roundfix reconcile <run-id> --discard-superseded  # discard a Run Branch proven superseded
 roundfix reconcile <run-id> --carry-forward       # hand a Stopped or Unresolved Run's settled Tasks back
 ```
@@ -170,7 +225,7 @@ has the largest carriable set and uses the newest Run to break ties.
 
 Carry-forward staging commits run without repository hooks because the carried commits already passed Daemon Verification and the repository hooks when the Daemon settled them. The checkout still receives the staged commits only through a fast-forward merge, and carry-forward does not change its Git configuration.
 
-`--apply` remains the only switch that releases Run Worktrees.
+`--apply` releases Run Worktrees on proof; `--discard-dirty` removes only the Runs the dry run listed under the confirmed digest.
 
 Reconcile also sweeps registered carry-forward staging worktrees whose path is
 `roundfix-carry-forward-*/worktree`. Dry-run reports every candidate without
@@ -194,8 +249,8 @@ and reports failures while preserving any remaining path or ref. Dirty,
 unintegrated, unknown, and released entries remain successful preserved
 results unless an operational inspection fails.
 
-Before cleanup, Roundfix records the reconciliation evidence. A safe
-Integration Pending Run moves to Clean through the guarded terminal transition;
+Except for an ignored-only unregistered directory, Roundfix records the
+reconciliation evidence before cleanup. A safe Integration Pending Run moves to Clean through the guarded terminal transition;
 every other terminal outcome remains unchanged. The Reconcile Command never
 integrates unique commits, repairs dirty work, chooses another target branch,
 or treats a missing path as proof.

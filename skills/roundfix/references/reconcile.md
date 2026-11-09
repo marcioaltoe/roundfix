@@ -18,8 +18,8 @@ repository. The report classifies every selected Run into one of six states:
 | `safe` | The Run Worktree is clean and the Run Branch is contained in its target or merged head, or its changed content is represented at the merged head. Eligible for cleanup after revalidation. |
 | `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers. Preserve it during dry-run; `--apply` can release it after revalidation. |
 | `unintegrated` | Clean, resolved evidence proves that the Run Branch tip is not an ancestor of the target tip. Preserve the Run Worktree and Run Branch. |
-| `dirty` | Tracked or untracked changes lack archived-Spec supersession proof, even after including paths beneath a declared or recorded path. For an archived Spec, `Run Worktree has tracked or untracked changes; <commit proof reason>` names the failed commit proof, or `Run Worktree has tracked or untracked changes; <path> is outside the archived Spec's declared and recorded paths` names the first outside path in byte order; the suffix is shortened in the middle to fit 160 bytes. An unarchived Spec keeps the bare constant; an unavailable archive source keeps its diagnostic. Preserve the Run Worktree and Run Branch. |
-| `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
+| `dirty` | Tracked or untracked changes lack archived-Spec supersession proof, even after including paths beneath a declared or recorded path. For an archived Spec, `Run Worktree has tracked or untracked changes; <commit proof reason>` names the failed commit proof, or `Run Worktree has tracked or untracked changes; <path> is outside the archived Spec's declared and recorded paths` names the first outside path in byte order; the suffix is shortened in the middle to fit 160 bytes. An unarchived Spec keeps the bare constant; an unavailable archive source keeps its diagnostic. Preserve the Run Worktree and Run Branch. A Run the dry run lists with `discard-path:` lines can leave through `--discard-dirty`. |
+| `unknown` | Metadata or Git evidence cannot prove another state. An unregistered Run Worktree that holds only files the repository ignores is `safe` instead. Preserve every other identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
 The same report can add debris candidates beside those legacy Run Worktree
@@ -103,16 +103,50 @@ mutation. `--apply` releases stale staging, and `--carry-forward` releases it
 before creating its own staging worktree. A live matching owner and every
 case without positive stale proof remain in `preservedCandidates`.
 
+### Dirty Discard
+
+A Dirty Discard is offered only for an ended Run whose outcome is `Failed`,
+`Unresolved`, `Stopped`, `BudgetExceeded` or `TimedOut`, that owns no live
+process tree, whose Spec's Archive Record is on the default branch head, and
+whose commit proof at that head is `safe` or `superseded`. Its only remaining
+obstacle must be an uncommitted path outside the archived Spec's declared and
+recorded paths; a failed commit proof, an ambiguous state or an unintegrated
+Run is never a candidate. The Run remains `dirty` during the dry run.
+
+The dry run lists every uncommitted path of each candidate as
+`  discard-path: <path>` and, after `Apply with:`, prints
+`Discard dirty leftovers with: roundfix reconcile --discard-dirty <digest>`.
+JSON adds `discardPaths` to each candidate and `discardDirtyDigest` and
+`discardDirtyCommand` to the report. The digest binds the complete candidate
+set, including each Run ID, Run head, Worktree path and discard path in byte
+order. A changed set or no candidate makes `--discard-dirty <digest>` exit 2
+with nothing on stdout and writes nothing.
+
+On a confirmed digest, the switch first writes the Branch Disposition record
+with `discardedPaths` and `discardDigest`, then re-proves the Run head, proof
+head and exact dirty path set before it removes the Run Worktree with `--force`
+and deletes the Run Branch. A record or removal failure preserves the
+remaining surfaces and counts an operational failure. Committed work is never
+discarded because a failed commit proof keeps the Run out of the candidate set.
+
+A recorded Run Worktree that Git does not register and that holds only files
+the repository ignores is `safe`; `--apply` re-lists the files and removes it
+on unchanged proof. On a full scan, `--apply` also sweeps empty repository
+directories directly under the configured Worktree Root after Run releases;
+the report lists them in `emptyDirectoryCandidates` and counts removals in
+`emptyDirectoriesRemoved`. A Run ID does not perform this directory sweep.
+
 After reviewing the dry-run, apply cleanup explicitly:
 
 ```bash
 roundfix reconcile <run-id> --apply
 roundfix reconcile --apply
 roundfix reconcile <run-id> --discard-superseded
+roundfix reconcile --discard-dirty <digest>
 roundfix reconcile <run-id> --carry-forward
 ```
 
-These three mutation switches are mutually exclusive. `--apply` releases
+These four mutation switches are mutually exclusive. `--apply` releases
 entries classified `safe` or `superseded`, or proven process, Run owner record,
 Run Branch, and staging candidates, after rechecking the applicable metadata, ownership,
 cleanliness, heads, ancestry, merged-head records, Task status, content, and
@@ -168,3 +202,5 @@ Never substitute manual Git deletion for this supported workflow. Do not run
 `git worktree remove`, delete the Run Branch, or remove a recorded worktree
 directory by hand. The Reconcile Command owns safety proof, evidence recording,
 the guarded Integration Pending transition, and cleanup.
+A Dirty Discard is the supported exit for an ended Run's dirty leftovers when
+its confirmed digest and all required proofs hold.

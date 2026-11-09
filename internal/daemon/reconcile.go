@@ -29,18 +29,20 @@ type RunTaskCoverage struct {
 // discarded. Commits and ChangedFiles describe the work created after the
 // Run's recorded starting head.
 type BranchDisposition struct {
-	RunID         string   `json:"runId"`
-	Branch        string   `json:"branch"`
-	TargetBranch  string   `json:"targetBranch"`
-	RunHead       string   `json:"runHead"`
-	TargetHead    string   `json:"targetHead"`
-	Worktree      string   `json:"worktree"`
-	Superseded    bool     `json:"superseded"`
-	Reachable     bool     `json:"reachable"`
-	Commits       []string `json:"commits"`
-	ChangedFiles  []string `json:"changedFiles"`
-	Reason        string   `json:"reason"`
-	RefusalReason string   `json:"refusalReason"`
+	RunID          string   `json:"runId"`
+	Branch         string   `json:"branch"`
+	TargetBranch   string   `json:"targetBranch"`
+	RunHead        string   `json:"runHead"`
+	TargetHead     string   `json:"targetHead"`
+	Worktree       string   `json:"worktree"`
+	Superseded     bool     `json:"superseded"`
+	Reachable      bool     `json:"reachable"`
+	Commits        []string `json:"commits"`
+	ChangedFiles   []string `json:"changedFiles"`
+	Reason         string   `json:"reason"`
+	RefusalReason  string   `json:"refusalReason"`
+	DiscardedPaths []string `json:"discardedPaths,omitempty"`
+	DiscardDigest  string   `json:"discardDigest,omitempty"`
 
 	evidence *branchDispositionEvidence
 }
@@ -348,6 +350,18 @@ func WriteBranchDispositionRecord(path string, disposition BranchDisposition, re
 	if !disposition.Superseded || disposition.evidence == nil {
 		return errors.New("write branch disposition record: branch was not classified superseded")
 	}
+	return writeBranchDispositionRecord(path, disposition, recordedAt)
+}
+
+// WriteDirtyDiscardRecord persists the paths and confirmation before removal.
+func WriteDirtyDiscardRecord(path string, disposition BranchDisposition, recordedAt time.Time) error {
+	if disposition.Superseded || len(disposition.DiscardedPaths) == 0 || disposition.DiscardDigest == "" {
+		return errors.New("write dirty discard record: a non-superseded disposition with paths and digest is required")
+	}
+	return writeBranchDispositionRecord(path, disposition, recordedAt)
+}
+
+func writeBranchDispositionRecord(path string, disposition BranchDisposition, recordedAt time.Time) error {
 	path = filepath.Clean(strings.TrimSpace(path))
 	if path == "." || !filepath.IsAbs(path) {
 		return errors.New("write branch disposition record: absolute record path is required")

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +30,7 @@ type reconcileOptions struct {
 	runID             string
 	apply             bool
 	discardSuperseded bool
+	discardDirty      string
 	carryForward      bool
 	format            string
 }
@@ -38,18 +41,19 @@ type reconcileProcessController interface {
 }
 
 type reconcileResult struct {
-	RunID             string `json:"runId"`
-	Outcome           string `json:"outcome"`
-	Classification    string `json:"classification"`
-	RunBranch         string `json:"runBranch"`
-	RunHead           string `json:"runHead"`
-	TargetBranch      string `json:"targetBranch"`
-	TargetHead        string `json:"targetHead"`
-	Worktree          string `json:"worktree"`
-	SupersedingReport string `json:"supersedingReport"`
-	Evidence          string `json:"evidence"`
-	Action            string `json:"action"`
-	RefusalReason     string `json:"refusalReason"`
+	RunID             string   `json:"runId"`
+	Outcome           string   `json:"outcome"`
+	Classification    string   `json:"classification"`
+	RunBranch         string   `json:"runBranch"`
+	RunHead           string   `json:"runHead"`
+	TargetBranch      string   `json:"targetBranch"`
+	TargetHead        string   `json:"targetHead"`
+	Worktree          string   `json:"worktree"`
+	SupersedingReport string   `json:"supersedingReport"`
+	Evidence          string   `json:"evidence"`
+	Action            string   `json:"action"`
+	RefusalReason     string   `json:"refusalReason"`
+	DiscardPaths      []string `json:"discardPaths,omitempty"`
 
 	inspected   runworktree.RunWorktreeReconciliation
 	disposition daemon.BranchDisposition
@@ -69,20 +73,23 @@ type reconcileSummary struct {
 }
 
 type reconcileReport struct {
-	SchemaVersion        string                   `json:"schemaVersion"`
-	Mode                 string                   `json:"mode"`
-	Repository           string                   `json:"repository"`
-	ApplyCommand         string                   `json:"applyCommand"`
-	Results              []reconcileResult        `json:"results"`
-	Runs                 []reconcileResult        `json:"runs"`
-	Summary              reconcileSummary         `json:"summary"`
-	ProcessCandidates    []reconcileDebrisResult  `json:"processCandidates"`
-	RunBranchCandidates  []reconcileDebrisResult  `json:"runBranchCandidates"`
-	StagingCandidates    []reconcileDebrisResult  `json:"stagingCandidates"`
-	ItemBranchCandidates *[]reconcileDebrisResult `json:"itemBranchCandidates,omitempty"`
-	PreservedCandidates  []reconcileDebrisResult  `json:"preservedCandidates"`
-	DebrisSummary        reconcileDebrisSummary   `json:"debrisSummary"`
-	CarryForwards        []spec.CarryForward      `json:"carryForwards"`
+	SchemaVersion            string                   `json:"schemaVersion"`
+	Mode                     string                   `json:"mode"`
+	Repository               string                   `json:"repository"`
+	ApplyCommand             string                   `json:"applyCommand"`
+	Results                  []reconcileResult        `json:"results"`
+	Runs                     []reconcileResult        `json:"runs"`
+	Summary                  reconcileSummary         `json:"summary"`
+	ProcessCandidates        []reconcileDebrisResult  `json:"processCandidates"`
+	RunBranchCandidates      []reconcileDebrisResult  `json:"runBranchCandidates"`
+	StagingCandidates        []reconcileDebrisResult  `json:"stagingCandidates"`
+	ItemBranchCandidates     *[]reconcileDebrisResult `json:"itemBranchCandidates,omitempty"`
+	EmptyDirectoryCandidates []reconcileDebrisResult  `json:"emptyDirectoryCandidates,omitempty"`
+	PreservedCandidates      []reconcileDebrisResult  `json:"preservedCandidates"`
+	DebrisSummary            reconcileDebrisSummary   `json:"debrisSummary"`
+	CarryForwards            []spec.CarryForward      `json:"carryForwards"`
+	DiscardDirtyDigest       string                   `json:"discardDirtyDigest,omitempty"`
+	DiscardDirtyCommand      string                   `json:"discardDirtyCommand,omitempty"`
 }
 
 type reconcileDebrisResult struct {
@@ -119,6 +126,7 @@ type reconcileDebrisSummary struct {
 	StagingApplied          int `json:"stagingApplied"`
 	ItemBranchCandidates    int `json:"itemBranchCandidates"`
 	ItemBranchesApplied     int `json:"itemBranchesApplied"`
+	EmptyDirectoriesRemoved int `json:"emptyDirectoriesRemoved,omitempty"`
 }
 
 type reconcileRunSelection struct {
@@ -183,6 +191,16 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	runs.worktreeLocation = loaded.Config.Worktree.Location
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
+	if opts.discardDirty != "" {
+		if report.DiscardDirtyDigest == "" {
+			printReconcileValidationFailure(validationError{message: "no ended Run has dirty leftovers a Dirty Discard can remove; run roundfix reconcile to see why each dirty Run is kept"}, stderr)
+			return exitPreflight
+		}
+		if opts.discardDirty != report.DiscardDirtyDigest {
+			printReconcileValidationFailure(validationError{message: fmt.Sprintf("the Dirty Discard set changed: confirmed digest %s, current digest %s; run roundfix reconcile and confirm the digest it prints", opts.discardDirty, report.DiscardDirtyDigest)}, stderr)
+			return exitPreflight
+		}
+	}
 	if opts.carryForward {
 		applyReconcileStaging(ctx, repository, &report)
 		if report.Summary.OperationalFailures > 0 {
@@ -266,7 +284,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 	}
 	discardRefusals := 0
-	if opts.discardSuperseded {
+	if opts.discardSuperseded || opts.discardDirty != "" {
 		artifactRoot, resolveErr := roundconfig.ResolveArtifactDirectory(
 			loaded.Config.Defaults.ArtifactDir,
 			repository,
@@ -280,12 +298,19 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 			)
 			return exitRunFailed
 		}
-		discardRefusals = discardSupersededReconcileResults(ctx, artifactRoot, &report)
+		if opts.discardDirty != "" {
+			discardDirtyReconcileResults(ctx, artifactRoot, &report)
+		} else {
+			discardRefusals = discardSupersededReconcileResults(ctx, artifactRoot, &report)
+		}
 	}
 	if opts.apply && (report.Summary.Safe+report.Summary.Superseded > 0 ||
 		len(report.ProcessCandidates) > 0 || len(report.RunBranchCandidates) > 0 ||
 		len(report.StagingCandidates) > 0 || report.DebrisSummary.ItemBranchCandidates > 0) {
 		applyReconcileReport(ctx, loaded.HomeDir, opts, &report)
+	}
+	if opts.apply && opts.runID == "" {
+		applyReconcileEmptyDirectories(runs.worktreeLocation, &report)
 	}
 	if err := printReconcileReport(stdout, opts.format, report); err != nil {
 		printReconcileOperationalFailure(
@@ -326,6 +351,20 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 			opts.apply = true
 		case arg == "--discard-superseded":
 			opts.discardSuperseded = true
+		case arg == "--discard-dirty":
+			if index+1 >= len(args) || strings.HasPrefix(args[index+1], "--") {
+				return opts, validationError{message: "flag needs an argument: --discard-dirty"}
+			}
+			index++
+			opts.discardDirty = args[index]
+			if !validDirtyDiscardDigest(opts.discardDirty) {
+				return opts, validationError{message: "--discard-dirty needs the 64-character digest that roundfix reconcile prints"}
+			}
+		case strings.HasPrefix(arg, "--discard-dirty="):
+			opts.discardDirty = strings.TrimPrefix(arg, "--discard-dirty=")
+			if !validDirtyDiscardDigest(opts.discardDirty) {
+				return opts, validationError{message: "--discard-dirty needs the 64-character digest that roundfix reconcile prints"}
+			}
 		case arg == "--carry-forward":
 			opts.carryForward = true
 		case arg == "--format":
@@ -354,13 +393,13 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 		}
 	}
 	mutationModes := 0
-	for _, enabled := range []bool{opts.apply, opts.discardSuperseded, opts.carryForward} {
+	for _, enabled := range []bool{opts.apply, opts.discardSuperseded, opts.discardDirty != "", opts.carryForward} {
 		if enabled {
 			mutationModes++
 		}
 	}
 	if mutationModes > 1 {
-		return opts, validationError{message: "--apply, --discard-superseded, and --carry-forward are mutually exclusive"}
+		return opts, validationError{message: "--apply, --discard-superseded, --discard-dirty, and --carry-forward are mutually exclusive"}
 	}
 	if opts.carryForward && opts.runID == "" {
 		return opts, validationError{message: "--carry-forward requires one Run ID"}
@@ -628,6 +667,8 @@ func inspectReconcileRuns(
 		mode = "apply"
 	} else if opts.discardSuperseded {
 		mode = "discard-superseded"
+	} else if opts.discardDirty != "" {
+		mode = "discard-dirty"
 	} else if opts.carryForward {
 		mode = "carry-forward"
 	}
@@ -665,16 +706,93 @@ func inspectReconcileRuns(
 	report.Runs = report.Results
 	report.Summary.Total = len(report.Results)
 	inspectReconcileProcesses(ctx, opts, runs, &report)
+	withholdDirtyDiscardFromLiveRuns(&report)
+	report.DiscardDirtyDigest = dirtyDiscardDigest(report.Results)
+	if report.DiscardDirtyDigest != "" {
+		report.DiscardDirtyCommand = reconcileRetryCommand(opts.runID) + " --discard-dirty " + report.DiscardDirtyDigest
+		if mode == "dry-run" {
+			for index := range report.Results {
+				result := &report.Results[index]
+				if len(result.DiscardPaths) != 0 {
+					result.Action = fmt.Sprintf("would discard %d uncommitted path(s) with --discard-dirty", len(result.DiscardPaths))
+				}
+			}
+		}
+	}
 	inspectReconcileRunBranches(ctx, repository, opts, runs, classifications, &report)
 	inspectReconcileStaging(ctx, repository, opts, &report)
 	if opts.runID == "" {
 		inspectReconcileItemBranches(ctx, repository, opts, runs, &report)
+		inspectReconcileEmptyDirectories(runs.worktreeLocation, opts.apply, &report)
 	}
 	report.DebrisSummary.ProcessCandidates = len(report.ProcessCandidates)
 	report.DebrisSummary.RunBranchCandidates = len(report.RunBranchCandidates)
 	report.DebrisSummary.StagingCandidates = len(report.StagingCandidates)
 	report.DebrisSummary.Preserved = len(report.PreservedCandidates)
 	return report
+}
+
+const emptyRepositoryDirectoryProof = "repository directory under the Worktree Root holds nothing"
+
+func emptyRepositoryDirectoryCandidate(path, action string) reconcileDebrisResult {
+	return reconcileDebrisResult{
+		Kind:     "emptyRepositoryDirectory",
+		Worktree: path,
+		Proof:    emptyRepositoryDirectoryProof,
+		Action:   action,
+	}
+}
+
+func recordEmptyRepositoryDirectoryFailure(location string, err error, report *reconcileReport) {
+	candidate := emptyRepositoryDirectoryCandidate(location, "preserve")
+	candidate.RefusalReason = err.Error()
+	report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, candidate)
+	report.Summary.OperationalFailures++
+}
+
+func inspectReconcileEmptyDirectories(location string, apply bool, report *reconcileReport) {
+	paths, err := runworktree.EmptyRepositoryDirectories(location)
+	if err != nil {
+		recordEmptyRepositoryDirectoryFailure(location, err, report)
+		return
+	}
+	action := "would remove with --apply"
+	if apply {
+		action = "remove after the Run releases"
+	}
+	for _, path := range paths {
+		report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, emptyRepositoryDirectoryCandidate(path, action))
+	}
+}
+
+func applyReconcileEmptyDirectories(location string, report *reconcileReport) {
+	paths, err := runworktree.EmptyRepositoryDirectories(location)
+	if err != nil {
+		recordEmptyRepositoryDirectoryFailure(location, err, report)
+		return
+	}
+	for _, path := range paths {
+		index := slices.IndexFunc(report.EmptyDirectoryCandidates, func(candidate reconcileDebrisResult) bool {
+			return candidate.Worktree == path
+		})
+		if index < 0 {
+			report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, emptyRepositoryDirectoryCandidate(path, "remove after the Run releases"))
+			index = len(report.EmptyDirectoryCandidates) - 1
+		}
+		candidate := &report.EmptyDirectoryCandidates[index]
+		if err := runworktree.RemoveEmptyRepositoryDirectory(location, path); err != nil {
+			candidate.Action = "preserve"
+			candidate.RefusalReason = err.Error()
+			report.Summary.OperationalFailures++
+			continue
+		}
+		candidate.Action = "removed"
+		candidate.RefusalReason = ""
+		report.DebrisSummary.EmptyDirectoriesRemoved++
+	}
+	slices.SortFunc(report.EmptyDirectoryCandidates, func(a, b reconcileDebrisResult) int {
+		return strings.Compare(a.Worktree, b.Worktree)
+	})
 }
 
 func inspectReconcileStaging(
@@ -1039,6 +1157,7 @@ func newReconcileResult(
 		Worktree:          inspected.Path,
 		SupersedingReport: inspected.SupersedingReport,
 		Evidence:          inspected.Reason,
+		DiscardPaths:      slices.Clone(inspected.DiscardPaths),
 		inspected:         inspected,
 	}
 	switch inspected.State {
@@ -1317,6 +1436,9 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  evidence: %s\n", textReconcileValue(result.Evidence))
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(result.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(result.RefusalReason))
+		for _, path := range result.DiscardPaths {
+			fmt.Fprintf(&output, "  discard-path: %s\n", path)
+		}
 	}
 	for _, candidate := range report.ProcessCandidates {
 		heading := "Process candidate"
@@ -1378,6 +1500,13 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
 	}
+	for _, candidate := range report.EmptyDirectoryCandidates {
+		fmt.Fprintf(&output, "Empty repository directory: %s\n", candidate.Worktree)
+		fmt.Fprintf(&output, "  action: %s\n", candidate.Action)
+		if candidate.RefusalReason != "" {
+			fmt.Fprintf(&output, "  refusal-reason: %s\n", candidate.RefusalReason)
+		}
+	}
 	summary := report.Summary
 	fmt.Fprintf(
 		&output,
@@ -1409,6 +1538,9 @@ func reconcileText(report reconcileReport) string {
 	)
 	if report.Mode == "dry-run" {
 		fmt.Fprintf(&output, "Apply with: %s\n", report.ApplyCommand)
+		if report.DiscardDirtyCommand != "" {
+			fmt.Fprintf(&output, "Discard dirty leftovers with: %s\n", report.DiscardDirtyCommand)
+		}
 	}
 	return output.String()
 }
@@ -1550,4 +1682,90 @@ func applyReconcileItemBranch(ctx context.Context, homeDir, repository string, i
 		}
 	}
 	return runworktree.ApplyItemBranch(ctx, item)
+}
+
+func validDirtyDiscardDigest(digest string) bool {
+	if len(digest) != sha256.Size*2 {
+		return false
+	}
+	for _, char := range digest {
+		if !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+func withholdDirtyDiscardFromLiveRuns(report *reconcileReport) {
+	live := make(map[string]bool)
+	for _, candidates := range [][]reconcileDebrisResult{report.ProcessCandidates, report.PreservedCandidates} {
+		for _, candidate := range candidates {
+			if candidate.Kind == "process" {
+				live[candidate.RunID] = true
+			}
+		}
+	}
+	for index := range report.Results {
+		result := &report.Results[index]
+		if live[result.RunID] && len(result.DiscardPaths) != 0 {
+			result.DiscardPaths = nil
+			result.RefusalReason = "a live process tree is attributed to this Run, so its dirty leftovers are not offered for discard"
+		}
+	}
+}
+
+func dirtyDiscardDigest(results []reconcileResult) string {
+	candidates := make([]reconcileResult, 0)
+	for _, result := range results {
+		if len(result.DiscardPaths) != 0 {
+			candidates = append(candidates, result)
+		}
+	}
+	if len(candidates) == 0 {
+		return ""
+	}
+	slices.SortFunc(candidates, func(a, b reconcileResult) int { return strings.Compare(a.RunID, b.RunID) })
+	digest := sha256.New()
+	for _, result := range candidates {
+		paths := slices.Clone(result.DiscardPaths)
+		slices.Sort(paths)
+		for _, value := range append([]string{result.RunID, result.RunHead, result.Worktree}, paths...) {
+			_, _ = digest.Write([]byte(value))
+			_, _ = digest.Write([]byte{0})
+		}
+		_, _ = digest.Write([]byte{0})
+	}
+	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func discardDirtyReconcileResults(ctx context.Context, artifactRoot string, report *reconcileReport) {
+	for index := range report.Results {
+		result := &report.Results[index]
+		if len(result.DiscardPaths) == 0 {
+			continue
+		}
+		recordPath := filepath.Join(artifactRoot, "runs", result.RunID, "branch-disposition.json")
+		disposition := daemon.BranchDisposition{
+			RunID: result.RunID, Branch: result.RunBranch, TargetBranch: result.TargetBranch,
+			RunHead: result.RunHead, TargetHead: result.TargetHead, Worktree: result.Worktree,
+			Commits: []string{}, ChangedFiles: []string{},
+			Reason:        "dirty leftovers discarded by a confirmed Dirty Discard",
+			RefusalReason: result.Evidence, DiscardedPaths: slices.Clone(result.DiscardPaths),
+			DiscardDigest: report.DiscardDirtyDigest,
+		}
+		err := daemon.WriteDirtyDiscardRecord(recordPath, disposition, time.Now().UTC())
+		if err == nil {
+			err = runworktree.DiscardDirtyTerminalRun(ctx, result.inspected)
+		}
+		if err != nil {
+			result.Action = "preserve"
+			result.RefusalReason = err.Error()
+			report.Summary.OperationalFailures++
+			continue
+		}
+		result.Action = "discarded"
+		result.Evidence += "; branch record: " + recordPath
+		result.RefusalReason = ""
+		report.Summary.Applied++
+	}
 }

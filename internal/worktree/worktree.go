@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -212,6 +213,7 @@ const (
 	reconciliationReasonRunMetadata          = "recorded Run metadata is invalid"
 	reconciliationReasonWorktreePath         = "recorded Run Worktree path is unsafe"
 	reconciliationReasonWorktreeUnregistered = "recorded Run Worktree is not registered in the Git root"
+	reconciliationReasonWorktreeIgnoredOnly  = "recorded Run Worktree is not registered in the Git root and holds only files the repository ignores"
 	reconciliationReasonWorktreeInspection   = "Run Worktree cleanliness could not be inspected"
 	reconciliationReasonRunBranch            = "Run Branch could not be resolved unambiguously"
 	reconciliationReasonTargetMetadata       = "recorded target branch is missing or invalid"
@@ -228,6 +230,11 @@ var (
 	errRecordedRootVanished = errors.New("recorded Git root does not exist")
 )
 
+// DirtyDiscardOutcomes names the ended outcomes eligible for a confirmed discard.
+func DirtyDiscardOutcomes() []string {
+	return []string{store.StateFailed, store.StateUnresolved, store.StateStopped, store.StateBudgetExceeded, store.StateTimedOut}
+}
+
 type RunWorktreeReconciliation struct {
 	RunID             string
 	Outcome           string
@@ -237,6 +244,7 @@ type RunWorktreeReconciliation struct {
 	RunHead           string
 	TargetHead        string
 	SupersedingReport string
+	DiscardPaths      []string
 	Reason            string
 	State             ReconciliationState
 
@@ -932,6 +940,7 @@ type terminalRunReconciliationEvidence struct {
 	proofHead        string
 	proofRef         string
 	dirtyPaths       []string
+	ignoredPaths     []string
 }
 
 type terminalRunReconciliationSnapshot struct {
@@ -945,6 +954,7 @@ type terminalRunReconciliationSnapshot struct {
 	supersedingReport string
 	reason            string
 	state             ReconciliationState
+	discardPaths      string
 }
 
 func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (RunWorktreeReconciliation, error) {
@@ -996,6 +1006,20 @@ func inspectTerminalRunMerged(
 	}
 	if worktreeState == recordedWorktreeUnregistered {
 		result.Reason = reconciliationReasonWorktreeUnregistered
+		if filepath.Base(result.Path) != run.ID || registeredBranchPath(worktrees, result.Branch) != "" {
+			return result, nil
+		}
+		present, branchErr := localBranchExists(ctx, runner, gitRoot, result.Branch)
+		if branchErr != nil || present {
+			return result, nil
+		}
+		paths, ignored := unregisteredIgnoredPaths(ctx, runner, gitRoot, result.Path)
+		if ignored {
+			result.State = ReconciliationSafe
+			result.Reason = reconciliationReasonWorktreeIgnoredOnly
+			result.evidence = newTerminalRunReconciliationEvidence(run, gitRoot, result, false, false)
+			result.evidence.ignoredPaths = paths
+		}
 		return result, nil
 	}
 	worktreePresent := worktreeState == recordedWorktreePresent
@@ -1041,6 +1065,7 @@ func inspectTerminalRunMerged(
 			return result, nil
 		}
 		if status != "" {
+			var discardProof *terminalRunReconciliationEvidence
 			dirtyPaths, parsed := terminalRunDirtyPaths(status)
 			source, found := chooseMergedHead(ctx, runner, run, gitRoot, merged)
 			archived := found && specArchivedAtMergedHead(ctx, runner, gitRoot, source.head, run.SpecSlug)
@@ -1076,6 +1101,11 @@ func inspectTerminalRunMerged(
 					detail = "archived Spec's declared and recorded paths could not be inspected"
 					if outside != "" {
 						detail = outside + " is outside the archived Spec's declared and recorded paths"
+						if slices.Contains(DirtyDiscardOutcomes(), run.State) {
+							if _, defaultHead, resolved := resolveDefaultBranchHead(ctx, runner, gitRoot); resolved && specArchivedAtMergedHead(ctx, runner, gitRoot, defaultHead, run.SpecSlug) {
+								discardProof = proof.evidence
+							}
+						}
 					}
 				}
 			}
@@ -1092,6 +1122,15 @@ func inspectTerminalRunMerged(
 				if err := archiveSourceUnavailable(ctx, runner, gitRoot, source.head, run.SpecSlug); err != nil {
 					result.Reason = boundedReconciliationReason(err.Error())
 				}
+			}
+			if discardProof != nil {
+				result.DiscardPaths = slices.Clone(dirtyPaths)
+				result.evidence = newTerminalRunReconciliationEvidence(run, gitRoot, result, worktreePresent, runBranchPresent)
+				result.evidence.proofHead = discardProof.proofHead
+				result.evidence.proofRef = discardProof.proofRef
+				result.evidence.merged = slices.Clone(discardProof.merged)
+				result.evidence.mergedSnapshot = slices.Clone(discardProof.mergedSnapshot)
+				result.evidence.dirtyPaths = slices.Clone(dirtyPaths)
 			}
 			return result, nil
 		}
@@ -1493,6 +1532,7 @@ func terminalRunSnapshot(result RunWorktreeReconciliation) terminalRunReconcilia
 		supersedingReport: result.SupersedingReport,
 		reason:            result.Reason,
 		state:             result.State,
+		discardPaths:      strings.Join(result.DiscardPaths, "\x00"),
 	}
 }
 
@@ -1533,6 +1573,38 @@ type TerminalRunReconciliationStore interface {
 	ReconcileIntegration(context.Context, store.IntegrationReconciliation) (store.Run, error)
 }
 
+// DiscardDirtyTerminalRun re-proves an inspected Dirty Discard before removing
+// its Git surfaces. The caller must persist its Branch Disposition first.
+func DiscardDirtyTerminalRun(ctx context.Context, result RunWorktreeReconciliation) error {
+	evidence := result.evidence
+	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot || len(result.DiscardPaths) == 0 {
+		return errors.New("discard dirty terminal Run: result was not produced by inspection or recorded metadata changed")
+	}
+	if !mergedHeadRecordsEqual(evidence.merged, evidence.mergedSnapshot) {
+		return errors.New("discard dirty terminal Run: merged-head record changed after inspection")
+	}
+	runner := execGitRunner{}
+	fresh, err := inspectTerminalRunMerged(ctx, runner, evidence.run, evidence.merged)
+	if err != nil {
+		return fmt.Errorf("revalidate terminal Run before Dirty Discard: %w", err)
+	}
+	if fresh.State != ReconciliationDirty || fresh.RunHead != result.RunHead ||
+		fresh.TargetHead != result.TargetHead || fresh.evidence == nil ||
+		fresh.evidence.proofHead != evidence.proofHead || fresh.evidence.proofRef != evidence.proofRef ||
+		!slices.Equal(fresh.DiscardPaths, result.DiscardPaths) {
+		return errors.New("discard dirty terminal Run: evidence is stale")
+	}
+	if _, err := runWorktreeCommand(ctx, runner, evidence.gitRoot, "worktree", "remove", "--force", fresh.Path); err != nil {
+		return terminalRunApplyFailure(ctx, runner, evidence.gitRoot, fresh, fmt.Errorf("remove Run Worktree %q: %w", fresh.Path, err))
+	}
+	if fresh.evidence.runBranchPresent {
+		if err := deleteRunBranch(ctx, runner, evidence.gitRoot, fresh.Branch); err != nil {
+			return terminalRunApplyFailure(ctx, runner, evidence.gitRoot, fresh, err)
+		}
+	}
+	return nil
+}
+
 func ApplyTerminalRun(ctx context.Context, runStore TerminalRunReconciliationStore, result RunWorktreeReconciliation) error {
 	return applyTerminalRunWithStore(ctx, execGitRunner{}, runStore, result)
 }
@@ -1546,6 +1618,9 @@ func applyTerminalRunWithStore(
 	fresh, released, err := revalidateTerminalRunApply(ctx, runner, result)
 	if err != nil || released {
 		return err
+	}
+	if fresh.Reason == reconciliationReasonWorktreeIgnoredOnly {
+		return cleanupTerminalRun(ctx, runner, fresh)
 	}
 	if runStore == nil {
 		return errors.New("apply terminal Run reconciliation: Run Store is required before cleanup")
@@ -1610,6 +1685,13 @@ func revalidateTerminalRunApply(
 	if err != nil {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf("revalidate terminal Run before cleanup: %w", err)
 	}
+	if result.Reason == reconciliationReasonWorktreeIgnoredOnly {
+		if fresh.State != ReconciliationSafe || fresh.Reason != result.Reason || fresh.evidence == nil ||
+			!slices.Equal(fresh.evidence.ignoredPaths, evidence.ignoredPaths) {
+			return RunWorktreeReconciliation{}, false, errors.New("apply terminal Run reconciliation: ignored-only evidence is stale")
+		}
+		return fresh, false, nil
+	}
 	if fresh.State == ReconciliationReleased {
 		return fresh, true, nil
 	}
@@ -1644,6 +1726,18 @@ func cleanupTerminalRun(ctx context.Context, runner gitRunner, fresh RunWorktree
 		fresh = revalidated
 	}
 	evidence := fresh.evidence
+	if fresh.Reason == reconciliationReasonWorktreeIgnoredOnly {
+		if err := noTopLevelGitEntry(fresh.Path); err != nil {
+			return fmt.Errorf("remove ignored-only Run Worktree: %w", err)
+		}
+		if err := makeTreeOwnerWritable(fresh.Path); err != nil {
+			return fmt.Errorf("make ignored-only Run Worktree writable: %w", err)
+		}
+		if err := os.RemoveAll(fresh.Path); err != nil {
+			return fmt.Errorf("remove ignored-only Run Worktree: %w", err)
+		}
+		return nil
+	}
 	if fresh.evidence.worktreePresent {
 		args := []string{"worktree", "remove"}
 		if fresh.State == ReconciliationSuperseded && len(evidence.dirtyPaths) != 0 {
@@ -1981,6 +2075,116 @@ func removeUnregisteredItemWorktree(ctx context.Context, runner gitRunner, ref I
 	}
 	if err := os.RemoveAll(ref.Path); err != nil {
 		return fmt.Errorf("remove unregistered item Worktree: %w", err)
+	}
+	return nil
+}
+
+// noTopLevelGitEntry rejects metadata files, directories and symbolic links.
+func noTopLevelGitEntry(directory string) error {
+	_, err := os.Lstat(filepath.Join(directory, ".git"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect top-level Git metadata: %w", err)
+	}
+	return errors.New("top-level Git metadata is present")
+}
+
+func unregisteredIgnoredPaths(ctx context.Context, runner gitRunner, gitRoot, directory string) ([]string, bool) {
+	if err := noTopLevelGitEntry(directory); err != nil {
+		return nil, false
+	}
+	var paths []string
+	err := filepath.WalkDir(directory, func(entryPath string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(directory, entryPath)
+		if err != nil {
+			return err
+		}
+		paths = append(paths, filepath.ToSlash(relative))
+		return nil
+	})
+	if err != nil {
+		return nil, false
+	}
+	sort.Strings(paths)
+	if len(paths) == 0 {
+		return paths, true
+	}
+	inputRunner, ok := runner.(interface {
+		RunInput(context.Context, string, string, ...string) (string, error)
+	})
+	if !ok {
+		return nil, false
+	}
+	output, err := inputRunner.RunInput(ctx, gitRoot, strings.Join(paths, "\x00")+"\x00", "check-ignore", "-z", "--stdin")
+	if err != nil || !strings.HasSuffix(output, "\x00") {
+		return nil, false
+	}
+	ignored := strings.Split(strings.TrimSuffix(output, "\x00"), "\x00")
+	sort.Strings(ignored)
+	return paths, slices.Equal(paths, ignored)
+}
+
+var repositoryDirectoryName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*-[0-9a-f]{8}$`)
+
+// EmptyRepositoryDirectories lists empty real repository directories directly
+// under the Worktree Root, in byte order. An absent root has no candidates.
+func EmptyRepositoryDirectories(location string) ([]string, error) {
+	root, err := filepath.Abs(location)
+	if err != nil {
+		return nil, fmt.Errorf("resolve Worktree Root: %w", err)
+	}
+	entries, err := os.ReadDir(root)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("list repository directories: %w", err)
+	}
+	var paths []string
+	for _, entry := range entries {
+		if !entry.IsDir() || !repositoryDirectoryName.MatchString(entry.Name()) {
+			continue
+		}
+		path := filepath.Join(root, entry.Name())
+		children, err := os.ReadDir(path)
+		if err != nil {
+			return nil, fmt.Errorf("inspect repository directory %q: %w", path, err)
+		}
+		if len(children) == 0 {
+			paths = append(paths, path)
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+// RemoveEmptyRepositoryDirectory removes only a real, empty repository
+// directory directly under location. Remove refuses any newly added entry.
+func RemoveEmptyRepositoryDirectory(location, path string) error {
+	root, err := filepath.Abs(location)
+	if err != nil {
+		return fmt.Errorf("resolve Worktree Root: %w", err)
+	}
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path || filepath.Dir(path) != root || !repositoryDirectoryName.MatchString(filepath.Base(path)) {
+		return errors.New("remove empty repository directory: path is not a repository directory directly under the Worktree Root")
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("inspect empty repository directory: %w", err)
+	}
+	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return errors.New("remove empty repository directory: path is not a real directory")
+	}
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("remove empty repository directory: %w", err)
 	}
 	return nil
 }
@@ -2579,7 +2783,11 @@ type gitRunner interface {
 
 type execGitRunner struct{}
 
-func (execGitRunner) Run(ctx context.Context, workDir string, args ...string) (string, error) {
+func (runner execGitRunner) Run(ctx context.Context, workDir string, args ...string) (string, error) {
+	return runner.RunInput(ctx, workDir, "", args...)
+}
+
+func (execGitRunner) RunInput(ctx context.Context, workDir, input string, args ...string) (string, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -2588,6 +2796,7 @@ func (execGitRunner) Run(ctx context.Context, workDir string, args ...string) (s
 	}
 	cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
 	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
+	cmd.Stdin = strings.NewReader(input)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
