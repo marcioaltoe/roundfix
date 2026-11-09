@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-03T00:00:00Z
-updated_at: 2026-08-03T00:00:00Z
+updated_at: 2026-11-09T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -24,6 +24,8 @@ should account for. Replaying Spec 0056, whose F-001 named ADR-0055 as the
 omission, the depth-one closure over its cited set — ADR-0037, ADR-0039,
 ADR-0049 — is exactly ADR-0040 and ADR-0055. Two candidates, one of them the
 finding. That is a report an author can read, not noise.
+
+**Amended by [ADR-0377](0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md) (2026-11-09).** Only a listed ADR the Spec applies or changes is a seed of the candidates: an ADR whose line under the TechSpec's ADR Alternatives begins with `not applicable` stays listed but draws in no ADR that cites it. The closure stays one citation edge deep, and the check still reads only what the Spec wrote.
 
 Findings therefore carry two severities with different consequences. An
 **error** states a contradiction both of whose sides the check located, with

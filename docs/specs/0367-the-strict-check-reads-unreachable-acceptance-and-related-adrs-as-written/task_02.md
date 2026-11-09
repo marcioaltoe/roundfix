@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -133,3 +133,52 @@ and the glossary sentence.
 - `_prd.md` → Goals; User Story 2; Core Feature 2; Core Feature 3; Success Metric 3
 - `_techspec.md` → Interfaces; API Contract 2; Testing Approach; Build Order 2
 - ADR-0377; ADR-0093; ADR-0168; ADR-0265
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the assigned slice for Daemon Verification. The initial worktree
+change was this Task's Daemon-owned `pending` to `in_progress` transition;
+its status and checkboxes remain unchanged by this Agent.
+
+- Acceptance criterion 1: `appliedADRNumbers` copies the listed set and removes
+  only numbers whose ADR Alternatives relation begins with the case-insensitive
+  `not applicable` token. Both marker variants in
+  `TestANotApplicableADRDrawsInNoCitingADR` report no related, unlisted, or
+  missing-alternatives findings. `TestAnADRCitingAnAppliedADRIsStillRelated`
+  reports ADR-0004 through applied ADR-0001 even while ADR-0002 is marked.
+- Acceptance criterion 2: applied relations, relations containing the words
+  later, and a missing TechSpec still report ADR-0003 through ADR-0002.
+  The new tests assert the exact fix, gap severity, summary seed, and two
+  location paths. Existing horizon and depth-one tests passed in the focused
+  selection. Other TechSpec read errors are returned with the path and `%w`;
+  the original listed map and the unlisted-citation check are preserved.
+- Acceptance criterion 3: ADR-0093 and ADR-0168 carry the exact ADR-0377
+  amendments and required `updated_at` values. Through `domain-modeling`,
+  the Spec Consistency Check definition gains exactly the required sentence.
+  A read-only Python comparison against `git show HEAD:<path>`, using the
+  literal paragraphs and sentence from this Task, confirmed that no other
+  bytes of those three documents changed. ADR-0377, guides, skills, records,
+  the manifest, and other Tasks were not edited.
+
+Focused-check evidence:
+
+- Before the production change,
+  `rtk proxy go test ./internal/speccheck -run '^TestANotApplicableADRDrawsInNoCitingADR$' -count=1 -timeout=2m`
+  exited 1: both marker variants incorrectly reported ADR-0003. The first
+  sandboxed attempt could not access the Go build cache; the escalated run
+  reproduced the behavioral failure without changing cache configuration.
+- After the change,
+  `rtk proxy go test ./internal/speccheck -run 'Test(ANotApplicableADR|AnAppliedADR|WithoutATechSpec|AnADRCitingAnAppliedADR|CheckADRClosureDepthOne|AnADRCommitted|TheHorizon|AnUncommitted|ASpecWithoutGit|ASpecInAnotherRepository|AShallowHistory)' -count=1 -timeout=3m -v`
+  exited 0: all 17 selected top-level tests passed, including the four new
+  regression tests and their subtests.
+- `gofmt -w internal/speccheck/authoring_proof.go internal/speccheck/citations.go internal/speccheck/adr_related_seed_test.go`
+  exited 0. `rtk proxy git diff --check` exited 0.
+- The old fix text search under `internal`, agent guides, user guides, and
+  both skill trees found only the changed implementation; no existing test
+  pinned the old fix.
+
+The declared Verification commands, full suites, and repository Verification
+were not run; they remain Daemon-owned. No commit, push, or pull request was
+created. No follow-up was identified within this slice.

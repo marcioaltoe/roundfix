@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-29T00:00:00Z
-updated_at: 2026-09-29T00:00:00Z
+updated_at: 2026-11-09T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -16,6 +16,8 @@ promoted, each gap refused: the strict check, the Delivery Plan, queue
 revalidation and the QA gate. PRs #268, #272 and #274 each had to edit other
 Specs' Project Constraints before they could merge. None of those Specs could
 have accounted for a decision that did not yet exist when it was written.
+
+**Amended by [ADR-0377](0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md) (2026-11-09).** The listed ADR the citing ADR names must also be one the Spec applies or changes: a listed ADR whose ADR Alternatives line begins with `not applicable` opens no gap for the ADRs that cite it. The horizon below is unchanged.
 
 The check now has a horizon. For a Spec whose `_prd.md` is committed, an ADR is
 related only when the commit that added the ADR is an ancestor of the commit

@@ -1155,6 +1155,11 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		})
 	}
 
+	seeds, err := appliedADRNumbers(listed, filepath.Join(specDir, "_techspec.md"))
+	if err != nil {
+		return err
+	}
+
 	var horizon adrHorizon
 	horizonLoaded := false
 	horizonApplies := false
@@ -1163,7 +1168,7 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		if listed[number] {
 			continue
 		}
-		relatedNumber, related := firstListedCitation(record, listed)
+		relatedNumber, related := firstListedCitation(record, seeds)
 		if !related {
 			continue
 		}
@@ -1182,10 +1187,31 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 				{Path: record.DisplayPath, Line: record.CitationLines[relatedNumber]},
 				rowLocation,
 			},
-			Fix: "Account for ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " by listing it or recording why it does not apply.",
+			Fix: "Account for ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.",
 		})
 	}
 	return nil
+}
+
+func appliedADRNumbers(listed map[string]bool, techSpecPath string) (map[string]bool, error) {
+	seeds := make(map[string]bool, len(listed))
+	for number, present := range listed {
+		seeds[number] = present
+	}
+	content, err := os.ReadFile(techSpecPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return seeds, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read TechSpec %q: %w", techSpecPath, err)
+	}
+	for _, line := range markdownSectionLines(content, "ADR Alternatives") {
+		match := adrAlternativePattern.FindStringSubmatch(line)
+		if len(match) == 3 && notApplicableRelationPattern.MatchString(match[2]) {
+			delete(seeds, match[1])
+		}
+	}
+	return seeds, nil
 }
 
 func readADRCorpus(repoRoot string) (map[string]adrRecord, bool, error) {
