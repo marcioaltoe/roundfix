@@ -1,9 +1,0 @@
-cmp internal/agent/testdata/codex-acp-2.6.0-config-options.json docs/specs/0365-the-capability-projection-reads-grouped-select-options/references/codex-acp-2.6.0-config-options.json: exit 0
-SHA-256 internal/agent/testdata/codex-acp-2.6.0-config-options.json: fcd34a03ef3e228c567692441e7af33b4b0803eca9b49256b077a6c36e92762f
-SHA-256 docs/specs/0365-the-capability-projection-reads-grouped-select-options/references/codex-acp-2.6.0-config-options.json: fcd34a03ef3e228c567692441e7af33b4b0803eca9b49256b077a6c36e92762f
-2.6.0: shape=grouped; values=['read-only', 'workspace-write', 'agent', 'agent-full-access', 'permission-profile:localdev']; current=permission-profile:localdev
-cmp internal/agent/testdata/codex-acp-2.5.0-config-options.json docs/specs/0365-the-capability-projection-reads-grouped-select-options/references/codex-acp-2.5.0-config-options.json: exit 0
-SHA-256 internal/agent/testdata/codex-acp-2.5.0-config-options.json: 0c8cef38871065ba5c593f5864c334d8d679968b21bc87d8ed0cfda146b34000
-SHA-256 docs/specs/0365-the-capability-projection-reads-grouped-select-options/references/codex-acp-2.5.0-config-options.json: 0c8cef38871065ba5c593f5864c334d8d679968b21bc87d8ed0cfda146b34000
-2.5.0: shape=flat; values=['read-only', 'workspace-write', 'agent', 'agent-full-access']; current=agent
-Outside source: operator measurement dated 2026-11-09, adopted unchanged from planning commit 0d6b34aa. ACP v1 Session Config Options passage quoted in PRD Acceptance evidence, retrieved 2026-11-09: flat or grouped union; values and groups must not mix. Offline comparison: recorded 2.6.0 projection passes and the values_and_groups_mixed refusal case passes in focused.txt; mixed-accepted-1.txt proves removal of that boundary is detected. No network retrieval.
