@@ -105,6 +105,39 @@ with `--force` and deleting its Run Branch. A record or removal failure
 preserves the remaining surfaces, reports the error and exits 1. The act
 writes nothing to the Run Database ([ADR-0379](../../adr/0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md)).
 
+A recorded Run Worktree that Git does not register is `safe` when its directory
+is named after the Run, its Run Branch is absent and no registered worktree
+holds that branch, no `.git` entry of any type is at its top, and walking it
+without following symbolic links succeeds. Every non-directory entry must be
+reported by one `git check-ignore -z --stdin` command in the Git root, with
+slash-separated relative paths supplied as NUL-separated input; it uses the
+checkout's ignore rules without `--no-index`, so tracked paths never qualify.
+An empty directory qualifies without running that command.
+
+Any failed proof keeps `unknown` with `recorded Run Worktree is not registered in the Git root`.
+`--apply` re-lists the files and refuses a changed list, checks again for Git
+metadata, makes the tree owner-writable and removes the directory without a
+Git command and without a Run Database record.
+
+On a full scan only, the dry run lists empty real repository directories
+directly under the Worktree Root
+whose names match `^[a-z0-9]+(-[a-z0-9]+)*-[0-9a-f]{8}$`; symbolic links and
+other names stay. After the Run and other releases, `--apply` lists them again
+and removes each with an empty-directory removal, so a newly added entry
+prevents removal.
+
+JSON lists `emptyDirectoryCandidates` of kind
+`emptyRepositoryDirectory`, with the path in `worktree` and proof
+`repository directory under the Worktree Root holds nothing`, and counts
+removals in `debrisSummary.emptyDirectoriesRemoved`; both fields are omitted
+when empty or zero. Text prints `Empty repository directory: <path>` and
+`  action: <action>` before `Summary:`, adding
+`  refusal-reason: <reason>` on failure. Actions are `would remove with --apply`
+in a dry run, `remove after the Run releases` before apply, `removed` after
+removal, or `preserve` with the error on failure; a failure counts as an
+operational failure. A Run ID lists and removes no empty repository directory
+([ADR-0379](../../adr/0379-an-archived-specs-ended-run-gives-up-its-dirty-leftovers-only-on-a-confirmed-discard.md)).
+
 Run Worktree Reconciliation uses six states:
 
 | State | Evidence and behavior |
@@ -113,7 +146,7 @@ Run Worktree Reconciliation uses six states:
 | `superseded` | A newer QA Report or the merged-head proof represents the Run's Task or QA Report commits, archived Spec-directory work, or scoped uncommitted leftovers. Eligible for cleanup after revalidation. |
 | `unintegrated` | The worktree cleanliness and ref evidence resolve, but the Run Branch tip is not an ancestor of the target tip. Roundfix preserves the worktree and branch. |
 | `dirty` | Tracked or untracked changes lack archived-Spec supersession proof, even after including paths beneath a declared or recorded path. For an archived Spec, `Run Worktree has tracked or untracked changes; <commit proof reason>` names the failed commit proof, or `Run Worktree has tracked or untracked changes; <path> is outside the archived Spec's declared and recorded paths` names the first outside path in byte order; the suffix is shortened in the middle to fit 160 bytes. An unarchived Spec keeps the bare constant; an unavailable archive source keeps its diagnostic. Roundfix preserves the worktree and branch. |
-| `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
+| `unknown` | Invalid or missing metadata, an unsafe worktree, an unregistered worktree unless it holds only files the repository ignores, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
 | `released` | Both the Run Worktree and Run Branch are absent. Repeated dry-run or apply is an idempotent no-op. |
 
 When `worktree.location` is a symbolic link, a recorded Run Worktree is
@@ -216,8 +249,8 @@ and reports failures while preserving any remaining path or ref. Dirty,
 unintegrated, unknown, and released entries remain successful preserved
 results unless an operational inspection fails.
 
-Before cleanup, Roundfix records the reconciliation evidence. A safe
-Integration Pending Run moves to Clean through the guarded terminal transition;
+Except for an ignored-only unregistered directory, Roundfix records the
+reconciliation evidence before cleanup. A safe Integration Pending Run moves to Clean through the guarded terminal transition;
 every other terminal outcome remains unchanged. The Reconcile Command never
 integrates unique commits, repairs dirty work, chooses another target branch,
 or treats a missing path as proof.

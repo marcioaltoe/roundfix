@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0369-reconcile-discards-confirmed-dirty-leftovers-and-ignored-only-worktrees
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -194,3 +194,72 @@ On a full scan, `--apply` also removes each empty repository directory directly 
 - `_prd.md` → Goals; User Story 3; Core Feature 3; Core Feature 4; Core Feature 5; User Experience; Success Metric 3; Success Metric 4; Glossary
 - `_techspec.md` → Interfaces; Data Models; API Contract 3; API Contract 4; Testing Approach; Build Order 2
 - ADR-0379; ADR-0053
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, no-workarounds, systematic-debugging.
+
+Implemented the task_02 slice for Daemon verification:
+
+- An unregistered recorded directory becomes safe only after the Run-name,
+  absent-branch, registration and top-level Git metadata guards hold. A
+  non-following walk collects sorted slash-separated paths, and one
+  NUL-framed check-ignore invocation proves every non-directory entry against
+  the repository index and checkout ignore rules, without --no-index. Empty
+  trees need no check-ignore invocation. Every failed proof retains the old
+  unknown reason.
+- Apply re-inspects the same ignored-only case and exact path set, checks
+  top-level metadata again, makes the tree owner-writable and removes it
+  without ReconcileIntegration or a Git removal. Existing registered cleanup
+  and Dirty Discard paths retain their behavior.
+- Full scans report empty real repository-shaped directories; apply re-lists
+  after the other releases and removes them with os.Remove. The sweep also
+  runs when no Run is eligible. Run-ID invocations omit it. Failures report
+  preserve, their reason and an operational failure. New JSON fields omit
+  empty collections and zero counts, and text entries precede Summary.
+- The reconcile guide documents both behaviors and the Run Database exception.
+  CONTEXT.md changes only the two requested definition lines, appending the
+  supplied sentences verbatim through domain-modeling.
+
+Focused implementation evidence (all commands below exited 0 on this checkout):
+
+```text
+rtk proxy go test ./internal/worktree ./internal/cli -run 'TestAnUnregistered|TestApplyRefusesAnIgnoredOnly|TestEmptyRepositoryDirectories|TestIgnoredOnly|TestReconcileApplyReleasesAnIgnoredOnly|TestReconcileWithARunIDRemoves|TestReconcileWithoutADirtyDiscardKeepsItsWireBytes|TestReconcileDiscardDirtyNeedsItsDigestTranscript|TestRunReconcileIdempotentApply' -count=1 -v
+rtk proxy go test ./internal/cli -run '^TestReconcileEmptyDirectory' -count=1 -v
+rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestGlossary(ClosedListsEqualTheirConstants|LinksNameAcceptedADRs|PhrasesAreDefinedTerms|StatesEachRuleOnce)$' -count=1
+```
+
+| Acceptance criterion | Focused evidence |
+| --- | --- |
+| Ignored-only directories release; other unregistered directories remain unknown | The four required worktree tests passed. They cover ignored and empty trees, no Run Database record, a subsequent released inspection, unignored files, tracked paths matching a later ignore rule, Git metadata, an existing branch, a wrong directory name and a changed ignored path set. Additional tests passed for metadata directories and dangling links, preservation of a symlink target, whitespace in paths, and metadata/branch/ignore-rule changes between inspection and apply. |
+| Full scan removes only empty repository-shaped directories; Run ID removes none | Both required CLI tests passed with temporary homes, real Git worktree creation/removal and recreated ignored storage. The full scan removed two repository directories and kept notes; Run-ID apply left both repository directories. The helper test passed for ordering, shape, nonempty directories, symlinks, absent roots and an entry added after listing. Additional CLI tests passed for a sweep without Run candidates and reported inspection failures. |
+| Reports without either case retain their bytes | Existing TestReconcileWithoutADirtyDiscardKeepsItsWireBytes passed for text and JSON. New CLI assertions also passed for omission of emptyDirectoryCandidates and emptyDirectoriesRemoved when unused. The existing digest transcript and idempotent-apply regression tests passed. |
+
+Windows compilation also exited 0, with both binaries written only into one
+fresh temporary build directory:
+
+```sh
+task_build_dir=$(mktemp -d)
+GOOS=windows rtk proxy go test -c -o "$task_build_dir/worktree.test.exe" ./internal/worktree && GOOS=windows rtk proxy go test -c -o "$task_build_dir/cli.test.exe" ./internal/cli
+```
+
+The initial red compilation identified the missing reason, ignored-path
+inspection evidence and empty-directory APIs. Fixture setup was corrected to
+create nested storage directories and resolve the temporary Git root's macOS
+symlink spelling. The sandbox denied the initial Go cache access; the focused
+checks above ran with authorized cache access. git diff --check exited 0.
+
+The required Behavior Surface Record regeneration is the final edit after
+this Result and all guide edits; its execution outcome is included in the
+Agent handback:
+
+```sh
+go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+```
+
+Task status and checkboxes remain Daemon-owned. No declared Verification
+command, repository Verification or incremental Verification was run; the
+focused checks above are not a Daemon verdict. No commit, push, pull request,
+other task, Task Graph manifest, ADR or skill was changed. No follow-up work
+was added to this slice.

@@ -73,22 +73,23 @@ type reconcileSummary struct {
 }
 
 type reconcileReport struct {
-	SchemaVersion        string                   `json:"schemaVersion"`
-	Mode                 string                   `json:"mode"`
-	Repository           string                   `json:"repository"`
-	ApplyCommand         string                   `json:"applyCommand"`
-	Results              []reconcileResult        `json:"results"`
-	Runs                 []reconcileResult        `json:"runs"`
-	Summary              reconcileSummary         `json:"summary"`
-	ProcessCandidates    []reconcileDebrisResult  `json:"processCandidates"`
-	RunBranchCandidates  []reconcileDebrisResult  `json:"runBranchCandidates"`
-	StagingCandidates    []reconcileDebrisResult  `json:"stagingCandidates"`
-	ItemBranchCandidates *[]reconcileDebrisResult `json:"itemBranchCandidates,omitempty"`
-	PreservedCandidates  []reconcileDebrisResult  `json:"preservedCandidates"`
-	DebrisSummary        reconcileDebrisSummary   `json:"debrisSummary"`
-	CarryForwards        []spec.CarryForward      `json:"carryForwards"`
-	DiscardDirtyDigest   string                   `json:"discardDirtyDigest,omitempty"`
-	DiscardDirtyCommand  string                   `json:"discardDirtyCommand,omitempty"`
+	SchemaVersion            string                   `json:"schemaVersion"`
+	Mode                     string                   `json:"mode"`
+	Repository               string                   `json:"repository"`
+	ApplyCommand             string                   `json:"applyCommand"`
+	Results                  []reconcileResult        `json:"results"`
+	Runs                     []reconcileResult        `json:"runs"`
+	Summary                  reconcileSummary         `json:"summary"`
+	ProcessCandidates        []reconcileDebrisResult  `json:"processCandidates"`
+	RunBranchCandidates      []reconcileDebrisResult  `json:"runBranchCandidates"`
+	StagingCandidates        []reconcileDebrisResult  `json:"stagingCandidates"`
+	ItemBranchCandidates     *[]reconcileDebrisResult `json:"itemBranchCandidates,omitempty"`
+	EmptyDirectoryCandidates []reconcileDebrisResult  `json:"emptyDirectoryCandidates,omitempty"`
+	PreservedCandidates      []reconcileDebrisResult  `json:"preservedCandidates"`
+	DebrisSummary            reconcileDebrisSummary   `json:"debrisSummary"`
+	CarryForwards            []spec.CarryForward      `json:"carryForwards"`
+	DiscardDirtyDigest       string                   `json:"discardDirtyDigest,omitempty"`
+	DiscardDirtyCommand      string                   `json:"discardDirtyCommand,omitempty"`
 }
 
 type reconcileDebrisResult struct {
@@ -125,6 +126,7 @@ type reconcileDebrisSummary struct {
 	StagingApplied          int `json:"stagingApplied"`
 	ItemBranchCandidates    int `json:"itemBranchCandidates"`
 	ItemBranchesApplied     int `json:"itemBranchesApplied"`
+	EmptyDirectoriesRemoved int `json:"emptyDirectoriesRemoved,omitempty"`
 }
 
 type reconcileRunSelection struct {
@@ -306,6 +308,9 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		len(report.ProcessCandidates) > 0 || len(report.RunBranchCandidates) > 0 ||
 		len(report.StagingCandidates) > 0 || report.DebrisSummary.ItemBranchCandidates > 0) {
 		applyReconcileReport(ctx, loaded.HomeDir, opts, &report)
+	}
+	if opts.apply && opts.runID == "" {
+		applyReconcileEmptyDirectories(runs.worktreeLocation, &report)
 	}
 	if err := printReconcileReport(stdout, opts.format, report); err != nil {
 		printReconcileOperationalFailure(
@@ -718,12 +723,76 @@ func inspectReconcileRuns(
 	inspectReconcileStaging(ctx, repository, opts, &report)
 	if opts.runID == "" {
 		inspectReconcileItemBranches(ctx, repository, opts, runs, &report)
+		inspectReconcileEmptyDirectories(runs.worktreeLocation, opts.apply, &report)
 	}
 	report.DebrisSummary.ProcessCandidates = len(report.ProcessCandidates)
 	report.DebrisSummary.RunBranchCandidates = len(report.RunBranchCandidates)
 	report.DebrisSummary.StagingCandidates = len(report.StagingCandidates)
 	report.DebrisSummary.Preserved = len(report.PreservedCandidates)
 	return report
+}
+
+const emptyRepositoryDirectoryProof = "repository directory under the Worktree Root holds nothing"
+
+func emptyRepositoryDirectoryCandidate(path, action string) reconcileDebrisResult {
+	return reconcileDebrisResult{
+		Kind:     "emptyRepositoryDirectory",
+		Worktree: path,
+		Proof:    emptyRepositoryDirectoryProof,
+		Action:   action,
+	}
+}
+
+func recordEmptyRepositoryDirectoryFailure(location string, err error, report *reconcileReport) {
+	candidate := emptyRepositoryDirectoryCandidate(location, "preserve")
+	candidate.RefusalReason = err.Error()
+	report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, candidate)
+	report.Summary.OperationalFailures++
+}
+
+func inspectReconcileEmptyDirectories(location string, apply bool, report *reconcileReport) {
+	paths, err := runworktree.EmptyRepositoryDirectories(location)
+	if err != nil {
+		recordEmptyRepositoryDirectoryFailure(location, err, report)
+		return
+	}
+	action := "would remove with --apply"
+	if apply {
+		action = "remove after the Run releases"
+	}
+	for _, path := range paths {
+		report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, emptyRepositoryDirectoryCandidate(path, action))
+	}
+}
+
+func applyReconcileEmptyDirectories(location string, report *reconcileReport) {
+	paths, err := runworktree.EmptyRepositoryDirectories(location)
+	if err != nil {
+		recordEmptyRepositoryDirectoryFailure(location, err, report)
+		return
+	}
+	for _, path := range paths {
+		index := slices.IndexFunc(report.EmptyDirectoryCandidates, func(candidate reconcileDebrisResult) bool {
+			return candidate.Worktree == path
+		})
+		if index < 0 {
+			report.EmptyDirectoryCandidates = append(report.EmptyDirectoryCandidates, emptyRepositoryDirectoryCandidate(path, "remove after the Run releases"))
+			index = len(report.EmptyDirectoryCandidates) - 1
+		}
+		candidate := &report.EmptyDirectoryCandidates[index]
+		if err := runworktree.RemoveEmptyRepositoryDirectory(location, path); err != nil {
+			candidate.Action = "preserve"
+			candidate.RefusalReason = err.Error()
+			report.Summary.OperationalFailures++
+			continue
+		}
+		candidate.Action = "removed"
+		candidate.RefusalReason = ""
+		report.DebrisSummary.EmptyDirectoriesRemoved++
+	}
+	slices.SortFunc(report.EmptyDirectoryCandidates, func(a, b reconcileDebrisResult) int {
+		return strings.Compare(a.Worktree, b.Worktree)
+	})
 }
 
 func inspectReconcileStaging(
@@ -1430,6 +1499,13 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  amended-inputs: %v\n", candidate.AmendedInputs)
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(candidate.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(candidate.RefusalReason))
+	}
+	for _, candidate := range report.EmptyDirectoryCandidates {
+		fmt.Fprintf(&output, "Empty repository directory: %s\n", candidate.Worktree)
+		fmt.Fprintf(&output, "  action: %s\n", candidate.Action)
+		if candidate.RefusalReason != "" {
+			fmt.Fprintf(&output, "  refusal-reason: %s\n", candidate.RefusalReason)
+		}
 	}
 	summary := report.Summary
 	fmt.Fprintf(
