@@ -238,6 +238,9 @@ func requireSettleQAReportEligibility(plan settlePlan) error {
 	if eligibilityErr == nil {
 		eligibilityErr = spec.RequireResolvedEvidenceLinks(context.Background(), path)
 	}
+	if eligibilityErr == nil {
+		eligibilityErr = spec.RequireOwnRunEvidence(context.Background(), path, spec.BorrowedEvidenceOptions{RunBranchPrefix: store.RunBranchPrefix})
+	}
 	if err := eligibilityErr; err != nil {
 		relative, pathErr := filepath.Rel(plan.workDir, path)
 		if pathErr != nil {
