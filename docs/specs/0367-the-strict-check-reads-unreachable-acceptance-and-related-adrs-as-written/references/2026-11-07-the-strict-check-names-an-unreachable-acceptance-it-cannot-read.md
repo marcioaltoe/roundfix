@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-07
-spec: null
+spec: 0367-the-strict-check-reads-unreachable-acceptance-and-related-adrs-as-written
 reason: null
 ---
 
