@@ -1,3 +1,0 @@
-Both Glossary declarations equal None.
-Command: git diff --name-only 04ece683f8b767b3086ddb5b9c1cec659636d847..9b8ba71b127c44fb3fbee5fa4c87d10116bb6945 -- CONTEXT.md
-Result: empty; exit 0. No domain term introduced or changed.

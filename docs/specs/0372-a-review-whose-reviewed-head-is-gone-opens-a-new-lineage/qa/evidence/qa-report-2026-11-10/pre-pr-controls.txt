@@ -1,7 +1,0 @@
-Pull Request fact: none open (Daemon QA assignment; no network rediscovery).
-Approval: approved Spec-contained authorization at 04ece683f8b767b3086ddb5b9c1cec659636d847; authorizes delivery operations, with QA child restricted to report/evidence.
-Checks/status: Daemon make verify-changed, pass, exit 0, audited head 9b8ba71b127c44fb3fbee5fa4c87d10116bb6945.
-Unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; not equivalent to review approval.
-Claimed candidate / review-artifact ancestry: 9b8ba71b127c44fb3fbee5fa4c87d10116bb6945; no current-candidate reviewer artifact asserted.
-Unblocking: supervisor obtains configured pre-PR review, opens the Spec-target-branch Pull Request, and verifies required checks and Merge-Ready acceptance at its head.

@@ -1,1 +1,0 @@
-Two fresh ./bin/roundfix processes return exit 2, empty stdout and the exact named missing-reviewed-head refusal. Independent filesystem read after each: disposition ledger remains absent; review record remains byte-identical. A third process confirms the recommended review command is supported via --help; it does not start review. All fixture paths removed.

@@ -1,8 +1,0 @@
-$ ./bin/roundfix review dispose F1 --fixed-by 9b8ba71b127c44fb3fbee5fa4c87d10116bb6945
-exit: 2
-stdout:
-
-stderr:
-roundfix: review dispose refused: reviewed head "ffffffffffffffffffffffffffffffffffffffff" is no longer in the repository; run roundfix review to open a new Reviewer Lineage
-
-Binary symlink resolves to this Run Worktree's bin/roundfix. Fresh process; disposable local repository; no reviewer invoked.
