@@ -1,6 +1,0 @@
-command: bash -c 'out="$(go test -count=1 -timeout 20m -v -run '"'"'^(TestTheBackendModuleRequiresTheSevenInngestSkills|TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill)$'"'"' ./internal/cli 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestTheBackendModuleRequiresTheSevenInngestSkills TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 30m -run '"'"'Baseline'"'"' ./internal/cli'
-repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
-ok  	roundfix/internal/cli	67.793s
-
-
-exit: 0

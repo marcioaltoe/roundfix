@@ -1,5 +1,0 @@
-Report: closed; verdict partial; 14 typed rows; 12 pass; one environment and one declared block; no failed, skipped or pending rows.
-All linked evidence exists, decodes as text and is not ignored.
-Audited HEAD unchanged; no tracked implementation delta.
-No evidence_snapshots were authored.
-exit: 0

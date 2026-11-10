@@ -1,5 +1,0 @@
-command: git status --porcelain
-repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb/bin/qa-0370-bump-vu86sr57
-
-
-exit: 0

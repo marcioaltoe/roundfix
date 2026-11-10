@@ -1,5 +1,0 @@
-command: git -C /Users/marcio/.roundfix-operator/scratch/spec-0370/skills cat-file -e 'e45466d2b9e15480eb286a4c19b513494a867bce^{commit}'
-repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
-
-
-exit: 0
