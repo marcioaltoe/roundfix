@@ -1,0 +1,11 @@
+Mutation target: internal/spec/qa.go
+Before:
+func QAReportEligibility(specDir string, report QAReport) error {
+	if report.ResultsBreak != nil {
+		return *report.ResultsBreak
+	}
+After:
+func QAReportEligibility(specDir string, report QAReport) error {
+Named oracle: TestQAResultsBreakStopsEveryCountingReader
+Observed assertion failure: yes
+Scratch copy removed after command.

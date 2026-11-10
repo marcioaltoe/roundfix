@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

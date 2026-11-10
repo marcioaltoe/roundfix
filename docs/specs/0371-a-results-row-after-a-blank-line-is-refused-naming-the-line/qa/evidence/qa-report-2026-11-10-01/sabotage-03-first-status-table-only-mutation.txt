@@ -1,0 +1,10 @@
+Mutation target: internal/spec/qa_results.go
+Before:
+	return tables
+}
+After:
+	if len(tables) > 1 { return tables[:1] }; return tables
+}
+Named oracle: TestQAResultsReadsEveryStatusTable
+Observed assertion failure: yes
+Scratch copy removed after command.

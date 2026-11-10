@@ -1,0 +1,13 @@
+docs/user-guide/commands/qa-report.md: contains Every Results row must belong to a table under
+docs/user-guide/commands/qa-report.md: contains is outside the Results table that starts at line <h>; remove the blank line at <path>:<b> so the row continues the table
+.agents/skills/roundfix/references/settle.md: contains Every Results row must belong to a table under
+.agents/skills/roundfix/references/settle.md: contains is outside the Results table that starts at line <h>; remove the blank line at <path>:<b> so the row continues the table
+skills/roundfix/references/settle.md: contains Every Results row must belong to a table under
+skills/roundfix/references/settle.md: contains is outside the Results table that starts at line <h>; remove the blank line at <path>:<b> so the row continues the table
+docs/user-guide/commands/settle.md: contains roundfix: settle QA Report is ineligible: QA Report <path>: Results row at line <n>
+docs/user-guide/commands/implement.md: contains When a Results row of the newest QA Report lies outside every table, the Daemon returns the QA turn once
+.agents/skills/roundfix/references/implement.md: contains When a Results row of the newest QA Report lies outside every table, the Daemon returns the QA turn once
+skills/roundfix/references/implement.md: contains When a Results row of the newest QA Report lies outside every table, the Daemon returns the QA turn once
+.agents/skills/qa-gate/SKILL.md: contains ### Results rows stay inside the table
+skills/qa-gate/SKILL.md: contains ### Results rows stay inside the table
+Broader obsolete-rule sweep: 85 Markdown files; no one-table-only rule.

@@ -1,0 +1,4 @@
+command: make build
+exit: 0
+Observed build output: go build -buildvcs=false with BuildCommit=9e6983a6-dirty -o bin/roundfix ./cmd/roundfix
+Dirty suffix reflects the Daemon-seeded untracked QA directory; audited tracked source is 9e6983a6be83e12ccea06e0b476eb1de59389944.

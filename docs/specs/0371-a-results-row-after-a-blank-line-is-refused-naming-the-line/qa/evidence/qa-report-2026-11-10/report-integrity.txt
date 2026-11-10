@@ -1,0 +1,7 @@
+Closed verdict fail; 8 contiguous Results rows with typed inputs; 6 pass, 1 fail, 1 environment block.
+Six coverage sources exactly match declared Requirements 2/4/10 and non-waivable repository/outside-evidence/Pull Request rows.
+All 46 report links resolve to non-ignored retained text evidence.
+Auditor fields preserved; no evidence snapshots written.
+No tracked source delta; git diff --check passed.
+Final public acceptance reads the report and rejects its fail verdict, as expected.
+All final observation commands have exited.

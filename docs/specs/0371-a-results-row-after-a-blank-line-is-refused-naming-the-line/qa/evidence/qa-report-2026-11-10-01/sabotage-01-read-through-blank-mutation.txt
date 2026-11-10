@@ -1,0 +1,12 @@
+Mutation target: internal/spec/qa_results.go
+Before:
+				if len(cells) == 0 {
+					break
+				}
+After:
+				if len(cells) == 0 {
+					if strings.TrimSpace(lines[index]) == "" { index++; continue }; break
+				}
+Named oracle: TestQAResultsRefusesARowAfterABlankLine
+Observed assertion failure: yes
+Scratch copy removed after command.

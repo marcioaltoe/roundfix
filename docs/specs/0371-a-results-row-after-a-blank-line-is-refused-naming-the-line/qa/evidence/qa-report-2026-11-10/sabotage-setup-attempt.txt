@@ -1,0 +1,8 @@
+command: go test -count=1 -timeout 20m -v -run ^TestQAResultsRefusesARowAfterABlankLine$ ./internal/spec
+exit: 1
+stdout:
+suiteguard: fingerprint repository before tests: git ls-files: exit status 128: fatal: not a git repository (or any of the parent directories): .git
+FAIL	roundfix/internal/spec	0.260s
+FAIL
+
+stderr:

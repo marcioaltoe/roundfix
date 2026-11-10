@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line --plan --offline
+exit: 0
+stdout:
+archive plan for 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line: removes 50 file(s) (1127530 bytes) and writes docs/history/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-10.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 39 file(s) (1000184 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-10-a-qa-report-results-row-after-a-blank-line-is-read-by-no-reader.md 4283 bytes: no advice (offline)
+promote with: roundfix archive 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line --promote <path>
+
+stderr:

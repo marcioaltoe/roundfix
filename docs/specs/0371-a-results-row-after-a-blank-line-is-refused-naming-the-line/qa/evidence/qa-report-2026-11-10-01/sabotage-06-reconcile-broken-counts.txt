@@ -1,0 +1,23 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestMechanicalReportShapeNamesARowAfterABlankLine$' ./internal/speccheck
+Exit: 1
+stdout:
+=== RUN   TestMechanicalReportShapeNamesARowAfterABlankLine
+=== PAUSE TestMechanicalReportShapeNamesARowAfterABlankLine
+=== CONT  TestMechanicalReportShapeNamesARowAfterABlankLine
+=== RUN   TestMechanicalReportShapeNamesARowAfterABlankLine/valid_frontmatter
+=== PAUSE TestMechanicalReportShapeNamesARowAfterABlankLine/valid_frontmatter
+=== RUN   TestMechanicalReportShapeNamesARowAfterABlankLine/frontmatter_parse_finding_precedes_the_break
+=== PAUSE TestMechanicalReportShapeNamesARowAfterABlankLine/frontmatter_parse_finding_precedes_the_break
+=== CONT  TestMechanicalReportShapeNamesARowAfterABlankLine/valid_frontmatter
+=== CONT  TestMechanicalReportShapeNamesARowAfterABlankLine/frontmatter_parse_finding_precedes_the_break
+    mechanical_results_test.go:40: shape findings = []speccheck.MechanicalFinding{speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:1, Detail:"report structure cannot be parsed: rows_blocked_environment must be a non-negative integer", Fix:"Repair the QA Report frontmatter and keep all three typed blocked-cause counts as non-negative integers.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:16, Detail:"Results row at line 16 is outside the Results table that starts at line 12", Fix:"Remove the blank line at docs/specs/mechanical/qa/report.md:15 so the row continues the table.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:1, Detail:"Results table has no report rows", Fix:"Materialize every planned QA row with one terminal status.", RowHint:""}}, want 2
+=== NAME  TestMechanicalReportShapeNamesARowAfterABlankLine/valid_frontmatter
+    mechanical_results_test.go:40: shape findings = []speccheck.MechanicalFinding{speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:16, Detail:"Results row at line 16 is outside the Results table that starts at line 12", Fix:"Remove the blank line at docs/specs/mechanical/qa/report.md:15 so the row continues the table.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:1, Detail:"Results table has no report rows", Fix:"Materialize every planned QA row with one terminal status.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:3, Detail:"rows_blocked_environment is 1 but the Results table contains 0 matching rows", Fix:"Set rows_blocked_environment to the exact number of matching typed blocked rows.", RowHint:""}, speccheck.MechanicalFinding{Code:"QA-REPORT-SHAPE", File:"docs/specs/mechanical/qa/report.md", Line:5, Detail:"rows_blocked_declared is 1 but the Results table contains 0 matching rows", Fix:"Set rows_blocked_declared to the exact number of matching typed blocked rows.", RowHint:""}}, want 1
+--- FAIL: TestMechanicalReportShapeNamesARowAfterABlankLine (0.00s)
+    --- FAIL: TestMechanicalReportShapeNamesARowAfterABlankLine/frontmatter_parse_finding_precedes_the_break (0.05s)
+    --- FAIL: TestMechanicalReportShapeNamesARowAfterABlankLine/valid_frontmatter (0.05s)
+FAIL
+suiteguard: guard cost: measured 3044 paths; fingerprint took 160.895583ms before and 152.771042ms after
+FAIL	roundfix/internal/speccheck	0.671s
+FAIL
+stderr:

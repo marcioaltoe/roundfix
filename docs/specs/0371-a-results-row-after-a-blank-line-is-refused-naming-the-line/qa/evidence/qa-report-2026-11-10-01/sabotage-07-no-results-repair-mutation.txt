@@ -1,0 +1,8 @@
+Mutation target: internal/daemon/task_engine.go
+Before:
+if readErr == nil && report.ResultsBreak != nil {
+After:
+if false && readErr == nil && report.ResultsBreak != nil {
+Named oracle: TestQAResultsRowAfterABlankLineGetsOneRepairTurn
+Observed assertion failure: yes
+Scratch copy removed after command.

@@ -1,0 +1,8 @@
+Prompt-established environment: no open Pull Request for Spec target branch.
+Approval: approved _authorization.md, granted before Task commits, grants implement, commit, push, pull_request, merge and release; read-only authority audit confirms ancestry and identical grant.
+Checks/status: Daemon-provided make verify-changed exit 0 at 9e6983a6be83e12ccea06e0b476eb1de59389944; all authored Task verification commands passed in this QA pass.
+Unresolved review threads: none exists because there is no open Pull Request.
+Merge-Ready acceptance: none exists yet; no equivalent Review Source acceptance of this candidate was supplied.
+Review-artifact ancestry: claimed candidate is 9e6983a6be83e12ccea06e0b476eb1de59389944; there is no current-candidate Review Artifact to establish ancestry.
+Unblocking action: after correcting F01 and rerunning QA, the Supervisor obtains configured current-candidate review and opens the Spec target-branch Pull Request; verify its checks, acceptance and review ancestry there.
+No Pull Request query or mutation was made. The Run branch has no Pull Request of its own.

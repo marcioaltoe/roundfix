@@ -1,0 +1,4 @@
+Spec PRD declaration observed: None. Every criterion is checked with temporary files, temporary Git
+repositories, the built binary with fresh temporary homes, and the Daemon's
+scripted QA Agent.
+Declared-blocked rows: 0. The synthetic CLI fixture declaration applies only to 9001-fixture.

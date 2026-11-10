@@ -1,0 +1,17 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestQAResultsNamesEveryBlankLineOrTheRowsPlace$/two_blank_lines' ./internal/spec
+Exit: 1
+stdout:
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+    qa_results_test.go:113: break text = "QA Report qa/report.md: Results row at line 17 is outside the Results table that starts at line 12; remove the blank line at qa/report.md:15 so the row continues the table", want detail "Results row at line 17 is outside the Results table that starts at line 12" and repair "remove the blank lines at qa/report.md:15-16 so the row continues the table"
+--- FAIL: TestQAResultsNamesEveryBlankLineOrTheRowsPlace (0.00s)
+    --- FAIL: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines (0.00s)
+FAIL
+suiteguard: guard cost: measured 3044 paths; fingerprint took 146.047916ms before and 141.066792ms after
+FAIL	roundfix/internal/spec	0.520s
+FAIL
+stderr:

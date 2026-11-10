@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run ^TestQAResultsReadsEveryStatusTable$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestQAResultsReadsEveryStatusTable
+=== PAUSE TestQAResultsReadsEveryStatusTable
+=== CONT  TestQAResultsReadsEveryStatusTable
+    qa_results_test.go:135: results = {Tables:[{HeaderLine:14 Header:[# Status Provenance] Rows:[{Line:16 Cells:[Q01 pass Requirement 1]}]} {HeaderLine:18 Header:[# Status Provenance] Rows:[{Line:20 Cells:[Q02 blocked (environment: no open Pull Request) Pull Request row]}]} {HeaderLine:24 Header:[# Provenance STATUS Evidence] Rows:[{Line:26 Cells:[Q03 outside-evidence row blocked (environment: network denied: docs.example.com) denied]} {Line:27 Cells:[Q04 outside-evidence row blocked (environment: network prohibited by Spec authorization) prohibited]} {Line:28 Cells:[Q05 Requirement 5 blocked (declared: the probe reads the live service) declaration]} {Line:29 Cells:[Q06 Requirement 6 SkIpPeD skipped]}]} {HeaderLine:31 Header:[Case Observation] Rows:[{Line:33 Cells:[comparison skipped]}]}] Break:<nil>}, want four tables and three Status tables
+--- FAIL: TestQAResultsReadsEveryStatusTable (0.00s)
+FAIL
+suiteguard: guard cost: measured 3044 paths; fingerprint took 154.481041ms before and 142.405708ms after
+FAIL	roundfix/internal/spec	0.546s
+FAIL
+
+stderr:

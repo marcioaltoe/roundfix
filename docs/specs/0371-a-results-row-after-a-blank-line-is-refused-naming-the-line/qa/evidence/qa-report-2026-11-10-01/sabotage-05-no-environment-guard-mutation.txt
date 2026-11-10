@@ -1,0 +1,11 @@
+Mutation target: internal/spec/qa.go
+Before:
+func (report QAReport) EnvironmentRowsNeedingOverride() int {
+	if report.ResultsBreak != nil {
+		return 0
+	}
+After:
+func (report QAReport) EnvironmentRowsNeedingOverride() int {
+Named oracle: TestQAResultsBreakStopsEveryCountingReader
+Observed assertion failure: yes
+Scratch copy removed after command.

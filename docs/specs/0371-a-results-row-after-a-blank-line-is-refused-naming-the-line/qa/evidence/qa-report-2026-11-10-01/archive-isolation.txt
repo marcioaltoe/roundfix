@@ -1,0 +1,7 @@
+HOME and TMPDIR: fresh temporary directories, removed after process.
+GOCACHE and GOMODCACHE: preserved from go env, values not recorded.
+ROUNDFIX_OPENROUTER_API_KEY unset
+ROUNDFIX_OPENROUTER_JUDGE_API_KEY unset
+ROUNDFIX_TYPESAFE_API_KEY unset
+TYPESAFE_API_KEY unset
+No judge/provider/reviewer request. No archive mutation; plan only.

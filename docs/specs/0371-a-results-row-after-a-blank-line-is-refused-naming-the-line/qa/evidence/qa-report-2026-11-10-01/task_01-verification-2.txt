@@ -1,0 +1,4 @@
+Command: bash -c 'grep -q '"'"'ReadQAResults('"'"' internal/spec/qa.go || { echo '"'"'readQAReport does not read the shared reader'"'"' >&2; exit 1; }; grep -q '"'"'ReadQAResults('"'"' internal/spec/qa_evidence_binding.go || { echo '"'"'Borrowed Evidence does not read the shared reader'"'"' >&2; exit 1; }; grep -q '"'"'ReadQAResults('"'"' internal/speccheck/mechanical.go || { echo '"'"'the mechanical stage does not read the shared reader'"'"' >&2; exit 1; }; ! grep -q '"'"'func parseMechanicalResultsRows'"'"' internal/speccheck/mechanical.go || { echo '"'"'the second reader is still present'"'"' >&2; exit 1; }'
+Exit: 0
+stdout:
+stderr:

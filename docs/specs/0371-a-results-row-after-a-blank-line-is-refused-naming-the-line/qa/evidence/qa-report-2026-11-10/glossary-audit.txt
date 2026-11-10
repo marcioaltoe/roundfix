@@ -1,0 +1,4 @@
+PRD and TechSpec each declare changes: **QA Report**.
+The Task commit range changes only the QA Report glossary entry; all other entries are byte-identical.
+Its new Results membership sentence links ADR-0381.
+Focused glossary contract: exit 0.

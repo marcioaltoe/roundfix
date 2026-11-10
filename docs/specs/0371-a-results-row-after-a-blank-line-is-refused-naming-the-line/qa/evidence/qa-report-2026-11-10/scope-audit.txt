@@ -1,0 +1,44 @@
+commit_range: 1febafab745e13e3e0b5403911293be113755733..9e6983a6be83e12ccea06e0b476eb1de59389944
+
+task_01 71b2ec2872ff4a1969f068ecb4f5921a524000e0
+  declared: docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_01.md
+  declared: internal/cli/qa_report_test.go
+  declared: internal/spec/qa.go
+  declared: internal/spec/qa_evidence_binding.go
+  declared: internal/spec/qa_results.go
+  declared: internal/spec/qa_results_test.go
+  declared: internal/speccheck/mechanical.go
+  declared: internal/speccheck/mechanical_results_test.go
+
+task_03 4d1ed9ebe9781958abafcee3c475cb6ef2b3fac9
+  declared: .agents/skills/qa-gate/SKILL.md
+  declared: .agents/skills/roundfix/SKILL.md
+  declared: .agents/skills/roundfix/references/implement.md
+  declared: .agents/skills/roundfix/references/settle.md
+  declared: CONTEXT.md
+  declared: docs/references/behavior-surfaces.json
+  declared: docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_03.md
+  declared: docs/user-guide/commands/implement.md
+  declared: docs/user-guide/commands/qa-report.md
+  declared: docs/user-guide/commands/settle.md
+  declared: docs/user-guide/context-driven-development.md
+  declared: skills/qa-gate/SKILL.md
+  declared: skills/roundfix/SKILL.md
+  declared: skills/roundfix/references/implement.md
+  declared: skills/roundfix/references/settle.md
+  declared: skills/testdata/owned-skill-versions.json
+
+task_02 9e6983a6be83e12ccea06e0b476eb1de59389944
+  declared: docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_02.md
+  declared: internal/daemon/qa_results_table_test.go
+  declared: internal/daemon/task_engine.go
+
+Governed paths, all expressly authorized before task_03:
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+.agents/skills/roundfix/references/settle.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+
+No prohibited path changed; all QA settlement sections byte-identical; no authorization was folded into a Task commit.

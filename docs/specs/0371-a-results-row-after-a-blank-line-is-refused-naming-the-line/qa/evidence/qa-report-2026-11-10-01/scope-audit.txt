@@ -1,0 +1,49 @@
+Audited head: 76ccef52936e309ae7db53a9659175356afb4630
+Task range: cb52f553e1804301afbb0de743ebeebfc897015e..76ccef52936e309ae7db53a9659175356afb4630
+
+Command: git diff-tree --no-commit-id --name-only -r d41268d30f0dfe1ce64d5b1e8a02f0bf6de10b1d
+task_01: all changed paths declared
+docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_01.md
+internal/cli/qa_report_test.go
+internal/spec/qa.go
+internal/spec/qa_evidence_binding.go
+internal/spec/qa_results.go
+internal/spec/qa_results_test.go
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_results_test.go
+
+Command: git diff-tree --no-commit-id --name-only -r 327b8d807cc8a4c6e5d7cd4ae9764ef057b30de3
+task_03: all changed paths declared
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+.agents/skills/roundfix/references/settle.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_03.md
+docs/user-guide/commands/implement.md
+docs/user-guide/commands/qa-report.md
+docs/user-guide/commands/settle.md
+docs/user-guide/context-driven-development.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/roundfix/references/settle.md
+skills/testdata/owned-skill-versions.json
+
+Command: git diff-tree --no-commit-id --name-only -r 76ccef52936e309ae7db53a9659175356afb4630
+task_02: all changed paths declared
+docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/task_02.md
+internal/daemon/qa_results_table_test.go
+internal/daemon/task_engine.go
+
+Governed classification from all regexp.MustCompile patterns and exact historical set in internal/speccheck/governed.go:
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+.agents/skills/roundfix/references/settle.md
+skills/qa-gate/SKILL.md
+skills/roundfix/SKILL.md
+All six listed in approved authorization, unchanged at base, Task 03 parent and head.
+Grant revision 1febafab precedes Task 03. No grant folded into a Task.
+No forbidden path changed; all four QA settlement sections byte-identical.

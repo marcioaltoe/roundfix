@@ -1,0 +1,8 @@
+Mutation target: internal/spec/qa_results.go
+Before:
+case b.BlankFrom > 0 && b.BlankFrom == b.BlankTo:
+After:
+case b.BlankFrom > 0:
+Named oracle: TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+Observed assertion failure: yes
+Scratch copy removed after command.

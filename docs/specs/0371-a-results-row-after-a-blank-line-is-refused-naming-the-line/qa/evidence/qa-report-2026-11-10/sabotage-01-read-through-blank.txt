@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run ^TestQAResultsRefusesARowAfterABlankLine$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestQAResultsRefusesARowAfterABlankLine
+=== PAUSE TestQAResultsRefusesARowAfterABlankLine
+=== CONT  TestQAResultsRefusesARowAfterABlankLine
+    qa_results_test.go:35: break = <nil>, want QA Report /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestQAResultsRefusesARowAfterABlankLine77366817/001/qa/qa-report-2026-11-10.md: Results row at line 16 is outside the Results table that starts at line 12; remove the blank line at /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestQAResultsRefusesARowAfterABlankLine77366817/001/qa/qa-report-2026-11-10.md:15 so the row continues the table with error "QA Report /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestQAResultsRefusesARowAfterABlankLine77366817/001/qa/qa-report-2026-11-10.md: Results row at line 16 is outside the Results table that starts at line 12; remove the blank line at /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestQAResultsRefusesARowAfterABlankLine77366817/001/qa/qa-report-2026-11-10.md:15 so the row continues the table"
+--- FAIL: TestQAResultsRefusesARowAfterABlankLine (0.00s)
+FAIL
+suiteguard: guard cost: measured 3044 paths; fingerprint took 147.764041ms before and 146.346208ms after
+FAIL	roundfix/internal/spec	0.552s
+FAIL
+
+stderr:

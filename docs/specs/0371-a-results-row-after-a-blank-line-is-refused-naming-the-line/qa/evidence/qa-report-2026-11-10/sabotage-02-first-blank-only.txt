@@ -1,0 +1,39 @@
+command: go test -count=1 -timeout 20m -v -run ^TestQAResultsNamesEveryBlankLineOrTheRowsPlace$ ./internal/spec
+exit: 1
+stdout:
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/prose_separates_the_row
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/prose_separates_the_row
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/header_has_no_separator
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/header_has_no_separator
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/deeper_heading_does_not_reset_the_table
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/deeper_heading_does_not_reset_the_table
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/empty_table_uses_its_header_for_the_last_row
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/empty_table_uses_its_header_for_the_last_row
+=== RUN   TestQAResultsNamesEveryBlankLineOrTheRowsPlace/blank_after_an_empty_table_excludes_the_separator
+=== PAUSE TestQAResultsNamesEveryBlankLineOrTheRowsPlace/blank_after_an_empty_table_excludes_the_separator
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/header_has_no_separator
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/blank_after_an_empty_table_excludes_the_separator
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/deeper_heading_does_not_reset_the_table
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/empty_table_uses_its_header_for_the_last_row
+=== NAME  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines
+    qa_results_test.go:113: break text = "QA Report qa/report.md: Results row at line 17 is outside the Results table that starts at line 12; remove the blank line at qa/report.md:15 so the row continues the table", want detail "Results row at line 17 is outside the Results table that starts at line 12" and repair "remove the blank lines at qa/report.md:15-16 so the row continues the table"
+=== CONT  TestQAResultsNamesEveryBlankLineOrTheRowsPlace/prose_separates_the_row
+--- FAIL: TestQAResultsNamesEveryBlankLineOrTheRowsPlace (0.00s)
+    --- PASS: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/header_has_no_separator (0.00s)
+    --- PASS: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/blank_after_an_empty_table_excludes_the_separator (0.00s)
+    --- PASS: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/deeper_heading_does_not_reset_the_table (0.00s)
+    --- PASS: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/empty_table_uses_its_header_for_the_last_row (0.00s)
+    --- FAIL: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/two_blank_lines (0.00s)
+    --- PASS: TestQAResultsNamesEveryBlankLineOrTheRowsPlace/prose_separates_the_row (0.00s)
+FAIL
+suiteguard: guard cost: measured 3044 paths; fingerprint took 154.380083ms before and 142.675834ms after
+FAIL	roundfix/internal/spec	0.562s
+FAIL
+
+stderr:

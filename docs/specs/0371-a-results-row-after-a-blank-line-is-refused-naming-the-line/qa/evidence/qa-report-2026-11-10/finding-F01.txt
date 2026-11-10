@@ -1,0 +1,15 @@
+F01 — required eligibility-guard sabotage survives its named CLI test
+Audited head: 9e6983a6be83e12ccea06e0b476eb1de59389944
+Coverage affected: task_04 Requirement 4, fourth sabotage only (row Q04).
+Expected: deleting only the ResultsBreak guard in QAReportEligibility makes TestQAReportAcceptRefusesARowAfterABlankLine fail.
+Observed: exit 0, --- PASS: TestQAReportAcceptRefusesARowAfterABlankLine. All other seven mutations were killed by their named tests.
+Mutation: remove the three-line ResultsBreak guard from internal/spec/qa.go:358-360 in a fresh git archive copy, initialize a disposable Git shell for suiteguard, then run go test -count=1 -timeout 20m -v -run ^TestQAReportAcceptRefusesARowAfterABlankLine$ ./internal/cli. The disposable copy was removed.
+Boundary trace at audited head:
+- internal/cli/qa_report.go:67 calls QAReportEligibility. With the guard removed, the pass fixture returns nil.
+- internal/cli/qa_report.go:75 next calls RequireOwnRunEvidence.
+- internal/spec/qa_evidence_binding.go:44 FindBorrowedEvidence parses ReadQAResults first and returns the identical QAResultsBreak before Git provenance.
+- internal/spec/qa_evidence_binding.go:378 RequireOwnRunEvidence propagates that error unchanged.
+- internal/cli/qa_report_test.go:23 asserts only final exit/stdout/stderr and repaired success, so the later identical refusal satisfies the test despite the missing eligibility guard.
+Impact: Trust-Damage — the authored gate claims sensitivity to one specific shared-policy regression that this named end-to-end oracle does not demonstrate. This is a verification-contract failure; the unmodified binary correctly refuses the malformed report.
+Resolution: retain the CLI regression and its evidence protection, and make the authorized sabotage contract observe the eligibility decision directly with an appropriate regression test; rerun this failed sabotage and final QA. Do not weaken or remove the evidence check to force a failure.
+No source, Task, manifest, authorization or test file was changed by this gate.

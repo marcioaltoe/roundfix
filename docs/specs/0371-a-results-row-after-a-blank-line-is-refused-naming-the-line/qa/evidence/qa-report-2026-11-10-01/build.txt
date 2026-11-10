@@ -1,0 +1,7 @@
+Command: make build
+Exit: 0
+stdout/stderr from this pass:
+gocache-bound: shared cache removed 4134 idle entries (2018109382 bytes)
+gocache-bound: warning: shared cache holds 11022610663 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=76ccef52-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-10 20:17:28 -0300'" -o bin/roundfix ./cmd/roundfix
+Cache location omitted; environment values are not recorded. Build identity independently confirmed in version.txt.
