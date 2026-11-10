@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.7] - 2026-11-10
+
+### The Inngest capability takes the seven official Inngest skills
+
+- **The `backend` Baseline module requires and dispatches the seven official Inngest skills.** The skills catalog replaced `inngest` with `inngest-setup`, `inngest-durable-functions`, `inngest-steps`, `inngest-events`, `inngest-flow-control`, `inngest-cli` and `inngest-middleware`, but the module still required the old skill and the Catalog Skill Bump stopped at the mismatch; a TypeScript adopter kept a skill whose catalog path no longer exists and never received its replacements (reported by the skills catalog operator).
+- **`inngest` becomes a Retired Skill.** An approved `roundfix baseline update` installs the seven, deletes an adopter's `inngest` copy the lock proves unedited and keeps an edited one. ADR-0380 amends ADR-0206: a skill the catalog replaces is followed to its replacements.
+- **Every upstream Setup Snapshot and the vendored catalog skills follow catalog commit `e45466d2`.** The glossary's Retired Skill entry and the `baseline` guide of the Roundfix skill describe the replacement.
+
 ## [0.137.6] - 2026-11-09
 
 ### Reconcile discards confirmed dirty leftovers and releases ignored-only worktrees
