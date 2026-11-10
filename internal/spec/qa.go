@@ -80,6 +80,8 @@ type QADeclaredRow struct {
 // Each blocked-row cause remains independent; absent counts are zero.
 type QAReport struct {
 	Verdict string
+	// ResultsBreak records an orphan table line without preventing verdict reading.
+	ResultsBreak *QAResultsBreak
 	// Hollow reports have a Results section but record no QA row there or in
 	// another table with a Status column. The zero value preserves the
 	// eligibility of reports built in code and older reports without Results.
@@ -342,6 +344,9 @@ func ReadQAReportFile(path string) (QAReport, error) {
 // EnvironmentRowsNeedingOverride counts environment rows outside the three
 // exempt kinds, capped by the frontmatter's environment count.
 func (report QAReport) EnvironmentRowsNeedingOverride() int {
+	if report.ResultsBreak != nil {
+		return 0
+	}
 	return report.RowsBlockedEnvironment - min(report.RowsBlockedEnvironment,
 		report.RowsBlockedPrePullRequest+report.RowsBlockedNetworkDenied+report.RowsBlockedNetworkProhibited)
 }
@@ -350,6 +355,9 @@ func (report QAReport) EnvironmentRowsNeedingOverride() int {
 // shared QA eligibility policy. A partial qualifies only with exempt
 // environment rows and covered declared rows, without findings or skips.
 func QAReportEligibility(specDir string, report QAReport) error {
+	if report.ResultsBreak != nil {
+		return *report.ResultsBreak
+	}
 	if report.Verdict == VerdictPass {
 		if report.Hollow {
 			return fmt.Errorf("newest QA Report verdict is %q but records no QA row", report.Verdict)
@@ -476,9 +484,52 @@ func readQAReport(path string) (QAReport, error) {
 	// reason stays empty rather than becoming the writer's placeholder, so a
 	// reader can tell a refusal whose cause was unnamed from one that was never
 	// written down.
-	prePullRequest, networkDenied, networkProhibited, skipped, declaredRows := qaReportResultsCounts(body)
+	results := ReadQAResults(path, content)
+	var prePullRequest, networkDenied, networkProhibited, skipped int
+	var declaredRows []QADeclaredRow
+	if results.Break == nil {
+		for _, table := range results.StatusTables() {
+			statusColumn := -1
+			provenanceColumn := -1
+			for column, cell := range table.Header {
+				switch {
+				case strings.EqualFold(strings.TrimSpace(cell), "Status"):
+					statusColumn = column
+				case strings.EqualFold(strings.TrimSpace(cell), "Provenance"):
+					provenanceColumn = column
+				}
+			}
+
+			for _, row := range table.Rows {
+				cells := row.Cells
+				if statusColumn >= 0 && statusColumn < len(cells) {
+					status := strings.TrimSpace(cells[statusColumn])
+					if criterion, ok := QADeclaredRowCriterion(status); ok {
+						declaredRows = append(declaredRows, QADeclaredRow{ID: cells[0], Criterion: criterion})
+					}
+					if strings.EqualFold(status, "skipped") {
+						skipped++
+					}
+					if provenanceColumn >= 0 && provenanceColumn < len(cells) {
+						provenance := cells[provenanceColumn]
+						if status == QANoOpenPullRequestStatus && qaReportProvenanceNames(provenance, QAPullRequestRowSource) {
+							prePullRequest++
+						}
+						if _, ok := qaProhibitedRowSubject(status); ok && qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
+							networkProhibited++
+						} else if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
+							strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QANetworkDeniedStatusPrefix), ")")) != "" &&
+							qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
+							networkDenied++
+						}
+					}
+				}
+			}
+		}
+	}
 	report := QAReport{
 		Verdict:                      frontmatter.Verdict,
+		ResultsBreak:                 results.Break,
 		Hollow:                       qaReportHollow(body),
 		AuditingBinary:               frontmatter.AuditingBinary,
 		AuditorStaleness:             frontmatter.AuditorStaleness,
@@ -642,96 +693,6 @@ func qaReportHollow(body []byte) bool {
 		}
 	}
 	return hasResults
-}
-
-// qaReportResultsCounts derives exempt environment and skipped counts and
-// declared rows in one Results-table pass. Exempt rows also require a Provenance column;
-// frontmatter counts retain their existing meaning and validation.
-func qaReportResultsCounts(body []byte) (prePullRequest, networkDenied, networkProhibited, skipped int, declaredRows []QADeclaredRow) {
-	lines := strings.Split(string(body), "\n")
-	inResults := false
-	inFence := false
-	fence := ""
-
-	for index := 0; index < len(lines); {
-		trimmed := strings.TrimSpace(lines[index])
-		if marker, ok := markdownFenceMarker(trimmed); ok {
-			if !inFence {
-				inFence = true
-				fence = marker
-			} else if marker == fence {
-				inFence = false
-				fence = ""
-			}
-			index++
-			continue
-		}
-		if inFence {
-			index++
-			continue
-		}
-
-		if depth, heading, ok := markdownHeading(trimmed); ok {
-			if depth <= 2 {
-				inResults = depth == 2 && heading == "Results"
-			}
-			index++
-			continue
-		}
-		if !inResults {
-			index++
-			continue
-		}
-
-		header := markdownTableCells(lines[index])
-		if len(header) == 0 || index+1 >= len(lines) || !markdownTableSeparator(markdownTableCells(lines[index+1])) {
-			index++
-			continue
-		}
-
-		statusColumn := -1
-		provenanceColumn := -1
-		for column, cell := range header {
-			switch {
-			case strings.EqualFold(strings.TrimSpace(cell), "Status"):
-				statusColumn = column
-			case strings.EqualFold(strings.TrimSpace(cell), "Provenance"):
-				provenanceColumn = column
-			}
-		}
-
-		index += 2
-		for index < len(lines) {
-			cells := markdownTableCells(lines[index])
-			if len(cells) == 0 {
-				break
-			}
-			if !markdownTableSeparator(cells) && statusColumn >= 0 && statusColumn < len(cells) {
-				status := strings.TrimSpace(cells[statusColumn])
-				if criterion, ok := QADeclaredRowCriterion(status); ok {
-					declaredRows = append(declaredRows, QADeclaredRow{ID: cells[0], Criterion: criterion})
-				}
-				if strings.EqualFold(status, "skipped") {
-					skipped++
-				}
-				if provenanceColumn >= 0 && provenanceColumn < len(cells) {
-					provenance := cells[provenanceColumn]
-					if status == QANoOpenPullRequestStatus && qaReportProvenanceNames(provenance, QAPullRequestRowSource) {
-						prePullRequest++
-					}
-					if _, ok := qaProhibitedRowSubject(status); ok && qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
-						networkProhibited++
-					} else if strings.HasPrefix(status, QANetworkDeniedStatusPrefix) && strings.HasSuffix(status, ")") &&
-						strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(status, QANetworkDeniedStatusPrefix), ")")) != "" &&
-						qaReportProvenanceNames(provenance, QAOutsideEvidenceRowSource) {
-						networkDenied++
-					}
-				}
-			}
-			index++
-		}
-	}
-	return prePullRequest, networkDenied, networkProhibited, skipped, declaredRows
 }
 
 // qaProhibitedRowSubject returns the subject of a status in the

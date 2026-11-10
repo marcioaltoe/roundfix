@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,61 @@ import (
 // Invariant: only a selected report accepted by the shared eligibility decision exits zero.
 // Boundary IN: command arguments, report parsing, eligibility, streams, and exit status.
 // Boundary OUT: newest-report selection and derived-command rendering, owned by internal/spec/task_test.go.
+
+const qaResultsBlankLineReport = "---\nverdict: pass\n---\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n| Q01 | pass | Requirement 1 |\n\n| Q02 | pass | Requirement 2 |\n"
+
+func TestQAReportAcceptRefusesARowAfterABlankLine(t *testing.T) {
+	t.Parallel()
+	_, root := newImplementWorkspace(t, []implementSeed{implementQAGateSeed(string(spec.StatusFailed))})
+	path := filepath.Join(root, "docs/specs", implementTestSlug, "qa/qa-report-2026-11-10.md")
+	writeQAReportTestFile(t, path, qaResultsBlankLineReport)
+	var stdout, stderr bytes.Buffer
+	args := []string{"qa-report", "accept", path}
+	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+	want := fmt.Sprintf("roundfix: QA Report eligibility refused: QA Report %s: Results row at line 11 is outside the Results table that starts at line 7; remove the blank line at %s:10 so the row continues the table\n", path, path)
+	if code != exitRunFailed || stdout.Len() != 0 || stderr.String() != want {
+		t.Fatalf("accept = %d, stdout %q, stderr %q; want refusal %q", code, stdout.String(), stderr.String(), want)
+	}
+	writeQAReportTestFile(t, path, strings.Replace(qaResultsBlankLineReport, "\n\n| Q02", "\n| Q02", 1))
+	stdout.Reset()
+	stderr.Reset()
+	if code := runCLIContext(t, t.Context(), args, &stdout, &stderr); code != exitOK || stdout.Len() != 0 || stderr.Len() != 0 {
+		t.Fatalf("repaired accept = %d, stdout %q, stderr %q", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestSettleRefusesARowAfterABlankLine(t *testing.T) {
+	t.Parallel()
+	_, root := newImplementWorkspace(t, []implementSeed{implementQAGateSeed(string(spec.StatusFailed))})
+	specDir := filepath.Join(root, "docs/specs", implementTestSlug)
+	reportRel := "docs/specs/" + implementTestSlug + "/qa/qa-report-2026-11-10.md"
+	writeQAReportTestFile(t, filepath.Join(root, reportRel), qaResultsBlankLineReport)
+	path, err := spec.NewestQAReport(specDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taskPath := implementTaskPath(root, "task_qa")
+	before := mustRead(t, taskPath)
+	var stdout, stderr bytes.Buffer
+	args := []string{"settle", "--spec", implementTestSlug, "--task", "task_qa"}
+	code := runCLIContext(t, t.Context(), args, &stdout, &stderr)
+	want := fmt.Sprintf("Settle surface: %s\nroundfix: settle QA Report is ineligible: QA Report %s: Results row at line 11 is outside the Results table that starts at line 7; remove the blank line at %s:10 so the row continues the table (report %s)\n", root, path, path, reportRel)
+	if code != exitRunFailed || stderr.String() != want {
+		t.Fatalf("settle = %d, stdout %q, stderr %q; want refusal %q", code, stdout.String(), stderr.String(), want)
+	}
+	if got := mustRead(t, taskPath); got != before {
+		t.Fatalf("refusal changed Task: %s", got)
+	}
+	writeQAReportTestFile(t, path, strings.Replace(qaResultsBlankLineReport, "\n\n| Q02", "\n| Q02", 1))
+	stdout.Reset()
+	stderr.Reset()
+	if code := runCLIContext(t, t.Context(), args, &stdout, &stderr); code != exitOK || stderr.String() != "Settle surface: "+root+"\n" {
+		t.Fatalf("repaired settle = %d, stdout %q, stderr %q", code, stdout.String(), stderr.String())
+	}
+	if got := mustRead(t, taskPath); !strings.Contains(got, "status: completed") {
+		t.Fatalf("repaired fixture did not settle: %s", got)
+	}
+}
 
 func TestRunQAReportAcceptCommandAcceptsAQualifyingPartial(t *testing.T) {
 	t.Parallel()

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -152,3 +152,70 @@ reported by pantheon on 2026-11-09 and recorded by the operator on 2026-11-10
 - `_prd.md` → Goals; User Stories 1 and 3; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; Success Metric 7
 - `_techspec.md` → Current behavior 1-5; API Contracts 1-7; Invariants 1-3; Declared breaks; Testing Approach; Build Order 1
 - ADR-0381, ADR-0376
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, golang-structs-interfaces, golang-error-handling, golang-testing, golang-cli, agentic-cli-design, testing-boss, tech-writer, evidence-gate.
+
+Implemented the shared Results reader and its typed break. QA Report eligibility,
+environment override classification, Borrowed Evidence and mechanical shape
+checking now use that reader. A broken report remains readable for its verdict,
+but contributes no counted or exempted rows. Eligibility returns the break before
+verdict, hollow, finding, environment, skipped or declared-row policy. Mechanical
+shape checking preserves a frontmatter parse finding, emits the break once with
+its repair, and skips every other shape finding for that broken report.
+
+Characterization before the production changes:
+
+- The reduced Pantheon report returned `rows_blocked_environment is 1; expected 0`.
+- Its mechanical check emitted two misleading count findings, for environment
+  and declared rows, and ignored a pending row in a second Status table.
+- Both new CLI regression tests observed exit 0 for the broken pass report.
+  The new regression assertions failed on those behaviors as expected.
+
+Acceptance evidence from focused checks in this worktree:
+
+- Criterion 1: `TestQAResultsRefusesARowAfterABlankLine` asserts the exact
+  path-preserving refusal, row 16, table 12, blank 15 and LF/CRLF line numbering;
+  removing line 15 yields one pre-PR row, declared row Q04 and eligible partial.
+  `TestQAResultsBreakStopsEveryCountingReader` checks every verdict's refusal
+  precedence, zero override count, nil archive actions, typed Borrowed Evidence
+  errors and no exemption for an orphan carried row. The mechanical regression
+  asserts the exact Detail and Fix, no RowHint and no count reconciliation, with
+  and without a frontmatter parse error.
+- Criterion 2: `TestQAResultsNamesEveryBlankLineOrTheRowsPlace` checks exact
+  repairs for two blank lines, intervening prose and a missing separator. It
+  also covers an intervening deeper heading and an empty preceding table.
+- Criterion 3: `TestQAResultsReadsEveryStatusTable` covers repeated headers,
+  a deeper heading, reordered columns, a case-insensitive Results heading,
+  both fence kinds, non-Status tables, section bounds and carried-row/detail
+  exemptions using each table's own Status column. The second-table mechanical
+  test detects R02 pending. Existing override, archived-pass, Results-only,
+  Borrowed Evidence, partial-policy, precondition and mechanical carry tests
+  passed unchanged in the focused selections below.
+- Criterion 4: both new CLI tests assert the complete specified stderr and exit
+  1, then exit 0 after removing line 10. The settle test checks the fixture Task
+  bytes remain unchanged on refusal and its status becomes completed on repair.
+
+Focused commands and outcomes (all final runs exited 0):
+
+- `rtk proxy go test ./internal/spec -run '^Test(QAResults|EnvironmentRowsNeedingOverride|ArchivedPassCorpus|BorrowedEvidence)' -count=1` — passed, including all four new reader tests and the existing Borrowed Evidence regressions.
+- `rtk proxy go test ./internal/spec -run '^Test(QAReportEligibility|ReadQAReport|APartial|ANetwork|APullRequestRow)' -count=1` — passed, preserving the existing reader and partial-policy rules.
+- `rtk proxy go test ./internal/speccheck -run '^Test(MechanicalReportShape|MechanicalStageReadsEveryStatusTable|ResultsTableIsTheOnlyRowSource|CountDisagreementReportsItsCause|MechanicalStageAcceptsThePreconditionRefusalRow|MechanicalEvidencePath|MechanicalStageCarriable)' -count=1` — passed. An initially incorrect line-18 assertion in the new second-table fixture was corrected to its actual line 16; the specified pending-row diagnostic is unchanged.
+- `rtk proxy go test ./internal/cli -run '^Test(QAReportAcceptRefuses|SettleRefusesA(QAReport|RowAfterABlankLine))' -count=1` — passed, including both new exact-diagnostic/repair tests and existing evidence-link and Borrowed Evidence refusals.
+- `rtk proxy git diff --check` — passed. Changed-path inspection contains only
+  this Task file and the seven declared Go paths. The Task's in-progress status
+  was present before implementation and has been preserved.
+
+Initial sandboxed test attempts could not access the default Go build cache;
+the focused tests ran with approved escalation, without changing cache or
+toolchain configuration.
+
+The declared Verification, repository Verification and final QA were not run;
+they remain Daemon-owned. No commit, push, PR, Task Graph or sibling Task edit.
+Daemon integration and documentation remain in their assigned downstream Tasks.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261110T215130Z_fa9f763e0a43c500`
+- Source commit: `71b2ec2872ff4a1969f068ecb4f5921a524000e0`

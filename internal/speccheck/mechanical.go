@@ -337,6 +337,7 @@ type mechanicalReport struct {
 	path                    string
 	content                 []byte
 	rows                    []mechanicalReportRow
+	resultsBreak            *spec.QAResultsBreak
 	rowsBlockedEnvironment  int
 	rowsBlockedFinding      int
 	rowsBlockedDeclared     int
@@ -1670,72 +1671,38 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 	}
 
 	allLines := strings.Split(text, "\n")
-	report.rows = parseMechanicalResultsRows(allLines)
-	parseMechanicalRowInputs(allLines, report.rows)
-	return report
-}
-
-// parseMechanicalResultsRows reads report rows from the one table under the
-// report's `## Results` heading, and from nowhere else. A gate justifies a
-// Results row in prose, and that prose may carry a table of its own — a
-// comparison whose cells are names and observations, not statuses. Measured on
-// Spec 0098 on 2026-08-26: four cells of such a comparison were read as rows,
-// and each became a blocker no edit to the Results table could clear.
-//
-// A report with no `## Results` heading yields no rows, which the shape
-// detector reports as the missing matrix it is rather than passing on silence.
-func parseMechanicalResultsRows(lines []string) []mechanicalReportRow {
-	index := 0
-	for ; index < len(lines); index++ {
-		if depth, heading := markdownHeading(lines[index]); depth == 2 && strings.EqualFold(heading, "Results") {
-			index++
-			break
-		}
-	}
-
-	var rows []mechanicalReportRow
-	statusColumn, evidenceColumn, provenanceColumn := -1, -1, -1
-	inTable := false
-	for ; index < len(lines); index++ {
-		// The matrix ends where its table ends: at the next heading of any
-		// depth, or at the first line after the table that is not a table row.
-		if depth, _ := markdownHeading(lines[index]); depth > 0 {
-			break
-		}
-		cells := markdownCells(lines[index])
-		if len(cells) == 0 {
-			if inTable {
-				break
-			}
-			continue
-		}
-		if !inTable {
-			inTable = true
-			for cellIndex, cell := range cells {
-				switch strings.ToLower(cell) {
+	results := spec.ReadQAResults(path, content)
+	report.resultsBreak = results.Break
+	if results.Break == nil {
+		for _, table := range results.StatusTables() {
+			statusColumn, evidenceColumn, provenanceColumn := -1, -1, -1
+			for column, cell := range table.Header {
+				switch strings.ToLower(strings.TrimSpace(cell)) {
 				case "status":
-					statusColumn = cellIndex
+					statusColumn = column
 				case "evidence":
-					evidenceColumn = cellIndex
+					evidenceColumn = column
 				case "provenance":
-					provenanceColumn = cellIndex
+					provenanceColumn = column
 				}
 			}
-			continue
+			for _, data := range table.Rows {
+				if statusColumn < 0 || statusColumn >= len(data.Cells) {
+					continue
+				}
+				row := mechanicalReportRow{id: data.Cells[0], status: data.Cells[statusColumn], line: data.Line}
+				if evidenceColumn >= 0 && evidenceColumn < len(data.Cells) {
+					row.evidence = data.Cells[evidenceColumn]
+				}
+				if provenanceColumn >= 0 && provenanceColumn < len(data.Cells) {
+					row.provenance = data.Cells[provenanceColumn]
+				}
+				report.rows = append(report.rows, row)
+			}
 		}
-		if markdownSeparator(cells) || statusColumn < 0 || statusColumn >= len(cells) {
-			continue
-		}
-		row := mechanicalReportRow{id: cells[0], status: cells[statusColumn], line: index + 1}
-		if evidenceColumn >= 0 && evidenceColumn < len(cells) {
-			row.evidence = cells[evidenceColumn]
-		}
-		if provenanceColumn >= 0 && provenanceColumn < len(cells) {
-			row.provenance = cells[provenanceColumn]
-		}
-		rows = append(rows, row)
 	}
-	return rows
+	parseMechanicalRowInputs(allLines, report.rows)
+	return report
 }
 
 func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvidenceRecord, error) {
@@ -2310,6 +2277,16 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			Detail: "report structure cannot be parsed: " + report.parseError.Error(),
 			Fix:    "Repair the QA Report frontmatter and keep all three typed blocked-cause counts as non-negative integers.",
 		})
+	}
+	if report.resultsBreak != nil {
+		brk := *report.resultsBreak
+		repair := brk.Repair()
+		addMechanicalFinding(result, MechanicalFinding{
+			Code: CodeMechanicalReportShape, File: report.path, Line: brk.Line,
+			Detail: brk.Detail(),
+			Fix:    strings.ToUpper(repair[:1]) + repair[1:] + ".",
+		})
+		return
 	}
 	actual := map[string]int{
 		"rows_blocked_environment":  0,
