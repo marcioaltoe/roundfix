@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.6] - 2026-11-09
+
+### Reconcile discards confirmed dirty leftovers and releases ignored-only worktrees
+
+- **`roundfix reconcile --discard-dirty <digest>` discards an ended Run's uncommitted leftovers once you confirm them.** It applies only to a terminal Run of an archived Spec: the read-only report shows the dirty paths and their digest, and the discard records a Branch Disposition naming every discarded path before it removes the Run Worktree and Run Branch. A digest that no longer matches the current leftovers changes nothing and keeps the work. Before, such a Run stayed `dirty` forever and could only be cleaned by hand (reported by the fiscus operator).
+- **`--apply` releases a recorded Run Worktree that Git no longer registers when it holds only ignored files.** The directory must be named after the Run, its Run Branch absent, with no Git metadata at its top and every file covered by the repository's ignore rules; anything else stays `unknown`. Removal never follows a symbolic link, and the inspection is re-proved before anything is deleted.
+- **On a full scan, `--apply` also removes each empty repository directory directly under the Worktree Root**; a scan for one Run ID removes none. ADR-0379 amends ADR-0053, ADR-0289 and ADR-0290, and the glossary, the `reconcile` guide and the Roundfix skill describe the switch and both releases.
+
 ## [0.137.5] - 2026-11-09
 
 ### The disk-full tests read no real host path
