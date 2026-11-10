@@ -356,7 +356,7 @@ upstream catalog may still list it: `council` and `the-fool` since 0.52.0;
 `design-patterns`, `diagnosing-bugs`, `fixing-metadata`,
 `game-changing-features`, `refactoring-analysis`, `tdd` and `to-prompt`
 since 0.127.0, which the catalog removed; and the Roundfix-owned
-`implement-spec` since 0.127.0.
+`implement-spec` since 0.127.0. `inngest` joined them when the catalog replaced it with seven `inngest-*` skills, which the `backend` module requires instead.
 No module requires or dispatches it, and the asset sync drops it from every
 Setup Snapshot.
 
@@ -395,6 +395,7 @@ git rm -r -q --ignore-unmatch \
   .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
   .agents/skills/game-changing-features .claude/skills/game-changing-features \
   .agents/skills/implement-spec .claude/skills/implement-spec \
+  .agents/skills/inngest .claude/skills/inngest \
   .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
   .agents/skills/tdd .claude/skills/tdd \
   .agents/skills/to-prompt .claude/skills/to-prompt
@@ -404,6 +405,7 @@ rm -rf \
   .agents/skills/fixing-metadata .claude/skills/fixing-metadata \
   .agents/skills/game-changing-features .claude/skills/game-changing-features \
   .agents/skills/implement-spec .claude/skills/implement-spec \
+  .agents/skills/inngest .claude/skills/inngest \
   .agents/skills/refactoring-analysis .claude/skills/refactoring-analysis \
   .agents/skills/tdd .claude/skills/tdd \
   .agents/skills/to-prompt .claude/skills/to-prompt

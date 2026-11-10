@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v2",
   "id": "backend",
-  "version": 7,
+  "version": 8,
   "kind": "application-surface",
   "title": "Backend application guidance",
   "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": [
@@ -14,7 +14,13 @@
     "external-api-adapters",
     "hono",
     "hono-api-best-practices",
-    "inngest",
+    "inngest-cli",
+    "inngest-durable-functions",
+    "inngest-events",
+    "inngest-flow-control",
+    "inngest-middleware",
+    "inngest-setup",
+    "inngest-steps",
     "integration-contract-testing",
     "logtape",
     "observability-audit",
@@ -106,11 +112,65 @@
       ]
     },
     {
-      "skill": "inngest",
+      "skill": "inngest-cli",
       "triggers": [
         {
-          "id": "trigger.backend.inngest",
-          "when": "Building or changing Inngest functions and event workflows."
+          "id": "trigger.backend.inngest-cli",
+          "when": "Installing or running the Inngest CLI and its local Dev Server."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-durable-functions",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-durable-functions",
+          "when": "Building or changing Inngest functions, their triggers, retries, and schedules."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-events",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-events",
+          "when": "Designing Inngest events, fan-out, and idempotent event handling."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-flow-control",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-flow-control",
+          "when": "Configuring Inngest concurrency, throttling, rate limits, debounce, or batching."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-middleware",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-middleware",
+          "when": "Adding Inngest middleware for logging, tracing, error tracking, or dependency injection."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-setup",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-setup",
+          "when": "Setting up Inngest in a project: the SDK, client configuration, environment variables, and the serve endpoint."
+        }
+      ]
+    },
+    {
+      "skill": "inngest-steps",
+      "triggers": [
+        {
+          "id": "trigger.backend.inngest-steps",
+          "when": "Building or changing the steps of Inngest functions: step runs, sleeps, waits for events, and invocations."
         }
       ]
     },

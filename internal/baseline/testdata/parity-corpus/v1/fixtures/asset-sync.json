@@ -34,7 +34,7 @@
       "id": "rust"
     },
     {
-      "digest": "f0efb803ff37903b569b4b437bd6f0a50860947a88fd65bed433660c7c953eb1",
+      "digest": "8f147615d58a8c72714d879b43619e2d5d04a53e99dc42d24476d9390763e02d",
       "id": "typescript"
     }
   ],
@@ -1640,7 +1640,7 @@
             ]
           }
         ],
-        "digest": "f0efb803ff37903b569b4b437bd6f0a50860947a88fd65bed433660c7c953eb1",
+        "digest": "8f147615d58a8c72714d879b43619e2d5d04a53e99dc42d24476d9390763e02d",
         "id": "typescript",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -2031,15 +2031,81 @@
             }
           },
           {
-            "name": "inngest",
-            "path": "skills/05-implementation-loop/inngest",
+            "name": "inngest-cli",
+            "path": "skills/05-implementation-loop/inngest-cli",
             "source": {
-              "path": "skills/05-implementation-loop/inngest",
+              "path": "skills/05-implementation-loop/inngest-cli",
               "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
               "repository": "example/skills",
               "type": "github"
             },
-            "treeDigest": "4361b49c3f4b59b13c5e1c37fae92b59969ba8558b553d73e22331b372f98d2d"
+            "treeDigest": "297cf7cfd7855141dc4972902efd03396c43bc2e1d9f42ba707c6b95c3bc49a8"
+          },
+          {
+            "name": "inngest-durable-functions",
+            "path": "skills/05-implementation-loop/inngest-durable-functions",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-durable-functions",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c5b62ae0c5ea5f4a0d0603fa54f0025334e67ac1454746e7a63adbae5a64ed9e"
+          },
+          {
+            "name": "inngest-events",
+            "path": "skills/05-implementation-loop/inngest-events",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-events",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "295e5c1103dc8f79dcab16f20544d74d93a2bcf8347a11c19a386a24abe4f014"
+          },
+          {
+            "name": "inngest-flow-control",
+            "path": "skills/05-implementation-loop/inngest-flow-control",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-flow-control",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "1c7f6614182c8b670889fabb63ece4c84366214be3eb035d93e81465fc6f15b5"
+          },
+          {
+            "name": "inngest-middleware",
+            "path": "skills/05-implementation-loop/inngest-middleware",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-middleware",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "c1d552155c203391af170bb1a565983367405029b4268e1b4daaab54386b6559"
+          },
+          {
+            "name": "inngest-setup",
+            "path": "skills/05-implementation-loop/inngest-setup",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-setup",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "8f50fd4c6e087129106846ef24f8b307852e63ae4647d3b1557adfee5e222618"
+          },
+          {
+            "name": "inngest-steps",
+            "path": "skills/05-implementation-loop/inngest-steps",
+            "source": {
+              "path": "skills/05-implementation-loop/inngest-steps",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "332072fa34cc59636c2f401431809bf6fe380dafbc9d3c9f73c5a5d4e291a64a"
           },
           {
             "name": "integration-contract-testing",

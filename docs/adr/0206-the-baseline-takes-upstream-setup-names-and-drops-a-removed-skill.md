@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-01T00:00:00Z
-updated_at: 2026-10-01T00:00:00Z
+updated_at: 2026-11-09T12:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -39,6 +39,8 @@ The Baseline now follows the reshaped catalog:
 - A skill that every built-in setup lists and every stack can use is required
   by `core`. `typesafe-ai` and `crafting-effective-readmes` are required there,
   and `crafting-effective-readmes` leaves the `typescript` module.
+
+**Amended by [ADR-0380](0380-a-skill-the-catalog-replaces-is-followed-to-its-replacements-and-retired.md) (2026-11-09).** A skill the catalog removes and, in the same change, replaces with skills it names is followed to those replacements once the maintainer approves them, and becomes a Retired Skill, so an approved update deletes an adopter's unedited copy; `inngest` was followed to the seven `inngest-*` skills. A skill removed without a named replacement is still dropped and never followed by a similar name or purpose, and the two alternatives below stay rejected.
 
 Two alternatives were rejected. Adding `crafting-effective-readmes` to the
 `go` and `rust` modules would give one skill three triggers that say the same

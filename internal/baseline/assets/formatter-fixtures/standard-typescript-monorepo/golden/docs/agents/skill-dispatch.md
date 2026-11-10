@@ -132,8 +132,20 @@ Individual skill triggers:
 - `implement-task`:
   - `trigger.autonomous-work.implement-task`: Delegating one autonomous Task to an ACP Runtime.
   - `trigger.context-workflow.implement-task`: Executing exactly one assigned Spec Task.
-- `inngest`:
-  - `trigger.backend.inngest`: Building or changing Inngest functions and event workflows.
+- `inngest-cli`:
+  - `trigger.backend.inngest-cli`: Installing or running the Inngest CLI and its local Dev Server.
+- `inngest-durable-functions`:
+  - `trigger.backend.inngest-durable-functions`: Building or changing Inngest functions, their triggers, retries, and schedules.
+- `inngest-events`:
+  - `trigger.backend.inngest-events`: Designing Inngest events, fan-out, and idempotent event handling.
+- `inngest-flow-control`:
+  - `trigger.backend.inngest-flow-control`: Configuring Inngest concurrency, throttling, rate limits, debounce, or batching.
+- `inngest-middleware`:
+  - `trigger.backend.inngest-middleware`: Adding Inngest middleware for logging, tracing, error tracking, or dependency injection.
+- `inngest-setup`:
+  - `trigger.backend.inngest-setup`: Setting up Inngest in a project: the SDK, client configuration, environment variables, and the serve endpoint.
+- `inngest-steps`:
+  - `trigger.backend.inngest-steps`: Building or changing the steps of Inngest functions: step runs, sleeps, waits for events, and invocations.
 - `integration-contract-testing`:
   - `trigger.backend.integration-contract-testing`: Writing backend integration or provider contract tests.
 - `interaction-design`:
