@@ -1,9 +1,0 @@
-Source: current child-Agent prompt: no open Pull Request on the Spec target branch.
-Approval: approved Spec-contained delivery authority; grant unchanged and precedes Task commits.
-Checks: Daemon make verify-changed pass (exit 0) at 76ccef52936e309ae7db53a9659175356afb4630. Fresh Task checks passed.
-Threads: none, because no Pull Request exists.
-Merge-Ready acceptance: not yet available.
-Candidate: 76ccef52936e309ae7db53a9659175356afb4630; candidate source ancestry verified in Task scope audit.
-Review-artifact ancestry: no current-candidate artifact yet; unproven.
-Unblock: after supervisor review and candidate publication, inspect the PR checks, approval, unresolved threads and Merge-Ready acceptance for its current head.
-The absent PR alone allows a qualifying partial, but is not a pass for an unobserved Merge-Ready control.

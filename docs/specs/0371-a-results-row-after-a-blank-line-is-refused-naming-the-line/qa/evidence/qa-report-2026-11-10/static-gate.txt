@@ -1,7 +1,0 @@
-Repository Verification supplied by the Daemon for audited head 9e6983a6be83e12ccea06e0b476eb1de59389944
-command: make verify-changed
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Not rerun by this Agent.
-The initial direct Go test launch could not start because the sandbox denied access to the existing Go build cache. The approved run with cache access completed all required tests. No persistent environment variable value was captured.

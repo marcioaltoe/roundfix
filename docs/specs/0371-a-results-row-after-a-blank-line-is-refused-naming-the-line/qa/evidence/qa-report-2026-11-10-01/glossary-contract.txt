@@ -1,5 +1,0 @@
-Command: go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossaryPhrasesAreDefinedTerms$'
-Exit: 0
-stdout:
-ok  	roundfix/internal/docscontract	0.298s
-stderr:

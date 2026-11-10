@@ -1,4 +1,0 @@
-Command: ./bin/roundfix qa-report accept /Users/marcio/.roundfix/worktrees/roundfix-deliver-0371-a-results-row-after-a-blank-line-is-refused-naming-the-line-2bbb5b78abb46859-5fd16efb-9f0ca5ce/run_20261110T230823Z_e792e87280ba6d4a/docs/specs/0371-a-results-row-after-a-blank-line-is-refused-naming-the-line/qa/qa-report-2026-11-10-01.md
-Exit: 0
-stdout:
-stderr:

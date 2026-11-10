@@ -1,5 +1,0 @@
-## Unreachable Acceptance
-
-- criterion: the probe reads the live service
-  reason: needs a deploy
-  satisfied-by: the operator after release

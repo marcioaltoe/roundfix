@@ -1,9 +1,0 @@
-Mutation target: internal/daemon/task_engine.go
-Before:
-		prompt += "Add each row of the matrix to the seeded Results table directly below its last row, with no blank line before it and the same three columns, #, Status and Provenance; a row after a blank line is outside the table, and the report is refused naming that line.\n"
-
-After:
-
-Named oracle: TestQAPromptTellsTheGateToContinueTheSeededTable
-Observed assertion failure: yes
-Scratch copy removed after command.

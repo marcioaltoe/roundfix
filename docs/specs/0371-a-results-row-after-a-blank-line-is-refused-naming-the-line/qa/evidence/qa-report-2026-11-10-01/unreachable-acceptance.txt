@@ -1,5 +1,0 @@
-Current Spec declaration:
-None. Every criterion is checked with temporary files, temporary Git
-repositories, the built binary with fresh temporary homes, and the Daemon's
-scripted QA Agent.
-No declared criteria; rows_blocked_declared: 0. Synthetic declaration belongs only to the carried fixture, not this Spec.

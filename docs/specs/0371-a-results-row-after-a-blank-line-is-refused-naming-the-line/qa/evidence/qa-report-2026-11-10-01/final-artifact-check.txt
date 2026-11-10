@@ -1,6 +1,0 @@
-Current Results table: eight contiguous rows and exactly three columns.
-Two seeded carried lines and seeded mechanical skip preserved.
-All local evidence links resolve; no new report or evidence path is ignored.
-Ten current repository Secret Patterns applied to this report and its pass evidence: zero matches.
-Tracked source diff: empty.
-All child commands exited; no test suite remains running.

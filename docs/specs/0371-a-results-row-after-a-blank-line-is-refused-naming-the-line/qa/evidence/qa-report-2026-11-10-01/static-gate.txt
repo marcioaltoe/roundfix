@@ -1,6 +1,0 @@
-Source: current Roundfix child-Agent prompt.
-Audited head: 76ccef52936e309ae7db53a9659175356afb4630
-Command: make verify-changed
-Verdict: pass; exit 0
-Diagnostics: removed on success
-Not rerun by Agent.
