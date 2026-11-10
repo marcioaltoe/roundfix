@@ -40,19 +40,29 @@ func reviewRecordedCommitPresence(ctx context.Context, root, commit string) revi
 	if err != nil || shallow != "true" && shallow != "false" {
 		return reviewCommitNotProvenGone
 	}
-	config, _, err := run("config", "--get-regexp", `^(remote\..+\.promisor|extensions\.partialclone)$`)
-	if err != nil {
+	unset := func(err error) bool {
 		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		return errors.As(err, &exitErr) && exitErr.ExitCode() == 1
+	}
+	// Git reads promisor remotes from every configuration scope and accepts every
+	// boolean spelling, so the lookup does the same and lets Git normalize the value.
+	promisors, _, err := run("config", "--type=bool", "--get-regexp", `^remote\..+\.promisor$`)
+	if err != nil {
+		if !unset(err) {
 			return reviewCommitNotProvenGone
 		}
 	} else {
-		for _, line := range strings.Split(config, "\n") {
-			fields := strings.Fields(line)
-			if len(fields) > 0 && (fields[0] == "extensions.partialclone" || len(fields) == 2 && fields[1] == "true") {
+		for _, line := range strings.Split(promisors, "\n") {
+			if fields := strings.Fields(line); len(fields) == 2 && fields[1] == "true" {
 				return reviewCommitHistoryIncomplete
 			}
 		}
+	}
+	// Git honors a repository extension only from the repository's own configuration.
+	if _, _, err := run("config", "--local", "--get", "extensions.partialclone"); err == nil {
+		return reviewCommitHistoryIncomplete
+	} else if !unset(err) {
+		return reviewCommitNotProvenGone
 	}
 	stdout, stderr, err := run("cat-file", "-e", commit)
 	var exitErr *exec.ExitError

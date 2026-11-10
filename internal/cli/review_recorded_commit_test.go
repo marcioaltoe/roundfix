@@ -193,3 +193,43 @@ func TestAReviewCorrectionNamesACommitThatIsGone(t *testing.T) {
 		})
 	}
 }
+
+func TestAPromisorRemoteInAnyBooleanSpellingIsNeverProbed(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		section string
+		want    reviewCommitPresence
+	}{
+		"yes":       {"\tpromisor = yes\n", reviewCommitHistoryIncomplete},
+		"on":        {"\tpromisor = on\n", reviewCommitHistoryIncomplete},
+		"one":       {"\tpromisor = 1\n", reviewCommitHistoryIncomplete},
+		"mixed":     {"\tpromisor = True\n", reviewCommitHistoryIncomplete},
+		"valueless": {"\tpromisor\n", reviewCommitHistoryIncomplete},
+		"false":     {"\tpromisor = false\n", reviewCommitGone},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			f := newReviewCommandFixture(t, "codex", &reviewCommandRunner{})
+			config := filepath.Join(f.repository, ".git", "config")
+			existing, err := os.ReadFile(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mustWrite(t, config, string(existing)+"[remote \"origin\"]\n"+tc.section)
+			if got := reviewRecordedCommitPresence(t.Context(), f.repository, strings.Repeat("f", 40)); got != tc.want {
+				t.Fatalf("presence=%v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAPartialCloneExtensionOutsideTheRepositoryDoesNotMakeItPartial(t *testing.T) {
+	// Sequential: this regression points the process at its own global Git configuration.
+	f := newReviewCommandFixture(t, "codex", &reviewCommandRunner{})
+	global := filepath.Join(t.TempDir(), "gitconfig")
+	mustWrite(t, global, "[extensions]\n\tpartialclone = origin\n")
+	t.Setenv("GIT_CONFIG_GLOBAL", global)
+	if got := reviewRecordedCommitPresence(t.Context(), f.repository, strings.Repeat("f", 40)); got != reviewCommitGone {
+		t.Fatalf("presence=%v, want the commit proven gone", got)
+	}
+}
