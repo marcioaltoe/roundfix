@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0370-the-inngest-capability-takes-the-seven-official-inngest-skills
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -110,3 +110,38 @@ task_01 delivered (`_prd.md` → Core Feature 4).
 - `_prd.md` → Goal 4; Core Feature 4; Glossary
 - `_techspec.md` → Documentation; Glossary; Build Order 2
 - ADR-0380; ADR-0206
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, systematic-debugging
+
+- Added the exact ADR-0380 amendment notice and set ADR-0206 `updated_at` to
+  `2026-11-09T12:00:00Z`.
+- Extended the **Retired Skill** glossary definition with the catalog-replacement
+  rule and ADR-0380 link.
+- Added the `inngest` replacement sentence and both removal paths to the
+  `baseline` guide, then added the same sentence to the canonical Roundfix
+  baseline reference and mirrored it with `make skills-sync`.
+- Raised both Roundfix skill version fields to `0.1.208` and recorded the
+  digest in `skills/testdata/owned-skill-versions.json` with the required
+  version-record command.
+- Re-recorded `docs/references/behavior-surfaces.json` with the required
+  docscontract command after the guide and skill edits.
+
+Focused checks:
+
+- `git diff --check` — passed.
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1` — passed (`ok roundfix/skills`); the first sandboxed attempt was blocked while writing the declared canonical skill path, then the same command passed with the required filesystem permission.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed (`ok roundfix/internal/docscontract`).
+
+Acceptance evidence:
+
+- ADR-0206 now carries the ADR-0380 notice and the required timestamp.
+- `CONTEXT.md` names the replaced-skill rule and links ADR-0380 in the
+  **Retired Skill** definition.
+- The guide and both Roundfix skill reference copies name `inngest` as
+  replaced, and the guide contains both `.agents/skills/inngest
+  .claude/skills/inngest` removal entries.
+
+Daemon Verification and Task settlement remain pending.
