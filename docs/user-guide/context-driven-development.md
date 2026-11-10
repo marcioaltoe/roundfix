@@ -125,9 +125,11 @@ because nothing ran, provenance `precondition` because the stop is a refusal
 rather than a measurement — so a maintainer whose gate refused reads the check
 and the reason from the frontmatter and decides whether to fix the Spec or the
 tree. The prose justifying that row is written as a list rather than as a second
-table: only the one table under the `## Results` heading is read as results, so
-every other table a report carries is evidence a reader weighs, never a row a
-later run can be blocked by. A gate that reached its matrix writes none of those
+table: under the `## Results` heading only tables whose header has a `Status`
+column are read as results, so every other table a report carries is evidence a
+reader weighs, never a row a later run can be blocked by, and a table line there
+that no header leads, such as a row after a blank line, refuses the report,
+naming its line. A gate that reached its matrix writes none of those
 three keys. The Daemon also records `build` in the report it closes for a
 blocking mechanical result, and the pending report it seeds for the gate carries
 none, because the gate's full report writes its own.

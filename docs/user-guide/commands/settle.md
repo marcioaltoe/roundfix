@@ -98,6 +98,12 @@ unchanged, and names the report relative to the selected surface:
 roundfix: settle QA Report is ineligible: QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>) (report <path>)
 ```
 
+For a `qa` Task, the Settle Command refuses a report with a Results row outside every table before any other rule, leaves the Task file unchanged, and names the report relative to the selected surface:
+
+```text
+roundfix: settle QA Report is ineligible: QA Report <path>: Results row at line <n> is outside the Results table that starts at line <h>; remove the blank line at <path>:<b> so the row continues the table (report <path>)
+```
+
 If the newest report in the selected surface is ineligible, settle exits `1`
 and leaves the Task file unchanged. Its stderr refusal names that report with
 `(report <path>)`, relative to the surface's working tree:

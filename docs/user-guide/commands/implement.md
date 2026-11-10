@@ -225,6 +225,8 @@ in the same turn as an unresolved link. A remaining item settles the QA Task
 `QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>)`,
 publishes the `evidence_binding` event and creates no QA Report commit.
 
+The QA prompt tells the gate to add each row directly below the last row of the seeded Results table, with no blank line before it. When a Results row of the newest QA Report lies outside every table, the Daemon returns the QA turn once, in the same turn as an unresolved link or Borrowed Evidence, naming the row's line and the repair, and publishes the `results_table` event. A `pass` or `partial` report with a row still outside settles the QA Task `failed` with `QA verdict <verdict> not accepted: QA Report <path>: Results row at line <n> is outside the Results table that starts at line <h>; <repair>`.
+
 The `Tokens:` line follows the outcome on every terminal Implement Run,
 before any `pushed` line. It reads the Run's recorded sums after the Run ends,
 using the same phrases as `runs show`: `<tokens> from <reported> of <n>

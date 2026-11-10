@@ -39,7 +39,8 @@ type BorrowedEvidenceOptions struct {
 }
 
 // FindBorrowedEvidence checks local evidence against the report's audited head.
-// Outside Git it checks nothing. Read and Git failures remain errors.
+// It refuses broken Results before checking provenance; outside Git it checks
+// no evidence provenance. Read and Git failures remain errors.
 func FindBorrowedEvidence(ctx context.Context, reportPath string, options BorrowedEvidenceOptions) ([]BorrowedEvidence, error) {
 	if options.RunBranchPrefix == "" {
 		return nil, errors.New("QA Report evidence requires RunBranchPrefix")
@@ -47,6 +48,9 @@ func FindBorrowedEvidence(ctx context.Context, reportPath string, options Borrow
 	content, err := os.ReadFile(reportPath)
 	if err != nil {
 		return nil, fmt.Errorf("read QA Report evidence: %w", err)
+	}
+	if results := ReadQAResults(reportPath, content); results.Break != nil {
+		return nil, *results.Break
 	}
 	path, err := filepath.EvalSymlinks(reportPath)
 	if err != nil {
@@ -321,37 +325,21 @@ func borrowedEvidenceExecutables(root string, content []byte) ([]BorrowedEvidenc
 func borrowedEvidenceCarriedLines(content []byte) map[int]bool {
 	lines := strings.Split(string(content), "\n")
 	exempt, carried := map[int]bool{}, map[string]bool{}
-	inResults, statusColumn := false, -1
-	fence := ""
-	for i, line := range lines {
-		text := strings.TrimSpace(line)
-		if marker, ok := markdownFenceMarker(text); ok {
-			if fence == "" {
-				fence = marker
-			} else if fence == marker {
-				fence = ""
+	results := ReadQAResults("", content)
+	if results.Break != nil {
+		return exempt
+	}
+	for _, table := range results.StatusTables() {
+		statusColumn := -1
+		for column, cell := range table.Header {
+			if strings.EqualFold(strings.TrimSpace(cell), "Status") {
+				statusColumn = column
 			}
-			continue
 		}
-		if fence != "" {
-			continue
-		}
-		if depth, heading, ok := markdownHeading(text); ok && depth <= 2 {
-			inResults, statusColumn = depth == 2 && heading == "Results", -1
-		}
-		if !inResults {
-			continue
-		}
-		cells := markdownTableCells(line)
-		if i+1 < len(lines) && len(cells) > 0 && markdownTableSeparator(markdownTableCells(lines[i+1])) {
-			statusColumn = -1
-			for column, cell := range cells {
-				if strings.EqualFold(strings.TrimSpace(cell), "Status") {
-					statusColumn = column
-				}
+		for _, row := range table.Rows {
+			if statusColumn >= 0 && statusColumn < len(row.Cells) && strings.HasPrefix(strings.TrimSpace(row.Cells[statusColumn]), "carried (") {
+				exempt[row.Line], carried[strings.TrimSpace(row.Cells[0])] = true, true
 			}
-		} else if statusColumn >= 0 && statusColumn < len(cells) && strings.HasPrefix(strings.TrimSpace(cells[statusColumn]), "carried (") {
-			exempt[i+1], carried[strings.TrimSpace(cells[0])] = true, true
 		}
 	}
 	block, fence := false, ""

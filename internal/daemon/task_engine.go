@@ -3073,6 +3073,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
 		prompt += fmt.Sprintf("Run Worktree: %s\nAudited head: %s\nEvidence directory: %s/\nBuild and run every executable a row exercises inside this Run Worktree, list their paths in user_flow_executables, write this pass's evidence under the evidence directory, and never copy, replay or cite evidence or an executable an earlier Run left.\n", plan.WorkDir, auditedHead, evidenceDir)
+		prompt += "Add each row of the matrix to the seeded Results table directly below its last row, with no blank line before it and the same three columns, #, Status and Provenance; a row after a blank line is outside the table, and the report is refused naming that line.\n"
 		if auditorEvidence.SelfAudit {
 			prompt += "Self-audit: build roundfix from this Run Worktree with make build, run every public-CLI row with ./bin/roundfix and never a roundfix found on PATH, and record its --version line as user_flow_binary.\n"
 		}
@@ -3178,6 +3179,28 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 			}
 			fmt.Fprintln(engine.deps.Progress, message)
 			repairPrompt += qaBorrowedEvidenceRepairPrompt(borrowedReport, plan.WorkDir, auditedHead, evidenceDir, borrowed)
+		}
+		resultsReport, resultsErr := spec.NewestQAReport(plan.Spec.Dir)
+		if resultsErr != nil && !errors.Is(resultsErr, spec.ErrNoQAReport) {
+			return "", "", false, fmt.Errorf("find QA Report for Results table check: %w", resultsErr)
+		}
+		if resultsErr == nil {
+			report, readErr := spec.ReadQAReportFile(resultsReport)
+			var pathErr *os.PathError
+			if errors.As(readErr, &pathErr) {
+				return "", "", false, fmt.Errorf("read QA Report for Results table check: %w", readErr)
+			}
+			// Parse diagnostics keep their existing unreadable-verdict settlement.
+			if readErr == nil && report.ResultsBreak != nil {
+				brk := *report.ResultsBreak
+				message := fmt.Sprintf("QA Report Results row outside the Results table at line %d; returning the QA turn once.", brk.Line)
+				if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+					message, map[string]any{"phase": "results_table", "outcome": "repair", "report": resultsReport, "line": brk.Line}); err != nil {
+					return "", "", false, err
+				}
+				fmt.Fprintln(engine.deps.Progress, message)
+				repairPrompt += qaResultsRepairPrompt(resultsReport, brk)
+			}
 		}
 		if repairPrompt != "" {
 			agentCtx, cancelAgent := context.WithCancel(ctx)
@@ -3382,13 +3405,18 @@ func borrowedQAEvidence(ctx context.Context, plan TaskPlan, prior priorQAPass, a
 	if err != nil {
 		return "", nil, fmt.Errorf("find QA Report for evidence binding check: %w", err)
 	}
-	if _, err := spec.ReadQAReportFile(reportPath); err != nil {
+	report, err := spec.ReadQAReportFile(reportPath)
+	if err != nil {
 		var pathErr *os.PathError
 		if errors.As(err, &pathErr) {
 			return "", nil, fmt.Errorf("read QA Report for evidence binding check: %w", err)
 		}
 		// An invalid report already settles unreadable with its parse diagnostic;
 		// evidence binding must not turn that refusal into an infrastructure error.
+		return reportPath, nil, nil
+	}
+	if report.ResultsBreak != nil {
+		// Eligibility owns the table refusal; evidence binding cannot read its rows.
 		return reportPath, nil, nil
 	}
 	options := spec.BorrowedEvidenceOptions{
@@ -3403,6 +3431,10 @@ func borrowedQAEvidence(ctx context.Context, plan TaskPlan, prior priorQAPass, a
 		return "", nil, fmt.Errorf("check QA Report evidence binding: %w", err)
 	}
 	return reportPath, evidence, nil
+}
+
+func qaResultsRepairPrompt(reportPath string, brk spec.QAResultsBreak) string {
+	return fmt.Sprintf("QA Report Results rows lie outside the Results table.\nReport: %s\n%s; %s.\nKeep every row in the seeded Results table, directly below its last row, with no blank line before it and the same three columns; never change a verdict or a row status.\n", reportPath, brk.Detail(), brk.Repair())
 }
 
 func qaBorrowedEvidenceRepairPrompt(reportPath, workDir, auditedHead, evidenceDir string, evidence []spec.BorrowedEvidence) string {
@@ -3941,16 +3973,21 @@ func mechanicalReportCell(value string) string {
 }
 
 func mechanicalBlockedRowCount(report []byte, cause string) int {
-	const resultsHeading = "## Results\n\n"
-	start := bytes.Index(report, []byte(resultsHeading))
-	if start < 0 {
-		return 0
+	count := 0
+	for _, table := range spec.ReadQAResults("", report).StatusTables() {
+		for column, header := range table.Header {
+			if !strings.EqualFold(strings.TrimSpace(header), "Status") {
+				continue
+			}
+			for _, row := range table.Rows {
+				if column < len(row.Cells) && strings.HasPrefix(row.Cells[column], "blocked ("+cause+":") {
+					count++
+				}
+			}
+			break
+		}
 	}
-	rows := report[start+len(resultsHeading):]
-	if end := bytes.Index(rows, []byte("\n## Mechanical skips")); end >= 0 {
-		rows = rows[:end]
-	}
-	return bytes.Count(rows, []byte(" | blocked ("+cause+":"))
+	return count
 }
 
 // resolveQAPullRequest reports the Open Pull Request fact and whether the
