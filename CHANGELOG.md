@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.8] - 2026-11-10
+
+### A review whose reviewed head is gone opens a new lineage
+
+- **`roundfix review` opens a new Reviewer Lineage when the commit an earlier review recorded is gone.** After a squash merge the reviewed branch is deleted and Git prunes its commits. The lineage check then stopped every later review of that checkout with `check review lineage ancestry: … Not a valid commit name`, with no supported way out (reported by Conexus). The review now starts again at round 1 and names the reason: `the reviewed head <commit> is no longer in the repository` or `the recorded merge base <commit> is no longer in the repository`.
+- **A commit counts as gone only in a complete repository.** The proof is `git cat-file -e` on the full object ID answering exit `1` with no output. A shallow or partial clone still blocks, with `a shallow or partial clone cannot prove that the recorded commit <commit> is gone; fetch the full history and try again`, and every other Git failure blocks as before. A promisor remote counts in every boolean spelling Git accepts, and the partial-clone extension only from the repository's own configuration.
+- **`roundfix review dispose` and the Delivery Retry's correction proof name the missing commit.** They refuse with `reviewed head "<commit>" is no longer in the repository; run roundfix review to open a new Reviewer Lineage` and `parked candidate <commit> is no longer in the repository`. The `review` and `deliver` guides and the Roundfix skill references list the new reasons.
+
 ## [0.137.7] - 2026-11-10
 
 ### The Inngest capability takes the seven official Inngest skills
