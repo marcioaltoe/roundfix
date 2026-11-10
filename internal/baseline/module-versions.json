@@ -35,6 +35,10 @@
       {
         "version": 7,
         "digest": "sha256:bf0c476336d637def65f86b5c0fe19c421ecc0ce2fc32d8c86b7e9ef0b387e1e"
+      },
+      {
+        "version": 8,
+        "digest": "sha256:9a9ec3d222d4abce45ad1a7b5bc94d457c60cdac4e2604a539ff0c640f5f673d"
       }
     ],
     "bun": [

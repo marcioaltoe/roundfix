@@ -115,7 +115,7 @@
         {
           "code": "catalog.profile.formatter.goldenDigest.mismatch",
           "subject": "standard-typescript-monorepo",
-          "detail": "got e6adec25ac6917a6807b38389f4f76d5fc093daff0b84b6128f0f44735af20de, want 8da32effbeb70d0f52aa3735e999450912e8bb842848921acbeaf3435930e55d"
+          "detail": "got 659ea92674715548d2833fd4c745bc6c81958e7ee3411ce326f14e041c07d200, want d117fe369c66d33cbee8240122396d21212698a8e7c3d64965810a7fe0b69c04"
         }
       ]
     },
@@ -215,7 +215,7 @@
         {
           "code": "catalog.setup.digest.mismatch",
           "subject": "rust",
-          "detail": "got 049c9bbe35d15b484b43324f9b325da5cdd38697be9f563ec15b9c54f863af90b, want 49c9bbe35d15b484b43324f9b325da5cdd38697be9f563ec15b9c54f863af90b"
+          "detail": "got 0507d490eebf245846c672f29e3f1ca11e52b17ff265fcd64afff7acaffa92a67, want 507d490eebf245846c672f29e3f1ca11e52b17ff265fcd64afff7acaffa92a67"
         }
       ]
     },

@@ -12,7 +12,7 @@ import (
 
 func TestNoCatalogEntryNamesARetiredSkill(t *testing.T) {
 	t.Parallel()
-	if got, want := RetiredSkills(), []string{"council", "design-patterns", "diagnosing-bugs", "fixing-metadata", "game-changing-features", "implement-spec", "refactoring-analysis", "tdd", "the-fool", "to-prompt"}; !reflect.DeepEqual(got, want) {
+	if got, want := RetiredSkills(), []string{"council", "design-patterns", "diagnosing-bugs", "fixing-metadata", "game-changing-features", "implement-spec", "inngest", "refactoring-analysis", "tdd", "the-fool", "to-prompt"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("retired skills = %v, want %v", got, want)
 	}
 	activations := readUpstreamSkillDocument(t, "skill-activations.json")

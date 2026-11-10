@@ -9,6 +9,7 @@ var retiredSkills = map[string]struct{}{
 	"fixing-metadata":        {},
 	"game-changing-features": {},
 	"implement-spec":         {},
+	"inngest":                {},
 	"refactoring-analysis":   {},
 	"tdd":                    {},
 	"the-fool":               {},

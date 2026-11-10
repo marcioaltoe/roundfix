@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0370-the-inngest-capability-takes-the-seven-official-inngest-skills
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -178,3 +178,91 @@ follow through the repository's own commands (`_prd.md` → Core Features
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1-3; Success Metrics 1-3
 - `_techspec.md` → Interfaces; API Contracts 1-3; Testing Approach; Build Order 1
 - ADR-0380; ADR-0350; ADR-0360; ADR-0191
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, no-workarounds, roundfix, setup-context-driven, evidence-gate, tech-writer.
+
+Implemented the slice answering the adopted marcioaltoe-skills report of
+2026-11-09 (message 01a1c01f-b6ad). Task status and checkboxes remain
+Daemon-owned; no commit, push, PR, Task Graph or sibling Task edit was made.
+
+- Acceptance 1: `backend` now requires and dispatches the seven replacements
+  in the prescribed order, with exactly the API Contract 1 trigger bytes.
+  `inngest` joins the Retired Skill set and its existing expected list.
+  A read-only comparison against HEAD confirmed that all other module fields
+  were preserved apart from the version raised by the record command, from
+  7 to 8. No other production Go file changed.
+- Acceptance 2: the Catalog Skill Bump moved all five upstream snapshots
+  and all 33 catalog lock entries to
+  `e45466d2b9e15480eb286a4c19b513494a867bce`; both TypeScript snapshots
+  contain all seven replacements at their catalog paths with tree digests
+  and omit `inngest`. The vendored change is only the generated
+  `context7-cli/references/setup.md` update. The exact sanctioned jq program
+  updated the asset-sync row, and the digest command regenerated its digest
+  and corpus manifest. Both final managed refreshes exited 0; the second
+  reported `File changes: 0` and `Idempotence: verified`.
+- Acceptance 3: the new CLI migration test exercises both `unedited` and
+  `edited`. It asserts the exact text lines, typed deletion/keep entries,
+  recorded hash, preview byte preservation, digest-confirmed deletion of
+  both paths and only the old lock entry, and unchanged repository bytes
+  when the edited copy is kept. The new catalog test checks the module,
+  both restore profiles and retirement without pinning a revision or digest.
+
+Regeneration evidence, in execution order:
+
+1. Read-only clone prerequisite:
+   `git -C /Users/marcio/.roundfix-operator/scratch/spec-0370/skills cat-file -e e45466d2b9e15480eb286a4c19b513494a867bce^{commit}`
+   exited 0 before any write. The clone was never modified; no network remote
+   or `/Users/marcio/dev/skills` was accessed.
+2. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+   exited 0 and wrote the module version and version record.
+3. `GIT_ALLOW_PROTOCOL=file make skills-third-party-bump SKILLS_CATALOG=/Users/marcio/.roundfix-operator/scratch/spec-0370/skills SKILLS_REF=e45466d2b9e15480eb286a4c19b513494a867bce`
+   exited 0, ending with `33 catalog skills and every upstream Setup Snapshot pinned to e45466d2b9e15480eb286a4c19b513494a867bce`.
+4. `jq -s 'sort_by(.id)[]' internal/baseline/assets/setups/*.json`, then
+   `jq --indent 2 --slurpfile s <snapshots> -f <program> internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`,
+   using the exact API Contract 3 program and temporary files under this
+   Run's `/private/tmp/roundfix-0370-task01-9_7wwuwk`, exited 0; its output
+   was copied over the declared fixture.
+5. `make baseline-digests` exited 0 and reported only the asset-sync fixture
+   and corpus manifest as regenerated at this step.
+6. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+   ran twice after regeneration, each with a separate fresh temporary HOME,
+   and exited 0 both times. The first updated only the Setup Manifest; the
+   second reported zero file changes. Temporary homes were removed, and
+   GOMODCACHE/GOCACHE retained their original `go env` values. The bump also
+   used its built-in temporary HOME. The refreshes reported the existing
+   nested-carrier warnings for the formatter fixture and Source Baseline;
+   neither carrier changed.
+
+Focused implementation checks:
+
+- Before the source edits,
+  `go test -count=1 -timeout 5m -run Inngest ./internal/baseline ./internal/cli`
+  exited 1 for the old module, missing replacement contracts and absent
+  retirement actions. The initial sandbox attempt could not access the Go
+  cache; the same focused command was rerun with the required cache access.
+- After regeneration,
+  `go test -count=1 -timeout 5m -v -run 'Inngest|^TestNoCatalogEntryNamesARetiredSkill$|^TestAssetsSyncCompatibilityMatchesMaintainedPythonContract$' ./internal/baseline ./internal/cli`
+  exited 0. All three new top-level tests passed, including both profile
+  subtests and both migration subtests; the existing retired-list and
+  asset-sync parity tests passed too.
+- `gofmt` formatted the two new files; `git diff --check` exited 0.
+  Read-only JSON checks confirmed module ordering, exact triggers, snapshot
+  source paths/digests and the 33 immutable catalog lock refs. Searching
+  existing Go tests found no other pinned `inngest` expectation to change.
+- Changed-path checks after each generator found no path outside this Task's
+  declared interfaces, creates and its own Result. No generated artifact
+  was hand-edited.
+
+Acceptance wording note: the asset-sync fixture intentionally retains
+`input.sourceRevision` and its synthetic `example/skills` refs at
+`21f59c7c11e5e449abbf2731be43d0a380c68854`, because API Contract 3's exact
+program uses that existing `$rev`. Thus it follows the seven replacement
+skills but does not literally name `e45466d2`, unlike the snapshots and
+lock. No synthetic source revision was changed by hand to satisfy the
+broader acceptance wording.
+
+The declared Verification commands, selected repository Verification and
+terminal QA were not run; they remain with the Daemon. Documentation belongs
+to task_02.
