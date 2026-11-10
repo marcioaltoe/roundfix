@@ -447,7 +447,7 @@ to read it`. Read the `Turn:` lines before acting on a stage that looks stuck:
 an item that waits for a review slot or the owner's turn needs no retry and no
 stop.
 
-When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the six the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the eight the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
 
 When the retried item returns to `reviewing` and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver retry` prints the same `Review:` line right after `Retried <slug>: <blocker> -> reviewing`, before the owner runs the review.
 
@@ -572,7 +572,10 @@ item head. The Correction Review then reviews the whole delta from the round-2
 head. A round-1 park, a Correction Review park, or any dismissed round-2
 finding keeps the path bound and its refusal text. Review and repository
 checks still follow. Outside that exception, any other path still requires a
-corrective Spec, and the refusal names that path.
+corrective Spec, and the refusal names that path. A parked candidate that is
+no longer in the repository refuses with `parked candidate <commit> is no
+longer in the repository`, and a fixing commit that is no longer in the
+repository is not a valid disposition.
 When no candidate is recorded, only an item the operator archived with the QA
 Archive Override may use the Run start head, whatever its park. The retry
 records the descended head as the candidate and resumes at `reviewing`. A
