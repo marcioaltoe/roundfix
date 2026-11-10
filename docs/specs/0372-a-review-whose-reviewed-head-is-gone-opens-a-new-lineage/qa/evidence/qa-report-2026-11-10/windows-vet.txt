@@ -1,0 +1,7 @@
+$ go vet ./internal/cli
+exit: 0
+stdout:
+
+stderr:
+
+GOOS set for Windows; other Go environment values not recorded.

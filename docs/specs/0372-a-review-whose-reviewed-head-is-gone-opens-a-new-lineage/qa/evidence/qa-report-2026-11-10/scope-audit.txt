@@ -1,0 +1,35 @@
+$ git diff-tree --no-commit-id --name-only -r 2292cba58d3e8bd0ed49e483de9617c8c023721f
+exit: 0
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+.agents/skills/roundfix/references/review.md
+docs/references/behavior-surfaces.json
+docs/specs/0372-a-review-whose-reviewed-head-is-gone-opens-a-new-lineage/task_01.md
+docs/user-guide/commands/deliver.md
+docs/user-guide/commands/review.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json
+
+task_01: actual paths all declared; no Recorded paths extension needed.
+$ git diff-tree --no-commit-id --name-only -r 9b8ba71b127c44fb3fbee5fa4c87d10116bb6945
+exit: 0
+docs/specs/0372-a-review-whose-reviewed-head-is-gone-opens-a-new-lineage/task_02.md
+internal/cli/deliver_review_correction.go
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_main_merge_lineage_test.go
+internal/cli/review_recorded_commit.go
+internal/cli/review_recorded_commit_test.go
+
+task_02: actual paths all declared; no Recorded paths extension needed.
+Governed paths classified against unchanged internal/speccheck/governed.go patterns/exact set:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+.agents/skills/roundfix/references/review.md
+skills/roundfix/SKILL.md
+The operative grant is byte-identical to the Delivery Base record and precedes both Task commits; the seeded authorization audit already covers task_01. No tooling change, prerequisite fix or consequent fix was introduced.
+.agents/skills/roundfix/SKILL.md: QA settlement section byte-identical
+skills/roundfix/SKILL.md: QA settlement section byte-identical
+Tracked worktree delta: empty. Forbidden path matches: zero.

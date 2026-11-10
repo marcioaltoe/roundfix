@@ -1,0 +1,9 @@
+$ ./bin/roundfix --version
+exit: 0
+stdout:
+roundfix 0.137.7 (9b8ba71b-dirty, built 2026-11-10 17:03:53 -0300)
+
+stderr:
+
+make build: exit 0 after approved cache access. Daemon make verify-changed: pass, exit 0 at 9b8ba71b127c44fb3fbee5fa4c87d10116bb6945; not rerun.
+Production tracked delta empty. Binary SHA-256: 848913d28e24578c9e44b75ae41d31bc26f2ce49f62941cc241ef71590055b58

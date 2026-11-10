@@ -1,0 +1,24 @@
+$ go test -count=1 -timeout 20m -v -run TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+    review_recorded_commit_test.go:122: plan={Lineage:{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session: Selection:<nil> SessionOpen:false ACPSessionIDs:[] Continued:false} Reuse:false Ceiling:false Restart:the reviewed head ffffffffffffffffffffffffffffffffffffffff is no longer in the repository prior:<nil> candidate:{DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:0 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestARecordedCommitThatIsNotProvenGoneStillBlocksobject_store_e854425213/004/clone BaseCommit:7d587a357892b5d0b279d0bc98ff6257de32bef2 BaseTipCommit: HeadCommit:57a14195eebdb4c4587115e93cd3717420bb847a Provider:codex Source:project Outcome:blocked Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath: Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:<nil> Lineage:<nil>} ctx:0xbff532c6460} err=<nil>, want blocking error
+--- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks (0.00s)
+    --- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error (0.17s)
+FAIL
+suiteguard: guard cost: measured 3023 paths; fingerprint took 157.044708ms before and 155.9855ms after
+FAIL	roundfix/internal/cli	0.893s
+FAIL
+
+stderr:
+
+
+Mutation: review_recorded_commit.go
+replace: ' && stderr == ""'
+with: ' && len(stderr) >= 0'
+Scratch archive removed after child exit.

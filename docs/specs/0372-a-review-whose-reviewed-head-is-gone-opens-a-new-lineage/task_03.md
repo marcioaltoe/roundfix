@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0372-a-review-whose-reviewed-head-is-gone-opens-a-new-lineage
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

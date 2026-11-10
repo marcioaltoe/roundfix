@@ -1,0 +1,82 @@
+$ go test -count=1 -timeout 20m -v -run '^(TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage|TestARecordedMergeBaseThatIsGoneOpensANewLineage|TestARecordedCommitThatIsNotProvenGoneStillBlocks|TestReviewDisposeRefusesAReviewedHeadThatIsGone|TestAReviewCorrectionNamesACommitThatIsGone)$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage
+=== PAUSE TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage
+=== RUN   TestARecordedMergeBaseThatIsGoneOpensANewLineage
+=== PAUSE TestARecordedMergeBaseThatIsGoneOpensANewLineage
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== RUN   TestReviewDisposeRefusesAReviewedHeadThatIsGone
+=== PAUSE TestReviewDisposeRefusesAReviewedHeadThatIsGone
+=== RUN   TestAReviewCorrectionNamesACommitThatIsGone
+=== PAUSE TestAReviewCorrectionNamesACommitThatIsGone
+=== CONT  TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage
+=== CONT  TestReviewDisposeRefusesAReviewedHeadThatIsGone
+=== CONT  TestAReviewCorrectionNamesACommitThatIsGone
+=== RUN   TestReviewDisposeRefusesAReviewedHeadThatIsGone/dismiss
+=== RUN   TestAReviewCorrectionNamesACommitThatIsGone/parked_candidate
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== PAUSE TestReviewDisposeRefusesAReviewedHeadThatIsGone/dismiss
+=== PAUSE TestAReviewCorrectionNamesACommitThatIsGone/parked_candidate
+=== CONT  TestARecordedMergeBaseThatIsGoneOpensANewLineage
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/shallow_clone
+=== RUN   TestReviewDisposeRefusesAReviewedHeadThatIsGone/fixed-by
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/shallow_clone
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/partial_clone
+=== RUN   TestAReviewCorrectionNamesACommitThatIsGone/fixing_commit
+=== PAUSE TestReviewDisposeRefusesAReviewedHeadThatIsGone/fixed-by
+=== CONT  TestReviewDisposeRefusesAReviewedHeadThatIsGone/dismiss
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/partial_clone
+=== PAUSE TestAReviewCorrectionNamesACommitThatIsGone/fixing_commit
+=== CONT  TestAReviewCorrectionNamesACommitThatIsGone/parked_candidate
+=== CONT  TestAReviewCorrectionNamesACommitThatIsGone/fixing_commit
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== CONT  TestReviewDisposeRefusesAReviewedHeadThatIsGone/fixed-by
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/shallow_clone
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/partial_clone
+=== NAME  TestAReviewCorrectionNamesACommitThatIsGone/parked_candidate
+    review_recorded_commit_test.go:191: proof={Accepted:false Reason:} err=check review correction ancestry: git merge-base --is-ancestor ffffffffffffffffffffffffffffffffffffffff 301b80893f8207c9b6af19448b59dc08fdd41f7e: fatal: Not a valid commit name ffffffffffffffffffffffffffffffffffffffff: exit status 128, want refusal "parked candidate ffffffffffffffffffffffffffffffffffffffff is no longer in the repository"
+=== NAME  TestAReviewCorrectionNamesACommitThatIsGone/fixing_commit
+    review_recorded_commit_test.go:191: proof={Accepted:false Reason:} err=check disposition fixing commit ancestry: git merge-base --is-ancestor ffffffffffffffffffffffffffffffffffffffff 301b80893f8207c9b6af19448b59dc08fdd41f7e: fatal: Not a valid commit name ffffffffffffffffffffffffffffffffffffffff: exit status 128, want refusal "finding F1 requires exactly one valid disposition with evidence or a fixing commit between the candidate and item head"
+=== NAME  TestARecordedMergeBaseThatIsGoneOpensANewLineage
+    review_recorded_commit_test.go:72: plan={Lineage:{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session: Selection:<nil> SessionOpen:false ACPSessionIDs:[] Continued:false} Reuse:false Ceiling:false Restart: prior:<nil> candidate:{DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:0 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestARecordedMergeBaseThatIsGoneOpensANewLineage1438954040/002 BaseCommit:7a2493232b877f902cec288b843f4579d719c109 BaseTipCommit: HeadCommit:2ed626a45a5ef704b7bb06a77dad2309aa213f6b Provider:codex Source:project Outcome:blocked Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath: Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:<nil> Lineage:<nil>} ctx:0x5fff6b4e230} err=check review lineage ancestry: git merge-base --is-ancestor ffffffffffffffffffffffffffffffffffffffff 7a2493232b877f902cec288b843f4579d719c109: fatal: Not a valid commit name ffffffffffffffffffffffffffffffffffffffff: exit status 128, want restart "the recorded merge base ffffffffffffffffffffffffffffffffffffffff is no longer in the repository"
+--- FAIL: TestARecordedMergeBaseThatIsGoneOpensANewLineage (0.17s)
+--- FAIL: TestAReviewCorrectionNamesACommitThatIsGone (0.00s)
+    --- FAIL: TestAReviewCorrectionNamesACommitThatIsGone/parked_candidate (0.16s)
+    --- FAIL: TestAReviewCorrectionNamesACommitThatIsGone/fixing_commit (0.17s)
+=== NAME  TestReviewDisposeRefusesAReviewedHeadThatIsGone/dismiss
+    review_recorded_commit_test.go:164: exit=2 stdout="" stderr="roundfix: review dispose refused: check dismissal ancestry: git merge-base --is-ancestor ffffffffffffffffffffffffffffffffffffffff b0e9b1de8fcb90ebd552858498d5dea8402caa12: fatal: Not a valid commit name ffffffffffffffffffffffffffffffffffffffff: exit status 128\n", want "roundfix: review dispose refused: reviewed head \"ffffffffffffffffffffffffffffffffffffffff\" is no longer in the repository; run roundfix review to open a new Reviewer Lineage\n"
+=== NAME  TestReviewDisposeRefusesAReviewedHeadThatIsGone/fixed-by
+    review_recorded_commit_test.go:164: exit=2 stdout="" stderr="roundfix: review dispose refused: fixing commit \"b0e9b1de8fcb90ebd552858498d5dea8402caa12\" does not descend from reviewed head \"ffffffffffffffffffffffffffffffffffffffff\"\n", want "roundfix: review dispose refused: reviewed head \"ffffffffffffffffffffffffffffffffffffffff\" is no longer in the repository; run roundfix review to open a new Reviewer Lineage\n"
+--- FAIL: TestReviewDisposeRefusesAReviewedHeadThatIsGone (0.00s)
+    --- FAIL: TestReviewDisposeRefusesAReviewedHeadThatIsGone/dismiss (0.20s)
+    --- FAIL: TestReviewDisposeRefusesAReviewedHeadThatIsGone/fixed-by (0.20s)
+=== NAME  TestARecordedCommitThatIsNotProvenGoneStillBlocks/shallow_clone
+    review_recorded_commit_test.go:127: err="check review lineage ancestry: git merge-base --is-ancestor 7a2493232b877f902cec288b843f4579d719c109 9a170c166d7789c8cac01005aedd70a2497ec988: fatal: Not a valid commit name 7a2493232b877f902cec288b843f4579d719c109: exit status 128", want "check review lineage ancestry: a shallow or partial clone cannot prove that the recorded commit 7a2493232b877f902cec288b843f4579d719c109 is gone; fetch the full history and try again"
+=== NAME  TestARecordedCommitThatIsNotProvenGoneStillBlocks/partial_clone
+    review_recorded_commit_test.go:127: err="check review lineage ancestry: git merge-base --is-ancestor ffffffffffffffffffffffffffffffffffffffff 9a170c166d7789c8cac01005aedd70a2497ec988: fatal: '/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestARecordedCommitThatIsNotProvenGoneStillBlockspartial_clone2814713775/005/missing' does not appear to be a git repository\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\nfatal: Not a valid commit name ffffffffffffffffffffffffffffffffffffffff: exit status 128", want "check review lineage ancestry: a shallow or partial clone cannot prove that the recorded commit ffffffffffffffffffffffffffffffffffffffff is gone; fetch the full history and try again"
+--- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks (0.00s)
+    --- PASS: TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit (0.16s)
+    --- PASS: TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit (0.17s)
+    --- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks/shallow_clone (0.21s)
+    --- PASS: TestARecordedCommitThatIsNotProvenGoneStillBlocks/object_store_error (0.21s)
+    --- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks/partial_clone (0.27s)
+=== NAME  TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage
+    review_recorded_commit_test.go:46: plan={Lineage:{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session: Selection:<nil> SessionOpen:false ACPSessionIDs:[] Continued:false} Reuse:false Ceiling:false Restart: prior:<nil> candidate:{DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:0 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage3258689753/002 BaseCommit:7a2493232b877f902cec288b843f4579d719c109 BaseTipCommit: HeadCommit:921d45600592b4dc40d9f98e000432538f8af740 Provider:codex Source:project Outcome:blocked Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath: Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:<nil> Lineage:<nil>} ctx:0x5fff6b4e1e0} err=check review lineage ancestry: git merge-base --is-ancestor 4ef12f72df4688cc721f3120f8464990ef0ae044 921d45600592b4dc40d9f98e000432538f8af740: fatal: Not a valid commit name 4ef12f72df4688cc721f3120f8464990ef0ae044: exit status 128
+--- FAIL: TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage (0.34s)
+FAIL
+suiteguard: guard cost: measured 3022 paths; fingerprint took 156.719167ms before and 150.998417ms after
+FAIL	roundfix/internal/cli	1.104s
+FAIL
+
+stderr:
+

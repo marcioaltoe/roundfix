@@ -1,0 +1,30 @@
+$ go test -count=1 -timeout 20m -v -run 'TestARecordedCommitThatIsNotProvenGoneStillBlocks/(abbreviated_commit|Git_failure_on_a_present_commit)' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== RUN   TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+=== PAUSE TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+=== CONT  TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit
+    review_recorded_commit_test.go:122: plan={Lineage:{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session: Selection:<nil> SessionOpen:false ACPSessionIDs:[] Continued:false} Reuse:false Ceiling:false Restart:the reviewed head 7d043f1d1920e3fc5166475f6ac3e66b39446239 is no longer in the repository prior:<nil> candidate:{DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:0 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestARecordedCommitThatIsNotProvenGoneStillBlocksGit_failure_on694067043/002 BaseCommit:0ea3eba3488344f06c050dff7f3743335adaad29 BaseTipCommit: HeadCommit:3068f8692394de6d6f83ce338903359df17535c5 Provider:codex Source:project Outcome:blocked Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath: Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:<nil> Lineage:<nil>} ctx:0x15940823a5f0} err=<nil>, want blocking error
+=== NAME  TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit
+    review_recorded_commit_test.go:122: plan={Lineage:{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session: Selection:<nil> SessionOpen:false ACPSessionIDs:[] Continued:false} Reuse:false Ceiling:false Restart:the reviewed head ffffffffffff is no longer in the repository prior:<nil> candidate:{DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:0 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestARecordedCommitThatIsNotProvenGoneStillBlocksabbreviated_co2107850866/002 BaseCommit:0ea3eba3488344f06c050dff7f3743335adaad29 BaseTipCommit: HeadCommit:3068f8692394de6d6f83ce338903359df17535c5 Provider:codex Source:project Outcome:blocked Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath: Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:<nil> Lineage:<nil>} ctx:0x15940823a500} err=<nil>, want blocking error
+--- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks (0.00s)
+    --- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks/Git_failure_on_a_present_commit (0.10s)
+    --- FAIL: TestARecordedCommitThatIsNotProvenGoneStillBlocks/abbreviated_commit (0.11s)
+FAIL
+suiteguard: guard cost: measured 3023 paths; fingerprint took 155.870916ms before and 156.643167ms after
+FAIL	roundfix/internal/cli	0.838s
+FAIL
+
+stderr:
+
+
+Mutation: review_lineage.go
+replace: 'switch reviewRecordedCommitPresence(ctx, candidate.Repository, prior.HeadCommit)'
+with: 'switch reviewCommitGone'
+Scratch archive removed after child exit.

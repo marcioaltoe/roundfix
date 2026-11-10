@@ -1,0 +1,16 @@
+$ ./bin/roundfix review --help
+exit: 0
+stdout:
+Usage:
+  roundfix review [--base <ref>]
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit>
+
+Runs the configured pre-PR reviewer over the candidate from the base commit to
+the current HEAD and records the result under the configured Artifact Directory.
+
+Options:
+  --base  Base Git ref; defaults to the repository's main branch
+
+stderr:
+

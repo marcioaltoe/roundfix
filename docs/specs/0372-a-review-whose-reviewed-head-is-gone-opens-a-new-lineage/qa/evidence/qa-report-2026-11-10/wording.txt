@@ -1,0 +1,9 @@
+docs/user-guide/commands/review.md: eight reasons; all proof/refusal phrases present
+.agents/skills/roundfix/references/review.md: eight reasons; all proof/refusal phrases present
+skills/roundfix/references/review.md: eight reasons; all proof/refusal phrases present
+docs/user-guide/commands/deliver.md: eight-reason wording; correction refusal present
+.agents/skills/roundfix/references/deliver.md: eight-reason wording; correction refusal present
+skills/roundfix/references/deliver.md: eight-reason wording; correction refusal present
+review.md: canonical and mirror byte-identical
+deliver.md: canonical and mirror byte-identical
+Obsolete wording matches across all three trees: zero.

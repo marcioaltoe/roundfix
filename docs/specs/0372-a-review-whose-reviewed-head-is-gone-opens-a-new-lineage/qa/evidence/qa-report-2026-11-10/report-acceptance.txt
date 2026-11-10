@@ -1,0 +1,3 @@
+Command: ./bin/roundfix qa-report accept <seeded report>
+exit: 0
+
