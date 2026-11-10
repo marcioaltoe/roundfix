@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 30m -v -run '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$' ./internal/baseline
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+--- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills (0.01s)
+    --- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo (0.00s)
+    --- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo (0.00s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3025 paths; fingerprint took 170.806875ms before and 162.341875ms after
+ok  	roundfix/internal/baseline	0.618s
+
+exit: 0

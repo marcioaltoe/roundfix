@@ -1,0 +1,24 @@
+command: go test -count=1 -timeout 30m -v -run '^(TestTheBackendModuleRequiresTheSevenInngestSkills|TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill)$' ./internal/cli
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+=== RUN   TestTheBackendModuleRequiresTheSevenInngestSkills
+=== PAUSE TestTheBackendModuleRequiresTheSevenInngestSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== CONT  TestTheBackendModuleRequiresTheSevenInngestSkills
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+--- PASS: TestTheBackendModuleRequiresTheSevenInngestSkills (0.02s)
+--- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill (0.00s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited (1.18s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited (1.25s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3026 paths; fingerprint took 165.915958ms before and 174.979667ms after
+ok  	roundfix/internal/cli	1.990s
+
+exit: 0

@@ -1,0 +1,7 @@
+command: bash -c 'out="$(go test -count=1 -timeout 20m -v -run '"'"'^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$'"'"' ./internal/baseline 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; printf '"'"'%s\n'"'"' "$out" | grep -q -- '"'"'--- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills '"'"' || { echo '"'"'missing pass: TestTheBackendModuleTakesTheSevenOfficialInngestSkills'"'"' >&2; exit 1; }; go test -count=1 -timeout 20m ./internal/baseline ./skills'
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+ok  	roundfix/internal/baseline	78.306s
+ok  	roundfix/skills	0.824s
+
+
+exit: 0

@@ -1,0 +1,12 @@
+command: git diff --unified=0 4d04b3f077bb16c118dd58fcf59d7a643cc48b87..351d341eafb899403df15b69889f831a14e27602 -- CONTEXT.md
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 782c5320..bb0d0dd9 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -934 +934 @@ _Avoid_: Scaffold, template file, managed tooling
+-A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and an approved `roundfix baseline update` deletes a copy it proves unedited against `skills-lock.json` and keeps an edited or unrecorded copy for the adopter ([ADR-0350](docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md)).
++A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and an approved `roundfix baseline update` deletes a copy it proves unedited against `skills-lock.json` and keeps an edited or unrecorded copy for the adopter ([ADR-0350](docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md)). A skill the catalog replaces with skills it names, as it replaced `inngest` with the seven `inngest-*` skills, becomes a Retired Skill, and the module that required it requires the replacements ([ADR-0380](docs/adr/0380-a-skill-the-catalog-replaces-is-followed-to-its-replacements-and-retired.md)).
+
+
+exit: 0

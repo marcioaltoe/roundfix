@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0370-the-inngest-capability-takes-the-seven-official-inngest-skills
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

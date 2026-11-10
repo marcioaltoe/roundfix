@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 30m -v -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce)$'
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryStatesEachRuleOnce (0.02s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.06s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.08s)
+PASS
+ok  	roundfix/internal/docscontract	0.330s
+
+
+exit: 0

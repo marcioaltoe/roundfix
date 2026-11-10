@@ -1,0 +1,13 @@
+Independent source: marcioaltoe-skills message 01a1c01f-b6ad, 2026-11-09; catalog PR #156, commit e45466d2b9e15480eb286a4c19b513494a867bce
+Published README: https://github.com/inngest/inngest-skills ; quoted in PRD Acceptance evidence, retrieved 2026-11-09. Offline quoted-source comparison only, not a fresh web lookup.
+inngest-cli: catalog source path confirmed in both TypeScript snapshots; trigger: Installing or running the Inngest CLI and its local Dev Server.
+inngest-durable-functions: catalog source path confirmed in both TypeScript snapshots; trigger: Building or changing Inngest functions, their triggers, retries, and schedules.
+inngest-events: catalog source path confirmed in both TypeScript snapshots; trigger: Designing Inngest events, fan-out, and idempotent event handling.
+inngest-flow-control: catalog source path confirmed in both TypeScript snapshots; trigger: Configuring Inngest concurrency, throttling, rate limits, debounce, or batching.
+inngest-middleware: catalog source path confirmed in both TypeScript snapshots; trigger: Adding Inngest middleware for logging, tracing, error tracking, or dependency injection.
+inngest-setup: catalog source path confirmed in both TypeScript snapshots; trigger: Setting up Inngest in a project: the SDK, client configuration, environment variables, and the serve endpoint.
+inngest-steps: catalog source path confirmed in both TypeScript snapshots; trigger: Building or changing the steps of Inngest functions: step runs, sleeps, waits for events, and invocations.
+Comparison: setup covers TypeScript project setup; flow-control covers the requested concurrency, throttling, rate limits, debounce and batching; middleware covers lifecycle use through logging/tracing/error tracking/dependency injection; CLI explicitly covers local Dev Server.
+Published README mentions priority as well; the catalog suggested mapping deliberately bounds this trigger. No unsupported extra skill was added.
+Independent checks: row 4 exact jq/grep facts; row 6 sabotage rejects the missing middleware and changed CLI trigger.
+exit: 0

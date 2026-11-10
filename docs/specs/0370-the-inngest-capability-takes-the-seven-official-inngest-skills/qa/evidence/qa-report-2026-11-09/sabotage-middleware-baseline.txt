@@ -1,0 +1,26 @@
+command: go test -count=1 -timeout 30m -v -run '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$' ./internal/baseline
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb/bin/qa-0370-middleware-j77svpvj
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+    inngest_skills_test.go:70: inngest-middleware required = false, dispatch count = 1; want true, 1
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== NAME  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+    inngest_skills_test.go:88: profile does not require inngest-middleware
+=== NAME  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+    inngest_skills_test.go:88: profile does not require inngest-middleware
+--- FAIL: TestTheBackendModuleTakesTheSevenOfficialInngestSkills (0.01s)
+    --- FAIL: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo (0.00s)
+    --- FAIL: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 23.758291ms before and 24.199542ms after
+FAIL	roundfix/internal/baseline	0.364s
+FAIL
+
+
+exit: 1

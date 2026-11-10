@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 30m -v -run '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$' ./internal/baseline
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb/bin/qa-0370-retirement-rpadjtd4
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== RUN   TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== PAUSE TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+=== NAME  TestTheBackendModuleTakesTheSevenOfficialInngestSkills
+    inngest_skills_test.go:98: inngest is not a Retired Skill
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo
+=== CONT  TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo
+--- FAIL: TestTheBackendModuleTakesTheSevenOfficialInngestSkills (0.01s)
+    --- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/standard-typescript-monorepo (0.00s)
+    --- PASS: TestTheBackendModuleTakesTheSevenOfficialInngestSkills/go-cli-typescript-monorepo (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 26.873917ms before and 25.773458ms after
+FAIL	roundfix/internal/baseline	0.373s
+FAIL
+
+
+exit: 1

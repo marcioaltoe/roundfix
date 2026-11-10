@@ -1,0 +1,6 @@
+command: bash -c 'a=docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md; grep -qF -- '"'"'**Amended by [ADR-0380](0380-a-skill-the-catalog-replaces-is-followed-to-its-replacements-and-retired.md) (2026-11-09).**'"'"' "$a" || { echo '"'"'ADR-0206 lacks the ADR-0380 notice'"'"' >&2; exit 1; }; grep -qx '"'"'updated_at: 2026-11-09T12:00:00Z'"'"' "$a" || { echo '"'"'ADR-0206 updated_at not moved'"'"' >&2; exit 1; }; grep -F -- '"'"'**Retired Skill**'"'"' < CONTEXT.md | grep -qE '"'"'^([-*+] )?\*\*Retired Skill\*\*(:| —( |$))'"'"' || exit 1; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'A skill the catalog replaces with skills it names, as it replaced'"'"' || { echo '"'"'CONTEXT.md lacks the Retired Skill sentence'"'"' >&2; exit 1; }; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '"'"'^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce)$'"'"''
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+ok  	roundfix/internal/docscontract	0.285s
+
+
+exit: 0

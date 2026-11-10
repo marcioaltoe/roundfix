@@ -1,0 +1,22 @@
+commit_range: 4d04b3f077bb16c118dd58fcf59d7a643cc48b87..351d341eafb899403df15b69889f831a14e27602
+task_01: all 26 changed files declared (own Task Result allowed).
+task_02: all 10 changed files declared (own Task Result allowed).
+Governed class verified against internal/speccheck/governed.go; the seeded mechanical authorization audit covers both Task commits at the prior operative grant.
+granted: .agents/skills/context7-cli/references/setup.md
+granted: .agents/skills/roundfix/SKILL.md
+granted: .agents/skills/roundfix/references/baseline.md
+granted: docs/agents/setup-context.json
+granted: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md
+granted: internal/baseline/assets/modules/backend.json
+granted: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+granted: internal/baseline/assets/setups/go-cli-typescript-bun.json
+granted: internal/baseline/assets/setups/go.json
+granted: internal/baseline/assets/setups/python.json
+granted: internal/baseline/assets/setups/rust.json
+granted: internal/baseline/assets/setups/typescript.json
+granted: skills/roundfix/SKILL.md
+No forbidden path changed; the skill QA settlement bytes are unchanged.
+ADR-0206 amendment and exact timestamp confirmed.
+The authorization revision precedes both Task commits; no authorization or prerequisite/consequent repair was folded into them.
+No current tracked implementation delta exists.
+exit: 0

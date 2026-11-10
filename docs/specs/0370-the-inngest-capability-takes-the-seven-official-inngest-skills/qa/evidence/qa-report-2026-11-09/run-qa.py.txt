@@ -1,0 +1,370 @@
+import contextlib
+import io
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path.cwd()
+SLUG = '0370-the-inngest-capability-takes-the-seven-official-inngest-skills'
+SPEC = ROOT / 'docs/specs' / SLUG
+REPORT = SPEC / 'qa/qa-report-2026-11-09.md'
+EVID = SPEC / 'qa/evidence/qa-report-2026-11-09'
+HEAD = '351d341eafb899403df15b69889f831a14e27602'
+BASE = '4d04b3f077bb16c118dd58fcf59d7a643cc48b87'
+REF = 'e45466d2b9e15480eb286a4c19b513494a867bce'
+CACHES = {n: subprocess.check_output(['go', 'env', n], text=True).strip() for n in ('GOCACHE', 'GOMODCACHE')}
+KEYS = ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY', 'ROUNDFIX_OPENROUTER_API_KEY', 'ROUNDFIX_TYPESAFE_API_KEY', 'TYPESAFE_API_KEY']
+
+@contextlib.contextmanager
+def isolated():
+    with tempfile.TemporaryDirectory(prefix='qa-0370-home-') as h, tempfile.TemporaryDirectory(prefix='qa-0370-tmp-', dir=ROOT / 'bin') as t:
+        env = os.environ.copy()
+        env.update(CACHES)
+        env.update(HOME=h, TMPDIR=t, GIT_ALLOW_PROTOCOL='file')
+        for key in KEYS:
+            env.pop(key, None)
+        yield env
+
+def run(name, args, cwd=ROOT, env=None, expected=0):
+    observed_executables = set()
+    if args[:2] == ['make', 'skills-third-party-bump']:
+        p = subprocess.Popen(args, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        while True:
+            for path in Path(env['TMPDIR']).glob('rf-skills.*/roundfix'):
+                observed_executables.add(str(path.relative_to(ROOT)))
+            try:
+                output, _ = p.communicate(timeout=1)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+        report = REPORT.read_text()
+        for path in sorted(observed_executables):
+            report = report.replace('user_flow_executables:\n', 'user_flow_executables:\n  - ' + path + '\n', 1)
+        REPORT.write_text(report)
+    else:
+        p = subprocess.run(args, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = p.stdout
+    # Retain names of isolated environment variables, never their values.
+    if env is not None:
+        for key in ['HOME', 'TMPDIR', 'GOMODCACHE', 'GOCACHE']:
+            output = output.replace(env[key], '<' + key + '>')
+    (EVID / (name + '.txt')).write_text('command: ' + shlex.join(args) + '\nrepository: ' + str(cwd) + '\n' + output + '\n' + '\n'.join('built executable inside Run: ' + path for path in sorted(observed_executables)) + '\nexit: ' + str(p.returncode) + '\n')
+    print(name + ': exit ' + str(p.returncode), flush=True)
+    if expected is not None and p.returncode != expected:
+        raise RuntimeError(name + ' unexpected exit; see evidence')
+    return p.returncode, output
+
+def done(row, status, note):
+    data = REPORT.read_text()
+    data, count = re.subn(r'(?m)^\| ' + str(row) + r' \| pending \|', '| ' + str(row) + ' | ' + status + ' |', data)
+    assert count == 1, (row, count)
+    data += '\n### Row ' + str(row) + '\n\n' + note + '\n'
+    REPORT.write_text(data)
+
+@contextlib.contextmanager
+def snapshot(revision, label):
+    # Scratch executables remain inside this Run Worktree, never another Run.
+    with tempfile.TemporaryDirectory(prefix='qa-0370-' + label + '-', dir=ROOT / 'bin') as path:
+        target = Path(path)
+        raw = subprocess.check_output(['git', 'archive', revision], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+            archive.extractall(target, filter='data')
+        yield target
+
+def tests(name, args, cwd=ROOT, expected=0):
+    return run(name, ['go', 'test', '-count=1', '-timeout', '30m', '-v'] + args, cwd=cwd, expected=expected)
+
+def initialize():
+    data = REPORT.read_text()
+    data = data.replace('verdict: pending', 'verdict: pending\nspec: ' + SLUG + '\ndate: 2026-11-09\nbuild: "' + HEAD + '"\nstatus: in-progress\nsurfaces: [backend, docs]\nuser_flow_binary: "' + (EVID / 'version.txt').read_text().splitlines()[1] + '"\nuser_flow_executables:\n  - bin/roundfix\n  - ' + str((EVID / 'run-qa.py.txt').relative_to(ROOT)))
+    rows = []
+    for n in range(1, 15):
+        provenance = 'task_03 Requirement ' + str(n)
+        if n == 1: provenance += '; repository Verification'
+        if n == 8: provenance += '; outside-evidence row'
+        if n == 10: provenance += '; PRD Unreachable Acceptance: Adopter migration'
+        if n == 13: provenance += '; Pull Request row'
+        rows.append('| ' + str(n) + ' | pending | ' + provenance + ' |')
+    data = data.replace('| - | --- | --- |\n', '| - | --- | --- |\n' + '\n'.join(rows) + '\n', 1)
+    data += '\n## Scope and environment\n\nAudited Run Worktree: `' + str(ROOT) + '`. Delivery Base: `' + BASE + '`; candidate: `' + HEAD + '`. The authored terminal QA Task is task_03, transitively dependent on both completed implementation Tasks. No carried rows exist. The supplied mechanical sections and skips are preserved. The initial untracked hash-named mechanical artifact accounts for the build dirty marker; tracked implementation bytes match the audited head.\n\nAll rows declare `repository_path: ' + str(ROOT) + '`. Rows 3, 7, 11, 12 and 13 additionally declare `commit_range: ' + BASE + '..' + HEAD + '` because they read Task commits or authorization. Scratch copies are fresh git archives of those revisions, under this Run Worktree. Public commands use `./bin/roundfix`, fresh disposable HOME and TMPDIR, preserved Go caches, file-only Git transport and unset Judge Key Variables/TYPESAFE_API_KEY. Go tests retain the session HOME and TMPDIR and carry explicit timeouts. No network, provider, judge, reviewer, ACP, other repository or real user state is used; row 5 alone reads the authorized catalog clone.\n\nCoverage sources are the authored task_03 Requirements 1–14 and the non-waivable repository Verification, outside-evidence row, Pull Request row and Adopter migration declaration. PRD stories, goals and implementation acceptance are traced through those Requirements, not added as unrelated provenance sources. No frontend or Surface Transcript is declared. Default behavior probes are deletion versus edited-copy preservation (data integrity), preview versus apply (approval boundary), repeat bump (idempotency), and the three authored sabotages (negative detector controls).\n\nStrict authoring precondition passed with no findings; [strict evidence](evidence/qa-report-2026-11-09/strict.txt). Its named skips are retained in that evidence and do not waive history, glossary or outside-evidence coverage.\n\n## Static gate\n\n`make build`: exit 0; [build output](evidence/qa-report-2026-11-09/build.txt). `make verify-changed`: **pass, exit 0**, run by the Daemon outside the Agent sandbox at the audited head; diagnostics removed on success, as supplied in the assignment. It was not rerun here. [Binary identity](evidence/qa-report-2026-11-09/version.txt).\n'
+    REPORT.write_text(data)
+    done(1, 'pass', 'Maintainer / backend and docs. Fresh `make build` exited 0 and the built command returned its version; independent strict check exited 0. Repository Verification is the supplied Daemon result, not a local replay. Evidence: [build](evidence/qa-report-2026-11-09/build.txt), [version](evidence/qa-report-2026-11-09/version.txt), [strict](evidence/qa-report-2026-11-09/strict.txt).')
+    done(9, 'pass', 'Maintainer / public CLI. `./bin/roundfix spec check ' + SLUG + ' --strict` exited 0 with `No findings. Authored Verification commands were not executed.` This read-only command changed no tracked Spec bytes. Evidence: [strict](evidence/qa-report-2026-11-09/strict.txt).')
+
+def suites():
+    _, b = tests('head-inngest-baseline', ['-run', '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$', './internal/baseline'])
+    _, c = tests('head-inngest-cli', ['-run', '^(TestTheBackendModuleRequiresTheSevenInngestSkills|TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill)$', './internal/cli'])
+    for name in ['TestTheBackendModuleRequiresTheSevenInngestSkills', 'TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited', 'TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited']:
+        assert '--- PASS: ' + name + ' ' in c
+    assert '--- SKIP:' not in b + c
+    for name, args in [('head-baseline', ['./internal/baseline']), ('head-skills', ['./skills']), ('head-cli-baseline', ['-run', 'Baseline', './internal/cli']), ('head-docscontract', ['-tags', 'docscontract', './internal/docscontract'])]:
+        tests(name, args)
+    done(2, 'pass', 'Adopter / backend regression boundary. All three new tests and the `unedited` and `edited` subtests passed with no SKIP; the complete Baseline and skills suites, CLI Baseline selection and docscontract suite passed at the audited head. The migration tests exercise real preview, digest-confirmed apply, deletion of both paths and only the old lock entry, and unchanged edited-copy bytes. Independent persistence checks are assertions after the public CLI update. Evidence: [new Baseline test](evidence/qa-report-2026-11-09/head-inngest-baseline.txt), [migration](evidence/qa-report-2026-11-09/head-inngest-cli.txt), [Baseline](evidence/qa-report-2026-11-09/head-baseline.txt), [skills](evidence/qa-report-2026-11-09/head-skills.txt), [CLI](evidence/qa-report-2026-11-09/head-cli-baseline.txt), [docs contracts](evidence/qa-report-2026-11-09/head-docscontract.txt).')
+
+def base_tests():
+    with snapshot(BASE, 'base') as target:
+        for path in ['internal/baseline/inngest_skills_test.go', 'internal/cli/baseline_update_inngest_migration_test.go']:
+            shutil.copyfile(ROOT / path, target / path)
+        _, b = tests('base-inngest-baseline', ['-run', '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$', './internal/baseline'], cwd=target, expected=1)
+        _, c = tests('base-inngest-cli', ['-run', '^(TestTheBackendModuleRequiresTheSevenInngestSkills|TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill)$', './internal/cli'], cwd=target, expected=1)
+        for name, out in [('TestTheBackendModuleTakesTheSevenOfficialInngestSkills', b), ('TestTheBackendModuleRequiresTheSevenInngestSkills', c), ('TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited', c)]:
+            assert '--- FAIL: ' + name + ' ' in out, name
+        assert '--- SKIP:' not in b + c
+    done(3, 'pass', 'Maintainer / negative control. Fresh archive of the merge base with main (`' + BASE + '`) plus only the two new test files. All three required test names, including migration `/unedited`, failed with exit 1. This proves that the new controls detect the pre-change contract rather than merely passing independently of the implementation. Evidence: [base Baseline](evidence/qa-report-2026-11-09/base-inngest-baseline.txt), [base CLI](evidence/qa-report-2026-11-09/base-inngest-cli.txt).')
+
+def facts():
+    run('catalog-facts', ['bash', str(EVID / 'catalog-facts.sh.txt')])
+    done(4, 'pass', 'Maintainer / backend and generated docs. The jq and grep assertions passed for all seven exact triggers, seven formatter-golden lines, absence of the old trigger, all GitHub sources in all five snapshots, equal nonempty tree digests and catalog paths in both TypeScript snapshots, and every catalog lock entry at the immutable revision. These checks separately confirm the embedded-catalog tests of row 2. Evidence: [commands](evidence/qa-report-2026-11-09/catalog-facts.sh.txt), [observations](evidence/qa-report-2026-11-09/catalog-facts.txt).')
+
+def bump():
+    clone = '/Users/marcio/.roundfix-operator/scratch/spec-0370/skills'
+    code, _ = run('clone-commit', ['git', '-C', clone, 'cat-file', '-e', REF + '^{commit}'], expected=None)
+    if code:
+        done(5, 'blocked (environment: the operator\'s catalog clone lacks e45466d2)', 'The authorized read-only commit lookup failed. Operator must populate the named clone before rerunning this row. Evidence: [clone prerequisite](evidence/qa-report-2026-11-09/clone-commit.txt).')
+        return
+    with snapshot(HEAD, 'bump') as target, isolated() as env:
+        run('bump-init', ['git', 'init', '-q'], cwd=target, env=env)
+        run('bump-stage', ['git', 'add', '.'], cwd=target, env=env)
+        # This commit is only the explicitly required throwaway archive repository.
+        run('bump-seed', ['git', '-c', 'user.name=QA', '-c', 'user.email=qa@example.invalid', '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'chore: seed disposable QA archive'], cwd=target, env=env)
+        _, out = run('repeat-bump', ['make', 'skills-third-party-bump', 'SKILLS_CATALOG=' + clone, 'SKILLS_REF=' + REF], cwd=target, env=env)
+        assert 'skills-third-party-bump: vendored catalog skills already match ' + REF in out
+        _, status = run('repeat-bump-status', ['git', 'status', '--porcelain'], cwd=target, env=env)
+        assert status == '', status
+    done(5, 'pass', 'Maintainer / documented Catalog Skill Bump. Fresh audited-head archive, initialized and committed only in its disposable repository. File-only catalog fetch; bump exit 0, exact already-match line observed, second managed refresh reports zero changes, and independent git status is empty. No operator-clone write or network access. Scratch HOME and TMPDIR removed. Evidence: [clone prerequisite](evidence/qa-report-2026-11-09/clone-commit.txt), [bump](evidence/qa-report-2026-11-09/repeat-bump.txt), [independent clean status](evidence/qa-report-2026-11-09/repeat-bump-status.txt).')
+
+def sabotage():
+    cases = [
+        ('retirement', 'internal/baseline/retired_skills.go', '\t"inngest":', None),
+        ('middleware', 'internal/baseline/assets/modules/backend.json', '    "inngest-middleware",\n', ''),
+        ('trigger', 'internal/baseline/assets/modules/backend.json', 'its local Dev Server.', 'its Dev Server.'),
+    ]
+    for label, path, old, new in cases:
+        with snapshot(HEAD, label) as target:
+            file = target / path
+            data = file.read_text()
+            if label == 'retirement':
+                changed, count = re.subn(r'(?m)^\s*"inngest":\s*\{\},\n', '', data)
+                assert count == 1
+            else:
+                assert data.count(old) == 1
+                changed = data.replace(old, new)
+            file.write_text(changed)
+            _, out = tests('sabotage-' + label + '-baseline', ['-run', '^TestTheBackendModuleTakesTheSevenOfficialInngestSkills$', './internal/baseline'], cwd=target, expected=1)
+            assert '--- FAIL: TestTheBackendModuleTakesTheSevenOfficialInngestSkills ' in out
+            if label != 'trigger':
+                name = 'TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill' if label == 'retirement' else 'TestTheBackendModuleRequiresTheSevenInngestSkills'
+                _, out = tests('sabotage-' + label + '-cli', ['-run', '^' + name + '$', './internal/cli'], cwd=target, expected=1)
+                assert '--- FAIL: ' + name + ' ' in out
+    done(6, 'pass', 'Maintainer / failure probes. Three independent audited-head archives were modified only at the authored sabotage boundary. Removing retirement failed both catalog and migration tests; removing the middleware requirement failed both catalog and requirement tests; changing the CLI trigger failed the catalog test. Each command exited 1 and named the required failing test. Copies were removed after execution; no production fix was attempted. Evidence: [retirement Baseline](evidence/qa-report-2026-11-09/sabotage-retirement-baseline.txt), [retirement CLI](evidence/qa-report-2026-11-09/sabotage-retirement-cli.txt), [middleware Baseline](evidence/qa-report-2026-11-09/sabotage-middleware-baseline.txt), [middleware CLI](evidence/qa-report-2026-11-09/sabotage-middleware-cli.txt), [trigger](evidence/qa-report-2026-11-09/sabotage-trigger-baseline.txt).')
+
+def declared_verifications():
+    for task in ['task_01', 'task_02']:
+        raw = subprocess.check_output(['git', 'show', HEAD + ':docs/specs/' + SLUG + '/' + task + '.md'], text=True)
+        current = (SPEC / (task + '.md')).read_text()
+        def projection(text):
+            return re.sub(r'(?m)^status:.*$', '', text.split('\n## Result')[0])
+        assert projection(raw) == projection(current), 'authored commands changed since HEAD'
+        section = raw.split('\n## Verification\n', 1)[1].split('\n## ', 1)[0]
+        commands = re.findall(r'^- `(.*)` — expected:', section, re.M)
+        assert len(commands) == (3 if task == 'task_01' else 2)
+        for i, command in enumerate(commands, 1):
+            run(task + '-verification-' + str(i), ['bash', '-c', command])
+    done(7, 'pass', 'Maintainer / implementation acceptance. Executed all three task_01 and both task_02 Verification commands from committed, byte-equivalent authored projections, verbatim, with their explicit Go timeouts. Every command exited 0, including pass-line assertions, snapshot/parity checks, current Setup Manifest, ADR/glossary checks, guide removal-path checks, skills version record and Behavior Surface Record. Evidence: [task_01 command 1](evidence/qa-report-2026-11-09/task_01-verification-1.txt), [command 2](evidence/qa-report-2026-11-09/task_01-verification-2.txt), [command 3](evidence/qa-report-2026-11-09/task_01-verification-3.txt), [task_02 command 1](evidence/qa-report-2026-11-09/task_02-verification-1.txt), [command 2](evidence/qa-report-2026-11-09/task_02-verification-2.txt).')
+
+def outside():
+    module = json.loads((ROOT / 'internal/baseline/assets/modules/backend.json').read_text())
+    triggers = {d['skill']: d['triggers'][0]['when'] for d in module['skillDispatch'] if d['skill'].startswith('inngest-')}
+    source = (SPEC / 'references/2026-11-09-marcioaltoe-skills-inngest-replaced-by-seven-official-skills.md').read_text()
+    prd = (SPEC / '_prd.md').read_text()
+    snapshots = [json.loads((ROOT / ('internal/baseline/assets/setups/' + name + '.json')).read_text()) for name in ['typescript', 'go-cli-typescript-bun']]
+    output = ['Independent source: marcioaltoe-skills message 01a1c01f-b6ad, 2026-11-09; catalog PR #156, commit ' + REF, 'Published README: https://github.com/inngest/inngest-skills ; quoted in PRD Acceptance evidence, retrieved 2026-11-09. Offline quoted-source comparison only, not a fresh web lookup.']
+    for name in sorted(triggers):
+        assert '`' + name + '`' in source
+        for snap in snapshots:
+            matches = [s for s in snap['skills'] if s['name'] == name]
+            assert len(matches) == 1 and matches[0]['source']['path'] == 'skills/05-implementation-loop/' + name
+        output.append(name + ': catalog source path confirmed in both TypeScript snapshots; trigger: ' + triggers[name])
+    mapping = {'inngest-durable-functions': ['functions', 'triggers', 'retries', 'schedules'], 'inngest-steps': ['steps', 'sleeps', 'waits', 'invocations'], 'inngest-events': ['events', 'fan-out', 'idempotent'], 'inngest-flow-control': ['concurrency', 'throttling', 'rate limits', 'debounce', 'batching'], 'inngest-middleware': ['logging', 'tracing', 'error tracking', 'dependency injection'], 'inngest-setup': ['SDK', 'configuration', 'environment variables', 'serve endpoint'], 'inngest-cli': ['CLI', 'local Dev Server']}
+    for name, words in mapping.items():
+        assert all(word in triggers[name] for word in words)
+    for quote in ['Set up Inngest in a TypeScript project', 'Concurrency limits, throttling, rate limiting, debounce, priority,', 'Middleware lifecycle, dependency', 'Inngest CLI and Dev Server']:
+        assert quote in ' '.join(prd.split()), quote
+    output += ['Comparison: setup covers TypeScript project setup; flow-control covers the requested concurrency, throttling, rate limits, debounce and batching; middleware covers lifecycle use through logging/tracing/error tracking/dependency injection; CLI explicitly covers local Dev Server.', 'Published README mentions priority as well; the catalog suggested mapping deliberately bounds this trigger. No unsupported extra skill was added.', 'Independent checks: row 4 exact jq/grep facts; row 6 sabotage rejects the missing middleware and changed CLI trigger.', 'exit: 0']
+    (EVID / 'outside-comparison.txt').write_text('\n'.join(output) + '\n')
+    done(8, 'pass', 'Maintainer / outside-evidence row. Compared the pre-Spec catalog-project report (message 01a1c01f-b6ad, dated 2026-11-09, PR #156 at `' + REF + '`) and the published inngest/inngest-skills README quotations retrieved on 2026-11-09, both already quoted in PRD Acceptance evidence. All seven catalog slugs have the reported paths in both snapshots and each trigger follows its suggested mapping; setup, flow control, middleware and CLI agree with the published descriptions. This is an offline check of externally authored passages, corroborated by row 4 and falsification in row 6; no live upstream availability or current upstream bytes are claimed. Evidence: [source comparison and assertions](evidence/qa-report-2026-11-09/outside-comparison.txt).')
+
+def declarations():
+    authorization = (SPEC / '_authorization.md').read_text()
+    assert 'reaches the network' in authorization and 'another repository' in authorization
+    done(10, 'blocked (declared: Adopter migration)', 'Adopter / after-release migration. Exact PRD Unreachable Acceptance leading label: **Adopter migration**. Its reason is proved by the approved Limits: installation reaches GitHub and the adopter is another repository, both prohibited in this Run. Rows 2, 4 and 5 provide local regression, catalog and repeatability support, not after-release installation evidence. Unblocking action: after the patch release, the operator runs `roundfix baseline update --yes` in one TypeScript adopter and records its Skills installed and Skills deleted output through ai-memory session evidence; repeat with an edited copy to confirm preservation. No such adopter migration was attempted or claimed here.')
+    done(13, 'blocked (environment: no open Pull Request)', 'Reviewer / Pull Request row. Assignment states no open Pull Request on the Spec target branch; the Run branch is never a PR branch. Pre-PR controls: approval is the approved delivery authority at `' + BASE + ':docs/specs/' + SLUG + '/_authorization.md` (implement, commit, push, pull_request, merge, release); checks are Daemon `make verify-changed` pass at `' + HEAD + '`; no unresolved threads exist because no PR exists; Merge-Ready acceptance is not yet available; the claimed candidate is exactly `' + HEAD + '`. Operator must later open the PR on the Spec target branch and observe required checks, review/approval and Merge-Ready for its current head. This cause alone does not prevent a qualifying declared partial.')
+
+def glossary():
+    for name in ['_prd.md', '_techspec.md']:
+        assert '- changes: **Retired Skill**' in (SPEC / name).read_text()
+    _, diff = run('glossary-history', ['git', 'diff', '--unified=0', BASE + '..' + HEAD, '--', 'CONTEXT.md'])
+    changed = [line for line in diff.splitlines() if line[:1] in ['+', '-'] and not line.startswith(('+++', '---'))]
+    assert len(changed) == 2 and all('A skill the Baseline no longer requires' in line for line in changed)
+    before = subprocess.check_output(['git', 'show', BASE + ':CONTEXT.md'], text=True)
+    after = (ROOT / 'CONTEXT.md').read_text()
+    assert before.index('A skill the Baseline no longer requires') > before.index('**Retired Skill**')
+    expected = ' A skill the catalog replaces with skills it names, as it replaced `inngest` with the seven `inngest-*` skills, becomes a Retired Skill, and the module that required it requires the replacements ([ADR-0380](docs/adr/0380-a-skill-the-catalog-replaces-is-followed-to-its-replacements-and-retired.md)).'
+    assert after.replace(expected, '', 1) == before
+    tests('glossary-contracts', ['-tags', 'docscontract', './internal/docscontract', '-run', '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce)$'])
+    done(11, 'pass', 'Maintainer / docs glossary boundary. PRD and TechSpec both declare changes to Retired Skill; the Task range changes exactly its definition line in CONTEXT.md and no other term. All three named glossary contracts passed. Evidence: [history](evidence/qa-report-2026-11-09/glossary-history.txt), [contracts](evidence/qa-report-2026-11-09/glossary-contracts.txt).')
+
+def history():
+    auth = (SPEC / '_authorization.md').read_text()
+    granted = set(re.findall(r'^  - (.+)$', auth.split('\noperations:', 1)[0], re.M))
+    output = ['commit_range: ' + BASE + '..' + HEAD]
+    commits = [('task_01', '2d08c5a55c8417a01a256797fa7ce7b6106f5dd4'), ('task_02', HEAD)]
+    all_paths = set()
+    for task, commit in commits:
+        _, raw = run(task + '-changed-paths', ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', commit])
+        paths = set(raw.splitlines()); all_paths |= paths
+        task_text = (SPEC / (task + '.md')).read_text()
+        declared = set(re.findall(r'^- (?:creates|interface|instruction|deletes): `([^`]+)`', task_text, re.M))
+        own_task = 'docs/specs/' + SLUG + '/' + task + '.md'
+        assert paths <= declared | {own_task}, sorted(paths - declared - {own_task})
+        output.append(task + ': all ' + str(len(paths)) + ' changed files declared (own Task Result allowed).')
+    governed = sorted(p for p in all_paths if p.startswith(('internal/baseline/assets/', '.agents/skills/')) or p == 'docs/agents/setup-context.json' or re.match(r'^skills/[^/]+/(SKILL\.md|agents/.*)$', p))
+    assert len(governed) == 13 and set(governed) <= granted
+    output += ['Governed class verified against internal/speccheck/governed.go; the seeded mechanical authorization audit covers both Task commits at the prior operative grant.'] + ['granted: ' + p for p in governed]
+    forbidden = []
+    allowed_skills = {'.agents/skills/context7-cli/references/setup.md', '.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/baseline.md', 'skills/roundfix/SKILL.md', 'skills/roundfix/references/baseline.md', 'skills/testdata/owned-skill-versions.json'}
+    for p in all_paths:
+        bad = p in ['Makefile', 'go.mod', 'go.sum', '.roundfixrc.yml', 'CHANGELOG.md', 'internal/app/version.go'] or p.startswith(('.github/workflows/', 'dist/npm/'))
+        bad |= p.startswith('internal/baseline/assets/modules/') and p != 'internal/baseline/assets/modules/backend.json'
+        bad |= p.endswith('.go') and not p.endswith('_test.go') and p != 'internal/baseline/retired_skills.go'
+        bad |= p.startswith('internal/baseline/testdata/parity-corpus/') and p not in ['internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json', 'internal/baseline/testdata/parity-corpus/v1/manifest.json']
+        bad |= p.startswith(('.agents/skills/', 'skills/')) and p not in allowed_skills
+        bad |= p.startswith('docs/adr/') and not p.startswith('docs/adr/0206-')
+        if bad: forbidden.append(p)
+    assert not forbidden, forbidden
+    for path in ['.agents/skills/roundfix/SKILL.md', 'skills/roundfix/SKILL.md']:
+        def settlement(text):
+            return text.split('### QA settlement\n', 1)[1].split('\n### ', 1)[0].split('\n## ', 1)[0]
+        before = subprocess.check_output(['git', 'show', BASE + ':' + path], text=True)
+        assert settlement(before) == settlement((ROOT / path).read_text())
+    adr = (ROOT / 'docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md').read_text()
+    assert 'updated_at: 2026-11-09T12:00:00Z' in adr and '**Amended by [ADR-0380]' in adr
+    assert subprocess.run(['git', 'merge-base', '--is-ancestor', BASE, commits[0][1]]).returncode == 0
+    assert subprocess.run(['git', 'diff', '--quiet', HEAD, '--', '.', ':!docs/specs/' + SLUG + '/qa']).returncode == 0
+    output += ['No forbidden path changed; the skill QA settlement bytes are unchanged.', 'ADR-0206 amendment and exact timestamp confirmed.', 'The authorization revision precedes both Task commits; no authorization or prerequisite/consequent repair was folded into them.', 'No current tracked implementation delta exists.', 'exit: 0']
+    (EVID / 'history-audit.txt').write_text('\n'.join(output) + '\n')
+    done(12, 'pass', 'Maintainer / commit-dependent tooling and scope audit. Both actual diff-tree file lists fit their Task declarations plus their own Result files. The 13 changed Governed Paths exactly fit the prior approved authorization; the seeded mechanical audit already grants both commits, so no duplicate mechanical re-audit was substituted. No forbidden production, module, tooling, ADR, fixture, skill or QA settlement edit exists. ADR-0206 has the exact amendment marker and timestamp. The Task range and current tracked tree were checked independently. Evidence: [task_01 actual paths](evidence/qa-report-2026-11-09/task_01-changed-paths.txt), [task_02 actual paths](evidence/qa-report-2026-11-09/task_02-changed-paths.txt), [asserted audit](evidence/qa-report-2026-11-09/history-audit.txt).')
+
+def archive_plan():
+    with isolated() as env:
+        _, out = run('archive-plan', ['./bin/roundfix', 'archive', SLUG, '--plan', '--offline'], env=env)
+    assert 'judge: skipped (offline)' in out
+    done(14, 'pass', 'Maintainer / archive dry run. Only `./bin/roundfix archive ' + SLUG + ' --plan --offline` was run, with temporary HOME/TMPDIR and every Judge Key Variable plus TYPESAFE_API_KEY unset. Exit 0 and explicit offline judge skip observed; no archive mutation, judge, reviewer or provider request. The adopted catalog report is provenance already captured by ADR-0380, ADR-0206 and the guide, so no additional reusable reference needs promotion. Evidence: [archive cut and candidates](evidence/qa-report-2026-11-09/archive-plan.txt).')
+
+def finalize():
+    data = REPORT.read_text()
+    assert data.count('verdict: pending') == 1 and '| pending |' not in data
+    data = data.replace('verdict: pending', 'verdict: partial').replace('status: in-progress', 'status: closed')
+    data = data.replace('rows_blocked_environment: 0', 'rows_blocked_environment: 1').replace('rows_blocked_declared: 0', 'rows_blocked_declared: 1')
+    data = data.replace('user_flow_executables:\n', 'user_flow_executables:\n  - ' + str((EVID / 'catalog-facts.sh.txt').relative_to(ROOT)) + '\n', 1)
+    data = data.replace('The initial untracked hash-named mechanical artifact accounts for the build dirty marker;', 'Untracked QA artifacts were present when make built the binary and account for its dirty marker;')
+    data = data.replace('The Task range changes exactly its definition line', 'The Task range changes exactly its definition paragraph')
+    data = data.replace('the Task range changes exactly its definition line', 'the Task range changes exactly its definition paragraph')
+    data = data.replace('Independent persistence checks are assertions after the public CLI update.', 'The tests invoke the public command handler and assert persisted filesystem/lock state after apply; these are handler-level integration tests, while rows 5, 9 and 14 exercise built executables.')
+    # Bind every row to typed inputs in the report reader's native syntax.
+    refs = {
+        1: ['Makefile', 'cmd/roundfix/**', 'internal/app/version.go'],
+        2: ['internal/baseline/**', 'internal/cli/**', 'skills/**', '.agents/skills/**', 'docs/agents/**', 'docs/user-guide/**'],
+        3: ['internal/baseline/inngest_skills_test.go', 'internal/cli/baseline_update_inngest_migration_test.go'],
+        4: ['internal/baseline/assets/modules/backend.json', 'internal/baseline/assets/setups/**', 'internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md', 'skills-lock.json'],
+        5: ['Makefile', 'internal/baseline/**', '.agents/skills/**', 'skills/**', 'skills-lock.json', 'docs/agents/setup-context.json'],
+        6: ['internal/baseline/**', 'internal/cli/baseline_update_inngest_migration_test.go'],
+        7: ['docs/specs/' + SLUG + '/task_01.md', 'docs/specs/' + SLUG + '/task_02.md', 'internal/baseline/**', 'internal/cli/**', 'internal/docscontract/**', 'skills/**', '.agents/skills/**', 'CONTEXT.md', 'docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md', 'docs/user-guide/commands/baseline.md', 'docs/references/behavior-surfaces.json'],
+        8: ['docs/specs/' + SLUG + '/_prd.md', 'docs/specs/' + SLUG + '/references/2026-11-09-marcioaltoe-skills-inngest-replaced-by-seven-official-skills.md', 'internal/baseline/assets/modules/backend.json', 'internal/baseline/assets/setups/typescript.json', 'internal/baseline/assets/setups/go-cli-typescript-bun.json'],
+        9: ['docs/specs/' + SLUG + '/**', 'internal/speccheck/**'],
+        10: ['docs/specs/' + SLUG + '/_prd.md', 'docs/specs/' + SLUG + '/_authorization.md'],
+        11: ['CONTEXT.md', 'docs/specs/' + SLUG + '/_prd.md', 'docs/specs/' + SLUG + '/_techspec.md', 'internal/docscontract/**'],
+        12: ['docs/specs/' + SLUG + '/task_01.md', 'docs/specs/' + SLUG + '/task_02.md', 'docs/specs/' + SLUG + '/_authorization.md', 'internal/speccheck/governed.go'],
+        13: ['docs/specs/' + SLUG + '/_authorization.md'],
+        14: ['docs/specs/' + SLUG + '/**', 'internal/cli/archive.go'],
+    }
+    for n, paths in refs.items():
+        block = '### ' + str(n) + ' evidence\n\n```yaml\ninputs:\n'
+        for path in paths:
+            block += '  - kind: repository_path\n    ref: ' + path + '\n'
+        if n in [3, 7, 10, 11, 12, 13]:
+            block += '  - kind: commit_range\n    ref: ' + BASE + '..' + HEAD + '\n'
+        if n == 5:
+            block += '  - kind: external_repository\n    ref: /Users/marcio/.roundfix-operator/scratch/spec-0370/skills\n'
+        block += '```'
+        assert data.count('### Row ' + str(n) + '\n') == 1
+        data = data.replace('### Row ' + str(n) + '\n', block + '\n', 1)
+    data += '''
+## Findings
+
+None. The fresh implementation tests, public commands, independent catalog checks and negative controls found no product defect. No repairs were made to production code, tests, tooling or Spec artifacts.
+
+## Blocked and skipped
+
+Only row 10 is declared-blocked and only row 13 is environment-blocked. The operator actions and pre-PR control equivalents are recorded in those rows. There are no finding-blocked or skipped matrix rows. The seeded Mechanical skips remain unchanged because they describe the Daemon's pre-Agent stage, not a current omission.
+
+One existing skills-suite test initially skipped because the sandbox could not bind its temporary Unix socket: `TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering`. Its isolated fresh run with the required filesystem access passed with no SKIP; [supplemental evidence](evidence/qa-report-2026-11-09/skills-socket-full-access.txt). None of the three new tests skipped. Row 3 first encountered a Go cache permission denial before any test ran; the same control was then run with the required access and produced the expected test failures. No final row relies on that denied attempt.
+
+Disposable HOME for the archive command is outside the repository: placing it inside the repository correctly triggers the existing worktree.location preflight, because its default worktree store would be nested inside the Git root. The final offline plan used the valid fresh HOME and passed. The bump's own transient executable was built and observed inside this Run, is listed in user_flow_executables, and was removed with its temporary directory. It is not an earlier Run's executable.
+
+## Coverage
+
+All 14 authored QA Requirements have rows with explicit provenance and typed inputs. Twelve rows passed; one is blocked by the exact Adopter migration declaration and one by no open Pull Request. All seven dispatches, both TypeScript snapshots, all five source revisions and 33 catalog lock entries were confirmed. All three new tests pass at the audited head and fail at the Delivery Base as required; the edited case passes on the old implementation as expected, while the unedited case detects the regression. Five sabotage test commands fail for their intended boundary. All five non-QA Verification commands passed.
+
+PRD Goals 1–3, stories 1–3 and task_01 local acceptance are covered through Requirements 2–6 and 8; Goal 4 and task_02 acceptance through Requirements 7, 11 and 12. The after-release portion of stories 1–2 remains explicitly unproven under row 10. The asset-sync fixture intentionally keeps its synthetic example/skills revision according to the exact TechSpec transform; it carries the seven replacement names rather than copying real catalog provenance into the synthetic fixture. Requirement 7 checks that distinction.
+
+Non-Goals were checked against actual Task paths and data: exactly seven replacements are required unconditionally by backend; no additional upstream Inngest skill, optional capability-probe change, other removed-skill migration, bump-order repair, forbidden tooling change or QA settlement edit shipped. No frontend or TUI sweep applies to the declared backend/docs surfaces. Scope and authorization history are current-head evidence; the seeded auditor identity is preserved. Every evidence link resolves to a retained text file and no evidence path is ignored.
+
+## Outcome
+
+The backend Baseline requires and dispatches the seven official Inngest skills, retires inngest with deletion of an unedited copy and preservation of an edited one, and pins the upstream snapshots and catalog skills to e45466d2. Fresh tests, Delivery Base controls, three sabotages, an unchanged repeat bump and the updated documentation all support the local result; the qualifying partial retains the post-release adopter migration as unproven and records the absent Pull Request separately.
+
+## Final verdict
+
+Qualifying declared partial: 12 pass, 0 fail, 1 blocked environment, 0 blocked finding, 1 blocked declared, 0 skipped; no impact-tier findings. The Daemon may evaluate settlement under the declared-partial policy; the operator still owes the after-release adopter migration and the eventual Pull Request controls. No commit, push, release, archive mutation or Pull Request was performed in the Run Worktree.
+'''
+    REPORT.write_text(data)
+    # Audit the report itself, not a repeat of repository Verification.
+    problems = []
+    for target in re.findall(r'\]\(([^)]+)\)', data):
+        if '://' in target or target.startswith('#'):
+            continue
+        path = (REPORT.parent / target.split('#', 1)[0]).resolve()
+        if not path.is_file():
+            problems.append('missing ' + target)
+        ignored = subprocess.run(['git', 'check-ignore', '-q', str(path)], cwd=ROOT).returncode
+        if ignored == 0:
+            problems.append('ignored ' + target)
+    assert not problems, problems
+    rows = re.findall(r'^\| (\d+) \| ([^|]+) \|', data, re.M)
+    assert len(rows) == 14
+    assert sum(s.strip() == 'pass' for _, s in rows) == 12
+    assert sum('blocked (environment:' in s for _, s in rows) == 1
+    assert sum('blocked (declared:' in s for _, s in rows) == 1
+    assert 'rows_blocked_finding: 0' in data
+    assert len(re.findall(r'^### \d+ evidence$', data, re.M)) == 14
+    assert 'evidence_snapshots:' not in data
+    assert data.count('\n---\n') == 1
+    assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == HEAD
+    assert subprocess.run(['git', 'diff', '--quiet', HEAD, '--', '.', ':!docs/specs/' + SLUG + '/qa']).returncode == 0
+    for path in EVID.iterdir():
+        path.read_text()
+        assert subprocess.run(['git', 'check-ignore', '-q', str(path)]).returncode != 0
+    summary = 'Report: closed; verdict partial; 14 typed rows; 12 pass; one environment and one declared block; no failed, skipped or pending rows.\nAll linked evidence exists, decodes as text and is not ignored.\nAudited HEAD unchanged; no tracked implementation delta.\nNo evidence_snapshots were authored.\nexit: 0\n'
+    (EVID / 'report-validation.txt').write_text(summary)
+    print(summary)
+
+if __name__ == '__main__':
+    globals()[sys.argv[1]]()

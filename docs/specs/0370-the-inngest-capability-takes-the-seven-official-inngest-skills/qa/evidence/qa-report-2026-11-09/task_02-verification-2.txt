@@ -1,0 +1,7 @@
+command: bash -c 'for p in docs/user-guide/commands/baseline.md .agents/skills/roundfix/references/baseline.md skills/roundfix/references/baseline.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$p" | grep -qF -- '"'"'joined them when the catalog replaced it with seven'"'"' || { printf '"'"'missing sentence in %s\n'"'"' "$p" >&2; exit 1; }; done; test "$(grep -cF -- '"'"'.agents/skills/inngest .claude/skills/inngest'"'"' docs/user-guide/commands/baseline.md)" = 2 || { echo '"'"'the removal commands lack the inngest paths'"'"' >&2; exit 1; }; go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '"'"'^TestTheSkillCoverageMapIsCurrent$'"'"''
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+ok  	roundfix/skills	1.184s
+ok  	roundfix/internal/docscontract	0.294s
+
+
+exit: 0

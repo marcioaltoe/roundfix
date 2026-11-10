@@ -1,0 +1,65 @@
+command: make skills-third-party-bump SKILLS_CATALOG=/Users/marcio/.roundfix-operator/scratch/spec-0370/skills SKILLS_REF=e45466d2b9e15480eb286a4c19b513494a867bce
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb/bin/qa-0370-bump-vu86sr57
+From /Users/marcio/.roundfix-operator/scratch/spec-0370/skills
+ * branch            e45466d2b9e15480eb286a4c19b513494a867bce -> FETCH_HEAD
+setup-context-driven audit: ok
+setup-context-driven audit: ok
+Baseline skills restore: no changes
+Plan Digest: 11bf721bc5e2ec653fd7dec85a3f82d459d2469e6a680d1c1c72edece2896d24
+skills-third-party-bump: vendored catalog skills already match e45466d2b9e15480eb286a4c19b513494a867bce
+ok  	roundfix/internal/baseline	1.487s
+ok  	roundfix/skills	0.292s
+ok  	roundfix/internal/baseline	1.289s
+ok  	roundfix/internal/baseline	0.510s
+ok  	roundfix/internal/baseline	1.187s
+ok  	roundfix/internal/baseline	0.841s
+ok  	roundfix/internal/baseline	1.855s
+ok  	roundfix/internal/baseline	0.519s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:36177ca7515368c8e425ff33cc78d4b57b83264456426b90875507aaa299024d
+Current catalog: sha256:36177ca7515368c8e425ff33cc78d4b57b83264456426b90875507aaa299024d
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:2a7ecd974701f60fcfa65475bd5b1faa03ae3aa0d31dab1902e8e5c99c509080
+Approved Plan Digest: sha256:2a7ecd974701f60fcfa65475bd5b1faa03ae3aa0d31dab1902e8e5c99c509080
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:36177ca7515368c8e425ff33cc78d4b57b83264456426b90875507aaa299024d
+Current catalog: sha256:36177ca7515368c8e425ff33cc78d4b57b83264456426b90875507aaa299024d
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:2a7ecd974701f60fcfa65475bd5b1faa03ae3aa0d31dab1902e8e5c99c509080
+Approved Plan Digest: sha256:2a7ecd974701f60fcfa65475bd5b1faa03ae3aa0d31dab1902e8e5c99c509080
+skills-third-party-bump: 33 catalog skills and every upstream Setup Snapshot pinned to e45466d2b9e15480eb286a4c19b513494a867bce
+
+built executable inside Run: bin/qa-0370-tmp-4dbc_tq3/rf-skills.VY4NAO/roundfix
+exit: 0

@@ -1,0 +1,39 @@
+command: go test -count=1 -timeout 30m -v -run '^(TestTheBackendModuleRequiresTheSevenInngestSkills|TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill)$' ./internal/cli
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb/bin/qa-0370-base-zibx5aa0
+=== RUN   TestTheBackendModuleRequiresTheSevenInngestSkills
+=== PAUSE TestTheBackendModuleRequiresTheSevenInngestSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== CONT  TestTheBackendModuleRequiresTheSevenInngestSkills
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== NAME  TestTheBackendModuleRequiresTheSevenInngestSkills
+    baseline_update_inngest_migration_test.go:30: backend still requires inngest
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-cli
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-durable-functions
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-events
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-flow-control
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-middleware
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-setup
+    baseline_update_inngest_migration_test.go:34: backend does not require inngest-steps
+--- FAIL: TestTheBackendModuleRequiresTheSevenInngestSkills (0.02s)
+=== NAME  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+    baseline_update_inngest_migration_test.go:83: preview exit=0 stdout={"history":{"status":"current","revision":"34d1f15b12cdad925f62bb411b29f5969512c36e","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":true,"state":"current","message":"the repository already matches the current Baseline catalog","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:fc956964366e626f1afd08b348d89db10d40f5990023b8a5bef4fa6bd251de3b"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:fc956964366e626f1afd08b348d89db10d40f5990023b8a5bef4fa6bd251de3b"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:cca01e185faf4206b5aa861c431ebcc623288cd7b74379396a95f1418de95527","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[]}}
+         stderr=; want retired [{Skill:inngest Paths:[.agents/skills/inngest .claude/skills/inngest] LockEntry:true Action:delete Reason: LockHash:642adb3eb017d3416aa6fee260a7f423b4bbec93583c5327df6825f20d76bcba}]
+=== NAME  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+    baseline_update_inngest_migration_test.go:83: preview exit=0 stdout={"history":{"status":"current","revision":"f45899ee336ed0081618b03e64cee9235f907965","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":true,"state":"current","message":"the repository already matches the current Baseline catalog","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:fc956964366e626f1afd08b348d89db10d40f5990023b8a5bef4fa6bd251de3b"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:fc956964366e626f1afd08b348d89db10d40f5990023b8a5bef4fa6bd251de3b"},"fileChanges":[],"retention":[],"warnings":[],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:cca01e185faf4206b5aa861c431ebcc623288cd7b74379396a95f1418de95527","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[]}}
+         stderr=; want retired [{Skill:inngest Paths:[.agents/skills/inngest .claude/skills/inngest] LockEntry:true Action:keep Reason:edited LockHash:642adb3eb017d3416aa6fee260a7f423b4bbec93583c5327df6825f20d76bcba}]
+--- FAIL: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill (0.00s)
+    --- FAIL: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited (1.13s)
+    --- FAIL: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited (1.15s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 22.648916ms before and 23.293167ms after
+FAIL	roundfix/internal/cli	1.620s
+FAIL
+
+exit: 1

@@ -1,0 +1,11 @@
+command: ./bin/roundfix archive 0370-the-inngest-capability-takes-the-seven-official-inngest-skills --plan --offline
+repository: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0370-the-inngest-capability-takes-the-seven-official-inngest-skills-4cc5f4fd071c278f-6ebb559c-b2ae5422/run_20261110T015054Z_513eb0b6759345bb
+archive plan for 0370-the-inngest-capability-takes-the-seven-official-inngest-skills: removes 48 file(s) (700555 bytes) and writes docs/history/specs/0370-the-inngest-capability-takes-the-seven-official-inngest-skills.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-09.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 38 file(s) (593946 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-09-marcioaltoe-skills-inngest-replaced-by-seven-official-skills.md 2264 bytes: no advice (offline)
+promote with: roundfix archive 0370-the-inngest-capability-takes-the-seven-official-inngest-skills --promote <path>
+
+
+exit: 0
