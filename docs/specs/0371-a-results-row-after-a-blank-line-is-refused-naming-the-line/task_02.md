@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -114,3 +114,60 @@ count of the rows it seeds reads the same reader.
 - `_prd.md` → Goals; User Story 2; Core Feature 4; Success Metric 6; Success Metric 7
 - `_techspec.md` → Current behavior 6-8; API Contracts 8-10; Invariants 4-5; Testing Approach; Build Order 2
 - ADR-0381, ADR-0351
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented this Task's Daemon slice in `internal/daemon/task_engine.go` and
+added `internal/daemon/qa_results_table_test.go`. The pre-existing Task status
+change remains Daemon-owned; no other Task or Task Graph was edited.
+
+Acceptance evidence:
+
+- The initial QA prompt adds the exact required table-continuation line
+  immediately after the executable/evidence instruction and before self-audit.
+  `TestQAPromptTellsTheGateToContinueTheSeededTable` asserts that ordering.
+- The newest report's `ResultsBreak` appends the four-line
+  `qaResultsRepairPrompt` after the existing repair texts. The Daemon publishes
+  the required `results_table` event and prints its summary. The two
+  `TestQAResultsRowAfterABlankLine...` tests assert one repair turn, the exact
+  prompt, unchanged session and Batch, event payload and progress text. Removing
+  the blank line accepts the QA Task and commits the repaired report; leaving
+  it intact settles the fixture's QA Task failed with the shared eligibility
+  refusal and the path returned by `spec.NewestQAReport`.
+- `borrowedQAEvidence` leaves a Results break to eligibility instead of
+  returning an infrastructure error. The unchanged evidence-link and Borrowed
+  Evidence tests passed, including their existing shared repair test. The new
+  `TestQAResultsAndEvidenceLinksShareOneRepairTurn` also asserts exact ordered
+  concatenation of the link and Results repair prompts, one repair turn and
+  committed regenerated evidence. `mechanicalBlockedRowCount` now reads the
+  shared reader's Status tables and counts only matching Status cells. The
+  existing mechanical report tests passed, including the exact populated seed
+  bytes and frontmatter counts.
+
+Focused checks:
+
+- Before production edits,
+  `go test -count=1 -timeout 3m -run 'TestQAResultsRowAfterABlankLine|TestQAPromptTellsTheGate' ./internal/daemon`
+  failed as expected: both broken-report cases returned an evidence-binding
+  infrastructure error naming row 13; the prompt test lacked the new line.
+  After the implementation the same focused command exited 0.
+- After adding the combined-repair regression,
+  `go test -count=1 -timeout 5m -v -run 'TestQAResults|TestQAPrompt|TestQAEvidence|TestQAReportWithResolved|TestQABorrowed|TestMechanicalStage|TestMechanicalQAReport|TestQASettlement|TestWriteMechanicalQAReport' ./internal/daemon`
+  exited 0 with every selected test passing. This includes all nine existing
+  tests named in Requirement 7. The initial sandbox attempt could not access
+  the Go build cache; the test commands above ran with approved cache access.
+- A source comparison against HEAD confirmed that
+  `qaEvidenceLinkRepairPrompt`, `qaBorrowedEvidenceRepairPrompt`, the seeded
+  report line and the Run Worktree instruction lines remain byte-identical.
+- `gofmt -l internal/daemon/task_engine.go internal/daemon/qa_results_table_test.go`
+  produced no output; `git diff --check` exited 0.
+
+The declared Verification, repository Verification and terminal settlement are
+left to the Daemon. No follow-up outside this slice was needed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261110T215130Z_fa9f763e0a43c500`
+- Source commit: `9e6983a6be83e12ccea06e0b476eb1de59389944`
