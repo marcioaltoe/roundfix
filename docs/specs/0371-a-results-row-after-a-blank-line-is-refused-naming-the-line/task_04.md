@@ -67,7 +67,11 @@ not ignore, `.txt` for command output, and links only files it kept.
    - `StatusTables` returns only the first table:
      `TestQAResultsReadsEveryStatusTable` fails on the second table;
    - the break check removed from `QAReportEligibility`:
-     `TestQAReportAcceptRefusesARowAfterABlankLine` fails;
+     `TestQAResultsBreakStopsEveryCountingReader` fails in its verdict
+     subtests, which call `QAReportEligibility` directly. Record also that
+     `TestQAReportAcceptRefusesARowAfterABlankLine` passes under this
+     mutation and why: `RequireOwnRunEvidence` returns the same break after
+     the eligibility check, so the command still refuses the report;
    - the break guard removed from `EnvironmentRowsNeedingOverride`:
      `TestQAResultsBreakStopsEveryCountingReader` fails on the reduced shape,
      whose frontmatter declares one environment row;
