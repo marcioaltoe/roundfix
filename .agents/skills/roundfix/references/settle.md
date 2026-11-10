@@ -230,3 +230,9 @@ multiple items with `; `:
 ```text
 roundfix: QA Report eligibility refused: QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>)
 ```
+
+Every Results row must belong to a table under `## Results`. A table starts at a header line followed by a separator line, and its rows run to the first line that is not a table row; the rows of every such table with a `Status` column are read, under a deeper heading too. A table line that no header leads, such as a row after a blank line, refuses the report before any other rule, naming the row's line and the repair: the blank line to remove, the line to move the row below, or the separator line a header lacks. The command exits `1` with no stdout and this stderr line:
+
+```text
+roundfix: QA Report eligibility refused: QA Report <path>: Results row at line <n> is outside the Results table that starts at line <h>; remove the blank line at <path>:<b> so the row continues the table
+```

@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.25
+  version: 0.0.26
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.25
+version: 0.0.26
 ---
 
 # QA Gate
@@ -91,6 +91,10 @@ head or the QA Report Import already held byte for byte, an executable outside
 your worktree, or a path inside another Run's Run Worktree. It gets one repair
 turn; after that, the QA Task settles `failed`, and `roundfix qa-report accept`
 and the Settle Command refuse the same report.
+
+### Results rows stay inside the table
+
+Add every row to the `## Results` table directly below its last row, with no blank line before it and the same three columns, `#`, `Status` and `Provenance`; in a Run that is the table the Daemon seeded. Put each row's detail in a block below the table. A row after a blank line is not part of the table: Markdown ends a table at its first blank line. `roundfix qa-report accept`, the Settle Command and `roundfix archive` refuse a report with such a row, naming its line and the blank line to remove, and in a Run the Daemon returns the QA turn once to repair it.
 
 ### Declared rows name their criterion
 

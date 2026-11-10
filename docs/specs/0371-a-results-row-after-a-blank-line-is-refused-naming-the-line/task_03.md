@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0371-a-results-row-after-a-blank-line-is-refused-naming-the-line
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -132,3 +132,18 @@ turn task_02 gives.
 - `_prd.md` → Goals; User Story 2; Core Feature 5; Glossary
 - `_techspec.md` → Current behavior 8; API Contract 11; Build Order 3
 - ADR-0381
+
+## Result
+
+Skills loaded: implement-task, tech-writer, knowledge-workspace, domain-modeling, evidence-gate
+
+- Added the Results-table placement rule to the canonical qa-gate skill; added the QA Report acceptance refusal to the qa-report guide and settle reference; added the Settle refusal to its guide; added the repair-turn rule to both implement surfaces; corrected the context-driven development guide; and appended the QA Report glossary sentence with ADR-0381.
+- `make skills-sync` passed. The owned-skill version recorder passed with `GOCACHE=/tmp/roundfix-skill-cache-task03 go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions -count=1`; the focused non-recording version test also passed.
+- `cmp` passed for both skill files and both Roundfix reference mirrors. A byte comparison of the `### QA settlement` section against `HEAD` passed. `git diff --check` passed.
+- The final Behavior Surface regeneration passed with `GOCACHE=/tmp/roundfix-skill-cache-task03 go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+- The Daemon-owned `status: in_progress` field and the declared Verification section remain unchanged; no Go file, other task, Task Graph manifest, ADR, Baseline module, Makefile, CI workflow, `go.mod` or `go.sum` was changed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261110T215130Z_fa9f763e0a43c500`
+- Source commit: `4d1ed9ebe9781958abafcee3c475cb6ef2b3fac9`

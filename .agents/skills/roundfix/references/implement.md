@@ -258,6 +258,8 @@ the largest carriable Task set, breaking ties with the newest Run.
    `QA Report evidence does not belong to this Run: <subject> (line <n>, <reason>)`,
    publishes the `evidence_binding` event and creates no QA Report commit.
 
+   The QA prompt tells the gate to add each row directly below the last row of the seeded Results table, with no blank line before it. When a Results row of the newest QA Report lies outside every table, the Daemon returns the QA turn once, in the same turn as an unresolved link or Borrowed Evidence, naming the row's line and the repair, and publishes the `results_table` event. A `pass` or `partial` report with a row still outside settles the QA Task `failed` with `QA verdict <verdict> not accepted: QA Report <path>: Results row at line <n> is outside the Results table that starts at line <h>; <repair>`.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent
