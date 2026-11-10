@@ -1119,6 +1119,10 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 			return exitPreflight
 		}
 		if _, ancestorErr := gitRunner.RunGit(ctx, gitState.Root, "merge-base", "--is-ancestor", record.HeadCommit, fixedBy); ancestorErr != nil {
+			if err := reviewedHeadGoneRefusal(ctx, gitState.Root, record.HeadCommit); err != nil {
+				printReviewDisposeRefusal(err, stderr)
+				return exitPreflight
+			}
 			printReviewDisposeRefusal(fmt.Errorf("fixing commit %q does not descend from reviewed head %q", fixedBy, record.HeadCommit), stderr)
 			return exitPreflight
 		}
@@ -1150,6 +1154,9 @@ func proveDismissalAnchor(ctx context.Context, git preflight.GitRunner, root, re
 		var exitErr interface{ ExitCode() int }
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			return fmt.Errorf("dismissal requires current HEAD %q to equal or descend from reviewed head %q", head, reviewed)
+		}
+		if refusal := reviewedHeadGoneRefusal(ctx, root, reviewed); refusal != nil {
+			return refusal
 		}
 		return fmt.Errorf("check dismissal ancestry: %w", err)
 	}

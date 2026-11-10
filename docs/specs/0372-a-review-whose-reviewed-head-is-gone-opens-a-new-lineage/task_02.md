@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0372-a-review-whose-reviewed-head-is-gone-opens-a-new-lineage
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -201,3 +201,60 @@ still blocks.
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 3; Core Feature 1; Core Feature 2; Core Feature 3; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 2; API Contract 3; Testing Approach; Build Order 2
 - ADR-0197; ADR-0272; ADR-0279
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-context, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, agentic-cli-design, tech-writer, evidence-gate.
+
+Added the recorded-commit presence proof with separate Git stdout/stderr and
+context cancellation. It validates full lowercase object IDs, checks shallow
+and partial history before probing the object, and accepts only exit 1 with
+empty stdout and stderr as absence. Lineage decisions, fixing-disposition
+validation, disposal and the Delivery Retry correction proof now use that
+proof at the specified ancestry-failure boundaries. Other errors retain their
+existing text; the declared missing-head assertion is the only existing test
+expectation changed.
+
+Acceptance evidence from focused implementation checks:
+
+- A pruned reviewed head opens round 1: the new end-to-end test creates a
+  first review, deletes its branch, expires reflogs and prunes objects,
+  checks the old object's silent exit 1, asserts the exact advisory notice
+  consumed by `deliver status`, and runs a second review with exit 0 and
+  empty stderr. The missing merge-base test also asserts round 1, its named
+  restart reason and no prior record. Both passed.
+- Unproven absence still blocks: all five subtests passed, covering a real
+  shallow clone, a real partial clone with a missing local remote, a broken
+  alternate object directory, an abbreviated ID and a fake ancestry failure
+  on a present commit. Each asserts no restart and the required error.
+- Disposal and correction refuse by name: both `dismiss` and `fixed-by`
+  subtests passed with exact stderr, empty stdout, exit 2 and unchanged
+  ledger; both correction subtests passed with the named refusal and no
+  returned error. Existing ancestry-failure and advisory-notice tests passed,
+  including all five present-commit failures in the moved-assertion test.
+
+Commands and outcomes:
+
+- Before production edits,
+  `rtk go test ./internal/cli -run '^TestAReviewWhoseReviewedHeadIsGoneOpensANewLineage$' -count=1 -timeout=3m`
+  compiled the new test file against the existing implementation and exited
+  1 at the lineage assertion with `check review lineage ancestry` after the
+  old head was pruned.
+- After production edits,
+  `rtk proxy go test ./internal/cli -run '^(TestAReviewWhose|TestARecorded)' -count=1 -timeout=3m -v`
+  exited 0; the restart and all five blocking cases passed.
+- `rtk proxy go test ./internal/cli -run '^(TestReviewDisposeRefusesAReviewedHeadThatIsGone|TestAReviewCorrectionNamesACommitThatIsGone|TestReviewLineageRestartNamesItsReason|TestReviewDisposeReportsAncestryFailureWithoutAppending|TestReviewLineageNoticeIsAdvisory)$' -count=1 -timeout=3m -v`
+  exited 0; disposal, correction and preserved-failure cases passed.
+- `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-0372-20261110T192720Z-cli.test.exe ./internal/cli`
+  exited 0, compiling the package and its tests for Windows without running
+  the executable.
+- `gofmt` applied to the six Go files; `rtk proxy git diff --check` exited 0.
+
+The sandbox initially denied writes to the host Go build cache; the focused
+tests and cross-compilation then ran with approved cache access. All Git
+fixtures and command artifacts belong to temporary directories. The new
+tests call only pre-existing production interfaces and can compile against
+the Delivery Base. No guide, skill, record format, Task Graph or sibling Task
+was edited. The pre-existing Daemon-owned `status: in_progress` is preserved.
+Declared Verification and repository Verification were not run; settlement
+remains with the Daemon. No follow-up outside this slice was identified.

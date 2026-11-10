@@ -239,9 +239,10 @@ func TestReviewLineageRestartNamesItsReason(t *testing.T) {
 		}
 		prior.HeadCommit = strings.Repeat("f", 40)
 		plan, err := decideReviewLineage(t.Context(), &prior, candidate, preflight.ExecGitRunner{})
-		var exitErr interface{ ExitCode() int }
-		if !errors.As(err, &exitErr) || exitErr.ExitCode() == 1 || plan.Restart != "" {
-			t.Fatalf("restart=%q err=%v, want non-ancestry Git failure to stay an error", plan.Restart, err)
+		// Spec 0372: a recorded head proven gone opens a new lineage.
+		want := "the reviewed head " + prior.HeadCommit + " is no longer in the repository"
+		if err != nil || plan.Lineage.Round != 1 || plan.Restart != want {
+			t.Fatalf("plan=%+v err=%v, want restart %q at round 1", plan, err, want)
 		}
 	})
 }
