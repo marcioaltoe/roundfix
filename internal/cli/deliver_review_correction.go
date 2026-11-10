@@ -24,6 +24,12 @@ func (workflow *commandDeliveryWorkflow) ProveReviewCorrection(ctx context.Conte
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			return refuse("item head does not descend from parked candidate")
 		}
+		switch reviewRecordedCommitPresence(ctx, workDir, candidate) {
+		case reviewCommitGone:
+			return refuse(fmt.Sprintf("parked candidate %s is no longer in the repository", candidate))
+		case reviewCommitHistoryIncomplete:
+			return delivery.ReviewCorrection{}, fmt.Errorf("check review correction ancestry: %w", reviewHistoryIncompleteError(candidate))
+		}
 		return delivery.ReviewCorrection{}, fmt.Errorf("check review correction ancestry: %w", err)
 	}
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workDir, workflow.loaded.HomeDir)

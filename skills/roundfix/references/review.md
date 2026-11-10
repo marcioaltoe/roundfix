@@ -265,7 +265,10 @@ recorded anchor, or an anchor whose file is missing, whose lines no longer
 exist, or whose lines changed or moved. Dismiss before committing a fix that
 changes or moves those lines. A fix requires a resolving commit that differs
 from and descends from the reviewed head and is reachable from the current
-`HEAD`. Evidence is copied as text and is never executed.
+`HEAD`. Evidence is copied as text and is never executed. When the reviewed
+head is no longer in the repository, both forms refuse with `reviewed head
+"<commit>" is no longer in the repository; run roundfix review to open a new
+Reviewer Lineage`.
 
 Successful dispositions append one JSON line to
 `pre-pr-review-dispositions.jsonl` in the Artifact Directory and print that
@@ -313,10 +316,14 @@ A restart names one of these reasons:
 
 - `the review provider changed from <prior provider> to <provider>`
 - `the head does not descend from the reviewed head <prior head>`
+- `the reviewed head <prior head> is no longer in the repository`
+- `the recorded merge base <prior base> is no longer in the repository`
 - `the merge base moved from <prior base> to <base> at the reviewed head`
 - `the merge base moved from <prior base> to <base>, which does not descend from it`
 - `the merge base moved from <prior base> to <base> through merge <merge> of <parent>, which the default branch does not contain`
 - `the merge base moved from <prior base> to <base> and the reviewed head <prior head> conflicts with it`
+
+A recorded commit is no longer in the repository only when the repository is neither shallow nor partial and `git cat-file -e` answers for its full object ID with exit `1` and no output. A complete repository holds every ancestor of every commit it holds, so a reviewed head it no longer holds is a head that does not descend. A shallow or partial clone cannot prove that, and Roundfix never asks a partial clone, because the question would fetch from its promisor remote; the review blocks with `check review lineage ancestry: a shallow or partial clone cannot prove that the recorded commit <commit> is gone; fetch the full history and try again`. Every other Git failure still blocks the review, so no failure resets the two-round ceiling.
 
 When round 2 ends with `findings`, a **Correction Review** reviews the fix once
 if the head moved and descends from the round-2 head, and every standing

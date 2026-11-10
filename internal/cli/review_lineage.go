@@ -58,6 +58,13 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
 	if prior.HeadCommit != candidate.HeadCommit {
 		descends, err := isAncestor(prior.HeadCommit, candidate.HeadCommit)
 		if err != nil {
+			switch reviewRecordedCommitPresence(ctx, candidate.Repository, prior.HeadCommit) {
+			case reviewCommitGone:
+				plan.Restart = fmt.Sprintf("the reviewed head %s is no longer in the repository", prior.HeadCommit)
+				return plan, nil
+			case reviewCommitHistoryIncomplete:
+				return plan, fmt.Errorf("check review lineage ancestry: %w", reviewHistoryIncompleteError(prior.HeadCommit))
+			}
 			return plan, err
 		}
 		if !descends {
@@ -72,6 +79,13 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
 		}
 		descends, err := isAncestor(prior.BaseCommit, candidate.BaseCommit)
 		if err != nil {
+			switch reviewRecordedCommitPresence(ctx, candidate.Repository, prior.BaseCommit) {
+			case reviewCommitGone:
+				plan.Restart = fmt.Sprintf("the recorded merge base %s is no longer in the repository", prior.BaseCommit)
+				return plan, nil
+			case reviewCommitHistoryIncomplete:
+				return plan, fmt.Errorf("check review lineage ancestry: %w", reviewHistoryIncompleteError(prior.BaseCommit))
+			}
 			return plan, err
 		}
 		if !descends {
@@ -257,6 +271,9 @@ func reviewDispositionValidAtHead(ctx context.Context, git preflight.GitRunner, 
 		if _, err := git.RunGit(ctx, repository, "merge-base", "--is-ancestor", pair[0], pair[1]); err != nil {
 			var exitErr interface{ ExitCode() int }
 			if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+				return false, nil
+			}
+			if reviewRecordedCommitPresence(ctx, repository, d.FixedBy) == reviewCommitGone {
 				return false, nil
 			}
 			return false, fmt.Errorf("check disposition fixing commit ancestry: %w", err)
