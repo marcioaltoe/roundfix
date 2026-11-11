@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -116,3 +116,65 @@ malformed value is refused naming the message. The command guide and both
 - `_prd.md` → Goal 4; User Story 4; Core Feature 5; Core Feature 7; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 6
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-7; Surface Transcript 1; Surface Transcript 2; Invariants 1-3; Declared breaks; Testing Approach; Build Order 1
 - ADR-0383
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, typesafe-ai, evidence-gate.
+
+Implemented this Task's slice for Daemon Verification; Task status remains
+Daemon-owned. The starting worktree had only this Task file modified (its
+`in_progress` status). No existing test, sibling Task or Task Graph was changed.
+
+Acceptance-criterion evidence:
+
+1. Messages carry trimmed `blocked_work`. Declared items bypass both the judge
+   request and `followUpOrder`, lead the list by parsed date and then reference,
+   receive priority `1`, `unblocking`, basis `declared`, their sender in `blocks`,
+   and null answers and reason. All ranks are renumbered before Waiting Items
+   are appended. The text suffix names the work, and judge totals exclude
+   declared items. The new ranking test supplies newer declared work first,
+   surrounding whitespace, and body text declaring a dependency on an ordinary
+   judged message: only the explicit field controls declaration. Its fake judge
+   accepts exactly the two undeclared titles. The no-judge test also exercises
+   equal-date reference ordering and declared items followed by a Waiting Item.
+2. Both malformed-value rows assert exit `2`, empty stdout and the complete
+   diagnostic naming the message. Existing id/date/text, duplicate and type
+   checks precede the new validation. The two new transcript rows assert whole
+   stdout, stderr and exit code. The existing byte-for-byte text and JSON
+   regression for a file without the field passes unchanged, as do focused
+   existing type, invalid-file, Waiting Item and read-only tests.
+3. The command guide and canonical reference contain API Contract 7's exact
+   section and revised field order and priority explanations. `make skills-sync`
+   generated the reference mirror. The owned-skill record command raised both
+   Roundfix version fields to `0.1.211` and recorded its digest; none was edited
+   by hand. The Behavior Surface writer updated only the follow-up guide's
+   digest. `make baseline-digests` reported no derived changes.
+
+Focused checks and regeneration, all exit `0` unless noted:
+
+- `go test ./internal/cli -run 'TestFollowUp.*(Declared|MalformedBlocked)' -count=1 -timeout=5m`:
+  all four new tests passed. Before production changes the same check failed
+  to compile because `followUpItem.BlockedWork` did not exist. The first
+  sandboxed attempt was denied access to Go's default build cache; the check
+  was then run with approved access to that cache.
+- `go test ./internal/cli -run '^TestFollowUp(KeepsItsBytesWithoutAWaitingDeclaration|OrdersByTypeWithoutTheJudge|AllListsWaitingItemsLast|HoldsBackWaitingItems|RefusesInvalidMessages|AcceptsEveryDocumentedMessageType|WritesNothing)$' -count=1 -timeout=5m`:
+  selected existing compatibility, waiting and read-only checks passed.
+- `go test ./internal/cli -run '^TestFollowUpRefuses(AnInvalidMessagesFile|AnUnknownMessageTypeNamingTheAcceptedOnes)$' -count=1 -timeout=5m`:
+  existing reader refusals passed.
+- `go test ./internal/cli -tags docscontract -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$' -count=1 -timeout=5m`:
+  all three guides agree with the item struct's field order and message types.
+- A local Python comparison checked each complete `Declared blocked work`
+  section against API Contract 7 word for word and the canonical/reference
+  mirror pair byte for byte: passed.
+- `make skills-sync`: generated the owned-skill mirrors.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  recorded Roundfix `0.1.211` and its digest.
+- `make baseline-digests`: `ok: true`, `changed: false`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  recorded the changed guide digest. This command is repeated after this
+  Result is written as the Task's last mutation step.
+- `git diff --check`: no whitespace errors.
+
+The declared `## Verification` commands, full suites and repository Verification
+remain for the Daemon. No live provider, ai-memory, real GitHub runner or other
+repository was used. No follow-up outside this Task's slice was implemented.
