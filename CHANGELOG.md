@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.137.9] - 2026-11-10
+
+### A Results row after a blank line is refused, naming the line
+
+- **A QA Report row that a blank line separates from the `## Results` table is refused, never ignored.** Markdown ends a table at the first empty line, so the rows after it were read by no reader, and eligibility failed naming the wrong cause, such as `rows_blocked_environment is 1; expected 0` (reported by Pantheon). Every reader now shares one Results reader. `roundfix qa-report accept`, settlement and archive refuse with `Results row at line <n> is outside the Results table that starts at line <m>` and the repair, `remove the blank line at <path>:<line> so the row continues the table`. A row with the wrong number of columns is refused too.
+- **The QA gate is told where rows go.** The Daemon's QA prompt and a new `Results rows stay inside the table` section of the `qa-gate` skill say to add each row directly below the seeded table's last row, with no blank line and the same three columns. A report broken this way goes back to the QA turn once for repair.
+- **ADR-0381 records the decision.** The glossary's **QA Report** entry, the `qa-report`, `settle` and `implement` guides and the Roundfix skill references describe the refusal. Archived reports are unchanged.
+
 ## [0.137.8] - 2026-11-10
 
 ### A review whose reviewed head is gone opens a new lineage
