@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -217,3 +217,66 @@ exactly `.github/workflows/ci-verify.yml` and `Makefile`, plus the derived
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 3; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; Testing Approach; Build Order 1
 - ADR-0387; ADR-0259; ADR-0253
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, golang-structs-interfaces, testing-boss, tech-writer, domain-modeling, no-workarounds, setup-context-driven, roundfix, evidence-gate.
+
+The Makefile now owns the measured 420 s default. With
+`SUITE_BUDGET_VERDICT` set, `test-budget` removes a stale verdict, records a
+passing suite's verdict even on an overrun, and leaves the decision to
+`suite-budget-check`. A failing suite leaves no verdict. Without the variable,
+an overrun still fails immediately with the verdict and hint.
+
+The push `Verify` step records the verdict under `runner.temp`, and the last
+step checks it whenever that step succeeded, including after a docs or
+contract failure. The pull request path and existing docs and contract steps
+retain their bytes. ADR-0259 carries the exact ADR-0387 amendment and requested
+`updated_at` value.
+
+Focused evidence by acceptance criterion:
+
+1. Recorded and immediate verdict behavior:
+   `go test -count=1 -run 'TestThe(SuiteTimeBudgetIsRecordedThenJudged|CIPushJudgesTheSuiteTimeBudgetLast)' -v ./internal/verifyselect`
+   exited 0 after the change: both tests and all eight subtests passed. Before
+   the Makefile/workflow edits, the same focused command failed the workflow
+   test and seven subtests; only the existing immediate-overrun case passed.
+   The cases cover recording an overrun without its hint, immediate failure,
+   stale-file removal after a test failure, the 420 s default, exceeded and
+   passing recorded verdicts, and missing and unreadable verdicts. Each test
+   and subtest starts with `t.Parallel()`; each make subprocess gets only
+   `PATH`, disposable `TMPDIR` and `HOME`, and its optional verdict variable.
+2. Push wiring and preserved consumers: the workflow test above passed.
+   `go test -count=1 -run '^(TestVerifyContractsRunsEveryContract|TestMainAndReleaseRunEveryContract|TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped|TestTheCIPullRequestSkipsOnlyTheRepeatedDocumentationContracts)$' ./internal/verifyselect`
+   exited 0. A Python source comparison confirmed the authored Makefile and
+   YAML blocks exactly, and confirmed all neighboring Makefile and existing
+   workflow bytes are unchanged except the authorized `.PHONY` addition.
+3. Documentation and generated manifest: the source comparison confirmed the
+   exact ADR notice and timestamp. As the last implementation step,
+   `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+   exited 0 and changed only `docs/agents/setup-context.json` (`File changes:
+   1`, approved plan digest
+   `sha256:e8d59cf21f5970f7f2d058dc42eb2610cabde957279280dcd5926bb6d948dfad`).
+   Its second run exited 0 with `File changes: 0`, `Idempotence: verified`,
+   and plan digest
+   `sha256:93bfc4f8108f35867522c9c7be74efe19ec38949b7d45f33773a1a2dc7d2dbc7`.
+   Both runs reported unchanged nested instruction-carrier warnings in
+   `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md`
+   and
+   `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md`.
+   The generated manifest was never edited by hand.
+
+Additional focused check: `GOOS=windows go test -c -o <temporary-directory>/verifyselect.test.exe ./internal/verifyselect`
+exited 0; the executable was written to a disposable directory and removed
+with it. `git diff --check` exited 0. The initial worktree contained only the
+Daemon's task-status change; implementation touches only the five declared
+implementation paths and this Result section.
+
+The declared Verification commands, full package run, docscontract checks,
+Windows vet, and repository Verification remain for the Daemon. No status,
+Task Graph, other Task, commit, push, or pull request was authored here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261111T175059Z_b2ca8b179566f7a4`
+- Source commit: `d8651e47b71fb74994202d77588942b0f82a92fa`

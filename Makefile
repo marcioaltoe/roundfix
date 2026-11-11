@@ -40,7 +40,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: gocache-bound docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: gocache-bound docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts verify-changed-core verify-changed-baseline verify-incremental spec-check spec-budget fmt fmt-check vet test test-race suite-budget-check baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -179,25 +179,54 @@ GO_TEST_PARALLEL ?= 16
 test: gocache-bound ## Run Go tests
 	$(GO) test -parallel $(GO_TEST_PARALLEL) $(PKGS)
 
-# The full suite's wall clock on a fresh run, in seconds. Derived from what the
-# parallelised suite actually achieves on a GitHub runner, not from the old
-# baseline: on 2026-08-03 the CI suite measured ~195s, dominated by
-# internal/cli at 192.5s. The headroom absorbs runner variance while still
-# catching a real regression — re-serialising internal/cli would put the suite
-# near 470s on the same hardware. Change this deliberately, and say why.
-# See docs/specs/_archived/0071-verification-cost/baseline/2026-08-03-after.md.
-SUITE_BUDGET_SECONDS ?= 360
+# The full suite's wall clock on a fresh CI run, in seconds (ADR-0387). The
+# pushes to main of 2026-11-06 to 2026-11-10 passed every test in 209 s to
+# 343 s, because GitHub assigns runners of different speeds: the same tree took
+# 215 s on one and 311 s on another. 420 s is 22 % above the slowest run and
+# fails a suite that slows by about 1.95 times on the fast runner.
+# Change this deliberately, with a new measurement, and say why.
+SUITE_BUDGET_SECONDS ?= 420
 
+# With SUITE_BUDGET_VERDICT naming a file, test-budget writes its verdict there
+# and suite-budget-check judges it later, so a slow suite does not skip the
+# steps that follow it; without it, an overrun fails at once.
 test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
-	@start=$$(date +%s); \
+	@if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then rm -f "$(SUITE_BUDGET_VERDICT)" || exit $$?; fi; \
+	start=$$(date +%s); \
 	$(GO) test -count=1 -parallel $(GO_TEST_PARALLEL) $(PKGS) || exit $$?; \
 	elapsed=$$(( $$(date +%s) - start )); \
 	if [ "$$elapsed" -gt "$(SUITE_BUDGET_SECONDS)" ]; then \
-		echo "suite-time budget exceeded: the suite took $${elapsed}s against a budget of $(SUITE_BUDGET_SECONDS)s"; \
+		verdict="suite-time budget exceeded: the suite took $${elapsed}s against a budget of $(SUITE_BUDGET_SECONDS)s"; \
+	else \
+		verdict="suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"; \
+	fi; \
+	echo "$$verdict"; \
+	if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then \
+		printf '%s\n' "$$verdict" > "$(SUITE_BUDGET_VERDICT)" || exit $$?; \
+		echo "suite-time verdict recorded in $(SUITE_BUDGET_VERDICT); make suite-budget-check judges it"; \
+		exit 0; \
+	fi; \
+	case "$$verdict" in "suite-time budget exceeded:"*) \
 		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+		exit 1;; \
+	esac
+
+suite-budget-check: ## Fail if the verdict test-budget recorded in SUITE_BUDGET_VERDICT exceeds the budget
+	@if [ -z "$(SUITE_BUDGET_VERDICT)" ] || [ ! -f "$(SUITE_BUDGET_VERDICT)" ]; then \
+		echo "suite-time budget: no verdict recorded at '$(SUITE_BUDGET_VERDICT)'; run make test-budget with SUITE_BUDGET_VERDICT set first"; \
 		exit 1; \
 	fi; \
-	echo "suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"
+	verdict=$$(cat "$(SUITE_BUDGET_VERDICT)") || exit $$?; \
+	echo "$$verdict"; \
+	case "$$verdict" in \
+	"suite-time budget exceeded:"*) \
+		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+		exit 1;; \
+	"suite-time budget: "*) ;; \
+	*) \
+		echo "suite-time budget: unreadable verdict at '$(SUITE_BUDGET_VERDICT)'"; \
+		exit 1;; \
+	esac
 
 test-race: gocache-bound ## Run Go tests with the race detector
 	$(GO) test -race -parallel $(GO_TEST_PARALLEL) $(PKGS)
