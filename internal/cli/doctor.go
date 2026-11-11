@@ -116,6 +116,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		results = append(results, dependencies.readiness(ctx, loaded)...)
 	}
 	results = append(results, repositorySkillsCheck(ctx, dependencies, repositoryRoot))
+	if copies := staleUserSkillCopies(ctx, loaded.HomeDir); len(copies) != 0 {
+		results = append(results, doctorUserSkillsResult(copies))
+	}
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
 	if dependencies.diskSpace != nil {

@@ -280,6 +280,7 @@ type commandDependencies struct {
 	resolvePullRequestForStop       func(context.Context, string, string) (preflight.PullRequest, error)
 	promptInitScope                 func(context.Context, io.Writer) (string, error)
 	checkOwnedSkills                func() roundskills.BundleReadiness
+	userSkillDirectories            func(string) []roundskills.UserSkillDirectory
 	resolveSkillsProjectRoot        func(context.Context, string) (string, error)
 	promptProjectClaudeSkillSymlink func(context.Context, io.Writer, string, string) (bool, error)
 	cancelStopAgentSession          func(context.Context, agent.RuntimeSpec, agent.SessionRef) error
@@ -325,7 +326,10 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
-		getenv:         os.Getenv,
+		getenv: os.Getenv,
+		userSkillDirectories: func(home string) []roundskills.UserSkillDirectory {
+			return roundskills.UserSkillDirectories(home, os.Getenv)
+		},
 		environ:        os.Environ,
 		logicalCPUs:    runtime.NumCPU,
 		tempDir:        os.TempDir,
@@ -726,9 +730,10 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		if len(unversioned) > 0 {
 			sort.Strings(unversioned)
 			fmt.Fprintf(stdout, "Roundfix skill check unversioned: %s\n", strings.Join(unversioned, ", "))
-			return exitOK
+		} else {
+			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		}
-		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
+		printUserSkillWarning(stderr, staleUserSkillCopies(ctx, environment.homeDir))
 		return exitOK
 	case "list":
 		if commandWantsHelp(args[1:]) {

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -140,3 +140,27 @@ unnoticed".
 - `_techspec.md` → Current behavior 1-5; Interfaces; Data Models; API Contracts 1-7; Surface Transcript 1; Surface Transcript 2; Invariants 1-5; Declared breaks; Testing Approach; Build Order 1
 - ADR-0386
 - [The adopted Backlog Entry](references/2026-11-10-a-user-level-skill-copy-older-than-the-project-copy-is-loaded-unnoticed.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+Starting-tree characterization (recorded before implementation): `runSkillsCommand` checks the embedded bundle and repository diagnostics only; `runDoctorCommand` obtains `skills:` through `repositorySkillsCheck`, which reads repository skills only; `runUpdateCommand` builds the release report and previews the repository Baseline only. None reads a user-level skill directory. `TestRunSkillsCheck` explicitly requires empty stderr. `commandEnvironmentForTest` starts with `commandEnvironmentWithDependencies` and keeps the host home unless a test explicitly overrides it. Inspection: `skills/readiness.go`, `skills/skills.go`, `internal/cli/cli.go`, `internal/cli/cli_test.go`, `internal/cli/doctor.go`, and `internal/cli/update_check.go`.
+
+The initial working tree had only this Task file modified (Daemon-owned status); no implementation changes were present.
+
+Implementation and acceptance evidence:
+
+- Criterion 1: added `UserSkillDirectories`, the read-only `StaleUserSkillCopies` reader, `Describe`, and first-seen refresh deduplication. Directory order and refresh commands follow API Contracts 1–3, including quoted paths containing spaces and apostrophes. The reader sorts owned names, follows links with `filepath.EvalSymlinks`, deduplicates reached folders, sets `Resolved` only for a direct skill-folder link, checks cancellation, and reuses `parseSkillFrontmatter`, `Readiness`, and `ownedSkillMinimumVersions`. The four required reader tests cover all five directories; equal, newer, unversioned, invalid, and non-owned copies; malformed/missing entries; linked folders and linked parent directories; cancellation; and unchanged paths, modes, modification times, link destinations, and file bytes. All expected shipped versions come from the embedded bundle.
+- Criterion 2: added the command dependency and the three renderers. Successful and unversioned `skills check` outputs retain their stdout and exit code and append the exact stderr warning only for stale copies; failed checks print no advisory. Doctor inserts the warning immediately after `skills:` using `loaded.HomeDir`. Update Check adds `UserSkills` immediately after `Baseline` in its JSON model and prints the prescribed line after the Baseline report, without changing `Next`. The three required command tests assert the whole skills-check and development Update Check transcripts, the exact Doctor line and position, JSON copies and `next: none`, and omission of `userSkills` once copies are current. Doctor's test deliberately uses different command and loaded homes to prove it reads the loaded home.
+- Criterion 3: `commandEnvironmentForTest` replaces the directory dependency after every override. It returns no directories unless a test explicitly supplies a home, then resolves directories from the argument with a nil environment reader. Existing assertions and goldens remain unchanged. A focused stale-HOME run passed nine selected existing/new tests; the full existing-test sweep remains the Daemon's declared Verification, not a result claimed here.
+
+Focused checks:
+
+- Red starting check: `go test ./skills -run '^TestUserSkillDirectoriesFollowTheInstallTargetVariables$' -count=1` exited 1 because the new API did not exist yet.
+- `go test ./skills -run 'UserSkill' -count=1` exited 0 after the final reader-test edit; all four required reader tests ran.
+- `go test ./internal/cli -run '^(TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit|TestDoctorReportsStaleUserSkillCopiesWithoutFailing|TestUpdateCheckNamesStaleUserSkillCopies|TestRunSkillsCheck|TestUpdateCheckTranscripts)$' -count=1 -timeout 5m` exited 0. Its first compile exposed a missing `roundskills` import in the test helper; adding the import resolved it.
+- An isolated Python fixture created a temporary process `HOME` with `roundfix` at `0.0.1` in all five directories, preserved the Go cache locations, and ran `go test ./internal/cli -run '^(TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit|TestDoctorReportsStaleUserSkillCopiesWithoutFailing|TestUpdateCheckNamesStaleUserSkillCopies|TestRunSkillsCheck|TestUpdateCheckTranscripts|TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness|TestRunDoctorRepositorySkillReadiness|TestRunSkillsListSeparatesOwnedFromExternal|TestRunSkillsInstallCopiesArtifactsToExplicitTarget)$' -count=1 -timeout 5m`: exit 0. The fixture cleaned up its temporary home; it read no real user skill directory.
+- `git diff --check`: exit 0. Changed-path inspection lists only this Task file and its nine declared implementation/test files. `repositorySkillsCheck`, the release plan, `skills install`, and `skills.DefaultTargetDirs` are unchanged.
+
+Declared Verification and repository gates were not run; the Daemon owns them and Task settlement. Status and all other Task files/graph metadata remain untouched. The command guides, glossary, and owned-skill updates remain task_02's slice. No commits, pushes, or pull requests were made.
