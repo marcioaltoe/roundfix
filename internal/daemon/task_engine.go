@@ -323,6 +323,8 @@ type TaskCycleResult struct {
 }
 
 type taskCycleBudget struct {
+	pauses      int
+	pausedAt    time.Time
 	mu          sync.Mutex
 	maximum     time.Duration
 	deadline    time.Time
@@ -357,15 +359,53 @@ func (budget *taskCycleBudget) renew(settledAt time.Time, taskID string) bool {
 	}
 	budget.mu.Lock()
 	defer budget.mu.Unlock()
-	if budget.deadline.IsZero() || budget.expired || !settledAt.Before(budget.deadline) {
+	if budget.deadline.IsZero() || budget.expired || (budget.pauses == 0 && !settledAt.Before(budget.deadline)) {
 		return false
 	}
 	budget.deadline = settledAt.Add(budget.maximum)
 	budget.renewedAt = settledAt
 	budget.renewedTask = taskID
+	if budget.pauses > 0 {
+		budget.pausedAt = settledAt
+	}
 	close(budget.changed)
 	budget.changed = make(chan struct{})
 	return true
+}
+
+// pause excludes the union of concurrent machine waits from the Run Budget.
+// A resume is idempotent and the last waiter moves the current deadline.
+func (budget *taskCycleBudget) pause(now time.Time) func(time.Time) {
+	if budget == nil {
+		return func(time.Time) {}
+	}
+	budget.mu.Lock()
+	if budget.deadline.IsZero() || budget.expired {
+		budget.mu.Unlock()
+		return func(time.Time) {}
+	}
+	if budget.pauses == 0 {
+		budget.pausedAt = now
+	}
+	budget.pauses++
+	close(budget.changed)
+	budget.changed = make(chan struct{})
+	budget.mu.Unlock()
+	var once sync.Once
+	return func(now time.Time) {
+		once.Do(func() {
+			budget.mu.Lock()
+			defer budget.mu.Unlock()
+			budget.pauses--
+			if budget.pauses == 0 {
+				if !budget.expired {
+					budget.deadline = budget.deadline.Add(now.Sub(budget.pausedAt))
+				}
+				close(budget.changed)
+				budget.changed = make(chan struct{})
+			}
+		})
+	}
 }
 
 func (budget *taskCycleBudget) expiredAt(now time.Time) bool {
@@ -374,7 +414,7 @@ func (budget *taskCycleBudget) expiredAt(now time.Time) bool {
 	}
 	budget.mu.Lock()
 	defer budget.mu.Unlock()
-	if budget.deadline.IsZero() {
+	if budget.deadline.IsZero() || budget.pauses > 0 {
 		return false
 	}
 	if !now.Before(budget.deadline) {
@@ -393,9 +433,10 @@ func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelC
 	for {
 		budget.mu.Lock()
 		deadline := budget.deadline
+		paused := budget.pauses > 0
 		changed := budget.changed
 		budget.mu.Unlock()
-		if deadline.IsZero() {
+		if deadline.IsZero() || paused {
 			select {
 			case <-ctx.Done():
 				return
@@ -415,11 +456,12 @@ func (budget *taskCycleBudget) watch(ctx context.Context, cancel context.CancelC
 		case <-timer:
 			budget.mu.Lock()
 			current := budget.deadline
-			if current.Equal(deadline) {
+			expire := current.Equal(deadline) && budget.pauses == 0
+			if expire {
 				budget.expired = true
 			}
 			budget.mu.Unlock()
-			if current.Equal(deadline) {
+			if expire {
 				cancel(context.DeadlineExceeded)
 				return
 			}
@@ -579,6 +621,7 @@ func (engine *Engine) verifyIntegratedRepository(ctx context.Context, plan TaskP
 	command := strings.TrimSpace(plan.RepositoryVerification)
 	path := filepath.Join(plan.ArtifactDir, "runs", plan.RunID, "verification", "integrated-repository.log")
 	request := verificationAttemptRequest{
+		Step:                    "Integrated Repository Verification",
 		RunID:                   plan.RunID,
 		WorkDir:                 plan.WorkDir,
 		ArtifactDir:             plan.ArtifactDir,
@@ -1406,6 +1449,7 @@ func (engine *Engine) verifyRepositoryPrecondition(ctx context.Context, plan Tas
 		return verificationAttemptOutcome{}, true, fmt.Errorf("update run %q to state %q before Task %s repository precondition: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
 	request := verificationAttemptRequest{
+		Step:                  fmt.Sprintf("Task %s repository precondition", task.ID),
 		RunID:                 plan.RunID,
 		WorkDir:               plan.WorkDir,
 		ArtifactDir:           plan.ArtifactDir,
@@ -1549,6 +1593,7 @@ func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task
 		return VerificationProbe{}, fmt.Errorf("update run %q to state %q before Task %s pre-work Verification probe: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
 	request := verificationAttemptRequest{
+		Step:        fmt.Sprintf("Task %s pre-work probe", task.ID),
 		RunID:       plan.RunID,
 		BatchNumber: ordinal,
 		WorkItem:    task.ID,
@@ -2046,7 +2091,8 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 }
 
 // acquireVerificationCapacity puts one Verification attempt through the
-// Run's capacity gate. An attempt that owns capacity immediately is
+// Run's capacity gate, then its optional machine gate. An attempt that owns
+// Run capacity immediately is
 // in-flight work and proceeds. An attempt that has to queue has started no
 // child command, so from that moment a public Stop Request ends the wait,
 // starts nothing, and leaves the Task resumable instead of settling it
@@ -2054,6 +2100,96 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 // separate process writes, so the queue reads that state; context
 // cancellation alone never observes it.
 func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+	releaseRun, err := engine.acquireRunVerificationCapacity(ctx, plan, task, request)
+	if err != nil {
+		return nil, err
+	}
+	if engine.deps.MachineVerification == nil {
+		return releaseRun, nil
+	}
+	releaseMachine, err := engine.acquireMachineVerificationCapacity(ctx, plan, task, request)
+	if err != nil {
+		releaseRun()
+		return nil, err
+	}
+	release := func() {
+		releaseMachine()
+		releaseRun()
+	}
+	// Re-check after both grants: cancellation or a Stop Request can race
+	// either acquisition. No child may cross this dequeue boundary.
+	if err := ctx.Err(); err != nil {
+		release()
+		return nil, fmt.Errorf("acquire Machine Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+	}
+	if err := engine.stopTaskCycleIfRequested(ctx, plan, request.BatchNumber); err != nil {
+		release()
+		return nil, fmt.Errorf("stop run %q before Task %s Verification attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+	}
+	return release, nil
+}
+
+func (engine *Engine) acquireMachineVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+	step := request.Step
+	if step == "" {
+		step = fmt.Sprintf("Task %s Verification %s", task.ID, request.identity())
+	}
+	waitCtx, cancelWait := context.WithCancel(ctx)
+	defer cancelWait()
+	waitCtx, finishWait := engine.watchStopRequest(waitCtx, plan.RunID)
+	var resume func(time.Time)
+	var waitedAt time.Time
+	var waitErr error
+	release, err := engine.deps.MachineVerification.Acquire(waitCtx, store.MachineVerificationHolder{
+		Kind: store.MachineVerificationHolderRun, RunID: plan.RunID, SpecSlug: plan.Spec.Slug, Step: step,
+	}, func(wait store.MachineVerificationWait) {
+		if resume != nil {
+			return
+		}
+		waitedAt = engine.deps.Now()
+		resume = plan.runBudget.pause(waitedAt)
+		holders := make([]string, 0, len(wait.Holding))
+		for _, entry := range wait.Holding {
+			holders = append(holders, store.DescribeMachineVerificationHolder(entry.Holder)+", "+entry.Holder.Step)
+		}
+		summary := fmt.Sprintf("%s waits for the Machine Verification Capacity: %d of %d held by %s.", step, len(wait.Holding), wait.Capacity, strings.Join(holders, "; "))
+		waitErr = engine.publishDaemonEvent(waitCtx, plan.RunID, request.BatchNumber, runevent.KindDaemonStatus, summary, map[string]any{
+			"machine_verification": "waiting", "step": step, "capacity": wait.Capacity,
+			"held": len(wait.Holding), "waiting_ahead": len(wait.Ahead), "holders": holders,
+		})
+		if waitErr == nil {
+			if _, writeErr := fmt.Fprintln(engine.deps.Progress, summary); writeErr != nil {
+				waitErr = fmt.Errorf("write Machine Verification Capacity wait progress: %w", writeErr)
+			}
+		}
+		if waitErr != nil {
+			cancelWait()
+		}
+	})
+	stopped := finishWait()
+	if resume != nil {
+		now := engine.deps.Now()
+		resume(now)
+		if err == nil && waitErr == nil && !stopped && ctx.Err() == nil {
+			seconds := now.Sub(waitedAt).Seconds()
+			waitErr = engine.publishDaemonEvent(ctx, plan.RunID, request.BatchNumber, runevent.KindDaemonStatus,
+				fmt.Sprintf("%s took the Machine Verification Capacity after waiting %gs.", step, seconds),
+				map[string]any{"machine_verification": "acquired", "step": step, "waited_seconds": seconds})
+		}
+	}
+	if stopped || err != nil || waitErr != nil {
+		if release != nil {
+			release()
+		}
+		if stopped {
+			return nil, engine.stopQueuedVerification(ctx, plan, task, request)
+		}
+		return nil, fmt.Errorf("acquire Machine Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, errors.Join(err, waitErr))
+	}
+	return release, nil
+}
+
+func (engine *Engine) acquireRunVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
 	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
 		if err := ctx.Err(); err != nil {
 			release()
@@ -2834,6 +2970,7 @@ func (engine *Engine) runQARepositoryVerification(ctx context.Context, plan Task
 		return "", nil, fmt.Errorf("update run %q to state %q before QA Task %s repository Verification: %w", plan.RunID, store.StateVerifying, qaTask.ID, err)
 	}
 	request := verificationAttemptRequest{
+		Step:                    fmt.Sprintf("QA Task %s repository Verification", qaTask.ID),
 		RunID:                   plan.RunID,
 		WorkDir:                 plan.WorkDir,
 		ArtifactDir:             plan.ArtifactDir,

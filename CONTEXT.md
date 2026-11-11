@@ -538,8 +538,12 @@ The maximum number of Task Worktree lifecycles one Implement Run may execute con
 _Avoid_: Verification concurrency, worker count, Agent pool
 
 **Verification Capacity**:
-The maximum number of Verification attempts for Tasks that one Implement Run may execute concurrently, configured by `verification.concurrency` and defaulting to `1`; an exclusive retry consumes the Run's entire capacity.
-_Avoid_: Task Capacity, worktree concurrency, machine-wide test lock
+The maximum number of Verification attempts for Tasks that one Implement Run may execute concurrently, configured by `verification.concurrency` and defaulting to `1`; an exclusive retry consumes the Run's entire capacity. An attempt holds it while it waits for the Machine Verification Capacity and gives it back last.
+_Avoid_: Task Capacity, worktree concurrency, Machine Verification Capacity
+
+**Machine Verification Capacity**:
+The maximum number of Verifications that run at once on one machine across every repository sharing the Roundfix Home, configured by `runs.max_verifying` in User Config, `1` by default and off at `0`. It is taken by every Verification the Daemon starts, after its Run's Verification Capacity, and by the repository gate of a Delivery Queue; waiters take it in arrival order, and only a proof that its owner is gone frees a holder ([ADR-0384](docs/adr/0384-a-machine-verification-capacity-bounds-the-verifications-of-every-repository.md)).
+_Avoid_: machine-wide test lock, core budget, Run ceiling
 
 **Task Worktree**:
 The ephemeral git worktree one concurrently executing Task runs in — created from the Run Branch tip at Task start and integrated back onto the Run Branch at settlement; kept only when its Task fails.
@@ -636,7 +640,7 @@ A terminal Review Run outcome where the Review Source explicitly reports that it
 _Avoid_: Clean, Clean Unverified, zero Review Issues
 
 **Run Budget**:
-A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
+A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources. It does not run while a Verification of the Run waits for the Machine Verification Capacity.
 _Avoid_: Max rounds, review round limit
 
 **Run Window**:
@@ -688,7 +692,7 @@ The selected fast local check recorded by the `verification.incremental` Baselin
 _Avoid_: Complete Verification, CI gate, optional check
 
 **Waiting for Verification**:
-The observable per-Task phase after Agent work is implementation-ready and before the Task acquires Verification Capacity; it is distinct from an Agent that is still working and from a Verification command that has started.
+The observable per-Task phase after Agent work is implementation-ready and before the Task holds its Run's Verification Capacity and the Machine Verification Capacity; it is distinct from an Agent that is still working and from a Verification command that has started.
 _Avoid_: Queued Agent, pending Task, blocked Run
 
 **Temporary Verification Failure**:

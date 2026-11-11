@@ -26,16 +26,17 @@ import (
 )
 
 type doctorDependencies struct {
-	readiness        func(context.Context, roundconfig.Loaded) []CheckResult
-	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	healthChecker    func(roundconfig.Loaded, string) HealthChecker
-	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
-	resolveExternal  func(string) ([]string, bool, error)
-	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
-	residue          func(context.Context, string) []CheckResult
-	storage          func(context.Context, roundconfig.Loaded) []CheckResult
-	diskSpace        func(context.Context, roundconfig.Loaded) []CheckResult
-	linuxLane        func(context.Context, roundconfig.Loaded) CheckResult
+	readiness            func(context.Context, roundconfig.Loaded) []CheckResult
+	loadConfig           func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	healthChecker        func(roundconfig.Loaded, string) HealthChecker
+	profileReadiness     func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
+	resolveExternal      func(string) ([]string, bool, error)
+	checkSkills          func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	residue              func(context.Context, string) []CheckResult
+	storage              func(context.Context, roundconfig.Loaded) []CheckResult
+	diskSpace            func(context.Context, roundconfig.Loaded) []CheckResult
+	verificationCapacity func(context.Context, roundconfig.Loaded) CheckResult
+	linuxLane            func(context.Context, roundconfig.Loaded) CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -50,12 +51,13 @@ func defaultDoctorDependencies() doctorDependencies {
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, commandDependenciesForContext(ctx).newEngineCollaborators().runner)
 		},
-		resolveExternal: resolveExternalSkillRequirement,
-		checkSkills:     skills.CheckRepositoryWithExternal,
-		residue:         defaultDoctorResidueResults,
-		storage:         defaultDoctorStorageResults,
-		diskSpace:       defaultDoctorDiskSpaceResults,
-		linuxLane:       doctorLinuxLaneCheck,
+		resolveExternal:      resolveExternalSkillRequirement,
+		checkSkills:          skills.CheckRepositoryWithExternal,
+		residue:              defaultDoctorResidueResults,
+		storage:              defaultDoctorStorageResults,
+		diskSpace:            defaultDoctorDiskSpaceResults,
+		verificationCapacity: doctorVerificationCapacityCheck,
+		linuxLane:            doctorLinuxLaneCheck,
 	}
 }
 
@@ -116,6 +118,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, dependencies.storage(ctx, loaded)...)
 	if dependencies.diskSpace != nil {
 		results = append(results, dependencies.diskSpace(ctx, loaded)...)
+	}
+	if dependencies.verificationCapacity != nil {
+		results = append(results, dependencies.verificationCapacity(ctx, loaded))
 	}
 	if dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane {
 		results = append(results, dependencies.linuxLane(ctx, loaded))

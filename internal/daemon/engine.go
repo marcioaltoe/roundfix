@@ -59,6 +59,12 @@ type GHRunner interface {
 
 var ErrStopRequested = errors.New("stop requested")
 
+// MachineVerificationGate bounds Verifications across repositories sharing a
+// Roundfix Home. The production gate supplies the checkout repository root.
+type MachineVerificationGate interface {
+	Acquire(ctx context.Context, holder store.MachineVerificationHolder, onWait func(store.MachineVerificationWait)) (release func(), err error)
+}
+
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
@@ -80,6 +86,8 @@ type Dependencies struct {
 	Now               func() time.Time
 	BudgetTimer       func(time.Duration) (<-chan time.Time, func() bool) // nil uses time.NewTimer
 	Progress          io.Writer
+
+	MachineVerification MachineVerificationGate
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -186,6 +194,7 @@ type verificationCheck struct {
 }
 
 type verificationAttemptRequest struct {
+	Step        string
 	RunID       string
 	WorkDir     string
 	ArtifactDir string

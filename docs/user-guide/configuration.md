@@ -127,8 +127,10 @@ otherwise invalid values fail strict configuration validation before the Run
 is created. Omitting `verification.concurrency` uses `1`; it never inherits
 `worktree.concurrency`.
 
-Verification Capacity is not a machine-wide lock. It does not coordinate
-other Roundfix Runs, CI jobs, manually started commands, or other processes.
+Verification Capacity is not a machine-wide lock. The Machine Verification
+Capacity below bounds Verifications across repositories. The Run's own
+Verification Capacity does not coordinate other Roundfix Runs, CI jobs,
+manually started commands, or other processes.
 Projects must still choose a safe Task Capacity for Worktree Bootstrap, Agent
 work, and resources used outside Daemon Verification.
 
@@ -163,6 +165,56 @@ with this warning:
 `config: runs.slot_wait in Project Config is ignored; set runs.slot_wait in User Config`.
 An older Roundfix binary refuses a User Config that sets `runs.slot_wait` as
 an unknown key; the default needs no setting.
+
+## Machine Verification Capacity
+
+`runs.max_verifying` limits Verifications across every repository sharing the
+Roundfix Home on one machine. It is an integer, defaults to `1`, and `0`
+disables the bound. Negative or non-integer values fail configuration
+validation. Set it only in User Config at `~/.roundfix/config.yml`:
+
+```yaml
+runs:
+  max_verifying: 1
+```
+
+After the update every machine verifies one repository at a time; set
+`runs.max_verifying` to a higher number, or to `0`, to change that.
+`roundfix init --scope user` and `roundfix setup` write the default into the
+User Config they create. A Project Config value is ignored with this warning:
+
+```text
+config: runs.max_verifying in Project Config is ignored; set runs.max_verifying in User Config
+```
+
+Every Verification attempt the Daemon starts takes the Run's own Verification
+Capacity first, then one machine unit, and releases the machine unit first:
+the pre-work probe, the repository precondition, each Task attempt with the
+repository Verification appended at settlement, the exclusive retry after exit
+`75`, the Integrated Repository Verification and the QA Task's repository
+Verification the Daemon runs before the QA Agent. The exclusive retry takes
+the Run's whole capacity and exactly one machine unit. The Delivery Queue's
+repository gate takes one unit for its repository Verification and Linux Lane
+together.
+
+Nothing a process runs inside an Agent session is gated: the QA Agent's own
+suites and an Agent's focused tests run whenever the Agent runs them.
+`roundfix spec check --run-verification`, `roundfix settle`, the item binary
+build and the derived-file regeneration of the queue, Worktree Bootstrap,
+and the Verification of review Runs (`fetch`, `resolve`, `watch`) are not gated.
+
+Waiters take a unit in arrival order. A cancelled or stopped wait removes its
+entry. A dead holder's unit is reclaimed only when its owner PID is absent or
+its readable start identity differs from the recorded identity. An unreadable,
+foreign or empty identity counts as present; elapsed time never frees a unit.
+A holder that is still alive keeps its unit however long it runs; stop its Run with `roundfix stop` to free it.
+
+While a Verification waits for the Machine Verification Capacity, its Run's `budget.max_run_duration` does not run.
+Overlapping waits pause the budget until the last wait ends. Each wait journals
+and prints its step and holders. The capacity is per Roundfix Home: processes
+using another Home do not share its entries. A changed value applies to
+processes started after the configuration change. An older Roundfix binary
+takes no machine unit and refuses a User Config that names this key.
 
 ## Jev monthly ceiling
 

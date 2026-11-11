@@ -59,6 +59,39 @@ Command to classify each retained Run. When present, this retained-worktree
 diagnostic is the one trailing stderr note.
 
 
+#### Machine Verification Capacity
+
+The command reads the Machine Verification Capacity across every repository
+sharing its Roundfix Home, using the reader's User Config `runs.max_verifying`.
+It writes nothing. When entries or unreadable paths exist, it prints:
+
+```text
+Machine Verification Capacity: <held> of <capacity> held, <waiting> waiting
+  holding: <holder description>, <step>, since <acquired_at>
+  waiting <n>: <holder description>, <step>, since <since>
+  unreadable: <path>
+```
+
+With `runs.max_verifying: 0`, the first line is:
+
+```text
+Machine Verification Capacity: off, <held> held, <waiting> waiting
+```
+
+Holders appear first, then waiters numbered from 1, each in ticket order,
+then unreadable paths. Times are RFC3339 UTC. A holder description is
+`Run <run-id> of <spec> in <repository>` or
+`Delivery Queue item <spec> in <repository>`.
+An empty view adds no block. A read error adds one stderr warning and keeps
+the exit code:
+
+```text
+roundfix: warning: read Machine Verification Capacity: <error>
+```
+
+`runs list` prints the block after its listing in both plain and table
+formats, including after `No Runs found.` when no Run Database exists.
+
 #### Show a Run's token usage
 
 `roundfix runs show <run-id>` reads the Run Database without creating a Run,

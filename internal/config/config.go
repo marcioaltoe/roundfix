@@ -42,6 +42,7 @@ const (
 	defaultJournalRetention         = 336 * time.Hour
 	defaultWorktreeLocation         = "~/.roundfix/worktrees"
 	defaultRunsMaxActive            = 3
+	defaultRunsMaxVerifying         = 1
 	defaultWorktreeConcurrency      = 2
 	defaultVerificationConcurrency  = 1
 	defaultWorktreeBootstrapTimeout = 10 * time.Minute
@@ -290,8 +291,9 @@ type Specs struct {
 }
 
 type Runs struct {
-	MaxActive int
-	SlotWait  time.Duration
+	MaxActive    int
+	MaxVerifying int
+	SlotWait     time.Duration
 }
 
 type Loaded struct {
@@ -530,8 +532,9 @@ type worktreeOverlay struct {
 }
 
 type runsOverlay struct {
-	MaxActive *int           `yaml:"max_active"`
-	SlotWait  *durationValue `yaml:"slot_wait"`
+	MaxActive    *int           `yaml:"max_active"`
+	MaxVerifying *int           `yaml:"max_verifying"`
+	SlotWait     *durationValue `yaml:"slot_wait"`
 }
 
 type verificationOverlay struct {
@@ -895,8 +898,9 @@ func Builtin() Config {
 			ReviewConcurrency: DefaultDeliveryReviewConcurrency,
 		},
 		Runs: Runs{
-			MaxActive: defaultRunsMaxActive,
-			SlotWait:  2 * time.Hour,
+			MaxActive:    defaultRunsMaxActive,
+			MaxVerifying: defaultRunsMaxVerifying,
+			SlotWait:     2 * time.Hour,
 		},
 	}
 }
@@ -1032,7 +1036,9 @@ func defaultConfigYAML(scope string) string {
 		runsConfig = fmt.Sprintf(`runs:
   # Maximum Active Implement Runs across repositories; 0 disables the bound.
   max_active: %d
-`, config.Runs.MaxActive)
+  # Maximum Verifications at once across repositories; 0 disables the bound.
+  max_verifying: %d
+`, config.Runs.MaxActive, config.Runs.MaxVerifying)
 	}
 	runRetentionConfig := ""
 	if scope == InitScopeUser {
@@ -1247,6 +1253,9 @@ func Validate(config Config) error {
 	}
 	if config.Runs.MaxActive < 0 {
 		return errors.New("runs.max_active must be greater than or equal to 0")
+	}
+	if config.Runs.MaxVerifying < 0 {
+		return errors.New("runs.max_verifying must be greater than or equal to 0")
 	}
 	if strings.TrimSpace(config.Specs.Root) == "" {
 		return errors.New("specs.root must not be empty")
@@ -1810,6 +1819,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_active"}) {
 		warnings.warnIgnoredProjectSetting("runs.max_active")
 	}
+	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"runs", "max_verifying"}) {
+		warnings.warnIgnoredProjectSetting("runs.max_verifying")
+	}
 	if source == ProfileSourceProject && removeYAMLPath(&document, []string{"jev", "monthly_ceiling_usd"}) {
 		warnings.warnIgnoredProjectSetting("jev.monthly_ceiling_usd")
 	}
@@ -2202,6 +2214,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 		}
 		if overlay.Runs.MaxActive != nil {
 			config.Runs.MaxActive = *overlay.Runs.MaxActive
+		}
+		if overlay.Runs.MaxVerifying != nil {
+			config.Runs.MaxVerifying = *overlay.Runs.MaxVerifying
 		}
 	}
 }

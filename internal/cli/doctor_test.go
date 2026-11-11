@@ -1576,6 +1576,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.doctor.resolveExternal = resolveExternalSkillRequirement
 		dependencies.doctor.checkSkills = skills.CheckRepositoryWithExternal
+		dependencies.doctor.verificationCapacity = defaultDoctorDependencies().verificationCapacity
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1600,6 +1601,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		) +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
+		"verification-capacity: ok (runs.max_verifying 1; 0 held, 0 waiting)\n" +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)

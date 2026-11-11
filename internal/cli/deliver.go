@@ -469,6 +469,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return printDeliverFailure("status", err, stderr)
 	}
+	printMachineVerificationStatus(ctx, loaded, stdout, stderr)
 	printDeliveryLimits(stdout, queue.Limits, loaded.Config.Delivery.ReviewConcurrency)
 	printDeliveryUsage(stdout, report.Total)
 	if question, found := delivery.PendingQuestionFor(queue); found {

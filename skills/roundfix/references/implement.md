@@ -296,6 +296,31 @@ the largest carriable Task set, breaking ties with the newest Run.
    limits concurrent Task Verification attempts. Both must be positive
    integers; Project Config overrides User Config, which overrides built-ins.
    Neither setting coordinates other Runs, CI, or external processes.
+   The Machine Verification Capacity, `runs.max_verifying`, bounds
+   Verifications across repositories sharing the Roundfix Home. It is User
+   Config only, defaults to `1`, and `0` disables the machine bound. Every
+   Daemon Verification takes the Run's own capacity first, then one machine
+   unit, and releases the machine unit first: the pre-work probe, repository
+   precondition, Task attempt with settlement Verification, exclusive retry,
+   Integrated Repository Verification and QA Task's repository Verification.
+   The exclusive retry takes the Run's whole capacity and one machine unit.
+   The Delivery Queue's repository gate takes one machine unit for repository
+   Verification and its Linux Lane together. Commands inside Agent sessions,
+   including QA suites and focused tests, remain ungated.
+
+   While any Verification waits for the Machine Verification Capacity, its
+   Run's `budget.max_run_duration` pauses until the last wait ends. A Stop
+   Request ends the wait without starting a command. Waiters take a unit in
+   arrival order. The first wait journals a `daemon.status` Run Event and
+   prints this summary to progress:
+
+   ```text
+   <step> waits for the Machine Verification Capacity: <held> of <capacity> held by <holders>.
+   ```
+
+   Each holder is `<DescribeMachineVerificationHolder>, <step>`, joined by
+   `; `. After acquisition a `daemon.status` Run Event records
+   `<step> took the Machine Verification Capacity after waiting <seconds>s.`
 
    The recommended split overlaps implementation while serializing the
    complete repository gate:
