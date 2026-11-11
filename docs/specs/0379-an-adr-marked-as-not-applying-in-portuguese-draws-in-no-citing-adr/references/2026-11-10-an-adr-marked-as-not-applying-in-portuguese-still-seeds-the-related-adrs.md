@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-11-10
-spec: null
+spec: 0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr
 reason: null
 ---
 
