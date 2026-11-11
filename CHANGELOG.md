@@ -2,6 +2,19 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.139.0] - 2026-11-11
+
+### A machine Verification Capacity bounds verifications across repositories
+
+- **Verifications of different repositories on one machine now take turns, and this changes every adopter's behavior after the update.** The new User Config key `runs.max_verifying` (default `1`; `0` turns it off; Project Config is ignored with a warning) bounds how many Verifications run at once across every repository. It covers every Verification the Daemon starts and the Delivery Queue's repository gate; Agents keep working in parallel, and only the Verification step waits. Requested by the maintainer through Vortex: two projects' time-sensitive test suites running together failed each other's tests.
+- **Waiting is visible.** `roundfix runs list`, `roundfix deliver status` and `roundfix doctor` (`verification-capacity:`) name the Run waiting for the machine capacity and the Run holding it. The Run Budget pauses while a Run waits. A holder that dies is released only when its owner is proven gone, never by age. `roundfix setup` and `init --scope user` write `max_verifying: 1`. ADR-0384 amends ADR-0056.
+- Suites the QA Agent runs inside its own session are not gated.
+
+### A Verification Core Budget keeps concurrent verifications light
+
+- **Every Verification receives a core budget.** Each Daemon Verification, each Agent Session of an Implement Run, the Delivery Queue's repository gate and the Linux Lane receive `GOMAXPROCS` and `ROUNDFIX_VERIFICATION_CORES` set to half of the logical CPUs divided by `runs.max_verifying` (at least 1). A positive `GOMAXPROCS` in Roundfix's own environment wins. Go honors it on its own; another test runner can read `ROUNDFIX_VERIFICATION_CORES` (the configuration guide shows a Vitest example). The Baseline is unchanged.
+- **`roundfix doctor` reports the budget** on a `verification-cores:` line and warns when the Verifications allowed at once could take more cores than the machine has. ADR-0385.
+
 ## [0.138.0] - 2026-11-10
 
 ### A message expects a reply only when it declares the work it blocks
