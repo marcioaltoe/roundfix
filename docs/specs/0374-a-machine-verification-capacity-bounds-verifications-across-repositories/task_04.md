@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0374-a-machine-verification-capacity-bounds-verifications-across-repositories
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -73,3 +73,50 @@ machine capacity.
 - `_techspec.md` → API Contract 10; Build Order 4
 - ADR-0384
 - ADR-0056
+
+## Result
+
+Skills loaded: domain-modeling
+
+### What changed
+
+- `CONTEXT.md`: added **Machine Verification Capacity** immediately after the
+  **Verification Capacity** entry, with API Contract 10's definition and
+  `_Avoid_: machine-wide test lock, core budget, Run ceiling`, closing with the
+  glossary's accepted-ADR link `([ADR-0384](docs/adr/0384-a-machine-verification-capacity-bounds-the-verifications-of-every-repository.md))`.
+  Changed exactly three entries: **Verification Capacity** appends "An attempt
+  holds it while it waits for the Machine Verification Capacity and gives it
+  back last." and its `_Avoid_` line becomes `_Avoid_: Task Capacity, worktree
+  concurrency, Machine Verification Capacity`; **Waiting for Verification**
+  replaces "before the Task acquires Verification Capacity" with "before the
+  Task holds its Run's Verification Capacity and the Machine Verification
+  Capacity"; **Run Budget** appends "It does not run while a Verification of
+  the Run waits for the Machine Verification Capacity." No other entry's bytes
+  changed.
+- `docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md`: added
+  the amendment paragraph after the paragraph ending "projects must choose a
+  safe Task Capacity for mutations outside the Daemon Verification boundary.",
+  naming ADR-0384, and set `updated_at` to `2026-11-10T23:30:00Z`. Its other
+  bytes stay.
+
+### Acceptance criteria evidence
+
+- **`CONTEXT.md` defines Machine Verification Capacity and carries the three
+  changed entries** — the first grep block names `**Machine Verification
+  Capacity**:` and the three changed terms, and the normalized-whitespace greps
+  find each added/replaced sentence: output `term ok` / `vc ok` / `wfv ok` /
+  `rb ok`.
+- **ADR-0056 carries the amendment notice naming ADR-0384** — normalized grep
+  finds `Amended by [ADR-0384]`: output `adr ok`; the added paragraph sits at
+  `docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md:29`.
+- **The glossary contracts pass** — focused check
+  `go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$'`
+  → `ok roundfix/internal/docscontract 0.415s`. The whole package was also run
+  green: `go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract`
+  → `ok ... 27.089s`.
+
+### Notes
+
+- No Governed Path changed; only `CONTEXT.md` and ADR-0056 were edited.
+- The Daemon owns the Verification run and Task status; this Result does not
+  claim the Task completed or failed.

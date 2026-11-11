@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-07-21T20:44:54Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-11-10T23:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -25,6 +25,8 @@ Task cycle, not by a machine-wide service, so it does not coordinate other
 Runs, CI, or processes outside Roundfix. ADR-0034 still governs shared
 Worktree Bootstrap and database resources; projects must choose a safe Task
 Capacity for mutations outside the Daemon Verification boundary.
+
+**Amended by [ADR-0384](0384-a-machine-verification-capacity-bounds-the-verifications-of-every-repository.md) (2026-11-10).** Every Verification attempt also takes one unit of the Machine Verification Capacity after the Run's own unit and gives it back first, so the Daemon Verifications of every Run and the Delivery Queue's repository gate on one machine no longer run together beyond runs.max_verifying. The per-Run capacity, its fairness and the exclusive retry still hold; the retry takes one machine unit.
 
 Exit code `75` is the sole project-authored Temporary Verification Failure
 signal. It is classified from the child process exit status, never from logs,
