@@ -37,6 +37,7 @@ type linuxLaneRequest struct {
 	WorkDir, Head, Image string
 	Label, LogPath, Name string
 	All                  bool
+	Cores                int
 }
 
 // linuxLaneImage resolves the configured image or the revision's go directive.
@@ -173,8 +174,12 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 	}
 	name := request.Name
 	args := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534",
-		"-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off",
-		"-v", strings.TrimSpace(string(cache)) + ":/go/pkg/mod:ro", "-v", historyMount, image, "sh", "-ceu", linuxLaneScript, "linux-lane"}
+		"-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off"}
+	if request.Cores > 0 {
+		cores := strconv.Itoa(request.Cores)
+		args = append(args, "-e", "GOMAXPROCS="+cores, "-e", "ROUNDFIX_VERIFICATION_CORES="+cores)
+	}
+	args = append(args, "-v", strings.TrimSpace(string(cache))+":/go/pkg/mod:ro", "-v", historyMount, image, "sh", "-ceu", linuxLaneScript, "linux-lane")
 	args = append(args, result.Packages...)
 	quoted := []string{"docker"}
 	for _, arg := range args {

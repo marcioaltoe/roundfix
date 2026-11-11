@@ -96,6 +96,7 @@ func newLinuxLaneFixture(t *testing.T, docker, goBinary string, files map[string
 
 func (f *linuxLaneFixture) context(ctx context.Context) context.Context {
 	deps := defaultCommandDependencies()
+	deps.logicalCPUs = func() int { return 8 }
 	deps.environ = func() []string { return append([]string(nil), f.environment...) }
 	return contextWithCommandDependencies(ctx, deps)
 }
@@ -167,7 +168,7 @@ func TestLinuxLaneRunsTheChangedPackagesInAContainer(t *testing.T) {
 			name := fmt.Sprintf("roundfix-linux-lane-widget-%d", os.Getpid())
 			// Deliberately independent of the production script constant.
 			script := `fail() { printf 'roundfix-linux-lane: container: %s\n' "$1" >&2; exit 3; }; for tool in tar git go; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool $tool"; done; [ -d /repo-objects ] && [ -r /repo-objects ] && [ -x /repo-objects ] || fail "cannot read the repository history at /repo-objects"; mkdir -p /tmp/work && cd /tmp/work || fail "cannot prepare /tmp/work"; tar -xf - || fail "cannot unpack the candidate"; { git init -q && echo /repo-objects > .git/objects/info/alternates && git add -A && git -c user.name=roundfix -c user.email=roundfix@localhost commit -q -m "Linux Lane"; } || fail "cannot record the candidate"; pkgs="$(go list -e -f '{{if or .GoFiles .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' "$@")" || { code=$?; printf 'roundfix-linux-lane: go list: exited %s\n' "$code" >&2; exit 4; }; if [ -z "$pkgs" ]; then echo "no package builds on linux"; echo "roundfix-linux-lane: packages: 0"; exit 0; fi && set -- $pkgs && echo "roundfix-linux-lane: packages: $#" && exec go test -count=1 "$@"`
-			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-v", f.cache + ":/go/pkg/mod:ro", "-v", linuxLaneFixtureObjects(t, f.repo) + ":/repo-objects:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
+			want := []string{"run", "--rm", "-i", "--init", "--pull", "never", "--network", "none", "--name", name, "--user", "65534:65534", "-e", "HOME=/tmp", "-e", "GOCACHE=/tmp/go-build", "-e", "GOMODCACHE=/go/pkg/mod", "-e", "GOFLAGS=-mod=readonly", "-e", "GOPROXY=off", "-e", "GOTOOLCHAIN=local", "-e", "GOSUMDB=off", "-e", "GOMAXPROCS=4", "-e", "ROUNDFIX_VERIFICATION_CORES=4", "-v", f.cache + ":/go/pkg/mod:ro", "-v", linuxLaneFixtureObjects(t, f.repo) + ":/repo-objects:ro", "golang:1.26.1", "sh", "-ceu", script, "linux-lane"}
 			want = append(want, tc.packages...)
 			if run.Tool != "docker" || !reflect.DeepEqual(run.Args, want) {
 				t.Fatalf("run args=%q\nwant=%q", run.Args, want)

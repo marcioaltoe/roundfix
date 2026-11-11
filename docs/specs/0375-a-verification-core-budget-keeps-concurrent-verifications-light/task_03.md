@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -150,3 +150,49 @@ guides and the Roundfix `deliver` and `setup` references say the same.
 - `_prd.md` → Goal 5; User Story 3; User Story 5; Core Feature 5; Core Feature 6; Core Feature 7; Success Metric 3; Success Metric 4; Success Metric 5
 - `_techspec.md` → Current behavior 4 and 6; Interfaces; API Contract 4; API Contract 5; API Contract 6; Invariant 4; Declared breaks; Testing Approach; Build Order 3
 - ADR-0385
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, golang-error-handling, golang-context, systematic-debugging, no-workarounds.
+
+### Starting-tree characterization
+
+- Starting HEAD: `4a313873276b5776400cd948b42297435cbc86e8`; the only pre-existing change was this Task's Daemon-owned status. Read-only inspection confirms `commandDeliveryWorkflow.Gate` calls `daemon.ExecVerifier` without `Cores`, `runLinuxLane` builds its container environment solely from the fixed `-e` arguments through `GOSUMDB=off`, and Doctor has no cores dependency, result or output line.
+- Inspected both the starting HEAD and default branch `main` at `996769bbe4eb8e4187fbde68e90ec1ebb456e4a9` with `git ls-tree` and `git show`. The sole whole `docker run` argument pin is `TestLinuxLaneRunsTheChangedPackagesInAContainer`. `TestDeliverLaneSelectsPackagesAndImage` checks selected run arguments; cancellation tests pin `docker rm -f`, not `docker run`.
+- No existing whole-output Doctor assertion uses the entire unmodified default Doctor dependency set. Literal whole-output assertions are `TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts`, `TestRunDoctorMissingRepositoryRoot`, and `TestRunDoctorRealRepositoryCheckDoesNotMutateState`; all use `withDoctorFakeLoadedAndReadiness`, whose optional dependencies are nil. The last explicitly restores only the default capacity dependency. Baseline-derived whole-output comparisons are `TestDoctorWarnsWhenALocationIsLowOnDisk`, `TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn`, and `TestDoctorReportsTheMachineVerificationCapacity`; each also uses that injected fixture and selectively restores its subject dependency. Their nil cores dependency remains isolated, like diskSpace. The new tests enable the default cores dependency explicitly.
+
+### Implementation and acceptance evidence
+
+- Repository gate and Linux Lane: `Gate` computes the budget once and shares it between the repository `VerifyRequest` and `linuxLaneRequest`; the on-demand lane computes its own budget. Container variables are inserted immediately after `GOSUMDB=off` and before the mounts only for positive budgets. The item build and derived regeneration verifier requests remain unchanged with zero `Cores`.
+  `TestTheRepositoryGateCommandReceivesTheCoreBudget` uses task_02's hermetic inputs and the delivery-item fixture: the real shell writes `3|3` on twelve CPUs at capacity 2, and `5|5` with explicit `GOMAXPROCS=5`. `TestLinuxLaneRunsTheChangedPackagesInAContainer` pins the entire argument list with both variables at 4 on eight CPUs. `TestDeliverLanePassesItsVerificationCoreBudget` additionally checks the on-demand lane's adjacent argument sequence at budgets 3 and 5.
+- Doctor: the optional default dependency prints immediately after capacity, or after disk space without that dependency. It reads all active Implement Runs through `openGCStore(ctx, true, home)`, reusing the read-only snapshot reader, and treats an absent database as zero. It reports each source, oversubscription and database errors with the exact next actions. The concurrent-core multiplication uses `int64`.
+  `TestDoctorReportsTheVerificationCoreBudget` compares the whole stdout against the six prescribed complete lines and the absent-database line. Its real temporary database includes active Implement Runs in different repositories, an excluded terminal Implement Run and an excluded active review-kind Run. Every row also preserves both healthy and failed readiness exit codes and compares the entire temporary home before and after; missing databases stay absent. The baseline run with a nil cores dependency proves the opt-out and isolates existing transcript fixtures.
+- Documentation: the doctor guide and canonical setup reference describe all three forms, the source, active count and warning actions; the deliver guide and canonical deliver reference describe both variables on the gate and lane, explicit overrides and the unchanged build/regeneration scope. `make skills-sync` generated the mirrors. The version recorder raised both Roundfix skill version fields to `0.1.216` and appended its digest; no mirror, version or record was hand-edited. `TestAuthorialSkillSync` and the owned-version check passed on the generated files.
+
+### Focused checks
+
+- Before wiring, `go test -count=1 -timeout 5m ./internal/cli -run '^(TestTheRepositoryGateCommandReceivesTheCoreBudget|TestDeliverLanePassesItsVerificationCoreBudget)$'` failed as intended: the shell saw only its inherited Go value and Docker had neither budget variable.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^(TestTheRepositoryGateCommandReceivesTheCoreBudget|TestDeliverLanePassesItsVerificationCoreBudget|TestDoctorReportsTheVerificationCoreBudget|TestLinuxLaneRunsTheChangedPackagesInAContainer|TestRunDoctorRealRepositoryCheckDoesNotMutateState)$'` — exit 0.
+- `go test -count=1 -timeout 8m ./internal/cli -run '^(TestRunDoctor|TestDoctor|TestLinuxLane|TestDeliverLane|TestDeliveryStep|TestDeliveryGate|TestTheRepositoryGate)'` — exit 0.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^(TestGate|TestRepositoryGate|TestTheRepositoryGateHolds|TestTheRepositoryGateOnAFullDisk|TestTheItemBuildOnAFullDisk|TestAConflictConfinedToDeclaredLines|TestADerivedConflict|TestAnArchivedItemsDerivedRecord)'` — exit 0 outside the sandbox. The sandbox attempt failed in the archived item's nested coverage regeneration; the same check passed without a source change when rerun with the required filesystem access. Earlier Go-cache and canonical skill-version write denials were likewise resolved by rerunning the same commands with filesystem access. Initial test-fixture compilation/required-field mistakes were corrected before these green runs.
+- `make skills-sync` — exit 0; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0.
+- `make baseline-digests` — exit 0, `changed: false`; no additional derived paths changed.
+- `go test -count=1 ./skills -run '^(TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$'` — exit 0.
+- `git diff --check` and `gofmt -l` over every changed Go file — exit 0, no formatting diagnostics.
+
+### Final regeneration and settlement boundary
+
+After this Result write, the last implementation step is the required command
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+It records the Behavior Surface fingerprints after all guide, skill, version and
+code edits; its outcome accompanies the Agent handback. Read-only postflight
+checks the resulting path set and confirms canonical/mirror equality.
+
+Declared Verification, the full CLI/delivery and documentation suites, and Task
+settlement remain for the Daemon. No Task status, sibling Task or Task Graph was
+edited by this Agent, and no commit, push, pull request or message was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261111T064558Z_6d985452394229fa`
+- Source commit: `a77ea3a6e532307aa3fa27eca66e30eb305c321a`

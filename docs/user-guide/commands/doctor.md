@@ -115,7 +115,21 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   `inspect <path> and remove it if no Roundfix process wrote it`.
   A directory read error reports `warn (read Machine Verification Capacity: <error>)`.
   Warnings keep the exit code, and the check writes nothing.
-- `linux-lane:` — printed after `verification-capacity:` and before `codex:` only when the
+- `verification-cores:` — the read-only Verification Core Budget check, printed
+  after `verification-capacity:`. It names the budget, its source and the count
+  of active Implement Runs across repositories (0 without a Run Database).
+  Its three forms are:
+  `ok (<cores> per Verification: <source>; <k> active Implement Runs)`;
+  `warn (<cores> per Verification: <source>; <k> active Implement Runs; <c> at once may take <total> of <cpus> logical CPUs; next: lower GOMAXPROCS in the environment or set runs.max_verifying in User Config)`;
+  and `warn (<cores> per Verification: <source>; active Implement Runs unknown: <error>; next: inspect the Run Database with roundfix runs list)`.
+  The source describes the positive whole-number `GOMAXPROCS` override or half
+  the logical CPUs divided by `runs.max_verifying`, then `runs.max_active`
+  while capacity is off, or undivided while both are 0; the budget is at least 1.
+  `<c>` is the positive `runs.max_verifying`, otherwise positive `runs.max_active`,
+  otherwise the active Run count, at least 1. Oversubscription warns only when
+  `<total>` (`<c>` times `<cores>`) exceeds the logical CPUs. The check writes
+  nothing and never changes the exit code.
+- `linux-lane:` — printed after `verification-cores:` and before `codex:` only when the
   checkout's effective `delivery.linux_lane` is `true`. It checks Docker on
   the command environment's PATH with `docker info`, then
   `docker image inspect <image>`, each with a ten-second limit that cancels

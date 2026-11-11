@@ -36,6 +36,7 @@ type doctorDependencies struct {
 	storage              func(context.Context, roundconfig.Loaded) []CheckResult
 	diskSpace            func(context.Context, roundconfig.Loaded) []CheckResult
 	verificationCapacity func(context.Context, roundconfig.Loaded) CheckResult
+	verificationCores    func(context.Context, roundconfig.Loaded) CheckResult
 	linuxLane            func(context.Context, roundconfig.Loaded) CheckResult
 }
 
@@ -57,6 +58,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		storage:              defaultDoctorStorageResults,
 		diskSpace:            defaultDoctorDiskSpaceResults,
 		verificationCapacity: doctorVerificationCapacityCheck,
+		verificationCores:    defaultDoctorVerificationCoresResult,
 		linuxLane:            doctorLinuxLaneCheck,
 	}
 }
@@ -121,6 +123,9 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if dependencies.verificationCapacity != nil {
 		results = append(results, dependencies.verificationCapacity(ctx, loaded))
+	}
+	if dependencies.verificationCores != nil {
+		results = append(results, dependencies.verificationCores(ctx, loaded))
 	}
 	if dependencies.linuxLane != nil && loaded.Config.Delivery.LinuxLane {
 		results = append(results, dependencies.linuxLane(ctx, loaded))
