@@ -1,0 +1,17 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/store/machine_verification.go
+Before: if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone {
+After: if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone || true {
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing$ ./internal/store
+EXIT: 1
+STDOUT:
+FAIL	roundfix/internal/store [setup failed]
+FAIL
+
+STDERR:
+# roundfix/internal/store
+internal/store/journal.go:11:2: open /Users/marcio/Library/Caches/go-build/59/59ca87ce9915807c56e5c287226ac40da4af3fd6fa4f2c9261720eeda17ac4d6-d: operation not permitted
+# roundfix/internal/store
+internal/store/agent_selection.go:12:2: open /Users/marcio/Library/Caches/go-build/f9/f9a1b3a50e2bed3fc27a45b54a31090c9bab5b73a67ffd34b2fd0dc4ce202664-d: operation not permitted
+
+Named case detected: False

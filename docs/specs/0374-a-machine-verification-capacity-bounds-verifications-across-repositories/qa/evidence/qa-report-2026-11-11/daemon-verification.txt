@@ -1,0 +1,6 @@
+Authority: current QA assignment supplied by the Daemon.
+Audited head: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+command: make verify-changed
+verdict: pass (exit 0)
+diagnostics: removed on success
+Already run by the Daemon outside the Agent sandbox; not rerun by this Agent. This is the repository static gate fact, not an Agent-local replacement.

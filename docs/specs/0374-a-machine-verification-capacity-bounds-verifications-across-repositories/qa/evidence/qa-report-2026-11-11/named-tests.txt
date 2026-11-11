@@ -1,0 +1,299 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestACancelledMachineVerificationWaitLeavesNoEntry|TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand|TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters|TestDoctorReportsTheMachineVerificationCapacity|TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn|TestGlossaryAvoidLinesArePlainLists|TestGlossaryLinksNameAcceptedADRs|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryStatesEachRuleOnce|TestImplementGivesTheEngineTheUserConfigMachineCapacity|TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead|TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits|TestMachineVerificationCapacityOffWritesNothing|TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone|TestMachineVerificationCapacityServesWaitersInTicketOrder|TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing|TestRunsListMachineCapacityTranscript|TestRunsListNamesTheMachineCapacityHolderAndWaiters|TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue|TestRunsMaxVerifyingDefaultsToOne|TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning|TestTheMachineCapacityWaitIsJournaledAndPrinted|TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns|TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity|TestTheSkillCoverageMapIsCurrent|TestTheUserConfigTemplateWritesRunsMaxVerifying)$ ./internal/store ./internal/config ./internal/daemon ./internal/cli
+EXIT: 0
+STDOUT:
+=== RUN   TestMachineVerificationCapacityServesWaitersInTicketOrder
+=== PAUSE TestMachineVerificationCapacityServesWaitersInTicketOrder
+=== RUN   TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+=== PAUSE TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+=== RUN   TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits
+=== PAUSE TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits
+=== RUN   TestMachineVerificationCapacityOffWritesNothing
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing
+=== RUN   TestACancelledMachineVerificationWaitLeavesNoEntry
+=== PAUSE TestACancelledMachineVerificationWaitLeavesNoEntry
+=== RUN   TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+=== PAUSE TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== CONT  TestMachineVerificationCapacityServesWaitersInTicketOrder
+=== CONT  TestACancelledMachineVerificationWaitLeavesNoEntry
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== CONT  TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+--- PASS: TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing (0.00s)
+=== CONT  TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits
+--- PASS: TestACancelledMachineVerificationWaitLeavesNoEntry (0.00s)
+=== CONT  TestMachineVerificationCapacityOffWritesNothing
+=== RUN   TestMachineVerificationCapacityOffWritesNothing/0
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing/0
+=== RUN   TestMachineVerificationCapacityOffWritesNothing/-1
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing/-1
+=== CONT  TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== CONT  TestMachineVerificationCapacityOffWritesNothing/0
+=== CONT  TestMachineVerificationCapacityOffWritesNothing/-1
+--- PASS: TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead (0.00s)
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+--- PASS: TestMachineVerificationCapacityOffWritesNothing (0.00s)
+    --- PASS: TestMachineVerificationCapacityOffWritesNothing/0 (0.00s)
+    --- PASS: TestMachineVerificationCapacityOffWritesNothing/-1 (0.00s)
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+--- PASS: TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits (0.00s)
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+--- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone (0.01s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent (0.00s)
+--- PASS: TestMachineVerificationCapacityServesWaitersInTicketOrder (0.02s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3107 paths; fingerprint took 195.905333ms before and 178.122584ms after
+ok  	roundfix/internal/store	0.694s
+=== RUN   TestRunsMaxVerifyingDefaultsToOne
+=== PAUSE TestRunsMaxVerifyingDefaultsToOne
+=== RUN   TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue
+=== PAUSE TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue
+=== RUN   TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning
+=== PAUSE TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning
+=== RUN   TestTheUserConfigTemplateWritesRunsMaxVerifying
+=== PAUSE TestTheUserConfigTemplateWritesRunsMaxVerifying
+=== CONT  TestRunsMaxVerifyingDefaultsToOne
+=== CONT  TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning
+=== CONT  TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue
+=== CONT  TestTheUserConfigTemplateWritesRunsMaxVerifying
+=== RUN   TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/0
+=== PAUSE TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/0
+=== RUN   TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/off
+=== PAUSE TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/off
+=== RUN   TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/positive
+=== PAUSE TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/positive
+=== RUN   TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/negative
+=== PAUSE TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/negative
+=== RUN   TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/not_an_integer
+=== PAUSE TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/not_an_integer
+=== CONT  TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/off
+=== RUN   TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/9
+=== PAUSE TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/9
+=== RUN   TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/-1
+=== PAUSE TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/-1
+=== RUN   TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/invalid
+=== PAUSE TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/invalid
+=== CONT  TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/not_an_integer
+--- PASS: TestRunsMaxVerifyingDefaultsToOne (0.00s)
+=== CONT  TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/0
+=== CONT  TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/invalid
+=== CONT  TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/negative
+--- PASS: TestTheUserConfigTemplateWritesRunsMaxVerifying (0.00s)
+=== CONT  TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/-1
+=== CONT  TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/9
+=== CONT  TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/positive
+--- PASS: TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue (0.00s)
+    --- PASS: TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/not_an_integer (0.00s)
+    --- PASS: TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/off (0.00s)
+    --- PASS: TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/negative (0.00s)
+    --- PASS: TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue/positive (0.00s)
+--- PASS: TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning (0.00s)
+    --- PASS: TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/0 (0.00s)
+    --- PASS: TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/invalid (0.00s)
+    --- PASS: TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/-1 (0.00s)
+    --- PASS: TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning/9 (0.00s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3107 paths; fingerprint took 220.987375ms before and 187.205084ms after
+ok  	roundfix/internal/config	0.680s
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand
+=== RUN   TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity
+=== PAUSE TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity
+=== RUN   TestTheMachineCapacityWaitIsJournaledAndPrinted
+=== PAUSE TestTheMachineCapacityWaitIsJournaledAndPrinted
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/pre-work
+=== CONT  TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand
+=== CONT  TestTheMachineCapacityWaitIsJournaledAndPrinted
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/pre-work
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/precondition
+=== RUN   TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity/overlap-renew-and-disabled
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/precondition
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/settlement
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/settlement
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/retry
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/retry
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated-retry
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated-retry
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/qa
+=== PAUSE TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/qa
+=== RUN   TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/two-ready-Tasks
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/error
+=== RUN   TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity/watch-timer-fires-during-pause
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/error
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel-at-grant
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel-at-grant
+=== RUN   TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop-at-grant
+=== PAUSE TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop-at-grant
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop
+--- PASS: TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity (0.00s)
+    --- PASS: TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity/overlap-renew-and-disabled (0.00s)
+    --- PASS: TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity/watch-timer-fires-during-pause (0.00s)
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel-at-grant
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/error
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop-at-grant
+--- PASS: TestTheMachineCapacityWaitIsJournaledAndPrinted (0.16s)
+=== CONT  TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/pre-work
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/qa
+--- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand (0.00s)
+    --- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop (0.16s)
+    --- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel-at-grant (0.16s)
+    --- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/stop-at-grant (0.12s)
+    --- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/error (0.12s)
+    --- PASS: TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand/cancel (0.12s)
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated-retry
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/settlement
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/retry
+=== CONT  TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/precondition
+--- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn (0.19s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/two-ready-Tasks (0.19s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/pre-work (0.12s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated (0.11s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/qa (0.11s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/integrated-retry (0.11s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/settlement (0.12s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/precondition (0.10s)
+    --- PASS: TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn/retry (0.12s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3107 paths; fingerprint took 169.517917ms before and 170.946ms after
+ok  	roundfix/internal/daemon	1.127s
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== RUN   TestRunsListMachineCapacityTranscript
+=== PAUSE TestRunsListMachineCapacityTranscript
+=== RUN   TestRunsListNamesTheMachineCapacityHolderAndWaiters
+=== PAUSE TestRunsListNamesTheMachineCapacityHolderAndWaiters
+=== RUN   TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters
+=== PAUSE TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity
+=== RUN   TestImplementGivesTheEngineTheUserConfigMachineCapacity
+=== PAUSE TestImplementGivesTheEngineTheUserConfigMachineCapacity
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+=== CONT  TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters
+=== CONT  TestImplementGivesTheEngineTheUserConfigMachineCapacity
+=== RUN   TestImplementGivesTheEngineTheUserConfigMachineCapacity/1
+=== CONT  TestRunsListNamesTheMachineCapacityHolderAndWaiters
+=== RUN   TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/plain
+=== PAUSE TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/plain
+=== RUN   TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/table
+=== PAUSE TestImplementGivesTheEngineTheUserConfigMachineCapacity/1
+=== PAUSE TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/table
+=== RUN   TestImplementGivesTheEngineTheUserConfigMachineCapacity/0
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+=== PAUSE TestImplementGivesTheEngineTheUserConfigMachineCapacity/0
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+=== RUN   TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/plain
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+=== PAUSE TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/plain
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity
+=== RUN   TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/table
+=== PAUSE TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/table
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/empty
+=== CONT  TestImplementGivesTheEngineTheUserConfigMachineCapacity/1
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/empty
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/off
+=== CONT  TestRunsListMachineCapacityTranscript
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/off
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== CONT  TestImplementGivesTheEngineTheUserConfigMachineCapacity/0
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+--- PASS: TestImplementGivesTheEngineTheUserConfigMachineCapacity (0.00s)
+    --- PASS: TestImplementGivesTheEngineTheUserConfigMachineCapacity/0 (0.00s)
+    --- PASS: TestImplementGivesTheEngineTheUserConfigMachineCapacity/1 (0.00s)
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+--- PASS: TestRunsListMachineCapacityTranscript (0.01s)
+=== CONT  TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/plain
+=== CONT  TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/plain
+=== CONT  TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/table
+=== CONT  TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/table
+--- PASS: TestRunsListNamesTheMachineCapacityHolderAndWaiters (0.00s)
+    --- PASS: TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/plain (0.00s)
+    --- PASS: TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/plain (0.01s)
+    --- PASS: TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=true/table (0.01s)
+    --- PASS: TestRunsListNamesTheMachineCapacityHolderAndWaiters/database=false/table (0.01s)
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/empty
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/off
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+--- PASS: TestDoctorReportsTheMachineVerificationCapacity (0.00s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/empty (0.00s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory (0.00s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry (0.00s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/off (0.01s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter (0.00s)
+--- PASS: TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters (0.08s)
+--- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns (0.00s)
+    --- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate (0.26s)
+    --- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate (0.29s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3107 paths; fingerprint took 171.424416ms before and 173.744166ms after
+ok  	roundfix/internal/cli	1.033s
+
+STDERR:
+
+Named tests selected: TestACancelledMachineVerificationWaitLeavesNoEntry
+TestAStopRequestWhileWaitingForTheMachineCapacityStartsNoCommand
+TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters
+TestDoctorReportsTheMachineVerificationCapacity
+TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn
+TestGlossaryAvoidLinesArePlainLists
+TestGlossaryLinksNameAcceptedADRs
+TestGlossaryPhrasesAreDefinedTerms
+TestGlossaryStatesEachRuleOnce
+TestImplementGivesTheEngineTheUserConfigMachineCapacity
+TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+TestMachineVerificationCapacityNeverHoldsMoreThanItsUnits
+TestMachineVerificationCapacityOffWritesNothing
+TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+TestMachineVerificationCapacityServesWaitersInTicketOrder
+TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+TestRunsListMachineCapacityTranscript
+TestRunsListNamesTheMachineCapacityHolderAndWaiters
+TestRunsMaxVerifyingAcceptsZeroAndRefusesANegativeValue
+TestRunsMaxVerifyingDefaultsToOne
+TestRunsMaxVerifyingInProjectConfigIsIgnoredWithAWarning
+TestTheMachineCapacityWaitIsJournaledAndPrinted
+TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity
+TestTheSkillCoverageMapIsCurrent
+TestTheUserConfigTemplateWritesRunsMaxVerifying
+Missing named passes: []

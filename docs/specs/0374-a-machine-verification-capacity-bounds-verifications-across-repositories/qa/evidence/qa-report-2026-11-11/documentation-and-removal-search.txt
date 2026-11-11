@@ -1,0 +1,110 @@
+PASS configuration exact sentence: After the update every machine verifies one repository at a time; set `runs.max_verifying` to a higher number, or to `0`, to change that.
+PASS configuration exact sentence: Waiters take a unit in arrival order.
+PASS configuration exact sentence: A holder that is still alive keeps its unit however long it runs; stop its Run with `roundfix stop` to free it.
+PASS configuration exact sentence: While a Verification waits for the Machine Verification Capacity, its Run's `budget.max_run_duration` does not run.
+PASS configuration exact sentence: config: runs.max_verifying in Project Config is ignored; set runs.max_verifying in User Config
+PASS configuration exact sentence: The Machine Verification Capacity below bounds Verifications across repositories.
+PASS byte-identical capacity reference: .agents/skills/roundfix/references/implement.md / skills/roundfix/references/implement.md
+PASS byte-identical capacity reference: .agents/skills/roundfix/references/runs.md / skills/roundfix/references/runs.md
+PASS byte-identical capacity reference: .agents/skills/roundfix/references/deliver.md / skills/roundfix/references/deliver.md
+PASS byte-identical capacity reference: .agents/skills/roundfix/references/setup.md / skills/roundfix/references/setup.md
+PASS command guide runs: all four exact capacity-block lines
+PASS command guide deliver: all four exact capacity-block lines
+PASS deliver queue wait line and doctor ok/warn forms
+PASS glossary exact sentence: The maximum number of Verifications that run at once on one machine across every repository sharing the Roundfix Home, configured by `runs.max_verifying` in User Config, `1` by default and off at `0`.
+PASS glossary exact sentence: An attempt holds it while it waits for the Machine Verification Capacity and gives it back last.
+PASS glossary exact sentence: before the Task holds its Run's Verification Capacity and the Machine Verification Capacity
+PASS glossary exact sentence: It does not run while a Verification of the Run waits for the Machine Verification Capacity.
+PASS glossary exact sentence: _Avoid_: machine-wide test lock, core budget, Run ceiling
+PASS glossary exact sentence: _Avoid_: Task Capacity, worktree concurrency, Machine Verification Capacity
+PASS all four glossary declarations, exact ADR-0056 amendment and accepted ADR-0384
+COMMAND: rg -n verification-capacity|machine_verification|MachineVerification internal -g *.go -g !*_test.go
+EXIT: 0
+STDOUT:
+internal/store/machine_verification.go:19:	MachineVerificationHolderRun      = "run"
+internal/store/machine_verification.go:20:	MachineVerificationHolderDelivery = "delivery"
+internal/store/machine_verification.go:25:type MachineVerificationHolder struct {
+internal/store/machine_verification.go:33:type MachineVerificationEntry struct {
+internal/store/machine_verification.go:36:	Holder        MachineVerificationHolder
+internal/store/machine_verification.go:44:type MachineVerificationWait struct {
+internal/store/machine_verification.go:46:	Holding  []MachineVerificationEntry
+internal/store/machine_verification.go:47:	Ahead    []MachineVerificationEntry
+internal/store/machine_verification.go:50:type MachineVerificationView struct {
+internal/store/machine_verification.go:51:	Entries    []MachineVerificationEntry
+internal/store/machine_verification.go:55:// MachineVerificationLease owns one entry until Release removes it.
+internal/store/machine_verification.go:57:type MachineVerificationLease struct {
+internal/store/machine_verification.go:63:func (lease *MachineVerificationLease) Release() error {
+internal/store/machine_verification.go:76:func (lease *MachineVerificationLease) Waited() time.Duration { return lease.waited }
+internal/store/machine_verification.go:106:func wakeMachineVerificationWaiters() {
+internal/store/machine_verification.go:114:	return filepath.Join(homeDir, ".roundfix", "verification-capacity")
+internal/store/machine_verification.go:117:func AcquireMachineVerification(ctx context.Context, homeDir string, holder MachineVerificationHolder, capacity int, onWait func(MachineVerificationWait)) (*MachineVerificationLease, error) {
+internal/store/machine_verification.go:119:		return &MachineVerificationLease{}, nil
+internal/store/machine_verification.go:130:	entry := MachineVerificationEntry{State: "waiting", Holder: holder, OwnerPID: os.Getpid(), OwnerIdentity: identity, Since: time.Now().UTC()}
+internal/store/machine_verification.go:131:	err := withMachineVerificationLock(ctx, dir, func() error {
+internal/store/machine_verification.go:132:		ticket, err := nextMachineVerificationTicket(dir)
+internal/store/machine_verification.go:138:		return writeMachineVerificationEntry(entry)
+internal/store/machine_verification.go:143:	lease := &MachineVerificationLease{release: func() error { return removeMachineVerificationEntry(ctx, entry.Path) }}
+internal/store/machine_verification.go:150:		wait := MachineVerificationWait{Capacity: capacity}
+internal/store/machine_verification.go:151:		err := withMachineVerificationLock(ctx, dir, func() error {
+internal/store/machine_verification.go:152:			view, err := readMachineVerificationEntries(ctx, dir)
+internal/store/machine_verification.go:162:						wakeMachineVerificationWaiters()
+internal/store/machine_verification.go:181:			if err := writeMachineVerificationEntry(entry); err != nil {
+internal/store/machine_verification.go:211:func withMachineVerificationLock(ctx context.Context, dir string, action func() error) (err error) {
+internal/store/machine_verification.go:230:func nextMachineVerificationTicket(dir string) (int64, error) {
+internal/store/machine_verification.go:252:func writeMachineVerificationEntry(entry MachineVerificationEntry) (err error) {
+internal/store/machine_verification.go:280:func removeMachineVerificationEntry(ctx context.Context, path string) error {
+internal/store/machine_verification.go:283:	err := withMachineVerificationLock(cleanupCtx, filepath.Dir(path), func() error {
+internal/store/machine_verification.go:287:		wakeMachineVerificationWaiters()
+internal/store/machine_verification.go:296:// readMachineVerificationEntries preserves unreadable entries without counting
+internal/store/machine_verification.go:298:func readMachineVerificationEntries(ctx context.Context, dir string) (MachineVerificationView, error) {
+internal/store/machine_verification.go:299:	var view MachineVerificationView
+internal/store/machine_verification.go:321:		entry := MachineVerificationEntry{Ticket: record.Ticket, State: record.State, Holder: MachineVerificationHolder{Kind: record.Kind, RunID: record.RunID, Repository: record.Repository, SpecSlug: record.Spec, Step: record.Step}, OwnerPID: record.OwnerPID, OwnerIdentity: record.OwnerIdentity, Since: record.Since, Path: path}
+internal/store/machine_verification.go:327:	slices.SortFunc(view.Entries, func(a, b MachineVerificationEntry) int {
+internal/store/machine_verification.go:339:// ReadMachineVerification takes no lock and never changes the entry directory.
+internal/store/machine_verification.go:340:func ReadMachineVerification(ctx context.Context, homeDir string) (MachineVerificationView, error) {
+internal/store/machine_verification.go:341:	view, err := readMachineVerificationEntries(ctx, machineVerificationDirectory(homeDir))
+internal/store/machine_verification.go:345:	live := make([]MachineVerificationEntry, 0, len(view.Entries))
+internal/store/machine_verification.go:358:func DescribeMachineVerificationHolder(holder MachineVerificationHolder) string {
+internal/store/machine_verification.go:359:	if holder.Kind == MachineVerificationHolderRun {
+internal/daemon/task_engine.go:2107:	if engine.deps.MachineVerification == nil {
+internal/daemon/task_engine.go:2110:	releaseMachine, err := engine.acquireMachineVerificationCapacity(ctx, plan, task, request)
+internal/daemon/task_engine.go:2132:func (engine *Engine) acquireMachineVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+internal/daemon/task_engine.go:2143:	release, err := engine.deps.MachineVerification.Acquire(waitCtx, store.MachineVerificationHolder{
+internal/daemon/task_engine.go:2144:		Kind: store.MachineVerificationHolderRun, RunID: plan.RunID, SpecSlug: plan.Spec.Slug, Step: step,
+internal/daemon/task_engine.go:2145:	}, func(wait store.MachineVerificationWait) {
+internal/daemon/task_engine.go:2153:			holders = append(holders, store.DescribeMachineVerificationHolder(entry.Holder)+", "+entry.Holder.Step)
+internal/daemon/task_engine.go:2157:			"machine_verification": "waiting", "step": step, "capacity": wait.Capacity,
+internal/daemon/task_engine.go:2177:				map[string]any{"machine_verification": "acquired", "step": step, "waited_seconds": seconds})
+internal/daemon/engine.go:62:// MachineVerificationGate bounds Verifications across repositories sharing a
+internal/daemon/engine.go:64:type MachineVerificationGate interface {
+internal/daemon/engine.go:65:	Acquire(ctx context.Context, holder store.MachineVerificationHolder, onWait func(store.MachineVerificationWait)) (release func(), err error)
+internal/daemon/engine.go:90:	MachineVerification MachineVerificationGate
+internal/cli/deliver_workflow.go:1705:	lease, err := store.AcquireMachineVerification(ctx, workflow.loaded.HomeDir, store.MachineVerificationHolder{
+internal/cli/deliver_workflow.go:1706:		Kind: store.MachineVerificationHolderDelivery, Repository: workflow.loaded.GitRoot,
+internal/cli/deliver_workflow.go:1708:	}, workflow.loaded.Config.Runs.MaxVerifying, func(wait store.MachineVerificationWait) {
+internal/cli/deliver_workflow.go:1711:			holders = append(holders, store.DescribeMachineVerificationHolder(entry.Holder)+", "+entry.Holder.Step)
+internal/cli/implement.go:568:	}, newImplementMachineVerificationGate(loadedConfig, gitState.Root, stderr), budgetNow, run.CreatedAt, loadedConfig.Config.Budget, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Verification.Format, loadedConfig.Config.Verification.RepositoryAtSettlement, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), authorization, runtime, agentSelections, operationalRuntimeFactory(req), implementLightTierPlan(loadedConfig, environment.environ, gitState.Root, profilePreflight.Override != nil), collaborators, runStore, ui)
+internal/cli/implement.go:1033:func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, machineVerification daemon.MachineVerificationGate, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, formatCommand string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+internal/cli/implement.go:1062:		MachineVerification: machineVerification,
+internal/cli/runs.go:101:		printMachineVerificationStatus(ctx, loaded, stdout, stderr)
+internal/cli/runs.go:130:	printMachineVerificationStatus(ctx, loaded, stdout, stderr)
+internal/cli/deliver.go:472:	printMachineVerificationStatus(ctx, loaded, stdout, stderr)
+internal/cli/machine_verification.go:12:// implementMachineVerificationGate attributes every lease to the checkout
+internal/cli/machine_verification.go:14:type implementMachineVerificationGate struct {
+internal/cli/machine_verification.go:21:func newImplementMachineVerificationGate(loaded roundconfig.Loaded, repository string, stderr io.Writer) *implementMachineVerificationGate {
+internal/cli/machine_verification.go:22:	return &implementMachineVerificationGate{
+internal/cli/machine_verification.go:28:func (gate *implementMachineVerificationGate) Acquire(ctx context.Context, holder store.MachineVerificationHolder, onWait func(store.MachineVerificationWait)) (func(), error) {
+internal/cli/machine_verification.go:30:	lease, err := store.AcquireMachineVerification(ctx, gate.homeDir, holder, gate.capacity, onWait)
+internal/cli/health.go:41:	HealthCheckVerificationCapacity = "verification-capacity"
+internal/cli/machine_verification_status.go:14:func machineVerificationCounts(view store.MachineVerificationView) (held, waiting int) {
+internal/cli/machine_verification_status.go:26:func printMachineVerificationStatus(ctx context.Context, loaded roundconfig.Loaded, stdout, stderr io.Writer) {
+internal/cli/machine_verification_status.go:27:	view, err := store.ReadMachineVerification(ctx, loaded.HomeDir)
+internal/cli/machine_verification_status.go:43:			fmt.Fprintf(stdout, "  holding: %s, %s, since %s\n", store.DescribeMachineVerificationHolder(entry.Holder), entry.Holder.Step, entry.AcquiredAt.UTC().Format(time.RFC3339))
+internal/cli/machine_verification_status.go:50:			fmt.Fprintf(stdout, "  waiting %d: %s, %s, since %s\n", n, store.DescribeMachineVerificationHolder(entry.Holder), entry.Holder.Step, entry.Since.UTC().Format(time.RFC3339))
+internal/cli/machine_verification_status.go:60:	view, err := store.ReadMachineVerification(ctx, loaded.HomeDir)
+internal/cli/machine_verification_status.go:74:			result.Detail += "; holding: " + store.DescribeMachineVerificationHolder(entry.Holder) + ", " + entry.Holder.Step
+internal/cli/machine_verification_status.go:81:			result.Detail += fmt.Sprintf("; waiting %d: %s, %s", n, store.DescribeMachineVerificationHolder(entry.Holder), entry.Holder.Step)
+
+STDERR:
+
+PASS source review: only the store removes capacity entries; acquisition uses OwnerGone; reader omits proven-gone owners without removal. No entry-age deadline/heartbeat/expiry exists. Poll and cleanup timeouts bound observation/cleanup only. See captured production-reference search and mutation tests 2, 3 and 6.

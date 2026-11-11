@@ -1,0 +1,9 @@
+Q24: blocked (declared: after the release that carries this Spec, a Run of this repository and a Run of another repository on the maintainer's machine never verify at the same time with the default capacity, and `roundfix runs list` names the waiting one.)
+Reason: two live real repositories after release require real Agents and the real Roundfix Home, which the approved Spec forbids QA to use. Temporary fixtures cannot establish this acceptance.
+satisfied-by: the operator's runs list and doctor evidence from the first cycle after the release, recorded session evidence.
+Q26: blocked (environment: no open Pull Request). This is the current assignment fact for the Spec target branch; no live lookup performed.
+Approval equivalent: approved delivery authorization, granted 2026-11-10, present in the delivery base; this child is restricted to QA.
+Checks equivalent: Daemon make verify-changed pass (exit 0) at the audited head.
+Threads: none unresolved because no Pull Request exists; this is not reviewer approval.
+Merge-Ready acceptance: none yet, no open Pull Request. Review artifact: none to claim as current.
+Candidate: 5b2311ffb4df7721f636ce5f40427835c88a5b91; Run branch is local only. Spec target branch: roundfix/deliver-0374-a-machine-verification-capacity-bounds-verifications-across-repositories-82b107413d07c6b1.

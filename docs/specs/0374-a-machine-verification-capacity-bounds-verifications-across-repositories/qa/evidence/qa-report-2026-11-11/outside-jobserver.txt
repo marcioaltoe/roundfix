@@ -1,0 +1,6 @@
+Origin: Michał Górny, One jobserver to rule them all; publication 2025-11-30; passage read 2026-11-10.
+URL: https://blogs.gentoo.org/mgorny/2025/11/30/one-jobserver-to-rule-them-all/
+Offline source: supplied published passage quoted in PRD Acceptance evidence.
+Quote: The availability of job tokens therefore limits the total number of processes started.
+Comparison: the actual CLI reports 1 of 1 held, 1 waiting. FIFO and held-gate tests show acquisition before work and return afterwards, matching the fixed token bound.
+No network retrieval or claim about the rest of the article. The quoted passage is available offline, so this outside-evidence row is satisfied, not blocked.

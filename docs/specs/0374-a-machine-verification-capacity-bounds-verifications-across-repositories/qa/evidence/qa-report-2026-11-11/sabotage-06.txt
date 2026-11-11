@@ -1,0 +1,20 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/store/machine_verification.go
+Before: if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone {
+After: if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone || true {
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing$ ./internal/store
+EXIT: 1
+STDOUT:
+=== RUN   TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+=== PAUSE TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+=== CONT  TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing
+    machine_verification_test.go:172: reader view = {Entries:[{Ticket:1 State:holding Holder:{Kind:run RunID:fixture Repository:fixture-repository SpecSlug:fixture-spec Step:fixture-step} OwnerPID:1073741824 OwnerIdentity: Since:2026-11-10 22:41:10 +0000 UTC AcquiredAt:2026-11-10 22:41:30 +0000 UTC Path:/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNo687329144/001/.roundfix/verification-capacity/00000000000000000001.json} {Ticket:2 State:waiting Holder:{Kind:run RunID:fixture Repository:fixture-repository SpecSlug:fixture-spec Step:fixture-step} OwnerPID:51833 OwnerIdentity: Since:2026-11-10 22:41:10 +0000 UTC AcquiredAt:0001-01-01 00:00:00 +0000 UTC Path:/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNo687329144/001/.roundfix/verification-capacity/00000000000000000002.json}] Unreadable:[/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNo687329144/001/.roundfix/verification-capacity/broken.json]}; dead = /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNo687329144/001/.roundfix/verification-capacity/00000000000000000001.json
+--- FAIL: TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 23.0375ms before and 22.526083ms after
+FAIL	roundfix/internal/store	0.300s
+FAIL
+
+STDERR:
+
+Named case detected: True

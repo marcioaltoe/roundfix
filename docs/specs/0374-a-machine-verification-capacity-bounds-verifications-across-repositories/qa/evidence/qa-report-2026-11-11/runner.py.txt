@@ -1,0 +1,310 @@
+"""Fresh, offline QA evidence for Spec 0374; run from the Run Worktree root."""
+import contextlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+ROOT = Path.cwd()
+SPEC = '0374-a-machine-verification-capacity-bounds-verifications-across-repositories'
+SD = ROOT / 'docs/specs' / SPEC
+EVIDENCE = SD / 'qa/evidence/qa-report-2026-11-11'
+REPORT = SD / 'qa/qa-report-2026-11-11.md'
+HEAD = '5b2311ffb4df7721f636ce5f40427835c88a5b91'
+BASE = 'd8158b0055a64a64cd0ff84cb20085dce532b9ac'
+
+def run(args, cwd=ROOT, environ=None, timeout=2700):
+    p = subprocess.run(args, cwd=cwd, env=environ, text=True, capture_output=True, timeout=timeout)
+    return p, 'COMMAND: ' + ' '.join(map(str,args)) + '\nEXIT: ' + str(p.returncode) + '\nSTDOUT:\n' + p.stdout + '\nSTDERR:\n' + p.stderr
+
+def save(name, text):
+    (EVIDENCE / name).write_text(text)
+
+def status(row, value):
+    text = REPORT.read_text()
+    text, n = re.subn(r'(?m)^\| ' + re.escape(row) + r' \| pending \|', '| ' + row + ' | ' + value + ' |', text)
+    assert n == 1, (row,n)
+    REPORT.write_text(text)
+
+@contextlib.contextmanager
+def isolated():
+    with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as tmp:
+        e = os.environ.copy()
+        for key in list(e):
+            if key.endswith('_KEY') or 'TOKEN' in key or key.startswith('ROUNDFIX_'):
+                e.pop(key, None)
+        # Preserve GIT_CONFIG_KEY_n: those are Git configuration names, not credentials.
+        for key in ['GOCACHE', 'GOMODCACHE']:
+            e[key] = subprocess.check_output(['go', 'env', key], text=True).strip()
+        e.update(HOME=home, TMPDIR=tmp, PATH=str(ROOT / 'bin/qa0374') + os.pathsep + e['PATH'])
+        yield Path(home), Path(tmp), e
+
+def cli(args, cwd=ROOT, environ=None):
+    # Keep the public command spelling ./bin/roundfix, including from scratch repos.
+    return run(['./bin/roundfix'] + args, cwd=cwd, environ=environ)
+
+def precondition():
+    with isolated() as (home, tmp, e):
+        p, v = cli(['--version'], environ=e)
+        assert p.returncode == 0
+        save('binary-version.txt',v)
+        p, log = cli(['spec','check',SPEC,'--strict'],environ=e)
+        save('precondition.txt',log)
+        print(log)
+        assert p.returncode == 0
+
+def named():
+    tests = []
+    for task in range(1,5):
+        body = (SD / ('task_%02d.md' % task)).read_text().split('## Verification\n')[1].split('\n## ')[0]
+        tests += re.findall(r'\bTest[A-Za-z0-9]+',body)
+    tests = sorted(set(tests))
+    pattern = '^(' + '|'.join(tests) + ')$'
+    p, log = run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./internal/store','./internal/config','./internal/daemon','./internal/cli'])
+    missing = [t for t in tests if ('--- PASS: '+t+' ') not in p.stdout and t not in ['TestTheSkillCoverageMapIsCurrent','TestGlossaryPhrasesAreDefinedTerms','TestGlossaryLinksNameAcceptedADRs','TestGlossaryAvoidLinesArePlainLists','TestGlossaryStatesEachRuleOnce']]
+    log += '\nNamed tests selected: ' + '\n'.join(tests) + '\nMissing named passes: ' + repr(missing) + '\n'
+    save('named-tests.txt',log)
+    status('Q02','pass' if p.returncode==0 and not missing else 'fail')
+    print('Named tests exit',p.returncode,'missing',missing)
+
+def suites():
+    commands = [
+        ['go','test','-count=1','-timeout','20m','-v','./internal/store','./internal/config','./internal/daemon','./internal/delivery'],
+        ['go','test','-count=1','-timeout','40m','-v','-run','Implement|Doctor|RunsList|Deliver|Gate','./internal/cli'],
+        ['go','test','-count=1','-timeout','30m','-v','-tags','docscontract','./internal/docscontract'],
+        ['go','test','-count=1','-timeout','20m','-v','./skills'],
+    ]
+    for row, name, command in zip(['Q03','Q04','Q05','Q06'],['core-suites.txt','cli-suites.txt','docscontract.txt','skills.txt'],commands):
+        p, log = run(command)
+        save(name,log)
+        status(row,'pass' if p.returncode==0 else 'fail')
+        print(row,'exit',p.returncode,flush=True)
+
+def windows():
+    e = os.environ.copy(); e['GOOS']='windows'
+    logs=[]; codes=[]
+    for args in [['go','build','-buildvcs=false','./internal/store'],['go','vet','./internal/store']]:
+        p, log = run(args,environ=e);logs.append('GOOS=windows\n'+log);codes.append(p.returncode)
+    save('windows.txt','\n'.join(logs));status('Q07','pass' if codes==[0,0] else 'fail');print('Windows exits',codes)
+
+def scratch(tmp, e):
+    repo = tmp / 'repo'; repo.mkdir()
+    p, log = run(['git','init','-q',str(repo)],environ=e)
+    assert p.returncode == 0, log
+    (repo/'bin').mkdir(); (repo/'bin/roundfix').symlink_to(ROOT/'bin/roundfix')
+    return repo
+
+def snapshot(directory):
+    return {str(p.relative_to(directory)): (p.read_bytes(),p.stat().st_size,p.stat().st_mtime_ns)
+            for p in directory.rglob('*') if p.is_file()}
+
+def public():
+    logs=[]
+    with isolated() as (home,tmp,e):
+        repo=scratch(tmp,e); one=tmp/'holder'; two=tmp/'waiter'; one.mkdir();two.mkdir()
+        capacity=home/'.roundfix/verification-capacity';capacity.mkdir(parents=True)
+        (home/'.roundfix/config.yml').write_text('runs:\n  max_verifying: 1\n')
+        child=subprocess.Popen(['sleep','600'],env=e)
+        try:
+            logs.append('Started sleep 600 child; owner_pid '+str(child.pid)+'; owner_identity empty.\n')
+            for ticket,state,kind,runid,repository,spec,step,since,acquired in [
+                (7,'holding','delivery','',one,'0001-holder','repository gate','2026-11-10T22:41:10Z','2026-11-10T22:41:30Z'),
+                (8,'waiting','run','run_20261110T221208Z_946b774b8b696f09',two,'0002-waiter','Task task_03 Verification attempt 2','2026-11-10T22:50:02Z',None)]:
+                entry=dict(schema='roundfix/machine-verification-entry/v1',ticket=ticket,state=state,kind=kind,run_id=runid,repository=str(repository),spec=spec,step=step,since=since,owner_pid=child.pid,owner_identity='')
+                if acquired:entry['acquired_at']=acquired
+                (capacity/('%020d.json'%ticket)).write_text(json.dumps(entry)+'\n')
+            expected='No Runs found.\nMachine Verification Capacity: 1 of 1 held, 1 waiting\n  holding: Delivery Queue item 0001-holder in '+str(one)+', repository gate, since 2026-11-10T22:41:30Z\n  waiting 1: Run run_20261110T221208Z_946b774b8b696f09 of 0002-waiter in '+str(two)+', Task task_03 Verification attempt 2, since 2026-11-10T22:50:02Z\n'
+            before=snapshot(home)
+            for label in ['first observation','independent fresh process repeat']:
+                p,log=cli(['runs','list','--all','--format','plain'],repo,e);logs.append(label+'\n'+log)
+                assert p.returncode==0 and p.stdout==expected and p.stderr=='',log
+                assert before==snapshot(home),'runs list changed Home'
+            child.terminate();child.wait(timeout=10)
+            logs.append('Terminated and reaped only the sleep child started by this row.\n')
+            p,log=cli(['runs','list','--all','--format','plain'],repo,e);logs.append('proven gone owner\n'+log)
+            assert p.returncode==0 and p.stdout=='No Runs found.\n' and p.stderr=='',log
+            assert before==snapshot(home),'reader modified dead-owner entries'
+            assert len(list(capacity.glob('*.json')))==2
+            logs.append('PASS: transcript exact stdout, empty stderr, exit 0; fresh process identical; dead-owner block absent; both entries, sizes, bytes and mtimes unchanged; no Run Database created.\n')
+        finally:
+            if child.poll() is None:child.terminate();child.wait(timeout=10)
+    save('public-transcript.txt','\n'.join(logs));status('Q08','pass')
+    logs=[]
+    for case in ['template','negative','project']:
+        with isolated() as (home,tmp,e):
+            repo=scratch(tmp,e);config=home/'.roundfix/config.yml'
+            if case=='template':
+                p,log=cli(['init','--scope','user'],repo,e);logs.append(log)
+                assert p.returncode==0,log
+                content=config.read_text()
+                assert '\n  # Maximum Verifications at once across repositories; 0 disables the bound.\n  max_verifying: 1\n' in content
+                assert '\nruns:\n' in content
+                logs.append('Independent file read: runs section contains the exact comment followed by max_verifying: 1.\n')
+                p,log=cli(['runs','list'],repo,e);logs.append(log)
+                assert p.returncode==0 and p.stdout=='No Runs found.\n' and p.stderr=='',log
+            else:
+                config.parent.mkdir(parents=True);config.write_text('runs:\n  max_verifying: '+('-1' if case=='negative' else '1')+'\n')
+                if case=='project':(repo/'.roundfixrc.yml').write_text('runs:\n  max_verifying: 3\n')
+                before=snapshot(home)
+                for _ in range(2):
+                    p,log=cli(['runs','list'],repo,e);logs.append(case+'\n'+log)
+                    if case=='negative':assert p.returncode!=0 and 'runs.max_verifying must be greater than or equal to 0' in p.stderr,log
+                    else:assert p.returncode==0 and p.stderr=='config: runs.max_verifying in Project Config is ignored; set runs.max_verifying in User Config\n',log
+                    assert before==snapshot(home)
+    save('public-config.txt','\n'.join(logs));status('Q09','pass');print('Public transcript and config pass')
+
+def sabotages():
+    store='internal/store/machine_verification.go';daemon='internal/daemon/task_engine.go';gate='internal/cli/deliver_workflow.go'
+    cases=[
+        (store,'len(wait.Holding)+len(wait.Ahead) >= capacity','len(wait.Holding) >= capacity','./internal/store','TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead',[]),
+        (store,'if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone {','if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone && false {','./internal/store','TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone',['reused','absent']),
+        (store,'if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone {','if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone || other.OwnerIdentity == "" || strings.HasPrefix(other.OwnerIdentity, "foreign:") {','./internal/store','TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone',['empty','foreign']),
+        (store,'release: func() error { return removeMachineVerificationEntry(ctx, entry.Path) }','release: func() error { return nil }','./internal/store','TestACancelledMachineVerificationWaitLeavesNoEntry',[]),
+        (store,'if capacity <= 0 {\n\t\treturn &MachineVerificationLease{}, nil','if capacity <= 0 {\n\t\t_ = os.MkdirAll(machineVerificationDirectory(homeDir), 0o700); return &MachineVerificationLease{}, nil','./internal/store','TestMachineVerificationCapacityOffWritesNothing',[]),
+        (store,'if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone {','if gone, _ := OwnerGone(ctx, entry.OwnerPID, entry.OwnerIdentity); !gone || true {','./internal/store','TestReadMachineVerificationLeavesOutAnOwnerProvenGoneAndWritesNothing',[]),
+        (daemon,'if engine.deps.MachineVerification == nil {','if engine.deps.MachineVerification == nil || true {','./internal/daemon','TestEveryDaemonVerificationStepTakesTheMachineCapacityAfterTheRunsOwn',[]),
+        (daemon,'if budget.deadline.IsZero() || budget.pauses > 0 {','if budget.deadline.IsZero() {','./internal/daemon','TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity',[]),
+        (daemon,'budget.deadline = budget.deadline.Add(now.Sub(budget.pausedAt))','budget.deadline = budget.deadline','./internal/daemon','TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity',[]),
+        (gate,'}, workflow.loaded.Config.Runs.MaxVerifying, func(wait store.MachineVerificationWait) {','}, 0, func(wait store.MachineVerificationWait) {','./internal/cli','TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns',[]),
+        (gate,'if err := lease.Release(); err != nil {','if err := func() error { _ = lease; return nil }(); err != nil {','./internal/cli','TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns',[]),
+    ]
+    for n,(file,old,new,package,test,subcases) in enumerate(cases,1):
+        with tempfile.TemporaryDirectory(prefix='sabotage-%02d-'%n,dir=ROOT/'bin/qa0374') as temp:
+            temp=Path(temp)
+            archive=temp/'head.tar'
+            with archive.open('wb') as output:
+                p=subprocess.run(['git','archive',HEAD],cwd=ROOT,stdout=output,stderr=subprocess.PIPE)
+            assert p.returncode==0
+            with tarfile.open(archive) as tar:tar.extractall(temp,filter='data')
+            archive.unlink()
+            path=temp/file;text=path.read_text();assert text.count(old)==1,(n,text.count(old))
+            path.write_text(text.replace(old,new))
+            p,log=run(['go','test','-count=1','-timeout','30s','-v','-run','^'+test+'$',package],cwd=temp,timeout=180)
+            killed=p.returncode!=0 and ('--- FAIL: '+test) in p.stdout and '[build failed]' not in p.stdout
+            for subcase in subcases:killed=killed and ('--- FAIL: '+test+'/'+subcase) in p.stdout
+            save('sabotage-%02d.txt'%n,'Audited git archive: '+HEAD+'\nMutation: '+file+'\nBefore: '+old+'\nAfter: '+new+'\n'+log+'\nNamed case detected: '+str(killed)+'\n')
+        status('Q%02d'%(n+9),'pass' if killed else 'fail')
+        print('Sabotage',n,'named case detected',killed,'exit',p.returncode,flush=True)
+
+def archiveplan():
+    with isolated() as (home,tmp,e):
+        p,log=cli(['archive',SPEC,'--plan','--offline'],environ=e)
+        save('archive-plan.txt',log);print(log)
+
+def extra():
+    p,log=run(['go','test','-count=1','-timeout','40m','-v','-run','RunCeiling','./internal/cli'])
+    save('run-ceiling.txt',log);print('Additional Task 02 RunCeiling tests exit',p.returncode)
+    assert p.returncode==0
+
+def audits():
+    logs=[]
+    guide=(ROOT/'docs/user-guide/configuration.md').read_text();normalized=' '.join(guide.split())
+    required=[
+        'After the update every machine verifies one repository at a time; set `runs.max_verifying` to a higher number, or to `0`, to change that.',
+        'Waiters take a unit in arrival order.',
+        'A holder that is still alive keeps its unit however long it runs; stop its Run with `roundfix stop` to free it.',
+        "While a Verification waits for the Machine Verification Capacity, its Run's `budget.max_run_duration` does not run.",
+        'config: runs.max_verifying in Project Config is ignored; set runs.max_verifying in User Config',
+        'The Machine Verification Capacity below bounds Verifications across repositories.',
+    ]
+    assert guide.index('## Active Implement Run ceiling') < guide.index('## Machine Verification Capacity')
+    for sentence in required:
+        assert sentence in normalized,sentence;logs.append('PASS configuration exact sentence: '+sentence)
+    for name in ['implement','runs','deliver','setup']:
+        source=ROOT/('.agents/skills/roundfix/references/'+name+'.md');mirror=ROOT/('skills/roundfix/references/'+name+'.md')
+        assert source.read_bytes()==mirror.read_bytes()
+        assert 'Machine Verification Capacity' in source.read_text()
+        logs.append('PASS byte-identical capacity reference: '+str(source.relative_to(ROOT))+' / '+str(mirror.relative_to(ROOT)))
+    lines=['Machine Verification Capacity: <held> of <capacity> held, <waiting> waiting','  holding: <holder description>, <step>, since <acquired_at>','  waiting <n>: <holder description>, <step>, since <since>','  unreadable: <path>']
+    for name in ['runs','deliver']:
+        path=ROOT/('docs/user-guide/commands/'+name+'.md');text=path.read_text()
+        assert '#### Machine Verification Capacity' in text
+        for line in lines:assert line in text,(name,line)
+        logs.append('PASS command guide '+name+': all four exact capacity-block lines')
+    text=(ROOT/'docs/user-guide/commands/deliver.md').read_text()
+    assert 'roundfix: Delivery Queue item <spec>: waiting for the Machine Verification Capacity; <held> of <capacity> held by <holders>' in text
+    text=(ROOT/'docs/user-guide/commands/doctor.md').read_text()
+    assert 'verification-capacity:' in text and 'unreadable' in text and 'warn' in text
+    logs.append('PASS deliver queue wait line and doctor ok/warn forms')
+    glossary=(ROOT/'CONTEXT.md').read_text();normal=' '.join(glossary.split())
+    for sentence in [
+        'The maximum number of Verifications that run at once on one machine across every repository sharing the Roundfix Home, configured by `runs.max_verifying` in User Config, `1` by default and off at `0`.',
+        'An attempt holds it while it waits for the Machine Verification Capacity and gives it back last.',
+        "before the Task holds its Run's Verification Capacity and the Machine Verification Capacity",
+        'It does not run while a Verification of the Run waits for the Machine Verification Capacity.',
+        '_Avoid_: machine-wide test lock, core budget, Run ceiling',
+        '_Avoid_: Task Capacity, worktree concurrency, Machine Verification Capacity',
+    ]:
+        assert sentence in normal,sentence;logs.append('PASS glossary exact sentence: '+sentence)
+    for name in ['_prd.md','_techspec.md']:
+        text=(SD/name).read_text()
+        for declaration in ['adds: **Machine Verification Capacity**','changes: **Verification Capacity**','changes: **Waiting for Verification**','changes: **Run Budget**']:assert declaration in text
+    text=(ROOT/'docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md').read_text()
+    required=(SD/'task_04.md').read_text().split('   `**Amended by ')[1].split('`\n')[0]
+    assert '**Amended by '+required in text
+    assert 'updated_at: 2026-11-10T23:30:00Z' in text
+    adr=ROOT/'docs/adr/0384-a-machine-verification-capacity-bounds-the-verifications-of-every-repository.md'
+    assert 'status: accepted' in adr.read_text().split('---')[1]
+    logs.append('PASS all four glossary declarations, exact ADR-0056 amendment and accepted ADR-0384')
+    p,log=run(['rg','-n','verification-capacity|machine_verification|MachineVerification','internal','-g','*.go','-g','!*_test.go'])
+    assert p.returncode==0;logs.append(log)
+    # Every production reference outside the store is a gate acquisition,
+    # dependency, status renderer or health reader; none removes an entry.
+    source=(ROOT/'internal/store/machine_verification.go').read_text()
+    assert 'time.Since(entry.' not in source and 'time.Since(other.' not in source
+    for path in (ROOT/'internal').rglob('*.go'):
+        if path.name.endswith('_test.go') or path.name.startswith('machine_verification'):continue
+        body=path.read_text()
+        for match in re.finditer(r'os\.(?:Remove|RemoveAll)\([^\n]*',body):
+            assert not any(x in match.group() for x in ['verification-capacity','machine_verification','other.Path','entry.Path']),str(path)
+    logs.append('PASS source review: only the store removes capacity entries; acquisition uses OwnerGone; reader omits proven-gone owners without removal. No entry-age deadline/heartbeat/expiry exists. Poll and cleanup timeouts bound observation/cleanup only. See captured production-reference search and mutation tests 2, 3 and 6.')
+    save('documentation-and-removal-search.txt','\n'.join(logs)+'\n');status('Q21','pass')
+    logs=[]
+    p,log=run(['git','merge-base',HEAD,'origin/main']);logs.append(log);assert p.stdout.strip()==BASE
+    commits=subprocess.check_output(['git','rev-list','--reverse',BASE+'..'+HEAD],text=True).splitlines()
+    assert len(commits)==4
+    governed=(ROOT/'internal/speccheck/governed.go').read_text()
+    patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',governed)
+    historical=set(re.findall(r'"([^"\n]+)"',governed.split('paths: exactGovernedPaths(')[1].split('\n\t\t),')[0]))
+    auth=(SD/'_authorization.md').read_text();bounded=set(re.findall(r'^  - (.+)$',auth.split('paths:\n')[1].split('operations:')[0],re.M))
+    forbidden=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json','docs/user-guide/run-database-lifecycle.md']
+    for i,commit in enumerate(commits,1):
+        p,log=run(['git','diff-tree','--no-commit-id','--name-only','-r',commit]);logs.append(log);assert p.returncode==0
+        paths=p.stdout.splitlines();task=SD/('task_%02d.md'%i);text=task.read_text()
+        allowed=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',text,re.M))
+        if '## Recorded paths' in text:allowed.update(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths')[1],re.M))
+        allowed.add(str(task.relative_to(ROOT)))
+        for path in paths:
+            assert path in allowed,('undeclared',i,path)
+            is_governed=path in historical or any(re.search(pattern,path) for pattern in patterns)
+            if is_governed:assert path in bounded,('unbounded',path)
+            assert path not in forbidden
+            assert not path.startswith(('.github/workflows/','internal/baseline/','.claude/','.codex/','.opencode/'))
+            if path.startswith('.agents/skills/'):assert path.startswith('.agents/skills/roundfix/')
+            if path.startswith('skills/') and not path.startswith('skills/testdata/'):assert path.startswith('skills/roundfix/')
+            logs.append(('governed bounded: ' if is_governed else 'declared ordinary: ')+path)
+        logs.append('PASS Task %02d actual diff-tree paths fit declarations and Recorded paths.'%i)
+    for revision in [BASE,HEAD]:
+        content=subprocess.check_output(['git','show',revision+':internal/store/store.go'],text=True)
+        assert 'const schemaVersion = 23' in content;logs.append(revision+': const schemaVersion = 23')
+    changed=subprocess.check_output(['git','diff','--name-only',BASE,HEAD],text=True).splitlines()
+    for path in changed:
+        if not path.endswith('.md'):continue
+        blocks=[]
+        for revision in [BASE,HEAD]:
+            content=subprocess.check_output(['git','show',revision+':'+path],text=True)
+            blocks.append(re.findall(r'(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)',content))
+        assert blocks[0]==blocks[1],('QA settlement changed',path)
+    oldauth=subprocess.check_output(['git','show',BASE+':'+str((SD/'_authorization.md').relative_to(ROOT))],text=True)
+    assert oldauth==auth
+    assert subprocess.check_output(['git','diff','--name-only'],text=True)==''
+    logs.append('PASS schema unchanged at 23; no forbidden path; every QA settlement section byte-identical; authority present in delivery base unchanged; no tracked worktree delta. Mechanical authorization audit already granted task_02/task_03; no unaudited tooling Task commit exists.')
+    save('scope-audit.txt','\n'.join(logs)+'\n');status('Q25','pass');print('Documentation, glossary and history scope pass')
+
+if __name__ == '__main__':
+    globals()[sys.argv[1]]()

@@ -1,0 +1,43 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/store/machine_verification.go
+Before: if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone {
+After: if gone, _ := OwnerGone(ctx, other.OwnerPID, other.OwnerIdentity); gone || other.OwnerIdentity == "" || strings.HasPrefix(other.OwnerIdentity, "foreign:") {
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone$ ./internal/store
+EXIT: 1
+STDOUT:
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+=== RUN   TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== PAUSE TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching
+=== NAME  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign
+    machine_verification_unix_test.go:57: stopped waiting for live or unproven owner wait: watched work ended: {}
+=== NAME  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty
+    machine_verification_unix_test.go:57: stopped waiting for live or unproven owner wait: watched work ended: {}
+=== CONT  TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent
+--- FAIL: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/matching (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/reused (0.00s)
+    --- FAIL: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/foreign (0.00s)
+    --- FAIL: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/empty (0.00s)
+    --- PASS: TestMachineVerificationCapacityRemovesOnlyAnOwnerProvenGone/absent (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 25.378125ms before and 23.212125ms after
+FAIL	roundfix/internal/store	0.339s
+FAIL
+
+STDERR:
+
+Named case detected: True

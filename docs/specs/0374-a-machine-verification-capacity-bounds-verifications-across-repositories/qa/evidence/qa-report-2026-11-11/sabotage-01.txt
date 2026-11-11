@@ -1,0 +1,20 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/store/machine_verification.go
+Before: len(wait.Holding)+len(wait.Ahead) >= capacity
+After: len(wait.Holding) >= capacity
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead$ ./internal/store
+EXIT: 1
+STDOUT:
+=== RUN   TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+=== PAUSE TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+=== CONT  TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead
+    machine_verification_test.go:57: stopped waiting for later waiter behind live ticket: watched work ended: {}
+--- FAIL: TestMachineVerificationCapacityKeepsALaterWaiterBehindALiveWaiterAhead (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 23.743958ms before and 22.709834ms after
+FAIL	roundfix/internal/store	0.303s
+FAIL
+
+STDERR:
+
+Named case detected: True

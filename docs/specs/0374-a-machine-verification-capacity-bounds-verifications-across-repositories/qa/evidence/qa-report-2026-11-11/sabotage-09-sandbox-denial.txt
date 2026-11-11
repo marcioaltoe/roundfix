@@ -1,0 +1,41 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/daemon/task_engine.go
+Before: budget.deadline = budget.deadline.Add(now.Sub(budget.pausedAt))
+After: budget.deadline = budget.deadline
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestTheRunBudgetDoesNotRunWhileAVerificationWaitsForTheMachineCapacity$ ./internal/daemon
+EXIT: 1
+STDOUT:
+FAIL	roundfix/internal/daemon [setup failed]
+FAIL
+
+STDERR:
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:14:2: open /Users/marcio/Library/Caches/go-build/db/db64ab65d5185e16d8b4c0087f9be797f3b1c88b850319957f6f871f9efb487d-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/engine.go:19:2: open /Users/marcio/Library/Caches/go-build/62/628f0ac0fdee1db1c59eda391fbb2d32c537e5d073db2c7387cab9b97606ea38-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:15:2: open /Users/marcio/Library/Caches/go-build/4b/4bdcf3b52d0e24748abf51064386a9bee779fca0897fd7c949a2fe6c259ff88a-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/daemon.go:13:2: open /Users/marcio/Library/Caches/go-build/92/928da9403516c5f7583dc3ae6a2ec424725a216df0ee88ab5da12ee5d66a559b-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:16:2: open /Users/marcio/Library/Caches/go-build/53/53221a8adc8b22fd8dbc8916f4a75a5021bae3619a837235f6a87fb85c8e2ade-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/qa_delivery_base.go:10:2: open /Users/marcio/Library/Caches/go-build/02/02154613cba0c79b96adcfe666a073619f9344017a82b1469ed15555cf5e7cb4-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/engine.go:20:2: open /Users/marcio/Library/Caches/go-build/ac/ac7a1008afed25c2377ecfbc2e0cee9c31f97124d34277c46fc17739399ca825-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/engine.go:21:2: open /Users/marcio/Library/Caches/go-build/10/10cf9c326fbc479d8bf5bc6d5bed6d9e8090a21939b67d18a923aca196417d52-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:17:2: open /Users/marcio/Library/Caches/go-build/cb/cbbcc61baba9885c0b8d808e03b152ec3eb85c037bc23170f891447cf355b78e-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/daemon.go:14:2: open /Users/marcio/Library/Caches/go-build/b8/b8826c635d67921322406a09e06af5e4bf9086ebacb11291040d44b718effbb5-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:18:2: open /Users/marcio/Library/Caches/go-build/44/444b5b59a9ae8ba6f995b41e5d9b8d4f4dba4862bf40c499229047a27c817010-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/qa_prior_pass.go:18:2: open /Users/marcio/Library/Caches/go-build/de/de380de61503c7069f851321d822852697f3bac07c99944c428fe136f9105d79-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/agent_session_owner.go:19:2: open /Users/marcio/Library/Caches/go-build/da/da57fdd1970d80f2c82ba4583cfcfdb0ddf0e28831150ab20e9e75e3605f8695-d: operation not permitted
+# roundfix/internal/daemon
+internal/daemon/engine.go:25:2: open /Users/marcio/Library/Caches/go-build/a1/a10a9a46c15bb0228c8458b8a824a062e9538d1fa6053232ebccf999a3627bc3-d: operation not permitted
+
+Named case detected: False

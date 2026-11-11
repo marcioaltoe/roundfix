@@ -1,0 +1,6 @@
+Origin: vortex, ai-memory message 01a1c7d9-d4ac-7553-9f7e-e1cf756c6ac3, 2026-11-10 20:45 BRT.
+Committed source: docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md
+Source at audited head is byte-identical to the delivery base and current committed file.
+Measurement: Com a máquina sem outra Run, a mesma árvore do Vortex passou inteira: 771 arquivos, 7.140 testes, 285 s
+Comparison: the observed FIFO store, every Daemon step and both passing/failing delivery gate cases take the shared capacity before Verification and release after it. With the default of one, the second repository waits rather than competing with the measured Vortex suite.
+This supports the chosen interference mechanism; it does not establish post-release runtime or reproduce the Vortex benchmark. No other repository or service was read.

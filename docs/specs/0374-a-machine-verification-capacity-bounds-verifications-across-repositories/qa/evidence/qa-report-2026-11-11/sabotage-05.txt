@@ -1,0 +1,33 @@
+Audited git archive: 5b2311ffb4df7721f636ce5f40427835c88a5b91
+Mutation: internal/store/machine_verification.go
+Before: if capacity <= 0 {
+		return &MachineVerificationLease{}, nil
+After: if capacity <= 0 {
+		_ = os.MkdirAll(machineVerificationDirectory(homeDir), 0o700); return &MachineVerificationLease{}, nil
+COMMAND: go test -count=1 -timeout 30s -v -run ^TestMachineVerificationCapacityOffWritesNothing$ ./internal/store
+EXIT: 1
+STDOUT:
+=== RUN   TestMachineVerificationCapacityOffWritesNothing
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing
+=== CONT  TestMachineVerificationCapacityOffWritesNothing
+=== RUN   TestMachineVerificationCapacityOffWritesNothing/0
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing/0
+=== RUN   TestMachineVerificationCapacityOffWritesNothing/-1
+=== PAUSE TestMachineVerificationCapacityOffWritesNothing/-1
+=== CONT  TestMachineVerificationCapacityOffWritesNothing/0
+=== CONT  TestMachineVerificationCapacityOffWritesNothing/-1
+=== NAME  TestMachineVerificationCapacityOffWritesNothing/0
+    machine_verification_test.go:113: off capacity wrote files: [d .roundfix/], <nil>
+=== NAME  TestMachineVerificationCapacityOffWritesNothing/-1
+    machine_verification_test.go:113: off capacity wrote files: [d .roundfix/], <nil>
+--- FAIL: TestMachineVerificationCapacityOffWritesNothing (0.00s)
+    --- FAIL: TestMachineVerificationCapacityOffWritesNothing/0 (0.00s)
+    --- FAIL: TestMachineVerificationCapacityOffWritesNothing/-1 (0.00s)
+FAIL
+suiteguard: guard cost: measured 0 paths; fingerprint took 22.892542ms before and 21.047583ms after
+FAIL	roundfix/internal/store	0.310s
+FAIL
+
+STDERR:
+
+Named case detected: True

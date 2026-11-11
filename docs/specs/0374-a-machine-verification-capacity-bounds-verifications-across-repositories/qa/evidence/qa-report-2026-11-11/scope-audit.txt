@@ -1,0 +1,130 @@
+COMMAND: git merge-base 5b2311ffb4df7721f636ce5f40427835c88a5b91 origin/main
+EXIT: 0
+STDOUT:
+d8158b0055a64a64cd0ff84cb20085dce532b9ac
+
+STDERR:
+
+COMMAND: git diff-tree --no-commit-id --name-only -r 55d1b94ecac4d2af38f64dadaae4e940359808be
+EXIT: 0
+STDOUT:
+docs/references/behavior-surfaces.json
+docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_01.md
+internal/config/config.go
+internal/config/machine_verification_config_test.go
+internal/store/machine_verification.go
+internal/store/machine_verification_test.go
+internal/store/machine_verification_unix_test.go
+
+STDERR:
+
+declared ordinary: docs/references/behavior-surfaces.json
+declared ordinary: docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_01.md
+declared ordinary: internal/config/config.go
+declared ordinary: internal/config/machine_verification_config_test.go
+declared ordinary: internal/store/machine_verification.go
+declared ordinary: internal/store/machine_verification_test.go
+declared ordinary: internal/store/machine_verification_unix_test.go
+PASS Task 01 actual diff-tree paths fit declarations and Recorded paths.
+COMMAND: git diff-tree --no-commit-id --name-only -r c47ac2c239e0084a3af7c90359bae6ff463c6680
+EXIT: 0
+STDOUT:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/implement.md
+docs/references/behavior-surfaces.json
+docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_02.md
+docs/user-guide/configuration.md
+internal/cli/implement.go
+internal/cli/machine_verification.go
+internal/cli/machine_verification_test.go
+internal/daemon/engine.go
+internal/daemon/machine_verification_test.go
+internal/daemon/task_engine.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/implement.md
+skills/testdata/owned-skill-versions.json
+
+STDERR:
+
+governed bounded: .agents/skills/roundfix/SKILL.md
+governed bounded: .agents/skills/roundfix/references/implement.md
+declared ordinary: docs/references/behavior-surfaces.json
+declared ordinary: docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_02.md
+declared ordinary: docs/user-guide/configuration.md
+declared ordinary: internal/cli/implement.go
+declared ordinary: internal/cli/machine_verification.go
+declared ordinary: internal/cli/machine_verification_test.go
+declared ordinary: internal/daemon/engine.go
+declared ordinary: internal/daemon/machine_verification_test.go
+declared ordinary: internal/daemon/task_engine.go
+governed bounded: skills/roundfix/SKILL.md
+declared ordinary: skills/roundfix/references/implement.md
+declared ordinary: skills/testdata/owned-skill-versions.json
+PASS Task 02 actual diff-tree paths fit declarations and Recorded paths.
+COMMAND: git diff-tree --no-commit-id --name-only -r cd565d233c861bddbc3bae4992120e997d1d24af
+EXIT: 0
+STDOUT:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+.agents/skills/roundfix/references/runs.md
+.agents/skills/roundfix/references/setup.md
+docs/references/behavior-surfaces.json
+docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_03.md
+docs/user-guide/commands/deliver.md
+docs/user-guide/commands/doctor.md
+docs/user-guide/commands/runs.md
+internal/cli/deliver.go
+internal/cli/deliver_workflow.go
+internal/cli/doctor.go
+internal/cli/doctor_test.go
+internal/cli/health.go
+internal/cli/machine_verification_status.go
+internal/cli/machine_verification_status_test.go
+internal/cli/runs.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/roundfix/references/runs.md
+skills/roundfix/references/setup.md
+skills/testdata/owned-skill-versions.json
+
+STDERR:
+
+governed bounded: .agents/skills/roundfix/SKILL.md
+governed bounded: .agents/skills/roundfix/references/deliver.md
+governed bounded: .agents/skills/roundfix/references/runs.md
+governed bounded: .agents/skills/roundfix/references/setup.md
+declared ordinary: docs/references/behavior-surfaces.json
+declared ordinary: docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_03.md
+declared ordinary: docs/user-guide/commands/deliver.md
+declared ordinary: docs/user-guide/commands/doctor.md
+declared ordinary: docs/user-guide/commands/runs.md
+declared ordinary: internal/cli/deliver.go
+declared ordinary: internal/cli/deliver_workflow.go
+declared ordinary: internal/cli/doctor.go
+declared ordinary: internal/cli/doctor_test.go
+declared ordinary: internal/cli/health.go
+declared ordinary: internal/cli/machine_verification_status.go
+declared ordinary: internal/cli/machine_verification_status_test.go
+declared ordinary: internal/cli/runs.go
+governed bounded: skills/roundfix/SKILL.md
+declared ordinary: skills/roundfix/references/deliver.md
+declared ordinary: skills/roundfix/references/runs.md
+declared ordinary: skills/roundfix/references/setup.md
+declared ordinary: skills/testdata/owned-skill-versions.json
+PASS Task 03 actual diff-tree paths fit declarations and Recorded paths.
+COMMAND: git diff-tree --no-commit-id --name-only -r 5b2311ffb4df7721f636ce5f40427835c88a5b91
+EXIT: 0
+STDOUT:
+CONTEXT.md
+docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md
+docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_04.md
+
+STDERR:
+
+declared ordinary: CONTEXT.md
+declared ordinary: docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md
+declared ordinary: docs/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories/task_04.md
+PASS Task 04 actual diff-tree paths fit declarations and Recorded paths.
+d8158b0055a64a64cd0ff84cb20085dce532b9ac: const schemaVersion = 23
+5b2311ffb4df7721f636ce5f40427835c88a5b91: const schemaVersion = 23
+PASS schema unchanged at 23; no forbidden path; every QA settlement section byte-identical; authority present in delivery base unchanged; no tracked worktree delta. Mechanical authorization audit already granted task_02/task_03; no unaudited tooling Task commit exists.

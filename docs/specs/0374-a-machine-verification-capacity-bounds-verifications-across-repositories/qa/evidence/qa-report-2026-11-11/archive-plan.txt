@@ -1,0 +1,13 @@
+COMMAND: ./bin/roundfix archive 0374-a-machine-verification-capacity-bounds-verifications-across-repositories --plan --offline
+EXIT: 0
+STDOUT:
+archive plan for 0374-a-machine-verification-capacity-bounds-verifications-across-repositories: removes 50 file(s) (1848440 bytes) and writes docs/history/specs/0374-a-machine-verification-capacity-bounds-verifications-across-repositories.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-11.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 38 file(s) (1673295 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md 5931 bytes: no advice (offline)
+promotes references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md to docs/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md
+relinks docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/_prd.md: 1 citation(s)
+promote with: roundfix archive 0374-a-machine-verification-capacity-bounds-verifications-across-repositories --promote <path>
+
+STDERR:
