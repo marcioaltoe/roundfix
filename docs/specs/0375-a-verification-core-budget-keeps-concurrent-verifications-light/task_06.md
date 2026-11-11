@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -31,12 +31,12 @@ package. The behavior is right; the names are duplicated.
 
 ## Subtasks
 
-- [ ] Replace the two literals with the corebudget constants.
-- [ ] Run the Linux Lane tests.
+- [x] Replace the two literals with the corebudget constants.
+- [x] Run the Linux Lane tests.
 
 ## Acceptance Criteria
 
-- [ ] The Linux Lane takes both names from `internal/corebudget`, the sweep finds no literal outside it, and the Linux Lane tests pass.
+- [x] The Linux Lane takes both names from `internal/corebudget`, the sweep finds no literal outside it, and the Linux Lane tests pass.
 
 ## Context
 
@@ -56,3 +56,38 @@ package. The behavior is right; the names are duplicated.
 - `qa/qa-report-2026-11-11.md` → F01, row D01
 - task_05 → Requirement 6
 - `_techspec.md` → Build Order
+
+## Result
+
+F01 (QA Report of 2026-11-11, row D01) answered. The Linux Lane's two budget
+`-e` entries are now built from `corebudget.GoVariable` and
+`corebudget.Variable` instead of the duplicated string literals; behavior,
+order (`GOMAXPROCS` first), position in the Docker argument list and the
+`request.Cores > 0` guard are unchanged. Only `internal/cli/deliver_linux_lane.go`
+changed: one import line and one `append` line.
+
+Implementation:
+- `internal/cli/deliver_linux_lane.go` — added the `roundfix/internal/corebudget`
+  import and replaced `"GOMAXPROCS="+cores` / `"ROUNDFIX_VERIFICATION_CORES="+cores`
+  with `corebudget.GoVariable+"="+cores` / `corebudget.Variable+"="+cores`.
+
+Focused checks (this session, after the last edit):
+- Pre-change signal: `grep -rnE '"(GOMAXPROCS|ROUNDFIX_VERIFICATION_CORES)=' --include='*.go' internal cmd` (excluding `_test.go` and `internal/corebudget/`) printed
+  `internal/cli/deliver_linux_lane.go:180`, and exited 0 — the duplicated literal F01 names.
+- Post-change sweep: the same filter now prints nothing and exits 1 (grep found
+  no match), so no non-test Go file outside `internal/corebudget` writes either
+  name followed by `=` (Requirement 2).
+- `gofmt -l internal/cli/deliver_linux_lane.go` — no output (formatted).
+- `go build ./internal/cli` — exits 0.
+- `go test -count=1 -timeout 20m -run 'LinuxLane' ./internal/cli` — `ok roundfix/internal/cli 5.321s`, all Linux Lane tests PASS. `TestLinuxLaneRunsTheChangedPackagesInAContainer` asserts the full Docker argument list including `-e GOMAXPROCS=4 -e ROUNDFIX_VERIFICATION_CORES=4` at their original position, which covers Requirement 1's names, order, position and positive-budget condition (Requirement 3: no test changed).
+
+Acceptance evidence: the Linux Lane now takes both names from
+`internal/corebudget` (import + symbol references above), the literal sweep
+finds nothing outside `internal/corebudget`, and the Linux Lane tests pass with
+no test modified (`git status --short` shows only `internal/cli/deliver_linux_lane.go`
+and this task file).
+
+Not run (Daemon-owned): the declared `## Verification` command and the full
+suite; the Daemon runs them at settlement.
+
+Follow-ups: none.
