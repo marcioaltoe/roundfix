@@ -35,6 +35,7 @@ const (
 	HealthCheckToolchain            = "toolchain"
 	HealthCheckEnvironment          = "environment"
 	HealthCheckSkills               = "skills"
+	HealthCheckUserSkills           = "user-skills"
 	HealthCheckResidue              = "residue"
 	HealthCheckStorage              = "storage"
 	HealthCheckDiskSpace            = "disk-space"

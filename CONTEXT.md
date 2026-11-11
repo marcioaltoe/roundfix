@@ -946,6 +946,10 @@ _Avoid_: Scaffold, template file, managed tooling
 A skill the Baseline no longer requires although the upstream catalog may still list it. No module requires or dispatches it, the asset sync drops it from every Setup Snapshot, and an approved `roundfix baseline update` deletes a copy it proves unedited against `skills-lock.json` and keeps an edited or unrecorded copy for the adopter ([ADR-0350](docs/adr/0350-an-approved-baseline-update-deletes-the-retired-skills-it-proves-unedited.md)). A skill the catalog replaces with skills it names, as it replaced `inngest` with the seven `inngest-*` skills, becomes a Retired Skill, and the module that required it requires the replacements ([ADR-0380](docs/adr/0380-a-skill-the-catalog-replaces-is-followed-to-its-replacements-and-retired.md)).
 _Avoid_: Deprecated skill, obsolete skill
 
+**Stale User Skill Copy**:
+A copy of a Roundfix-owned skill in a user-level skill directory of an Agent harness whose `SKILL.md` declares a version below the one the installed Roundfix carries. The harness can load it in place of the repository's copy, so `roundfix skills check`, the Doctor Command and the Update Check name it with the `roundfix skills install` command that refreshes it, and none of them changes it ([ADR-0386](docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md)).
+_Avoid_: Global skill, personal override, outdated install
+
 **Missing Required Skill**:
 An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
 _Avoid_: Uninstalled skill, absent skill, dispatched skill gap

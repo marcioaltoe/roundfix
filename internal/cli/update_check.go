@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"roundfix/internal/app"
+	roundskills "roundfix/skills"
 )
 
 const (
@@ -62,16 +63,17 @@ type updateCheckBaseline struct {
 }
 
 type updateCheckReport struct {
-	SchemaVersion     string              `json:"schemaVersion"`
-	Mode              string              `json:"mode"`
-	Installed         string              `json:"installed"`
-	Latest            string              `json:"latest"`
-	State             string              `json:"state"`
-	Lookup            updateCheckLookup   `json:"lookup"`
-	Releases          []app.Release       `json:"releases"`
-	ReleasesTruncated bool                `json:"releasesTruncated"`
-	Baseline          updateCheckBaseline `json:"baseline"`
-	Next              string              `json:"next"`
+	SchemaVersion     string                           `json:"schemaVersion"`
+	Mode              string                           `json:"mode"`
+	Installed         string                           `json:"installed"`
+	Latest            string                           `json:"latest"`
+	State             string                           `json:"state"`
+	Lookup            updateCheckLookup                `json:"lookup"`
+	Releases          []app.Release                    `json:"releases"`
+	ReleasesTruncated bool                             `json:"releasesTruncated"`
+	Baseline          updateCheckBaseline              `json:"baseline"`
+	UserSkills        []roundskills.StaleUserSkillCopy `json:"userSkills,omitempty"`
+	Next              string                           `json:"next"`
 }
 
 func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -105,6 +107,7 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	report := buildUpdateCheckReport(ctx, loaded.HomeDir, loaded.Config.Update.Mode, *refresh)
 	report.Baseline = previewUpdateCheckBaseline(ctx, loaded.GitRoot, environment)
+	report.UserSkills = staleUserSkillCopies(ctx, loaded.HomeDir)
 	if report.State == "update_available" || report.Baseline.State == "plan_ready" {
 		report.Next = "apply"
 	}
@@ -334,6 +337,7 @@ func printUpdateCheckReport(stdout io.Writer, report updateCheckReport) {
 			fmt.Fprintf(stdout, "Baseline: %s.\n", report.Baseline.State)
 		}
 	}
+	printUpdateCheckUserSkills(stdout, report.UserSkills)
 	if report.Next == "apply" {
 		if report.Mode == "auto" {
 			fmt.Fprintln(stdout, "Next: update.mode auto: apply it now with the Roundfix skill's --update mode.")

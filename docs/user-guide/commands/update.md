@@ -64,6 +64,14 @@ The counts come from `fileChanges`, `history.units`, and the sum of
 the preview's message with whitespace collapsed, or just the state without
 a message. The final outside-repository line skips the preview.
 
+When a **Stale User Skill Copy** exists, this line follows the Baseline line inside or outside a Git repository, including for a development build:
+
+```text
+User skills: copies older than this binary: <skill> <found> (binary <version>) at <path>[ -> <link target>], ...; refresh with <refresh> && <refresh>.
+```
+
+It does not change `next`; the `--update` Skill Mode asks before running a refresh.
+
 Only when a release is newer or the Baseline has a plan, the last line names
 the configured mode:
 
@@ -89,6 +97,7 @@ document:
 | `baseline.state` | Preview state, or `not_checked` outside a Git repository |
 | `baseline.fileChanges`, `baseline.historyUnits`, `baseline.skillChanges` | Plan counts |
 | `baseline.message` | Preview message with whitespace collapsed |
+| `userSkills` | Each Stale User Skill Copy with `skill`, `path`, `resolved` (the link target, omitted for a plain folder), `found`, `embedded` and `refresh`; omitted when there is none |
 | `next` | `apply` for a newer release or a `plan_ready` Baseline, otherwise `none` |
 
 A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.

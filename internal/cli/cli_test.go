@@ -38,6 +38,7 @@ import (
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
 	runworktree "roundfix/internal/worktree"
+	roundskills "roundfix/skills"
 )
 
 func init() {
@@ -120,6 +121,12 @@ func commandEnvironmentForTest(t *testing.T) commandEnvironment {
 	}
 	if overrides.dependenciesSet {
 		environment.dependencies = overrides.dependencies
+	}
+	environment.dependencies.userSkillDirectories = func(home string) []roundskills.UserSkillDirectory {
+		if !overrides.homeDirSet {
+			return nil
+		}
+		return roundskills.UserSkillDirectories(home, nil)
 	}
 	return environment
 }

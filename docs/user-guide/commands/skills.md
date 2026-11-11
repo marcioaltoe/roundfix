@@ -22,6 +22,16 @@ Required Skill, printing
 on stderr. Outside a Git repository, or without a Setup Manifest, it checks
 only the shipped bundle.
 
+It also names each **Stale User Skill Copy**, a user-level Roundfix skill copy older than the binary, which an Agent harness can load in place of the project copy. It reads the copies from these directories, in order: `$CLAUDE_HOME/skills` or `~/.claude/skills`, `$CODEX_HOME/skills` or `~/.codex/skills`, `$OPENCODE_HOME/skills` or `~/.opencode/skills`, `~/.agents/skills` and `~/.config/opencode/skills`. Symbolic links are followed; when several links reach one folder, that folder is named once under the first directory. A copy at or above the binary's version, one without a comparable version and an unreadable one are not named. Nothing is written, and the exit code does not change.
+
+```text
+roundfix: warning: user-level Roundfix skill copies older than this binary; an Agent harness may load them in place of the project copy:
+  <skill> <found> (binary <version>) at <path>[ -> <link target>]
+  refresh: <command>
+```
+
+Refresh the first three directories with `roundfix skills install --target <claude|codex|opencode>`, `~/.agents/skills` with `roundfix skills install --target codex --dir <path>`, and `~/.config/opencode/skills` with `roundfix skills install --target opencode --dir <path>`. A refresh writes through a link to the folder the ` -> <link target>` names.
+
 After bundle installation, an existing `skills-lock.json` entry naming an
 owned skill receives the installed folder's `computedHash` and loses its
 `ref`; every other field is preserved. No entry or lock is created when no

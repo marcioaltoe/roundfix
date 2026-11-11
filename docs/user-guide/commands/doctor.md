@@ -204,6 +204,12 @@ the warning. If the scan cannot run, Doctor appends
 `; skills-lock.json comparison unavailable: <error>` and keeps the status and
 next action. The release plan's `skills` check reads this same line.
 
+When a **Stale User Skill Copy** exists, Doctor prints this line right after `skills:`; it never changes Doctor's exit code, prints no such line otherwise, and the release plan does not read it.
+
+```text
+user-skills: warn (user-level Roundfix skill copies older than this binary: <skill> <found> (binary <version>) at <path>[ -> <link target>], ...; next: <refresh> && <refresh>)
+```
+
 In the catalog's sync window right after a release, `skills update` over an
 unpinned entry can still install the previous copy. Doctor's version check
 reports that older installed copy, and one bundle install restores it.
