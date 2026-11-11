@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -99,3 +99,60 @@ budget yet, so no command changes behavior in this Task.
 - `_prd.md` → Core Feature 1; Core Feature 2; Core Feature 3; User Story 4; Goal 2; Goal 4; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior 1; Interfaces; API Contract 1; API Contract 2; Invariants 1-3; Testing Approach; Build Order 1
 - ADR-0385
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Starting-tree characterization, recorded before implementation:
+
+- `ExecVerifier.Verify` in `internal/daemon/daemon.go` builds `cmd.Env`
+  from `judge.WithoutKeyVariables(os.Environ())`, then replaces the Run
+  Marker only when `req.RunID` is nonempty. No core budget is applied.
+- `rg -n 'GOMAXPROCS|NumCPU' internal --glob '*.go' --glob '!**/*_test.go'`
+  returned no matches (exit 1). `internal/corebudget` does not exist.
+- Initial `git status --short` showed only this Task file changed; its
+  pre-existing change is the Daemon-owned `pending` to `in_progress` status.
+  That field is preserved.
+
+Implementation and acceptance evidence:
+
+- Budget computation: added the exact `corebudget` interface from API
+  Contract 1, using only standard-library imports and explicit inputs.
+  The named table rows assert all Budget fields and the exact descriptions:
+  twelve CPUs produce 6 at capacity 1 and 3 at 2; rounding, fallback
+  capacities and the minimum of 1 are covered. The override rows cover
+  last-entry precedence and every required invalid value, plus ASCII-only
+  parsing, the 2147483647 ceiling and leading zeros. Additional rows cover
+  CPU normalization and `Concurrent`'s capacity/active-Run fallback.
+- Command environment: added `VerifyRequest.Cores` and apply
+  `corebudget.Environment` after the Run Marker. The package test verifies
+  replacement of duplicate variables, ordering of other entries, unchanged
+  input and independent copies with zero/negative budgets. The real
+  `ExecVerifier` command writes `4|4|1` for budget four and the process's
+  inherited values/count for no budget. The existing Judge-key isolation
+  test also passed. No caller sets a budget in this slice.
+- Every new top-level test and subtest starts with `t.Parallel()`. The new
+  tests set no process environment variable and add no real-time wait.
+
+Focused implementation checks on this working tree:
+
+- `rtk go test -race -count=1 -timeout 2m ./internal/corebudget` — exit 0;
+  RTK reported 38 passing test entries, including the required tables and
+  additional concurrency cases.
+- `rtk go test -count=1 -timeout 2m -run '^(TestTheVerificationCommandReceivesTheCoreBudget|TestVerificationReceivesNoJudgeKeyVariable)$' ./internal/daemon`
+  — exit 0; RTK reported 4 passing test entries.
+- Both test commands initially stopped because the sandbox denied a write
+  to Go's existing build cache; rerunning with approved cache access produced
+  the results above. No cache or toolchain configuration was changed.
+- `git diff --check` — exit 0.
+
+The declared Verification commands and repository gates were not run; the
+Daemon owns them and Task settlement. Task status, checkboxes, the Task
+Graph and other Task files are unchanged by this Agent. Caller wiring and
+user documentation remain with the subsequent Tasks.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261111T064558Z_6d985452394229fa`
+- Source commit: `9f0b955bb9cf6fa91f0c1f1569ed02af0d7dd104`

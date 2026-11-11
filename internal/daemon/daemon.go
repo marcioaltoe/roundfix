@@ -10,12 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"roundfix/internal/corebudget"
 	"roundfix/internal/judge"
 	"roundfix/internal/secretscan"
 )
 
 type VerifyRequest struct {
 	RunID      string
+	Cores      int
 	WorkDir    string
 	Command    string
 	OutputPath string
@@ -140,6 +142,7 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 		}
 		cmd.Env = append(filtered, marker+req.RunID)
 	}
+	cmd.Env = corebudget.Environment(cmd.Env, req.Cores)
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile
 	runErr := cmd.Run()
