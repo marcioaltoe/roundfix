@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 20m -v -run '^TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory$' ./skills
+stdout:
+=== RUN   TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+=== PAUSE TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+=== CONT  TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+--- PASS: TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory (0.01s)
+PASS
+ok  	roundfix/skills	0.379s
+stderr:
+exit: 0

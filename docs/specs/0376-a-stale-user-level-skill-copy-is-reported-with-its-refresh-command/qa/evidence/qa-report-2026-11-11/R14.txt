@@ -1,0 +1,10 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command-349ba1fa84e7be33-0570099e-69ca9a33/run_20261111T214342Z_06342bedaaf4c9cd/bin/roundfix archive 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command --plan --offline
+stdout:
+archive plan for 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command: removes 91 file(s) (335657 bytes) and writes docs/history/specs/0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-11.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 81 file(s) (202236 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-10-a-user-level-skill-copy-older-than-the-project-copy-is-loaded-unnoticed.md 2448 bytes: no advice (offline)
+promote with: roundfix archive 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command --promote <path>
+stderr:
+exit: 0

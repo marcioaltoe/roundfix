@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 20m -v -run '^TestDoctorReportsStaleUserSkillCopiesWithoutFailing$' ./internal/cli
+stdout:
+=== RUN   TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+=== PAUSE TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+=== CONT  TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+--- PASS: TestDoctorReportsStaleUserSkillCopiesWithoutFailing (0.01s)
+PASS
+suiteguard: guard cost: measured 3141 paths; fingerprint took 154.019958ms before and 142.376084ms after
+ok  	roundfix/internal/cli	0.636s
+stderr:
+exit: 0

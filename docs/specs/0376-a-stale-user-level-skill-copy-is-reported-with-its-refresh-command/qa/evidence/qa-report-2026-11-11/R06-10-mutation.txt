@@ -1,0 +1,14 @@
+Origin: git archive 0dce44536e1de09d2486f019d971b4cacb733c36; independent initialized/staged scratch repository.
+diff --git a/internal/cli/user_skills.go b/internal/cli/user_skills.go
+index c5b7666..61255c2 100644
+--- a/internal/cli/user_skills.go
++++ b/internal/cli/user_skills.go
+@@ -31,7 +31,7 @@ func printUserSkillWarning(stderr io.Writer, copies []roundskills.StaleUserSkill
+ }
+ 
+ func doctorUserSkillsResult(copies []roundskills.StaleUserSkillCopy) CheckResult {
+-	return CheckResult{Name: HealthCheckUserSkills, Status: CheckStatusWarn,
++	return CheckResult{Name: HealthCheckUserSkills, Status: CheckStatusFailed,
+ 		Detail:     "user-level Roundfix skill copies older than this binary: " + describeUserSkillCopies(copies),
+ 		NextAction: strings.Join(roundskills.StaleUserSkillRefreshes(copies), " && ")}
+ }

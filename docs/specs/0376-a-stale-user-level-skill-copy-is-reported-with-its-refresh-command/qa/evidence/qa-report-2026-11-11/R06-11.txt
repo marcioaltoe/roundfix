@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run '^TestUpdateCheckNamesStaleUserSkillCopies$' ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckNamesStaleUserSkillCopies
+=== PAUSE TestUpdateCheckNamesStaleUserSkillCopies
+=== CONT  TestUpdateCheckNamesStaleUserSkillCopies
+    user_skills_test.go:120: exit=0 stdout="Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify).\nBaseline: not checked (outside a Git repository).\n" stderr=""
+        want="Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify).\nBaseline: not checked (outside a Git repository).\nUser skills: copies older than this binary: roundfix 0.0.1 (binary 0.1.217) at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckNamesStaleUserSkillCopies1807397687/001/.claude/skills/roundfix -> /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckNamesStaleUserSkillCopies1807397687/001/vault/roundfix, qa-gate 0.0.1 (binary 0.0.26) at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestUpdateCheckNamesStaleUserSkillCopies1807397687/001/.opencode/skills/qa-gate; refresh with roundfix skills install --target claude && roundfix skills install --target opencode.\n"
+--- FAIL: TestUpdateCheckNamesStaleUserSkillCopies (0.01s)
+FAIL
+suiteguard: guard cost: measured 3126 paths; fingerprint took 160.392541ms before and 146.179084ms after
+FAIL	roundfix/internal/cli	0.780s
+FAIL
+stderr:
+exit: 1

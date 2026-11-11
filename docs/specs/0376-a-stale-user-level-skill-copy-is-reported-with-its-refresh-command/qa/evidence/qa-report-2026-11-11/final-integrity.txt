@@ -1,0 +1,9 @@
+QA report/evidence files: 85
+Ignored evidence files: 0
+Non-text files: 0
+Results rows: 42 contiguous; typed inputs: 42 unique
+Daemon auditor fields: preserved
+Tracked product changes: 0
+Audited HEAD unchanged: 0dce44536e1de09d2486f019d971b4cacb733c36
+git diff --check: pass
+No evidence_snapshots written.

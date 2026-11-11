@@ -1,0 +1,4 @@
+Fixture construction prewarms the offline Update Check cache through the fake gh before the before-snapshot.
+Compared every fixture-home path including root, directories, symlinks, vault files, and the seeded cache: modes, nanosecond modification times, link targets and file SHA-256 digests.
+Equal: True
+No path excluded.

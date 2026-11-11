@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheUpdateModeAppliesOnlyThePlanItShowed$' ./skills
+stdout:
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+--- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed (0.00s)
+    --- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded (0.00s)
+    --- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical (0.00s)
+PASS
+ok  	roundfix/skills	0.155s
+stderr:
+exit: 0

@@ -1,0 +1,11 @@
+command: go test -count=1 -timeout 20m -v -run '^TestUpdateCheckNamesStaleUserSkillCopies$' ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckNamesStaleUserSkillCopies
+=== PAUSE TestUpdateCheckNamesStaleUserSkillCopies
+=== CONT  TestUpdateCheckNamesStaleUserSkillCopies
+--- PASS: TestUpdateCheckNamesStaleUserSkillCopies (0.01s)
+PASS
+suiteguard: guard cost: measured 3142 paths; fingerprint took 157.49625ms before and 142.9ms after
+ok  	roundfix/internal/cli	0.628s
+stderr:
+exit: 0

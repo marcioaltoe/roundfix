@@ -1,0 +1,11 @@
+command: ./bin/roundfix spec check 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command --strict
+stdout:
+Spec 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command/_techspec.md Vocabulary Contract
+stderr:
+exit: 0

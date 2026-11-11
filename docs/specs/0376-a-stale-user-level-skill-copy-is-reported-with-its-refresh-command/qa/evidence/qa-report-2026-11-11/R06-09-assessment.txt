@@ -1,0 +1,6 @@
+Named test: TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+Expected: Doctor warning receives no copies.
+Named test failed: True
+Observed exit: 1
+    user_skills_test.go:98: line after skills:
+--- FAIL: TestDoctorReportsStaleUserSkillCopiesWithoutFailing (0.01s)

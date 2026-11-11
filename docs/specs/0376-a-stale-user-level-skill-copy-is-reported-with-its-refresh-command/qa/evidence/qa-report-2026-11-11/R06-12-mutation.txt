@@ -1,0 +1,14 @@
+Origin: git archive 0dce44536e1de09d2486f019d971b4cacb733c36; independent initialized/staged scratch repository.
+diff --git a/internal/cli/cli_test.go b/internal/cli/cli_test.go
+index a9fcd00..8dd10a8 100644
+--- a/internal/cli/cli_test.go
++++ b/internal/cli/cli_test.go
+@@ -123,7 +123,7 @@ func commandEnvironmentForTest(t *testing.T) commandEnvironment {
+ 		environment.dependencies = overrides.dependencies
+ 	}
+ 	environment.dependencies.userSkillDirectories = func(home string) []roundskills.UserSkillDirectory {
+-		if !overrides.homeDirSet {
++		if false {
+ 			return nil
+ 		}
+ 		return roundskills.UserSkillDirectories(home, nil)

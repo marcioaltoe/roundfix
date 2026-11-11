@@ -1,0 +1,5 @@
+command: go test -count=1 -timeout 30m ./skills
+stdout:
+ok  	roundfix/skills	0.968s
+stderr:
+exit: 0

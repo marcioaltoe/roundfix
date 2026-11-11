@@ -1,0 +1,170 @@
+[
+  [
+    "R01",
+    "task_03 Requirement 1; repository Verification"
+  ],
+  [
+    "R02-01",
+    "task_03 Requirement 2; TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory"
+  ],
+  [
+    "R02-02",
+    "task_03 Requirement 2; TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce"
+  ],
+  [
+    "R02-03",
+    "task_03 Requirement 2; TestStaleUserSkillCopiesWritesNothing"
+  ],
+  [
+    "R02-04",
+    "task_03 Requirement 2; TestUserSkillDirectoriesFollowTheInstallTargetVariables"
+  ],
+  [
+    "R02-05",
+    "task_03 Requirement 2; TestTheUpdateModeAppliesOnlyThePlanItShowed"
+  ],
+  [
+    "R02-06",
+    "task_03 Requirement 2; TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit"
+  ],
+  [
+    "R02-07",
+    "task_03 Requirement 2; TestDoctorReportsStaleUserSkillCopiesWithoutFailing"
+  ],
+  [
+    "R02-08",
+    "task_03 Requirement 2; TestUpdateCheckNamesStaleUserSkillCopies"
+  ],
+  [
+    "R02-09",
+    "task_03 Requirement 2; TestRunSkillsCheck"
+  ],
+  [
+    "R02-10",
+    "task_03 Requirement 2; TestUpdateCheckTranscripts"
+  ],
+  [
+    "R02-skills",
+    "task_03 Requirement 2; ./skills"
+  ],
+  [
+    "R02-cli",
+    "task_03 Requirement 2; ./internal/cli"
+  ],
+  [
+    "R02-docs",
+    "task_03 Requirement 2; docscontract ./internal/docscontract"
+  ],
+  [
+    "R03",
+    "task_03 Requirement 3"
+  ],
+  [
+    "R04-1",
+    "task_03 Requirement 4; Surface Transcript 1"
+  ],
+  [
+    "R04-2",
+    "task_03 Requirement 4; Surface Transcript 2"
+  ],
+  [
+    "R04-json",
+    "task_03 Requirement 4"
+  ],
+  [
+    "R04-empty",
+    "task_03 Requirement 4"
+  ],
+  [
+    "R05",
+    "task_03 Requirement 5"
+  ],
+  [
+    "R06-01",
+    "task_03 Requirement 6; sabotage 1"
+  ],
+  [
+    "R06-02",
+    "task_03 Requirement 6; sabotage 2"
+  ],
+  [
+    "R06-03",
+    "task_03 Requirement 6; sabotage 3"
+  ],
+  [
+    "R06-04",
+    "task_03 Requirement 6; sabotage 4"
+  ],
+  [
+    "R06-05",
+    "task_03 Requirement 6; sabotage 5"
+  ],
+  [
+    "R06-06",
+    "task_03 Requirement 6; sabotage 6"
+  ],
+  [
+    "R06-07",
+    "task_03 Requirement 6; sabotage 7"
+  ],
+  [
+    "R06-08",
+    "task_03 Requirement 6; sabotage 8"
+  ],
+  [
+    "R06-09",
+    "task_03 Requirement 6; sabotage 9"
+  ],
+  [
+    "R06-10",
+    "task_03 Requirement 6; sabotage 10"
+  ],
+  [
+    "R06-11",
+    "task_03 Requirement 6; sabotage 11"
+  ],
+  [
+    "R06-12",
+    "task_03 Requirement 6; sabotage 12"
+  ],
+  [
+    "R07",
+    "task_03 Requirement 7"
+  ],
+  [
+    "R08",
+    "task_03 Requirement 8"
+  ],
+  [
+    "R09-claude",
+    "task_03 Requirement 9; outside-evidence row; Claude Code"
+  ],
+  [
+    "R09-opencode",
+    "task_03 Requirement 9; outside-evidence row; OpenCode"
+  ],
+  [
+    "R09-codex",
+    "task_03 Requirement 9; outside-evidence row; Codex"
+  ],
+  [
+    "R10",
+    "task_03 Requirement 10; PRD Unreachable Acceptance"
+  ],
+  [
+    "R11",
+    "task_03 Requirement 11"
+  ],
+  [
+    "R12",
+    "task_03 Requirement 12"
+  ],
+  [
+    "R13",
+    "task_03 Requirement 13; Pull Request row"
+  ],
+  [
+    "R14",
+    "task_03 Requirement 14"
+  ]
+]

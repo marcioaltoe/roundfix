@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

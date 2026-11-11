@@ -1,0 +1,6 @@
+command: /bin/bash -c 'h="$(mktemp -d)" || exit 1; trap '"'"'rm -rf "$h"'"'"' EXIT; for d in .claude/skills .codex/skills .opencode/skills .agents/skills .config/opencode/skills; do mkdir -p "$h/$d/roundfix" && printf '"'"'%s\n'"'"' '"'"'---'"'"' '"'"'name: roundfix'"'"' '"'"'version: 0.0.1'"'"' '"'"'---'"'"' > "$h/$d/roundfix/SKILL.md" || exit 1; done; gocache="$(go env GOCACHE)"; gomodcache="$(go env GOMODCACHE)"; out="$(HOME="$h" GOCACHE="$gocache" GOMODCACHE="$gomodcache" go test -count=1 -timeout 40m -v -run '"'"'Doctor|SkillsCheck|UpdateCheck|Skill'"'"' ./internal/cli 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit TestDoctorReportsStaleUserSkillCopiesWithoutFailing TestUpdateCheckNamesStaleUserSkillCopies TestRunSkillsCheck; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done'
+stdout:
+stderr:
+/bin/bash: line 0: printf: write error: Broken pipe
+/bin/bash: line 0: printf: write error: Broken pipe
+exit: 0

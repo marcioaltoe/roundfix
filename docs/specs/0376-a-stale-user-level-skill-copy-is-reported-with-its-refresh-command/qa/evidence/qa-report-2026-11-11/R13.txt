@@ -1,0 +1,7 @@
+Claimed candidate: 0dce44536e1de09d2486f019d971b4cacb733c36
+Approval: approved Spec _authorization.md in Delivery Base 0e42a7cf6a5f6b7b826d1f65e50d893b44ca3d55; grants delivery operations.
+Checks: Daemon make verify-changed, pass exit 0 at claimed candidate.
+Unresolved review threads: none, because no Pull Request exists.
+Merge-Ready acceptance: not available before Pull Request creation.
+Pull Request fact: none open, supplied by the Daemon prompt; real gh not run.
+Unblocking action: operator delivery creates the target-branch Pull Request, then checks Merge-Ready acceptance and current-head required checks/review controls.

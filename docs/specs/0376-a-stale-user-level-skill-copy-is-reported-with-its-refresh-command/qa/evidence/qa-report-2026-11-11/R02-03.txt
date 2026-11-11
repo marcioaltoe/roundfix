@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 20m -v -run '^TestStaleUserSkillCopiesWritesNothing$' ./skills
+stdout:
+=== RUN   TestStaleUserSkillCopiesWritesNothing
+=== PAUSE TestStaleUserSkillCopiesWritesNothing
+=== CONT  TestStaleUserSkillCopiesWritesNothing
+--- PASS: TestStaleUserSkillCopiesWritesNothing (0.00s)
+PASS
+ok  	roundfix/skills	0.158s
+stderr:
+exit: 0

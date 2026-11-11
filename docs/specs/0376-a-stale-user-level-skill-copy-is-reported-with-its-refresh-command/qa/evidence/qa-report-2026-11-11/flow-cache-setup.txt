@@ -1,0 +1,7 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command-349ba1fa84e7be33-0570099e-69ca9a33/run_20261111T214342Z_06342bedaaf4c9cd/bin/roundfix update check
+stdout:
+Roundfix 0.139.1: latest release not reached (no releases published); the session continues.
+Baseline: not checked (outside a Git repository).
+User skills: copies older than this binary: roundfix 0.0.1 (binary 0.1.217) at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0376-flowhome-rhfyuvuc/.claude/skills/roundfix -> /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0376-flowhome-rhfyuvuc/vault/roundfix, qa-gate 0.0.1 (binary 0.0.26) at /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0376-flowhome-rhfyuvuc/.opencode/skills/qa-gate; refresh with roundfix skills install --target claude && roundfix skills install --target opencode.
+stderr:
+exit: 0

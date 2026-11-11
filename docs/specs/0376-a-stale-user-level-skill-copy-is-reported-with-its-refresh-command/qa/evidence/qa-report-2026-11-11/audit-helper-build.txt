@@ -1,0 +1,4 @@
+command: go build -o ./bin/qa0376/audit-check ./bin/qa0376/audit-src
+stdout:
+stderr:
+exit: 0

@@ -1,0 +1,7 @@
+Source: OpenCode
+URL: https://opencode.ai/docs/skills/
+Date read: 2026-11-10, as recorded in the planning evidence.
+Offline source: PRD Acceptance evidence quoted published passage. No new network lookup.
+Compared with reader directory ordering and R02-01 runtime assertions.
+Quoted-source anchor: ~/.config/opencode/skills
+Match: True

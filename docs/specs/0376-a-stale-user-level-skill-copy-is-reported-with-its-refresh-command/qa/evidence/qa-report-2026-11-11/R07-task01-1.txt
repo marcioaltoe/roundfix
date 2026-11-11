@@ -1,0 +1,4 @@
+command: /bin/bash -c 'out="$(go test -count=1 -timeout 20m -v -run '"'"'^(TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory|TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce|TestStaleUserSkillCopiesWritesNothing|TestUserSkillDirectoriesFollowTheInstallTargetVariables)$'"'"' ./skills 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce TestStaleUserSkillCopiesWritesNothing TestUserSkillDirectoriesFollowTheInstallTargetVariables; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done'
+stdout:
+stderr:
+exit: 0

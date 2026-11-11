@@ -1,0 +1,14 @@
+Origin: git archive 0dce44536e1de09d2486f019d971b4cacb733c36; independent initialized/staged scratch repository.
+diff --git a/internal/cli/cli.go b/internal/cli/cli.go
+index 01e4270..92c78c9 100644
+--- a/internal/cli/cli.go
++++ b/internal/cli/cli.go
+@@ -733,7 +733,7 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
+ 		} else {
+ 			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
+ 		}
+-		printUserSkillWarning(stderr, staleUserSkillCopies(ctx, environment.homeDir))
++
+ 		return exitOK
+ 	case "list":
+ 		if commandWantsHelp(args[1:]) {

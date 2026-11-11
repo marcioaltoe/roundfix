@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 20m -v -run '^TestUserSkillDirectoriesFollowTheInstallTargetVariables$' ./skills
+stdout:
+=== RUN   TestUserSkillDirectoriesFollowTheInstallTargetVariables
+=== PAUSE TestUserSkillDirectoriesFollowTheInstallTargetVariables
+=== CONT  TestUserSkillDirectoriesFollowTheInstallTargetVariables
+--- PASS: TestUserSkillDirectoriesFollowTheInstallTargetVariables (0.00s)
+PASS
+ok  	roundfix/skills	0.153s
+stderr:
+exit: 0
