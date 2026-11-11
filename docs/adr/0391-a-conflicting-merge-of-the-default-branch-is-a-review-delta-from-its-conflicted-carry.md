@@ -74,7 +74,7 @@ conflict.` and, when Git lists paths, `Conflicted paths: <path>, <path>.`
 read-only line: `A diff hunk shows only the lines near a change. Before a
 finding states that an import, declaration, symbol or closing part of a block
 is missing or undefined, read the whole file in the repository, which holds
-the head commit, and raise the finding only if the file confirms it.`
+the head commit, and raise the finding only if the file confirms it. Before a finding states that a file, ADR or other record the change names or links to does not exist, look for it in the repository, which holds files the diff leaves out, and raise the finding only if it is not there.`
 
 ## Considered Options
 
@@ -106,7 +106,7 @@ the head commit, and raise the finding only if the file confirms it.`
   that spans a conflicting merge.
 - `deliver status` and `deliver retry` print no `Review:` line for a
   conflicting merge; the `review` guide lists seven restart reasons.
-- Every review prompt grows by one sentence, and a conflicting delta by one
+- Every review prompt grows by two sentences, and a conflicting delta by one
   or two lines.
 - A conflict resolution made after a clean round 2 is not reviewed; the
   ceiling of ADR-0197 already bounds every change after round 2.

@@ -92,7 +92,8 @@ and edits only through the repository's record commands or narrowly:
    branch's landed Specs as the candidate's, so that its findings are about
    the candidate.
 3. As an operator running an unattended queue, I want the reviewer to check
-   a missing import or `catch` in the file before reporting it, so that a
+   a missing import or `catch` in the file, or a missing ADR the change
+   links to in the repository, before reporting it, so that a
    false finding does not park the item as `corrective-spec-required`.
 
 ## Core Features
@@ -264,9 +265,13 @@ Taken from those and the evidence, with no further interview:
   injected-failure test keeps its meaning.
 - The ceiling of ADR-0197 is unchanged: a conflicting merge after a clean
   round 2 closes at the ceiling without review, as every later change does.
-- The reviewer gets one sentence, not whole files: it already runs read-only
+- The reviewer gets two sentences, not whole files: it already runs read-only
   in the checkout at the head, and the two findings were absence claims the
   file refutes; the maintainer approved "com contexto".
+  The second sentence, about a file or record the change names or links
+  to, was added on 2026-11-11 after Spec 0377's pre-PR review claimed that an
+  ADR the change linked to was missing: the plan commit had added it before the delivery
+  base, so it sat outside the candidate diff, as the import did in Conexus.
 - Nothing is persisted for the conflict: the prompt lines are recomputed from
   `lineage.deltaBase` and the commits at every run, so the record schema
   stays as it is.
