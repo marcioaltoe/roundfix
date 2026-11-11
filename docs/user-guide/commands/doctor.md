@@ -104,7 +104,18 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   directory: `DR-DISK-LOW` gives its free MiB with `next: roundfix gc`, and
   `DR-DISK-UNREAD` gives the read error. Findings are `warn` and never change
   the exit code; with enough free space everywhere the line is absent.
-- `linux-lane:` — printed after `storage:` and before `codex:` only when the
+- `verification-capacity:` — the read-only Machine Verification Capacity
+  check, printed after the `disk-space:` results and before `linux-lane:`.
+  It reports `ok (runs.max_verifying <n>; <held> held, <waiting> waiting)`,
+  or `ok (off; <held> held, <waiting> waiting)` at `0`. The detail adds
+  `; holding: <holder description>, <step>` per holder, then
+  `; waiting <n>: <holder description>, <step>` per waiter numbered from 1,
+  each in ticket order. An unreadable entry changes it to `warn`, adds
+  `; unreadable entry <path>` and the next action
+  `inspect <path> and remove it if no Roundfix process wrote it`.
+  A directory read error reports `warn (read Machine Verification Capacity: <error>)`.
+  Warnings keep the exit code, and the check writes nothing.
+- `linux-lane:` — printed after `verification-capacity:` and before `codex:` only when the
   checkout's effective `delivery.linux_lane` is `true`. It checks Docker on
   the command environment's PATH with `docker info`, then
   `docker image inspect <image>`, each with a ten-second limit that cancels

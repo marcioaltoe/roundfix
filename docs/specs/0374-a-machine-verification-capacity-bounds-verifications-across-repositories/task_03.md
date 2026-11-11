@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0374-a-machine-verification-capacity-bounds-verifications-across-repositories
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -179,3 +179,87 @@ and start time. Their command guides and the Roundfix `runs`, `deliver` and
 - `_prd.md` → Goal 4; User Story 3; Core Feature 3; Core Feature 8; Success Metric 5; Success Metric 6; Success Metric 7
 - `_techspec.md` → Current behavior 3 and 7; API Contracts 7-9; Surface Transcript 1; Invariants 1 and 5; Declared breaks; Testing Approach; Build Order 3
 - ADR-0384
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Starting-tree characterization (before implementation): `commandDeliveryWorkflow.Gate`
+in `internal/cli/deliver_workflow.go` trims shared caches, runs the repository
+Verification through `daemon.ExecVerifier`, then runs the Linux Lane, without
+acquiring a machine unit. `runRunsListCommand`, `runDeliverStatus`, and
+`runDoctorCommand` do not read Machine Verification Capacity entries and print
+no line naming another repository's Verification. Confirmed by reading those
+four functions and the capacity store API. The starting worktree has only the
+Daemon-owned change to this Task file; no partial implementation is present.
+
+Implementation and acceptance evidence:
+
+- The repository gate acquires one `delivery` unit after cache trimming,
+  attributed to the owner's checkout root, Spec and `repository gate` step.
+  Its deferred release covers the repository Verification, Linux Lane and
+  every error return. The first wait names its holders in the queue log;
+  acquisition errors retain their cause and release errors become warnings.
+  `TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns` passes both
+  `passing gate` and `failing gate`: the shell Verification copies exactly
+  `state: holding` and `kind: delivery` from one entry to an external file,
+  and no entry remains after either gate. The additional
+  `TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait` verifies the
+  exact wait log, wrapped cancellation, waiter cleanup and no command start.
+- One read-only renderer supplies both listing formats and Delivery Queue
+  status immediately before `Limits:`. The required runs-list and
+  deliver-status tests pass with live holder/waiter files owned by this
+  test process. `TestRunsListMachineCapacityTranscript` asserts the whole
+  prescribed stdout, empty stderr and exit 0, replacing only the two
+  repository placeholders. `TestMachineCapacityStatusReadFailuresAndOff`
+  additionally covers an empty view, `off`, an unreadable entry and a
+  directory error that warns once without changing the exit code.
+- The default doctor dependency prints `verification-capacity` after disk
+  space and before the Linux Lane. `TestDoctorReportsTheMachineVerificationCapacity`
+  passes `empty`, `holder and waiter`, `off`, `unreadable entry` and the
+  additional `unreadable directory` row, asserting complete command output,
+  prescribed warning/action text and the unchanged exit code. The existing
+  whole-output pin updated is
+  `TestRunDoctorRealRepositoryCheckDoesNotMutateState`: it now exercises the
+  default capacity dependency and expects its empty-capacity line. Other
+  existing doctor fixtures that deliberately omit this dependency retain
+  their output unchanged.
+- Reader tests compare the capacity directory strictly and reuse the existing
+  `snapshotUsageHome` oracle for persistent Home contents; SQLite's existing
+  shared-memory coordination bytes are excluded by that established oracle.
+  No capacity directory, entry, sequence or lock is created or changed by a
+  reader, including with no Run Database. No new persistent Home write was
+  observed. The guides and canonical references describe the exact blocks,
+  warning, queue wait line, doctor detail and User Config template key.
+
+Focused checks (all exit 0 after the implementation fixes):
+
+- `rtk proxy go test ./internal/cli -run '^(TestRunsList|TestDeliverStatus|TestDeliveryStep|TestGateReturns|TestTheRepositoryGate|TestMachineCapacityStatus|TestDoctor|TestRunDoctor)' -count=1 -timeout=10m`
+- `rtk proxy go test ./internal/cli -run 'MachineCapacity|MachineVerificationCapacity|TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait' -count=1 -timeout=5m -v`
+- `make skills-sync` and
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  canonical references mirrored by the generator and Roundfix version recorded
+  as `0.1.214` in both skill copies.
+- Read-only Python scope/content inspection: all 21 changed paths before the
+  final coverage record are declared by this Task; the skill and three
+  reference pairs are byte-identical, and both command-guide blocks match
+  their references. `rtk proxy git diff --check`: no whitespace errors.
+
+Initial focused checks exposed the misplaced status call and fixture issues
+(shell extraction, conditional Linux Lane and SQLite coordination snapshots);
+the fixes above were checked again. The sandbox initially denied the existing
+Go cache; the focused checks and record command used approved execution with
+that cache, without changing toolchain settings.
+
+Final required generation command, after the last guide, skill and Result edit:
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+
+The declared Verification commands and repository Verification are reserved
+for the Daemon. Task status, sibling Tasks and the Task Graph remain untouched;
+no commit, push, pull request or ai-memory message was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/doctor_test.go`

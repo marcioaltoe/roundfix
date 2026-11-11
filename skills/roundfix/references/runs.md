@@ -81,7 +81,8 @@ the hidden count and the widening flag:
 (15 older Run(s) hidden; use --limit 0)
 ```
 
-With no matches, stdout is exactly:
+With no matching Runs, the listing prints this line before any Machine
+Verification Capacity block:
 
 ```text
 No Runs found.
@@ -162,6 +163,40 @@ several Runs exits `2` and lists them:
 `Run id prefix "<prefix>" matches <n> Runs: <id>, <id>; pass more digits or the full Run id`.
 `events`, `stop`, `reconcile` and every other command need the full Run
 id.
+
+#### Machine Verification Capacity
+
+The command reads the Machine Verification Capacity across every repository
+sharing its Roundfix Home, using the reader's User Config `runs.max_verifying`.
+It writes no capacity entry or lock. When entries or unreadable paths exist,
+it prints:
+
+```text
+Machine Verification Capacity: <held> of <capacity> held, <waiting> waiting
+  holding: <holder description>, <step>, since <acquired_at>
+  waiting <n>: <holder description>, <step>, since <since>
+  unreadable: <path>
+```
+
+With `runs.max_verifying: 0`, the first line is:
+
+```text
+Machine Verification Capacity: off, <held> held, <waiting> waiting
+```
+
+Holders appear first, then waiters numbered from 1, each in ticket order,
+then unreadable paths. Times are RFC3339 UTC. A holder description is
+`Run <run-id> of <spec> in <repository>` or
+`Delivery Queue item <spec> in <repository>`.
+An empty view adds no block. A read error adds one stderr warning and keeps
+the exit code:
+
+```text
+roundfix: warning: read Machine Verification Capacity: <error>
+```
+
+`runs list` prints the block after its listing in both plain and table
+formats, including after `No Runs found.` when no Run Database exists.
 
 ## Live Run View
 

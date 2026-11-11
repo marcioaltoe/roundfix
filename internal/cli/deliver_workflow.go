@@ -1702,6 +1702,25 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		}
 	}
 
+	lease, err := store.AcquireMachineVerification(ctx, workflow.loaded.HomeDir, store.MachineVerificationHolder{
+		Kind: store.MachineVerificationHolderDelivery, Repository: workflow.loaded.GitRoot,
+		SpecSlug: specSlug, Step: "repository gate",
+	}, workflow.loaded.Config.Runs.MaxVerifying, func(wait store.MachineVerificationWait) {
+		holders := make([]string, 0, len(wait.Holding))
+		for _, entry := range wait.Holding {
+			holders = append(holders, store.DescribeMachineVerificationHolder(entry.Holder)+", "+entry.Holder.Step)
+		}
+		fmt.Fprintf(workflow.log, "roundfix: Delivery Queue item %s: waiting for the Machine Verification Capacity; %d of %d held by %s\n", specSlug, len(wait.Holding), wait.Capacity, strings.Join(holders, "; "))
+	})
+	if err != nil {
+		return delivery.GateResult{}, fmt.Errorf("wait for the Machine Verification Capacity: %w", err)
+	}
+	defer func() {
+		if err := lease.Release(); err != nil {
+			fmt.Fprintf(workflow.log, "roundfix: warning: %v\n", err)
+		}
+	}()
+
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(
 		workflow.loaded.Config.Defaults.ArtifactDir,
 		workflow.loaded.GitRoot,

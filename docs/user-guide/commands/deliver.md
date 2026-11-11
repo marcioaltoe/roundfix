@@ -1013,6 +1013,54 @@ flag. Items already past `queued`, including a running item, continue; no Run
 is signalled, stopped or cancelled. The queue can exceed its ceiling by an
 item's Run. Tokens outside Runs, such as the pre-PR review, do not count.
 
+#### Machine Verification Capacity
+
+The command reads the Machine Verification Capacity across every repository
+sharing its Roundfix Home, using the reader's User Config `runs.max_verifying`.
+It writes no capacity entry or lock. When entries or unreadable paths exist,
+it prints:
+
+```text
+Machine Verification Capacity: <held> of <capacity> held, <waiting> waiting
+  holding: <holder description>, <step>, since <acquired_at>
+  waiting <n>: <holder description>, <step>, since <since>
+  unreadable: <path>
+```
+
+With `runs.max_verifying: 0`, the first line is:
+
+```text
+Machine Verification Capacity: off, <held> held, <waiting> waiting
+```
+
+Holders appear first, then waiters numbered from 1, each in ticket order,
+then unreadable paths. Times are RFC3339 UTC. A holder description is
+`Run <run-id> of <spec> in <repository>` or
+`Delivery Queue item <spec> in <repository>`.
+An empty view adds no block. A read error adds one stderr warning and keeps
+the exit code:
+
+```text
+roundfix: warning: read Machine Verification Capacity: <error>
+```
+
+`deliver status` prints the block immediately before `Limits:`.
+The repository gate takes one machine unit after the shared cache trim,
+before its repository Verification, and holds it through the Linux Lane.
+The holder is kind `delivery`, with the owner's checkout root, the Spec slug
+and step `repository gate`. No other queue step takes a unit. The gate
+releases it on every return path; release errors go to the queue log as
+`roundfix: warning: <release error>`. An acquisition error is wrapped with
+`wait for the Machine Verification Capacity`.
+On the first wait the queue log prints:
+
+```text
+roundfix: Delivery Queue item <spec>: waiting for the Machine Verification Capacity; <held> of <capacity> held by <holders>
+```
+
+Each holder in `<holders>` is `<holder description>, <step>`, joined by `; `.
+The Run slot wait below is a separate wait for `runs.max_active`.
+
 ## Run slot wait
 
 When an item's `roundfix implement` is refused only because Active Implement

@@ -98,6 +98,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	if !found {
 		printRunsListOutput(stdout, nil, opts, commandDependenciesForContext(ctx))
+		printMachineVerificationStatus(ctx, loaded, stdout, stderr)
 		return exitOK
 	}
 	defer func() {
@@ -126,6 +127,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		visible = matching[:opts.limit]
 	}
 	printRunsListOutput(stdout, visible, opts, commandDependenciesForContext(ctx))
+	printMachineVerificationStatus(ctx, loaded, stdout, stderr)
 	note := runsListRetainedWorktreeNote(retainedWorktrees)
 	if note == "" {
 		note = runsListHiddenNote(opts.state, len(runs), len(matching), len(visible))
