@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-08T00:00:00Z
-updated_at: 2026-10-08T00:00:00Z
+updated_at: 2026-11-10T23:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -77,3 +77,5 @@ Git processes it starts.
   per run and their files are the next cost, and they belong to a later Spec
   that batches Git in production code.
 - The CI suite budget stays at 240 s until CI measures the converted suite.
+
+**Amended by [ADR-0387](0387-the-suite-time-budget-is-measured-on-ci-and-judged-after-the-contract-runs.md) (2026-11-10).** CI measured the converted suite on the pushes to main from 2026-11-06 to 2026-11-10 at 209 s to 343 s, depending on the runner. The CI suite budget is now 420 s, kept in the Makefile, and it is judged after the docs and contract runs instead of stopping them. Every other decision of this record still holds.

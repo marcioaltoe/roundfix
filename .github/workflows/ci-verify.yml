@@ -65,13 +65,16 @@ jobs:
         run: make verify-changed
 
       # Pushes to main owe a fresh verdict on the whole tree. -count=1 disables
-      # the result cache, and the budget target catches wall-clock regressions.
+      # the result cache. test-budget times the suite and records its verdict;
+      # the last step judges it, so a slow runner never skips the docs and
+      # contract runs (ADR-0387). The budget is the Makefile's.
       - name: Verify
+        id: verify
         if: github.event_name == 'push'
         env:
           GOFLAGS: -count=1
           VERIFY_TEST_TARGET: test-budget
-          SUITE_BUDGET_SECONDS: "240"
+          SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
         run: make verify
 
       # Repository-markdown contracts run at the pull request boundary. CI is
@@ -86,3 +89,11 @@ jobs:
       - name: Verify every contract
         if: github.event_name == 'push'
         run: make verify-contracts
+
+      # The suite-time budget is judged last, whenever the timed suite passed,
+      # even when the docs or contract runs failed (ADR-0387).
+      - name: Check the suite-time budget
+        if: ${{ !cancelled() && github.event_name == 'push' && steps.verify.outcome == 'success' }}
+        env:
+          SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
+        run: make suite-budget-check
