@@ -545,6 +545,10 @@ _Avoid_: Task Capacity, worktree concurrency, Machine Verification Capacity
 The maximum number of Verifications that run at once on one machine across every repository sharing the Roundfix Home, configured by `runs.max_verifying` in User Config, `1` by default and off at `0`. It is taken by every Verification the Daemon starts, after its Run's Verification Capacity, and by the repository gate of a Delivery Queue; waiters take it in arrival order, and only a proof that its owner is gone frees a holder ([ADR-0384](docs/adr/0384-a-machine-verification-capacity-bounds-the-verifications-of-every-repository.md)).
 _Avoid_: machine-wide test lock, core budget, Run ceiling
 
+**Verification Core Budget**:
+The number of cores Roundfix gives each Verification it starts for an Implement Run or for the repository gate of a Delivery Queue, and each Agent Session of an Implement Run, as `GOMAXPROCS` and `ROUNDFIX_VERIFICATION_CORES`. It is half of the logical CPUs, at least 1, divided by `runs.max_verifying`, or by `runs.max_active` while that is `0`, and never below 1; a positive whole-number `GOMAXPROCS` in the environment of the Roundfix process takes its place ([ADR-0385](docs/adr/0385-each-verification-receives-a-verification-core-budget-in-its-environment.md)).
+_Avoid_: core limit, CPU quota, Machine Verification Capacity
+
 **Task Worktree**:
 The ephemeral git worktree one concurrently executing Task runs in — created from the Run Branch tip at Task start and integrated back onto the Run Branch at settlement; kept only when its Task fails.
 _Avoid_: Run Worktree, sandbox, scratch dir

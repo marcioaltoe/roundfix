@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -57,3 +57,24 @@ Contract 7 and a link to ADR-0385.
 - `_prd.md` → Glossary; Success Metric 5
 - `_techspec.md` → API Contract 7; Glossary; Build Order 4
 - ADR-0385
+
+## Result
+
+Skills loaded: `implement-task`, `domain-modeling`, `tech-writer`, `evidence-gate`
+
+Implementation:
+- `CONTEXT.md` now defines **Verification Core Budget** immediately after the **Machine Verification Capacity** entry, using the API Contract 7 text verbatim, with the `(ADR-0385)` link to `docs/adr/0385-each-verification-receives-a-verification-core-budget-in-its-environment.md` and the final `_Avoid_: core limit, CPU quota, Machine Verification Capacity` line. No other glossary entry changed.
+
+Focused checks:
+- Pre-change: `grep -n 'Verification Core Budget\|core limit\|CPU quota\|ROUNDFIX_VERIFICATION_CORES' CONTEXT.md` returned no matches.
+- Post-change: `grep -n 'Verification Core Budget' CONTEXT.md` returns line 548; the definition line and the `_Avoid_` line match the prescribed text.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run 'TestGlossary'` → `ok roundfix/internal/docscontract 0.461s` (covers the four glossary contracts, including the new entry).
+
+Acceptance evidence:
+- The new entry is present at the prescribed position and carries the prescribed text, link, and `_Avoid_` line.
+- The four glossary contracts pass in the focused run; the declared `## Verification` command remains for the Daemon to run.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261111T064558Z_6d985452394229fa`
+- Source commit: `763fb7f208209b282299d8a0faca96078093c864`
