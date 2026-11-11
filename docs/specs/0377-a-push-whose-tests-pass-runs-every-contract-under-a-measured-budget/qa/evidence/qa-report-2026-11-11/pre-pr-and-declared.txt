@@ -1,8 +1,0 @@
-Audited candidate: d8651e47b71fb74994202d77588942b0f82a92fa
-Pull Request: none open (Daemon-supplied fact); not queried over network.
-Approval equivalent: approved _authorization.md at 013af3b4de2727df1b2203b64e629491a35e01e9; consuming Spec and implement/commit/push/pull_request/merge grants recorded.
-Checks equivalent: Daemon make verify-changed pass, exit 0 at audited candidate.
-Unresolved threads: no Pull Request exists.
-Merge-Ready acceptance: not yet available; no real Merge-Ready claim.
-Review-artifact ancestry: no separate PR review artifact is required by this Spec at this pre-PR QA stage; no reviewer was contacted.
-Declared hosted workflow: cannot run before merge; authorization forbids starting a workflow or pushing. Operator must observe first post-merge CI | Verify push on main using gh run view <id> --json jobs and record Verify, Verify docs, Verify every contract, final budget check and green status when tests pass.

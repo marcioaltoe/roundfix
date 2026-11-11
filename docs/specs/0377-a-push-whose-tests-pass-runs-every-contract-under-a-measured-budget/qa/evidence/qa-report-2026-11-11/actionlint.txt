@@ -1,2 +1,0 @@
-command -v actionlint: absent
-Equivalent: passing YAML parse test TestTheCIPushJudgesTheSuiteTimeBudgetLast in package.txt
