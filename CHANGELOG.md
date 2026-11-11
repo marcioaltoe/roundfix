@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.139.1] - 2026-11-11
+
+### A push whose tests pass runs every contract under a measured budget
+
+- **The `CI | Verify` push gate no longer stops before the contract suites when the unit suite runs past its time budget.** The suite-time verdict is recorded first and judged only after every contract has run, so a slow runner still reports each contract's result. The measured 420 s budget stays the default; an overrun, a missing verdict or an unreadable verdict still fails the gate. ADR-0387 amends ADR-0259.
+
 ## [0.139.0] - 2026-11-11
 
 ### A machine Verification Capacity bounds verifications across repositories
