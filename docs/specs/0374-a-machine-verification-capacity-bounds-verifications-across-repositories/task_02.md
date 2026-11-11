@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0374-a-machine-verification-capacity-bounds-verifications-across-repositories
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -195,3 +195,97 @@ and the gated steps.
 - `_techspec.md` → Current behavior 1, 2 and 5; Interfaces; API Contracts 4-6; API Contract 9; Invariants 1 and 2; Declared breaks; Testing Approach; Build Order 2
 - ADR-0384
 - ADR-0056
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-concurrency, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, golang-cli, testing-boss, agentic-cli-design, tech-writer, evidence-gate.
+
+Starting-tree characterization (before implementation): `acquireVerificationCapacity`
+is the only function that acquires Verification Capacity. Its callers are
+`verifyTaskPreWork` and `runTaskVerificationRequest`. The callers of
+`runTaskVerificationRequest` are `verifyIntegratedRepository` (normal and exclusive
+retry), `verifyRepositoryPrecondition`, `verifyTask` (normal and exclusive retry),
+and `runQARepositoryVerification`. The starting tree has no machine gate or budget
+pause. Inspection: `rg` for those three acquisition/request symbols in
+`internal/daemon/task_engine.go` and the request and dependency types in
+`internal/daemon/engine.go`.
+
+Initial worktree: only this Task file's Daemon-owned status differs from HEAD.
+The PRD/TechSpec constraints and approved authorization bound the owned-skill
+changes to the three Governed Paths this Task declares. Implementation evidence
+will be appended below; Task status and declared Verification belong to the Daemon.
+
+### Implementation and acceptance evidence
+
+- Both units before commands, machine released first: added the optional
+  `MachineVerificationGate` dependency and the four explicit step labels; ordinary
+  Task attempts derive their label from `identity()`. The existing Run acquisition
+  path remains unchanged in `acquireRunVerificationCapacity`, including its nil-gate
+  behavior. The outer acquisition waits for the Run first, then takes one machine
+  unit, rechecks cancellation/Stop Request after both grants and releases in reverse
+  order. The step-table test exercises pre-work, repository precondition, Task
+  settlement (including the repository command), Task exclusive retry, Integrated
+  Repository Verification (including retry) and QA repository Verification. The
+  fake verifier rejects any command without a granted machine lease. The fake
+  machine gate checks the Run unit is already held at acquisition and still held
+  at release. The two-ready-Tasks row observes the second Task queue for the Run
+  before checking that it has issued no machine request while the first holds it.
+- Stop Request and Run Budget: Stop/cancel/error/grant-race rows start no command,
+  preserve pending Task status and return the Run unit. Wait callbacks pause the
+  budget only once per acquisition. The budget counts overlapping pauses, resumes
+  on acquisition success and failure, extends the deadline only at the last resume
+  and restarts pause accounting at a timely settlement renewal. Tests assert a
+  one-minute budget paused after 30 seconds expires exactly at three minutes after
+  a two-minute pause; overlapping/duplicate resumes, renewal during pause, disabled
+  budgets and a fake watchdog timer firing during a pause are also covered.
+- Implement configuration: only `executeImplementCycle` receives the production
+  gate. It uses the loaded Home, `Runs.MaxVerifying` and the preflight checkout
+  root. The CLI test loads real User Config values `1` and `0` in temporary homes,
+  observes the holding `run` entry and checkout identity at `1`, no capacity
+  directory at `0`, and removal after cancellation. A separate test forces release
+  failure and observes the `roundfix: warning:` diagnostic without a Task error.
+- Wait observability: the journal/progress test checks both exact summaries and
+  all payload keys, two holder descriptions joined by `; `, waiting-ahead count,
+  first-callback deduplication and a measured twelve-second wait.
+- Guide and references: added the Machine Verification Capacity section immediately
+  after Active Implement Run ceiling, the required sentences and Project Config
+  warning, gated/ungated steps, FIFO order, owner-death proof and per-Home scope.
+  Item 9 of the canonical implement reference describes the machine bound, order,
+  exclusive retry, budget pause and wait events. The generated mirror matches it.
+
+### Focused checks
+
+All commands below ran in this worktree. These are implementation checks, not
+Daemon Verification or terminal QA.
+
+- `go test -count=1 -race -timeout 8m ./internal/daemon ./internal/cli -run 'Test(EveryDaemonVerificationStep|AStopRequestWhileWaitingForTheMachine|TheRunBudgetDoesNotRun|TheMachineCapacityWait|NilMachineVerification|ImplementGivesTheEngine|MachineVerificationRelease)'`
+  — exit 0, daemon 3.551 s and CLI 2.042 s, including the final code/test edits.
+- `go test -count=1 -race -timeout 15m ./internal/daemon ./internal/cli -run '^Test(TaskBudget|TaskCycle.*Verification|PreWorkProbe|Repository.*Precondition|IntegratedRepository|QA.*Repository|Implement|RunCeiling)'`
+  — exit 0, daemon 9.036 s and CLI 13.440 s. Existing tests were unchanged;
+  no existing test needed a `runs.max_verifying: 0` override.
+- `make skills-sync` — exit 0; both Roundfix `SKILL.md` files and both implement
+  references subsequently compared byte-identical with `cmp`.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  — exit 0; the command raised Roundfix from `0.1.212` to `0.1.213` and updated
+  its owned-version record. No mirror or version was hand-edited.
+- `make baseline-digests` — exit 0, `changed: false`; no derived Baseline paths changed.
+- `go test -count=1 -timeout 5m ./skills -run '^(TestCheckValidatesRoundfixSkillArtifacts|TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillIndexLinksResolve|TestRoundfixSkillEntryFileStaysWithinItsBudget)$'`
+  — exit 0.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^TestUserGuideLinksResolve$'`
+  — exit 0.
+- `git diff --check` — exit 0. Changed/untracked-path inspection found only this
+  Task's declared files. No sibling Task, Task Graph, status field or QA settlement
+  section was edited. The only changed Governed Paths are the three this Task
+  authorizes.
+
+The sandbox initially denied the Go build cache and the canonical skill write;
+the same operations succeeded through the required escalated tool calls.
+
+Final regeneration, after all guide/skill edits and this evidence entry:
+`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+The tool transcript records its process outcome; only
+`docs/references/behavior-surfaces.json` is its sanctioned output.
+
+The declared Verification commands, full suites and terminal settlement remain
+for the Daemon. No commit, push or Pull Request was made. No follow-up outside
+this slice was required.
