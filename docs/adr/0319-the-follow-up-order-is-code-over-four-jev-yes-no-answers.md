@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-22T22:00:00Z
-updated_at: 2026-10-22T22:00:00Z
+updated_at: 2026-11-10T19:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -39,6 +39,8 @@ comes from its declared type: `fix`, `perf` and a Finding are `health`,
 without an answer. The report names the reason, and the command still exits
 `0`, as ADR-0200 requires of every advisory judgment.
 
+**Amended by [ADR-0383](0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md) (2026-11-10).** A message entry that carries `blocked_work`, the sender's own declaration that its work is blocked until this project answers, ranks in `unblocking` with basis `declared` without an answer: it comes before every other item, the oldest first, and is never sent to the judge. Every other item is still ordered from the four answers or, without an answer, by its type, which never places it in `unblocking`.
+
 **The judge reads Follow-up Items, and nothing else changes.** A request's
 state is one item's kind, type, origin, title and an excerpt of its text: a
 pending Inbox Entry of this repository's inbox namespace, a message the skill
@@ -63,6 +65,8 @@ directory User Config names, and is never fetched or pulled.
   code.
 - Order by the declared type alone: rejected as the default, kept as the
   fallback. Only an answer can tell that an item blocks another project.
+  Since ADR-0383 the sender's own declaration also tells it, for a message
+  entry that carries `blocked_work`.
 - Keep the English gate of ADR-0201: rejected. It would skip almost every
   Inbox Entry, which is where blocking requests from other projects arrive.
 - Let the command call ai-memory: rejected. Only the Agent Session sees the

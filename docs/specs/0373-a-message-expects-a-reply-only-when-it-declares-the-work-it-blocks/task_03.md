@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -96,3 +96,24 @@ ADR-0330 carry ADR-0383's amendment notices.
 - `_prd.md` → User Story 2; User Story 3; Core Feature 6; Core Feature 7; Success Metric 5; Success Metric 6; Glossary
 - `_techspec.md` → Current behavior 6; API Contracts 9-11; Testing Approach; Build Order 3
 - ADR-0383
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, evidence-gate
+
+Implementation and focused checks:
+
+- Updated steps 1, 2, 4 and 8 under `## --follow-up` in the canonical modes reference, preserving the existing handoff and settlement wording; `make skills-sync` completed successfully and `cmp` confirmed the canonical and mirror references match.
+- Added `TestTheFollowUpModeRepliesOnlyToDeclaredBlockedWork`, with `t.Parallel()` first and checks over all four `roundfixLayoutSources` using the existing section, numbered-item and whitespace helpers.
+- Updated the `Cross-project Message` and `Follow-up Priority` definitions, added `Blocking Request` with its `_Avoid_` line, and added the dated ADR-0383 amendment notices at the specified locations. Only the pre-existing Daemon status change and this Result changed in the Task file.
+- `gofmt -d skills/roundfix_modes_test.go`: passed with no output.
+- `GOCACHE=/private/tmp/roundfix-task0373-gocache rtk proxy go test ./skills -run '^TestTheFollowUpModeRepliesOnlyToDeclaredBlockedWork$' -count=1`: passed (`ok roundfix/skills 0.263s`); the initial cache-only attempt was blocked by the sandbox's global Go cache, then passed with the temporary cache.
+- `git diff --check`: passed.
+
+Acceptance evidence:
+
+- Both modes copies contain the four changed steps, and the focused contract test passed across all four layouts.
+- `CONTEXT.md` contains the required glossary entries and exact contracted phrases; the full docscontract command remains for Daemon Verification.
+- Both ADRs contain the linked `Amended by ADR-0383 (2026-11-10)` notice and `updated_at: 2026-11-10T19:00:00Z`; the full docscontract command remains for Daemon Verification.
+
+The Task status and declared Verification commands were left for the Daemon. The owned-skill version-record command is the final required Task step and is next.
