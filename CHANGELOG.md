@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.138.0] - 2026-11-10
+
+### A message expects a reply only when it declares the work it blocks
+
+- **The Baseline's cross-project message rules change, and every adopter receives them through `roundfix baseline update`.** A message to another project expects no reply unless the sending project's own work depends on the answer. After sending one that expects none, the sender does not wait, check whether the other project acted, send it again or record a `waiting_on` wait for it. When the sender's work cannot start or continue without the answer, the message says so in its subject and first lines: what is asked and which implementation, Spec or other work is blocked. The receiving project triages such a message first, handles it as its next item without interrupting work already running, answers as soon as the answer exists, and sends no acknowledgment, adoption notice or completion notice to a message that declared no blocked work (requested by the maintainer). The three clauses keep their ids.
+- **`roundfix follow-up` ranks a message that declares blocked work first, without the judge.** A `roundfix/follow-up-messages/v1` entry may carry `blocked_work`, one line in the sender's own words. Such an entry ranks first in `unblocking` with basis `declared`, names the blocked project and its `blocked_work` in text and JSON, and is never sent to the judge. A value with a line break, or one on an entry without `from`, is refused. An older binary ignores the field.
+- **The `--follow-up` Skill Mode fills `blocked_work`, replies only to declared blocked work and never watches a message it sent.** The glossary adds **Blocking Request** and changes **Cross-project Message** and **Follow-up Priority**. ADR-0383 amends ADR-0319 and ADR-0330.
+
 ## [0.137.9] - 2026-11-10
 
 ### A Results row after a blank line is refused, naming the line
