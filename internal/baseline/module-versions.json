@@ -127,6 +127,10 @@
       {
         "version": 27,
         "digest": "sha256:99fb9f5b717be62c275cbdfea4884c6afcea5aea775168817f9bf6ba8b4e970c"
+      },
+      {
+        "version": 28,
+        "digest": "sha256:cedfa7f210d1e8b41818a12d38f502ee6a322ddfa144b78f97904b9db04b668c"
       }
     ],
     "external-triage": [

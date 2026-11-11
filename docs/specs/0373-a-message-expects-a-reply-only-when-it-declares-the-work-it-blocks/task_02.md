@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -112,3 +112,28 @@ guide and setup manifest are refreshed the same way.
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 3; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; Success Metric 1
 - `_techspec.md` → Current behavior 5; API Contract 8; Invariants 4 and 5; Declared breaks; Testing Approach; Build Order 2
 - ADR-0383
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, knowledge-workspace, setup-context-driven, roundfix, systematic-debugging, evidence-gate
+
+Implementation:
+
+- Reworded the three cross-project continuity clauses exactly from API Contract 8 and raised `rule.core.cross-project-continuity` from version 2 to 3. The sanctioned module record raised the core module record as required.
+- Added `TestTheMessageClausesAskForAReplyOnlyForBlockedWork`, which builds the Standard TypeScript decision plan and checks exact-once rendering of the four required phrases plus absence of both obsolete phrases.
+- Regenerated the module record, Baseline catalog/profile/formatter-derived files, and this repository's managed guide and setup manifest only through their authorized commands.
+
+Focused checks and evidence:
+
+- `gofmt -w internal/baseline/message_reply_clause_test.go`: passed.
+- `GOCACHE=<temporary /tmp directory> go test ./internal/baseline -run '^TestTheMessageClausesAskForAReplyOnlyForBlockedWork$' -count=1`: passed.
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`: passed and recorded the core module version.
+- `make baseline-digests`: passed and regenerated the declared formatter golden, profile, catalog snapshots and plan goldens.
+- Managed refresh with `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`: verified and applied the two managed postimages. A second run reported `Idempotence: verified`, `File changes: 0`, and `Result: approved Baseline Plan is already applied`.
+- The first sandboxed refresh attempt could not create the Git-private transaction directory; the same authorized command succeeded after allowing access to the shared `.git/worktrees` transaction path. No generated file was hand-edited.
+
+Acceptance evidence:
+
+- The focused render test proves the sender, content and receiver phrases occur once each and the two obsolete phrases are absent from the resolved guide postimage.
+- The source diff keeps all three clause ids, `mandatory` enforcement and their existing `replaces` lists; no clause was added or removed.
+- The managed guide and setup manifest are current according to the second idempotent refresh. The Task's declared Verification remains for the Daemon and was not run in this turn.
