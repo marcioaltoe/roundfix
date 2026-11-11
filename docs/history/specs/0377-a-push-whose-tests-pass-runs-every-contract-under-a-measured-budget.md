@@ -24,6 +24,7 @@ regeneration:
     outputs:
       - docs/agents/setup-context.json
 promoted: []
+pull_request: "825"
 type: fix
 ---
 
