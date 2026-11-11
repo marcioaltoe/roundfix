@@ -1,0 +1,5 @@
+command: out="$(go test -count=1 -timeout 20m -v -run '^(TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity|TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget|TestTheCoreBudgetEnvironmentReplacesBothVariables)$' ./internal/corebudget 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget TestTheCoreBudgetEnvironmentReplacesBothVariables; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done
+exit: 0
+stdout:
+
+stderr:

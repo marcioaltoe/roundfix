@@ -1,0 +1,38 @@
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/agent/acpx_runner.go
+before: return corebudget.Environment(nil, cores)
+after: return corebudget.Environment(nil, 0)
+command: go test -count=1 -timeout 20m -v -run '^TestAnAgentSessionReceivesTheCoreBudget$/^budget_three$' ./internal/agent
+BASELINE exit: 1
+stdout:
+FAIL	./internal/agent [setup failed]
+FAIL
+
+stderr:
+# ./internal/agent
+open /Users/marcio/Library/Caches/go-build/38/38b50526766110d230cabfd0551bf5be603d208fc992ebb363fecc8c865c12e7-d: operation not permitted
+
+MUTATION exit: 1
+stdout:
+FAIL	roundfix/internal/agent [setup failed]
+FAIL
+
+stderr:
+# roundfix/internal/agent
+internal/agent/codex_spawn.go:11:2: open /Users/marcio/Library/Caches/go-build/c7/c75581e64f140e163eb47d65ec3ea79b677db3dc0f92d543ced8bcef27654e89-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/acpx_runner.go:21:2: open /Users/marcio/Library/Caches/go-build/c4/c4f4fa85cfc4a69474009c1e0258407a8c15139f6e947d7f048212ff7df00d4d-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/acpx_runner.go:22:2: open /Users/marcio/Library/Caches/go-build/a9/a98ebc4b72eb91372519be8193d81ef580778c0ef0a9ca168d1432ec5da7d24d-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/acpx_runner.go:23:2: open /Users/marcio/Library/Caches/go-build/0d/0dd5b01b194328881cd93522865e045631f2bdd68ebd926e450a022a56893046-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/light_session.go:7:2: open /Users/marcio/Library/Caches/go-build/9a/9a9ac1e87dac683d827f14348571df88972e8b92f6671814f8d33dbafed09099-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/agent.go:13:2: open /Users/marcio/Library/Caches/go-build/4b/4b60bf4206b25c462102d3f0df72a56fadb9a128374dd1f71e67eecbb9520278-d: operation not permitted
+# roundfix/internal/agent
+internal/agent/acpx_runner.go:24:2: open /Users/marcio/Library/Caches/go-build/e3/e31781fdf05006ec634e824d53585235eeb2a19ff3fece76261d65f24a6db210-d: operation not permitted

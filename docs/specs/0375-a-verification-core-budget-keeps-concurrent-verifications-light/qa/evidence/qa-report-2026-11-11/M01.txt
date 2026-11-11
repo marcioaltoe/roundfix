@@ -1,0 +1,41 @@
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/corebudget/corebudget.go
+before: digits := explicit != ""
+after: digits := false
+command: go test -count=1 -timeout 20m -v -run '^TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget$/^positive_whole_number$' ./internal/corebudget
+BASELINE exit: 0
+stdout:
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+--- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.195s
+
+stderr:
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+    corebudget_test.go:90: Compute with ["GOMAXPROCS=4"] = {Cores:3 LogicalCPUs:12 Share:6 Divisor:2 Source:runs.max_verifying MaxVerifying:2 MaxActive:4}, want {Cores:4 LogicalCPUs:12 Share:6 Divisor:1 Source:environment MaxVerifying:2 MaxActive:4}
+    corebudget_test.go:93: Describe() = "half of 12 logical CPUs divided by runs.max_verifying 2", want "GOMAXPROCS 4 in the environment"
+--- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.192s
+FAIL
+
+stderr:

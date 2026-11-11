@@ -1,0 +1,71 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget$' ./internal/corebudget
+exit: 0
+stdout:
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/larger_than_the_share
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/larger_than_the_share
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/last_entry_wins
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/last_entry_wins
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/zero_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/zero_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/negative_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/negative_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/text_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/text_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/empty_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/empty_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/the_Roundfix_variable_alone_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/the_Roundfix_variable_alone_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/invalid_last_entry_wins
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/invalid_last_entry_wins
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/maximum_whole_number
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/maximum_whole_number
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/overflow_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/overflow_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/non_ASCII_digits_are_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/non_ASCII_digits_are_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/whitespace_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/whitespace_is_ignored
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/leading_zeros_are_digits
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/leading_zeros_are_digits
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/leading_zeros_are_digits
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/maximum_whole_number
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/whitespace_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/the_Roundfix_variable_alone_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/non_ASCII_digits_are_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/text_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/negative_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/zero_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/last_entry_wins
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/larger_than_the_share
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/overflow_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/invalid_last_entry_wins
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/empty_is_ignored
+--- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/positive_whole_number (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/leading_zeros_are_digits (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/maximum_whole_number (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/whitespace_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/the_Roundfix_variable_alone_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/non_ASCII_digits_are_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/text_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/negative_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/zero_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/last_entry_wins (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/larger_than_the_share (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/overflow_is_ignored (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/invalid_last_entry_wins (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/empty_is_ignored (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.062s
+
+stderr:

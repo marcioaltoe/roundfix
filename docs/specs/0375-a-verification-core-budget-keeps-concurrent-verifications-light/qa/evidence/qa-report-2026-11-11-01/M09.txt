@@ -1,0 +1,38 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget$/^budget_five$' ./internal/daemon
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+--- PASS: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget (0.00s)
+    --- PASS: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five (0.16s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 173.26675ms before and 155.109916ms after
+ok  	roundfix/internal/daemon	0.837s
+
+Mutant exit: 1
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+    run_core_budget_test.go:55: Agent Session roundfix-run_20261111T085643Z_13eb41aac8462a3f cores = 0, want 5
+--- FAIL: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget (0.00s)
+    --- FAIL: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five (0.15s)
+FAIL
+suiteguard: guard cost: measured 3101 paths; fingerprint took 166.450833ms before and 155.58ms after
+FAIL	roundfix/internal/daemon	0.803s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/daemon/agent_session_owner.go
+Before: req.Cores = engine.deps.VerificationCores
+After: req.Cores = 0
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

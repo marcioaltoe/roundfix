@@ -1,0 +1,30 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity$/^default_on_twelve$' ./internal/corebudget
+Exit: 1
+stdout:
+Baseline exit: 1
+FAIL	./internal/corebudget [setup failed]
+FAIL
+
+Mutant exit: 1
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+    corebudget_test.go:50: Compute({LogicalCPUs:12 MaxVerifying:1 MaxActive:4 Environ:[]}) = {Cores:12 LogicalCPUs:12 Share:12 Divisor:1 Source:runs.max_verifying MaxVerifying:1 MaxActive:4}, want {Cores:6 LogicalCPUs:12 Share:6 Divisor:1 Source:runs.max_verifying MaxVerifying:1 MaxActive:4}
+--- FAIL: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity (0.00s)
+    --- FAIL: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.282s
+FAIL
+
+stderr:
+# ./internal/corebudget
+open /Users/marcio/Library/Caches/go-build/ca/caa03de22df4a57002684cc9354ba77e0026639447d1227eb2f339b02efb75d2-d: operation not permitted
+
+
+One-line mutation in internal/corebudget/corebudget.go
+Before: budget.LogicalCPUs/2
+After: budget.LogicalCPUs
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

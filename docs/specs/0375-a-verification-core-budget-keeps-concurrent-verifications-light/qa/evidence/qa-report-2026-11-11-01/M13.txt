@@ -1,0 +1,57 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestLinuxLaneRunsTheChangedPackagesInAContainer$' ./internal/cli
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== PAUSE TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== CONT  TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/module
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sum
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages
+--- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer (1.79s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file (0.67s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata (0.22s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/module (0.21s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sum (0.21s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages (0.21s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 162.969834ms before and 155.522084ms after
+ok  	roundfix/internal/cli	2.547s
+
+Mutant exit: 1
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== PAUSE TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== CONT  TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file
+[fixture environment omitted]
+[fixture environment omitted]
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata
+[fixture environment omitted]
+[fixture environment omitted]
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/module
+[fixture environment omitted]
+[fixture environment omitted]
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sum
+[fixture environment omitted]
+[fixture environment omitted]
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages
+--- FAIL: TestLinuxLaneRunsTheChangedPackagesInAContainer (1.71s)
+    --- FAIL: TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file (0.65s)
+    --- FAIL: TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata (0.21s)
+    --- FAIL: TestLinuxLaneRunsTheChangedPackagesInAContainer/module (0.19s)
+    --- FAIL: TestLinuxLaneRunsTheChangedPackagesInAContainer/sum (0.18s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages (0.21s)
+FAIL
+suiteguard: guard cost: measured 3101 paths; fingerprint took 155.344292ms before and 155.635167ms after
+FAIL	roundfix/internal/cli	2.458s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/cli/deliver_linux_lane.go
+Before: if request.Cores > 0 {
+After: if request.Cores < 0 {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

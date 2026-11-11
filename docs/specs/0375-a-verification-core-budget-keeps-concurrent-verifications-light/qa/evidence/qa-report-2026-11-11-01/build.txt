@@ -1,0 +1,7 @@
+Command: make build
+Worktree head: 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779
+Exit: 0
+Output:
+gocache-bound: warning: shared cache above its bound, and no other entry is idle for 2h0m0s; the build continues
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=84d94eab-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-11 05:50:39 -0300'" -o bin/roundfix ./cmd/roundfix
+Cache path and size omitted; no cache setting was changed.

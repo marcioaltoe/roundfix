@@ -1,0 +1,60 @@
+commit_range: 996769bbe4eb8e4187fbde68e90ec1ebb456e4a9..763fb7f208209b282299d8a0faca96078093c864
+Approved authorization is byte-identical to the record at the Delivery Base.
+Seeded mechanical audit already covers the governed Task commits 02 and 03.
+task_01: 9f0b955bb9cf6fa91f0c1f1569ed02af0d7dd104; changed files:
+  docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/task_01.md
+  internal/corebudget/corebudget.go
+  internal/corebudget/corebudget_test.go
+  internal/daemon/daemon.go
+  internal/daemon/verification_cores_test.go
+task_02: 4a313873276b5776400cd948b42297435cbc86e8; changed files:
+  .agents/skills/roundfix/SKILL.md
+  .agents/skills/roundfix/references/implement.md
+  docs/references/behavior-surfaces.json
+  docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/task_02.md
+  docs/user-guide/configuration.md
+  internal/agent/acpx_runner.go
+  internal/agent/acpx_runner_test.go
+  internal/agent/agent.go
+  internal/agent/core_budget_test.go
+  internal/cli/cli.go
+  internal/cli/implement.go
+  internal/cli/verification_cores.go
+  internal/cli/verification_cores_test.go
+  internal/daemon/agent_session_owner.go
+  internal/daemon/engine.go
+  internal/daemon/run_core_budget_test.go
+  internal/daemon/task_engine.go
+  internal/daemon/verification_probe.go
+  skills/roundfix/SKILL.md
+  skills/roundfix/references/implement.md
+  skills/testdata/owned-skill-versions.json
+task_03: a77ea3a6e532307aa3fa27eca66e30eb305c321a; changed files:
+  .agents/skills/roundfix/SKILL.md
+  .agents/skills/roundfix/references/deliver.md
+  .agents/skills/roundfix/references/setup.md
+  docs/references/behavior-surfaces.json
+  docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/task_03.md
+  docs/user-guide/commands/deliver.md
+  docs/user-guide/commands/doctor.md
+  internal/cli/deliver_core_budget_test.go
+  internal/cli/deliver_lane.go
+  internal/cli/deliver_linux_lane.go
+  internal/cli/deliver_linux_lane_test.go
+  internal/cli/deliver_workflow.go
+  internal/cli/doctor.go
+  internal/cli/doctor_verification_cores.go
+  internal/cli/doctor_verification_cores_test.go
+  internal/cli/health.go
+  skills/roundfix/SKILL.md
+  skills/roundfix/references/deliver.md
+  skills/roundfix/references/setup.md
+  skills/testdata/owned-skill-versions.json
+task_04: 763fb7f208209b282299d8a0faca96078093c864; changed files:
+  CONTEXT.md
+  docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/task_04.md
+All five changed governed paths are bounded by the approved grant.
+Authorization predates every consuming Task; no authorization or fix is folded into a Task commit.
+No prerequisite/consequent fix is declared; the seeded consequent-fix mechanical skip is preserved.
+No forbidden file, Baseline module, vendored skill or QA settlement section changed.
+No tracked working-tree delta; Agent-authored output is confined to this Spec QA directory.

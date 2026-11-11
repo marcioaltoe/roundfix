@@ -1,0 +1,48 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestTheRepositoryGateCommandReceivesTheCoreBudget$' ./internal/cli
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+--- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget (0.00s)
+    --- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two (0.21s)
+    --- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS (0.21s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 159.411208ms before and 155.56475ms after
+ok  	roundfix/internal/cli	0.970s
+
+Mutant exit: 1
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+    deliver_core_budget_test.go:29: gate environment = "4|4", want "5|5"
+=== NAME  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+    deliver_core_budget_test.go:29: gate environment = "4|4", want "3|3"
+--- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget (0.00s)
+    --- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS (0.21s)
+    --- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two (0.21s)
+FAIL
+suiteguard: guard cost: measured 3101 paths; fingerprint took 161.336958ms before and 152.581125ms after
+FAIL	roundfix/internal/cli	1.224s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/cli/deliver_workflow.go
+Before: Cores:      cores,
+After: Cores:      0,
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

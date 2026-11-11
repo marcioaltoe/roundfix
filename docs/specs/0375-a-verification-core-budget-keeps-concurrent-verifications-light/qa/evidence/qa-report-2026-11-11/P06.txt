@@ -1,0 +1,6 @@
+command: go build -buildvcs=false ./internal/...
+exit: 1
+stdout:
+
+stderr:
+pattern ./internal/...: open /Users/marcio/Library/Caches/go-build/3f/3ff691863ce64abc414127e86b516043b37dabd2746ac02dfe2c1cc6ef8e3b46-d: operation not permitted

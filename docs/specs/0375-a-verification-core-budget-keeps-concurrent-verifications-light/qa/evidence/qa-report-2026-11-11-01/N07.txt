@@ -1,0 +1,21 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestImplementGivesTheEngineTheVerificationCoreBudget$' ./internal/cli
+Exit: 0
+stdout:
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+--- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget (0.00s)
+    --- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two (0.37s)
+    --- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS (0.37s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3186 paths; fingerprint took 501.116875ms before and 179.591875ms after
+ok  	roundfix/internal/cli	1.451s
+
+stderr:

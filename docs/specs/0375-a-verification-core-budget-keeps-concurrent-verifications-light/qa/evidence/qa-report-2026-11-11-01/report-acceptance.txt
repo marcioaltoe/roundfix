@@ -1,0 +1,5 @@
+Command: ./bin/roundfix qa-report accept docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/qa/qa-report-2026-11-11-01.md
+Exit: 0
+stdout:
+
+stderr:

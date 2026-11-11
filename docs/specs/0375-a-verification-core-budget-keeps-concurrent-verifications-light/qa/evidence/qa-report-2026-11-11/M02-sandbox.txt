@@ -1,0 +1,36 @@
+Fixture environment values except numeric budgets are omitted.
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/corebudget/corebudget.go
+before: if explicit[i] < '0' || explicit[i] > '9' {
+after: if (explicit[i] < '0' || explicit[i] > '9') && !(i == 0 && explicit[i] == '+') {
+command: go test -count=1 -timeout 20m -v -run '^TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget$/^signed_is_ignored$' ./internal/corebudget
+BASELINE exit: 1
+stdout:
+FAIL	./internal/corebudget [setup failed]
+FAIL
+
+stderr:
+# ./internal/corebudget
+open /Users/marcio/Library/Caches/go-build/88/8870771d59c628af94fe8c1a42386a81d560156c822b7db6bf50d4a04bbf8be5-d: operation not permitted
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+    corebudget_test.go:90: Compute with ["GOMAXPROCS=<value omitted>"] = {Cores:4 LogicalCPUs:12 Share:6 Divisor:1 Source:environment MaxVerifying:2 MaxActive:4}, want {Cores:3 LogicalCPUs:12 Share:6 Divisor:2 Source:runs.max_verifying MaxVerifying:2 MaxActive:4}
+    corebudget_test.go:93: Describe() = "GOMAXPROCS 4 in the environment", want "half of 12 logical CPUs divided by runs.max_verifying 2"
+--- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.195s
+FAIL
+
+stderr:

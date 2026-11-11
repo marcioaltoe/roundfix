@@ -1,0 +1,5 @@
+command: go build -buildvcs=false ./internal/...
+exit: 0
+stdout:
+
+stderr:

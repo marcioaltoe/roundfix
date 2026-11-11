@@ -1,0 +1,41 @@
+Fixture environment values except numeric budgets are omitted.
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/corebudget/corebudget.go
+before: if cores > 0 && (name == GoVariable || name == Variable) {
+after: if cores > 0 && name == Variable {
+command: go test -count=1 -timeout 20m -v -run '^TestTheCoreBudgetEnvironmentReplacesBothVariables$/^budget_four$' ./internal/corebudget
+BASELINE exit: 0
+stdout:
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+--- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables (0.00s)
+    --- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.195s
+
+stderr:
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+    corebudget_test.go:120: Environment() = ["FIRST=<value omitted>" "GOMAXPROCS=12" "MIDDLE=<value omitted>" "GOMAXPROCS_EXTRA=<value omitted>" "GOMAXPROCS=8" "LAST=<value omitted>" "GOMAXPROCS=4" "ROUNDFIX_VERIFICATION_CORES=4"], want ["FIRST=<value omitted>" "MIDDLE=<value omitted>" "GOMAXPROCS_EXTRA=<value omitted>" "LAST=<value omitted>" "GOMAXPROCS=4" "ROUNDFIX_VERIFICATION_CORES=4"]
+--- FAIL: TestTheCoreBudgetEnvironmentReplacesBothVariables (0.00s)
+    --- FAIL: TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.195s
+FAIL
+
+stderr:

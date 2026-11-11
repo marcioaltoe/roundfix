@@ -1,0 +1,164 @@
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+
+ROOT = Path.cwd()
+SLUG = '0375-a-verification-core-budget-keeps-concurrent-verifications-light'
+SPEC = ROOT / 'docs/specs' / SLUG
+OUT = SPEC / 'qa/evidence/qa-report-2026-11-11'
+REPORT = SPEC / 'qa/qa-report-2026-11-11.md'
+HEAD = '763fb7f208209b282299d8a0faca96078093c864'
+BASE = '996769bbe4eb8e4187fbde68e90ec1ebb456e4a9'
+RANGE = BASE + '..' + HEAD
+
+def sanitize(text):
+    # Mutation assertions may print fixture environment entries; keep only budget numbers.
+    def entry(match):
+        name, value = match.group(1), match.group(2)
+        if name in ('GOMAXPROCS', 'ROUNDFIX_VERIFICATION_CORES') and value.isascii() and value.isdigit():
+            return match.group(0)
+        return '"' + name + '=<value omitted>"'
+    return re.sub(r'"([A-Z][A-Z0-9_]*)=([^"\n]*)"', entry, text)
+NAMES = [
+ ('internal/corebudget', 'TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity'),
+ ('internal/corebudget', 'TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget'),
+ ('internal/corebudget', 'TestTheCoreBudgetEnvironmentReplacesBothVariables'),
+ ('internal/daemon', 'TestTheVerificationCommandReceivesTheCoreBudget'),
+ ('internal/daemon', 'TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget'),
+ ('internal/agent', 'TestAnAgentSessionReceivesTheCoreBudget'),
+ ('internal/cli', 'TestImplementGivesTheEngineTheVerificationCoreBudget'),
+ ('internal/cli', 'TestTheRepositoryGateCommandReceivesTheCoreBudget'),
+ ('internal/cli', 'TestLinuxLaneRunsTheChangedPackagesInAContainer'),
+ ('internal/cli', 'TestDoctorReportsTheVerificationCoreBudget'),
+]
+PROVENANCE = {'G01': 'repository Verification'}
+PROVENANCE.update({f'N{i:02}': 'QA Task Requirement 2' for i in range(1, 11)})
+PROVENANCE.update({f'P{i:02}': 'QA Task Requirement 2' for i in range(1, 10)})
+PROVENANCE.update({f'M{i:02}': 'QA Task Requirement 4' for i in range(1, 15)})
+PROVENANCE.update({'C01': 'QA Task Requirement 2', 'D01': 'QA Task Requirement 2',
+                   'S01': 'QA Task Requirement 10',
+                   **{f'X{i:02}': 'outside-evidence row' for i in range(1, 5)},
+                   'U01': 'PRD Unreachable Acceptance: after the release that carries this Spec',
+                   'PR01': 'Pull Request row'})
+
+def update(row, status, detail):
+    text = REPORT.read_text()
+    pattern = r'^\| ' + re.escape(row) + r' \| [^|]+ \| [^\n]+ \|$'
+    replacement = '| ' + row + ' | ' + status + ' | ' + PROVENANCE[row] + ' |'
+    text, count = re.subn(pattern, lambda m: replacement, text, flags=re.M)
+    assert count == 1, (row, count)
+    block = '\n### ' + row + '\n\n' + detail.strip() + '\n'
+    old = r'\n### ' + row + r'\n.*?(?=\n### |\n## |\Z)'
+    if re.search(old, text, re.S):
+        text = re.sub(old, lambda m: block, text, flags=re.S)
+    else:
+        text += block
+    REPORT.write_text(text)
+
+def run(row, args, *, cwd=ROOT, env=None, expected=0, marker=None, filename=None):
+    print(row + ': running ' + (shlex.join(args) if isinstance(args, list) else args), flush=True)
+    result = subprocess.run(args, cwd=cwd, env=env, shell=isinstance(args, str),
+                            capture_output=True, text=True)
+    ok = result.returncode == expected
+    if marker:
+        ok = ok and marker in result.stdout + result.stderr
+    name = filename or row + '.txt'
+    command = shlex.join(args) if isinstance(args, list) else args
+    log = ('command: ' + command + '\nexit: ' + str(result.returncode)
+           + '\nstdout:\n' + result.stdout + '\nstderr:\n' + result.stderr)
+    (OUT / name).write_text(log)
+    update(row, 'pass' if ok else 'fail',
+           'Inputs: `repository_path` = `' + str(ROOT) + '`.\n\n'
+           'Command: `' + command.replace('`', '\\`') + '`. Exit ' + str(result.returncode)
+           + '. ' + ('Expected observable confirmed.' if ok else 'Expected observable was not reached.')
+           + '\n\nEvidence: [command and output](evidence/qa-report-2026-11-11/' + name + ').')
+    print(row + ': ' + ('PASS' if ok else 'FAIL') + ', exit ' + str(result.returncode), flush=True)
+    return result, ok
+
+def init():
+    text = REPORT.read_text()
+    rows = '\n'.join('| ' + row + ' | pending | ' + source + ' |' for row, source in PROVENANCE.items())
+    text = text.replace('| - | --- | --- |\n', '| - | --- | --- |\n' + rows + '\n', 1)
+    metadata = ('spec: ' + SLUG + '\ndate: 2026-11-11\nbuild: "' + HEAD + '"\n'
+                'status: in-progress\nsurfaces: [backend, cli, docs]\n'
+                'user_flow_executables:\n  - bin/roundfix\n'
+                '  - docs/specs/' + SLUG + '/qa/evidence/qa-report-2026-11-11/cli-runner.py.txt\n'
+                '  - docs/specs/' + SLUG + '/qa/evidence/qa-report-2026-11-11/gate-runner.py.txt\n')
+    text = text.replace('verdict: pending\n', 'verdict: pending\n' + metadata, 1)
+    text += ('\n## Scope and environment\n\n'
+             'Full authored terminal gate at the audited head. All four implementation Tasks are completed; '
+             '`task_05` is the terminal node and transitively depends on every non-QA leaf. '
+             'No prior report or carried row exists. Mechanical findings and skips above are preserved. '
+             'No seeded mechanical row was present.\n\n'
+             'The strict precondition passed through the newly built `./bin/roundfix`; '
+             '[output](evidence/qa-report-2026-11-11/precondition.txt). '
+             'Its skipped lifecycle detectors have no applicable artifacts; no Surface Transcript is declared. '
+             'The doctor line is deliberately exercised with hermetic fake dependencies, because real '
+             'doctor starts ACP adapters. No live Agent, real Docker, GitHub, network, credential or real '
+             'Roundfix Home is used. Every public binary invocation gets fresh HOME and TMPDIR, '
+             'retains Go cache locations without logging their values, removes all Judge Key Variables '
+             'and GH_TOKEN/GITHUB_TOKEN/TYPESAFE_API_KEY, and deletes its temporary directories. '
+             'Go suites keep the existing toolchain HOME/TMPDIR; their fixtures isolate product state. '
+             'No checkout write is performed while a suite runs; captured output is persisted after exit.\n\n'
+             'Coverage sources: QA Requirements 2, 4 and 10 (the numbered requirements starting '
+             'MUST verify or MUST run), repository Verification, four outside-evidence rows, '
+             'the one declared Unreachable Acceptance criterion and the Pull Request row. '
+             'Other authored requirements are execution obligations recorded within those rows or '
+             'the scope/Outcome. Risks are budget calculation, duplicate environment entries, '
+             'missing propagation sites, doctor warnings/read-only behavior, docs drift and unauthorized scope. '
+             'Default unrelated frontend, destructive, data and network probes do not apply to the declared surfaces.\n\n'
+             '## Row evidence\n')
+    REPORT.write_text(text)
+    update('G01', 'pass', 'Inputs: `repository_path` = `' + str(ROOT) + '`.\n\n'
+           'The Daemon reports `make verify-changed`: pass, exit 0, at `' + HEAD
+           + '`. Diagnostics were removed on success. This is supplied Daemon evidence; '
+           'the Agent did not rerun repository Verification. `make build` exited 0 in this worktree; '
+           '[build output](evidence/qa-report-2026-11-11/build.txt). The binary build commit has a '
+           '`-dirty` suffix because the untracked seeded QA directory existed before building; '
+           'implementation source matches the audited head.')
+
+def named():
+    for i, (package, name) in enumerate(NAMES, 1):
+        run(f'N{i:02}', ['go', 'test', '-count=1', '-timeout', '20m', '-v', '-run', '^' + name + '$', './' + package],
+            marker='--- PASS: ' + name + ' ')
+
+def packages():
+    for i, package in enumerate(['corebudget', 'daemon', 'agent', 'delivery'], 1):
+        run(f'P{i:02}', ['go', 'test', '-count=1', '-timeout', '30m', './internal/' + package])
+    run('P05', ['go', 'test', '-count=1', '-timeout', '40m', '-run', 'Implement|Doctor|Deliver|Gate|Lane', './internal/cli'])
+    windows = os.environ.copy()
+    windows['GOOS'] = 'windows'
+    run('P06', ['go', 'build', '-buildvcs=false', './internal/...'], env=windows)
+    run('P07', ['go', 'test', '-count=1', '-timeout', '30m', '-tags', 'docscontract', './internal/docscontract'])
+    run('P08', ['go', 'test', '-count=1', '-timeout', '20m', './skills'])
+    run('P09', ['go', 'test', '-count=1', '-timeout', '20m', '-v', '-tags', 'docscontract', './internal/docscontract',
+                '-run', '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$'])
+
+def tasks():
+    commands = []
+    for i in range(1, 5):
+        task = (SPEC / f'task_{i:02}.md').read_text()
+        section = task.split('## Verification\n', 1)[1].split('\n## ', 1)[0]
+        for number, command in enumerate(re.findall(r'^- `(.*)` — expected:', section, re.M), 1):
+            commands.append((f'task_{i:02}-{number}', command))
+    assert len(commands) == 9, len(commands)
+    for name, command in commands:
+        print(name + ': running authored Verification', flush=True)
+        result = subprocess.run(command, shell=True, cwd=ROOT, capture_output=True, text=True)
+        (OUT / (name + '.txt')).write_text(sanitize('command: ' + command + '\nexit: ' + str(result.returncode)
+                                          + '\nstdout:\n' + result.stdout + '\nstderr:\n' + result.stderr))
+        print(name + ': exit ' + str(result.returncode), flush=True)
+
+def cache_access_retry():
+    run('P02', ['go', 'test', '-count=1', '-timeout', '30m', './internal/daemon'], filename='P02-cache-access.txt')
+    windows = os.environ.copy()
+    windows['GOOS'] = 'windows'
+    run('P06', ['go', 'build', '-buildvcs=false', './internal/...'], env=windows, filename='P06-cache-access.txt')
+
+if __name__ == '__main__':
+    {'init': init, 'named': named, 'packages': packages, 'tasks': tasks,
+     'cache-access-retry': cache_access_retry}[sys.argv[1]]()

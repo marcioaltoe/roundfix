@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 30m ./internal/daemon
+exit: 1
+stdout:
+--- FAIL: TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch (0.20s)
+    run_disposition_characterization_test.go:302: build Roundfix CLI: exit status 1
+        open /Users/marcio/Library/Caches/go-build/2f/2f91ecc2410717e9a7658f0a3321177732462a12aaf7a36bfa81477f3942b2de-d: operation not permitted
+FAIL
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3120 paths; fingerprint took 410.483ms before and 621.393333ms after
+FAIL	roundfix/internal/daemon	59.113s
+FAIL
+
+stderr:

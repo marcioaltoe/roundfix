@@ -1,0 +1,7 @@
+Outside sources, read 2026-11-10:
+https://github.com/facebook/jest/blob/master/packages/jest-config/src/getMaxWorkers.ts
+https://vitest.dev/config/maxworkers
+PRD-quoted Jest passage: In watch mode, Jest should be unobtrusive and not use all available CPUs.
+PRD-quoted Vitest passage: if `watch` is enabled, uses half of all available parallelism
+Current comparison: N01/default_on_twelve passed, asserting six of twelve logical CPUs.
+These sources support the half-machine design rationale, not automatic configuration of non-Go runners.

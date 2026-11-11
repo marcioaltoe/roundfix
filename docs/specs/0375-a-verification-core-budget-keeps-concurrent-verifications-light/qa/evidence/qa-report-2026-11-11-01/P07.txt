@@ -1,0 +1,4 @@
+Command: go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract
+Execution: approved cache access outside Agent sandbox
+Exit: 0
+Go test: 151 passed in 1 packages

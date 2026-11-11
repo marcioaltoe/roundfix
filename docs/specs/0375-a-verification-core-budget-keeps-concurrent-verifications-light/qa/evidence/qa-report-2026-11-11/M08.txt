@@ -1,0 +1,42 @@
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/daemon/task_engine.go
+before: probeCommandsForRun(ctx, engine.deps.Verifier, engine.deps.VerificationCores,
+after: probeCommandsForRun(ctx, engine.deps.Verifier, 0,
+command: go test -count=1 -timeout 20m -v -run '^TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget$/^budget_five$' ./internal/daemon
+BASELINE exit: 0
+stdout:
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+--- PASS: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget (0.00s)
+    --- PASS: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five (0.15s)
+PASS
+suiteguard: guard cost: measured 3100 paths; fingerprint took 160.362375ms before and 158.109916ms after
+ok  	roundfix/internal/daemon	0.767s
+
+stderr:
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget
+=== RUN   TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== PAUSE TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+=== CONT  TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five
+    run_core_budget_test.go:45: Verification "true" (/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudgetbud1967826137/003/artifacts/runs/run_20261111T081749Z_80ed89aa4ae0d7b7/verification/batch-001-probe-1.log) cores = 0, want 5
+--- FAIL: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget (0.00s)
+    --- FAIL: TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget/budget_five (0.16s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 150.8385ms before and 155.092666ms after
+FAIL	roundfix/internal/daemon	0.757s
+FAIL
+
+stderr:

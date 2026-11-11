@@ -1,0 +1,6 @@
+command: grep -F -- '**Verification Core Budget**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Verification Core Budget\*\*(:| —( |$))' || { echo 'missing term **Verification Core Budget**' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qE -- 'and each Agent Session of an Implement Run, as .GOMAXPROCS. and .ROUNDFIX_VERIFICATION_CORES.\.' || { echo 'missing: Verification Core Budget definition' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "_Avoid_: core limit, CPU quota, Machine Verification Capacity" || { printf 'missing phrase in %s: %s\n' CONTEXT.md "_Avoid_: core limit, CPU quota, Machine Verification Capacity" >&2; exit 1; }; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$'
+exit: 0
+stdout:
+ok  	roundfix/internal/docscontract	0.288s
+
+stderr:

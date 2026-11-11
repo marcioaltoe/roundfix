@@ -1,0 +1,5 @@
+Outside source: Vortex measurement, 2026-11-10, 20:45 BRT.
+Committed adopted/promoted copy: docs/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md@763fb7f208209b282299d8a0faca96078093c864
+Compared passage: O `go test` usa todos os núcleos por padrão
+Independent current observations: N04 asserts a real verifier shell reads 4|4|1; N08 asserts a real gate shell reads 3|3, and 5|5 with an override. Both tests passed.
+This is the existing Vortex measurement, not a measurement authored by this Spec.

@@ -1,0 +1,36 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestTheVerificationCommandReceivesTheCoreBudget$/^budget_four$' ./internal/daemon
+Exit: 1
+stdout:
+Baseline exit: 0
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+--- PASS: TestTheVerificationCommandReceivesTheCoreBudget (0.00s)
+    --- PASS: TestTheVerificationCommandReceivesTheCoreBudget/budget_four (0.01s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 164.158084ms before and 155.240875ms after
+ok  	roundfix/internal/daemon	0.651s
+
+Mutant exit: 0
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+--- PASS: TestTheVerificationCommandReceivesTheCoreBudget (0.00s)
+    --- PASS: TestTheVerificationCommandReceivesTheCoreBudget/budget_four (0.01s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 158.112666ms before and 150.619917ms after
+ok  	roundfix/internal/daemon	0.639s
+
+stderr:
+
+
+One-line mutation in internal/daemon/daemon.go
+Before: corebudget.Environment(cmd.Env, req.Cores)
+After: corebudget.Environment(cmd.Env, 0)
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

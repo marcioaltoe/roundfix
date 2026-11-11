@@ -1,0 +1,13 @@
+command: ./bin/roundfix archive 0375-a-verification-core-budget-keeps-concurrent-verifications-light --plan --offline
+HOME and TMPDIR: fresh temporary directories; removed after exit
+GOMODCACHE and GOCACHE: retained at go env values (values omitted)
+unset variables: GH_TOKEN, GITHUB_TOKEN, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_TYPESAFE_API_KEY, TYPESAFE_API_KEY
+exit: 0
+stdout:
+archive plan for 0375-a-verification-core-budget-keeps-concurrent-verifications-light: removes 75 file(s) (310794 bytes) and writes docs/history/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-11.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 65 file(s) (162791 bytes) under qa/evidence/
+judge: skipped (offline)
+promote with: roundfix archive 0375-a-verification-core-budget-keeps-concurrent-verifications-light --promote <path>
+
+stderr:

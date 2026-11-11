@@ -1,0 +1,55 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestImplementGivesTheEngineTheVerificationCoreBudget$' ./internal/cli
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+--- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget (0.00s)
+    --- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS (0.33s)
+    --- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two (0.33s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 156.258708ms before and 148.78725ms after
+ok  	roundfix/internal/cli	1.061s
+
+Mutant exit: 1
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== RUN   TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+=== CONT  TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+=== NAME  TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two
+    verification_cores_test.go:74: Verification "test -f \"$(git rev-parse --git-path 'roundfix-test-agent-task_01.done')\"" cores = 0, want 3
+    verification_cores_test.go:74: Verification "test -f \"$(git rev-parse --git-path 'roundfix-test-agent-task_01.done')\"" cores = 0, want 3
+    verification_cores_test.go:74: Verification "repository check" cores = 0, want 3
+    verification_cores_test.go:79: Agent Session roundfix-run_20261111T085704Z_1787aeef2904123d-task_01 cores = 0, want 3
+=== NAME  TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS
+    verification_cores_test.go:74: Verification "test -f \"$(git rev-parse --git-path 'roundfix-test-agent-task_01.done')\"" cores = 0, want 7
+    verification_cores_test.go:74: Verification "test -f \"$(git rev-parse --git-path 'roundfix-test-agent-task_01.done')\"" cores = 0, want 7
+    verification_cores_test.go:74: Verification "repository check" cores = 0, want 7
+    verification_cores_test.go:79: Agent Session roundfix-run_20261111T085704Z_77ea0d5abc325332-task_01 cores = 0, want 7
+--- FAIL: TestImplementGivesTheEngineTheVerificationCoreBudget (0.00s)
+    --- FAIL: TestImplementGivesTheEngineTheVerificationCoreBudget/half_divided_by_two (0.34s)
+    --- FAIL: TestImplementGivesTheEngineTheVerificationCoreBudget/explicit_GOMAXPROCS (0.34s)
+FAIL
+suiteguard: guard cost: measured 3101 paths; fingerprint took 167.095542ms before and 157.081625ms after
+FAIL	roundfix/internal/cli	1.100s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/cli/implement.go
+Before: cores:        verificationCoreBudget(ctx, loadedConfig.Config).Cores,
+After: cores:        0,
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

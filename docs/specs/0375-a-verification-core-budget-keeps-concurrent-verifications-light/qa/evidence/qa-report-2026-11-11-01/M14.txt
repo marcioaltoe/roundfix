@@ -1,0 +1,38 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestDoctorReportsTheVerificationCoreBudget$/^undivided_with_three_Runs$' ./internal/cli
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestDoctorReportsTheVerificationCoreBudget
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget
+=== CONT  TestDoctorReportsTheVerificationCoreBudget
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+--- PASS: TestDoctorReportsTheVerificationCoreBudget (0.00s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs (0.01s)
+PASS
+suiteguard: guard cost: measured 3101 paths; fingerprint took 158.698583ms before and 155.685625ms after
+ok  	roundfix/internal/cli	0.766s
+
+Mutant exit: 1
+=== RUN   TestDoctorReportsTheVerificationCoreBudget
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget
+=== CONT  TestDoctorReportsTheVerificationCoreBudget
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+    doctor_verification_cores_test.go:108: stdout = "node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ndisk-space: ok\nverification-capacity: ok\nverification-cores: ok (6 per Verification: half of 12 logical CPUs, undivided while runs.max_verifying and runs.max_active are 0; 3 active Implement Runs)\nlinux-lane: ok\ncodex: ok\n", want "node: ok\nacpx: ok\nadapter: ok (claude: claude-agent-acp | codex: codex-acp)\nprofiles: ok (0 distinct tuples; 0 category references)\nrecommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)\npre-pr-review: ok (provider=codex; source=default)\ngh: ok\ngit: ok\nremote: ok\ntoolchain: ok\nenvironment: ok\nskills: ok (39 required: 14 Roundfix-owned, 25 external)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ndisk-space: ok\nverification-capacity: ok\nverification-cores: warn (6 per Verification: half of 12 logical CPUs, undivided while runs.max_verifying and runs.max_active are 0; 3 active Implement Runs; 3 at once may take 18 of 12 logical CPUs; next: lower GOMAXPROCS in the environment or set runs.max_verifying in User Config)\nlinux-lane: ok\ncodex: ok\n"
+--- FAIL: TestDoctorReportsTheVerificationCoreBudget (0.00s)
+    --- FAIL: TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs (0.01s)
+FAIL
+suiteguard: guard cost: measured 3101 paths; fingerprint took 159.813667ms before and 154.97825ms after
+FAIL	roundfix/internal/cli	0.771s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/cli/doctor_verification_cores.go
+Before: if total > int64(budget.LogicalCPUs) {
+After: if false && total > int64(budget.LogicalCPUs) {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

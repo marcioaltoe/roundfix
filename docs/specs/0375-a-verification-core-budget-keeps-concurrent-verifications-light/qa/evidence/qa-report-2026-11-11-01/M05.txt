@@ -1,0 +1,36 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestTheCoreBudgetEnvironmentReplacesBothVariables$/^budget_four$' ./internal/corebudget
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+--- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables (0.00s)
+    --- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.220s
+
+Mutant exit: 1
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+    corebudget_test.go:120: Environment() = ["FIRST=1" "GOMAXPROCS=12" "MIDDLE=a=b" "GOMAXPROCS_EXTRA=keep" "GOMAXPROCS=8" "LAST=3" "GOMAXPROCS=4" "ROUNDFIX_VERIFICATION_CORES=4"], want ["FIRST=1" "MIDDLE=a=b" "GOMAXPROCS_EXTRA=keep" "LAST=3" "GOMAXPROCS=4" "ROUNDFIX_VERIFICATION_CORES=4"]
+--- FAIL: TestTheCoreBudgetEnvironmentReplacesBothVariables (0.00s)
+    --- FAIL: TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.207s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/corebudget/corebudget.go
+Before: if cores > 0 && (name == GoVariable || name == Variable) {
+After: if cores > 0 && name == Variable {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

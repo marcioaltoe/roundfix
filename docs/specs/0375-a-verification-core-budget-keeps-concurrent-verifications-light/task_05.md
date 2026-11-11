@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

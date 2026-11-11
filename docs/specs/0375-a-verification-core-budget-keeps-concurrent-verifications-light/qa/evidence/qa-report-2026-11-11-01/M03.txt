@@ -1,0 +1,37 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity$/^two_at_once$' ./internal/corebudget
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+--- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.232s
+
+Mutant exit: 1
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+    corebudget_test.go:50: Compute({LogicalCPUs:12 MaxVerifying:2 MaxActive:4 Environ:[]}) = {Cores:1 LogicalCPUs:12 Share:6 Divisor:4 Source:runs.max_active MaxVerifying:2 MaxActive:4}, want {Cores:3 LogicalCPUs:12 Share:6 Divisor:2 Source:runs.max_verifying MaxVerifying:2 MaxActive:4}
+    corebudget_test.go:53: Describe() = "half of 12 logical CPUs divided by runs.max_active 4 while runs.max_verifying is 0", want "half of 12 logical CPUs divided by runs.max_verifying 2"
+--- FAIL: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity (0.00s)
+    --- FAIL: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.215s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/corebudget/corebudget.go
+Before: if in.MaxVerifying > 0 {
+After: if false && in.MaxVerifying > 0 {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

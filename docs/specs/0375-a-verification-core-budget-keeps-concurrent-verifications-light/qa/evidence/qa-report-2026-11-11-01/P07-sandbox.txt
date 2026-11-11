@@ -1,0 +1,9 @@
+Command: go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract
+Exit: 1
+stdout:
+FAIL	./internal/docscontract [setup failed]
+FAIL
+
+stderr:
+# ./internal/docscontract
+open /Users/marcio/Library/Caches/go-build/07/07b4a115936d9864415bfeb41881fd04c74ab9d073fbc29203e884909681dc4c-d: operation not permitted

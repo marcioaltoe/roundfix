@@ -1,0 +1,222 @@
+Command: python3 docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/qa/evidence/qa-report-2026-11-11-01/integrity.py.txt
+Exit: 0
+PASS row has three columns N01
+PASS row has three columns N02
+PASS row has three columns N03
+PASS row has three columns N04
+PASS row has three columns N05
+PASS row has three columns N06
+PASS row has three columns P01
+PASS row has three columns P02
+PASS row has three columns P03
+PASS row has three columns P04
+PASS row has three columns P08
+PASS row has three columns P09
+PASS row has three columns C01
+PASS row has three columns X01
+PASS row has three columns X02
+PASS row has three columns X03
+PASS row has three columns X04
+PASS row has three columns G01
+PASS row has three columns N07
+PASS row has three columns N08
+PASS row has three columns N09
+PASS row has three columns N10
+PASS row has three columns P05
+PASS row has three columns P06
+PASS row has three columns P07
+PASS row has three columns M01
+PASS row has three columns M02
+PASS row has three columns M03
+PASS row has three columns M04
+PASS row has three columns M05
+PASS row has three columns M06
+PASS row has three columns M07
+PASS row has three columns M08
+PASS row has three columns M09
+PASS row has three columns M10
+PASS row has three columns M11
+PASS row has three columns M12
+PASS row has three columns M13
+PASS row has three columns M14
+PASS row has three columns D01
+PASS row has three columns S01
+PASS row has three columns U01
+PASS row has three columns PR01
+PASS 43 unique results
+PASS no pending or failed row
+PASS 17 seeded carried rows kept
+PASS 24 fresh rows pass
+PASS one environment block
+PASS one declared block
+PASS only one frontmatter block
+PASS Daemon auditor identity unchanged
+PASS Daemon-owned snapshots absent
+PASS G01 typed repository inputs
+PASS N07 typed repository inputs
+PASS N08 typed repository inputs
+PASS N09 typed repository inputs
+PASS N10 typed repository inputs
+PASS P05 typed repository inputs
+PASS P06 typed repository inputs
+PASS P07 typed repository inputs
+PASS M01 typed repository inputs
+PASS M01 commit range declared
+PASS M02 typed repository inputs
+PASS M02 commit range declared
+PASS M03 typed repository inputs
+PASS M03 commit range declared
+PASS M04 typed repository inputs
+PASS M04 commit range declared
+PASS M05 typed repository inputs
+PASS M05 commit range declared
+PASS M06 typed repository inputs
+PASS M06 commit range declared
+PASS M07 typed repository inputs
+PASS M07 commit range declared
+PASS M08 typed repository inputs
+PASS M08 commit range declared
+PASS M09 typed repository inputs
+PASS M09 commit range declared
+PASS M10 typed repository inputs
+PASS M10 commit range declared
+PASS M11 typed repository inputs
+PASS M11 commit range declared
+PASS M12 typed repository inputs
+PASS M12 commit range declared
+PASS M13 typed repository inputs
+PASS M13 commit range declared
+PASS M14 typed repository inputs
+PASS M14 commit range declared
+PASS D01 typed repository inputs
+PASS S01 typed repository inputs
+PASS S01 commit range declared
+PASS U01 typed repository inputs
+PASS PR01 typed repository inputs
+PASS PR01 commit range declared
+PASS no detached result rows
+PASS evidence exists precondition.txt
+PASS evidence unignored precondition.txt
+PASS evidence exists build.txt
+PASS evidence unignored build.txt
+PASS evidence exists version.txt
+PASS evidence unignored version.txt
+PASS evidence exists N07.txt
+PASS evidence unignored N07.txt
+PASS evidence exists N08.txt
+PASS evidence unignored N08.txt
+PASS evidence exists N09.txt
+PASS evidence unignored N09.txt
+PASS evidence exists N10.txt
+PASS evidence unignored N10.txt
+PASS evidence exists P05.txt
+PASS evidence unignored P05.txt
+PASS evidence exists P06.txt
+PASS evidence unignored P06.txt
+PASS evidence exists P07.txt
+PASS evidence unignored P07.txt
+PASS evidence exists P06-sandbox.txt
+PASS evidence unignored P06-sandbox.txt
+PASS evidence exists P07-sandbox.txt
+PASS evidence unignored P07-sandbox.txt
+PASS evidence exists M01.txt
+PASS evidence unignored M01.txt
+PASS evidence exists M02.txt
+PASS evidence unignored M02.txt
+PASS evidence exists M03.txt
+PASS evidence unignored M03.txt
+PASS evidence exists M04.txt
+PASS evidence unignored M04.txt
+PASS evidence exists M05.txt
+PASS evidence unignored M05.txt
+PASS evidence exists M07.txt
+PASS evidence unignored M07.txt
+PASS evidence exists M08.txt
+PASS evidence unignored M08.txt
+PASS evidence exists M09.txt
+PASS evidence unignored M09.txt
+PASS evidence exists M10.txt
+PASS evidence unignored M10.txt
+PASS evidence exists M11.txt
+PASS evidence unignored M11.txt
+PASS evidence exists M12.txt
+PASS evidence unignored M12.txt
+PASS evidence exists M13.txt
+PASS evidence unignored M13.txt
+PASS evidence exists M14.txt
+PASS evidence unignored M14.txt
+PASS evidence exists M06-inherited-budget.txt
+PASS evidence unignored M06-inherited-budget.txt
+PASS evidence exists M06.txt
+PASS evidence unignored M06.txt
+PASS evidence exists S01.txt
+PASS evidence unignored S01.txt
+PASS evidence exists D01-probe-scope.txt
+PASS evidence unignored D01-probe-scope.txt
+PASS evidence exists D01.txt
+PASS evidence unignored D01.txt
+PASS evidence exists report-integrity.txt
+PASS evidence unignored report-integrity.txt
+PASS evidence exists report-acceptance.txt
+PASS evidence unignored report-acceptance.txt
+PASS evidence exists archive-plan.txt
+PASS evidence unignored archive-plan.txt
+PASS executable in this Run roundfix
+PASS executable in this Run runner.py.txt
+PASS executable in this Run mutations.py.txt
+PASS executable in this Run audit.py.txt
+PASS executable in this Run integrity.py.txt
+PASS loaded all canonical secret patterns
+PASS no binary evidence qa-report-2026-11-11-01.md
+PASS no binary evidence D01-probe-scope.txt
+PASS no binary evidence D01.txt
+PASS no binary evidence M01-sandbox.txt
+PASS no binary evidence M01.txt
+PASS no binary evidence M02-sandbox.txt
+PASS no binary evidence M02.txt
+PASS no binary evidence M03-sandbox.txt
+PASS no binary evidence M03.txt
+PASS no binary evidence M04-sandbox.txt
+PASS no binary evidence M04.txt
+PASS no binary evidence M05-sandbox.txt
+PASS no binary evidence M05.txt
+PASS no binary evidence M06-inherited-budget.txt
+PASS no binary evidence M06-sandbox.txt
+PASS no binary evidence M06.txt
+PASS no binary evidence M07-sandbox.txt
+PASS no binary evidence M07.txt
+PASS no binary evidence M08-sandbox.txt
+PASS no binary evidence M08.txt
+PASS no binary evidence M09-sandbox.txt
+PASS no binary evidence M09.txt
+PASS no binary evidence M10-sandbox.txt
+PASS no binary evidence M10.txt
+PASS no binary evidence M11-sandbox.txt
+PASS no binary evidence M11.txt
+PASS no binary evidence M12-sandbox.txt
+PASS no binary evidence M12.txt
+PASS no binary evidence M13-sandbox.txt
+PASS no binary evidence M13.txt
+PASS no binary evidence M14-sandbox.txt
+PASS no binary evidence M14.txt
+PASS no binary evidence N07.txt
+PASS no binary evidence N08.txt
+PASS no binary evidence N09.txt
+PASS no binary evidence N10.txt
+PASS no binary evidence P05.txt
+PASS no binary evidence P06-sandbox.txt
+PASS no binary evidence P06.txt
+PASS no binary evidence P07-sandbox.txt
+PASS no binary evidence P07.txt
+PASS no binary evidence S01.txt
+PASS no binary evidence archive-plan.txt
+PASS no binary evidence audit.py.txt
+PASS no binary evidence build.txt
+PASS no binary evidence integrity.py.txt
+PASS no binary evidence mutations.py.txt
+PASS no binary evidence precondition.txt
+PASS no binary evidence report-acceptance.txt
+PASS no binary evidence report-integrity.txt
+PASS no binary evidence runner.py.txt
+PASS no binary evidence version.txt
+Checks: 219 Failures: 0

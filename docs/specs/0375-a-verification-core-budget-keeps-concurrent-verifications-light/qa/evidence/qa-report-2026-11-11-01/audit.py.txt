@@ -1,0 +1,126 @@
+import importlib.machinery
+import importlib.util
+from pathlib import Path
+import re
+import sys
+
+sys.dont_write_bytecode = True
+loader = importlib.machinery.SourceFileLoader('qa_runner', str(Path(__file__).with_name('runner.py.txt')))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+q = importlib.util.module_from_spec(spec)
+loader.exec_module(q)
+read = lambda p: (q.ROOT / p).read_text()
+flat = lambda s: ' '.join(s.split())
+observations = []
+checks = []
+def check(label, condition):
+    observations.append(('PASS ' if condition else 'FAIL ') + label)
+    checks.append(condition)
+
+config = flat(read('docs/user-guide/configuration.md'))
+for sentence in [
+    'Roundfix gives every Verification and every Agent Session of an Implement Run, and the repository gate of a Delivery Queue, a Verification Core Budget: half of the logical CPUs, at least 1, divided by `runs.max_verifying`, or by `runs.max_active` while `runs.max_verifying` is `0`, and never below 1.',
+    'It sets `GOMAXPROCS` and `ROUNDFIX_VERIFICATION_CORES` to that number.',
+    'A `GOMAXPROCS` that holds a positive whole number in the environment of the process that starts the Run or the queue takes its place.',
+    'A test runner that reads neither variable keeps its own parallelism; changing its configuration is a tooling change your repository authorizes.']:
+    check('configuration sentence: '+sentence, sentence in config)
+check('budget section follows capacity section', config.index('## Machine Verification Capacity') < config.index('## Verification Core Budget'))
+check('Vitest worker example opts in', 'maxWorkers' in config and 'process.env.ROUNDFIX_VERIFICATION_CORES' in config)
+check('doctor guide names the cores line', 'verification-cores:' in read('docs/user-guide/commands/doctor.md'))
+for name in ['GOMAXPROCS','ROUNDFIX_VERIFICATION_CORES']:
+    check('deliver guide names '+name, name in read('docs/user-guide/commands/deliver.md'))
+for ref in ['implement','deliver','setup']:
+    a=read('.agents/skills/roundfix/references/'+ref+'.md')
+    b=read('skills/roundfix/references/'+ref+'.md')
+    check(ref+' mirror byte equality', a == b)
+    required = ['Verification Core Budget','verification-cores:'] if ref == 'setup' else ['Verification Core Budget','GOMAXPROCS','ROUNDFIX_VERIFICATION_CORES']
+    check(ref+' reference names its Task 03 Requirement 7 contract', all(n in a for n in required))
+context = read('CONTEXT.md')
+glossary = flat(context.split('**Verification Core Budget**:',1)[1].split('\n\n',1)[0])
+tech = q.SD.joinpath('_techspec.md').read_text()
+contract = flat(tech.split('7. **Glossary text**',1)[1].split('exactly: "',1)[1].split('" The closing',1)[0])
+glossary_text = re.sub(r'\[ADR-0385\]\([^)]*\)', 'ADR-0385', glossary).split(' _Avoid_:',1)[0]
+check('glossary matches API Contract 7', glossary_text == contract)
+check('glossary follows Machine Verification Capacity', context.index('**Machine Verification Capacity**:') < context.index('**Verification Core Budget**:'))
+check('glossary avoid line exact', '_Avoid_: core limit, CPU quota, Machine Verification Capacity' in glossary)
+for name in ['_prd.md','_techspec.md']:
+    section=q.SD.joinpath(name).read_text().split('## Glossary',1)[1].split('\n## ',1)[0]
+    check(name+' declares added term', 'adds:' in section and 'Verification Core Budget' in section)
+check('ADR-0385 accepted', 'status: accepted\n' in read('docs/adr/0385-each-verification-receives-a-verification-core-budget-in-its-environment.md'))
+writers=[]
+users=[]
+for p in sorted(q.ROOT.joinpath('internal').rglob('*.go')):
+    rel=p.relative_to(q.ROOT).as_posix()
+    if p.name.endswith('_test.go') or rel.startswith('internal/corebudget/'):
+        continue
+    content=p.read_text()
+    for i,line in enumerate(content.splitlines(),1):
+        if re.search(r'"(?:GOMAXPROCS|ROUNDFIX_VERIFICATION_CORES)=',line):
+            writers.append(f'{rel}:{i}')
+        if re.search(r'corebudget\.(GoVariable|Variable|Environment)\b',line):
+            users.append(rel)
+            observations.append('environment boundary '+rel+':'+str(i)+': '+line.strip())
+check('F01 reproduction sweep: no duplicated assignment literals', not writers)
+allowed={'internal/daemon/daemon.go','internal/agent/acpx_runner.go','internal/cli/deliver_linux_lane.go'}
+check('shared names/environment helper occur only at approved boundaries', set(users)==allowed)
+lanefile=read('internal/cli/deliver_linux_lane.go')
+check('lane constructs both names from shared constants', 'corebudget.GoVariable+"="+cores' in lanefile and 'corebudget.Variable+"="+cores' in lanefile)
+observations.append('Independent runtime confirmation: fresh N08, N09, N10 and P05 all pass. P07 executes the documentation contracts; carried P09 retains the glossary contract pass. This row is a supporting search, not a substitute for the runtime journeys.')
+(q.EVIDENCE/'D01.txt').write_text('\n'.join(observations)+'\n')
+q.update('D01','pass' if all(checks) else 'fail', [('repository_path',p) for p in ['CONTEXT.md','docs/user-guide/**','.agents/skills/roundfix/**','skills/roundfix/**','internal/**','docs/adr/0385-each-verification-receives-a-verification-core-budget-in-its-environment.md',str(q.SD.relative_to(q.ROOT))+'/_prd.md',str(q.SD.relative_to(q.ROOT))+'/_techspec.md']], 'Maintainer follows configuration/doctor/deliver documentation and checks all three reference mirror pairs, the glossary, accepted ADR and environment boundaries. Reproduction of previous F01 now finds no duplicated assignment literal; the Linux Lane uses the shared constants. All wording/scope assertions and independent runtime confirmations N08–N10/P05/P07 '+('pass' if all(checks) else 'must be reviewed')+'. [Audit observations](evidence/qa-report-2026-11-11-01/D01.txt).')
+print('D01',all(checks),flush=True)
+if len(sys.argv) > 1 and sys.argv[1] == 'D01-only':
+    sys.exit(0 if all(checks) else 1)
+
+observations=[]
+checks=[]
+commits={'task_01':'29babf98','task_02':'7d13a542','task_03':'97d14077','task_04':'a6b0d6c0','task_06':'84d94eab'}
+authorized=set(re.findall(r'^  - (\S+)$',q.SD.joinpath('_authorization.md').read_text().split('paths:',1)[1].split('operations:',1)[0],re.M))
+all_paths=set()
+for task,commit in commits.items():
+    text=q.SD.joinpath(task+'.md').read_text()
+    declared=set(re.findall(r'^- (?:instruction|interface|creates): `([^`]+)`',text,re.M))
+    declared.add(str(q.SD.joinpath(task+'.md').relative_to(q.ROOT)))
+    if '## Recorded paths' in text:
+        declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+    args=['git','diff-tree','--no-commit-id','--name-only','-r',commit]
+    p=q.run(args)
+    assert p.returncode==0
+    changed=set(p.stdout.splitlines())
+    all_paths.update(changed)
+    observations.append('Command: '+' '.join(args)+'\n'+p.stdout)
+    check(task+' changed paths within declarations plus assigned task file', changed <= declared)
+    if not changed <= declared:
+        observations.append('Undeclared: '+', '.join(sorted(changed-declared)))
+    governed={p for p in changed if p.startswith('.agents/skills/') or re.match(r'skills/[^/]+/SKILL.md$',p)}
+    check(task+' governed changes bounded by operative grant', governed <= authorized)
+    if governed:
+        check(task+' grant predates commit',q.run(['git','merge-base','--is-ancestor',q.BASE,commit]).returncode==0)
+        delta=q.run(['git','diff',commit+'^',commit,'--',str(q.SD.joinpath('_authorization.md').relative_to(q.ROOT))])
+        check(task+' no authorization folded into implementation commit',delta.stdout=='')
+        observations.append(task+' operative grant and chronology also established by preserved Daemon authorization audit inputs.')
+prohibited=[]
+for path in all_paths:
+    if path in {'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json'} or path.startswith(('.github/workflows/','internal/baseline/','docs/agents/','.claude/','.codex/','.opencode/')) or (path.startswith('.agents/skills/') and not path.startswith('.agents/skills/roundfix/')) or (path.startswith('skills/') and not path.startswith('skills/roundfix/') and path!='skills/testdata/owned-skill-versions.json'):
+        prohibited.append(path)
+check('no prohibited paths in Task commits',not prohibited)
+for path in sorted(all_paths):
+    if path.startswith(('.agents/skills/','skills/')) and path.endswith('.md'):
+        old=q.run(['git','show',q.BASE+':'+path])
+        new=q.run(['git','show',q.HEAD+':'+path])
+        section=lambda text: re.search(r'^### QA settlement\n.*?(?=^###? |\Z)',text,re.M|re.S)
+        before=section(old.stdout)
+        after=section(new.stdout)
+        check(path+' QA settlement section unchanged', (before.group(0) if before else '')==(after.group(0) if after else ''))
+check('corrective Task changes no test',not any(p.endswith('_test.go') for p in q.run(['git','diff-tree','--no-commit-id','--name-only','-r','84d94eab']).stdout.splitlines()))
+check('no implementation delta in current worktree',q.run(['git','diff','--name-only','--','internal','cmd','CONTEXT.md','Makefile','.agents','skills']).stdout=='')
+(q.EVIDENCE/'S01.txt').write_text('\n'.join(observations)+'\n')
+q.update('S01','pass' if all(checks) else 'fail',[('repository_path',str(q.SD.relative_to(q.ROOT))+'/task_*.md'),('repository_path',str(q.SD.relative_to(q.ROOT))+'/_authorization.md'),('repository_path','internal/speccheck/governed.go'),('commit_range',q.BASE+'..'+q.HEAD)], 'Repository-history audit runs diff-tree for all five implementation commits, compares actual files to declarations/Recorded paths and the grant, checks all prohibited path families, authorization ancestry and unchanged QA settlement sections. The existing Daemon authorization table remains authoritative for task_02/task_03. Corrective task_06 changes only its assigned task file and the Linux Lane source, with no test edit. '+('All scope checks pass.' if all(checks) else 'Scope assertions require investigation.')+' [Commands and observations](evidence/qa-report-2026-11-11-01/S01.txt).')
+print('S01',all(checks),flush=True)
+
+criterion=flat(q.SD.joinpath('_prd.md').read_text().split('- criterion: ',1)[1].split('\n  reason:',1)[0])
+q.update('U01','blocked (declared: '+criterion+')',[('repository_path',str(q.SD.relative_to(q.ROOT))+'/_prd.md'),('repository_path',str(q.SD.relative_to(q.ROOT))+'/_authorization.md')], 'The pre-run PRD declaration requires the released binary on the maintainer’s twelve-core machine with its real Roundfix Home and User Config. This worktree binary is unreleased; every CLI observation uses disposable homes. Task 05 and the operative authorization forbid reaching the real machine state. No live-machine probe is attempted. The observed constraints match the declaration. satisfied-by: the operator’s doctor line and a Verification diagnostic from the first cycle after the release, recorded session evidence. That human action remains unproven; hermetic fixtures do not satisfy it.')
+q.update('PR01','blocked (environment: no open Pull Request)',[('repository_path',str(q.SD.relative_to(q.ROOT))+'/_authorization.md'),('commit_range',q.BASE+'..'+q.HEAD)], 'The assignment states no Pull Request exists. Pre-PR equivalent controls: approval is the operative delivery grant at '+q.BASE+'; checks are the supplied Daemon make verify-changed pass at '+q.HEAD+'; no unresolved threads exist because no Pull Request exists; no Merge-Ready acceptance exists; the claimed candidate is '+q.HEAD+'. No hosted approval or acceptance is claimed. Unblock in the authorized Supervisor delivery session by opening the delivery Pull Request on the Spec target branch, then inspect its head, required checks, review threads and Merge-Ready acceptance. This row alone never prevents a qualifying declared partial.')
+plan=q.cli('archive-plan',['archive',q.SPEC,'--plan','--offline'])
+print('archive plan exit',plan.returncode,flush=True)
+assert plan.returncode==0,plan.stderr

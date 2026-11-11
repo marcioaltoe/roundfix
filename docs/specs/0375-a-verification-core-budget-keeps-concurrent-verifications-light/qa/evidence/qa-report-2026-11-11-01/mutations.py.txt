@@ -1,0 +1,82 @@
+import importlib.machinery
+import importlib.util
+import io
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+sys.dont_write_bytecode = True
+
+loader = importlib.machinery.SourceFileLoader('qa_runner', str(Path(__file__).with_name('runner.py.txt')))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+q = importlib.util.module_from_spec(spec)
+loader.exec_module(q)
+
+C = 'internal/corebudget/corebudget.go'
+D = 'internal/daemon/'
+L = 'internal/cli/'
+A = 'internal/agent/acpx_runner.go'
+calculation = 'TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity'
+override = 'TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget'
+cycle = 'TestEveryRunVerificationAndAgentSessionReceivesTheCoreBudget'
+cases = [
+    (C, 'if digits {', 'if false && digits {', 'corebudget', override, 'positive_whole_number'),
+    (C, "if explicit[i] < '0' || explicit[i] > '9' {", "if (explicit[i] < '0' || explicit[i] > '9') && !(i == 0 && explicit[i] == '+') {", 'corebudget', override, 'signed_is_ignored'),
+    (C, 'if in.MaxVerifying > 0 {', 'if false && in.MaxVerifying > 0 {', 'corebudget', calculation, 'two_at_once'),
+    (C, 'budget.LogicalCPUs/2', 'budget.LogicalCPUs', 'corebudget', calculation, 'default_on_twelve'),
+    (C, 'if cores > 0 && (name == GoVariable || name == Variable) {', 'if cores > 0 && name == Variable {', 'corebudget', 'TestTheCoreBudgetEnvironmentReplacesBothVariables', 'budget_four'),
+    (D+'daemon.go', 'corebudget.Environment(cmd.Env, req.Cores)', 'corebudget.Environment(cmd.Env, 0)', 'daemon', 'TestTheVerificationCommandReceivesTheCoreBudget', 'budget_four'),
+    (D+'engine.go', 'Cores:      engine.deps.VerificationCores,', 'Cores:      0,', 'daemon', cycle, 'budget_five'),
+    (D+'task_engine.go', 'probeCommandsForRun(ctx, engine.deps.Verifier, engine.deps.VerificationCores,', 'probeCommandsForRun(ctx, engine.deps.Verifier, 0,', 'daemon', cycle, 'budget_five'),
+    (D+'agent_session_owner.go', 'req.Cores = engine.deps.VerificationCores', 'req.Cores = 0', 'daemon', cycle, 'budget_five'),
+    (A, 'return corebudget.Environment(nil, cores)', 'return corebudget.Environment(nil, 0)', 'agent', 'TestAnAgentSessionReceivesTheCoreBudget', 'budget_three'),
+    (L+'implement.go', 'cores:        verificationCoreBudget(ctx, loadedConfig.Config).Cores,', 'cores:        0,', 'cli', 'TestImplementGivesTheEngineTheVerificationCoreBudget', None),
+    (L+'deliver_workflow.go', 'Cores:      cores,', 'Cores:      0,', 'cli', 'TestTheRepositoryGateCommandReceivesTheCoreBudget', None),
+    (L+'deliver_linux_lane.go', 'if request.Cores > 0 {', 'if request.Cores < 0 {', 'cli', 'TestLinuxLaneRunsTheChangedPackagesInAContainer', None),
+    (L+'doctor_verification_cores.go', 'if total > int64(budget.LogicalCPUs) {', 'if false && total > int64(budget.LogicalCPUs) {', 'cli', 'TestDoctorReportsTheVerificationCoreBudget', 'undivided_with_three_Runs'),
+]
+
+for number, (path, before, after, package, test, subtest) in enumerate(cases, 1):
+    row = f'M{number:02}'
+    if q.REPORT.read_text().find('| '+row+' | pending |') < 0:
+        continue
+    archive = subprocess.run(['git','archive',q.HEAD],cwd=q.ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True).stdout
+    with tempfile.TemporaryDirectory(prefix='.qa-mutation-',dir=q.ROOT) as scratch:
+        root = Path(scratch)
+        with tarfile.open(fileobj=io.BytesIO(archive),mode='r:') as tar:
+            tar.extractall(root,filter='data')
+        setup = [
+            ['git','init','-q'],
+            ['git','add','.'],
+            ['git','-c','user.name=QA Fixture','-c','user.email=qa-fixture@example.invalid','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','-qm','test: establish disposable mutation baseline']]
+        for command in setup:
+            p = q.run(command,cwd=root)
+            assert p.returncode == 0, p.stderr
+        expression = '^'+test+'$'+('/^'+subtest+'$' if subtest else '')
+        args = ['go','test','-count=1','-timeout','20m','-v','-run',expression,'./internal/'+package]
+        environ = os.environ.copy()
+        if number == 6:
+            # A value already equal to four masks removal of the verifier rewrite.
+            environ.pop('GOMAXPROCS', None)
+            environ.pop('ROUNDFIX_VERIFICATION_CORES', None)
+        baseline = q.run(args,cwd=root,environ=environ)
+        target = root / path
+        original = target.read_text()
+        assert before in original, (row, before)
+        target.write_text(original.replace(before,after,1))
+        mutated = q.run(args,cwd=root,environ=environ)
+        observed_failure = ('--- FAIL: '+test) in mutated.stdout
+        expected_row = not subtest or ('/'+subtest in mutated.stdout)
+        ok = baseline.returncode == 0 and ('--- PASS: '+test+' ') in baseline.stdout and mutated.returncode == 1 and observed_failure and expected_row and 'build failed' not in mutated.stdout and 'suiteguard:' not in mutated.stderr
+        result = subprocess.CompletedProcess(args,0 if ok else 1,'Baseline exit: '+str(baseline.returncode)+'\n'+baseline.stdout+'\nMutant exit: '+str(mutated.returncode)+'\n'+mutated.stdout,baseline.stderr+'\n'+mutated.stderr)
+    q.save(row,args,result)
+    with (q.EVIDENCE / (row+'.txt')).open('a') as f:
+        f.write('\nOne-line mutation in '+path+'\nBefore: '+before+'\nAfter: '+after+'\nScratch copy: git archive '+q.HEAD+'; independent git init/add/baseline commit before mutation; removed after both commands.\n')
+        if number == 6:
+            f.write('Both baseline and mutant commands unset GOMAXPROCS and ROUNDFIX_VERIFICATION_CORES to keep inherited values from masking the verifier rewrite.\n')
+    q.update(row,'pass' if ok else 'fail', [('repository_path',path),('repository_path','internal/'+package+'/**'),('commit_range',q.BASE+'..'+q.HEAD)], 'TechSpec Testing Approach sabotage '+str(number)+', distinct disposable Git copy of audited HEAD inside this Run Worktree. Named test '+test+(('/'+subtest) if subtest else '')+'. Baseline exit '+str(baseline.returncode)+'; mutant exit '+str(mutated.returncode)+'. '+('Named assertion rejected the mutation; no setup, compile or suiteguard failure.' if ok else 'Investigate outputs; the expected baseline/pass and mutant/assertion failure pair was not established.')+' [Commands, mutation and both outputs](evidence/qa-report-2026-11-11-01/'+row+'.txt).')
+    print(row, 'pass' if ok else 'fail', flush=True)

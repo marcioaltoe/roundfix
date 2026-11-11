@@ -1,0 +1,42 @@
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/daemon/daemon.go
+before: cmd.Env = corebudget.Environment(cmd.Env, req.Cores)
+after: cmd.Env = corebudget.Environment(cmd.Env, 0)
+command: go test -count=1 -timeout 20m -v -run '^TestTheVerificationCommandReceivesTheCoreBudget$/^budget_four$' ./internal/daemon
+BASELINE exit: 0
+stdout:
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+--- PASS: TestTheVerificationCommandReceivesTheCoreBudget (0.00s)
+    --- PASS: TestTheVerificationCommandReceivesTheCoreBudget/budget_four (0.01s)
+PASS
+suiteguard: guard cost: measured 3100 paths; fingerprint took 158.841ms before and 159.484208ms after
+ok  	roundfix/internal/daemon	0.641s
+
+stderr:
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget
+=== RUN   TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== PAUSE TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+=== CONT  TestTheVerificationCommandReceivesTheCoreBudget/budget_four
+    verification_cores_test.go:52: command environment = "4|unset|1", want "4|4|1"
+--- FAIL: TestTheVerificationCommandReceivesTheCoreBudget (0.00s)
+    --- FAIL: TestTheVerificationCommandReceivesTheCoreBudget/budget_four (0.01s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 157.150459ms before and 155.461458ms after
+FAIL	roundfix/internal/daemon	0.619s
+FAIL
+
+stderr:

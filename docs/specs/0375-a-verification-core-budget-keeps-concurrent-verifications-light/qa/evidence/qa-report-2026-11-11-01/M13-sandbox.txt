@@ -1,0 +1,84 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestLinuxLaneRunsTheChangedPackagesInAContainer$' ./internal/cli
+Exit: 1
+stdout:
+Baseline exit: 1
+FAIL	./internal/cli [setup failed]
+FAIL
+
+Mutant exit: 1
+FAIL	roundfix/internal/cli [setup failed]
+FAIL
+
+stderr:
+# ./internal/cli
+open /Users/marcio/Library/Caches/go-build/5b/5bd10920ef5c31ec6d9089060e107e327e9aaa7b7386876cc1823982fddb5e47-d: operation not permitted
+
+# roundfix/internal/cli
+internal/cli/cli.go:26:2: open /Users/marcio/Library/Caches/go-build/d5/d5de2fc7ab4f5f35777b46366eccb6f1f68cdc41735d21ba72fa94415fdba314-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:16:2: open /Users/marcio/Library/Caches/go-build/31/31028529213db5602a3e179052161a23e5c028a9c8b9eaa6d9010026882c8ee9-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/baseline_apply.go:13:2: open /Users/marcio/Library/Caches/go-build/57/5729644b9e416fde9aa9787b963633b35af53ba4e6ea23d91dc865aa5312f2d7-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/baseline_human.go:18:2: open /Users/marcio/Library/Caches/go-build/58/581dcb8611153f7fc34bdbb521706b78cbf64809d8fd6bc85bdbbdd1fdca6e7e-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/deliver_workflow.go:27:2: open /Users/marcio/Library/Caches/go-build/87/87365723d03a5759a596d6555ae27673c8ed68d1b014d17f7572de9854589580-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/health.go:10:2: open /Users/marcio/Library/Caches/go-build/f2/f2e51fd1e9f8ecd7258d8a35141ff1eb01d35fe817d7c203929a9a609836cdac-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:17:2: open /Users/marcio/Library/Caches/go-build/b1/b1c26193fbcf5cc0e864d00e9006fdddc28f4ce15edc51ddabb0d27b76a1e939-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/deliver_linux_lane.go:20:2: open /Users/marcio/Library/Caches/go-build/20/209aa65f0a0adccea9319278f7949868386500f98982c17326863c35ca084108-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/cli.go:30:2: open /Users/marcio/Library/Caches/go-build/0a/0a63b4ee2a5a1c0f41761586a18883b08d721bff4ca3ee419cf1db615357fe35-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/deliver.go:17:2: open /Users/marcio/Library/Caches/go-build/9a/9a626b311de777f0453c13622621c0facebbcf8debef22046dacf3039c17e007-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:18:2: open /Users/marcio/Library/Caches/go-build/ad/adf4bab72df2d5f9339541a4a9223ced1cae0ff0469e11d00d25e651ad2cb7d5-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/doctor.go:22:2: open /Users/marcio/Library/Caches/go-build/96/96f890a48b53a3f9f91423d723fa47be2ad9382b30271378858a6d624c651689-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/cli.go:31:2: open /Users/marcio/Library/Caches/go-build/8f/8f96938d097baa0d461da877a259061e44b469bbdbbd9aef3be75f55580a5e21-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/implement.go:24:2: open /Users/marcio/Library/Caches/go-build/d8/d8e055707edf3211fec997f5a445e92d25c887ff4592d43dbe7c976ffd2e17ce-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:19:2: open /Users/marcio/Library/Caches/go-build/fb/fbf1d13e0022087ef2dfe2c275980a25815cde5d5a24d201a221426aa8749109-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/follow_up_status.go:15:2: open /Users/marcio/Library/Caches/go-build/22/2298d952cf7fb117f4733b1539fed5c4c8eb5074b3b37befa5be0eb18bb752d1-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/cli.go:33:2: open /Users/marcio/Library/Caches/go-build/7b/7b92315d4a783803ef2ddb020098d973245cea2055debfa37bfdc68e8ccd9150-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/cli.go:34:2: open /Users/marcio/Library/Caches/go-build/c0/c05ad6c032003d57a2841ad6252c06b6a0605aae159872da14bc01a4210eacd6-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/attach.go:15:2: open /Users/marcio/Library/Caches/go-build/78/780d03f15e74e24fdf7fa1a8d41ba65cbed395d4cbe22d2b01e73fd23fc0ef4e-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/runs_causes.go:17:2: open /Users/marcio/Library/Caches/go-build/d1/d1d2b4c3b2e949dfc03a30a3929dc169e82d6fa70b55872663498b1c32e800d2-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/attach.go:16:2: open /Users/marcio/Library/Caches/go-build/7c/7c7ab1d01b00b9808a2a5ab43dc3962e12592d8e0bb6d9f332f5ba55f158e864-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/deliver_secret_rewrite.go:11:2: open /Users/marcio/Library/Caches/go-build/a1/a1b832eec4c68f1957963ff84e9773f1a32ce3b5d3faba3b65c7324a06a7d17f-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/gc_shared_cache.go:14:2: open /Users/marcio/Library/Caches/go-build/6e/6e008d3727102e1a555fb6fd9e3a306db491c59b9794fd4274551d9ad17156eb-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/releaseplan_checks.go:12:2: open /Users/marcio/Library/Caches/go-build/c2/c2bb8a0771f99e474cb7362f209c21ff40daf342afbe89f59e97015ff1175a72-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:20:2: open /Users/marcio/Library/Caches/go-build/e5/e5f5bd4df47c5762798e3c09643df75968a6033dddfabbc93f54b916e1a7f210-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/spec_check.go:17:2: open /Users/marcio/Library/Caches/go-build/ba/bac1acf6e7c2d3a60b66c8daa4a0fd9527f2e49a870e048917209a6a7b98b161-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/archive.go:21:2: open /Users/marcio/Library/Caches/go-build/a1/a1f12d98f303443a7126f7282213ddee5e13543435c3e9f0ce939432d4acf560-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/attach.go:18:2: open /Users/marcio/Library/Caches/go-build/e2/e2309ccb57a225c66e3cdd26fbe92307bb5d873e4786cc4c47a10b61bf9d05ea-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/attach.go:19:2: open /Users/marcio/Library/Caches/go-build/5b/5be43f0840c4cc947f879e0623cb641092d40cd944910e26a8b63f04c97f6c67-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/cli.go:40:2: open /Users/marcio/Library/Caches/go-build/19/19cbfea50f55ec2831430a12949c09c0e4c7864c9dcc4fa7a890f6c7ed7751d5-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/carryforward.go:17:2: open /Users/marcio/Library/Caches/go-build/5b/5bfe5df432eeb386889083fdd77aff9a08defcc139d25a9d91f340ced6a9c27f-d: operation not permitted
+# roundfix/internal/cli
+internal/cli/baseline_update.go:18:2: open /Users/marcio/Library/Caches/go-build/54/5409b6475d7e48495761ff6fbabe6d35d12579729781bb579e71152e04cebdaa-d: operation not permitted
+
+One-line mutation in internal/cli/deliver_linux_lane.go
+Before: if request.Cores > 0 {
+After: if request.Cores < 0 {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

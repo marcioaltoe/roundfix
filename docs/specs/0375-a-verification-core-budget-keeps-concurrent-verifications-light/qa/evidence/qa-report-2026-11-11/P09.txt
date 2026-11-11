@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestGlossaryStatesEachRuleOnce)$'
+exit: 0
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestGlossaryStatesEachRuleOnce
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.02s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.284s
+
+stderr:

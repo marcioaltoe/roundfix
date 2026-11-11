@@ -1,0 +1,37 @@
+Command: go test -count=1 -timeout 20m -v -run '^TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget$/^signed_is_ignored$' ./internal/corebudget
+Exit: 0
+stdout:
+Baseline exit: 0
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+--- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- PASS: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.220s
+
+Mutant exit: 1
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget
+=== RUN   TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== PAUSE TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+=== CONT  TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored
+    corebudget_test.go:90: Compute with ["GOMAXPROCS=+4"] = {Cores:4 LogicalCPUs:12 Share:6 Divisor:1 Source:environment MaxVerifying:2 MaxActive:4}, want {Cores:3 LogicalCPUs:12 Share:6 Divisor:2 Source:runs.max_verifying MaxVerifying:2 MaxActive:4}
+    corebudget_test.go:93: Describe() = "GOMAXPROCS 4 in the environment", want "half of 12 logical CPUs divided by runs.max_verifying 2"
+--- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget (0.00s)
+    --- FAIL: TestAnExplicitGOMAXPROCSWinsTheVerificationCoreBudget/signed_is_ignored (0.00s)
+FAIL
+FAIL	roundfix/internal/corebudget	0.240s
+FAIL
+
+stderr:
+
+
+One-line mutation in internal/corebudget/corebudget.go
+Before: if explicit[i] < '0' || explicit[i] > '9' {
+After: if (explicit[i] < '0' || explicit[i] > '9') && !(i == 0 && explicit[i] == '+') {
+Scratch copy: git archive 84d94eabb6b3c78ddc0be860c7a4e08a1cbf2779; independent git init/add/baseline commit before mutation; removed after both commands.

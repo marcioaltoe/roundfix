@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -run '^TestLinuxLaneRunsTheChangedPackagesInAContainer$' ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== PAUSE TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== CONT  TestLinuxLaneRunsTheChangedPackagesInAContainer
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/module
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sum
+=== RUN   TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages
+--- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer (3.02s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/go_file (0.79s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/testdata (0.44s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/module (0.38s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sum (0.38s)
+    --- PASS: TestLinuxLaneRunsTheChangedPackagesInAContainer/sorted_nearest_unique_packages (0.42s)
+PASS
+suiteguard: helper residue check unavailable: read process table: operation not permitted
+suiteguard: guard cost: measured 3117 paths; fingerprint took 468.517209ms before and 217.079958ms after
+ok  	roundfix/internal/cli	3.987s
+
+stderr:

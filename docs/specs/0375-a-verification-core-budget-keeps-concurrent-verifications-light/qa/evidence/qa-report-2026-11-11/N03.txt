@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheCoreBudgetEnvironmentReplacesBothVariables$' ./internal/corebudget
+exit: 0
+stdout:
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/no_budget
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/no_budget
+=== RUN   TestTheCoreBudgetEnvironmentReplacesBothVariables/negative_budget
+=== PAUSE TestTheCoreBudgetEnvironmentReplacesBothVariables/negative_budget
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/no_budget
+=== CONT  TestTheCoreBudgetEnvironmentReplacesBothVariables/negative_budget
+--- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables (0.00s)
+    --- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables/budget_four (0.00s)
+    --- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables/no_budget (0.00s)
+    --- PASS: TestTheCoreBudgetEnvironmentReplacesBothVariables/negative_budget (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.071s
+
+stderr:

@@ -1,0 +1,52 @@
+source: git archive 763fb7f208209b282299d8a0faca96078093c864
+git init -q: exit 0
+git add .: exit 0
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=QA -c user.email=qa@localhost commit -qm 'Audited head baseline': exit 0
+Each mutation used a distinct temporary repository, removed after both tests.
+mutation file: internal/cli/deliver_workflow.go
+before: Cores:      cores,
+after: Cores:      0,
+command: go test -count=1 -timeout 20m -v -run '^TestTheRepositoryGateCommandReceivesTheCoreBudget$' ./internal/cli
+BASELINE exit: 0
+stdout:
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+--- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget (0.00s)
+    --- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS (0.21s)
+    --- PASS: TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two (0.21s)
+PASS
+suiteguard: guard cost: measured 3100 paths; fingerprint took 153.009083ms before and 167.311458ms after
+ok  	roundfix/internal/cli	0.955s
+
+stderr:
+
+MUTATION exit: 1
+stdout:
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== RUN   TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== PAUSE TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+=== CONT  TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS
+    deliver_core_budget_test.go:29: gate environment = "4|", want "5|5"
+=== NAME  TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two
+    deliver_core_budget_test.go:29: gate environment = "4|", want "3|3"
+--- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget (0.00s)
+    --- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget/explicit_GOMAXPROCS (0.20s)
+    --- FAIL: TestTheRepositoryGateCommandReceivesTheCoreBudget/half_divided_by_two (0.20s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 157.101167ms before and 157.382041ms after
+FAIL	roundfix/internal/cli	0.917s
+FAIL
+
+stderr:

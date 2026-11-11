@@ -1,0 +1,6 @@
+command: out="$(go test -count=1 -timeout 30m -v -run '^TestImplementGivesTheEngineTheVerificationCoreBudget$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestImplementGivesTheEngineTheVerificationCoreBudget ' || { echo 'missing pass: TestImplementGivesTheEngineTheVerificationCoreBudget' >&2; exit 1; }; go test -count=1 -timeout 40m -run 'Implement' ./internal/cli
+exit: 0
+stdout:
+ok  	roundfix/internal/cli	17.829s
+
+stderr:

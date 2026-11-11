@@ -1,0 +1,47 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity$' ./internal/corebudget
+exit: 0
+stdout:
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/odd_count_rounds_down
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/odd_count_rounds_down
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/capacity_off_divides_by_max_active
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/capacity_off_divides_by_max_active
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/both_off_is_undivided
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/both_off_is_undivided
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/one_CPU_keeps_one
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/one_CPU_keeps_one
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/never_below_one
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/never_below_one
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/zero_CPUs_counts_as_one
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/zero_CPUs_counts_as_one
+=== RUN   TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/negative_CPUs_counts_as_one
+=== PAUSE TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/negative_CPUs_counts_as_one
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/negative_CPUs_counts_as_one
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/zero_CPUs_counts_as_one
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/capacity_off_divides_by_max_active
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/odd_count_rounds_down
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/both_off_is_undivided
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/never_below_one
+=== CONT  TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/one_CPU_keeps_one
+--- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/default_on_twelve (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/negative_CPUs_counts_as_one (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/zero_CPUs_counts_as_one (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/capacity_off_divides_by_max_active (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/odd_count_rounds_down (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/both_off_is_undivided (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/two_at_once (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/never_below_one (0.00s)
+    --- PASS: TestTheVerificationCoreBudgetIsHalfTheLogicalCPUsDividedByTheMachineCapacity/one_CPU_keeps_one (0.00s)
+PASS
+ok  	roundfix/internal/corebudget	0.263s
+
+stderr:
