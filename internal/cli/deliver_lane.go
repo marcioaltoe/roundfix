@@ -61,6 +61,7 @@ func runDeliverLane(ctx context.Context, args []string, stdout, stderr io.Writer
 	workflow := &commandDeliveryWorkflow{loaded: loaded, git: git, log: stdout}
 	result, err := workflow.runLinuxLane(ctx, linuxLaneRequest{
 		WorkDir: loaded.GitRoot, Head: strings.TrimSpace(head), Image: loaded.Config.Delivery.LinuxLaneImage,
+		Cores:   verificationCoreBudget(ctx, loaded.Config).Cores,
 		LogPath: filepath.Join(artifactDir, "delivery", "linux-lane.log"),
 		Name:    fmt.Sprintf("roundfix-linux-lane-%d", os.Getpid()), All: *all,
 	})

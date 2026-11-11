@@ -308,6 +308,17 @@ the largest carriable Task set, breaking ties with the newest Run.
    Verification and its Linux Lane together. Commands inside Agent sessions,
    including QA suites and focused tests, remain ungated.
 
+   Every Verification and every Agent Session of an Implement Run receives
+   the Verification Core Budget as `GOMAXPROCS` and
+   `ROUNDFIX_VERIFICATION_CORES`: half of the logical CPUs, at least `1`,
+   divided by `runs.max_verifying`, or by `runs.max_active` while
+   `runs.max_verifying` is `0`, undivided when both are `0`, and never below
+   `1`. Integer division rounds down. A positive whole-number `GOMAXPROCS`
+   in the environment of the process that starts the Run takes its place.
+   The Implement Command computes it once from its loaded User Config and
+   environment; Agent Sessions inherit both variables beside the Run Marker,
+   so their focused tests and QA suites can use the same budget.
+
    While any Verification waits for the Machine Verification Capacity, its
    Run's `budget.max_run_duration` pauses until the last wait ends. A Stop
    Request ends the wait without starting a command. Waiters take a unit in

@@ -39,6 +39,7 @@ const (
 	HealthCheckStorage              = "storage"
 	HealthCheckDiskSpace            = "disk-space"
 	HealthCheckVerificationCapacity = "verification-capacity"
+	HealthCheckVerificationCores    = "verification-cores"
 	HealthCheckLinuxLane            = "linux-lane"
 	HealthCheckCodex                = "codex"
 )

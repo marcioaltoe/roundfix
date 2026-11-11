@@ -759,6 +759,17 @@ trim removed entries, failed or stopped. The gate's result still comes only
 from its Verification and the Linux Lane, so a `deliver retry` that resumes at
 the gate trims first.
 
+The gate computes one Verification Core Budget from the Queue Owner's loaded
+User Config and environment. Its repository Verification and Linux Lane
+container both receive that number as `GOMAXPROCS` and
+`ROUNDFIX_VERIFICATION_CORES`. A positive whole-number `GOMAXPROCS` in the
+owner's environment wins; otherwise half the logical CPUs, at least 1, is
+divided by positive `runs.max_verifying`, or by positive `runs.max_active`
+while capacity is off, and never falls below 1. With both bounds at 0 the
+share stays undivided. `roundfix deliver lane` computes its own budget the
+same way for its container. The item binary build and derived-file regeneration
+receive no new budget.
+
 Before an item's Implement Run and before its repository gate, the queue
 reads the free space where the worktree location, each declared Shared Build
 Cache and the temporary directory live. Below the Free-Space Floor of
@@ -795,7 +806,8 @@ never mounted. After `git init`, the container repository registers
 `/repo-objects` in its own `.git/objects/info/alternates` before recording the
 candidate; the host store is never written. Its only explicitly
 supplied environment variables are `HOME`, `GOCACHE`, `GOMODCACHE`, `GOFLAGS`,
-`GOPROXY`, `GOTOOLCHAIN`, and `GOSUMDB`; no Queue Owner key or token is forwarded.
+`GOPROXY`, `GOTOOLCHAIN`, `GOSUMDB`, `GOMAXPROCS`, and
+`ROUNDFIX_VERIFICATION_CORES`; no Queue Owner key or token is forwarded.
 The Docker CLI keeps the operator's own environment and Docker context. Tests
 use a temporary Git repository inside the container and cannot download modules
 or toolchains; missing cached modules fail the lane. The operator must make the

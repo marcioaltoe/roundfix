@@ -195,6 +195,7 @@ func SessionRefForTask(runID string, taskID string, workDir string) SessionRef {
 }
 
 type ExecuteRequest struct {
+	Cores         int
 	Runtime       RuntimeSpec
 	Session       SessionRef
 	Access        SessionAccess

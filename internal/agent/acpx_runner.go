@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"roundfix/internal/config"
+	"roundfix/internal/corebudget"
 	"roundfix/internal/judge"
 	"roundfix/internal/runevent"
 )
@@ -1258,6 +1259,10 @@ func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec
 	return nil
 }
 
+func coreBudgetOverrides(cores int) []string {
+	return corebudget.Environment(nil, cores)
+}
+
 func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
 	sessionName := strings.TrimSpace(req.Session.Name)
 	if sessionName == "" {
@@ -1281,6 +1286,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if req.RunID != "" {
 		codexEnv = append(append([]string(nil), codexEnv...), judge.RunMarkerVariable+"="+req.RunID)
 	}
+	codexEnv = append(codexEnv, coreBudgetOverrides(req.Cores)...)
 	session := SessionRef{Name: sessionName, WorkDir: workDir}
 	capabilities, err := runner.startSessionSelection(ctx, req.Runtime, session, adapter, codexEnv, false)
 	if err != nil {
@@ -1468,6 +1474,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	if req.RunID != "" {
 		codexEnv = append(append([]string(nil), codexEnv...), judge.RunMarkerVariable+"="+req.RunID)
 	}
+	codexEnv = append(codexEnv, coreBudgetOverrides(req.Cores)...)
 	classifyFailure := func(agentOutput bool, failure error) error {
 		return runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, agentOutput, failure)
 	}

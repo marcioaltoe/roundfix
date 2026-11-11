@@ -88,6 +88,7 @@ type Dependencies struct {
 	Progress          io.Writer
 
 	MachineVerification MachineVerificationGate
+	VerificationCores   int
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -429,6 +430,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			}
 		}
 		result, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
+			Cores:      engine.deps.VerificationCores,
 			RunID:      req.RunID,
 			WorkDir:    req.WorkDir,
 			Command:    command,

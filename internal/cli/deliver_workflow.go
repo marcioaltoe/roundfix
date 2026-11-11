@@ -1730,10 +1730,12 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		return delivery.GateResult{}, err
 	}
 	outputPath := filepath.Join(artifactDir, "delivery", specSlug, "repository-gate.log")
+	cores := verificationCoreBudget(ctx, workflow.loaded.Config).Cores
 	_, err = (daemon.ExecVerifier{}).Verify(ctx, daemon.VerifyRequest{
 		WorkDir:    gitRoot,
 		Command:    workflow.loaded.Config.Defaults.Verification,
 		OutputPath: outputPath,
+		Cores:      cores,
 	})
 	if err != nil {
 		var commandErr *daemon.VerificationCommandError
@@ -1770,6 +1772,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		}
 		lane, err := workflow.runLinuxLane(ctx, linuxLaneRequest{
 			WorkDir: gitRoot, Head: head, Image: image,
+			Cores:   cores,
 			Label:   "Delivery Queue item " + specSlug + ": ",
 			LogPath: filepath.Join(artifactDir, "delivery", specSlug, "linux-lane.log"),
 			Name:    fmt.Sprintf("roundfix-linux-lane-%.40s-%d", specSlug, os.Getpid()),
