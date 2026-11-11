@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0374-a-machine-verification-capacity-bounds-verifications-across-repositories
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -136,3 +136,32 @@ calls the store yet; task_02 and task_03 do.
 - `_prd.md` → Goal 3; Goal 5; User Story 4; User Story 5; Core Feature 1; Core Feature 4; Core Feature 5; Core Feature 9; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior 4 and 6; Interfaces; Data Models; API Contracts 1-3; Invariants 3-6; Testing Approach; Build Order 1
 - ADR-0384
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-concurrency, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented this Task's configuration and store slice. No production caller takes the capacity yet; Daemon and Delivery Queue integration remain in tasks 02 and 03. The initial worktree contained only the Daemon-owned `status: in_progress` change in this Task file; that field was preserved.
+
+Starting-tree characterization, before implementation:
+
+- A temporary `TestCharacterizeMachineVerificationUnknownKey` exercised `config.Load` with a temporary User Config containing `runs:\n  max_verifying: 1\n`. `go test ./internal/config -run '^TestCharacterizeMachineVerificationUnknownKey$' -count=1 -v` exited 0 and recorded the expected refusal: `line 2: field max_verifying not found in type config.runsOverlay`. The temporary characterization test was then removed.
+- `rg -n 'verification-capacity' internal/store` returned no matches before the new store was written.
+- The first characterization attempt encountered the sandbox's denial of Go build-cache access. The same command then ran successfully with approved cache access; no cache configuration was changed.
+
+Acceptance evidence from focused implementation checks:
+
+- User Config: added `Runs.MaxVerifying`, default `1`, strict integer decoding, nonnegative validation, User Config overlay, and Project Config removal with the exact warning. The user template writes the exact two lines immediately after `max_active`; the project template source is unchanged. The four required configuration tests cover default, zero, positive, negative and invalid values, Project Config values including invalid input, warning text, template placement and template loading. Neighboring Run-limit, slot-wait and template tests also passed unchanged in the focused run below.
+- Admission and reclamation: added the platform-neutral entry store using the existing advisory lock helpers, a sequence file and atomic entry publication. Admission counts holders plus earlier live waiters; entries are reclaimed only through `OwnerGone`. The required store tests exercise FIFO grants, a live waiting ticket ahead with no holder, two immediate grants at capacity two, the third waiting, and the `reused`, `absent`, `matching`, `foreign` and `empty` owner rows. An additional eight-acquisition concurrent test checks the capacity bound. Release and cancellation cleanup use `context.WithoutCancel` with a 30-second bound, remove their own entry, and broadcast a local wake; remote changes are polled every two seconds. No process-signalling path or Run Database schema was changed.
+- No-write behavior: the off-capacity test covers both zero and negative capacities and checks that the temporary home stays empty. The reader test checks missing-directory behavior and equality of directory names, sizes and modification times before and after reading; a proven-absent owner is omitted without deleting its entry. Additional tests show malformed and foreign-schema entries remain unchanged, are reported as unreadable, and do not consume capacity. Holder descriptions match both exact contract strings. The cancellation test also asserts that release after the holder's context is cancelled removes its entry and that repeated release is safe.
+
+Focused checks (all exited 0):
+
+- `go test -race -count=1 -timeout 5m ./internal/store ./internal/config -run 'MachineVerification|RunsMaxVerifying|UserConfigTemplateWrites'`.
+- After the cancellation-path review and concurrent test addition: `go test -race -count=1 -timeout 5m ./internal/store ./internal/config -run 'MachineVerification|RunsMaxVerifying|UserConfigTemplateWrites|ConfigRunsMaxActive|ConfigRefusesANegativeRunsMaxActive|ProjectConfigCannotRaiseTheRunCeiling|ProjectInit|RunSlotWait|RenderedConfig|DefaultConfigYAML'`.
+- `GOOS=windows go test -c -o /private/tmp/roundfix-0374-store.test.exe ./internal/store` compiled the store and its portable tests for Windows; it did not execute Windows tests.
+- `git diff --check` found no whitespace errors.
+
+As the final implementation step, ran the required generator: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (exit 0). Its only record change is the `config keys` fingerprint in `docs/references/behavior-surfaces.json`; no generated value was edited by hand.
+
+The declared Verification commands, complete configuration suite, repository Verification, Task settlement and commit remain with the Daemon. No Task status, graph manifest, other Task file, commit, push or pull request was written by this Agent.
