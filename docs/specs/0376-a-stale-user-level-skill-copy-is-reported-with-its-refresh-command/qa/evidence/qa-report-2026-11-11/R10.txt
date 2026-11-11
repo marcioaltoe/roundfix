@@ -1,4 +1,0 @@
-criterion: after the release that carries this Spec, `roundfix skills check` on the maintainer's MacBook names the user-level Roundfix skill copies older than the installed binary, and the refresh commands it prints bring them to the binary's versions.
-reason: it needs the maintainer's real home directory and its linked vault, which no Verification or QA row may read or write.
-satisfied-by: the operator's run on the maintainer's MacBook after the release, recorded session evidence.
-Observed boundary: no released installation or real MacBook home is available within this authored offline gate; reading/writing the real home and linked vault is prohibited by the Task and authorization. Temporary-home evidence proves the shipped behavior, not post-release operator execution.

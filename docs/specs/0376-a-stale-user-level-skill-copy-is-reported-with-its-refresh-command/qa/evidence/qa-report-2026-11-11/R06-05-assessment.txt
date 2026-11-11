@@ -1,6 +1,0 @@
-Named test: TestStaleUserSkillCopiesWritesNothing
-Expected: Skill file written before production read; snapshot must change.
-Named test failed: True
-Observed exit: 1
-    user_copies_test.go:135: home changed:
---- FAIL: TestStaleUserSkillCopiesWritesNothing (0.00s)

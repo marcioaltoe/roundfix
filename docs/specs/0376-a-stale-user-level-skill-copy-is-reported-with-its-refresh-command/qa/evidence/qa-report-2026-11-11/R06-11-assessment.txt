@@ -1,6 +1,0 @@
-Named test: TestUpdateCheckNamesStaleUserSkillCopies
-Expected: Update Check no longer assigns copies.
-Named test failed: True
-Observed exit: 1
-    user_skills_test.go:120: exit=0 stdout="Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify).\nBaseline: not checked (outside a Git repository).\n" stderr=""
---- FAIL: TestUpdateCheckNamesStaleUserSkillCopies (0.01s)

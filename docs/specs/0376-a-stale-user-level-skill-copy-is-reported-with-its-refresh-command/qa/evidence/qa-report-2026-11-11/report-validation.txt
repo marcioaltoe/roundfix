@@ -1,5 +1,0 @@
-Final read-only validation after integrity links were added: QAReportEligibility, ReportShapeFindings, secretscan.ScanContent.
-QA eligibility: qualifying partial; environment=1 declared=1 finding=0
-Report shape and evidence links: pass
-Secret matches: 0
-exit: 0

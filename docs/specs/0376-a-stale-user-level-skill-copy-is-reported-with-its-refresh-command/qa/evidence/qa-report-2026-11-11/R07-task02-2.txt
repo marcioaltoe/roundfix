@@ -1,5 +1,0 @@
-command: /bin/bash -c 'grep -F -- '"'"'**Stale User Skill Copy**'"'"' < CONTEXT.md | grep -qE '"'"'^([-*+] )?\*\*Stale User Skill Copy\*\*(:| —( |$))'"'"' || { echo '"'"'missing term: Stale User Skill Copy'"'"' >&2; exit 1; }; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'none of them changes it'"'"' || { echo '"'"'Stale User Skill Copy definition differs'"'"' >&2; exit 1; }; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '"'"'^TestGlossaryPhrasesAreDefinedTerms$'"'"''
-stdout:
-ok  	roundfix/internal/docscontract	0.345s
-stderr:
-exit: 0

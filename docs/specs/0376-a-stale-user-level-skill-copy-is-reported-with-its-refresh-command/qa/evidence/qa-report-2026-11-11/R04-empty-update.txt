@@ -1,6 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command-349ba1fa84e7be33-0570099e-69ca9a33/run_20261111T214342Z_06342bedaaf4c9cd/bin/roundfix update check
-stdout:
-Roundfix 0.139.1: latest release not reached (no releases published); the session continues.
-Baseline: not checked (outside a Git repository).
-stderr:
-exit: 0

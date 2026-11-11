@@ -1,6 +1,0 @@
-Named test: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit
-Expected: Stale copies change skills-check exit to 1.
-Named test failed: True
-Observed exit: 1
-    user_skills_test.go:29: exit=1
---- FAIL: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit (0.02s)

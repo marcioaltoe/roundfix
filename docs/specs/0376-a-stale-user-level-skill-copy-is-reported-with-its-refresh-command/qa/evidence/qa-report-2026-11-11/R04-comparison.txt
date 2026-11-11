@@ -1,4 +1,0 @@
-Comparator correction: remove three spaces of Markdown list indentation from the two fenced transcript bodies before applying angle-placeholder rules.
-No product output normalization; streams compared separately, exact exit 0.
-R04-1: True
-R04-2: True

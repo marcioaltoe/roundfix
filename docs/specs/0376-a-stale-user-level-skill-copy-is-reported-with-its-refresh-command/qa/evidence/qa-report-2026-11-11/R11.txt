@@ -1,5 +1,0 @@
-PASS PRD adds term
-PASS TechSpec adds term
-PASS API Contract 10 exact definition
-PASS Definition precedes Missing Required Skill
-PASS Named glossary test passed in exact Task 02 Verification

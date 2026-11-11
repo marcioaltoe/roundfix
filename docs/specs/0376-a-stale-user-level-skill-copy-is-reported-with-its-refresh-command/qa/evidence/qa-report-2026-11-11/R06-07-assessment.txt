@@ -1,6 +1,0 @@
-Named test: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit
-Expected: Successful skills check loses its warning block.
-Named test failed: True
-Observed exit: 1
-    user_skills_test.go:29: exit=0
---- FAIL: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit (0.02s)
