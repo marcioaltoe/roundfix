@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-10
-spec: null
+spec: 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget
 reason: null
 ---
 
