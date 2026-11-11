@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.139.2] - 2026-11-11
+
+### A stale user-level skill copy is reported with its refresh command
+
+- **Roundfix now names a user-level copy of its own skills that is older than the installed binary.** An Agent harness can load such a copy in place of the project's, so it follows outdated instructions without warning. `roundfix skills check` warns on stderr, `roundfix doctor` adds a `user-skills: warn` line, and the Update Check adds `User skills:` (JSON `userSkills`). Each copy is listed with its version, path and the exact `roundfix skills install` command that refreshes it. The directories read are `$CLAUDE_HOME/skills` or `~/.claude/skills`, `$CODEX_HOME/skills` or `~/.codex/skills`, `$OPENCODE_HOME/skills` or `~/.opencode/skills`, `~/.agents/skills` and `~/.config/opencode/skills`, following symbolic links.
+- Nothing is written and no exit code changes; a refresh runs only when the user asks, because it writes outside the repository. The `--update` Skill Mode shows each copy and asks once. ADR-0386.
+
 ## [0.139.1] - 2026-11-11
 
 ### A push whose tests pass runs every contract under a measured budget
