@@ -176,6 +176,50 @@ func TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage(t *testing.T) {
 	}
 }
 
+func TestTheFollowUpModeRepliesOnlyToDeclaredBlockedWork(t *testing.T) {
+	t.Parallel()
+	for name, source := range roundfixLayoutSources() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			data, err := fs.ReadFile(source, "roundfix/references/modes.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			followUp := roundfixSection(string(data), "--follow-up")
+			step1 := roundfixWhitespace(roundfixNumberedItem(followUp, 1))
+			step2 := roundfixWhitespace(roundfixNumberedItem(followUp, 2))
+			step4 := roundfixWhitespace(roundfixNumberedItem(followUp, 4))
+			step8 := roundfixWhitespace(roundfixNumberedItem(followUp, 8))
+
+			for _, phrase := range []string{
+				"Give a message entry `blocked_work` only when",
+				"never from a fixed word or phrase",
+			} {
+				if !strings.Contains(step1, roundfixWhitespace(phrase)) {
+					t.Errorf("step 1 omits %q", phrase)
+				}
+			}
+			if !strings.Contains(step2, roundfixWhitespace("is the plan's first item")) {
+				t.Error("step 2 does not put declared blocked work first")
+			}
+			if !strings.Contains(step4, roundfixWhitespace("only when its message declared blocked work")) {
+				t.Error("step 4 does not restrict replies to declared blocked work")
+			}
+			if strings.Contains(step4, roundfixWhitespace("when a reply is due")) {
+				t.Error("step 4 still uses the reply-due rule")
+			}
+			for _, phrase := range []string{
+				"that expects no reply",
+				"write no Waiting Declaration",
+			} {
+				if !strings.Contains(step8, roundfixWhitespace(phrase)) {
+					t.Errorf("step 8 omits %q", phrase)
+				}
+			}
+		})
+	}
+}
+
 func TestTheUnattendedModeAsksWithinTheBaselineLimit(t *testing.T) {
 	t.Parallel()
 	for name, source := range roundfixLayoutSources() {

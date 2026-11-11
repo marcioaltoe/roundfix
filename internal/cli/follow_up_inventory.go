@@ -178,12 +178,13 @@ func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 	var document struct {
 		Schema   string `json:"schema"`
 		Messages []struct {
-			ID        string `json:"id"`
-			From      string `json:"from"`
-			CreatedAt string `json:"created_at"`
-			Subject   string `json:"subject"`
-			Text      string `json:"text"`
-			Type      string `json:"type"`
+			ID          string `json:"id"`
+			From        string `json:"from"`
+			CreatedAt   string `json:"created_at"`
+			Subject     string `json:"subject"`
+			Text        string `json:"text"`
+			Type        string `json:"type"`
+			BlockedWork string `json:"blocked_work"`
 		} `json:"messages"`
 	}
 	if err := json.Unmarshal(content, &document); err != nil {
@@ -217,6 +218,13 @@ func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 				return fail(fmt.Errorf("invalid type %q; use one of %s, or omit type", typ, strings.Join(names, ", ")))
 			}
 		}
+		blockedWork := strings.TrimSpace(message.BlockedWork)
+		if strings.ContainsAny(blockedWork, "\r\n") {
+			return fail(fmt.Errorf("message %q: blocked_work must be one line", message.ID))
+		}
+		if blockedWork != "" && strings.TrimSpace(message.From) == "" {
+			return fail(fmt.Errorf("message %q: blocked_work needs from, the project whose work is blocked", message.ID))
+		}
 		title := followUpFirstLine(message.Subject)
 		if title == "" {
 			title = followUpFirstLine(message.Text)
@@ -225,7 +233,7 @@ func followUpMessages(path string) ([]followUpItem, followUpSource, error) {
 				title = string(runes[:80])
 			}
 		}
-		items = append(items, followUpItem{Kind: "message", Ref: "message:" + message.ID, Type: typ, Date: message.CreatedAt, Title: title, RequestedBy: followUpString(message.From), text: message.Text, origin: message.From})
+		items = append(items, followUpItem{Kind: "message", Ref: "message:" + message.ID, Type: typ, Date: message.CreatedAt, Title: title, RequestedBy: followUpString(message.From), BlockedWork: blockedWork, text: message.Text, origin: message.From})
 	}
 	source.Count = len(items)
 	return items, source, nil

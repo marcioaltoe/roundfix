@@ -47,6 +47,7 @@ type followUpItem struct {
 	Title        string            `json:"title"`
 	RequestedBy  *string           `json:"requested_by"`
 	Blocks       *string           `json:"blocks"`
+	BlockedWork  string            `json:"blocked_work,omitempty"`
 	Basis        string            `json:"basis"`
 	Answers      map[string]string `json:"answers"`
 	Reason       *string           `json:"reason"`
@@ -149,10 +150,13 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	doc.all = req.all
 	waiting := []followUpItem{}
+	declared := []followUpItem{}
 	ranked := []followUpItem{}
 	for _, item := range items {
 		if item.WaitingOn != "" {
 			waiting = append(waiting, item)
+		} else if item.BlockedWork != "" {
+			declared = append(declared, item)
 		} else {
 			ranked = append(ranked, item)
 		}
@@ -233,6 +237,10 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		}
 		doc.Items = followUpOrder(items, answers)
 	}
+	doc.Items = append(followUpDeclaredOrder(declared), doc.Items...)
+	for index := range doc.Items {
+		doc.Items[index].Rank = index + 1
+	}
 	if req.all {
 		sort.Slice(waiting, func(i, j int) bool {
 			if waiting[i].Since != waiting[j].Since {
@@ -249,6 +257,9 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	if len(items) == 0 && len(doc.Items) > 0 {
 		doc.Judge.Reason = followUpString("only waiting items")
+		if len(declared) > 0 {
+			doc.Judge.Reason = followUpString("only declared or waiting items")
+		}
 	}
 	if len(doc.Items) == 0 && progress.count() == 0 {
 		doc.State = "nothing_to_do"
@@ -268,6 +279,25 @@ func followUpString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func followUpDeclaredOrder(items []followUpItem) []followUpItem {
+	ordered := append([]followUpItem{}, items...)
+	for index := range ordered {
+		item := &ordered[index]
+		item.Priority, item.PriorityName, item.Basis = 1, "unblocking", "declared"
+		item.Blocks = item.RequestedBy
+		item.Answers, item.Reason = nil, nil
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		a, b := ordered[i], ordered[j]
+		dateA, dateB := followUpDate(a.Date), followUpDate(b.Date)
+		if !dateA.Equal(dateB) {
+			return dateA.Before(dateB)
+		}
+		return a.Ref < b.Ref
+	})
+	return ordered
 }
 
 func followUpOrder(items []followUpItem, answers map[string]judge.FollowUpAnswer) []followUpItem {
@@ -358,6 +388,9 @@ func renderFollowUpText(doc followUpDocument) string {
 			}
 			if item.Blocks != nil {
 				fmt.Fprintf(&out, " — blocks %s", *item.Blocks)
+				if item.Basis == "declared" {
+					fmt.Fprintf(&out, ": %s", item.BlockedWork)
+				}
 			}
 			if item.WaitingOn != "" {
 				fmt.Fprintf(&out, " — waiting on %s since %s", item.WaitingOn, item.Since)
@@ -383,7 +416,7 @@ func renderFollowUpText(doc followUpDocument) string {
 		}
 		answered, ranked := 0, 0
 		for _, item := range doc.Items {
-			if item.WaitingOn == "" {
+			if item.Basis == "judge" || item.Basis == "type" {
 				ranked++
 			}
 			if item.Basis == "judge" {

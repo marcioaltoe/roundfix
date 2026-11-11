@@ -32,8 +32,8 @@ command that classifies them.
 ai-memory messages are handed in by the caller with `--messages <path>`, never
 read through an MCP. The file uses
 `roundfix/follow-up-messages/v1`. Each message needs a unique `id`, an RFC
-3339 or `YYYY-MM-DD` `created_at`, and `text`; `from`, `subject` and `type`
-are optional. The file is at most 1 MiB.
+3339 or `YYYY-MM-DD` `created_at`, and `text`; `from`, `subject`, `type` and
+`blocked_work` are optional. The file is at most 1 MiB.
 
 A message type is empty or one of `feat`, `feature`, `finding`, `fix`,
 `information`, `other`, `perf`, `refactor`. An empty or omitted type is stored
@@ -60,8 +60,34 @@ Each source carries these JSON fields: `name`, `state`, `count`, `detail`,
 The judge carries these JSON fields: `state`, `reason`, `model`, `calls`,
 `cost_usd`.
 Each item carries these JSON fields: `rank`, `priority`, `priority_name`,
-`kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `basis`,
-`answers`, `reason`, `waiting_on`, `since`, `waiting_error`.
+`kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `blocked_work`,
+`basis`, `answers`, `reason`, `waiting_on`, `since`, `waiting_error`.
+
+## Declared blocked work
+
+A message entry may carry `blocked_work`: one line, in the sender's own words,
+naming the implementation, Spec or other work the sender says cannot start or
+continue until this project answers. The session that writes the messages file
+fills it from what the message says; the command never reads a message body
+to find it. The value is trimmed, and an empty or blank value is the same as
+no field. A value with a line break is refused with
+`message "<id>": blocked_work must be one line`, and a value on an entry
+without `from` with
+`message "<id>": blocked_work needs from, the project whose work is blocked`;
+both exit `2`.
+
+An entry with `blocked_work` ranks in `unblocking` without the judge and is
+never sent to it: priority `1`, `basis` `declared`, `blocks` its `from`,
+`blocked_work` its value, and null `answers` and `reason`. Declared entries come
+before every other item, oldest `created_at` first, then reference in byte
+order. Its text line appends `: <blocked_work>` after ` — blocks <from>`.
+When no item goes to the judge and an item declares blocked work, the judge is
+`not_asked` with reason `only declared or waiting items`.
+
+An item that declares no blocked work omits `blocked_work`, so a file without
+the field gives the same report as before. An older `roundfix` that does not
+know the field ignores it, as it ignores any key it does not read, and orders
+that entry by the judge or by its type.
 
 ## Waiting Items
 
@@ -105,15 +131,17 @@ applicable reason, in this order:
 
 The new JSON keys `waiting`, `waiting_on`, `since` and `waiting_error` are
 omitted when zero or empty. With no ranked items the judge is `not_asked`,
-with reason `no item` if the list is empty or `only waiting items` otherwise.
-Judge answer totals count ranked items only.
+with reason `no item` if the list is empty or `only waiting items` when every
+listed item waits. Judge answer totals count only the items whose basis
+is `judge` or `type`.
 
 `--all` is refused with `--status`, with exit `2` and the diagnostic
 `--all applies only to the follow-up list; drop it with --status`.
 The status view reads no Backlog Entry or Finding and prints no waiting count.
 
 The four ranked classes are `unblocking`, `health`, `feature` and `other`. Without
-an answer, an item's declared type orders it, and nothing is unblocking:
+an answer, an item's declared type orders it, and only an entry that declares
+blocked work is unblocking:
 `finding`, `fix` and `perf`, and any item whose kind is `finding`, are
 `health`; `feat` and `feature` are `feature`; `information`, `other` and
 `refactor` are `other`. An omitted type (`message`) and any unlisted type are

@@ -170,8 +170,12 @@ Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a na
 _Avoid_: Finding, idea artifact, untyped suggestion
 
 **Cross-project Message**:
-A self-contained message a session sends to another project's ai-memory inbox with `memory_message_send` when it observes work that project owns. The receiving project reads its messages oldest first, records each in a Spec, a Backlog Entry or a Finding, or names it when it only informs, and only then consumes it with `memory_message_pop`; without ai-memory the sender gives the text to the user ([ADR-0330](docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md)).
+A self-contained message a session sends to another project's ai-memory inbox with `memory_message_send` when it observes work that project owns. The receiving project triages each Blocking Request first and the other messages oldest first, records each in a Spec, a Backlog Entry or a Finding, or names it when it only informs, and only then consumes it with `memory_message_pop`; without ai-memory the sender gives the text to the user ([ADR-0330](docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md)). A message that is not a Blocking Request expects no reply: its sender neither waits for one nor watches whether the receiving project acted ([ADR-0383](docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md)).
 _Avoid_: Inbox Entry, capture, note
+
+**Blocking Request**:
+A Cross-project Message whose subject and first lines say that the sending project's own implementation, Spec or other work cannot start or continue until the receiving project answers, and name what is asked and what is blocked, in the sender's own words and language. The receiving project handles it next, ahead of every other pending item and after the work already running, which it never interrupts for it, and answers as soon as the answer exists; the Follow-up Command lists a message entry whose `blocked_work` carries the declaration first in `unblocking`, without the judge ([ADR-0383](docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md)).
+_Avoid_: Urgent message, reply request, priority flag
 
 **Session Handoff**:
 A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)).
@@ -194,7 +198,7 @@ One pending unit the Follow-up Command lists: an ai-memory message the caller ha
 _Avoid_: Work Item, ticket, to-do
 
 **Follow-up Priority**:
-The order of ranked Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`, computed in code from four Jev yes/no answers per item, with small items and then the oldest first inside a class; without an answer an item's declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)).
+The order of ranked Follow-up Items in four classes, `unblocking`, `health`, `feature` and `other`. A Blocking Request the caller marks leads `unblocking` with basis `declared` and is never sent to the judge, the oldest first. Every other item's class is computed in code from four Jev yes/no answers, with small items and then the oldest first inside a class; without an answer its declared type places it, and never in `unblocking` ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0383](docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md)).
 A Waiting Item is in the fifth class `waiting`, outside the four, and follows all ranked items only when `--all` is given, oldest `since` first and then reference ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Jev ranking, severity, score
 
