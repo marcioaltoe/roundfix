@@ -1,9 +1,0 @@
-command: ./bin/roundfix --version
-HOME and TMPDIR: fresh temporary directories; removed after exit
-GOMODCACHE and GOCACHE: retained at go env values (values omitted)
-unset variables: GH_TOKEN, GITHUB_TOKEN, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_TYPESAFE_API_KEY, TYPESAFE_API_KEY
-exit: 0
-stdout:
-roundfix 0.138.0 (763fb7f2-dirty, built 2026-11-11 05:08:01 -0300)
-
-stderr:

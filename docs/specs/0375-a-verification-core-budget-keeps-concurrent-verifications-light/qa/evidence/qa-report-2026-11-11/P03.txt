@@ -1,6 +1,0 @@
-command: go test -count=1 -timeout 30m ./internal/agent
-exit: 0
-stdout:
-ok  	roundfix/internal/agent	5.531s
-
-stderr:

@@ -1,3 +1,0 @@
-Command: GOOS=windows go build -buildvcs=false ./internal/...
-Execution: approved cache access outside Agent sandbox
-Exit: 0

@@ -1,7 +1,0 @@
-command: grep -qF 'verification-cores:' docs/user-guide/commands/doctor.md || { echo 'missing: doctor guide line' >&2; exit 1; }; grep -qF 'ROUNDFIX_VERIFICATION_CORES' docs/user-guide/commands/deliver.md || { echo 'missing: deliver guide variable' >&2; exit 1; }; for f in .agents/skills/roundfix/references/setup.md skills/roundfix/references/setup.md; do grep -qF 'verification-cores:' "$f" || { echo "missing doctor line: $f" >&2; exit 1; }; done; for f in .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md; do grep -qF 'ROUNDFIX_VERIFICATION_CORES' "$f" || { echo "missing variable: $f" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract
-exit: 0
-stdout:
-ok  	roundfix/skills	0.714s
-ok  	roundfix/internal/docscontract	19.689s
-
-stderr:

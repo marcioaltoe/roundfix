@@ -1,6 +1,0 @@
-command: go test -count=1 -timeout 30m ./internal/delivery
-exit: 0
-stdout:
-ok  	roundfix/internal/delivery	4.489s
-
-stderr:

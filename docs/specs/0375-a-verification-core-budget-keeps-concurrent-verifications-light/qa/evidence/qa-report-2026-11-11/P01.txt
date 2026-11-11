@@ -1,6 +1,0 @@
-command: go test -count=1 -timeout 30m ./internal/corebudget
-exit: 0
-stdout:
-ok  	roundfix/internal/corebudget	0.071s
-
-stderr:

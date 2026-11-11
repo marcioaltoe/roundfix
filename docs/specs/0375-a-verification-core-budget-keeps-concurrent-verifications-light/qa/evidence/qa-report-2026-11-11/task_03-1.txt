@@ -1,7 +1,0 @@
-command: out="$(go test -count=1 -timeout 30m -v -run '^(TestTheRepositoryGateCommandReceivesTheCoreBudget|TestDoctorReportsTheVerificationCoreBudget|TestLinuxLaneRunsTheChangedPackagesInAContainer)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheRepositoryGateCommandReceivesTheCoreBudget TestDoctorReportsTheVerificationCoreBudget TestLinuxLaneRunsTheChangedPackagesInAContainer; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 40m -run 'Doctor|Deliver|Gate|Lane' ./internal/cli && go test -count=1 -timeout 30m ./internal/delivery
-exit: 0
-stdout:
-ok  	roundfix/internal/cli	29.557s
-ok  	roundfix/internal/delivery	2.501s
-
-stderr:

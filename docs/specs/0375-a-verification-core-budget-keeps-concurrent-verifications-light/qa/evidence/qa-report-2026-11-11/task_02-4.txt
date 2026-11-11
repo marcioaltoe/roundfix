@@ -1,7 +1,0 @@
-command: tr -s '[:space:]' ' ' < docs/user-guide/configuration.md | grep -qE -- 'It sets .GOMAXPROCS. and .ROUNDFIX_VERIFICATION_CORES. to that number.' || { echo 'missing: configuration sentence' >&2; exit 1; }; grep -q '^## Verification Core Budget$' docs/user-guide/configuration.md || { echo 'missing: configuration section' >&2; exit 1; }; for f in .agents/skills/roundfix/references/implement.md skills/roundfix/references/implement.md; do grep -qF 'ROUNDFIX_VERIFICATION_CORES' "$f" || { echo "missing variable: $f" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract
-exit: 0
-stdout:
-ok  	roundfix/skills	1.153s
-ok  	roundfix/internal/docscontract	18.820s
-
-stderr:

@@ -1,4 +1,0 @@
-Outside source: https://pkg.go.dev/runtime; read during authoring 2026-11-10.
-Offline cited passage verified in PRD Acceptance evidence: If the GOMAXPROCS environment variable is set to a positive whole number, GOMAXPROCS defaults to that value.
-Current comparison: N02 passes positive whole number, larger than share, duplicate precedence and invalid-value rows. Expected positive budget numbers include 4 and 10.
-No network reread was made; authorization requires offline evidence.

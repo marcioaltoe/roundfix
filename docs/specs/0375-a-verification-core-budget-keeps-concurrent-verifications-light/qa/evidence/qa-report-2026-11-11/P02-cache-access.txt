@@ -1,6 +1,0 @@
-command: go test -count=1 -timeout 30m ./internal/daemon
-exit: 0
-stdout:
-ok  	roundfix/internal/daemon	39.583s
-
-stderr:

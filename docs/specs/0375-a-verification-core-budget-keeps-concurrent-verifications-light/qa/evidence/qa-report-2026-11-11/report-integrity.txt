@@ -1,9 +1,0 @@
-Report integrity: PASS
-43 contiguous Results rows: 40 pass, 1 fail, 1 environment-blocked, 1 declared-blocked.
-Every row has typed repository_path inputs; the scope audit has commit_range.
-One frontmatter block, closed/fail, correct blocked counts; auditor fields preserved.
-57 local evidence links resolve and are unignored.
-76 QA files are UTF-8 text and unignored.
-No secret-shaped match against the ten expressions read from internal/secretscan/patterns.go (Agent integrity check; Daemon secret scan remains separate).
-All 14 mutation pairs and nine authored Task Verification command exits confirmed.
-No tracked implementation or Task changes; no evidence_snapshots field.
