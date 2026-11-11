@@ -1,3 +1,0 @@
-Outside evidence: Microsoft Azure Architecture Center, Priority Queue pattern. Read during authoring 2026-11-10; quoted passage checked offline in PRD Acceptance evidence.
-Source: https://learn.microsoft.com/en-us/azure/architecture/patterns/priority-queue
-The passage assigns priority at the producer and processes messages by priority at the consumer. C01 and C03 demonstrate that the sender declaration supplies the first-place priority ahead of older routine work, matching that mechanism. This does not prove starvation freedom under an unlimited stream of declarations. No network lookup was made.

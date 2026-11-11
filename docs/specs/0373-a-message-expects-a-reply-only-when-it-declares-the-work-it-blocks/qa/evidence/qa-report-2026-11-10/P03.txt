@@ -1,7 +1,0 @@
-command: go test -count=1 -timeout 30m ./skills
-cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef
-exit: 0
-stdout:
-ok  	roundfix/skills	1.190s
-
-stderr:
