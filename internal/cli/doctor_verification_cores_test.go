@@ -45,6 +45,10 @@ func TestDoctorReportsTheVerificationCoreBudget(t *testing.T) {
 			want: "verification-cores: warn (8 per Verification: GOMAXPROCS 8 in the environment; 1 active Implement Runs; 2 at once may take 16 of 12 logical CPUs; next: lower GOMAXPROCS in the environment or set runs.max_verifying in User Config)\n",
 		},
 		{
+			name: "demand beyond the int64 limit", gomaxprocs: "2147483647", maxVerifying: 9223372036854775807, active: 1,
+			want: "verification-cores: warn (2147483647 per Verification: GOMAXPROCS 2147483647 in the environment; 1 active Implement Runs; 9223372036854775807 at once may take more than 9223372036854775807 of 12 logical CPUs; next: lower GOMAXPROCS in the environment or set runs.max_verifying in User Config)\n",
+		},
+		{
 			name: "unreadable Run Database", maxVerifying: 1, unreadable: true,
 			want: "verification-cores: warn (6 per Verification: half of 12 logical CPUs divided by runs.max_verifying 1; active Implement Runs unknown: open Run Database: denied; next: inspect the Run Database with roundfix runs list)\n",
 		},

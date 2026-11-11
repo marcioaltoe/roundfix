@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 
 	roundconfig "roundfix/internal/config"
@@ -26,10 +27,16 @@ func defaultDoctorVerificationCoresResult(ctx context.Context, loaded roundconfi
 	}
 	result.Detail += fmt.Sprintf("; %d active Implement Runs", active)
 	concurrent := budget.Concurrent(active)
-	total := int64(concurrent) * int64(budget.Cores)
-	if total > int64(budget.LogicalCPUs) {
+	cores, cpus := int64(budget.Cores), int64(budget.LogicalCPUs)
+	// cores > cpus/concurrent is concurrent*cores > cpus for positive values,
+	// without multiplying first: a large runs.max_verifying must still warn.
+	if concurrent > 0 && cores > cpus/int64(concurrent) {
+		demand := fmt.Sprintf("%d", int64(concurrent)*cores)
+		if cores > math.MaxInt64/int64(concurrent) {
+			demand = fmt.Sprintf("more than %d", int64(math.MaxInt64))
+		}
 		result.Status = CheckStatusWarn
-		result.Detail += fmt.Sprintf("; %d at once may take %d of %d logical CPUs", concurrent, total, budget.LogicalCPUs)
+		result.Detail += fmt.Sprintf("; %d at once may take %s of %d logical CPUs", concurrent, demand, budget.LogicalCPUs)
 		result.NextAction = "lower GOMAXPROCS in the environment or set runs.max_verifying in User Config"
 	}
 	return result
