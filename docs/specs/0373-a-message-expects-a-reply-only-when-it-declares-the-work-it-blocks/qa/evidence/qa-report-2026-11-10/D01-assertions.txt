@@ -1,0 +1,17 @@
+docs/user-guide/commands/follow-up.md: API Contract 7 section matches word for word
+.agents/skills/roundfix/references/follow-up.md: API Contract 7 section matches word for word
+skills/roundfix/references/follow-up.md: API Contract 7 section matches word for word
+references/follow-up.md: canonical and mirror bytes match
+references/modes.md: canonical and mirror bytes match
+docs/agents/agent-instructions.md: each of the three phrases occurs exactly once
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md: each of the three phrases occurs exactly once
+internal/baseline/assets/modules/core.json: each of the three phrases occurs exactly once
+clause.core.message-the-owning-project: complete guidance matches API Contract 8 word for word
+clause.core.messages-are-self-contained: complete guidance matches API Contract 8 word for word
+clause.core.consume-messages-after-recording: complete guidance matches API Contract 8 word for word
+clause.core.message-the-owning-project: id, enforcement and replaces equal Delivery Base
+clause.core.messages-are-self-contained: id, enforcement and replaces equal Delivery Base
+clause.core.consume-messages-after-recording: id, enforcement and replaces equal Delivery Base
+0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md: dated amendment matches
+0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md: dated amendment matches
+Obsolete-phrase search over exactly the six authorized paths: no matches (exit 1).

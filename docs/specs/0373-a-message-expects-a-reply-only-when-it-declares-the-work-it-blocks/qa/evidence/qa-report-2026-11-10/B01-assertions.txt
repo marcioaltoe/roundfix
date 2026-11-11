@@ -1,0 +1,2 @@
+All three required phrases occur exactly once.
+Second refresh leaves the guide byte-identical and reports zero file changes.

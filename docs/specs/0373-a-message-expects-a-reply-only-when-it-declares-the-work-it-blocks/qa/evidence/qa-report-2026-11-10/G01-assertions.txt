@@ -1,0 +1,3 @@
+Both PRD and TechSpec declare the one added and two changed terms.
+CONTEXT.md defines all three terms as glossary entries and contains their contracted ordering semantics.
+TestGlossaryPhrasesAreDefinedTerms passes (see glossary.txt).

@@ -1,0 +1,27 @@
+command: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef/bin/roundfix baseline update --repo . --no-skills --no-history --yes
+cwd: /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/q373-refresh-_j9c63ea
+exit: 0
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:b20c9abf5b3dfe88f37498c9346fe07fc3745a210f7e8b16e478c7acc2dbfa02
+Current catalog: sha256:b20c9abf5b3dfe88f37498c9346fe07fc3745a210f7e8b16e478c7acc2dbfa02
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:a4c814981ab7cc565c04572416fb47765bc89e913cc325bee417b20428ae0aba
+Approved Plan Digest: sha256:a4c814981ab7cc565c04572416fb47765bc89e913cc325bee417b20428ae0aba
+
+stderr:

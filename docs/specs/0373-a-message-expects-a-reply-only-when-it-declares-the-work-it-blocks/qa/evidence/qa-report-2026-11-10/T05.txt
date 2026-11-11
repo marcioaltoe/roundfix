@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheMessageClausesAskForAReplyOnlyForBlockedWork$' ./internal/baseline
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef
+exit: 0
+stdout:
+=== RUN   TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== PAUSE TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== CONT  TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+--- PASS: TestTheMessageClausesAskForAReplyOnlyForBlockedWork (0.08s)
+PASS
+suiteguard: guard cost: measured 3048 paths; fingerprint took 147.016458ms before and 148.572584ms after
+ok  	roundfix/internal/baseline	0.664s
+
+stderr:

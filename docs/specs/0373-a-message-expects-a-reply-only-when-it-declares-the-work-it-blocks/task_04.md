@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,3 @@
+Outside evidence: Hohpe and Woolf, Enterprise Integration Patterns, Request-Reply. Read during authoring 2026-11-10; quoted passage checked offline in PRD Acceptance evidence.
+Source: https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html
+The passage describes messaging as one-way and identifies the requestor as the participant waiting for a reply. B01 and D01 demonstrate the sender rule implements that distinction: only dependent work asks for an answer. This comparison supports that communication model; it does not establish a measured reduction in polling. No network lookup was made.

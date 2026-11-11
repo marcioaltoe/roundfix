@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef
+exit: 0
+stdout:
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+--- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+PASS
+ok  	roundfix/skills	0.132s
+
+stderr:

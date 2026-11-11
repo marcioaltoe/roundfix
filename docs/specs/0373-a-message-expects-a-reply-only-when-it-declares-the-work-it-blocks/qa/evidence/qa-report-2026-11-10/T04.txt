@@ -1,0 +1,21 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpDeclaredBlockedWorkTranscripts$' ./internal/cli
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef
+exit: 0
+stdout:
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+--- PASS: TestFollowUpDeclaredBlockedWorkTranscripts (0.00s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/without_from (0.04s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/declared_first (0.07s)
+PASS
+suiteguard: guard cost: measured 3047 paths; fingerprint took 155.179542ms before and 146.73525ms after
+ok  	roundfix/internal/cli	0.684s
+
+stderr:

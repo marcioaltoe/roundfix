@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheMessageClausesAskForAReplyOnlyForBlockedWork$' ./internal/baseline
+cwd: /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/q373-sabotage-2h0z4jnp
+exit: 1
+stdout:
+=== RUN   TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== PAUSE TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== CONT  TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+    message_reply_clause_test.go:25: agent instructions contain "after the work already running, which is never interrupted for it" 0 times, want once
+    message_reply_clause_test.go:25: agent instructions contain "send no acknowledgment, adoption notice or completion notice to a message that declared none" 0 times, want once
+    message_reply_clause_test.go:30: agent instructions still contain "triage them oldest first"
+    message_reply_clause_test.go:30: agent instructions still contain "when the message asks for a reply"
+--- FAIL: TestTheMessageClausesAskForAReplyOnlyForBlockedWork (0.08s)
+FAIL
+suiteguard: guard cost: measured 3035 paths; fingerprint took 158.573625ms before and 160.186875ms after
+FAIL	roundfix/internal/baseline	0.606s
+FAIL
+
+stderr:

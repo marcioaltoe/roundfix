@@ -1,0 +1,23 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpDeclaredBlockedWorkTranscripts$/declared_first$' ./internal/cli
+cwd: /var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/q373-sabotage-oceb40a4
+exit: 1
+stdout:
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+    follow_up_blocked_work_test.go:144: exit=0 want=0
+        stdout="Follow-up for widget in /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestFollowUpDeclaredBlockedWorkTranscriptsdeclared_first3176537079/001\nItems: 3\n  1. unblocking information 2026-10-10 message:d1: Export field — from argus — blocks argus\n  2. unblocking message 2026-10-20 message:d2: Totals question — from quaestor — blocks quaestor\n  3. health fix 2026-10-01 message:j1: Broken export — from fluxus\nIn progress: 0\nJudge: unavailable: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set; ordered by type\nSources:\n  ai-memory-messages: checked 3\n  backlog: checked 0\n  findings: checked 0\n  repository-inbox: checked 0\n  specs: checked 0\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: checked 0\n  git: checked 0\n"
+        want stdout="Follow-up for widget in /private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/TestFollowUpDeclaredBlockedWorkTranscriptsdeclared_first3176537079/001\nItems: 3\n  1. unblocking information 2026-10-10 message:d1: Export field — from argus — blocks argus: release 1.4 waits on the answer\n  2. unblocking message 2026-10-20 message:d2: Totals question — from quaestor — blocks quaestor: Spec 0120 task_02 waits on the totals rule\n  3. health fix 2026-10-01 message:j1: Broken export — from fluxus\nIn progress: 0\nJudge: unavailable: ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set; ordered by type\nSources:\n  ai-memory-messages: checked 3\n  backlog: checked 0\n  findings: checked 0\n  repository-inbox: checked 0\n  specs: checked 0\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: checked 0\n  git: checked 0\n"
+        stderr=""
+        want stderr=""
+--- FAIL: TestFollowUpDeclaredBlockedWorkTranscripts (0.00s)
+    --- FAIL: TestFollowUpDeclaredBlockedWorkTranscripts/declared_first (0.07s)
+FAIL
+suiteguard: guard cost: measured 3035 paths; fingerprint took 160.973625ms before and 157.484167ms after
+FAIL	roundfix/internal/cli	0.810s
+FAIL
+
+stderr:

@@ -1,0 +1,6 @@
+command: rg -n 'when a reply is due|when the message asks for a reply' .agents/skills/roundfix skills/roundfix docs/agents docs/user-guide internal/baseline/assets/modules internal/baseline/assets/formatter-fixtures
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-deliver-0373-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks-cc6dd50651fb1309-de3db996-b8942373/run_20261111T003304Z_2608b0f98a513eef
+exit: 1
+stdout:
+
+stderr:
