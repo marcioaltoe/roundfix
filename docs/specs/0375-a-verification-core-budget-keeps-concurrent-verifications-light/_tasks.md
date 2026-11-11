@@ -19,6 +19,9 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
+      needs: [task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_04]
 ---
 
@@ -30,9 +33,12 @@ graph:
 | task_02 | Every Verification and Agent Session of an Implement Run receives the Verification Core Budget          | backend | high       | task_01 |
 | task_03 | The repository gate and the Linux Lane receive the budget, and doctor reports it                        | backend | high       | task_02 |
 | task_04 | The glossary defines the Verification Core Budget                                                       | docs    | low        | task_03 |
-| task_05 | Run the final QA gate                                                                                   | qa      | medium     | task_04 |
+| task_05 | Run the final QA gate                                                                                   | qa      | medium     | task_06 |
+| task_06 | The Linux Lane builds the budget entries from the corebudget names                                       | backend | low        | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
+
+task_06 is corrective Task 1 of 2, added on 2026-11-11 for finding F01 of the QA Report of that day; the QA gate now needs it.
 
 The Tasks run in series. task_02 and task_03 call the package task_01 adds,
 share the Roundfix skill version and the Behavior Surface Record, and task_03
