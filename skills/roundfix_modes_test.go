@@ -376,7 +376,7 @@ func TestTheUpdateModeAppliesOnlyThePlanItShowed(t *testing.T) {
 				t.Fatalf("update items = %d, want 5", len(items))
 			}
 			checks := map[int][]string{
-				1: {"roundfix update check --refresh --format json"},
+				1: {"roundfix update check --refresh --format json", "userSkills", "ask once"},
 				2: {"roundfix upgrade", "without applying a Baseline plan"},
 				3: {"roundfix baseline update --repo <root> --format json", "never pass `--adopt-suggested` unasked"},
 				4: {"--confirm-plan <planDigest>", "history.units", "skills.retired", "git status --porcelain", "apply no Baseline plan over uncommitted changes"},

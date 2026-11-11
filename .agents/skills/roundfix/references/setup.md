@@ -180,6 +180,8 @@ deliberately.
 Git repository, fails with exit `1` for each Missing Required Skill, naming it
 with `roundfix baseline skills restore --profile <id> --skill <name>`.
 
+`roundfix skills check`, `roundfix doctor` and `roundfix update check` also name each Stale User Skill Copy: they read the five user-level directories in the `skills check` order, follow symbolic links and name a folder once under the first directory that reaches it. `skills check` warns on stderr and keeps its exit code, Doctor adds `user-skills: warn` after `skills:`, and the Update Check adds `User skills:` and `userSkills`; each names the refresh command. None of them changes a copy; run a refresh only when the user asks, because it writes outside the repository and through the link the report names.
+
 The binary ships twelve Roundfix-owned skills: the operational `roundfix`
 skill and eleven authorial workflow skills.
 

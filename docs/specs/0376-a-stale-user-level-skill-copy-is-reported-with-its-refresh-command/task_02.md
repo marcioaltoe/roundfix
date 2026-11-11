@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -148,3 +148,27 @@ is loaded unnoticed".
 - `_prd.md` → User Story 2; User Story 3; Core Feature 6; Success Metric 7; Glossary
 - `_techspec.md` → Current behavior 6; API Contracts 8-10; Declared breaks; Build Order 2
 - ADR-0386
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implementation and focused-check evidence:
+
+- Added the prescribed stale-copy report paragraphs and text blocks to the `skills`, `doctor` and `update` command guides, including the `userSkills` JSON row and the refresh/exit-code rules.
+- Added the API Contract 9 paragraph to the canonical Roundfix `setup` reference and the API Contract 9 prompt to `--update` step 1; `make skills-sync` copied both references to `skills/`.
+- Added `userSkills` and `ask once` to `TestTheUpdateModeAppliesOnlyThePlanItShowed`, and added the **Stale User Skill Copy** glossary entry linked to ADR-0386.
+- `rtk make skills-sync`: passed.
+- `rtk go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed; Roundfix skill version recorded as `0.1.217`.
+- `rtk go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed; Behavior Surface Record re-recorded after the final guide edit.
+- `rtk go test -count=1 ./skills -run '^TestTheUpdateModeAppliesOnlyThePlanItShowed$'`: passed, 3 subtests.
+- `rtk go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestTheSkillCoverageMapIsCurrent|TestCommandPathsReadSubcommandsAndAlternatives)$'`: passed, 4 tests.
+- `cmp .agents/skills/roundfix/references/setup.md skills/roundfix/references/setup.md` and the equivalent `modes.md` comparison: passed; `git diff --check`: passed.
+
+Acceptance evidence:
+
+- Criterion 1: all three guides and both synced `setup` references contain the prescribed report and refresh descriptions.
+- Criterion 2: both `modes` copies are synchronized with the ask-before-refresh sentence, and the update-mode contract test pins `userSkills` and `ask once`.
+- Criterion 3: `CONTEXT.md` defines **Stale User Skill Copy** with the ADR-0386 link, and the focused glossary/coverage contracts pass.
+
+The Task's declared Verification and repository Verification remain for the Daemon; they were not run in this child Agent turn.
