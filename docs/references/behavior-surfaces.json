@@ -100,7 +100,7 @@
     "guide docs/user-guide/commands/upgrade.md": "sha256:03745dd97843513014b79fb4193a1e9883ecf41d56a04500f22516568d9abad7",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
-    "guide docs/user-guide/configuration.md": "sha256:2cb2a3cfa4eb62a7f322a8ab9d22b1fd83bcc6ee92dec48640f124997c8e7656",
+    "guide docs/user-guide/configuration.md": "sha256:43c4b5d94e34a9b58d592476db31c3a9c961bd933a49de91d71feb1a451402d5",
     "guide docs/user-guide/context-driven-development.md": "sha256:da248c2c1319120140604dbe15ad75912aeb5223129656643a952314cc387457",
     "guide docs/user-guide/release-runbook.md": "sha256:bd524e7b398f252b606841e04d9431230b451276cf13516cf70c4fb2f3e51efe",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:f1525e00f9be7aad470bc3f1d635f65c07ce1aae230c01a836a55d10215a4f14",

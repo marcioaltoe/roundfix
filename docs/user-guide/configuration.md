@@ -216,6 +216,52 @@ using another Home do not share its entries. A changed value applies to
 processes started after the configuration change. An older Roundfix binary
 takes no machine unit and refuses a User Config that names this key.
 
+## Verification Core Budget
+
+Roundfix gives every Verification and every Agent Session of an Implement Run, and the repository gate of a Delivery Queue, a Verification Core Budget: half of the logical CPUs, at least 1, divided by `runs.max_verifying`, or by `runs.max_active` while `runs.max_verifying` is `0`, and never below 1.
+It sets `GOMAXPROCS` and `ROUNDFIX_VERIFICATION_CORES` to that number.
+A `GOMAXPROCS` that holds a positive whole number in the environment of the process that starts the Run or the queue takes its place.
+
+Integer division rounds down. On twelve logical CPUs, the default capacity of
+`1` gives each Verification six cores; `runs.max_verifying: 2` gives three.
+With both capacities at `0`, the share stays undivided. An explicit value must
+contain only ASCII digits and name a number from `1` to `2147483647`; empty,
+signed, zero, non-numeric or larger values are ignored. An inherited
+`ROUNDFIX_VERIFICATION_CORES` never selects the budget. Roundfix computes the
+budget once from the loaded User Config and process environment when the Run
+or queue gate starts; it adds no configuration key and stores nothing.
+
+The budget reaches the pre-work probe, repository precondition, every Task
+attempt and retry, settlement Verification, Integrated Repository Verification
+and QA repository Verification, plus every Agent Session of that Implement
+Run. The queue's repository Verification and Linux Lane container receive it
+too, including `roundfix deliver lane`. Agent commands inherit the budget even
+though the Machine Verification Capacity does not gate them. Go reads
+`GOMAXPROCS` without a repository change.
+
+A test runner that reads neither variable keeps its own parallelism; changing its configuration is a tooling change your repository authorizes.
+After that authorization, a Vitest configuration can opt in through
+[`maxWorkers`](https://vitest.dev/config/maxworkers):
+
+```ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    maxWorkers: process.env.ROUNDFIX_VERIFICATION_CORES
+      ? Number(process.env.ROUNDFIX_VERIFICATION_CORES)
+      : undefined,
+  },
+})
+```
+
+Roundfix adds no budget to `roundfix spec check --run-verification`,
+`roundfix settle`, the queue's item binary build or derived-file regeneration,
+Worktree Bootstrap, review Runs (`fetch`, `resolve`, `watch`) or commands run
+by hand. It does not set CPU affinity, scheduling priority or container CPU
+quotas, and cannot constrain child processes that ignore both variables.
+The Baseline does not change an adopter's test-runner configuration.
+
 ## Jev monthly ceiling
 
 `jev.monthly_ceiling_usd` is a finite number of US dollars greater than zero.

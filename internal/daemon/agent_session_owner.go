@@ -208,6 +208,7 @@ func (engine *Engine) agentSessionOwner(config agentSelectionOwnerConfig, scope 
 }
 
 func (engine *Engine) runAgentSession(ctx context.Context, owner *agentSessionOwner, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
+	req.Cores = engine.deps.VerificationCores
 	if owner == nil {
 		result, err := engine.deps.Runner.Run(ctx, req, engine.deps.Sink)
 		engine.recordPromptUsage(ctx, req, result, "session", req.Session.Name, 0)

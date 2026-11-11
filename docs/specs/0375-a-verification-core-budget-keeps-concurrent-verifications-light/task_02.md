@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0375-a-verification-core-budget-keeps-concurrent-verifications-light
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -170,3 +170,36 @@ in.
 - `_prd.md` → Goal 1; Goal 3; User Story 1; User Story 2; User Story 3; Core Feature 3; Core Feature 4; Core Feature 7; Success Metric 2; Success Metric 5
 - `_techspec.md` → Current behavior 2 and 3; Interfaces; API Contract 3; API Contract 6; Invariants 1 and 2; Declared breaks; Testing Approach; Build Order 2
 - ADR-0385
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, context7-cli, knowledge-workspace.
+
+Characterization before implementation:
+- `internal/daemon/engine.go`: the `verificationAttempt` path (the method is named `runVerificationAttempt` in this checkout) calls `engine.deps.Verifier.Verify` for attempts, including repository settlement.
+- `internal/daemon/verification_probe.go`: `probeCommandsForRun` calls `verifier.Verify`. Its only callers are `ProbeCommands` in that file and `verifyTaskPreWork` in `internal/daemon/task_engine.go`.
+- `internal/agent/acpx_runner.go`: `ensureSession` (called by `PrepareSession`) and `RunPrompt` append the Run Marker to `codexEnv` before session selection and prompt execution respectively.
+- Initial inspection: the three required budget propagation tests and the CLI budget helper do not exist; requests have no Run budget wiring. The only pre-existing working-tree change is this Task's Daemon-owned status.
+
+Implementation and acceptance evidence:
+- Every Run request: the Implement Command computes the budget once from its loaded config and command environment, with injectable logical CPUs and the `runtime.NumCPU` fallback. Only `executeImplementCycle` supplies `Dependencies.VerificationCores`; attempts, pre-work probes and both branches of `runAgentSession` receive it. `ProbeCommands` explicitly supplies zero. The new Daemon test observes all Verification requests, requires a pre-work probe and the repository command in a Task-attempt settlement artifact, and checks every recorded Agent request with budgets five and zero. The new CLI test exercises `implement` with twelve logical CPUs and `runs.max_verifying: 2`, asserting three on every Verification and Agent request, or seven with explicit `GOMAXPROCS=7`.
+- acpx environment: both Run Marker sites append `coreBudgetOverrides`, using the existing environment replacement path. The new fake-acpx recorder observes every invocation without credential values. The Agent test requires both `sessions ensure` and `prompt`: inherited `GOMAXPROCS=12` and `ROUNDFIX_VERIFICATION_CORES=19` become `3`/`3`; at zero, `GOMAXPROCS` stays `12` and the Roundfix variable is absent (checked with `LookupEnv`).
+- Documentation: the configuration section follows Machine Verification Capacity, preserves all four required sentences, explains recipients, exclusions, rounding and explicit values, and gives the authorized Vitest opt-in example. The example's numeric `maxWorkers` API was checked against Vitest's official documentation through Context7. Item 9 of the canonical implement reference describes the same budget and Agent inheritance; `make skills-sync` generated its byte-identical mirror. The version recorder raised both Roundfix skill versions to `0.1.215`.
+
+Focused checks (all exit 0 unless stated):
+- Before implementation, `go test ./internal/agent ./internal/daemon ./internal/cli -run 'CoreBudget/' -count=1 -timeout 5m` exposed the missing `Cores`, `VerificationCores` and `logicalCPUs` fields. The first sandboxed attempt also could not access parts of the Go build cache; the approved rerun outside the sandbox confirmed the compile failures.
+- `go test ./internal/agent ./internal/daemon ./internal/cli -run 'CoreBudget/' -count=1 -timeout 8m`: passed.
+- `go test -race ./internal/agent ./internal/daemon ./internal/cli -run 'CoreBudget/' -count=1 -v -timeout 8m`: passed every new test and the existing ExecVerifier budget test, including all budget/zero rows.
+- After strengthening the Agent recorder's absence and replacement assertions: `go test ./internal/agent -race -run 'CoreBudget/' -count=1 -timeout 5m`: passed. After identifying settlement by its artifact: `go test ./internal/daemon -race -run 'CoreBudget/' -count=1 -timeout 5m`: passed.
+- `go test ./internal/agent ./internal/daemon ./internal/cli -run '^(TestProbeCommands|TestFallbackEligibilitySurvivesASelectionFailure|TestNoAgentSessionReceivesAJudgeKeyVariable|TestApplySessionSelectionDisposableAndLiveOrder|TestImplementGatedGraphRunsRepositoryVerificationAtSettlement|TestImplementRepositoryAtSettlementOffRunsOnlyDeclaredCommands|TestImplementUngatedGraphRunsRepositoryVerificationAtSettlement)$' -count=1 -timeout 8m`: passed existing tests unchanged.
+- `make skills-sync`: passed. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed. `go test ./skills -run '^(TestAuthorialSkillSync|TestCheckValidatesRoundfixSkillArtifacts)$' -count=1`: passed.
+- `make baseline-digests`: passed, reporting `changed: false`; no Baseline artifacts changed.
+- Final implementation step, after all guide and skill edits: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed; the generator refreshed only the configuration guide's digest in `docs/references/behavior-surfaces.json`.
+- `git diff --check`: passed. Scope postflight accounted for tracked and untracked files, confirmed skill mirror equality, preserved authored Task text apart from Result and the pre-existing Daemon status, and verified `_tasks.md` and every sibling Task byte-identical to HEAD.
+
+Declared Verification and the complete package/Implement suites remain for the Daemon. No status settlement, commit, push, PR or cross-project message was performed. Delivery Queue/doctor/Linux Lane implementation and the glossary remain the later Tasks' slices.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261111T064558Z_6d985452394229fa`
+- Source commit: `4a313873276b5776400cd948b42297435cbc86e8`

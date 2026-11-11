@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -249,6 +250,7 @@ type commandDependencies struct {
 	followUpGHRunner                preflight.GHRunner
 	getenv                          func(string) string
 	environ                         func() []string
+	logicalCPUs                     func() int
 	tempDir                         func() string
 	availableBytes                  func(string) (int64, error)
 	auditor                         func() app.AuditingBinary
@@ -325,6 +327,7 @@ func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
 		getenv:         os.Getenv,
 		environ:        os.Environ,
+		logicalCPUs:    runtime.NumCPU,
 		tempDir:        os.TempDir,
 		availableBytes: store.AvailableBytes,
 		auditor:        app.Auditor,

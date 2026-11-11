@@ -1610,7 +1610,7 @@ func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task
 	}
 	defer release()
 
-	verdicts, probeErr := probeCommandsForRun(ctx, engine.deps.Verifier, plan.RunID, plan.WorkDir, task.Verification, func(index int) string {
+	verdicts, probeErr := probeCommandsForRun(ctx, engine.deps.Verifier, engine.deps.VerificationCores, plan.RunID, plan.WorkDir, task.Verification, func(index int) string {
 		return verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1)
 	})
 	if probeErr != nil {
