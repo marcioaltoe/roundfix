@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-10
-spec: null
+spec: 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests
 reason: null
 ---
 
