@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-10
-spec: null
+spec: 0376-a-stale-user-level-skill-copy-is-reported-with-its-refresh-command
 reason: null
 ---
 
