@@ -1,0 +1,14 @@
+Isolated temporary HOME and TMPDIR; GOMODCACHE and GOCACHE retained at go env values (values not recorded).
+ROUNDFIX_OPENROUTER_JUDGE_API_KEY unset; ROUNDFIX_OPENROUTER_API_KEY unset; ROUNDFIX_TYPESAFE_API_KEY unset; TYPESAFE_API_KEY unset.
+$ ./bin/roundfix archive 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget --plan --offline
+stdout:
+archive plan for 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget: removes 48 file(s) (340779 bytes) and writes docs/history/specs/0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-11-01.md, qa/qa-report-2026-11-11.md, references/_index.md, task_01.md, task_02.md
+evidence 37 file(s) (216601 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-10-ci-verify-push-suite-times.md 5248 bytes: no advice (offline)
+candidate references/2026-11-10-the-push-gate-on-main-fails-its-suite-time-budget-on-most-runs.md 2201 bytes: no advice (offline)
+promote with: roundfix archive 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget --promote <path>
+stderr:
+
+exit: 0

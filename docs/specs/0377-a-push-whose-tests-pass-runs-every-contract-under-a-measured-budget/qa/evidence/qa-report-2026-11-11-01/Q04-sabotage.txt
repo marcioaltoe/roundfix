@@ -1,0 +1,38 @@
+Fresh git archive 5bc2ed9f77570e4a81eb64f2a5df57f2cd631eb0; git init; git add .
+One isolated mutation:
+diff --git a/Makefile b/Makefile
+index dc8c274..089b806 100644
+--- a/Makefile
++++ b/Makefile
+@@ -221,7 +221,7 @@ suite-budget-check: ## Fail if the verdict test-budget recorded in SUITE_BUDGET_
+ 	case "$$verdict" in \
+ 	"suite-time budget exceeded:"*) \
+ 		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+-		exit 1;; \
++		exit 0;; \
+ 	"suite-time budget: "*) ;; \
+ 	*) \
+ 		echo "suite-time budget: unreadable verdict at '$(SUITE_BUDGET_VERDICT)'"; \
+
+$ go test -count=1 -timeout 20m -v -run '^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^the_check_fails_an_exceeded_verdict$' ./internal/verifyselect
+stdout:
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_an_exceeded_verdict
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_an_exceeded_verdict
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_an_exceeded_verdict
+    suite_budget_test.go:90: make suite-budget-check error = <nil>, want failure true
+        suite-time budget exceeded: the suite took 500s against a budget of 420s
+        the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression
+--- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged (0.00s)
+    --- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_an_exceeded_verdict (0.05s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 150.155667ms before and 173.278916ms after
+FAIL	roundfix/internal/verifyselect	0.608s
+FAIL
+stderr:
+
+exit: 1
+
+Intended diagnostic confirmed: True

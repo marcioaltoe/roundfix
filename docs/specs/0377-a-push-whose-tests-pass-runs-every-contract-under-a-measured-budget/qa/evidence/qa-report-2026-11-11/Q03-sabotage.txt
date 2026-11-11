@@ -1,0 +1,35 @@
+Setup: isolated git archive d8651e47b71fb74994202d77588942b0f82a92fa; git init; git add .
+Mutation:
+diff --git a/Makefile b/Makefile
+index dc8c274..33a124d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -204,7 +204,7 @@ test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SU
+ 	if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then \
+ 		printf '%s\n' "$$verdict" > "$(SUITE_BUDGET_VERDICT)" || exit $$?; \
+ 		echo "suite-time verdict recorded in $(SUITE_BUDGET_VERDICT); make suite-budget-check judges it"; \
+-		exit 0; \
++		exit 1; \
+ 	fi; \
+ 	case "$$verdict" in "suite-time budget exceeded:"*) \
+ 		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+
+Command: go test -count=1 -timeout 20m -v -run ^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^an_overrun_is_recorded_without_failing$ ./internal/verifyselect
+Exit: 1
+Expected test rejection: True
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged/an_overrun_is_recorded_without_failing
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged/an_overrun_is_recorded_without_failing
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged/an_overrun_is_recorded_without_failing
+    suite_budget_test.go:90: make test-budget error = exit status 2, want failure false
+        suite-time budget exceeded: the suite took 0s against a budget of -1s
+        suite-time verdict recorded in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSuiteTimeBudgetIsRecordedThenJudgedan_overrun_is_recorde884207914/001/suite-budget-verdict; make suite-budget-check judges it
+        make: *** [test-budget] Error 1
+--- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged (0.00s)
+    --- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged/an_overrun_is_recorded_without_failing (0.11s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 150.0475ms before and 155.4825ms after
+FAIL	roundfix/internal/verifyselect	0.662s
+FAIL

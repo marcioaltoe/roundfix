@@ -1,0 +1,33 @@
+Setup: isolated git archive d8651e47b71fb74994202d77588942b0f82a92fa; git init; git add .
+Mutation:
+diff --git a/Makefile b/Makefile
+index dc8c274..1745ac2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -214,7 +214,7 @@ test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SU
+ suite-budget-check: ## Fail if the verdict test-budget recorded in SUITE_BUDGET_VERDICT exceeds the budget
+ 	@if [ -z "$(SUITE_BUDGET_VERDICT)" ] || [ ! -f "$(SUITE_BUDGET_VERDICT)" ]; then \
+ 		echo "suite-time budget: no verdict recorded at '$(SUITE_BUDGET_VERDICT)'; run make test-budget with SUITE_BUDGET_VERDICT set first"; \
+-		exit 1; \
++		exit 0; \
+ 	fi; \
+ 	verdict=$$(cat "$(SUITE_BUDGET_VERDICT)") || exit $$?; \
+ 	echo "$$verdict"; \
+
+Command: go test -count=1 -timeout 20m -v -run ^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^the_check_fails_without_a_verdict$ ./internal/verifyselect
+Exit: 1
+Expected test rejection: True
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_without_a_verdict
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_without_a_verdict
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_without_a_verdict
+    suite_budget_test.go:90: make suite-budget-check error = <nil>, want failure true
+        suite-time budget: no verdict recorded at '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSuiteTimeBudgetIsRecordedThenJudgedthe_check_fails_witho3446092143/001/suite-budget-verdict'; run make test-budget with SUITE_BUDGET_VERDICT set first
+--- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged (0.00s)
+    --- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged/the_check_fails_without_a_verdict (0.05s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 165.696416ms before and 153.178917ms after
+FAIL	roundfix/internal/verifyselect	0.623s
+FAIL

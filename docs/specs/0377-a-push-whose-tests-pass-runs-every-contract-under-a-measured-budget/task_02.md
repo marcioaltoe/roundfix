@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

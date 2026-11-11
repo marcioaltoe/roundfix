@@ -1,0 +1,75 @@
+from pathlib import Path
+import subprocess,os,shutil,re,sys,tarfile,io,json
+root=Path.cwd(); spec='0377-a-push-whose-tests-pass-runs-every-contract-under-a-measured-budget'
+e=root/'docs/specs'/spec/'qa/evidence/qa-report-2026-11-11-01'; report=e.parent.parent/'qa-report-2026-11-11-01.md'
+head='5bc2ed9f77570e4a81eb64f2a5df57f2cd631eb0'; base='013af3b4de2727df1b2203b64e629491a35e01e9'
+selector='^(TestTheSuiteTimeBudgetIsRecordedThenJudged|TestTheCIPushJudgesTheSuiteTimeBudgetLast)$'
+subtests=['an_overrun_is_recorded_without_failing','without_a_verdict_file_an_overrun_fails_at_once','a_failing_suite_records_no_verdict','the_default_budget_is_420_seconds','the_check_fails_an_exceeded_verdict','the_check_passes_a_verdict_within_the_budget','the_check_fails_without_a_verdict','the_check_fails_an_unreadable_verdict']
+def run(cmd,cwd=root,env=None):
+ r=subprocess.run(cmd,cwd=cwd,env=env,capture_output=True,text=True)
+ return r,'$ '+__import__('shlex').join(cmd)+'\nstdout:\n'+r.stdout+'stderr:\n'+r.stderr+'\nexit: '+str(r.returncode)+'\n'
+def update(row,status,note):
+ s=report.read_text(); s=re.sub(r'(?m)^(\| '+row+r' \| )[^|]+( \|)',lambda m:m[1]+status+m[2],s)
+ start=s.index('### '+row+' evidence'); end=s.find('\n### ',start+4); end=len(s) if end<0 else end
+ block=s[start:end].replace('Pending execution.',note); s=s[:start]+block+s[end:]; report.write_text(s)
+def temp(): return Path(subprocess.check_output(['mktemp','-d'],text=True).strip())
+def archive(rev):
+ d=temp(); data=subprocess.check_output(['git','archive',rev],cwd=root)
+ with tarfile.open(fileobj=io.BytesIO(data)) as t: t.extractall(d,filter='data')
+ subprocess.run(['git','init','-q'],cwd=d,check=True)
+ subprocess.run(['git','add','.'],cwd=d,check=True)
+ return d
+if sys.argv[1]=='positive':
+ update('Q01','pass','Daemon-supplied `make verify-changed`: pass, exit 0, at the audited head. Not rerun. [Static record](evidence/qa-report-2026-11-11-01/static-gate.txt).')
+ logs=[]
+ commands=[['go','test','-count=1','-timeout','20m','-v','./internal/verifyselect'],['go','test','-count=1','-timeout','20m','./internal/verifyselect'],['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract','-run','^(TestTheSetupManifestIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$'],['go','vet','./internal/verifyselect']]
+ for i,cmd in enumerate(commands):
+  env=os.environ.copy(); env.update(GOPROXY='off',GOSUMDB='off')
+  if i==3: env['GOOS']='windows'
+  r,log=run(cmd,env=env); logs.append(('GOOS=windows (variable name and target only)\n' if i==3 else '')+log)
+  (e/'positive-tests.txt').write_text('\n'.join(logs)); print('positive command',i+1,'exit',r.returncode,flush=True)
+  if r.returncode: update('Q02','fail','A required check failed. [Transcript](evidence/qa-report-2026-11-11-01/positive-tests.txt).'); sys.exit(1)
+  if i==0:
+   for name in subtests: assert re.search(r'--- PASS: TestTheSuiteTimeBudgetIsRecordedThenJudged/'+name+r' ',r.stdout)
+   assert '--- PASS: TestTheCIPushJudgesTheSuiteTimeBudgetLast ' in r.stdout
+ d=archive(base)
+ try:
+  (d/'internal/verifyselect/suite_budget_test.go').write_bytes((root/'internal/verifyselect/suite_budget_test.go').read_bytes())
+  r,log=run(['go','test','-count=1','-timeout','20m','-v','-run',selector,'./internal/verifyselect'],cwd=d,env={**os.environ,'GOPROXY':'off','GOSUMDB':'off'})
+  (e/'baseline-contrast.txt').write_text('git archive Delivery Base '+base+'; git init; git add .; copy only audited suite_budget_test.go\n'+log)
+  assert r.returncode==1
+  for name in subtests:
+   tag='PASS' if name==subtests[1] else 'FAIL'
+   assert re.search(r'--- '+tag+r': TestTheSuiteTimeBudgetIsRecordedThenJudged/'+name+r' ',r.stdout),name
+  assert '--- FAIL: TestTheCIPushJudgesTheSuiteTimeBudgetLast ' in r.stdout
+ finally: shutil.rmtree(d)
+ update('Q02','pass','The full verbose package run passes both named tests and all eight subtests; a second whole-package run, the two docscontract tests and Windows vet pass. Delivery Base contrast fails the workflow test and seven subtests, while the immediate-overrun case passes on both versions. This independently confirms the intentional break and kept behavior. [Required tests](evidence/qa-report-2026-11-11-01/positive-tests.txt), [base contrast](evidence/qa-report-2026-11-11-01/baseline-contrast.txt).')
+ print('Q02 complete including baseline contrast',flush=True)
+if sys.argv[1]=='sabotage':
+ mutations=[
+ ('Q03','Makefile','\t\texit 0; \\\n\tfi; \\\n\tcase', '\t\texit 1; \\\n\tfi; \\\n\tcase',subtests[0],'want failure false'),
+ ('Q04','Makefile','\t\texit 1;; \\\n\t"suite-time budget: "*','\t\texit 0;; \\\n\t"suite-time budget: "*',subtests[4],'want failure true'),
+ ('Q05','Makefile','\t@if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then rm -f "$(SUITE_BUDGET_VERDICT)" || exit $$?; fi; \\\n','\t@',subtests[2],'want no file'),
+ ('Q06','Makefile','SUITE_BUDGET_SECONDS ?= 420','SUITE_BUDGET_SECONDS ?= 360',subtests[3],'of 360s'),
+ ('Q07','Makefile','\t\texit 1; \\\n\tfi; \\\n\tverdict=$$(cat','\t\texit 0; \\\n\tfi; \\\n\tverdict=$$(cat',subtests[6],'want failure true'),
+ ('Q08','Makefile','\t\texit 1;; \\\n\tesac\n','\t\texit 0;; \\\n\tesac\n',subtests[7],'want failure true'),
+ ('Q09','.github/workflows/ci-verify.yml','          VERIFY_TEST_TARGET: test-budget','          VERIFY_TEST_TARGET: test-budget\n          SUITE_BUDGET_SECONDS: "240"',None,"overrides the Makefile's budget"),
+ ('Q10','.github/workflows/ci-verify.yml',"${{ !cancelled() && github.event_name == 'push' && steps.verify.outcome == 'success' }}","github.event_name == 'push'",None,'last step must judge the recorded verdict')]
+ for row,path,old,new,sub,diagnostic in mutations:
+  if '| '+row+' | pass |' in report.read_text(): continue
+  if row=='Q08':
+   original=(root/'Makefile').read_text(); start=original.index('\t\techo \"suite-time budget: unreadable verdict at '); stop=original.index('exit 1;;',start)+len('exit 1;;'); old=original[start:stop]
+   new=old.replace('exit 1;;','exit 0;;')
+  d=archive(head)
+  try:
+   f=d/path; s=f.read_text(); assert s.count(old)==1,(row,'mutation count',s.count(old)); f.write_text(s.replace(old,new))
+   diff=subprocess.check_output(['git','diff','--',path],cwd=d,text=True)
+   test='^TestTheCIPushJudgesTheSuiteTimeBudgetLast$' if sub is None else '^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^'+sub+'$'
+   cmd=['go','test','-count=1','-timeout','20m','-v','-run',test,'./internal/verifyselect']
+   r,log=run(cmd,cwd=d,env={**os.environ,'GOPROXY':'off','GOSUMDB':'off'})
+   name='TestTheCIPushJudgesTheSuiteTimeBudgetLast' if sub is None else 'TestTheSuiteTimeBudgetIsRecordedThenJudged/'+sub
+   good=r.returncode==1 and diagnostic in r.stdout+r.stderr and '--- FAIL: '+name+' ' in r.stdout
+   (e/(row+'-sabotage.txt')).write_text('Fresh git archive '+head+'; git init; git add .\nOne isolated mutation:\n'+diff+'\n'+log+'\nIntended diagnostic confirmed: '+str(good)+'\n')
+   update(row,'pass' if good else 'fail','An independent archived copy rejects the named mutation on its intended behavioral assertion (not a build, timeout or guard failure). The positive head case passes in Q02. [Mutation and failing transcript](evidence/qa-report-2026-11-11-01/'+row+'-sabotage.txt).')
+   print(row,'expected failure verified:',good,flush=True)
+  finally: shutil.rmtree(d)

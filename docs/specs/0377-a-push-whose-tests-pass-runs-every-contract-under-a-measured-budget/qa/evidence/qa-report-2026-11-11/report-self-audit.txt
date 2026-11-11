@@ -1,0 +1,9 @@
+Report self-audit: passed
+Audited head unchanged; no tracked source delta.
+One frontmatter, seeded auditor identity unchanged.
+Results contiguous: 15 rows; 12 pass, 2 environment, 1 declared.
+Every row has typed repository inputs; history/authority rows carry commit_range.
+All 24 local evidence links resolve and are not ignored.
+All evidence is fresh UTF-8 text and absent from audited HEAD.
+No executable or binary stored under evidence.
+No pending rows; no evidence_snapshots authored.

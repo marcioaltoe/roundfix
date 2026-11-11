@@ -1,0 +1,10 @@
+Daemon fact: no open Pull Request. Claimed candidate: 5bc2ed9f77570e4a81eb64f2a5df57f2cd631eb0
+Q13 declared criterion: the first push to `main` after this Spec merges runs `Verify`, `Verify docs`, `Verify every contract` and `Check the suite-time budget`, and its gate is green when every test passes.
+Cause: push to main and a GitHub-hosted workflow run required. PRD Unreachable Acceptance declares precisely this criterion and cause. Authorization forbids QA pushes and workflow dispatch; no lookup or workflow started.
+Satisfaction: operator reads first post-merge main CI Verify run via gh run view <id> --json jobs and records all four steps plus green gate with passing tests.
+Q14 Pull Request controls:
+approval: recorded approved delivery authority predates Task; no PR review approval obtained.
+checks/status: Daemon make verify-changed passed at audited head.
+unresolved threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet.
+review-artifact ancestry: claimed head is 5bc2ed9f77570e4a81eb64f2a5df57f2cd631eb0; no Review Source artifact or acceptance for that head exists yet.

@@ -1,0 +1,37 @@
+Fresh git archive 5bc2ed9f77570e4a81eb64f2a5df57f2cd631eb0; git init; git add .
+One isolated mutation:
+diff --git a/Makefile b/Makefile
+index dc8c274..d5e065d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -191,8 +191,7 @@ SUITE_BUDGET_SECONDS ?= 420
+ # and suite-budget-check judges it later, so a slow suite does not skip the
+ # steps that follow it; without it, an overrun fails at once.
+ test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
+-	@if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then rm -f "$(SUITE_BUDGET_VERDICT)" || exit $$?; fi; \
+-	start=$$(date +%s); \
++	@	start=$$(date +%s); \
+ 	$(GO) test -count=1 -parallel $(GO_TEST_PARALLEL) $(PKGS) || exit $$?; \
+ 	elapsed=$$(( $$(date +%s) - start )); \
+ 	if [ "$$elapsed" -gt "$(SUITE_BUDGET_SECONDS)" ]; then \
+
+$ go test -count=1 -timeout 20m -v -run '^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^a_failing_suite_records_no_verdict$' ./internal/verifyselect
+stdout:
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged/a_failing_suite_records_no_verdict
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged/a_failing_suite_records_no_verdict
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged/a_failing_suite_records_no_verdict
+    suite_budget_test.go:104: verdict = "suite-time budget: 1s of 420s\n", error = <nil>, want no file
+--- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged (0.00s)
+    --- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged/a_failing_suite_records_no_verdict (0.10s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 156.986083ms before and 152.426334ms after
+FAIL	roundfix/internal/verifyselect	0.655s
+FAIL
+stderr:
+
+exit: 1
+
+Intended diagnostic confirmed: True

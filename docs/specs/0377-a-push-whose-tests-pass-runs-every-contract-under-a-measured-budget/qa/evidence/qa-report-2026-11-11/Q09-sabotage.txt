@@ -1,0 +1,27 @@
+Setup: isolated git archive d8651e47b71fb74994202d77588942b0f82a92fa; git init; git add .
+Mutation:
+diff --git a/.github/workflows/ci-verify.yml b/.github/workflows/ci-verify.yml
+index eb32fde..e593aa0 100644
+--- a/.github/workflows/ci-verify.yml
++++ b/.github/workflows/ci-verify.yml
+@@ -74,6 +74,7 @@ jobs:
+         env:
+           GOFLAGS: -count=1
+           VERIFY_TEST_TARGET: test-budget
++          SUITE_BUDGET_SECONDS: "240"
+           SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
+         run: make verify
+ 
+
+Command: go test -count=1 -timeout 20m -v -run ^TestTheCIPushJudgesTheSuiteTimeBudgetLast$ ./internal/verifyselect
+Exit: 1
+Expected test rejection: True
+=== RUN   TestTheCIPushJudgesTheSuiteTimeBudgetLast
+=== PAUSE TestTheCIPushJudgesTheSuiteTimeBudgetLast
+=== CONT  TestTheCIPushJudgesTheSuiteTimeBudgetLast
+    suite_budget_test.go:141: job verify step "Verify" overrides the Makefile's budget
+--- FAIL: TestTheCIPushJudgesTheSuiteTimeBudgetLast (0.00s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 171.029917ms before and 156.031ms after
+FAIL	roundfix/internal/verifyselect	0.565s
+FAIL

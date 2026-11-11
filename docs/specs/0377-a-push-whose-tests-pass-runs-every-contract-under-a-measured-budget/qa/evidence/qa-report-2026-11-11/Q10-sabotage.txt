@@ -1,0 +1,28 @@
+Setup: isolated git archive d8651e47b71fb74994202d77588942b0f82a92fa; git init; git add .
+Mutation:
+diff --git a/.github/workflows/ci-verify.yml b/.github/workflows/ci-verify.yml
+index eb32fde..94c2650 100644
+--- a/.github/workflows/ci-verify.yml
++++ b/.github/workflows/ci-verify.yml
+@@ -93,7 +93,7 @@ jobs:
+       # The suite-time budget is judged last, whenever the timed suite passed,
+       # even when the docs or contract runs failed (ADR-0387).
+       - name: Check the suite-time budget
+-        if: ${{ !cancelled() && github.event_name == 'push' && steps.verify.outcome == 'success' }}
++        if: github.event_name == 'push'
+         env:
+           SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
+         run: make suite-budget-check
+
+Command: go test -count=1 -timeout 20m -v -run ^TestTheCIPushJudgesTheSuiteTimeBudgetLast$ ./internal/verifyselect
+Exit: 1
+Expected test rejection: True
+=== RUN   TestTheCIPushJudgesTheSuiteTimeBudgetLast
+=== PAUSE TestTheCIPushJudgesTheSuiteTimeBudgetLast
+=== CONT  TestTheCIPushJudgesTheSuiteTimeBudgetLast
+    suite_budget_test.go:163: last step must judge the recorded verdict whenever push Verify succeeded, got {Name:Check the suite-time budget ID: If:github.event_name == 'push' Run:make suite-budget-check Env:map[SUITE_BUDGET_VERDICT:${{ runner.temp }}/suite-budget-verdict]}
+--- FAIL: TestTheCIPushJudgesTheSuiteTimeBudgetLast (0.00s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 157.553084ms before and 153.825875ms after
+FAIL	roundfix/internal/verifyselect	0.532s
+FAIL

@@ -1,0 +1,10 @@
+QA report self-audit: pass
+One frontmatter; seeded auditor identity and staleness unchanged; audited head unchanged.
+Results table: 15 unique contiguous three-column rows; 12 fresh pass, one carried, one environment-blocked, one declared-blocked.
+Counts match frontmatter; no pending, failed, skipped or finding-blocked row.
+Typed repository_path inputs exist for all executed rows; commit_range exists for all history-dependent rows. No evidence_snapshots authored.
+All 19 local links resolve to current-pass files, and git check-ignore reports every evidence file unignored.
+All current-pass artifacts are UTF-8 text and new to the audited head. Carried Q12 alone retains previous provenance; its status is unchanged.
+All eight negative transcripts have intended behavioral diagnostics.
+git diff --name-only: empty (tracked source untouched). git diff --check: exit 0.
+All started foreground processes have exited and all harness-created temporary directories were removed.

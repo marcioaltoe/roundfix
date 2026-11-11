@@ -1,0 +1,32 @@
+Setup: isolated git archive d8651e47b71fb74994202d77588942b0f82a92fa; git init; git add .
+Mutation:
+diff --git a/Makefile b/Makefile
+index dc8c274..17fb33e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -185,7 +185,7 @@ test: gocache-bound ## Run Go tests
+ # 215 s on one and 311 s on another. 420 s is 22 % above the slowest run and
+ # fails a suite that slows by about 1.95 times on the fast runner.
+ # Change this deliberately, with a new measurement, and say why.
+-SUITE_BUDGET_SECONDS ?= 420
++SUITE_BUDGET_SECONDS ?= 360
+ 
+ # With SUITE_BUDGET_VERDICT naming a file, test-budget writes its verdict there
+ # and suite-budget-check judges it later, so a slow suite does not skip the
+
+Command: go test -count=1 -timeout 20m -v -run ^TestTheSuiteTimeBudgetIsRecordedThenJudged$/^the_default_budget_is_420_seconds$ ./internal/verifyselect
+Exit: 1
+Expected test rejection: True
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged
+=== RUN   TestTheSuiteTimeBudgetIsRecordedThenJudged/the_default_budget_is_420_seconds
+=== PAUSE TestTheSuiteTimeBudgetIsRecordedThenJudged/the_default_budget_is_420_seconds
+=== CONT  TestTheSuiteTimeBudgetIsRecordedThenJudged/the_default_budget_is_420_seconds
+    suite_budget_test.go:109: verdict = "suite-time budget: 1s of 360s\n", want pattern "^suite-time budget: [0-9]+s of 420s\\n$"
+--- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged (0.00s)
+    --- FAIL: TestTheSuiteTimeBudgetIsRecordedThenJudged/the_default_budget_is_420_seconds (0.10s)
+FAIL
+suiteguard: guard cost: measured 3092 paths; fingerprint took 152.984875ms before and 147.074041ms after
+FAIL	roundfix/internal/verifyselect	0.621s
+FAIL
