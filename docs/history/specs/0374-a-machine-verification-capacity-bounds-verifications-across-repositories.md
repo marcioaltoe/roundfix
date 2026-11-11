@@ -33,6 +33,7 @@ promoted:
   - docs/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md
 relinked:
   - docs/specs/0375-a-verification-core-budget-keeps-concurrent-verifications-light/_prd.md
+pull_request: "821"
 type: feat
 ---
 
