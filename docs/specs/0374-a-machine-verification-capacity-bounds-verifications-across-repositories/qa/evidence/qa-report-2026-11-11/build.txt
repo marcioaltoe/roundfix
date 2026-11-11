@@ -1,4 +1,0 @@
-COMMAND: make build
-EXIT: 0
-Built bin/roundfix from this Run Worktree with -buildvcs=false and build identity 5b2311ff-dirty.
-Version is preserved in binary-version.txt. Only untracked QA artifacts differ from the audited head; implementation sources remain unchanged.

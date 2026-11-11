@@ -26,7 +26,7 @@ against the active Implement Runs.
 One request, owned by Spec 0374, which adopted it; this Spec links that copy
 and adopts nothing:
 
-1. [`../0374-a-machine-verification-capacity-bounds-verifications-across-repositories/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md`](../0374-a-machine-verification-capacity-bounds-verifications-across-repositories/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md),
+1. [`../0374-a-machine-verification-capacity-bounds-verifications-across-repositories/references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md`](../../references/2026-11-10-vortex-verifications-of-different-repositories-collide-on-one-machine.md),
    an ai-memory message from vortex of 2026-11-10 20:45 BRT, requested by the
    maintainer through vortex, with the operator's measured facts. Its second
    request names "um orçamento de núcleos por Run que o Roundfix exporta para
