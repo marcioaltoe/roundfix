@@ -9,6 +9,8 @@ import (
 	"io/fs"
 	"os"
 	"strconv"
+
+	"roundfix/internal/skillhash"
 )
 
 type orderedJSONKind uint8
@@ -36,8 +38,9 @@ type orderedJSONValue struct {
 }
 
 type skillsLockDocument struct {
-	before []byte
-	root   orderedJSONValue
+	before  []byte
+	root    orderedJSONValue
+	version int
 }
 
 type skillsLockEntry struct {
@@ -49,6 +52,7 @@ func loadSkillsLock(filename string) (skillsLockDocument, error) {
 	info, err := os.Lstat(filename)
 	if errors.Is(err, fs.ErrNotExist) {
 		return skillsLockDocument{
+			version: 1,
 			root: orderedObject(
 				orderedJSONField{name: "version", value: orderedNumber("1")},
 				orderedJSONField{name: "skills", value: orderedObject()},
@@ -97,24 +101,35 @@ func loadSkillsLock(filename string) (skillsLockDocument, error) {
 	skills, skillsOK := root.field("skills")
 	if root.kind != orderedJSONObject ||
 		!versionOK ||
-		!version.isOne() ||
+		version.kind != orderedJSONNumber ||
 		!skillsOK ||
 		skills.kind != orderedJSONObject {
 		return skillsLockDocument{}, restoreError(
 			SkillsRestoreInvalid,
 			"lock.invalid",
-			"skills-lock.json must use version 1 with a skills object.",
+			"skills-lock.json must hold a version number and a skills object.",
 			"Fix skills-lock.json before restoring external skills.",
 			errors.New("skills-lock.json schema is invalid"),
 		)
 	}
-	return skillsLockDocument{before: data, root: root}, nil
+	parsed, err := skillhash.ParseLockVersion(version.text)
+	if err != nil {
+		return skillsLockDocument{}, restoreError(
+			SkillsRestoreInvalid,
+			"lock.unsupported-version",
+			err.Error()+".",
+			"Run roundfix upgrade; a newer Roundfix may read this version.",
+			err,
+		)
+	}
+	return skillsLockDocument{before: data, root: root, version: parsed}, nil
 }
 
 func (document skillsLockDocument) clone() skillsLockDocument {
 	return skillsLockDocument{
-		before: append([]byte(nil), document.before...),
-		root:   document.root.clone(),
+		before:  append([]byte(nil), document.before...),
+		root:    document.root.clone(),
+		version: document.version,
 	}
 }
 
@@ -320,14 +335,6 @@ func (value *orderedJSONValue) setField(name string, child orderedJSONValue) {
 	value.object = append(value.object, orderedJSONField{name: name, value: child})
 }
 
-func (value orderedJSONValue) isOne() bool {
-	if value.kind != orderedJSONNumber {
-		return false
-	}
-	number, err := strconv.ParseFloat(value.text, 64)
-	return err == nil && number == 1
-}
-
 func (value orderedJSONValue) interfaceValue() any {
 	switch value.kind {
 	case orderedJSONObject:
@@ -453,4 +460,12 @@ func spaces(count int) string {
 func stringMapValue(values map[string]any, key string) string {
 	value, _ := values[key].(string)
 	return value
+}
+
+func (document skillsLockDocument) digest(files []restoreFile) (string, error) {
+	hashFiles := make([]skillhash.File, len(files))
+	for index, file := range files {
+		hashFiles[index] = skillhash.File{Path: file.Path, Content: file.Content}
+	}
+	return skillhash.SumForLockVersion(document.version, hashFiles)
 }

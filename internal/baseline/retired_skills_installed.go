@@ -82,8 +82,14 @@ func InstalledRetiredSkills(repoRoot string) ([]InstalledRetiredSkill, error) {
 			}
 			if entry.LockHash == "" {
 				unrecorded = true
-			} else if externalSkillsLockDigest(files) != entry.LockHash {
-				edited = true
+			} else {
+				digest, err := lock.digest(files)
+				if err != nil {
+					return nil, fmt.Errorf("hash retired skill %q for skills-lock.json: %w", name, err)
+				}
+				if digest != entry.LockHash {
+					edited = true
+				}
 			}
 		}
 		switch {

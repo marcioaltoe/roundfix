@@ -489,7 +489,7 @@ func buildSkillsRestorePlan(
 		files := acquired[contract.Name]
 		observed := nullableDigest(exists, portableRestoreDigest(current))
 		changes := restoreChanges(contract.Name, target, current, files)
-		expectedEntry, entryErr := expectedSkillsLockEntry(contract, files)
+		expectedEntry, entryErr := expectedSkillsLockEntry(lock, contract, files)
 		if entryErr != nil {
 			return restorePlan{}, entryErr
 		}
@@ -937,6 +937,7 @@ func requireJSONEOF(decoder *json.Decoder) error {
 }
 
 func expectedSkillsLockEntry(
+	document skillsLockDocument,
 	contract restoreSkillContract,
 	files []restoreFile,
 ) (map[string]any, error) {
@@ -956,12 +957,16 @@ func expectedSkillsLockEntry(
 			errors.New("SKILL.md is missing"),
 		)
 	}
+	digest, err := document.digest(files)
+	if err != nil {
+		return nil, fmt.Errorf("hash restored skill %q for skills-lock.json: %w", contract.Name, err)
+	}
 	return map[string]any{
 		"source":       contract.Source.Repository,
 		"ref":          contract.Source.Ref,
 		"sourceType":   contract.Source.Provider,
 		"skillPath":    path.Join(contract.Source.Path, "SKILL.md"),
-		"computedHash": externalSkillsLockDigest(files),
+		"computedHash": digest,
 	}, nil
 }
 

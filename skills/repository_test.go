@@ -439,7 +439,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 			name: "wrong version",
 			write: func(t *testing.T, root string) {
 				lock := readRepositoryLockFixture(t, root)
-				lock.Version = 2
+				lock.Version = 3
 				writeRepositoryLockFixture(t, root, lock)
 			},
 		},

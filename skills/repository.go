@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"roundfix/internal/skillhash"
 )
 
 type RepositoryOwnership string
@@ -66,7 +68,7 @@ func (err *RepositoryReadinessError) Unwrap() error {
 }
 
 type localSkillsLock struct {
-	Version int                        `json:"version"`
+	Version json.Number                `json:"version"`
 	Skills  map[string]json.RawMessage `json:"skills"`
 }
 
@@ -388,9 +390,14 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath 
 			err,
 		)
 	}
-	var lock localSkillsLock
+	// Decode through UseNumber: decoding directly into json.Number also accepts quoted numbers.
+	var decoded struct {
+		Version any                        `json:"version"`
+		Skills  map[string]json.RawMessage `json:"skills"`
+	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&lock); err != nil {
+	decoder.UseNumber()
+	if err := decoder.Decode(&decoded); err != nil {
 		return localSkillsLock{}, repositoryReadinessError(
 			RepositoryOwnershipExternal,
 			"decode skills lock",
@@ -410,12 +417,22 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath 
 			err,
 		)
 	}
-	if lock.Version != 1 {
+	version, numericVersion := decoded.Version.(json.Number)
+	if !numericVersion {
 		return localSkillsLock{}, repositoryReadinessError(
 			RepositoryOwnershipExternal,
 			"validate skills lock version",
 			displayPath,
-			fmt.Errorf("got %d, want 1", lock.Version),
+			errors.New("skills-lock.json must hold a version number and a skills object"),
+		)
+	}
+	lock := localSkillsLock{Version: version, Skills: decoded.Skills}
+	if _, err := skillhash.ParseLockVersion(lock.Version.String()); err != nil {
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"validate skills lock version",
+			displayPath,
+			err,
 		)
 	}
 	// Every entry is read raw, but it must still be a JSON object or null, as

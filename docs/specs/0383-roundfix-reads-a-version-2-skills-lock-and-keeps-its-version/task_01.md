@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -154,3 +154,40 @@ Interfaces and API Contracts 1 and 3 define.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1-2; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 3; Testing Approach; Build Order 1
 - ADR-0393; ADR-0359; ADR-0350
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, tech-writer, evidence-gate, systematic-debugging, golang-safety, golang-cli.
+
+Implemented the Task 01 slice:
+
+- Both readers accept numeric versions 1 and 2 and preserve unsupported-version errors through `errors.Is`. Baseline distinguishes malformed schema (`lock.invalid`) from unsupported numbers (`lock.unsupported-version`) with the specified message and upgrade action. The readiness reader preserves external ownership and rejects missing, quoted, null and boolean versions as malformed.
+- `SumForLockVersion` keeps `Sum` unchanged for version 1 and implements the published version 2 filtering, CRLF normalization, UTF-8 path ordering and NUL/length framing. The parser compares exact numeric values so fractions cannot round into a supported version.
+- The Baseline document and its clone retain the parsed version; an absent lock starts at version 1. Owned-entry recording/comparison, retired-skill proof and external restore use the document's digest and wrap digest errors with their operation. The compatibility adapter still uses the legacy digest.
+- Added all eight specified top-level tests with parallel entry and suite headers. Moved only the invalid-version literal from 2 to 3 in each of the three existing expectations. Tests use temporary trees and offline Git source fixtures; no network, skills CLI or Agent session is needed.
+
+Focused evidence, all exit 0 on the implementation:
+
+1. `go test ./internal/skillhash ./skills -run '^Test(SumForLockVersionMatchesThePublishedSkillsCLI|ParseLockVersionReadsOnlyVersionsOneAndTwo|CheckRepositoryReadsASkillsLockOfVersionTwo|CheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName|CheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames)$' -count=1 -timeout=5m`
+   - Acceptance 1: version 2 readiness equals version 1; version 3 and fractional versions produce the exact named readiness error and typed sentinel; missing/nonnumeric versions remain malformed.
+   - Acceptance 2: all three README vectors, the version 2 edge folder, binary CRLF preservation and excluded components are exercised.
+   - Acceptance 3: the pinned version 1 edge-folder digest remains unchanged and hashing preserves caller-owned input.
+2. `go test ./internal/baseline -run '^Test(OwnedSkillLockEntriesUseTheHashOfTheLockVersion|ARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion|SkillsRestoreWritesTheHashOfTheLockVersion|EveryLockReaderRefusesAnUnsupportedVersionByName|RecordInstalledOwnedSkillsRefusesAnUnsafeLock|RecordInstalledOwnedSkillsRewritesOnlyTheHashOfAnInstalledOwnedSkill|RecordInstalledOwnedSkillsLeavesAMatchingLockUntouched|SkillsRestoreOfflinePreviewApplyAndIdempotence|RetiredSkillDispositionsProveACopyUnedited|DeleteRetiredSkillsDeletesOnlyThePlannedCopies|ReconcileSkillsLockRemovesOnlyAbsentUnrequiredEntries)$' -count=1 -timeout=5m`
+   - Acceptance 1: unsupported numbers retain the sentinel and exact Baseline finding code, message and action through the document, recorder, stale scan and retired scan; malformed shapes remain `lock.invalid`.
+   - Acceptance 2: the other version's hash is stale and cannot prove a retired copy unedited; recording and offline restore write the lock version's digest, including CRLF text and metadata exclusion.
+   - Acceptance 3: owned recording changes only the hash bytes, preserves the original `version` representation, and becomes a no-op; restore preserves `2.0` and the unrelated entry and becomes a no-op. Existing version 1 restore, retired deletion and reconciliation regressions also pass.
+3. `go test ./internal/baseline -run '^Test(OwnedSkillLockEntriesUseTheHashOfTheLockVersion|ARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion|SkillsRestoreWritesTheHashOfTheLockVersion|EveryLockReaderRefusesAnUnsupportedVersionByName)$' -count=1 -timeout=5m`
+   - Rechecked the four new Baseline tests after adding explicit clone digest/version assertions for both versions.
+4. `go test ./internal/cli -run '^TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable$' -count=1 -timeout=5m`
+   - The moved version 3 schema fixture preserves Doctor's existing readiness behavior.
+5. `git diff --check` — no whitespace errors. Scope inspection found only this Task's declared paths and its Result; the pre-existing Daemon change to `status: in_progress` was preserved. `internal/skillhash/hash.go` and `hash_test.go` have no diff.
+
+Pre-change evidence: the focused version 2 edge-folder test initially failed to compile because the new hashing/version APIs were absent. Added numeric-boundary tests then exposed rounding and quoted-number acceptance; those tests pass after the parser and decoding changes.
+
+The declared Verification commands, repository Verification and incremental Verification were not run; they remain Daemon-owned. No Task status, Task Graph or other Task file was edited, and no commit, push or pull request was made. Doctor/Baseline next-action changes and guide updates remain in their planned Tasks 02 and 03.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261112T212907Z_a8dd596719159f5e`
+- Source commit: `976a1939b385cf1eb073b7cbfd30e4faea6ea5ca`
