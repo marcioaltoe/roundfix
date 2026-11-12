@@ -1,0 +1,36 @@
+$ git init -q
+
+exit: 0
+$ git add -A
+
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null commit -qm QA isolated audited head
+
+exit: 0
+$ git diff -- skills/repository.go
+diff --git a/skills/repository.go b/skills/repository.go
+index 9037b6a..a58d635 100644
+--- a/skills/repository.go
++++ b/skills/repository.go
+@@ -427,6 +427,7 @@ func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath
+ 		)
+ 	}
+ 	lock := localSkillsLock{Version: version, Skills: decoded.Skills}
++	if lock.Version.String() == "2" { return localSkillsLock{}, repositoryReadinessError(RepositoryOwnershipExternal, "validate skills lock version", displayPath, errors.New("sabotage refuses version 2")) }
+ 	if _, err := skillhash.ParseLockVersion(lock.Version.String()); err != nil {
+ 		return localSkillsLock{}, repositoryReadinessError(
+ 			RepositoryOwnershipExternal,
+
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestCheckRepositoryReadsASkillsLockOfVersionTwo$ ./skills
+=== RUN   TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== PAUSE TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== CONT  TestCheckRepositoryReadsASkillsLockOfVersionTwo
+    repository_lock_version_test.go:32: version 2 readiness = {OwnedRequired:12 ExternalRequired:33 MissingOwned:[] Owned:[] MissingExternal:[]}, validate skills lock version "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/skills-lock.json": sabotage refuses version 2; want {OwnedRequired:12 ExternalRequired:33 MissingOwned:[] Owned:[{Skill:archive-spec Minimum:0.0.19 Found:0.0.19 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/archive-spec/SKILL.md State:satisfies Detail:} {Skill:brainstorming Minimum:0.0.3 Found:0.0.3 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/brainstorming/SKILL.md State:satisfies Detail:} {Skill:business-analyst Minimum:0.0.3 Found:0.0.3 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/business-analyst/SKILL.md State:satisfies Detail:} {Skill:evidence-gate Minimum:0.0.2 Found:0.0.2 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/evidence-gate/SKILL.md State:satisfies Detail:} {Skill:implement-task Minimum:0.0.6 Found:0.0.6 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/implement-task/SKILL.md State:satisfies Detail:} {Skill:qa-gate Minimum:0.0.26 Found:0.0.26 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/qa-gate/SKILL.md State:satisfies Detail:} {Skill:roundfix Minimum:0.1.223 Found:0.1.223 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/roundfix/SKILL.md State:satisfies Detail:} {Skill:setup-context-driven Minimum:0.0.8 Found:0.0.8 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/setup-context-driven/SKILL.md State:satisfies Detail:} {Skill:write-idea Minimum:0.0.7 Found:0.0.7 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/write-idea/SKILL.md State:satisfies Detail:} {Skill:write-prd Minimum:0.0.18 Found:0.0.18 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/write-prd/SKILL.md State:satisfies Detail:} {Skill:write-tasks Minimum:0.0.32 Found:0.0.32 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/write-tasks/SKILL.md State:satisfies Detail:} {Skill:write-techspec Minimum:0.0.19 Found:0.0.19 Source:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestCheckRepositoryReadsASkillsLockOfVersionTwo1055802139/001/.agents/skills/write-techspec/SKILL.md State:satisfies Detail:}] MissingExternal:[]}
+--- FAIL: TestCheckRepositoryReadsASkillsLockOfVersionTwo (0.02s)
+FAIL
+FAIL	roundfix/skills	0.301s
+FAIL
+
+exit: 1
+All named target tests failed with runtime assertion diagnostics, not build failures.

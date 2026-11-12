@@ -1,0 +1,325 @@
+import pathlib, subprocess, os, sys, json, re, shutil, hashlib, tarfile, io
+ROOT = pathlib.Path(__file__).resolve().parents[6]
+SPEC = "0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version"
+SD = ROOT / "docs/specs" / SPEC
+E = SD / "qa/evidence/qa-report-2026-11-12"
+REPORT = SD / "qa/qa-report-2026-11-12.md"
+HEAD = "5a39f5d83e6a9492ead2d90de6fb32fb7068a1c9"
+BASE = "73421db24d576ee75f6f5dbbe31043b1d570f715"
+BASEENV = dict(os.environ)
+BASEENV.update(GOPROXY="off", GOSUMDB="off")
+for key in list(BASEENV):
+    if "API_KEY" in key:
+        BASEENV.pop(key)
+
+def run(args, cwd=ROOT, env=None, expected=0):
+    p = subprocess.run(args, cwd=cwd, env=env or BASEENV, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out = "$ " + " ".join(args) + "\n" + p.stdout + "\nexit: " + str(p.returncode) + "\n"
+    if expected is not None and p.returncode != expected:
+        print(out[-5000:], flush=True)
+        raise RuntimeError("unexpected exit: " + str(p.returncode))
+    return p, out
+
+def save(name, content):
+    (E/name).write_text(content)
+
+def status(row, value, detail):
+    s=REPORT.read_text()
+    s=re.sub(r"^\| "+row+r" \| [^|]+ \|", "| "+row+" | "+value+" |",s,flags=re.M)
+    marker="### "+row+" evidence\n"
+    s=s.replace(marker,marker+"\n"+detail+"\n",1)
+    REPORT.write_text(s)
+    print(row+": "+value, flush=True)
+
+def temp(in_root=False):
+    args=["mktemp","-d"]
+    if in_root: args.append(str(ROOT/".qa-0383-XXXXXX"))
+    return pathlib.Path(subprocess.check_output(args,text=True).strip())
+
+def isolated():
+    h,t=temp(),temp()
+    a=dict(BASEENV); a.update(HOME=str(h),TMPDIR=str(t))
+    for k in ["GOMODCACHE","GOCACHE"]:
+        a[k]=subprocess.check_output(["go","env",k],cwd=ROOT,text=True).strip()
+    return h,t,a
+
+def archive(revision, destination):
+    data=subprocess.check_output(["git","archive",revision],cwd=ROOT)
+    with tarfile.open(fileobj=io.BytesIO(data)) as tf: tf.extractall(destination, filter="data")
+
+def named():
+    names=["TestSumForLockVersionMatchesThePublishedSkillsCLI","TestParseLockVersionReadsOnlyVersionsOneAndTwo","TestCheckRepositoryReadsASkillsLockOfVersionTwo","TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName","TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames","TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion","TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion","TestSkillsRestoreWritesTheHashOfTheLockVersion","TestEveryLockReaderRefusesAnUnsupportedVersionByName","TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock","TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock","TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion","TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion","TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable"]
+    p,out=run(["go","test","-count=1","-timeout","20m","-v","-run","^("+"|".join(names)+")$","./internal/skillhash","./skills","./internal/baseline","./internal/cli"])
+    save("named-tests.txt",out)
+    for n in names:
+        assert re.search(r"--- PASS: "+n+r" ",p.stdout), "missing pass: "+n
+    for n in ["TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder","TestSumForLockVersionMatchesThePublishedSkillsCLI/version_1_edge_folder","TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version","TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_2","TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2","TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/schema","TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2","TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3"]:
+        assert "--- PASS: "+n+" " in p.stdout, "missing pass: "+n
+    print("14 named tests and all declared pass-line assertions passed",flush=True)
+
+def broad():
+    commands=[["go","test","-count=1","-timeout","30m","./internal/skillhash","./skills"],["go","test","-count=1","-timeout","30m","-run","Lock|Restore|Retired|Reconcile|OwnedSkill","./internal/baseline"],["go","test","-count=1","-timeout","30m","-run","Doctor|Skills|Lock|Retired|OwnedSkill|MissingRequired|ReleasePlan","./internal/cli"]]
+    for i,cmd in enumerate(commands,1):
+        p,out=run(cmd);save("regression-"+str(i)+".txt",out);print(out,flush=True)
+    a=dict(BASEENV);a["GOOS"]="windows"
+    p,out=run(["go","vet","./internal/skillhash","./skills","./internal/baseline","./internal/cli"],env=a)
+    save("windows-vet.txt","GOOS set to windows for cross-platform verification\n"+out);print("Windows vet passed",flush=True)
+
+def docs():
+    output=""
+    # Execute both committed documentation Verification commands verbatim.
+    text=(SD/"task_03.md").read_text().split("## Verification\n",1)[1].split("## References",1)[0]
+    commands=re.findall(r"^- `(.+)` — expected:",text,re.M)
+    assert len(commands)==2
+    for i,command in enumerate(commands,1):
+        p,out=run(["/bin/zsh","-c",command]);save("task03-verification-"+str(i)+".txt",out)
+        output+="task_03 Verification "+str(i)+": pass (exit 0)\n"
+    checks={"internal/skillhash/lock.go":"func SumForLockVersion", "internal/cli/doctor_skills_lock_test.go":'{"version":3,"skills":{}}',"internal/cli/doctor.go":"skillhash.ErrUnsupportedLockVersion","internal/cli/baseline_update.go":"skillhash.ErrUnsupportedLockVersion"}
+    for file,needle in checks.items():
+        assert needle in (ROOT/file).read_text();output+="Required source assertion passed: "+file+"\n"
+    obsolete=[]
+    for folder in ["internal/cli","internal/baseline","skills"]:
+        for f in (ROOT/folder).rglob("*"):
+            if f.is_file() and not f.name.endswith("_test.go"):
+                data=f.read_text(errors="replace")
+                if "must use version 1 with a skills object" in data or 'want 1"' in data: obsolete.append(str(f.relative_to(ROOT)))
+    assert not obsolete, obsolete
+    output+="Non-test obsolete version-1-only wording: zero matches\n"
+    for name in ["_prd.md","_techspec.md"]:
+        assert "changes: **Stale Owned Lock Entry**" in (SD/name).read_text()
+    context=(ROOT/"CONTEXT.md").read_text()
+    assert "other than the hash of the installed copy in the algorithm of the lock version" in " ".join(context.split())
+    adr="docs/adr/0393-roundfix-reads-skills-lock-versions-1-and-2-and-keeps-the-version-it-found.md"
+    assert "[ADR-0393]("+adr+")" in context
+    assert re.search(r"^status: accepted$",(ROOT/adr).read_text(),re.M)
+    output+="Both glossary declarations, definition wording and accepted ADR-0393 link agree.\n"
+    output+="Non-QA Verification test coverage: task_01 named pass assertions in named-tests.txt; all package selections in regression-1/2/3.txt and windows-vet.txt. task_02 CLI pass assertions in named-tests.txt and CLI selection in regression-3.txt; Windows vet covered all four packages. task_03 commands executed verbatim above.\n"
+    save("documentation-checks.txt",output)
+    status("Q01","pass","Maintainer: make build exited 0 and the built version was read independently. Daemon-supplied make verify-changed passed at the audited head (exit 0; successful diagnostics removed). [Build](evidence/qa-report-2026-11-12/build.txt), [binary identity](evidence/qa-report-2026-11-12/version.txt).")
+    status("Q02","pass","Maintainer: all 14 required named tests and every required subtest passed, followed by the three regression selections and Windows vet. Authored task_01/02 test selections are covered by these runs; task_03 Verification commands were executed verbatim. The wording checks, mirror comparisons, obsolete-message search and glossary definition/ADR assertions passed. [Named tests](evidence/qa-report-2026-11-12/named-tests.txt), [skillhash/skills](evidence/qa-report-2026-11-12/regression-1.txt), [Baseline](evidence/qa-report-2026-11-12/regression-2.txt), [CLI](evidence/qa-report-2026-11-12/regression-3.txt), [Windows vet](evidence/qa-report-2026-11-12/windows-vet.txt), [wording and mirrors](evidence/qa-report-2026-11-12/task03-verification-1.txt), [glossary contracts](evidence/qa-report-2026-11-12/task03-verification-2.txt), [supporting assertions](evidence/qa-report-2026-11-12/documentation-checks.txt). Independent confirmations include exact pass-line assertions, version 1 preservation, refused-version nonmutation, and generated mirror equality. These are authored test and documentation checks, not a separate live CLI journey.")
+
+def sabotage(index):
+    row="S"+str(index).zfill(2)
+    copies=temp(True)
+    logs=""
+    try:
+        archive(HEAD,copies)
+        for cmd in [["git","init","-q"],["git","add","-A"],["git","-c","user.name=QA","-c","user.email=qa@example.invalid","-c","commit.gpgsign=false","-c","core.hooksPath=/dev/null","commit","-qm","QA isolated audited head"]]:
+            _,out=run(cmd,cwd=copies);logs+=out
+        package="./internal/skillhash";file="internal/skillhash/lock.go"
+        if index==1:
+            old='file.Content = bytes.ReplaceAll(file.Content, []byte("\\r\\n"), []byte("\\n"))'
+            new="// Sabotage: leave CRLF untouched."
+            tests=["TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder"]
+        elif index==2:
+            old="case 2:\n\t\tordered :=";new="case 2:\n\t\treturn Sum(files), nil\n\t\tordered :="
+            tests=["TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file"]
+        elif index==3:
+            old="version == 1 || version == 2";new="version == 1 || version == 3"
+            tests=["TestParseLockVersionReadsOnlyVersionsOneAndTwo"]
+        elif index==4:
+            package="./internal/baseline";file="internal/baseline/skills_restore_lock.go"
+            old="return skillhash.SumForLockVersion(document.version, hashFiles)";new="return skillhash.Sum(hashFiles), nil"
+            tests=["TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_2","TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2","TestSkillsRestoreWritesTheHashOfTheLockVersion"]
+        elif index==5:
+            package="./skills";file="skills/repository.go"
+            old="if _, err := skillhash.ParseLockVersion(lock.Version.String()); err != nil {"
+            new='if lock.Version.String() == "2" { return localSkillsLock{}, repositoryReadinessError(RepositoryOwnershipExternal, "validate skills lock version", displayPath, errors.New("sabotage refuses version 2")) }\n\t'+old
+            tests=["TestCheckRepositoryReadsASkillsLockOfVersionTwo"]
+        elif index==6:
+            package="./internal/cli";file="internal/baseline/skills_restore_lock.go"
+            old="parsed, err := skillhash.ParseLockVersion(version.text)"
+            new='if version.text == "2" { return skillsLockDocument{}, errors.New("sabotage refuses version 2") }\n\t'+old
+            tests=["TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock"]
+        elif index==7:
+            package="./internal/cli";file="internal/cli/doctor.go"
+            old='if errors.Is(checkErr, skillhash.ErrUnsupportedLockVersion) {\n\t\tresult.NextAction = "roundfix upgrade"\n\t\treturn result\n\t}'
+            new='if errors.Is(checkErr, skillhash.ErrUnsupportedLockVersion) {\n\t\tresult.NextAction = "bunx skills experimental_install && bunx skills update -p -y"\n\t\treturn result\n\t}'
+            tests=["TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion"]
+        elif index==8:
+            package="./internal/cli";file="internal/cli/baseline_update.go"
+            old='return "run roundfix upgrade, then rerun roundfix baseline update"'
+            new='return "repair skills-lock.json and rerun roundfix baseline update"'
+            tests=["TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3"]
+        f=copies/file;source=f.read_text();assert source.count(old)==1,(index,old);f.write_text(source.replace(old,new,1))
+        _,out=run(["git","diff","--",file],cwd=copies);logs+=out
+        for test in tests:
+            selector="/".join("^"+part+"$" for part in test.split("/"))
+            p,out=run(["go","test","-count=1","-timeout","20m","-v","-run",selector,package],cwd=copies,expected=None);logs+=out
+            save(row+"-sabotage.txt",logs)
+            if index==2 and p.returncode==0:
+                real="TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_single_file"
+                logs+="The authored version_2_one_file selector has no matching subtest. Diagnostic only: exercise the actual version_2_single_file subtest on the same mutant.\n"
+                p2,out2=run(["go","test","-count=1","-timeout","20m","-v","-run","^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_single_file$",package],cwd=copies,expected=None)
+                logs+=out2
+                assert p2.returncode != 0 and "--- FAIL: "+real+" " in p2.stdout
+                save(row+"-sabotage.txt",logs)
+                status(row,"fail","F-01: the Task-prescribed version_2_one_file selector exits 0 without executing any child test. The actual subtest is version_2_single_file; a diagnostic run of that subtest on the same mutant fails the digest assertion. The algorithm has negative-test coverage, but the authored required sabotage is ineffective as written. [Exact selector and actual-subtest transcripts](evidence/qa-report-2026-11-12/S02-sabotage.txt).")
+                return
+            assert p.returncode != 0, "sabotage survived: "+test
+            assert "--- FAIL: "+test+" " in p.stdout, "did not fail target test: "+test
+            assert "[build failed]" not in p.stdout, "compile failure is not a qualifying sabotage"
+        logs+="All named target tests failed with runtime assertion diagnostics, not build failures.\n"
+        save(row+"-sabotage.txt",logs)
+        status(row,"pass","Maintainer: applied only the named mutation on a fresh git archive of the audited head, initialized/staged/committed the disposable copy, and observed each specified target fail its assertion with go test -count=1 -timeout 20m -v. The transcript contains the exact mutation, command, exit and failing assertion. [Fresh sabotage transcript](evidence/qa-report-2026-11-12/"+row+"-sabotage.txt). The positive test passed on the unchanged head in Q02. Removed the disposable copy after execution.")
+    finally:
+        shutil.rmtree(copies)
+
+def public(args,cwd):
+    h,t,a=isolated()
+    try:
+        p=subprocess.run(args,cwd=cwd,env=a,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        log="$ "+" ".join(args)+"\nstdout:\n"+p.stdout+"stderr:\n"+p.stderr+"exit: "+str(p.returncode)+"\n"
+        return p,log
+    finally: shutil.rmtree(h);shutil.rmtree(t)
+
+def public_flows():
+    scratch=temp(True)
+    logs="Delivery Base is the merge base of the audited head and local main. No fetch.\n"
+    try:
+        actual=subprocess.check_output(["git","merge-base",HEAD,"main"],cwd=ROOT,text=True).strip()
+        assert actual==BASE
+        logs+="Delivery Base: "+actual+"\n"
+        source=scratch/"base-source";source.mkdir();archive(BASE,source)
+        (source/"bin").mkdir(exist_ok=True)
+        basebin=source/"bin/roundfix"
+        _,out=run(["go","build","-buildvcs=false","-o",str(basebin),"./cmd/roundfix"],cwd=source);logs+=out
+        report=REPORT.read_text().replace("user_flow_executables:\n","user_flow_executables:\n  - "+str(basebin.relative_to(ROOT))+"\n",1)
+        marker="### Q03 evidence\n"
+        report=report.replace(marker,marker+"\n```yaml\ninputs:\n  - kind: commit_range\n    ref: "+BASE+".."+HEAD+"\n```\n",1)
+        REPORT.write_text(report)
+        for label,binary,version in [("Delivery Base version 2",basebin,2),("Audited head version 2",ROOT/"bin/roundfix",2),("Audited head version 3",ROOT/"bin/roundfix",3)]:
+            fixture=scratch/("fixture-"+str(version)+("-base" if binary==basebin else "-head"));fixture.mkdir()
+            _,out=run(["git","init","-q"],cwd=fixture);logs+=out
+            (fixture/"bin").mkdir();(fixture/"bin/roundfix").symlink_to(binary)
+            lock={"version":version,"skills":{}}
+            if version==2: lock["skills"]["roundfix"]={"source":"marcioaltoe/skills","ref":"old","sourceType":"github","skillPath":"skills/roundfix/SKILL.md","computedHash":"0"*64}
+            lp=fixture/"skills-lock.json";lp.write_text(json.dumps(lock,indent=2)+"\n");before=lp.read_bytes()
+            p,out=public(["./bin/roundfix","skills","install","--target","project"],fixture);logs+="\n"+label+"\n"+out
+            after=json.loads(lp.read_text());logs+="Lock after independent reopen:\n"+lp.read_text()
+            if binary==basebin:
+                assert p.returncode==2 and "skills install failed: skills-lock.json must use version 1 with a skills object." in p.stderr
+                assert lp.read_bytes()==before and after["skills"]["roundfix"]["ref"]=="old"
+                logs+="Base refusal left the original zero hash and ref byte-identical.\n"
+            elif version==2:
+                assert p.returncode==0
+                assert "Updated skills-lock.json computedHash: roundfix" in p.stdout and "Removed skills-lock.json ref: roundfix" in p.stdout
+                entry=after["skills"]["roundfix"];assert after["version"]==2 and "ref" not in entry and re.fullmatch("[0-9a-f]{64}",entry["computedHash"])
+                folder=fixture/".agents/skills/roundfix"
+                h=hashlib.sha256();files=[]
+                for f in folder.rglob("*"):
+                    assert not f.is_symlink()
+                    if f.is_file():
+                        name=f.relative_to(folder).as_posix();parts=name.split("/")
+                        if "metadata.json" in parts or any(x in [".git","__pycache__","__pypackages__"] for x in parts[:-1]): continue
+                        content=f.read_bytes()
+                        if b"\x00" not in content: content=content.replace(b"\r\n",b"\n")
+                        files.append((name,content))
+                for name,content in sorted(files,key=lambda x:x[0].encode()): h.update(name.encode()+b"\x00"+str(len(content)).encode()+b"\x00"+content)
+                assert entry["computedHash"]==h.hexdigest()
+                logs+="Independent Python README algorithm equals installed lock hash: "+h.hexdigest()+"\n"
+                stable=lp.read_bytes()
+                p2,out2=public(["./bin/roundfix","skills","install","--target","project"],fixture);logs+="Fresh-process repeated install:\n"+out2
+                assert p2.returncode==0 and lp.read_bytes()==stable
+                logs+="Second process preserved every lock byte and version 2.\n"
+                p3,out3=public(["./bin/roundfix","skills","check"],fixture);logs+="Independent public bundle read:\n"+out3
+                assert p3.returncode==0
+            else:
+                assert p.returncode==2 and "skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2." in p.stderr
+                assert lp.read_bytes()==before
+                logs+="Version 3 refusal preserved lock bytes.\n"
+        save("public-flows.txt",logs)
+        status("Q03","pass","Adopter: the Delivery Base binary exits 2 on the specified version 2 stale lock and leaves its ref and zero hash intact. The Run-built audited binary exits 0, reports updated computedHash and removed ref, and preserves version 2. A fresh file reopen and independent Python implementation of the quoted README framing confirm the exact installed folder digest. A second CLI process preserves the full lock bytes; skills check exits 0. Version 3 exits 2 by name without changing the lock. Every operator command is ./bin/roundfix through a scratch-local symlink to the relevant binary built inside this Run Worktree. [Exact stdout, stderr, exits and independent confirmation](evidence/qa-report-2026-11-12/public-flows.txt). All scratch, HOME and TMPDIR directories were removed.")
+    finally: shutil.rmtree(scratch)
+
+def outside():
+    output="Outside sources, checked offline and compared with fresh execution:\n"
+    for project,id in [("vortex","01a1cfef-7944-7f70-8e88-3476a8596003"),("pantheon","01a1d081-347f-70c1-976e-f00851ad9a19")]:
+        f=SD/("references/2026-11-12-"+project+"-skills-lock-version-2-refused.md")
+        txt=f.read_text();assert id in txt and "0.141.1" in txt and "1.8.1" in txt and "skills-lock.json must use version 1 with a skills object" in txt
+        output+=project+" message "+id+", measured 2026-11-12 on Roundfix 0.141.1 and skills 1.8.1 in its own repository. Local adopted source: "+str(f.relative_to(ROOT))+".\n"
+    publiclog=(E/"public-flows.txt").read_text()
+    assert "skills install failed: skills-lock.json must use version 1 with a skills object." in publiclog
+    output+="The outside measurements' version-1-only refusal matches Q03's independently built Delivery Base failure; the audited public install removes that refusal. Pantheon's looping Doctor remedy is independently tested by the named CLI tests and the S07 mutant.\n"
+    prd=(SD/"_prd.md").read_text();tests=(ROOT/"internal/skillhash/lock_test.go").read_text();namedlog=(E/"named-tests.txt").read_text()
+    for label,digest in [("empty","e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),("single_file","93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55"),("nested_files","b22c4d22aa319d2924312fa18fcbfedc88fa89c74dbd8f298c683e1caf7b7f24")]:
+        assert digest in prd and digest in tests
+        assert "--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_"+label+" " in namedlog
+        output+="README vector "+label+": "+digest+"; quoted outside source value equals the test expectation and the fresh version 2 subtest passed.\n"
+    for passage in ["replace each CRLF with LF","Do not use a locale-aware sort.","feed `path`, a NUL byte"]: assert passage in prd
+    output+="Published source: https://github.com/vercel-labs/skills, README section Lock File Content Hash, accessed by Spec author on 2026-11-12 and quoted in PRD Acceptance evidence. This gate uses the permitted local quotation, no network lookup and no skills CLI. Independent Q03 hashing confirms byte ordering, filtering and NUL/length framing on the installed folder; CRLF, metadata and node_modules edge cases passed in Q02.\n"
+    save("outside-evidence.txt",output)
+    status("Q04","pass","Maintainer: compared the dated Vortex and Pantheon measurements and the quoted external skills README values with fresh results, rather than treating the Spec's premise as proof. All three exact published vectors match the test expectations and have fresh passing subtests; the original refusal matches Q03. [Source identities, dates, exact vectors and comparisons](evidence/qa-report-2026-11-12/outside-evidence.txt). The source quotations are reachable in this repository, so this row is not blocked.")
+
+def audit():
+    logs=""
+    def git(*args):
+        nonlocal logs
+        p,out=run(["git",*args]);logs+=out;return p.stdout
+    commits=git("rev-list","--reverse",BASE+".."+HEAD).splitlines()
+    assert len(commits)==3
+    authpath="docs/specs/"+SPEC+"/_authorization.md"
+    authority=git("show",BASE+":"+authpath)
+    assert authority==(SD/"_authorization.md").read_text()
+    assert "status: approved" in authority
+    allowed=set(re.findall(r"^  - (.+)$",authority.split("paths:\n",1)[1].split("operations:\n",1)[0],re.M))
+    changed=set()
+    for commit in commits:
+        files=git("diff-tree","--no-commit-id","--name-only","-r",commit).splitlines()
+        tasks=[f for f in files if f.startswith("docs/specs/"+SPEC+"/task_")]
+        assert len(tasks)==1,tasks
+        task=tasks[0];text=git("show",commit+":"+task)
+        declarations=set(re.findall(r"^- (?:creates|interface|instruction|deletes): `([^`]+)`",text,re.M))
+        if "## Recorded paths" in text:
+            section=text.split("## Recorded paths",1)[1].split("\n## ",1)[0]
+            declarations.update(re.findall(r"`([^`]+)`",section))
+        declarations.add(task)
+        excess=set(files)-declarations
+        assert not excess,(commit,excess)
+        git("merge-base","--is-ancestor",BASE,commit)
+        assert authpath not in files
+        for f in files:
+            assert f not in ["Makefile","go.mod","go.sum",".roundfixrc.yml","skills-lock.json","CHANGELOG.md","internal/app/version.go"]
+            assert not f.startswith((".github/workflows/","dist/npm/","docs/adr/","internal/baseline/assets/","docs/agents/")),f
+            if "/SKILL.md" in f:
+                before=git("show",commit+"^:"+f);after=git("show",commit+":"+f)
+                def settlement(t):
+                    assert "### QA settlement" in t
+                    return re.split(r"\n##? ",t.split("### QA settlement",1)[1],maxsplit=1)[0]
+                assert settlement(before)==settlement(after),f
+        changed.update(files)
+        logs+="Scope assertion: "+task+" changed "+str(len(files))+" files, all declared including its Daemon-owned Result/status. No Recorded paths expansion needed.\n"
+    scratch=temp(True)
+    try:
+        code='package main\nimport("encoding/json";"os";"roundfix/internal/speccheck")\nfunc main(){m:=map[string]bool{};for _,p:=range os.Args[1:]{m[p]=speccheck.GovernedPath(p)};if err:=json.NewEncoder(os.Stdout).Encode(m);err!=nil{panic(err)}}\n'
+        save("scope-probe.go.txt",code)
+        (scratch/"main.go").write_text(code)
+        binary=scratch/"scope-probe"
+        _,out=run(["go","build","-o",str(binary),str(scratch/"main.go")]);logs+=out
+        REPORT.write_text(REPORT.read_text().replace("user_flow_executables:\n","user_flow_executables:\n  - "+str(binary.relative_to(ROOT))+"\n",1))
+        p,out=run([str(binary),*sorted(changed)]);logs+=out
+        governed={p for p,yes in json.loads(p.stdout).items() if yes}
+        assert governed<=allowed,(governed-allowed)
+        assert len(governed)==5,governed
+        logs+="Every changed Governed Path is granted by the operative pre-Task authority. Exact set:\n"+"\n".join(sorted(governed))+"\n"
+    finally: shutil.rmtree(scratch)
+    _,out=run(["git","diff","--name-only",BASE,HEAD]);logs+=out
+    _,out=run(["git","status","--short"]);logs+=out
+    logs+="All three Task commits are descendants of the unchanged authorization record; the authorization was not folded into a Task commit. The Task range changes no forbidden configuration, release, lock, ADR, Baseline asset or agent-guide file; QA settlement bytes are identical. Working tree changes are QA-only.\n"
+    save("history-scope.txt",logs)
+    status("Q05","pass","Maintainer: enumerated all three Task commits with git diff-tree, matched every changed path to that Task's declarations or its own Task file, checked the operative authorization predates every commit and remains byte-identical, and ran the real speccheck.GovernedPath classifier over every changed path. All five governed paths are granted. No forbidden path changed; the QA settlement section is byte-identical. The seeded mechanical authorization result remains intact. [Exact history, path lists and assertions](evidence/qa-report-2026-11-12/history-scope.txt), [classifier probe source](evidence/qa-report-2026-11-12/scope-probe.go.txt).")
+
+def archive_plan():
+    p,out=public(["./bin/roundfix","archive",SPEC,"--plan","--offline"],ROOT)
+    save("archive-plan.txt", "HOME and TMPDIR isolated in fresh mktemp directories and removed afterwards. GOMODCACHE and GOCACHE preserved. Every API_KEY-named variable, including all Judge Key Variables and TYPESAFE_API_KEY, removed from the command environment. No judge request is permitted.\n"+out)
+    print(out[-4500:],flush=True)
+
+if __name__ == "__main__":
+    if sys.argv[1]=="named": named()
+    elif sys.argv[1]=="broad": broad()
+    elif sys.argv[1]=="docs": docs()
+    elif sys.argv[1]=="sabotage": sabotage(int(sys.argv[2]))
+    elif sys.argv[1]=="public": public_flows()
+    elif sys.argv[1]=="outside": outside()
+    elif sys.argv[1]=="audit": audit()
+    elif sys.argv[1]=="archive": archive_plan()

@@ -1,0 +1,58 @@
+Isolated git archive of 255a668e2bc0d2e817755fd0f1ad3cf5da85f2ac
+Mutation: internal/skillhash/lock.go
+Before: if version == 1 || version == 2 {
+After: if version == 1 || version == 3 {
+$ go test -count=1 -timeout 20m -v -run ^TestParseLockVersionReadsOnlyVersionsOneAndTwo$ ./internal/skillhash
+exit: 1
+stdout:
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== PAUSE TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== CONT  TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2
+    lock_test.go:89: ParseLockVersion("2") = 0, skills-lock.json version 2 is not supported; this Roundfix reads versions 1 and 2
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0
+    lock_test.go:89: ParseLockVersion("2e0") = 0, skills-lock.json version 2e0 is not supported; this Roundfix reads versions 1 and 2
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1
+    lock_test.go:89: ParseLockVersion("0.2e1") = 0, skills-lock.json version 0.2e1 is not supported; this Roundfix reads versions 1 and 2
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3
+    lock_test.go:99: refusal = <nil>; want "skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2" and typed version
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1
+--- FAIL: TestParseLockVersionReadsOnlyVersionsOneAndTwo (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1 (0.00s)
+    --- FAIL: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0 (0.00s)
+    --- FAIL: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0 (0.00s)
+    --- FAIL: TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1 (0.00s)
+    --- FAIL: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_ (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1 (0.00s)
+FAIL
+FAIL	roundfix/internal/skillhash	0.244s
+FAIL
+
+stderr:
+
+Every named target executed and failed its behavioral assertion; disposable initialized Git copy removed.

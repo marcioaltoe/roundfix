@@ -1,0 +1,48 @@
+$ git init -q
+
+exit: 0
+$ git add -A
+
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null commit -qm QA isolated audited head
+
+exit: 0
+$ git diff -- internal/skillhash/lock.go
+diff --git a/internal/skillhash/lock.go b/internal/skillhash/lock.go
+index da588e8..be97dde 100644
+--- a/internal/skillhash/lock.go
++++ b/internal/skillhash/lock.go
+@@ -49,6 +49,7 @@ func SumForLockVersion(version int, files []File) (string, error) {
+ 	case 1:
+ 		return Sum(files), nil
+ 	case 2:
++		return Sum(files), nil
+ 		ordered := make([]File, 0, len(files))
+ 		for _, file := range files {
+ 			file.Path = filepath.ToSlash(file.Path)
+
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_one_file$ ./internal/skillhash
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+testing: warning: no tests to run
+PASS
+ok  	roundfix/internal/skillhash	0.212s [no tests to run]
+
+exit: 0
+The authored version_2_one_file selector has no matching subtest. Diagnostic only: exercise the actual version_2_single_file subtest on the same mutant.
+$ go test -count=1 -timeout 20m -v -run ^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_single_file$ ./internal/skillhash
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_single_file
+    lock_test.go:45: digest = "615cf79d5358268f527f9e2f1722904ae6d2a78046d81c3f4f6ac46a1674bd82", <nil>; want "93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55"
+--- FAIL: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+    --- FAIL: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_single_file (0.00s)
+FAIL
+FAIL	roundfix/internal/skillhash	0.088s
+FAIL
+
+exit: 1

@@ -1,0 +1,24 @@
+Isolated git archive of 255a668e2bc0d2e817755fd0f1ad3cf5da85f2ac
+Mutation: internal/skillhash/lock.go
+Before: case 2:
+		ordered :=
+After: case 2:
+		return Sum(files), nil
+		ordered :=
+$ go test -count=1 -timeout 20m -v -run ^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_one_file$ ./internal/skillhash
+exit: 1
+stdout:
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file
+    lock_test.go:45: digest = "615cf79d5358268f527f9e2f1722904ae6d2a78046d81c3f4f6ac46a1674bd82", <nil>; want "93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55"
+--- FAIL: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+    --- FAIL: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file (0.00s)
+FAIL
+FAIL	roundfix/internal/skillhash	0.239s
+FAIL
+
+stderr:
+
+Every named target executed and failed its behavioral assertion; disposable initialized Git copy removed.

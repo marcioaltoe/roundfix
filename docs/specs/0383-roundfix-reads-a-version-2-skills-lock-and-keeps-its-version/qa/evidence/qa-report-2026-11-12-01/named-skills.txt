@@ -1,0 +1,45 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestCheckRepositoryReadsASkillsLockOfVersionTwo|TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName|TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames)$ ./skills
+exit: 0
+stdout:
+=== RUN   TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== PAUSE TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== PAUSE TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== PAUSE TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== CONT  TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== CONT  TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock
+--- PASS: TestCheckRepositoryReadsASkillsLockOfVersionTwo (0.04s)
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version
+=== CONT  TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version
+--- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames (0.13s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape (0.02s)
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version
+--- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName (0.15s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3 (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version (0.02s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version (0.03s)
+PASS
+ok  	roundfix/skills	0.478s
+
+stderr:

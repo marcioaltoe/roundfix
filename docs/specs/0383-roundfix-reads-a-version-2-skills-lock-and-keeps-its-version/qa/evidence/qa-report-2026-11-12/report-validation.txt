@@ -1,0 +1,7 @@
+Fourteen contiguous Results rows: 12 pass, 1 fail, 1 environment-blocked; all have typed repository inputs and all history-dependent rows have commit_range inputs. No pending rows, duplicated frontmatter or Agent-written snapshots.
+29 local evidence links resolve and none is ignored.
+28 fresh evidence files are UTF-8 text, unignored and absent at the audited head. No borrowed evidence or retained binary.
+No retained scratch directory or tracked implementation/Task delta; every untracked file is inside the assigned qa directory.
+Seeded mechanical findings, skips and assigned repair sections preserved. Auditing-binary and staleness lines unchanged.
+All eight sabotage transcripts retained and inspected; S02 accurately records the required selector failure and separate diagnostic assertion failure.
+Final strict Spec check exited 0 without authored Verification execution. Audited HEAD unchanged; final link and ignore checks passed after linking validation evidence.

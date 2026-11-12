@@ -1,0 +1,157 @@
+import subprocess as sp, pathlib as P, os, json, re, sys, contextlib, shutil, hashlib, io, tarfile
+ROOT=P.Path.cwd(); SLUG='0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version'; SPEC=ROOT/'docs/specs'/SLUG
+REPORT=SPEC/'qa/qa-report-2026-11-12-01.md'; EV=SPEC/'qa/evidence/qa-report-2026-11-12-01'; HEAD='255a668e2bc0d2e817755fd0f1ad3cf5da85f2ac'; BASE='73421db24d576ee75f6f5dbbe31043b1d570f715'
+KEYS=['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY']
+ENV=os.environ.copy()
+for k in KEYS: ENV.pop(k,None)
+ENV.update(GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_TERMINAL_PROMPT='0')
+def raw(cmd,cwd=ROOT,env=None):
+ return sp.run(cmd,cwd=cwd,env=ENV if env is None else env,stdout=sp.PIPE,stderr=sp.PIPE,text=True)
+def capture(cmd,name,cwd=ROOT,env=None,expected=0):
+ r=raw(cmd,cwd,env)
+ (EV/name).write_text('$ '+sp.list2cmdline(cmd)+'\nexit: '+str(r.returncode)+'\nstdout:\n'+r.stdout+'\nstderr:\n'+r.stderr)
+ assert r.returncode==expected,(name,r.returncode,r.stderr[-2000:])
+ return r
+@contextlib.contextmanager
+def scratch(outside=False):
+ r=raw(['mktemp','-d'] if outside else ['mktemp','-d',str(ROOT/'.qa0383-XXXXXX')]);assert r.returncode==0
+ p=P.Path(r.stdout.strip())
+ try: yield p
+ finally: shutil.rmtree(p)
+@contextlib.contextmanager
+def cli_env():
+ with scratch(True) as h, scratch(True) as t:
+  e=ENV.copy();e['HOME']=str(h);e['TMPDIR']=str(t)
+  for key in ['GOMODCACHE','GOCACHE']:
+   r=raw(['go','env',key]);assert r.returncode==0;e[key]=r.stdout.strip()
+  yield e
+
+def update(row,status,detail):
+ text=REPORT.read_text();text,n=re.subn(r'^\| '+re.escape(row)+r' \| [^|]+ \|', '| '+row+' | '+status+' |',text,count=1,flags=re.M);assert n==1,row
+ marker='<!-- detail:'+row+' -->';text=text.replace(marker,detail+'\n'+marker);REPORT.write_text(text)
+ print(row+': '+status,flush=True)
+def addexe(path):
+ p=str(P.Path(path).relative_to(ROOT));t=REPORT.read_text();mark='user_flow_executables:\n';assert mark in t
+ if '  - '+p+'\n' not in t:t=t.replace(mark,mark+'  - '+p+'\n',1)
+ REPORT.write_text(t)
+
+def init():
+ assert raw(['git','rev-parse','HEAD']).stdout.strip()==HEAD
+ (EV/'build.txt').write_text('Command: make build (foreground)\nResult: exit 0\nBuilt bin/roundfix from audited Run Worktree. BuildCommit=255a668e-dirty.\nBuild cache bound warning: cache above 10 GiB with no entry idle for two hours; build continued successfully.\nDaemon static gate: make verify-changed; pass; exit 0; diagnostics removed on success. Not rerun.\n')
+ with cli_env() as env:
+  version=capture(['./bin/roundfix','--version'],'version.txt',env=env).stdout.strip()
+  capture(['./bin/roundfix','spec','check',SLUG,'--strict'],'spec-check.txt',env=env)
+ t=REPORT.read_text();t=t.replace('verdict: pending','verdict: pending\nspec: '+SLUG+'\nbuild: "'+HEAD+'"\nstatus: in-progress\nsurfaces: [cli, docs]\nuser_flow_binary: '+json.dumps(version)+'\nuser_flow_executables:\n  - bin/roundfix\n  - '+str((EV/'gate.py.txt').relative_to(ROOT)))
+ rows=[('Q01','repository Verification'),('Q02','Requirement 2'),('Q03','Requirement 2')]+[('S%02d'%n,'Requirement 4') for n in range(1,9)]+[('Q04','outside-evidence row'),('Q05','Requirement 9'),('Q06','Pull Request row')]
+ table='| - | --- | --- |\n';t=t.replace(table,table+''.join('| '+r+' | pending | '+s+' |\n' for r,s in rows),1)
+ t+='\n## Scope and environment\n\nFull authored terminal gate, task_04, at the audited head. task_01, task_02 and task_03 are completed and task_04 transitively depends on all three. Strict authoring check exited 0: [precondition](evidence/qa-report-2026-11-12-01/spec-check.txt). Surfaces: CLI and docs; no frontend or Surface Transcripts declared. All rows re-run under the seeded dispositions.\n\nThe sandbox could not start because the logical writable root contains a symlink. Authorized escalated foreground commands execute in the same physical Run Worktree. Network is disabled for Go module lookup (GOPROXY and GOSUMDB); all Judge Key Variables and TYPESAFE_API_KEY are unset in child environments. Public commands isolate HOME and TMPDIR using mktemp -d and retain GOCACHE and GOMODCACHE at their go env values. No environment values are recorded. No ai-memory, external repository, provider or skills CLI is used.\n\n## Static gate\n\nmake build: exit 0. Daemon-supplied make verify-changed: pass (exit 0) at the audited head; diagnostics removed on success; never rerun. [Build and static record](evidence/qa-report-2026-11-12-01/build.txt), [binary identity](evidence/qa-report-2026-11-12-01/version.txt). Dirty build suffix comes from the untracked QA report tree, not a source edit.\n\n## Row details\n'
+ compiled=['internal/**','cmd/**','skills/**','go.mod','go.sum','Makefile','.agents/skills/roundfix/**']
+ docs=['docs/user-guide/commands/**','CONTEXT.md','docs/adr/0393*',str(SPEC.relative_to(ROOT))+'/*.md',str(SPEC.relative_to(ROOT))+'/references/**','docs/agents/**','docs/references/behavior-surfaces.json']
+ for row,source in rows:
+  paths=compiled+docs
+  t+='\n### '+row+'\n\nActor: maintainer/adopter. Source: '+source+'. Entry: '+('public ./bin/roundfix in disposable repositories' if row=='Q03' else 'authored command, test selection or repository evidence audit')+'. Expected: the authored observable, independently asserted from command results and persisted files; tests and documentation checks make only their bounded claims. Evidence will be recorded below after execution.\n\n```yaml\ninputs:\n'
+  for path in paths:t+='  - kind: repository_path\n    ref: '+path+'\n'
+  if row in ['Q03','Q05','Q06']:t+='  - kind: commit_range\n    ref: '+BASE+'..'+HEAD+'\n'
+  t+='```\n\n<!-- detail:'+row+' -->\n'
+ REPORT.write_text(t)
+ update('Q01','pass','Fresh make build and independent --version process succeeded. Repository Verification is the supplied Daemon fact, pass exit 0; no rerun. See build.txt and version.txt linked above.')
+
+def tests():
+ groups={
+ './internal/skillhash':['TestSumForLockVersionMatchesThePublishedSkillsCLI','TestParseLockVersionReadsOnlyVersionsOneAndTwo'],
+ './skills':['TestCheckRepositoryReadsASkillsLockOfVersionTwo','TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName','TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames'],
+ './internal/baseline':['TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion','TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion','TestSkillsRestoreWritesTheHashOfTheLockVersion','TestEveryLockReaderRefusesAnUnsupportedVersionByName','TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock'],
+ './internal/cli':['TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock','TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion','TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion','TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable']}
+ for pkg,names in groups.items():
+  name='named-'+pkg.split('/')[-1]+'.txt';r=capture(['go','test','-count=1','-timeout','20m','-v','-run','^('+'|'.join(names)+')$',pkg],name)
+  for test in names:assert re.search(r'--- PASS: '+re.escape(test)+r' \(',r.stdout),test
+  assert '--- FAIL:' not in r.stdout
+  print(name+': pass',flush=True)
+ capture(['go','test','-count=1','-timeout','30m','./internal/skillhash','./skills'],'regression-skills.txt')
+ capture(['go','test','-count=1','-timeout','30m','-run','Lock|Restore|Retired|Reconcile|OwnedSkill','./internal/baseline'],'regression-baseline.txt')
+ capture(['go','test','-count=1','-timeout','30m','-run','Doctor|Skills|Lock|Retired|OwnedSkill|MissingRequired|ReleasePlan','./internal/cli'],'regression-cli.txt')
+ e=ENV.copy();e['GOOS']='windows';capture(['go','vet','./internal/skillhash','./skills','./internal/baseline','./internal/cli'],'windows-vet.txt',env=e)
+ print('regressions and Windows vet: pass',flush=True)
+
+def unpack(revision,dest):
+ data=sp.run(['git','archive',revision],cwd=ROOT,stdout=sp.PIPE,stderr=sp.PIPE,env=ENV);assert data.returncode==0
+ with tarfile.open(fileobj=io.BytesIO(data.stdout)) as f:f.extractall(dest,filter='data')
+
+def public():
+ lines=[]
+ def flowcmd(cmd,cwd,env,code):
+  r=raw(cmd,cwd,env);lines.extend(['$ '+sp.list2cmdline(cmd),'exit: '+str(r.returncode),'stdout:',r.stdout,'stderr:',r.stderr]);assert r.returncode==code,(cmd,r.stderr);return r
+ with scratch() as base:
+  unpack(BASE,base)
+  capture(['go','build','-buildvcs=false','-o',str(base/'bin/roundfix'),'./cmd/roundfix'],'base-build.txt',cwd=base);addexe(base/'bin/roundfix')
+  for label,binary,code in [('Delivery Base',base/'bin/roundfix',2),('audited head',ROOT/'bin/roundfix',0)]:
+   with scratch() as repo,cli_env() as env:
+    flowcmd(['git','init','-q'],repo,env,0)
+    (repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(binary)
+    doc={'version':2,'skills':{'roundfix':{'source':'marcioaltoe/skills','ref':'old','sourceType':'github','skillPath':'skills/roundfix/SKILL.md','computedHash':'0'*64}}}
+    lock=repo/'skills-lock.json';lock.write_text(json.dumps(doc,indent=2)+'\n');before=lock.read_bytes()
+    lines.append('Actor: adopter; '+label+'; fixture version 2, stale roundfix ref and zero hash.')
+    r=flowcmd(['./bin/roundfix','skills','install','--target','project'],repo,env,code)
+    if code==2:
+     assert 'skills install failed: skills-lock.json must use version 1 with a skills object.' in r.stderr;assert lock.read_bytes()==before
+     lines.append('Independent reopen: Delivery Base preserved old ref and zero hash; lock bytes unchanged.')
+    else:
+     assert 'Updated skills-lock.json computedHash: roundfix' in r.stdout and 'Removed skills-lock.json ref: roundfix' in r.stdout
+     after=json.loads(lock.read_text());entry=after['skills']['roundfix'];assert after['version']==2 and 'ref' not in entry
+     folder=repo/'.agents/skills/roundfix';items=[]
+     for f in folder.rglob('*'):
+      if not f.is_file():continue
+      rel=f.relative_to(folder).as_posix();parts=rel.split('/')
+      if 'metadata.json' in parts or any(x in ['.git','__pycache__','__pypackages__'] for x in parts[:-1]):continue
+      data=f.read_bytes()
+      if b'\0' not in data:data=data.replace(b'\r\n',b'\n')
+      items.append((rel.encode(),data))
+     digest=hashlib.sha256()
+     for path,data in sorted(items):digest.update(path+b'\0'+str(len(data)).encode()+b'\0'+data)
+     assert entry['computedHash']==digest.hexdigest();assert len(entry['computedHash'])==64
+     lines.append('Independent Python README digest equals persisted hash: '+digest.hexdigest())
+     stable=lock.read_bytes();flowcmd(['./bin/roundfix','skills','install','--target','project'],repo,env,0);assert lock.read_bytes()==stable
+     flowcmd(['./bin/roundfix','skills','check'],repo,env,0);lines.append('Independent second CLI process and skills check: version 2 and entire repaired lock remain unchanged.')
+ with scratch() as repo,cli_env() as env:
+  flowcmd(['git','init','-q'],repo,env,0);(repo/'bin').mkdir();(repo/'bin/roundfix').symlink_to(ROOT/'bin/roundfix')
+  lock=repo/'skills-lock.json';lock.write_text('{"version":3,"skills":{}}');before=lock.read_bytes()
+  r=flowcmd(['./bin/roundfix','skills','install','--target','project'],repo,env,2)
+  assert 'skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2.' in r.stderr;assert lock.read_bytes()==before
+  lines.append('Independent reopen: refused version 3 did not alter lock bytes.')
+ (EV/'public-flows.txt').write_text('\n'.join(lines));update('Q03','pass','[Fresh public CLI comparison](evidence/qa-report-2026-11-12-01/public-flows.txt) and [Delivery Base build](evidence/qa-report-2026-11-12-01/base-build.txt): base exits 2 unchanged; head exits 0, removes ref, preserves version 2 and matches an independent README digest; second-process install/check preserve lock bytes. Version 3 exits 2 by name without lock mutation. Scratch binary and repositories were removed.')
+
+def sabotage(index):
+ row='S%02d'%index
+ changes={
+ 1:('internal/skillhash/lock.go','file.Content = bytes.ReplaceAll(file.Content, []byte("\\r\\n"), []byte("\\n"))','file.Content = bytes.ReplaceAll(file.Content, []byte("\\r\\n"), []byte("\\r\\n"))',[('./internal/skillhash','TestSumForLockVersionMatchesThePublishedSkillsCLI','version_2_edge_folder')]),
+ 2:('internal/skillhash/lock.go','case 2:\n\t\tordered :=','case 2:\n\t\treturn Sum(files), nil\n\t\tordered :=',[('./internal/skillhash','TestSumForLockVersionMatchesThePublishedSkillsCLI','version_2_one_file')]),
+ 3:('internal/skillhash/lock.go','if version == 1 || version == 2 {','if version == 1 || version == 3 {',[('./internal/skillhash','TestParseLockVersionReadsOnlyVersionsOneAndTwo','')]),
+ 4:('internal/baseline/skills_restore_lock.go','skillhash.SumForLockVersion(document.version, hashFiles)','skillhash.SumForLockVersion(1, hashFiles)',[('./internal/baseline','TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion','version_2'),('./internal/baseline','TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion','version_2'),('./internal/baseline','TestSkillsRestoreWritesTheHashOfTheLockVersion','')]),
+ 5:('skills/repository.go','skillhash.ParseLockVersion(lock.Version.String())','skillhash.ParseLockVersion(strings.ReplaceAll(lock.Version.String(), "2", "3"))',[('./skills','TestCheckRepositoryReadsASkillsLockOfVersionTwo','')]),
+ 6:('internal/baseline/skills_restore_lock.go','skillhash.ParseLockVersion(version.text)','skillhash.ParseLockVersion(string(bytes.ReplaceAll([]byte(version.text), []byte("2"), []byte("3"))))',[('./internal/cli','TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock','')]),
+ 7:('internal/cli/doctor.go','result.NextAction = "roundfix upgrade"','result.NextAction = externalSkillsNextAction',[('./internal/cli','TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion','')]),
+ 8:('internal/cli/baseline_update.go','return "run roundfix upgrade, then rerun roundfix baseline update"','return "repair skills-lock.json and rerun roundfix baseline update"',[('./internal/cli','TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion','version_3')])}
+ path,old,new,targets=changes[index];out=[]
+ with scratch() as d:
+  unpack(HEAD,d)
+  for cmd in [['git','init','-q'],['git','add','-A'],['git','-c','user.name=Disposable QA','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false','-c','core.hooksPath=/dev/null','commit','-qm','Disposable audited snapshot']]:
+   r=raw(cmd,d);assert r.returncode==0,r.stderr
+  file=d/path;text=file.read_text();assert text.count(old)==1,(row,text.count(old));file.write_text(text.replace(old,new))
+  out.extend(['Isolated git archive of '+HEAD,'Mutation: '+path,'Before: '+old,'After: '+new])
+  for pkg,parent,child in targets:
+   selector='^'+parent+'$'+('/^'+child+'$' if child else '')
+   cmd=['go','test','-count=1','-timeout','20m','-v','-run',selector,pkg];r=raw(cmd,d)
+   out.extend(['$ '+sp.list2cmdline(cmd),'exit: '+str(r.returncode),'stdout:',r.stdout,'stderr:',r.stderr])
+   (EV/(row+'-sabotage.txt')).write_text('\n'.join(out))
+   name=parent+('/'+child if child else '')
+   assert r.returncode!=0 and '--- FAIL: '+name+' ' in r.stdout,(row,r.returncode,r.stdout[-2500:],r.stderr[-2000:])
+   assert '[build failed]' not in r.stdout and 'no tests to run' not in r.stdout+r.stderr,(row,'invalid probe')
+ out.append('Every named target executed and failed its behavioral assertion; disposable initialized Git copy removed.')
+ (EV/(row+'-sabotage.txt')).write_text('\n'.join(out));update(row,'pass','[Exact isolated mutation and failing target transcript](evidence/qa-report-2026-11-12-01/'+row+'-sabotage.txt). Each required selector executed its named test and failed its behavior assertion; no compiler failure or empty selector was credited. Positive counterparts ran unchanged in Q02; disposable copy removed.')
+
+if __name__=='__main__':
+ stage=sys.argv[1]
+ if stage=='init':init()
+ elif stage=='tests':tests()
+ elif stage=='public':public()
+ elif stage=='sabotage':sabotage(int(sys.argv[2]))

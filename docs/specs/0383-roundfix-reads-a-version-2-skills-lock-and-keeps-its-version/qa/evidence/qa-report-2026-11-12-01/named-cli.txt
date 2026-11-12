@@ -1,0 +1,38 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock|TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion|TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion|TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== PAUSE TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== RUN   TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== PAUSE TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== RUN   TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== CONT  TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== CONT  TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed
+--- PASS: TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (0.00s)
+=== CONT  TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory
+--- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory (0.00s)
+=== CONT  TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+--- PASS: TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock (0.02s)
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3
+--- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (1.38s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2 (0.72s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3 (0.66s)
+PASS
+suiteguard: guard cost: measured 3164 paths; fingerprint took 153.841208ms before and 139.906375ms after
+ok  	roundfix/internal/cli	2.136s
+
+stderr:

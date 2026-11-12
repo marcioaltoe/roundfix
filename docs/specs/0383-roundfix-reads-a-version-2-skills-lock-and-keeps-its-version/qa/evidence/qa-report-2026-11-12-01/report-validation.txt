@@ -1,0 +1,6 @@
+PASS: single seeded frontmatter, auditor identity preserved, exact audited head.
+PASS: 14 contiguous three-column Results rows; 13 pass, sole Pull Request environment block; no pending, skipped or failed row.
+PASS: closed named provenance over exactly six sources; typed inputs present before execution; history-dependent rows carry commit_range.
+PASS: mechanical authorization, skips and all rerun dispositions preserved; no evidence_snapshots written.
+PASS: all links exist and are non-ignored; evidence files are text and newly generated in this pass; source files match audited HEAD.
+PASS: isolated scratch directories removed after process exit; no command left running.

@@ -1,0 +1,20 @@
+$ ./bin/roundfix spec check 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version --strict
+exit: 1
+stdout:
+Spec 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version
+[error] SC-HISTORY-RETAINED: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md links to a missing file or itself: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/report-validation.txt
+  at docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md:671
+  fix: Replace the link with `docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/report-validation.txt` (not reachable from any branch or tag).
+[error] SC-HISTORY-RETAINED: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md links to a missing file or itself: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/secret-scan.txt
+  at docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md:671
+  fix: Replace the link with `docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/secret-scan.txt` (not reachable from any branch or tag).
+[error] SC-HISTORY-RETAINED: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md links to a missing file or itself: docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/final-spec-check.txt
+  at docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/qa-report-2026-11-12-01.md:671
+  fix: Replace the link with `docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/qa/evidence/qa-report-2026-11-12-01/final-spec-check.txt` (not reachable from any branch or tag).
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version/_techspec.md Vocabulary Contract
+
+stderr:

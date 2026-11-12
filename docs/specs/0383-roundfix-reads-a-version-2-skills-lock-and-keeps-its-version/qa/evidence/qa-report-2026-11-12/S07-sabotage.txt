@@ -1,0 +1,38 @@
+$ git init -q
+
+exit: 0
+$ git add -A
+
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null commit -qm QA isolated audited head
+
+exit: 0
+$ git diff -- internal/cli/doctor.go
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index e757d3a..2175ad0 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -770,7 +770,7 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
+ 	// A lock Roundfix cannot read is fixed only by a newer Roundfix, so the
+ 	// refusal names roundfix upgrade and no skills command.
+ 	if errors.Is(checkErr, skillhash.ErrUnsupportedLockVersion) {
+-		result.NextAction = "roundfix upgrade"
++		result.NextAction = "bunx skills experimental_install && bunx skills update -p -y"
+ 		return result
+ 	}
+ 
+
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion$ ./internal/cli
+=== RUN   TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== CONT  TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+    skills_lock_version_test.go:156: skills line = "skills: failed (validate skills lock version \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion1023127473/001/skills-lock.json\": skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2; skills-lock.json comparison unavailable: skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2.; next: bunx skills experimental_install && bunx skills update -p -y)\n", want "skills: failed (validate skills lock version \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion1023127473/001/skills-lock.json\": skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2; skills-lock.json comparison unavailable: skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2.; next: roundfix upgrade)\n"
+--- FAIL: TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (0.00s)
+FAIL
+suiteguard: guard cost: measured 3123 paths; fingerprint took 152.523709ms before and 140.367ms after
+FAIL	roundfix/internal/cli	0.732s
+FAIL
+
+exit: 1
+All named target tests failed with runtime assertion diagnostics, not build failures.

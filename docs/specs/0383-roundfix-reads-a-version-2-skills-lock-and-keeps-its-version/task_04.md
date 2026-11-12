@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

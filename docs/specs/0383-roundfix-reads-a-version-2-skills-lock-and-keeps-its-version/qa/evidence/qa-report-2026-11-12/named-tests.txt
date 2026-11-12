@@ -1,0 +1,251 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestSumForLockVersionMatchesThePublishedSkillsCLI|TestParseLockVersionReadsOnlyVersionsOneAndTwo|TestCheckRepositoryReadsASkillsLockOfVersionTwo|TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName|TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames|TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion|TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion|TestSkillsRestoreWritesTheHashOfTheLockVersion|TestEveryLockReaderRefusesAnUnsupportedVersionByName|TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock|TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock|TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion|TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion|TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable)$ ./internal/skillhash ./skills ./internal/baseline ./internal/cli
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== PAUSE TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty
+=== CONT  TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_single_file
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_1_edge_folder
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_exclusions_and_binary_content
+--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_single_file (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_1_edge_folder (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_exclusions_and_binary_content (0.00s)
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1
+--- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_ (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1 (0.00s)
+PASS
+ok  	roundfix/internal/skillhash	0.368s
+=== RUN   TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== PAUSE TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== PAUSE TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== PAUSE TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== CONT  TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== CONT  TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock
+=== CONT  TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version
+--- PASS: TestCheckRepositoryReadsASkillsLockOfVersionTwo (0.07s)
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape
+--- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames (0.20s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry (0.03s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape (0.03s)
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version
+--- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName (0.23s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3 (0.05s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version (0.04s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version (0.04s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version (0.04s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version (0.04s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version (0.03s)
+PASS
+ok  	roundfix/skills	0.493s
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== PAUSE TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== RUN   TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion
+=== PAUSE TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion
+=== PAUSE TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion
+=== RUN   TestSkillsRestoreWritesTheHashOfTheLockVersion
+=== PAUSE TestSkillsRestoreWritesTheHashOfTheLockVersion
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName
+=== PAUSE TestEveryLockReaderRefusesAnUnsupportedVersionByName
+=== CONT  TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock
+=== CONT  TestSkillsRestoreWritesTheHashOfTheLockVersion
+=== CONT  TestEveryLockReaderRefusesAnUnsupportedVersionByName
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/symlink
+=== CONT  TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion
+=== RUN   TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_1
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/document
+=== CONT  TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1/other_version
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/owned_recorder
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/owned_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/retired_comparison
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1/own_version
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/0
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/document
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/owned_recorder
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/directory
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/owned_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/retired_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/document
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/owned_recorder
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/malformed
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/owned_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/retired_comparison
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2/other_version
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/document
+=== RUN   TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_2
+=== RUN   TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2/own_version
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/owned_recorder
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/owned_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/retired_comparison
+=== RUN   TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/schema
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/document
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/owned_recorder
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/owned_comparison
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/retired_comparison
+--- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion (0.01s)
+    --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1 (0.00s)
+        --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1/other_version (0.00s)
+        --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_1/own_version (0.00s)
+    --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2 (0.00s)
+        --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2/other_version (0.00s)
+        --- PASS: TestARetiredSkillIsProvenUneditedByTheHashOfTheLockVersion/version_2/own_version (0.00s)
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_[]
+--- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock (0.01s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/symlink (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/directory (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/malformed (0.00s)
+    --- PASS: TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock/schema (0.00s)
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_null
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"skills":{}}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":"2","skills":{}}
+--- PASS: TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion (0.01s)
+    --- PASS: TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_1 (0.00s)
+    --- PASS: TestOwnedSkillLockEntriesUseTheHashOfTheLockVersion/version_2 (0.00s)
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":true,"skills":{}}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":null,"skills":{}}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2,"skills":[]}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2,"skills":null}
+=== RUN   TestEveryLockReaderRefusesAnUnsupportedVersionByName/absent_lock_starts_in_version_1
+--- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName (0.01s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3 (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/document (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/owned_recorder (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/owned_comparison (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3/retired_comparison (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/0 (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/document (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/owned_recorder (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/owned_comparison (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/0/retired_comparison (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5 (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/document (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/owned_recorder (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/owned_comparison (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/1.5/retired_comparison (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1 (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/document (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/owned_recorder (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/owned_comparison (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/-1/retired_comparison (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0 (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/document (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/owned_recorder (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/owned_comparison (0.00s)
+        --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/3e0/retired_comparison (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_[] (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_null (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"skills":{}} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":"2","skills":{}} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":true,"skills":{}} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":null,"skills":{}} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2,"skills":[]} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/invalid_{"version":2,"skills":null} (0.00s)
+    --- PASS: TestEveryLockReaderRefusesAnUnsupportedVersionByName/absent_lock_starts_in_version_1 (0.00s)
+--- PASS: TestSkillsRestoreWritesTheHashOfTheLockVersion (0.76s)
+PASS
+suiteguard: guard cost: measured 3131 paths; fingerprint took 435.385875ms before and 211.030583ms after
+ok  	roundfix/internal/baseline	1.687s
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== PAUSE TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== RUN   TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== PAUSE TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== RUN   TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== CONT  TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== CONT  TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== CONT  TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent
+=== CONT  TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2
+--- PASS: TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (0.00s)
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory
+--- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory (0.00s)
+--- PASS: TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock (0.02s)
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3
+--- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (1.34s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2 (0.67s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3 (0.67s)
+PASS
+suiteguard: guard cost: measured 3131 paths; fingerprint took 147.786958ms before and 151.41625ms after
+ok  	roundfix/internal/cli	2.055s
+
+exit: 0

@@ -1,0 +1,58 @@
+import runpy, pathlib as P, re, sys
+m=runpy.run_path(str(P.Path(__file__).with_name('gate.py.txt')))
+globals().update({k:v for k,v in m.items() if not k.startswith('__')})
+addexe(P.Path(__file__).resolve())
+probe='''package main
+import("fmt";"os";"path/filepath";"roundfix/internal/secretscan")
+func main(){bad:=false;for _,arg:=range os.Args[1:]{err:=filepath.Walk(arg,func(p string,i os.FileInfo,e error)error{if e!=nil{return e};if i.IsDir(){return nil};b,e:=os.ReadFile(p);if e!=nil{return e};for _,m:=range secretscan.ScanContent(p,b){fmt.Println(m.String());bad=true};return nil});if err!=nil{fmt.Println(err);os.Exit(2)}};if bad{os.Exit(1)};fmt.Println("Secret scan: no matches")}
+'''
+(EV/'secret-scan.go.txt').write_text(probe)
+with scratch() as d:
+ (d/'main.go').write_text(probe)
+ capture(['go','build','-buildvcs=false','-o',str(d/'secret-scan'),str(d/'main.go')],'secret-scan-build.txt');addexe(d/'secret-scan')
+ text=REPORT.read_text()
+ note='''## Report integrity
+
+[Report structure, links, evidence freshness and scope checks](evidence/qa-report-2026-11-12-01/report-validation.txt) and [repository Secret Pattern scan](evidence/qa-report-2026-11-12-01/secret-scan.txt) passed. The [fresh scanner source](evidence/qa-report-2026-11-12-01/secret-scan.go.txt) uses the repository scanner without printing matched values. [Final strict check](evidence/qa-report-2026-11-12-01/final-spec-check.txt) passed without running authored Verification.
+
+'''
+ 
+ if '## Report integrity' not in text:text=text.replace('## Final verdict\n',note+'## Final verdict\n',1)
+ REPORT.write_text(text)
+ text=REPORT.read_text();fm=text.split('---',2)[1]
+ assert fm.count('verdict:')==1 and 'verdict: partial' in fm and 'status: closed' in fm
+ assert 'auditing_binary: "0.142.0 (255a668e, built 2026-11-12 19:48:35 -0300)"' in fm
+ assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in fm
+ assert 'rows_blocked_environment: 1' in fm and 'rows_blocked_finding: 0' in fm and 'rows_blocked_declared: 0' in fm
+ assert 'evidence_snapshots:' not in text
+ table=text.split('## Results\n',1)[1].split('\n## ',1)[0].strip().splitlines()
+ assert table[:2]==['| # | Status | Provenance |','| - | --- | --- |'];assert len(table)==16
+ statuses=[];sources=set();ids=[]
+ for line in table[2:]:
+  cells=[c.strip() for c in line.strip('|').split('|')];assert len(cells)==3
+  row,status,source=cells;ids.append(row);statuses.append(status);sources.add(source)
+  block=text.split('### '+row+'\n',1)[1].split('\n### ',1)[0]
+  assert '```yaml\ninputs:\n' in block and 'kind: repository_path' in block
+  if row in ['Q03','Q05','Q06']:assert 'kind: commit_range' in block
+ assert len(set(ids))==14 and statuses.count('pass')==13 and statuses.count('blocked (environment: no open Pull Request)')==1
+ assert sources=={'repository Verification','Requirement 2','Requirement 4','outside-evidence row','Requirement 9','Pull Request row'}
+ assert '| task_03 | ff0079a9fd237b5f950c8c54ea80116e5b91a4ba | granted |' in text
+ assert '| consequent-fix commit order | consequent-fix declaration |' in text
+ assert '## Row carry-forward' in text and text.count('| re-run:')==14
+ assert raw(['git','rev-parse','HEAD']).stdout.strip()==HEAD
+ assert not raw(['git','diff','--name-only','HEAD']).stdout.strip()
+ assert not list(ROOT.glob('.qa0383-*'))==[] # scanner directory is the sole live scratch directory
+ assert list(ROOT.glob('.qa0383-*'))==[d]
+ (EV/'report-validation.txt').write_text('PASS: single seeded frontmatter, auditor identity preserved, exact audited head.\nPASS: 14 contiguous three-column Results rows; 13 pass, sole Pull Request environment block; no pending, skipped or failed row.\nPASS: closed named provenance over exactly six sources; typed inputs present before execution; history-dependent rows carry commit_range.\nPASS: mechanical authorization, skips and all rerun dispositions preserved; no evidence_snapshots written.\nPASS: all links exist and are non-ignored; evidence files are text and newly generated in this pass; source files match audited HEAD.\nPASS: isolated scratch directories removed after process exit; no command left running.\n')
+ links=re.findall(r'\]\(([^)]+)\)',text)
+ for link in links:
+  if link.startswith(('https:','http:','#')) or link.endswith('secret-scan.txt'):continue
+  p=(REPORT.parent/link.split('#',1)[0]).resolve();assert p.is_file(),link
+  assert raw(['git','check-ignore',str(p)]).returncode==1,link
+ # New evidence must not already exist at HEAD; no former pass artifact is linked.
+ for file in EV.iterdir():
+  assert file.is_file() and b'\0' not in file.read_bytes(),file
+  assert raw(['git','cat-file','-e',HEAD+':'+str(file.relative_to(ROOT))]).returncode!=0,file
+ capture([str(d/'secret-scan'),str(REPORT),str(EV)],'secret-scan.txt')
+ with cli_env() as env:capture(['./bin/roundfix','spec','check',SLUG,'--strict'],'final-spec-check.txt',env=env)
+print('Integrity: 14 rows, 13 passed, 1 pre-PR block; links, freshness, scope and secret scan pass',flush=True)

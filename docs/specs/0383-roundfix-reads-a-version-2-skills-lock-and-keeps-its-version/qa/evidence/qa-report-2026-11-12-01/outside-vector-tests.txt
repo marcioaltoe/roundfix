@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 20m -v -run ^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_(empty|one_file|nested_files)$ ./internal/skillhash
+exit: 0
+stdout:
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files
+--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files (0.00s)
+PASS
+ok  	roundfix/internal/skillhash	0.101s
+
+stderr:

@@ -1,0 +1,85 @@
+Delivery Base is the merge base of the audited head and local main. No fetch.
+Delivery Base: 73421db24d576ee75f6f5dbbe31043b1d570f715
+$ go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version-1291c5e87a2458a7-2a1e07d5-19caedcc/run_20261112T212907Z_a8dd596719159f5e/.qa-0383-ICKvID/base-source/bin/roundfix ./cmd/roundfix
+
+exit: 0
+$ git init -q
+
+exit: 0
+
+Delivery Base version 2
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version-1291c5e87a2458a7-2a1e07d5-19caedcc/run_20261112T212907Z_a8dd596719159f5e/.qa-0383-ICKvID/fixture-2-base/.agents/skills (41 file(s))
+stderr:
+roundfix: skills install failed: skills-lock.json must use version 1 with a skills object.
+exit: 2
+Lock after independent reopen:
+{
+  "version": 2,
+  "skills": {
+    "roundfix": {
+      "source": "marcioaltoe/skills",
+      "ref": "old",
+      "sourceType": "github",
+      "skillPath": "skills/roundfix/SKILL.md",
+      "computedHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}
+Base refusal left the original zero hash and ref byte-identical.
+$ git init -q
+
+exit: 0
+
+Audited head version 2
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version-1291c5e87a2458a7-2a1e07d5-19caedcc/run_20261112T212907Z_a8dd596719159f5e/.qa-0383-ICKvID/fixture-2-head/.agents/skills (41 file(s))
+Updated skills-lock.json computedHash: roundfix
+Removed skills-lock.json ref: roundfix
+stderr:
+exit: 0
+Lock after independent reopen:
+{
+  "version": 2,
+  "skills": {
+    "roundfix": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/roundfix/SKILL.md",
+      "computedHash": "374853a28040722f68d6ee94529bfdc8e8b0aa84d762627537c59a54362d79df"
+    }
+  }
+}
+Independent Python README algorithm equals installed lock hash: 374853a28040722f68d6ee94529bfdc8e8b0aa84d762627537c59a54362d79df
+Fresh-process repeated install:
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version-1291c5e87a2458a7-2a1e07d5-19caedcc/run_20261112T212907Z_a8dd596719159f5e/.qa-0383-ICKvID/fixture-2-head/.agents/skills (41 file(s))
+stderr:
+exit: 0
+Second process preserved every lock byte and version 2.
+Independent public bundle read:
+$ ./bin/roundfix skills check
+stdout:
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate
+stderr:
+exit: 0
+$ git init -q
+
+exit: 0
+
+Audited head version 3
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version-1291c5e87a2458a7-2a1e07d5-19caedcc/run_20261112T212907Z_a8dd596719159f5e/.qa-0383-ICKvID/fixture-3-head/.agents/skills (41 file(s))
+stderr:
+roundfix: skills install failed: skills-lock.json version 3 is not supported; this Roundfix reads versions 1 and 2.
+exit: 2
+Lock after independent reopen:
+{
+  "version": 3,
+  "skills": {}
+}
+Version 3 refusal preserved lock bytes.

@@ -1,0 +1,5 @@
+$ go test -count=1 -timeout 30m ./internal/skillhash ./skills
+ok  	roundfix/internal/skillhash	0.079s
+ok  	roundfix/skills	1.032s
+
+exit: 0

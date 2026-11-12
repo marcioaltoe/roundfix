@@ -1,0 +1,37 @@
+$ git init -q
+
+exit: 0
+$ git add -A
+
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null commit -qm QA isolated audited head
+
+exit: 0
+$ git diff -- internal/baseline/skills_restore_lock.go
+diff --git a/internal/baseline/skills_restore_lock.go b/internal/baseline/skills_restore_lock.go
+index 733b48d..52a8c7d 100644
+--- a/internal/baseline/skills_restore_lock.go
++++ b/internal/baseline/skills_restore_lock.go
+@@ -112,6 +112,7 @@ func loadSkillsLock(filename string) (skillsLockDocument, error) {
+ 			errors.New("skills-lock.json schema is invalid"),
+ 		)
+ 	}
++	if version.text == "2" { return skillsLockDocument{}, errors.New("sabotage refuses version 2") }
+ 	parsed, err := skillhash.ParseLockVersion(version.text)
+ 	if err != nil {
+ 		return skillsLockDocument{}, restoreError(
+
+exit: 0
+$ go test -count=1 -timeout 20m -v -run ^TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock$ ./internal/cli
+=== RUN   TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== PAUSE TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+=== CONT  TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock
+    skills_lock_version_test.go:111: skills line = "skills: ok (13 required: 12 Roundfix-owned, 1 external; skills-lock.json comparison unavailable: sabotage refuses version 2)\n", want "skills: warn (13 required: 12 Roundfix-owned, 1 external; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: roundfix; next: roundfix skills install --target project)\n"
+--- FAIL: TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock (0.01s)
+FAIL
+suiteguard: guard cost: measured 3123 paths; fingerprint took 139.22ms before and 139.894833ms after
+FAIL	roundfix/internal/cli	0.713s
+FAIL
+
+exit: 1
+All named target tests failed with runtime assertion diagnostics, not build failures.

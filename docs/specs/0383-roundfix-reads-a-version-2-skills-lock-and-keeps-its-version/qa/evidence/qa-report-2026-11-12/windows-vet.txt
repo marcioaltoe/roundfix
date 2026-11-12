@@ -1,0 +1,4 @@
+GOOS set to windows for cross-platform verification
+$ go vet ./internal/skillhash ./skills ./internal/baseline ./internal/cli
+
+exit: 0

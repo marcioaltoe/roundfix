@@ -1,0 +1,7 @@
+Pull Request fact: none open, supplied by the Daemon prompt. No GitHub lookup performed.
+Approval: maintainer cycle BD approval recorded in the unchanged, approved Spec _authorization.md at Delivery Base 73421db24d576ee75f6f5dbbe31043b1d570f715 grants the bounded implementation and delivery operations; QA performs none of those delivery operations.
+Checks: Daemon-supplied make verify-changed passed (exit 0) at audited head 5a39f5d83e6a9492ead2d90de6fb32fb7068a1c9; diagnostics removed on success. Fresh named, regression, documentation and Windows vet results are retained separately.
+Threads: no unresolved Pull Request threads, because no Pull Request exists.
+Merge-Ready: no review or Merge-Ready acceptance exists yet; the pre-PR evidence does not substitute for that acceptance.
+Candidate ancestry: claimed candidate is audited head 5a39f5d83e6a9492ead2d90de6fb32fb7068a1c9. The three audited Task commits descend from the recorded authorization. No review-artifact head exists to compare.
+Unblocking action: the operator may prepare the delivery Pull Request on the Spec target branch after repairing F-01 and rerunning the gate, then obtain review acceptance and required checks for that candidate.

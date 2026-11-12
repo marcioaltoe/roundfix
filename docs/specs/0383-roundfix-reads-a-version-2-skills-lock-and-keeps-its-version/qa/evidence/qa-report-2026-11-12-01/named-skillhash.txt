@@ -1,0 +1,63 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestSumForLockVersionMatchesThePublishedSkillsCLI|TestParseLockVersionReadsOnlyVersionsOneAndTwo)$ ./internal/skillhash
+exit: 0
+stdout:
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== PAUSE TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== PAUSE TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== CONT  TestSumForLockVersionMatchesThePublishedSkillsCLI
+=== CONT  TestParseLockVersionReadsOnlyVersionsOneAndTwo
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_1_edge_folder
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word
+=== RUN   TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_exclusions_and_binary_content
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999
+--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_empty (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_one_file (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_nested_files (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_edge_folder (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_1_edge_folder (0.00s)
+    --- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/version_2_exclusions_and_binary_content (0.00s)
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1
+=== RUN   TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1
+--- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/1.0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/2e0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/0.2e1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_3 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.5 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_-1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_ (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_null (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_word (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1e9999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.0000000000000001 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1.9999999999999999 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_+1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_0x1 (0.00s)
+    --- PASS: TestParseLockVersionReadsOnlyVersionsOneAndTwo/refuse_1/1 (0.00s)
+PASS
+ok  	roundfix/internal/skillhash	0.247s
+
+stderr:

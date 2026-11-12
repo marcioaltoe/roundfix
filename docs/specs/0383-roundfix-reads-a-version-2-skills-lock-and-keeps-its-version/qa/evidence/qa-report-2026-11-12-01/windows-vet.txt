@@ -1,0 +1,5 @@
+$ go vet ./internal/skillhash ./skills ./internal/baseline ./internal/cli
+exit: 0
+stdout:
+
+stderr:

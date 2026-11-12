@@ -1,0 +1,5 @@
+$ /bin/zsh -c grep -F -- '**Stale Owned Lock Entry**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Stale Owned Lock Entry\*\*(:| —( |$))' && tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- 'other than the hash of the installed copy in the algorithm of the lock version' && grep -qF -- '[ADR-0393](docs/adr/0393-roundfix-reads-skills-lock-versions-1-and-2-and-keeps-the-version-it-found.md)' CONTEXT.md && go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce|TestGlossaryAvoidLinesArePlainLists)$'
+ok  	roundfix/skills	0.912s
+ok  	roundfix/internal/docscontract	0.460s
+
+exit: 0

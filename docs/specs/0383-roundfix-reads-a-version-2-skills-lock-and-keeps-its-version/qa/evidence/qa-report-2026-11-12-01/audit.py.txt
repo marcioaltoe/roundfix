@@ -1,0 +1,126 @@
+import runpy, pathlib as P, re, json, sys, subprocess as sp
+m=runpy.run_path(str(P.Path(__file__).with_name('gate.py.txt')))
+globals().update({k:v for k,v in m.items() if not k.startswith('__')})
+
+def docs():
+ out=[]
+ # The authored commands have been read in task_03; execute their non-recording Verification verbatim.
+ text=(SPEC/'task_03.md').read_text().split('## Verification\n',1)[1].split('\n## References',1)[0]
+ commands=re.findall(r'^- `(.*?)` — expected:',text,re.M)
+ assert len(commands)==2
+ for i,command in enumerate(commands,1):
+  capture(['/bin/sh','-c',command],'task03-verification-%d.txt'%i)
+  out.append('task_03 authored Verification command %d: exit 0'%i)
+ # Check every explicit pass-line obligation from task_01 and task_02 against this pass's verbose execution.
+ combined='\n'.join((EV/('named-'+n+'.txt')).read_text() for n in ['skillhash','skills','baseline','cli'])
+ for task in ['task_01','task_02']:
+  verification=(SPEC/(task+'.md')).read_text().split('## Verification\n',1)[1].split('\n## References',1)[0]
+  passcmd=re.search(r'; for name in (.*?); do',verification).group(1)
+  for name in passcmd.split():
+   assert re.search(r'--- PASS: '+re.escape(name)+r' \(',combined),name
+   out.append('Explicit required pass line present: '+name)
+ for file in ['internal/skillhash/lock.go','internal/cli/doctor.go','internal/cli/baseline_update.go','internal/cli/doctor_skills_lock_test.go']:
+  s=(ROOT/file).read_text()
+  needle='func SumForLockVersion' if file.endswith('lock.go') else ('{"version":3,"skills":{}}' if file.endswith('_test.go') else 'skillhash.ErrUnsupportedLockVersion')
+  assert needle in s;out.append(file+': required symbol/fixture present')
+ for base in ['internal/cli','internal/baseline','skills']:
+  for file in (ROOT/base).rglob('*.go'):
+   if file.name.endswith('_test.go'):continue
+   content=file.read_text()
+   assert 'must use version 1 with a skills object' not in content and 'want 1"' not in content,file
+ out.append('Obsolete version-1-only refusal absent in all non-test Go files under internal/cli, internal/baseline and skills.')
+ for name in ['_prd.md','_techspec.md']:assert 'changes: **Stale Owned Lock Entry**' in (SPEC/name).read_text();out.append(name+': declares glossary change')
+ context=' '.join((ROOT/'CONTEXT.md').read_text().split());assert 'other than the hash of the installed copy in the algorithm of the lock version' in context
+ adr=next((ROOT/'docs/adr').glob('0393-*'));assert 'status: accepted' in adr.read_text();assert str(adr.relative_to(ROOT)) in context
+ out.append('Stale Owned Lock Entry definition uses lock-version algorithm and links accepted ADR-0393.')
+ for r in ['setup','baseline','runtime']:
+  canonical=ROOT/('.agents/skills/roundfix/references/'+r+'.md');mirror=ROOT/('skills/roundfix/references/'+r+'.md');assert canonical.read_bytes()==mirror.read_bytes()
+  out.append(r+' canonical and mirror equal')
+ (EV/'documentation-checks.txt').write_text('\n'.join(out)+'\n')
+ links=['named-skillhash.txt','named-skills.txt','named-baseline.txt','named-cli.txt','regression-skills.txt','regression-baseline.txt','regression-cli.txt','windows-vet.txt','task03-verification-1.txt','task03-verification-2.txt','documentation-checks.txt']
+ update('Q02','pass','All 14 required top-level tests and their required subtests passed with fresh verbose pass lines, followed by the three authored regression selections and Windows vet. Each non-QA Task\'s named tests was executed; explicit pass-line obligations and symbol/fixture prechecks were independently checked. task_03 Verification ran verbatim, including skill contracts and glossary/coverage contracts. Wording, mirrored references, obsolete-message sweep, changed glossary declaration and accepted ADR match. Evidence: '+', '.join('['+n+'](evidence/qa-report-2026-11-12-01/'+n+')' for n in links)+'.')
+
+def history():
+ notes=[];commits=raw(['git','rev-list','--reverse',BASE+'..'+HEAD]).stdout.splitlines();assert len(commits)==4
+ granted=set(re.findall(r'^  - (.+)$',(SPEC/'_authorization.md').read_text().split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+ allpaths=set()
+ with scratch() as d:
+  source='''package main
+import("fmt";"os";"roundfix/internal/speccheck")
+func main(){for _,p:=range os.Args[1:]{fmt.Printf("%t\\t%s\\n",speccheck.GovernedPath(p),p)}}
+'''
+  (EV/'scope-probe.go.txt').write_text(source);(d/'main.go').write_text(source)
+  capture(['go','build','-buildvcs=false','-o',str(d/'scope-probe'),str(d/'main.go')],'scope-probe-build.txt');addexe(d/'scope-probe')
+  authpath=str((SPEC/'_authorization.md').relative_to(ROOT));auth=(SPEC/'_authorization.md').read_text()
+  assert raw(['git','show',BASE+':'+authpath]).stdout==auth
+  for commit in commits:
+   info=raw(['git','show','-s','--format=%B',commit]).stdout
+   task=re.search(r'^Roundfix-Task: (task_\d+)',info,re.M)
+   task=task.group(1) if task else 'task_01'
+   paths=raw(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).stdout.splitlines();assert paths
+   declared=(SPEC/(task+'.md')).read_text()
+   allowed=set(re.findall(r'^- (?:creates|interface|instruction): `([^`]+)`',declared,re.M));allowed.add(str((SPEC/(task+'.md')).relative_to(ROOT)))
+   if '## Recorded paths' in declared:
+    recorded=declared.split('## Recorded paths',1)[1].split('\n## ',1)[0]
+    allowed.update(re.findall(r'`([^`]+)`',recorded))
+   notes.extend(['Commit '+commit+' -> '+task, 'git diff-tree --no-commit-id --name-only -r '+commit]+paths)
+   assert set(paths)<=allowed,(commit,set(paths)-allowed)
+   assert raw(['git','merge-base','--is-ancestor',BASE,commit]).returncode==0
+   assert raw(['git','show',commit+'^:'+authpath]).stdout==auth
+   assert authpath not in paths
+   allpaths.update(paths)
+   for p in paths:
+    assert p not in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go'] and not p.startswith(('.github/workflows/','dist/npm/','docs/adr/','internal/baseline/assets/','docs/agents/')),p
+   notes.append('Every path declared by '+task+' (or its own Task file); operative authorization already in parent and base; no forbidden path.')
+  check=raw([str(d/'scope-probe')]+sorted(allpaths));assert check.returncode==0;notes.extend(['Actual speccheck.GovernedPath classification:',check.stdout]);governed=[]
+  for line in check.stdout.splitlines():
+   flag,path=line.split('\t');
+   if flag=='true':governed.append(path);assert path in granted,path
+  assert len(governed)==5
+  def settlement(s):
+   text=s.split('### QA settlement\n',1)[1];return re.split(r'\n#{1,3} ',text,maxsplit=1)[0]
+  for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+   assert settlement(raw(['git','show',BASE+':'+p]).stdout)==settlement((ROOT/p).read_text()),p
+  notes.append('Five governed changes match all five granted paths. QA settlement sections unchanged from base. No authorization folded into a Task or late. Mechanical audit of task_03 is preserved; no additional governed Task commit needs re-audit.')
+  notes.append('Head correction '+HEAD+' changes only internal/skillhash/lock_test.go, a path task_01 already declares; no governed mutation. It repairs the earlier selector finding without changing assertions.')
+  delta=raw(['git','diff','--name-only','HEAD']).stdout;assert not delta.strip(),delta
+  notes.append('Tracked working-tree delta: none. QA report/evidence are the only untracked repository paths after scratch cleanup.')
+ (EV/'history-scope.txt').write_text('\n'.join(notes)+'\n')
+ update('Q05','pass','[History and actual path classification](evidence/qa-report-2026-11-12-01/history-scope.txt), [probe source](evidence/qa-report-2026-11-12-01/scope-probe.go.txt), [probe build](evidence/qa-report-2026-11-12-01/scope-probe-build.txt). All three Task commits and the selector correction stay within declared paths; five governed paths are authorized before the changes. Forbidden paths and both QA settlement sections are unchanged. Seeded mechanical findings, authorization table and skip remain intact.')
+
+def outside():
+ sources=[]
+ for name in ['2026-11-12-vortex-skills-lock-version-2-refused.md','2026-11-12-pantheon-skills-lock-version-2-refused.md']:
+  text=(SPEC/'references'/name).read_text();assert '0.141.1' in text and '1.8.1' in text and 'skills-lock.json must use version 1 with a skills object' in text
+  sources.append(name+'\n'+text.splitlines()[0]+'\nIndependent adopter measurement: Roundfix 0.141.1 / skills 1.8.1, 2026-11-12. Original version-1-only refusal matches this pass\'s Delivery Base reproduction.')
+ vectors=['e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855','93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55','b22c4d22aa319d2924312fa18fcbfedc88fa89c74dbd8f298c683e1caf7b7f24']
+ prd=(SPEC/'_prd.md').read_text();test=(ROOT/'internal/skillhash/lock_test.go').read_text()
+ for v in vectors:assert v in prd and v in test;sources.append('Quoted vercel-labs/skills README vector equals pinned test value: '+v)
+ selector='^TestSumForLockVersionMatchesThePublishedSkillsCLI$/^version_2_(empty|one_file|nested_files)$'
+ r=capture(['go','test','-count=1','-timeout','20m','-v','-run',selector,'./internal/skillhash'],'outside-vector-tests.txt')
+ for name in ['version_2_empty','version_2_one_file','version_2_nested_files']:assert '--- PASS: TestSumForLockVersionMatchesThePublishedSkillsCLI/'+name+' ' in r.stdout
+ sources.append('External published source: https://github.com/vercel-labs/skills README, Lock File Content Hash, passage quoted in PRD Acceptance evidence, read at authoring 2026-11-12. Offline comparison verifies exclusions, text CRLF normalization, UTF-8 path sort and NUL/decimal-byte-length framing against this pass\'s vector execution. No live upstream lookup or claim of current upstream state.')
+ public=(EV/'public-flows.txt').read_text();assert 'skills install failed: skills-lock.json must use version 1 with a skills object.' in public
+ (EV/'outside-evidence.txt').write_text('\n\n'.join(sources)+'\n')
+ update('Q04','pass','Compared independent Vortex and Pantheon measurements of 2026-11-12 (Roundfix 0.141.1 / skills 1.8.1) with the fresh Delivery Base refusal, and the quoted published README vectors with independent fresh execution of the three version 2 vector subtests. [Source identities, dates and comparisons](evidence/qa-report-2026-11-12-01/outside-evidence.txt), [fresh vector test transcript](evidence/qa-report-2026-11-12-01/outside-vector-tests.txt). Sources originate outside this Spec, are available offline in adopted messages and quoted literature, and are not blocked.')
+
+def pr():
+ text='''Pull Request fact: none open (supplied by Daemon; no lookup or mutation).
+Approval: recorded delivery authority in this Spec's approved _authorization.md at delivery base 73421db24d576ee75f6f5dbbe31043b1d570f715, unchanged in Task ancestry and audited head. Maintainer cycle BD authorization grants delivery operations; this child Agent performs none.
+Checks/status: Daemon make verify-changed at audited head passed, exit 0, diagnostics removed on success. Fresh focused tests, build and Windows vet passed in this gate.
+Unresolved threads: none because no Pull Request exists; no assertion of review approval.
+Merge-Ready acceptance: none yet; no Review Source acceptance or current-candidate review artifact was supplied.
+Claimed candidate and review-artifact ancestry: 255a668e2bc0d2e817755fd0f1ad3cf5da85f2ac, this report's audited head. No later head or review artifact is claimed.
+Blocked cause: no open Pull Request. Unblocking: operator opens a Pull Request from the Spec target branch after the configured review; verify current-head acceptance, required checks and threads there. Run Worktree branch is never published.
+This row has no equivalent Merge-Ready acceptance and remains environment-blocked; by the gate policy this pre-PR row alone permits a qualifying partial.
+'''
+ (EV/'pull-request-controls.txt').write_text(text)
+ update('Q06','blocked (environment: no open Pull Request)','[Pre-PR equivalent controls and exact remaining control](evidence/qa-report-2026-11-12-01/pull-request-controls.txt). Approval authority, checks/status, no threads, absent Merge-Ready acceptance and claimed candidate ancestry are all explicit. No review acceptance is invented. This sole pre-PR block permits a qualifying partial.')
+
+def archive():
+ with cli_env() as env:
+  capture(['./bin/roundfix','archive',SLUG,'--plan','--offline'],'archive-plan.txt',env=env)
+ print('offline archive plan: pass',flush=True)
+
+if __name__=='__main__':
+ for action in sys.argv[1:]:globals()[action]()
