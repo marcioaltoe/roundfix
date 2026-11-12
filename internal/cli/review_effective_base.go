@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"roundfix/internal/preflight"
 )
@@ -86,6 +89,16 @@ func reviewConflictedCarry(ctx context.Context, root, from, to, toBase string) (
 	return reviewMeasurement{From: tree, Carried: from, Conflicted: true, Conflicts: slices.Compact(conflicts)}, nil
 }
 
+// The note sits outside the diff's untrusted-data boundary, so a candidate
+// path with a control character or invalid UTF-8 is quoted: a line break in a
+// file name can never start a new prompt line. Other paths stay as Git names them.
+func reviewConflictedPathText(path string) string {
+	if !utf8.ValidString(path) || strings.ContainsFunc(path, func(r rune) bool { return unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp) }) {
+		return strconv.Quote(path)
+	}
+	return path
+}
+
 func reviewCarryTreeIDValid(tree string) bool {
 	return (len(tree) == 40 || len(tree) == 64) && strings.Trim(tree, "0123456789abcdef") == ""
 }
@@ -96,7 +109,11 @@ func reviewConflictedCarryNote(measurement reviewMeasurement) string {
 	}
 	note := fmt.Sprintf("Carrying %s onto the default branch conflicted; where tree %s holds Git's conflict markers, the diff shows how the candidate resolved the conflict.\n", measurement.Carried, measurement.From)
 	if len(measurement.Conflicts) > 0 {
-		note += "Conflicted paths: " + strings.Join(measurement.Conflicts, ", ") + ".\n"
+		paths := make([]string, len(measurement.Conflicts))
+		for index, path := range measurement.Conflicts {
+			paths[index] = reviewConflictedPathText(path)
+		}
+		note += "Conflicted paths: " + strings.Join(paths, ", ") + ".\n"
 	}
 	return note
 }
