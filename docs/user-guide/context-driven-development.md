@@ -1056,7 +1056,7 @@ The Spec Consistency Check uses an ADR horizon: `SC-ADR-RELATED` reports an ADR
 for a committed Spec only when the commit that added the ADR is an ancestor of
 the commit that added the Spec's `_prd.md`. Only an ADR the Spec applies or
 changes draws in the ADRs that cite it: an ADR whose line under the TechSpec's
-`## ADR Alternatives` begins with `not applicable` stays listed, and an ADR that
+`## ADR Alternatives` begins with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, stays listed, and an ADR that
 cites only such ADRs opens no `SC-ADR-RELATED` gap.
 
 The check reads the PRD's `## Unreachable Acceptance` section as the QA gate

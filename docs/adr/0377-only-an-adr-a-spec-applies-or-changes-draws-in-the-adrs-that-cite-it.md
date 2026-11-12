@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-09T12:00:00Z
-updated_at: 2026-11-09T12:00:00Z
+updated_at: 2026-11-11T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -46,12 +46,16 @@ The check reads a fixed leading token in a line the Spec already writes for
 every listed ADR, so it still compares written declarations and never judges
 whether an ADR is relevant (ADR-0093).
 
+**Amended by [ADR-0389](0389-an-adr-alternatives-line-marks-an-adr-as-not-applying-in-english-or-portuguese.md) (2026-11-11).** The leading token is read from a closed list: `not applicable`, `não se aplica` with a precomposed or decomposed `ã`, and `nao se aplica`, matched without regard to case and ending before a character that is not an ASCII letter, digit or underscore. Everything else in this decision still holds.
+
 ## Considered Options
 
 - A marker phrase inside the PRD's Active ADR obligations row, such as a
   "Not applicable:" sentence: rejected, because the row is free prose with no
   boundary between ADRs, and a phrase written in one Spec's language binds no
-  other.
+  other. ADR-0389 keeps this option rejected: it reads the Portuguese token
+  only in the TechSpec's ADR Alternatives line, from a closed list every
+  checkout shares.
 - A fifth Project Constraints row for the ADRs that do not apply: rejected,
   because it changes the four-row contract that every adopter's templates and
   the `SC-CONSTRAINT-*` checks hold.

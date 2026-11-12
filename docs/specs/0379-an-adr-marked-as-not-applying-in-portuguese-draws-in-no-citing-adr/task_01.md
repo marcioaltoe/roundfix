@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -74,16 +74,16 @@ token, so the code Task that follows changes behavior they already describe.
 
 ## Subtasks
 
-- [ ] Write the amendment notice and the Considered Option note into ADR-0377.
-- [ ] Revise **Spec Consistency Check** through `domain-modeling`.
-- [ ] Align the `write-techspec` skill and template, the `write-tasks` skill and the `spec` reference, then sync and record the skill versions.
-- [ ] Align the two guides and re-record the Behavior Surface Record last.
+- [x] Write the amendment notice and the Considered Option note into ADR-0377.
+- [x] Revise **Spec Consistency Check** through `domain-modeling`.
+- [x] Align the `write-techspec` skill and template, the `write-tasks` skill and the `spec` reference, then sync and record the skill versions.
+- [x] Align the two guides and re-record the Behavior Surface Record last.
 
 ## Acceptance Criteria
 
-- [ ] Every prescribed sentence is present in each file and its mirror, and the mirrors equal their canonical copies.
-- [ ] The three owned skills carry raised, recorded versions, and the Behavior Surface Record is current.
-- [ ] ADR-0377 carries the dated notice and its `updated_at`; the glossary keeps its definition line.
+- [x] Every prescribed sentence is present in each file and its mirror, and the mirrors equal their canonical copies.
+- [x] The three owned skills carry raised, recorded versions, and the Behavior Surface Record is current.
+- [x] ADR-0377 carries the dated notice and its `updated_at`; the glossary keeps its definition line.
 
 ## Context
 
@@ -123,3 +123,31 @@ token, so the code Task that follows changes behavior they already describe.
 - `_prd.md` → Goals; User Stories 2-3; Core Feature 4; Success Metric 3; Glossary
 - `_techspec.md` → ADR Alternatives; Build Order 1
 - ADR-0389; ADR-0377
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implemented the ADR-0377 amendment, the Portuguese token wording in the
+`Spec Consistency Check` glossary entry, both owned authoring skills and their
+template/reference text, both user guides, and the generated skill/version
+records. The Behavior Surface Record was re-recorded after the final skill and
+guide edit.
+
+Focused checks:
+
+- `make skills-sync`: passed; the `skills/` copies were regenerated.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed (`1 passed`); versions recorded as `roundfix 0.1.218`, `write-tasks 0.0.32`, and `write-techspec 0.0.19`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed (`1 passed`); executed last after all skill and guide edits.
+- `git diff --check`: passed.
+- `diff -r .agents/skills/<owned-skill> skills/<owned-skill>` for `roundfix`, `write-tasks`, and `write-techspec`: all three mirrors equal their canonical copies.
+- Focused phrase and version inspections found the prescribed ADR notice, glossary links, Portuguese token wording, guide entries, raised versions, and coverage record change.
+
+Acceptance evidence:
+
+- Prescribed sentences and mirrors: the focused phrase checks found each required sentence, and all three owned-skill mirror comparisons were equal.
+- Raised skill versions and Behavior Surface Record: both recorder tests passed; the version record contains the new entries and `docs/references/behavior-surfaces.json` changed.
+- ADR-0377 and glossary: focused inspection found `updated_at: 2026-11-11T00:00:00Z`, the dated ADR-0389 notice, the Considered Option note, and the unchanged `**Spec Consistency Check**` definition heading.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that verification and Task status. No commit, push, or pull request was made.
