@@ -1,7 +1,0 @@
-Pull Request fact: none open (current QA assignment).
-Approval: Spec _authorization.md approved, operative grant at Delivery Base; delivery authority authorizes the declared bounded change.
-Checks/status: Daemon make verify-changed exit 0 at 22032335825a257e5ddc8ca1267befb67b1acabc; QA focused and declared Task verifications exit 0.
-Unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; no current-candidate Review Source acceptance supplied. This control has no equivalent evidence.
-Candidate/review ancestry: claimed candidate 22032335825a257e5ddc8ca1267befb67b1acabc; approval antecedent 131748308e030f8c64ef807f5789ec7303b1876f; no later Review Artifact acceptance exists in this assignment.
-Unblocking action: Supervisor completes configured current-candidate review, opens the Spec target-branch Pull Request and verifies required controls for its candidate; QA creates no PR.

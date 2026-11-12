@@ -1,7 +1,0 @@
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20/bin/qa-0379-ex27qu77/delivery-base
-command: go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20/bin/qa-0379-ex27qu77/delivery-base/bin/roundfix ./cmd/roundfix
-stdout:
-
-stderr:
-
-exit: 0

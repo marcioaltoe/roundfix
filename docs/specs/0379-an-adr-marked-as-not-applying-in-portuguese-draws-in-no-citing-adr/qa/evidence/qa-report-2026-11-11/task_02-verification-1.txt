@@ -1,7 +1,0 @@
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
-command: sh -c 'out="$(GOMAXPROCS=2 go test -count=1 -timeout 10m ./internal/speccheck -run '"'"'^(TestAPortugueseNotApplicableADRDrawsInNoCitingADR|TestAMarkerOutsideTheClosedListStillDrawsIn|TestAnAppliedADRStillDrawsInItsCitingADR|TestANotApplicableADRDrawsInNoCitingADR|TestWithoutATechSpecEveryListedADRSeeds|TestAnADRCitingAnAppliedADRIsStillRelated)$'"'"' -v 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; printf '"'"'%s\n'"'"' "$out" | grep -q -- '"'"'--- PASS: TestAPortugueseNotApplicableADRDrawsInNoCitingADR'"'"' && printf '"'"'%s\n'"'"' "$out" | grep -q -- '"'"'--- PASS: TestAMarkerOutsideTheClosedListStillDrawsIn'"'"''
-stdout:
-
-stderr:
-
-exit: 0

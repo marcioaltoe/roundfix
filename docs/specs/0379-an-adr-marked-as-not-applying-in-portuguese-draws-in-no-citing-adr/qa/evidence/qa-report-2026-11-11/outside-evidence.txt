@@ -1,7 +1,0 @@
-Offline outside-evidence comparison, recorded sources dated 2026-11-10.
-
-1. Operator-adopted Backlog Entry, message id prefix 01a1c323 from Fiscus: 76 ADR lines use “não se aplica”. Independent adopter report predates this Spec; this QA did not read Fiscus. Compare cli-accented.txt: audited head zero related gaps, Delivery Base one. This corroborates the reported input form and reproduced closure; it does not remeasure Fiscus’s 76 lines.
-
-2. Unicode Standard Annex #15, https://unicode.org/reports/tr15/, passage preserved in _prd.md Acceptance evidence from 2026-11-10: canonical equivalence describes the same abstract character and appearance/behavior; example Ç ↔ C+◌̧. Compare focused.txt decomposed PASS and sabotage-decomposed.txt assertion failure: Go literal contains U+0061 U+0303, while the accented case contains U+00E3. No network reread.
-
-3. Go regexp/syntax, https://pkg.go.dev/regexp/syntax, passage preserved in _prd.md Acceptance evidence from 2026-11-10: \b is at ASCII word boundary. Compare focused.txt plural PASS, sabotage-boundary.txt intended assertion failure, cli-plural.txt, cli-ascii-digit.txt and cli-ascii-underscore.txt: each retains one related gap. No network reread.
