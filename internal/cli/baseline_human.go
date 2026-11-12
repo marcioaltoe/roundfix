@@ -126,6 +126,11 @@ func runBaselineHumanCommandWithIO(
 	if err != nil {
 		return printBaselineHumanFailure(err, jsonOutput, stdout, stderr)
 	}
+	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+		return writeBaselineHumanAction(baselineHumanActionResult(
+			"preflight", err.Error(), "run roundfix upgrade, then rerun roundfix baseline",
+		), jsonOutput, stdout, stderr)
+	}
 	if !commandIO.interactive {
 		result := baselineHumanActionResult(
 			"interactive_input",
@@ -428,6 +433,7 @@ func driveHumanBaselinePlanWithAnalyzers(
 	}
 
 	request := baseline.PlanRequest{
+		WriterVersion:         app.Version,
 		Repository:            inspection.Root,
 		Decisions:             decisions,
 		Preservation:          preservation,
@@ -517,6 +523,7 @@ func driveResolvedHumanBaselinePlan(
 		return baseline.PlanDocument{}, err
 	}
 	request := baseline.PlanRequest{
+		WriterVersion:         app.Version,
 		Repository:            inspection.Root,
 		Decisions:             decisions,
 		Preservation:          baseline.RootPreservationRequest{Mode: baseline.PreservationModeManagedRefresh},

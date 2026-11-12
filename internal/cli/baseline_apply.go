@@ -30,6 +30,9 @@ func runBaselineApplyCommand(ctx context.Context, args []string, stdout, stderr 
 	if err != nil {
 		return printBaselineApplyFailure(baseline.PlanDocument{}, err, jsonOutput, stdout, stderr)
 	}
+	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+		return printBaselineApplyFailure(baseline.PlanDocument{}, err, jsonOutput, stdout, stderr)
+	}
 	data, err := os.ReadFile(request.plan)
 	if err != nil {
 		return printBaselineApplyFailure(

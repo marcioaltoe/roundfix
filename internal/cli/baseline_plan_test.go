@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 	"roundfix/internal/gittest"
 )
@@ -209,6 +210,8 @@ func TestBaselinePlanProfileFile(t *testing.T) {
 		ProfileDraft: &input,
 		Decisions:    decisions,
 		Preservation: baseline.RootPreservationRequest{Mode: baseline.PreservationModeGreenfield},
+
+		WriterVersion: app.Version,
 	})
 	if err != nil || direct.Plan == nil {
 		t.Fatalf("build direct Profile draft Plan: outcome=%+v error=%v", direct, err)

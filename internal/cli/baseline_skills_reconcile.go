@@ -56,6 +56,21 @@ func runBaselineSkillsReconcileCommand(
 			stderr,
 		)
 	}
+	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+		payload := baseline.SkillsReconcilePayload{
+			SchemaVersion:  baseline.SkillsReconcileSchemaVersion,
+			Profile:        request.profile,
+			Acquisitions:   []baseline.RestoreAcquisition{},
+			Skills:         []baseline.SkillsReconcileEntry{},
+			PlannedChanges: []baseline.RestorePlannedChange{},
+			Finding: &baseline.RestoreFinding{
+				Code:    "reconcile.roundfix-version-newer",
+				Message: err.Error(),
+				Action:  "Run roundfix upgrade, then rerun roundfix baseline skills reconcile.",
+			},
+		}
+		return writeBaselineSkillsReconcileFailure(payload, err, exitPreflight, jsonOutput, stdout, stderr)
+	}
 	payload, reconcileErr := baseline.ReconcileSkillsLock(ctx, baseline.SkillsReconcileRequest{
 		Repository:       request.repo,
 		ProfileID:        request.profile,

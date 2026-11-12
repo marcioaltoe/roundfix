@@ -1127,6 +1127,8 @@ func TestHumanAutomationPlanParity(t *testing.T) {
 		Preservation: baseline.RootPreservationRequest{
 			Mode: baseline.PreservationModeGreenfield,
 		},
+
+		WriterVersion: app.Version,
 	})
 	if err != nil || automation.Plan == nil {
 		t.Fatalf("build automation Baseline Plan: outcome=%+v error=%v", automation, err)
@@ -1354,6 +1356,8 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 		ProfileDraft: &automationInput,
 		Decisions:    request.Decisions,
 		Preservation: request.Preservation,
+
+		WriterVersion: app.Version,
 	})
 	if err != nil || automation.Plan == nil {
 		t.Fatalf("build automation Profile draft Plan: outcome=%+v error=%v", automation, err)

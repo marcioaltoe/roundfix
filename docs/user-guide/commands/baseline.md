@@ -27,6 +27,22 @@ Change Plan. Rejecting the plan returns to a selected decision area and
 recalculates the complete plan. Mutation requires one explicit confirmation of
 the current displayed Plan Digest.
 
+#### Recorded Roundfix Version
+
+The Setup Manifest's `roundfixVersion` records the release of the Roundfix that
+last applied a Baseline change. A plan records the running release only when
+it changes a file and that release is higher; a plan without a file change
+keeps the value. Development and pre-release builds record none. `roundfix
+baseline`, `baseline update`, `baseline plan`, `baseline apply`, `baseline
+skills restore` and `baseline skills reconcile` refuse a newer value before
+they read anything else, exit `2` and change no file:
+
+```text
+roundfix: baseline update failed: Setup Manifest "<path>" records Roundfix <recorded>, newer than this binary's <running>; a newer roundfix wrote this repository's Baseline, so use that binary or run 'roundfix upgrade'
+Category: version
+Next action: run roundfix upgrade, then rerun roundfix baseline update
+```
+
 #### Capability evidence and remediation
 
 Profile alignment groups unsatisfied Repository Capabilities by requirement

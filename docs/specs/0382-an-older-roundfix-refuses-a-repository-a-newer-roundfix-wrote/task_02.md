@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -181,3 +181,25 @@ repository's managed guides back to its own text.
 - `_techspec.md` → Current behavior 2, 3, 6; Interfaces; Data Models; API Contracts 6-10; Surface Transcript 2; Invariants 2-4; Declared breaks; Testing Approach; Build Order 2
 - ADR-0392
 - [The adopted message](references/2026-11-11-conexus-an-older-roundfix-ran-against-a-newer-repository.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+### Starting-tree characterization
+
+- Before implementation, a temporary Go overlay test built the characterization adoption manifest, confirmed it parsed, added `roundfixVersion: "0.140.0"`, and confirmed `parseManagedSetupManifest` rejected it. `go test -count=1 -overlay <temporary overlay.json> ./internal/baseline -run '^TestTask02StartingManifestRejectsUnknownField$' -v` exited 0; the named test passed. The overlay changed no repository source.
+- Inspection of the four production `BuildPlan` calls in `baseline_update.go`, `baseline_profile.go` and `baseline_human.go` (two) found no writer release input; `PlanRequest` had no `WriterVersion` field. The starting working tree contained only this Daemon-owned Task file's status change.
+
+### Implementation and acceptance evidence
+
+- Writer rule: `SetupManifest.RoundfixVersion` is the last optional JSON field, and `PlanRequest.WriterVersion` is supplied by only the four production CLI plan builders. Planning carries a valid existing release, derives changes before deciding whether to raise it, then rebuilds manifest postimages and the ledger before computing the digest. Both manifest validators reject non-release values.
+- Refusal: the six commands check the repository immediately after successful argument parsing and before their remaining reads. Existing failure printers preserve each command's contract; update reports category `version`, human adoption reports `preflight`, and skill commands report their specified finding codes and actions. The Update Check reaches the same refusal through its preview.
+- Criterion 1 focused check: `go test -count=1 ./internal/baseline -run '^(TestAPlanRecordsItsWriterVersionOnlyWithAFileChange|TestASetupManifestRoundfixVersionMustBeAReleaseVersion)$' -v` exited 0. Adoption without a writer omitted the field; adoption with a release applied `verified`; Managed Refresh replans by newer, empty, development and pre-release writers had no changes and kept the record. A stale root-cause guide kept the record for lower, equal, empty, development, pre-release and invalid writers; a normalized higher writer raised it in the manifest postimage. Strict parsing and validation accepted empty/release values and rejected the three specified invalid forms with the required validation diagnostic.
+- Criterion 2 focused check: `go test -count=1 ./internal/cli -run '^(TestBaselineUpdateRecordsTheRunningRoundfixVersion|TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix|TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix|TestBaselinePlanProfileFile|TestHumanAutomationPlanParity|TestBaselineHumanProfileAdaptation)$' -v` exited 0. All six refusal subtests asserted exit 2, the JSON refusal and unchanged repository-tree identity; apply supplied a missing plan plus the required confirmation. Update recorded `app.NormalizeVersion(app.Version)` after clearing the fixture record, then converged with zero changes. The Update Check matched Surface Transcript 2 in full and asserted JSON `baseline.state`, `baseline.message` and `next`.
+- The first command-test run exposed two new-fixture mistakes: apply omitted the existing mandatory `--confirm-plan`, and the zero-change `--yes` update expected `current` instead of the existing `verified` result. Reading the parser and existing idempotence test established those contracts; the fixtures were corrected without changing production behavior or existing assertions.
+- Criterion 3 focused check: `go test -count=1 ./internal/baseline -run '^(TestBaselinePlanCharacterization|TestBaselineCompatibilityCorpus)$'` exited 0 without regeneration. The only existing tests edited are the three declared parity requests (and the specified `app` import); their original lines and assertions are preserved. No additional parity adjustment was needed in the focused journeys.
+- Existing-behavior check: `go test -count=1 ./internal/cli -run '^(TestBaselineUpdateFleetSweep|TestBaselineUpdateIdempotenceReportsZeroFileChanges|TestBaselineMacroJourneysPublicCLI|TestACommandRefusesARepositoryRecordedByANewerRoundfix|TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix)$'` exited 0.
+- The Baseline and Update Check guides contain the prescribed heading, explanatory text, failure block and exact Update Check sentence. No Baseline command was run against this checkout. Plan goldens, parity fixtures, this repository's Setup Manifest, Task Graph and other Task files remain unchanged. `git diff --check` exited 0 before regeneration.
+- Declared Verification and repository Verification remain for the Daemon; no Task status, checkbox settlement, commit, push or pull request was performed. No follow-up outside this Task was required.
+- Final regeneration: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 after the last guide edit. Its diff contains only the Baseline and Update Check guide fingerprints. Final `git diff --check` exited 0; the protected-byte diff for `internal/baseline/testdata`, `docs/agents/setup-context.json`, `_tasks.md` and the other Task files was empty. All changed and new paths are declared by task_02; the two governed parity test files contain only the authorized writer inputs and import.
