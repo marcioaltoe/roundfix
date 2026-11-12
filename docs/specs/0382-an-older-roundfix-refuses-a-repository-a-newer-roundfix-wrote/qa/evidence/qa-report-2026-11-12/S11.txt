@@ -1,0 +1,49 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAPlanRecordsItsWriterVersionOnlyWithAFileChange$' ./internal/baseline
+stdout:
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange
+=== PAUSE TestAPlanRecordsItsWriterVersionOnlyWithAFileChange
+=== CONT  TestAPlanRecordsItsWriterVersionOnlyWithAFileChange
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.141.0
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.0.0-dev
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.141.0-rc.1
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.139.0
+    recorded_version_test.go:91: record="0.139.0" want="0.140.0"
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.140.0
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.141.0-rc.1
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.0.0-dev
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_invalid
+=== RUN   TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_v0.141.0
+--- FAIL: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange (0.77s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.141.0 (0.04s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_ (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.0.0-dev (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/converged_writer_0.141.0-rc.1 (0.02s)
+    --- FAIL: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.139.0 (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.140.0 (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.141.0-rc.1 (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_ (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_0.0.0-dev (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_invalid (0.02s)
+    --- PASS: TestAPlanRecordsItsWriterVersionOnlyWithAFileChange/stale_writer_v0.141.0 (0.02s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 168.816416ms before and 140.408833ms after
+FAIL	roundfix/internal/baseline	1.387s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/baseline/plan.go b/internal/baseline/plan.go
+index bf11555..3edd855 100644
+--- a/internal/baseline/plan.go
++++ b/internal/baseline/plan.go
+@@ -648,7 +648,7 @@ func buildPlanWithCatalog(
+ 	}
+ 	writerVersion := app.NormalizeVersion(request.WriterVersion)
+ 	if len(doc.FileChanges) != 0 && config.IsReleaseVersion(writerVersion) &&
+-		(manifest.RoundfixVersion == "" || app.CompareVersions(writerVersion, manifest.RoundfixVersion) > 0) {
++		(manifest.RoundfixVersion == "" || app.CompareVersions(writerVersion, manifest.RoundfixVersion) != 0) {
+ 		manifest.RoundfixVersion = writerVersion
+ 		manifestBytes, err = marshalSetupManifestBytes(manifest)
+ 		if err != nil {

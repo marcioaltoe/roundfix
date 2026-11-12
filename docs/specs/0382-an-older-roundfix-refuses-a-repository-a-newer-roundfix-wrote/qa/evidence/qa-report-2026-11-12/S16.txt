@@ -1,0 +1,64 @@
+command: go test -count=1 -timeout 20m -v -run '^TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix$' ./internal/cli
+stdout:
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== NAME  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+    baseline_version_test.go:78: exit=2 stdout={
+          "schemaVersion": "roundfix/baseline-result/v1",
+          "operation": "apply",
+          "state": "failed",
+          "category": "invalid",
+          "message": "read Baseline Plan \"missing-plan.json\": open missing-plan.json: no such file or directory",
+          "nextAction": "correct the command input and rerun roundfix baseline apply",
+          "verifiedPostimages": [],
+          "warnings": [],
+          "recommendations": []
+        }
+         stderr=roundfix: baseline apply failed: read Baseline Plan "missing-plan.json": open missing-plan.json: no such file or directory
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+--- FAIL: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan (0.00s)
+    --- FAIL: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 154.380125ms before and 140.226666ms after
+FAIL	roundfix/internal/cli	0.745s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/cli/baseline_apply.go b/internal/cli/baseline_apply.go
+index 28b9457..0f3cec9 100644
+--- a/internal/cli/baseline_apply.go
++++ b/internal/cli/baseline_apply.go
+@@ -30,9 +30,6 @@ func runBaselineApplyCommand(ctx context.Context, args []string, stdout, stderr
+ 	if err != nil {
+ 		return printBaselineApplyFailure(baseline.PlanDocument{}, err, jsonOutput, stdout, stderr)
+ 	}
+-	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+-		return printBaselineApplyFailure(baseline.PlanDocument{}, err, jsonOutput, stdout, stderr)
+-	}
+ 	data, err := os.ReadFile(request.plan)
+ 	if err != nil {
+ 		return printBaselineApplyFailure(

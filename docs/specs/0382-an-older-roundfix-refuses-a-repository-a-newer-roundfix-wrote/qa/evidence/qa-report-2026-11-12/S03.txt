@@ -1,0 +1,29 @@
+command: go test -count=1 -timeout 20m -v -run '^TestARepositoryRecordedByANewerRoundfixRefusesLoad$' ./internal/config
+stdout:
+=== RUN   TestARepositoryRecordedByANewerRoundfixRefusesLoad
+=== PAUSE TestARepositoryRecordedByANewerRoundfixRefusesLoad
+=== CONT  TestARepositoryRecordedByANewerRoundfixRefusesLoad
+    recorded_version_test.go:26: expected newer repository refusal before YAML decode, got parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestARepositoryRecordedByANewerRoundfixRefusesLoad1958493225/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay
+--- FAIL: TestARepositoryRecordedByANewerRoundfixRefusesLoad (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 147.1115ms before and 149.708041ms after
+FAIL	roundfix/internal/config	0.527s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/config/config.go b/internal/config/config.go
+index 4e03fe5..3e27d2b 100644
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -933,6 +933,9 @@ func Load(opts LoadOptions) (Loaded, error) {
+ 
+ 	if loaded.GitRoot != "" {
+ 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
++		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings, ProfileSourceProject); err != nil {
++			return Loaded{}, err
++		}
+ 		if err := CheckRecordedRoundfixVersion(loaded.GitRoot, app.Version); err != nil {
+ 			if !opts.AllowNewerRepository {
+ 				return loaded, err

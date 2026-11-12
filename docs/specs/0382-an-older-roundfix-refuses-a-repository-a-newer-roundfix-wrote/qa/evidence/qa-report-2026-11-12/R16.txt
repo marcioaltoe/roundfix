@@ -1,0 +1,14 @@
+Published source: HashiCorp, Manage Terraform versions
+URL: https://developer.hashicorp.com/terraform/tutorials/configuration-language/versions
+Source read date: 2026-11-11, as recorded by the PRD Acceptance evidence
+Offline passage: Terraform will update the `terraform_version` whenever you apply a change to your configuration using a newer Terraform version.
+Passage matches quoted PRD bytes after whitespace normalization: True
+Observed comparison:
+step 0: roundfixVersion: <absent>
+step 1: roundfixVersion: 0.900.0
+step 2: roundfixVersion: 0.900.0
+step 3: roundfixVersion: 0.900.0
+step 4: roundfixVersion: 0.900.0
+checks: [True, True, True, True, True]
+
+Match: True

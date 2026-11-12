@@ -1,0 +1,51 @@
+command: go test -count=1 -timeout 20m -v -run '^TestACommandRefusesARepositoryRecordedByANewerRoundfix$' ./internal/cli
+stdout:
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+=== NAME  TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+    recorded_version_test.go:38: exit=0 stdout=Roundfix config updated
+        
+        Scope:
+          project
+        
+        Path:
+          /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACommandRefusesARepositoryRecordedByANewerRoundfixinit_--sc3284770591/002/.roundfixrc.yml
+        
+        Next:
+          roundfix fetch --pr <number>
+         stderr=
+--- FAIL: TestACommandRefusesARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x (0.00s)
+    --- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up (0.00s)
+    --- FAIL: TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 153.64725ms before and 141.67875ms after
+FAIL	roundfix/internal/cli	0.742s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/config/config.go b/internal/config/config.go
+index 4e03fe5..7a574f3 100644
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -1005,9 +1005,6 @@ func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
+ 		if gitRoot == "" {
+ 			return InitResult{}, errors.New("project init requires a Git root; use --scope user outside a repository")
+ 		}
+-		if err := CheckRecordedRoundfixVersion(gitRoot, app.Version); err != nil {
+-			return InitResult{}, err
+-		}
+ 		path = filepath.Join(gitRoot, projectConfigName)
+ 	}
+ 

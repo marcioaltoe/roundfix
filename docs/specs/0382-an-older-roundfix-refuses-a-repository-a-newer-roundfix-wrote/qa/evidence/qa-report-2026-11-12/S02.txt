@@ -1,0 +1,36 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig$' ./internal/config
+stdout:
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+=== NAME  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+    recorded_version_test.go:49: loaded = config.Loaded{Config:config.Config{OpenRouter:config.OpenRouter{LightModels:[]string{"deepseek/deepseek-v4.1-flash"}, ImplementMonthlyCeilingUSD:10}, Jev:config.Jev{MonthlyCeilingUSD:0}, Defaults:config.Defaults{ProfileProofSetupTimeout:30000000000, Agent:"codex", Model:"", AgentFullAccess:false, AutoCommit:true, Verification:"make verify", ArtifactDir:""}, Runtimes:config.Runtimes{Codex:config.RuntimeDefaults{Model:"gpt-6.1-sol", ReasoningEffort:"high"}, Claude:config.RuntimeDefaults{Model:"opus", ReasoningEffort:""}, OpenCode:config.RuntimeDefaults{Model:"", ReasoningEffort:""}}, Profiles:config.Profiles{"backend":config.ProfileEntry{Profile:config.AgentSelectionProfile{Preferred:config.AgentSelection{Runtime:"codex", Model:"gpt-6.1-sol", ReasoningEffort:"high"}, Fallbacks:[]config.AgentSelection{config.AgentSelection{Runtime:"claude", Model:"opus", ReasoningEffort:"high"}}}, Source:"built-in", Deviation:(*config.ProfileDeviation)(nil)}, "frontend":config.ProfileEntry{Profile:config.AgentSelectionProfile{Preferred:config.AgentSelection{Runtime:"claude", Model:"opus", ReasoningEffort:"high"}, Fallbacks:[]config.AgentSelection{config.AgentSelection{Runtime:"codex", Model:"gpt-6.1-sol", ReasoningEffort:"xhigh"}}}, Source:"built-in", Deviation:(*config.ProfileDeviation)(nil)}, "general":config.ProfileEntry{Profile:config.AgentSelectionProfile{Preferred:config.AgentSelection{Runtime:"codex", Model:"gpt-6.1-sol", ReasoningEffort:"high"}, Fallbacks:[]config.AgentSelection{config.AgentSelection{Runtime:"claude", Model:"opus", ReasoningEffort:"high"}}}, Source:"built-in", Deviation:(*config.ProfileDeviation)(nil)}, "qa":config.ProfileEntry{Profile:config.AgentSelectionProfile{Preferred:config.AgentSelection{Runtime:"codex", Model:"gpt-6.1-sol", ReasoningEffort:"high"}, Fallbacks:[]config.AgentSelection{config.AgentSelection{Runtime:"claude", Model:"opus", ReasoningEffort:"high"}}}, Source:"built-in", Deviation:(*config.ProfileDeviation)(nil)}, "review":config.ProfileEntry{Profile:config.AgentSelectionProfile{Preferred:config.AgentSelection{Runtime:"codex", Model:"gpt-5.6-luna", ReasoningEffort:"max"}, Fallbacks:[]config.AgentSelection{config.AgentSelection{Runtime:"codex", Model:"gpt-6.1-sol", ReasoningEffort:"high"}}}, Source:"built-in", Deviation:(*config.ProfileDeviation)(nil)}}, ReviewSource:config.ReviewSource{Name:"coderabbit", IncludeNitpicks:false, RequestReview:false, RequestCommand:"@coderabbitai review"}, PrePRReview:config.PrePRReview{Provider:"codex", Source:"default", OmitPaths:[]string(nil), DataPaths:[]string(nil)}, Delivery:config.Delivery{CheckTimeout:3600000000000, ReviewConcurrency:2, DerivedPaths:[]config.DerivedPathDeclaration(nil), NumberedFiles:[]string(nil), ItemBinary:config.ItemBinaryDeclaration{Build:"", Path:""}, LinuxLane:false, LinuxLaneImage:""}, Watch:config.Watch{UntilClean:true, MaxRounds:6, PollInterval:30000000000, ReviewTimeout:1800000000000, CheckGracePeriod:300000000000, QuietPeriod:30000000000, AutoPush:true, PushRemote:"", PushBranch:""}, Implement:config.Implement{AutoPush:false}, Notify:config.Notify{Enabled:true, Command:""}, Update:config.Update{Mode:"notify"}, Worktree:config.Worktree{Concurrency:2, Location:"~/.roundfix/worktrees", Copy:[]string(nil), Caches:[]string(nil), SharedCaches:[]config.SharedCache(nil), Bootstrap:"", BootstrapTimeout:600000000000}, Verification:config.Verification{Format:"", Tools:[]string(nil), Concurrency:1, RepositoryAtSettlement:true}, Budget:config.Budget{Enabled:true, MaxRunDuration:7200000000000}, Resolve:config.Resolve{BatchSize:3}, Logs:config.Logs{Agent:false}, Store:config.Store{JournalRetention:1209600000000000, RunRetentionDays:30}, Specs:config.Specs{Root:"docs/specs"}, Runs:config.Runs{MaxActive:3, MaxVerifying:1, SlotWait:7200000000000}}, GitRoot:"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig0.143496665352/002", HomeDir:"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig0.143496665352/001", UserConfigPath:"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig0.143496665352/001/.roundfix/config.yml", ProjectConfigPath:"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig0.143496665352/002/.roundfixrc.yml", RepositoryVersionErr:error(nil), WorktreeLocationErr:error(nil)}, err = Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig0.143496665352/002/docs/agents/setup-context.json" records Roundfix 0.141.1, newer than this binary's 0.141.1; a newer roundfix wrote this repository's Baseline, so use that binary or run 'roundfix upgrade'
+--- FAIL: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig (0.00s)
+    --- FAIL: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1 (0.00s)
+    --- PASS: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1 (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 150.279875ms before and 152.406708ms after
+FAIL	roundfix/internal/config	0.538s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/config/recorded_version.go b/internal/config/recorded_version.go
+index 45292b6..4150f44 100644
+--- a/internal/config/recorded_version.go
++++ b/internal/config/recorded_version.go
+@@ -69,7 +69,7 @@ func CheckRecordedRoundfixVersion(gitRoot string, running string) error {
+ 	if err != nil {
+ 		return err
+ 	}
+-	if recorded == "" || app.CompareVersions(recorded, running) <= 0 {
++	if recorded == "" || app.CompareVersions(recorded, running) < 0 {
+ 		return nil
+ 	}
+ 	path, err := filepath.Abs(filepath.Join(gitRoot, SetupManifestPath))

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

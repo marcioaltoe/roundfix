@@ -1,0 +1,90 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAMalformedRecordedRoundfixVersionRefusesLoad$' ./internal/config
+stdout:
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.140.0-rc.11254932329/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.140.0-rc.11254932329/002/docs/agents/setup-context.json" records roundfixVersion "0.140.0-rc.1", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoadv0.140.0295371725/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoadv0.140.0295371725/002/docs/agents/setup-context.json" records roundfixVersion "v0.140.0", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.1403361573051/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.1403361573051/002/docs/agents/setup-context.json" records roundfixVersion "0.140", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad_0.140.0868844725/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad_0.140.0868844725/002/docs/agents/setup-context.json" records roundfixVersion " 0.140.0", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoadnull4225038120/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoadnull4225038120/002/docs/agents/setup-context.json" records roundfixVersion null, which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.140.0n1704745008/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad0.140.0n1704745008/002/docs/agents/setup-context.json" records roundfixVersion "0.140.0\n", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== NAME  TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+    recorded_version_test.go:84: refusal = parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad2466711203/002/.roundfixrc.yml": yaml: unmarshal errors:
+          line 1: field future_section not found in type config.configOverlay, want Setup Manifest "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAMalformedRecordedRoundfixVersionRefusesLoad2466711203/002/docs/agents/setup-context.json" records roundfixVersion "", which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded
+--- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/{} (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/140 (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140" (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0" (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/true (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/null (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0" (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n" (0.00s)
+    --- FAIL: TestAMalformedRecordedRoundfixVersionRefusesLoad/"" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/[] (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 153.338041ms before and 149.007833ms after
+FAIL	roundfix/internal/config	0.538s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/config/recorded_version.go b/internal/config/recorded_version.go
+index 45292b6..121421e 100644
+--- a/internal/config/recorded_version.go
++++ b/internal/config/recorded_version.go
+@@ -53,7 +53,7 @@ func RecordedRoundfixVersion(gitRoot string) (string, error) {
+ 		return "", nil
+ 	}
+ 	var version string
+-	if json.Unmarshal(raw, &version) != nil || !IsReleaseVersion(version) {
++	if json.Unmarshal(raw, &version) != nil {
+ 		return "", fmt.Errorf("Setup Manifest %q records roundfixVersion %s, which is not a Roundfix release version such as 0.140.0; restore the value the Roundfix that wrote it recorded", path, raw)
+ 	}
+ 	return version, nil

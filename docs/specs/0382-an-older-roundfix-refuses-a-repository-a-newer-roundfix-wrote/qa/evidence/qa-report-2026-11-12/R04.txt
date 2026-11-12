@@ -1,0 +1,155 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestACommandRefusesARepositoryRecordedByANewerRoundfix|TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix|TestBaselineUpdateRecordsTheRunningRoundfixVersion|TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix|TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix|TestUpdateCheckTranscripts|TestBaselinePlanProfileFile|TestHumanAutomationPlanParity|TestBaselineHumanProfileAdaptation)$' ./internal/cli
+stdout:
+=== RUN   TestHumanAutomationPlanParity
+=== PAUSE TestHumanAutomationPlanParity
+=== RUN   TestBaselineHumanProfileAdaptation
+=== PAUSE TestBaselineHumanProfileAdaptation
+=== RUN   TestBaselinePlanProfileFile
+=== PAUSE TestBaselinePlanProfileFile
+=== RUN   TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== PAUSE TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== RUN   TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+=== PAUSE TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== RUN   TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix
+=== PAUSE TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix
+=== RUN   TestUpdateCheckTranscripts
+=== PAUSE TestUpdateCheckTranscripts
+=== CONT  TestHumanAutomationPlanParity
+=== CONT  TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+=== CONT  TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== CONT  TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix
+=== CONT  TestBaselinePlanProfileFile
+=== RUN   TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/runs_list
+=== PAUSE TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/runs_list
+=== RUN   TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/update_check
+=== PAUSE TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/update_check
+=== RUN   TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/stop
+=== PAUSE TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/stop
+=== RUN   TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/doctor
+=== PAUSE TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/doctor
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+=== RUN   TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== PAUSE TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== CONT  TestUpdateCheckTranscripts
+=== RUN   TestUpdateCheckTranscripts/available_notify
+=== PAUSE TestUpdateCheckTranscripts/available_notify
+=== RUN   TestUpdateCheckTranscripts/available_auto
+=== PAUSE TestUpdateCheckTranscripts/available_auto
+=== RUN   TestUpdateCheckTranscripts/current
+=== PAUSE TestUpdateCheckTranscripts/current
+=== RUN   TestUpdateCheckTranscripts/ahead_of_latest
+=== PAUSE TestUpdateCheckTranscripts/ahead_of_latest
+=== RUN   TestUpdateCheckTranscripts/unknown
+=== PAUSE TestUpdateCheckTranscripts/unknown
+=== RUN   TestUpdateCheckTranscripts/no_releases
+=== PAUSE TestUpdateCheckTranscripts/no_releases
+=== RUN   TestUpdateCheckTranscripts/empty_listing
+=== PAUSE TestUpdateCheckTranscripts/empty_listing
+=== RUN   TestUpdateCheckTranscripts/bounded_error
+=== PAUSE TestUpdateCheckTranscripts/bounded_error
+=== RUN   TestUpdateCheckTranscripts/development
+=== PAUSE TestUpdateCheckTranscripts/development
+=== RUN   TestUpdateCheckTranscripts/truncated
+=== PAUSE TestUpdateCheckTranscripts/truncated
+=== RUN   TestUpdateCheckTranscripts/untitled_release
+=== PAUSE TestUpdateCheckTranscripts/untitled_release
+=== RUN   TestUpdateCheckTranscripts/json
+=== PAUSE TestUpdateCheckTranscripts/json
+=== CONT  TestBaselineHumanProfileAdaptation
+--- PASS: TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix (0.00s)
+=== CONT  TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/runs_list
+=== CONT  TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/stop
+=== CONT  TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/doctor
+=== CONT  TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/update_check
+--- PASS: TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/runs_list (0.00s)
+    --- PASS: TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/stop (0.01s)
+    --- PASS: TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/doctor (0.00s)
+    --- PASS: TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix/update_check (0.00s)
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+--- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update (0.00s)
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force
+=== CONT  TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up
+--- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix/spec_check_x (0.00s)
+    --- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix/init_--scope_project_--force (0.00s)
+    --- PASS: TestACommandRefusesARepositoryRecordedByANewerRoundfix/follow-up (0.00s)
+=== CONT  TestUpdateCheckTranscripts/available_notify
+=== CONT  TestUpdateCheckTranscripts/empty_listing
+=== CONT  TestUpdateCheckTranscripts/json
+=== CONT  TestUpdateCheckTranscripts/untitled_release
+=== CONT  TestUpdateCheckTranscripts/truncated
+=== CONT  TestUpdateCheckTranscripts/development
+=== CONT  TestUpdateCheckTranscripts/bounded_error
+=== CONT  TestUpdateCheckTranscripts/ahead_of_latest
+=== CONT  TestUpdateCheckTranscripts/no_releases
+=== CONT  TestUpdateCheckTranscripts/unknown
+=== CONT  TestUpdateCheckTranscripts/current
+=== CONT  TestUpdateCheckTranscripts/available_auto
+--- PASS: TestUpdateCheckTranscripts (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/available_notify (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/empty_listing (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/json (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/untitled_release (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/truncated (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/development (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/bounded_error (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/ahead_of_latest (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/no_releases (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/unknown (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/current (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/available_auto (0.00s)
+=== RUN   TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs
+=== RUN   TestBaselinePlanProfileFile/invalid_draft
+=== RUN   TestBaselinePlanProfileFile/stale_draft
+=== RUN   TestBaselinePlanProfileFile/output_failure
+--- PASS: TestHumanAutomationPlanParity (0.12s)
+=== RUN   TestBaselineHumanProfileAdaptation/decline_writes_nothing
+=== RUN   TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing
+--- PASS: TestBaselinePlanProfileFile (0.16s)
+    --- PASS: TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/invalid_draft (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/stale_draft (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/output_failure (0.03s)
+--- PASS: TestBaselineHumanProfileAdaptation (0.19s)
+    --- PASS: TestBaselineHumanProfileAdaptation/decline_writes_nothing (0.00s)
+    --- PASS: TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing (0.04s)
+--- PASS: TestBaselineUpdateRecordsTheRunningRoundfixVersion (0.94s)
+PASS
+suiteguard: guard cost: measured 3097 paths; fingerprint took 153.456459ms before and 136.285709ms after
+ok  	roundfix/internal/cli	1.693s
+stderr:
+exit: 0

@@ -1,0 +1,366 @@
+one frontmatter: True
+audited head unchanged: True
+auditor identity preserved: True
+auditor freshness preserved: True
+three table columns R01: True
+three table columns R02: True
+three table columns R03: True
+three table columns R04: True
+three table columns R05: True
+three table columns R06: True
+three table columns R07: True
+three table columns R08: True
+three table columns R09: True
+three table columns R10: True
+three table columns R11: True
+three table columns R12: True
+three table columns S01: True
+three table columns S02: True
+three table columns S03: True
+three table columns S04: True
+three table columns S05: True
+three table columns S06: True
+three table columns S07: True
+three table columns S08: True
+three table columns S09: True
+three table columns S10: True
+three table columns S11: True
+three table columns S12: True
+three table columns S13: True
+three table columns S14: True
+three table columns S15: True
+three table columns S16: True
+three table columns R13: True
+three table columns R14: True
+three table columns R15: True
+three table columns R16: True
+three table columns R17: True
+row counts: {"blocked (environment: no open Pull Request)": 1, "pass": 32}
+33 distinct rows: True
+32 passes and sole expected environment block: True
+no Results row outside table: True
+R01 one typed input block: True
+R02 one typed input block: True
+R03 one typed input block: True
+R04 one typed input block: True
+R05 one typed input block: True
+R06 one typed input block: True
+R07 one typed input block: True
+R08 one typed input block: True
+R09 one typed input block: True
+R10 one typed input block: True
+R11 one typed input block: True
+R12 one typed input block: True
+S01 one typed input block: True
+S02 one typed input block: True
+S03 one typed input block: True
+S04 one typed input block: True
+S05 one typed input block: True
+S06 one typed input block: True
+S07 one typed input block: True
+S08 one typed input block: True
+S09 one typed input block: True
+S10 one typed input block: True
+S11 one typed input block: True
+S12 one typed input block: True
+S13 one typed input block: True
+S14 one typed input block: True
+S15 one typed input block: True
+S16 one typed input block: True
+R13 one typed input block: True
+R14 one typed input block: True
+R14 commit range: True
+R15 one typed input block: True
+R16 one typed input block: True
+R17 one typed input block: True
+R17 commit range: True
+all source Requirements covered: True
+both outside-evidence sources: True
+PR source named: True
+Outcome single paragraph and no colon: True
+local link evidence/qa-report-2026-11-12/build.txt: True
+local link evidence/qa-report-2026-11-12/version.txt: True
+local link evidence/qa-report-2026-11-12/precondition.txt: True
+local link evidence/qa-report-2026-11-12/build.txt: True
+local link evidence/qa-report-2026-11-12/R02-cases.txt: True
+local link evidence/qa-report-2026-11-12/R02.txt: True
+local link evidence/qa-report-2026-11-12/R03-cases.txt: True
+local link evidence/qa-report-2026-11-12/R03.txt: True
+local link evidence/qa-report-2026-11-12/R04-cases.txt: True
+local link evidence/qa-report-2026-11-12/R04.txt: True
+local link evidence/qa-report-2026-11-12/R05-cases.txt: True
+local link evidence/qa-report-2026-11-12/R05.txt: True
+local link evidence/qa-report-2026-11-12/R06-cases.txt: True
+local link evidence/qa-report-2026-11-12/R06.txt: True
+local link evidence/qa-report-2026-11-12/R07-cases.txt: True
+local link evidence/qa-report-2026-11-12/R07.txt: True
+local link evidence/qa-report-2026-11-12/R08-cases.txt: True
+local link evidence/qa-report-2026-11-12/R08.txt: True
+local link evidence/qa-report-2026-11-12/R09-cases.txt: True
+local link evidence/qa-report-2026-11-12/R09.txt: True
+local link evidence/qa-report-2026-11-12/stop-confirmation.txt: True
+local link evidence/qa-report-2026-11-12/flow-00.txt: True
+local link evidence/qa-report-2026-11-12/flow-01.txt: True
+local link evidence/qa-report-2026-11-12/flow-02.txt: True
+local link evidence/qa-report-2026-11-12/flow-03.txt: True
+local link evidence/qa-report-2026-11-12/flow-04.txt: True
+local link evidence/qa-report-2026-11-12/flow-05.txt: True
+local link evidence/qa-report-2026-11-12/flow-06.txt: True
+local link evidence/qa-report-2026-11-12/flow-07.txt: True
+local link evidence/qa-report-2026-11-12/flow-08.txt: True
+local link evidence/qa-report-2026-11-12/update-flow.txt: True
+local link evidence/qa-report-2026-11-12/writer-summary.txt: True
+local link evidence/qa-report-2026-11-12/writer-step-0.txt: True
+local link evidence/qa-report-2026-11-12/writer-step-1.txt: True
+local link evidence/qa-report-2026-11-12/writer-step-2.txt: True
+local link evidence/qa-report-2026-11-12/writer-step-3.txt: True
+local link evidence/qa-report-2026-11-12/writer-step-4.txt: True
+local link evidence/qa-report-2026-11-12/writer-build-0.900.0.txt: True
+local link evidence/qa-report-2026-11-12/writer-build-0.901.0.txt: True
+local link evidence/qa-report-2026-11-12/S01.txt: True
+local link evidence/qa-report-2026-11-12/S02.txt: True
+local link evidence/qa-report-2026-11-12/S03.txt: True
+local link evidence/qa-report-2026-11-12/S04.txt: True
+local link evidence/qa-report-2026-11-12/S05.txt: True
+local link evidence/qa-report-2026-11-12/S06.txt: True
+local link evidence/qa-report-2026-11-12/S07.txt: True
+local link evidence/qa-report-2026-11-12/S08.txt: True
+local link evidence/qa-report-2026-11-12/S09.txt: True
+local link evidence/qa-report-2026-11-12/S10.txt: True
+local link evidence/qa-report-2026-11-12/S11.txt: True
+local link evidence/qa-report-2026-11-12/S12.txt: True
+local link evidence/qa-report-2026-11-12/S13.txt: True
+local link evidence/qa-report-2026-11-12/S14.txt: True
+local link evidence/qa-report-2026-11-12/S15.txt: True
+local link evidence/qa-report-2026-11-12/S16.txt: True
+local link evidence/qa-report-2026-11-12/wording-assertions.txt: True
+local link evidence/qa-report-2026-11-12/wording-search.txt: True
+local link evidence/qa-report-2026-11-12/scope-audit.txt: True
+local link evidence/qa-report-2026-11-12/protected-bytes.txt: True
+local link evidence/qa-report-2026-11-12/parity-diff.txt: True
+local link evidence/qa-report-2026-11-12/R15.txt: True
+local link evidence/qa-report-2026-11-12/R16.txt: True
+local link evidence/qa-report-2026-11-12/pull-request.txt: True
+local link evidence/qa-report-2026-11-12/archive-plan-initial.txt: True
+local link evidence/qa-report-2026-11-12/archive-plan.txt: True
+text qa/qa-report-2026-11-12.md: True
+evidence not ignored qa-report-2026-11-12.md: True
+fresh QA file qa-report-2026-11-12.md: True
+text qa/evidence/qa-report-2026-11-12/R03-cases.txt: True
+evidence not ignored R03-cases.txt: True
+fresh QA file R03-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/S06.txt: True
+evidence not ignored S06.txt: True
+fresh QA file S06.txt: True
+text qa/evidence/qa-report-2026-11-12/S12.txt: True
+evidence not ignored S12.txt: True
+fresh QA file S12.txt: True
+text qa/evidence/qa-report-2026-11-12/S13.txt: True
+evidence not ignored S13.txt: True
+fresh QA file S13.txt: True
+text qa/evidence/qa-report-2026-11-12/S07.txt: True
+evidence not ignored S07.txt: True
+fresh QA file S07.txt: True
+text qa/evidence/qa-report-2026-11-12/S11.txt: True
+evidence not ignored S11.txt: True
+fresh QA file S11.txt: True
+text qa/evidence/qa-report-2026-11-12/S05.txt: True
+evidence not ignored S05.txt: True
+fresh QA file S05.txt: True
+text qa/evidence/qa-report-2026-11-12/parity-diff.txt: True
+evidence not ignored parity-diff.txt: True
+fresh QA file parity-diff.txt: True
+text qa/evidence/qa-report-2026-11-12/S04.txt: True
+evidence not ignored S04.txt: True
+fresh QA file S04.txt: True
+text qa/evidence/qa-report-2026-11-12/S10.txt: True
+evidence not ignored S10.txt: True
+fresh QA file S10.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-build-0.901.0.txt: True
+evidence not ignored writer-build-0.901.0.txt: True
+fresh QA file writer-build-0.901.0.txt: True
+text qa/evidence/qa-report-2026-11-12/S14.txt: True
+evidence not ignored S14.txt: True
+fresh QA file S14.txt: True
+text qa/evidence/qa-report-2026-11-12/R05-cases.txt: True
+evidence not ignored R05-cases.txt: True
+fresh QA file R05-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/S01.txt: True
+evidence not ignored S01.txt: True
+fresh QA file S01.txt: True
+text qa/evidence/qa-report-2026-11-12/S15.txt: True
+evidence not ignored S15.txt: True
+fresh QA file S15.txt: True
+text qa/evidence/qa-report-2026-11-12/pull-request.txt: True
+evidence not ignored pull-request.txt: True
+fresh QA file pull-request.txt: True
+text qa/evidence/qa-report-2026-11-12/update-flow.txt: True
+evidence not ignored update-flow.txt: True
+fresh QA file update-flow.txt: True
+text qa/evidence/qa-report-2026-11-12/S03.txt: True
+evidence not ignored S03.txt: True
+fresh QA file S03.txt: True
+text qa/evidence/qa-report-2026-11-12/R08-cases.txt: True
+evidence not ignored R08-cases.txt: True
+fresh QA file R08-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/secret-scan.txt: True
+evidence not ignored secret-scan.txt: True
+fresh QA file secret-scan.txt: True
+text qa/evidence/qa-report-2026-11-12/gate.py.txt: True
+evidence not ignored gate.py.txt: True
+fresh QA file gate.py.txt: True
+text qa/evidence/qa-report-2026-11-12/S16.txt: True
+evidence not ignored S16.txt: True
+fresh QA file S16.txt: True
+text qa/evidence/qa-report-2026-11-12/S02.txt: True
+evidence not ignored S02.txt: True
+fresh QA file S02.txt: True
+text qa/evidence/qa-report-2026-11-12/R05.txt: True
+evidence not ignored R05.txt: True
+fresh QA file R05.txt: True
+text qa/evidence/qa-report-2026-11-12/scope-audit.txt: True
+evidence not ignored scope-audit.txt: True
+fresh QA file scope-audit.txt: True
+text qa/evidence/qa-report-2026-11-12/R02-cases.txt: True
+evidence not ignored R02-cases.txt: True
+fresh QA file R02-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-build-0.900.0.txt: True
+evidence not ignored writer-build-0.900.0.txt: True
+fresh QA file writer-build-0.900.0.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-08.txt: True
+evidence not ignored flow-08.txt: True
+fresh QA file flow-08.txt: True
+text qa/evidence/qa-report-2026-11-12/R04.txt: True
+evidence not ignored R04.txt: True
+fresh QA file R04.txt: True
+text qa/evidence/qa-report-2026-11-12/R06.txt: True
+evidence not ignored R06.txt: True
+fresh QA file R06.txt: True
+text qa/evidence/qa-report-2026-11-12/R07.txt: True
+evidence not ignored R07.txt: True
+fresh QA file R07.txt: True
+text qa/evidence/qa-report-2026-11-12/R03.txt: True
+evidence not ignored R03.txt: True
+fresh QA file R03.txt: True
+text qa/evidence/qa-report-2026-11-12/wording-assertions.txt: True
+evidence not ignored wording-assertions.txt: True
+fresh QA file wording-assertions.txt: True
+text qa/evidence/qa-report-2026-11-12/stop-confirmation.txt: True
+evidence not ignored stop-confirmation.txt: True
+fresh QA file stop-confirmation.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-summary.txt: True
+evidence not ignored writer-summary.txt: True
+fresh QA file writer-summary.txt: True
+text qa/evidence/qa-report-2026-11-12/R04-cases.txt: True
+evidence not ignored R04-cases.txt: True
+fresh QA file R04-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/R16.txt: True
+evidence not ignored R16.txt: True
+fresh QA file R16.txt: True
+text qa/evidence/qa-report-2026-11-12/R02.txt: True
+evidence not ignored R02.txt: True
+fresh QA file R02.txt: True
+text qa/evidence/qa-report-2026-11-12/protected-bytes.txt: True
+evidence not ignored protected-bytes.txt: True
+fresh QA file protected-bytes.txt: True
+text qa/evidence/qa-report-2026-11-12/build.txt: True
+evidence not ignored build.txt: True
+fresh QA file build.txt: True
+text qa/evidence/qa-report-2026-11-12/scan-evidence.go.txt: True
+evidence not ignored scan-evidence.go.txt: True
+fresh QA file scan-evidence.go.txt: True
+text qa/evidence/qa-report-2026-11-12/R09-cases.txt: True
+evidence not ignored R09-cases.txt: True
+fresh QA file R09-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/R15.txt: True
+evidence not ignored R15.txt: True
+fresh QA file R15.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-00.txt: True
+evidence not ignored flow-00.txt: True
+fresh QA file flow-00.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-step-4.txt: True
+evidence not ignored writer-step-4.txt: True
+fresh QA file writer-step-4.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-01.txt: True
+evidence not ignored flow-01.txt: True
+fresh QA file flow-01.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-03.txt: True
+evidence not ignored flow-03.txt: True
+fresh QA file flow-03.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-02.txt: True
+evidence not ignored flow-02.txt: True
+fresh QA file flow-02.txt: True
+text qa/evidence/qa-report-2026-11-12/R07-cases.txt: True
+evidence not ignored R07-cases.txt: True
+fresh QA file R07-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/wording-search.txt: True
+evidence not ignored wording-search.txt: True
+fresh QA file wording-search.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-06.txt: True
+evidence not ignored flow-06.txt: True
+fresh QA file flow-06.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-step-2.txt: True
+evidence not ignored writer-step-2.txt: True
+fresh QA file writer-step-2.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-step-3.txt: True
+evidence not ignored writer-step-3.txt: True
+fresh QA file writer-step-3.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-07.txt: True
+evidence not ignored flow-07.txt: True
+fresh QA file flow-07.txt: True
+text qa/evidence/qa-report-2026-11-12/R09.txt: True
+evidence not ignored R09.txt: True
+fresh QA file R09.txt: True
+text qa/evidence/qa-report-2026-11-12/scanner-build.txt: True
+evidence not ignored scanner-build.txt: True
+fresh QA file scanner-build.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-05.txt: True
+evidence not ignored flow-05.txt: True
+fresh QA file flow-05.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-step-1.txt: True
+evidence not ignored writer-step-1.txt: True
+fresh QA file writer-step-1.txt: True
+text qa/evidence/qa-report-2026-11-12/archive-plan.txt: True
+evidence not ignored archive-plan.txt: True
+fresh QA file archive-plan.txt: True
+text qa/evidence/qa-report-2026-11-12/writer-step-0.txt: True
+evidence not ignored writer-step-0.txt: True
+fresh QA file writer-step-0.txt: True
+text qa/evidence/qa-report-2026-11-12/flow-04.txt: True
+evidence not ignored flow-04.txt: True
+fresh QA file flow-04.txt: True
+text qa/evidence/qa-report-2026-11-12/R08.txt: True
+evidence not ignored R08.txt: True
+fresh QA file R08.txt: True
+text qa/evidence/qa-report-2026-11-12/archive-plan-initial.txt: True
+evidence not ignored archive-plan-initial.txt: True
+fresh QA file archive-plan-initial.txt: True
+text qa/evidence/qa-report-2026-11-12/version.txt: True
+evidence not ignored version.txt: True
+fresh QA file version.txt: True
+text qa/evidence/qa-report-2026-11-12/R06-cases.txt: True
+evidence not ignored R06-cases.txt: True
+fresh QA file R06-cases.txt: True
+text qa/evidence/qa-report-2026-11-12/S09.txt: True
+evidence not ignored S09.txt: True
+fresh QA file S09.txt: True
+text qa/evidence/qa-report-2026-11-12/S08.txt: True
+evidence not ignored S08.txt: True
+fresh QA file S08.txt: True
+text qa/evidence/qa-report-2026-11-12/precondition.txt: True
+evidence not ignored precondition.txt: True
+fresh QA file precondition.txt: True
+tracked files unchanged: True
+untracked files limited to Spec QA: True
+untracked QA files: 69
+no suite skips R02: True
+no suite skips R03: True
+no suite skips R04: True
+no suite skips R05: True
+no suite skips R06: True
+no suite skips R07: True
+no suite skips R08: True
+no suite skips R09: True
+all declared executables present: True
+whitespace: True
+checks passed: 363/363

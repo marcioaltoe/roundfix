@@ -1,0 +1,48 @@
+command: go test -count=1 -timeout 20m -v -run '^TestASetupManifestRoundfixVersionMustBeAReleaseVersion$' ./internal/baseline
+stdout:
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion
+=== PAUSE TestASetupManifestRoundfixVersionMustBeAReleaseVersion
+=== CONT  TestASetupManifestRoundfixVersionMustBeAReleaseVersion
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion/#00
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140.0
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140
+    recorded_version_test.go:123: parse version "0.140" valid=true want=false
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion/v0.140.0
+    recorded_version_test.go:123: parse version "v0.140.0" valid=true want=false
+=== RUN   TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140.0-rc.1
+    recorded_version_test.go:123: parse version "0.140.0-rc.1" valid=true want=false
+--- FAIL: TestASetupManifestRoundfixVersionMustBeAReleaseVersion (0.06s)
+    --- PASS: TestASetupManifestRoundfixVersionMustBeAReleaseVersion/#00 (0.00s)
+    --- PASS: TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140.0 (0.00s)
+    --- FAIL: TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140 (0.00s)
+    --- FAIL: TestASetupManifestRoundfixVersionMustBeAReleaseVersion/v0.140.0 (0.00s)
+    --- FAIL: TestASetupManifestRoundfixVersionMustBeAReleaseVersion/0.140.0-rc.1 (0.00s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 165.915125ms before and 139.76575ms after
+FAIL	roundfix/internal/baseline	0.675s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/baseline/classification.go b/internal/baseline/classification.go
+index feba5f8..7c55354 100644
+--- a/internal/baseline/classification.go
++++ b/internal/baseline/classification.go
+@@ -15,7 +15,6 @@ import (
+ 	"strings"
+ 	"unicode/utf8"
+ 
+-	"roundfix/internal/config"
+ )
+ 
+ const (
+@@ -940,8 +939,7 @@ func parseManagedSetupManifest(content []byte) (SetupManifest, bool) {
+ 		!isRawSHA256(strings.TrimPrefix(manifest.CatalogDigest, "sha256:")) ||
+ 		manifest.Modules == nil || manifest.Decisions == nil ||
+ 		manifest.ManagedArtifacts == nil || manifest.LocalSkills == nil ||
+-		manifest.Verification == nil ||
+-		(manifest.RoundfixVersion != "" && !config.IsReleaseVersion(manifest.RoundfixVersion)) {
++		manifest.Verification == nil {
+ 		return SetupManifest{}, false
+ 	}
+ 	if manifestArtifactsByPath(manifest.ManagedArtifacts) == nil {

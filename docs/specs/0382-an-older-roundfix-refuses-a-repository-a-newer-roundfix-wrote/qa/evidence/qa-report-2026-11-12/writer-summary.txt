@@ -1,0 +1,6 @@
+step 0: roundfixVersion: <absent>
+step 1: roundfixVersion: 0.900.0
+step 2: roundfixVersion: 0.900.0
+step 3: roundfixVersion: 0.900.0
+step 4: roundfixVersion: 0.900.0
+checks: [True, True, True, True, True]

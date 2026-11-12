@@ -1,0 +1,131 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestARepositoryRecordedByANewerRoundfixRefusesLoad|TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig|TestARepositoryWithoutARecordedRoundfixVersionLoads|TestAMalformedRecordedRoundfixVersionRefusesLoad|TestAllowNewerRepositoryLoadsWithoutProjectConfig|TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion)$' ./internal/config
+stdout:
+=== RUN   TestARepositoryRecordedByANewerRoundfixRefusesLoad
+=== PAUSE TestARepositoryRecordedByANewerRoundfixRefusesLoad
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== RUN   TestAllowNewerRepositoryLoadsWithoutProjectConfig
+=== PAUSE TestAllowNewerRepositoryLoadsWithoutProjectConfig
+=== RUN   TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion
+=== PAUSE TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion
+=== CONT  TestARepositoryRecordedByANewerRoundfixRefusesLoad
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads
+=== CONT  TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion
+=== CONT  TestAllowNewerRepositoryLoadsWithoutProjectConfig
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/absent_manifest
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/absent_manifest
+=== RUN   TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"999999.0.0"
+=== PAUSE TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"999999.0.0"
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/no_field
+=== RUN   TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"malformed"
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/no_field
+=== PAUSE TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"malformed"
+=== RUN   TestAllowNewerRepositoryLoadsWithoutProjectConfig/valid_project_config
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/not_JSON
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/not_JSON
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/array
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/array
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/null
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/null
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/string
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/string
+=== RUN   TestARepositoryWithoutARecordedRoundfixVersionLoads/unreadable_file
+=== PAUSE TestARepositoryWithoutARecordedRoundfixVersionLoads/unreadable_file
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== CONT  TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"999999.0.0"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== PAUSE TestAllowNewerRepositoryLoadsWithoutProjectConfig/valid_project_config
+=== RUN   TestAllowNewerRepositoryLoadsWithoutProjectConfig/unknown_project_key
+=== PAUSE TestAllowNewerRepositoryLoadsWithoutProjectConfig/unknown_project_key
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== RUN   TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+=== PAUSE TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+=== RUN   TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== PAUSE TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== CONT  TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"malformed"
+=== RUN   TestAllowNewerRepositoryLoadsWithoutProjectConfig/malformed_record
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/absent_manifest
+=== PAUSE TestAllowNewerRepositoryLoadsWithoutProjectConfig/malformed_record
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/null
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/unreadable_file
+--- PASS: TestARepositoryRecordedByANewerRoundfixRefusesLoad (0.00s)
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/string
+--- PASS: TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion (0.00s)
+    --- PASS: TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"999999.0.0" (0.00s)
+    --- PASS: TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion/"malformed" (0.00s)
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/not_JSON
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/array
+=== CONT  TestARepositoryWithoutARecordedRoundfixVersionLoads/no_field
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140"
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/[]
+=== CONT  TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1
+--- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/null (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/absent_manifest (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/unreadable_file (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/not_JSON (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/string (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/array (0.00s)
+    --- PASS: TestARepositoryWithoutARecordedRoundfixVersionLoads/no_field (0.00s)
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n"
+=== CONT  TestAllowNewerRepositoryLoadsWithoutProjectConfig/valid_project_config
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0"
+--- PASS: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig (0.00s)
+    --- PASS: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.141.1 (0.00s)
+    --- PASS: TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig/0.0.1 (0.00s)
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/""
+=== CONT  TestAllowNewerRepositoryLoadsWithoutProjectConfig/malformed_record
+=== CONT  TestAllowNewerRepositoryLoadsWithoutProjectConfig/unknown_project_key
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/null
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/{}
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/true
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1"
+--- PASS: TestAllowNewerRepositoryLoadsWithoutProjectConfig (0.00s)
+    --- PASS: TestAllowNewerRepositoryLoadsWithoutProjectConfig/malformed_record (0.00s)
+    --- PASS: TestAllowNewerRepositoryLoadsWithoutProjectConfig/valid_project_config (0.00s)
+    --- PASS: TestAllowNewerRepositoryLoadsWithoutProjectConfig/unknown_project_key (0.00s)
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/140
+=== CONT  TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0"
+--- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/[] (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0\n" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"_0.140.0" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/{} (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/true (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/null (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/140 (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"0.140.0-rc.1" (0.00s)
+    --- PASS: TestAMalformedRecordedRoundfixVersionRefusesLoad/"v0.140.0" (0.00s)
+PASS
+suiteguard: guard cost: measured 3093 paths; fingerprint took 219.536708ms before and 137.625334ms after
+ok  	roundfix/internal/config	0.696s
+stderr:
+exit: 0

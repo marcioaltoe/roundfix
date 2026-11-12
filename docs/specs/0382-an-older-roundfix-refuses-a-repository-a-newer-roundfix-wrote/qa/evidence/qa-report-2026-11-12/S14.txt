@@ -1,0 +1,269 @@
+command: go test -count=1 -timeout 20m -v -run '^TestBaselineUpdateRecordsTheRunningRoundfixVersion$' ./internal/cli
+stdout:
+=== RUN   TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== PAUSE TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== CONT  TestBaselineUpdateRecordsTheRunningRoundfixVersion
+    baseline_version_test.go:44: manifest omits "roundfixVersion": "0.141.1": {
+          "schemaVersion": "setup-context-driven/manifest/0.0.1",
+          "version": "0.0.1",
+          "generator": {
+            "skill": "setup-context-driven",
+            "version": "0.0.1",
+            "baseline": "baseline.go-cli-tui-0.0.1"
+          },
+          "profile": "go-cli-tui",
+          "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
+          "catalogDigest": "sha256:971abb74ae02d72463e90cf24f4e8d27e51452431e9a6d92fb0a2cf3ce6c5aeb",
+          "modules": [
+            "core",
+            "context-workflow",
+            "go",
+            "cli-surface",
+            "tui-surface",
+            "autonomous-work",
+            "spec-workflow"
+          ],
+          "decisions": {
+            "autonomous.enabled": {
+              "value": true
+            },
+            "branch.prefix": {
+              "value": "ma/"
+            },
+            "domain.layout": {
+              "value": "single-context"
+            },
+            "language.generated": {
+              "value": "English"
+            },
+            "repository.extension.enabled": {
+              "value": false
+            },
+            "runtime.backend": {
+              "value": "codex gpt-5.5 xhigh"
+            },
+            "runtime.design": {
+              "value": "claude opus xhigh"
+            },
+            "secondbrain.enabled": {
+              "value": false
+            },
+            "spec.scaffold": {
+              "value": true
+            },
+            "triage.external": {
+              "value": false
+            },
+            "verification.gate": {
+              "value": "make verify"
+            },
+            "verification.incremental": {
+              "value": "make verify-incremental"
+            }
+          },
+          "managedArtifacts": [
+            {
+              "id": "guide.skill-dispatch",
+              "path": "docs/agents/skill-dispatch.md",
+              "kind": "guide",
+              "module": "core",
+              "template": "template.guide.skill-dispatch",
+              "version": "0.0.1",
+              "digest": "d1221ce4e5da9705c94309d289a48079c2deedbebbf10c30d2b5362e3dc8020b"
+            },
+            {
+              "id": "root.core",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "core",
+              "template": "template.root.core",
+              "version": "0.0.1",
+              "digest": "fc65c9495a097088c55d63f5d07792e8defd6063ca0b9b35011913d01d6c273d"
+            },
+            {
+              "id": "guide.docs-layout",
+              "path": "docs/agents/docs-layout.md",
+              "kind": "guide",
+              "module": "context-workflow",
+              "template": "template.guide.docs-layout",
+              "version": "0.0.1",
+              "digest": "64b394052ea39d7a3859ce6d695f7e98686a25920d6596a01e6aea4cb4a32b88"
+            },
+            {
+              "id": "root.context-workflow",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "context-workflow",
+              "template": "template.root.context-workflow",
+              "version": "0.0.1",
+              "digest": "1de9a12f45489adb5326705a5cd2a2d351f6ae5ec0a30199d4a52c684cd9711e"
+            },
+            {
+              "id": "guide.go",
+              "path": "docs/agents/go.md",
+              "kind": "guide",
+              "module": "go",
+              "template": "template.guide.go",
+              "version": "0.0.1",
+              "digest": "6fee500bb59545010733dddb952de1864b12c8675ed6b5b4ba3caa6f4552dcfa"
+            },
+            {
+              "id": "root.spec-workflow",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "spec-workflow",
+              "template": "template.root.spec-workflow",
+              "version": "0.0.1",
+              "digest": "7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f"
+            },
+            {
+              "id": "guide.cli-surface",
+              "path": "docs/agents/cli.md",
+              "kind": "guide",
+              "module": "cli-surface",
+              "template": "template.guide.cli-surface",
+              "version": "0.0.1",
+              "digest": "34467966b14696fddd9a83c802acbcca2785b210505692a95989964f453648c1"
+            },
+            {
+              "id": "root.autonomous-work",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "autonomous-work",
+              "template": "template.root.autonomous-work",
+              "version": "0.0.1",
+              "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
+            },
+            {
+              "id": "guide.tui-surface",
+              "path": "docs/agents/tui.md",
+              "kind": "guide",
+              "module": "tui-surface",
+              "template": "template.guide.tui-surface",
+              "version": "0.0.1",
+              "digest": "7e5a76f12057f18ba95a4f77738566ce4ead00c07f1b4d9c0d1c6b9b59150773"
+            },
+            {
+              "id": "root.go",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "go",
+              "template": "template.root.go",
+              "version": "0.0.1",
+              "digest": "66ebe38c0cae01a9039e126979fce84d10f3f4f562b2f5fa08cbe9ecf8b9dc84"
+            },
+            {
+              "id": "guide.agent-instructions",
+              "path": "docs/agents/agent-instructions.md",
+              "kind": "guide",
+              "module": "core",
+              "template": "template.guide.agent-instructions",
+              "version": "0.0.1",
+              "digest": "cfe279d47f6c7d94d296a9f66884193de87b08ce6df3d0c5ca51a4067767d1b8"
+            },
+            {
+              "id": "root.cli-surface",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "cli-surface",
+              "template": "template.root.cli-surface",
+              "version": "0.0.1",
+              "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb"
+            },
+            {
+              "id": "guide.spec-routing",
+              "path": "docs/agents/spec-routing.md",
+              "kind": "guide",
+              "module": "spec-workflow",
+              "template": "template.guide.spec-routing",
+              "version": "0.0.1",
+              "digest": "61bae84e0f1538028319ede84ac7d3175583fedc157d1b15413a300b75f19b34"
+            },
+            {
+              "id": "guide.issue-tracker",
+              "path": "docs/agents/issue-tracker.md",
+              "kind": "guide",
+              "module": "spec-workflow",
+              "template": "template.guide.issue-tracker",
+              "version": "0.0.1",
+              "digest": "818e4d1e44d73a208eba5a7d3aa2115c7420a062b898897a801d3cadd9bc9fd6"
+            },
+            {
+              "id": "guide.spec-docs-layout",
+              "path": "docs/agents/docs-layout.md",
+              "kind": "guide",
+              "module": "spec-workflow",
+              "template": "template.guide.spec-docs-layout",
+              "version": "0.0.1",
+              "digest": "5233d273a0f0c4427b3df89fdabe6ac659c3afb99fbe75d797eb33e38c8776cd"
+            },
+            {
+              "id": "guide.domain",
+              "path": "docs/agents/domain.md",
+              "kind": "guide",
+              "module": "context-workflow",
+              "template": "template.guide.domain.single-context",
+              "version": "0.0.1",
+              "digest": "cc969b44097582875117ee2b920c2a19accdfd6cdc6b18cb01a4442d5cab87dc"
+            },
+            {
+              "id": "root.tui-surface",
+              "path": "AGENTS.md",
+              "kind": "root-block",
+              "module": "tui-surface",
+              "template": "template.root.tui-surface",
+              "version": "0.0.1",
+              "digest": "d6b56fd1f990de1e3c3dd31ba6bf4067fc7f9fa1b6901ba5db671f134f518929"
+            },
+            {
+              "id": "guide.autonomous-work",
+              "path": "docs/agents/autonomous-work.md",
+              "kind": "guide",
+              "module": "autonomous-work",
+              "template": "template.guide.autonomous-work",
+              "version": "0.0.1",
+              "digest": "75912cc8156b5c96d7b4593c76c949f9ea35800179904c22aeb174633374247b"
+            }
+          ],
+          "localSkills": [],
+          "verification": [
+            {
+              "id": "verification.gate",
+              "role": "repository-gate",
+              "command": "make verify",
+              "classification": "repository-command",
+              "repositoryExecutable": true,
+              "declarationPath": "Makefile",
+              "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
+            },
+            {
+              "id": "verification.incremental",
+              "role": "incremental",
+              "command": "make verify-incremental",
+              "classification": "repository-command",
+              "repositoryExecutable": true,
+              "declarationPath": "Makefile",
+              "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
+            }
+          ]
+        }
+--- FAIL: TestBaselineUpdateRecordsTheRunningRoundfixVersion (0.86s)
+FAIL
+suiteguard: guard cost: measured 3085 paths; fingerprint took 155.054417ms before and 141.12225ms after
+FAIL	roundfix/internal/cli	1.675s
+FAIL
+stderr:
+exit: 1
+mutation:
+diff --git a/internal/cli/baseline_update.go b/internal/cli/baseline_update.go
+index 5329572..b8b0078 100644
+--- a/internal/cli/baseline_update.go
++++ b/internal/cli/baseline_update.go
+@@ -254,7 +254,6 @@ func runBaselineUpdateCommandWithSkillsStage(
+ 		)
+ 	}
+ 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
+-		WriterVersion:         app.Version,
+ 		Repository:            request.repo,
+ 		ProfileID:             input.ProfileID,
+ 		Decisions:             input.Decisions,

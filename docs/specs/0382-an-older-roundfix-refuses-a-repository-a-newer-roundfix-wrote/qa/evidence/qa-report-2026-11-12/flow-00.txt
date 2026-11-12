@@ -1,0 +1,8 @@
+command: ./bin/roundfix runs list
+stdout:
+No Runs found.
+stderr:
+roundfix: warning: Setup Manifest "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote-220a1a4c89f07ce2-4a182467-2b05ed8e/run_20261112T084128Z_467a4e08188c7a1c/bin/qa-0382/tmpm51tb01v/docs/agents/setup-context.json" records Roundfix 999999.0.0, newer than this binary's 0.141.1; a newer roundfix wrote this repository's Baseline, so use that binary or run 'roundfix upgrade'; Project Config not read
+exit: 0
+repository tree unchanged: True
+assertions: True

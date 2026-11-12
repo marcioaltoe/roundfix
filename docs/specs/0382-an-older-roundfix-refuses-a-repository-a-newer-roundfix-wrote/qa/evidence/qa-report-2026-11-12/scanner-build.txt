@@ -1,0 +1,4 @@
+command: go build -o bin/qa-0382/scan-evidence ./bin/qa-0382/scanner
+stdout:
+stderr:
+exit: 0
