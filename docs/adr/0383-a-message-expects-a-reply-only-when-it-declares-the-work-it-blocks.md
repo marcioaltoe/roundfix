@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-10T19:00:00Z
-updated_at: 2026-11-10T19:00:00Z
+updated_at: 2026-11-11T18:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -61,6 +61,8 @@ never interrupted for it), answers it as soon as the answer exists, and sends
 no acknowledgment, adoption notice or completion notice to a message that
 declared no blocked work.
 
+**Amended by [ADR-0390](0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md) (2026-11-11).** The receiving clause triages first only the oldest message of each sender that declares blocked work, then the rest oldest first, a later blocking message from the same sender included, and says that the precedence never replaces the maintainer's judgment. It answers each direct question a message asks as soon as the answer exists, whether or not the message declared blocked work; acknowledgments, adoption notices and completion notices stay forbidden for a message that declared none. The sender's and the content clauses still hold.
+
 **The declaration is prose, never a marker.** Adopters write messages in
 their own language, so no code reads a message body for a fixed word or
 phrase. The receiving session reads the message and decides.
@@ -75,6 +77,8 @@ work, and it is never sent to the judge, because no answer could move it
 from that place. The file keeps its schema name: an older `roundfix`
 ignores the unknown key and ranks the entry as before. `--status` reads no
 message and does not change.
+
+**Amended by [ADR-0390](0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md) (2026-11-11).** Only the oldest entry with `blocked_work` of each `from`, then the lowest reference, ranks in `unblocking` with basis `declared` without the judge. Every later declared entry of the same sender goes to the judge, is ordered as if it declared nothing, keeps its `blocked_work` and names the holding entry in `precedence_held_by`. The declaration still comes only from the field the caller fills, and the file keeps its schema name.
 
 This amends ADR-0319, whose rule that nothing is `unblocking` without an
 answer now has one exception, and ADR-0330, whose receiving project no longer
