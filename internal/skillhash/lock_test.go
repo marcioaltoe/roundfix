@@ -29,7 +29,7 @@ func TestSumForLockVersionMatchesThePublishedSkillsCLI(t *testing.T) {
 		want    string
 	}{
 		{"version 2 empty", 2, nil, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
-		{"version 2 single file", 2, []File{{Path: "SKILL.md", Content: []byte("# hi\n")}}, "93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55"},
+		{"version 2 one file", 2, []File{{Path: "SKILL.md", Content: []byte("# hi\n")}}, "93c36952d8843b33e68ae970ebabcc03e1687c9bb0dd1ecaf357060318952f55"},
 		{"version 2 nested files", 2, []File{{Path: "docs/b.md", Content: []byte("b\n")}, {Path: "SKILL.md", Content: []byte("a\n")}}, "b22c4d22aa319d2924312fa18fcbfedc88fa89c74dbd8f298c683e1caf7b7f24"},
 		{"version 2 edge folder", 2, edge, "e5adbe14f1b9b04eb73f28a1fc7e58f083b72328dbb7271c4a2813cbcadb42ac"},
 		{"version 1 edge folder", 1, edge[:len(edge)-1], "416d74f34b15134cda0d15e3b9e7dd32f3b0fb6aaf9369c51d9931b37138dc73"},
