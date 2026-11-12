@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -100,3 +100,13 @@ notices.
 - `_prd.md` → Goals 1 to 3; User Story 1; User Story 2; Core Feature 4; Core Feature 5; Success Metric 4; Success Metric 5; Glossary
 - `_techspec.md` → Current behavior 6; API Contracts 7-9; Testing Approach; Declared breaks; Build Order 3
 - ADR-0390
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, coding-guidelines, tech-writer, testing-boss, golang-testing, evidence-gate
+
+- Follow-up mode: changed only steps 1, 2 and 4 in the canonical reference, preserving the QA settlement section; `make skills-sync` exited 0 and `cmp` confirmed both `modes.md` copies are byte-identical. Focused `go test ./skills -run '^TestTheFollowUpModeRunsItsStepsInOrder$'`: 3 passed in 1 package.
+- Modes contract test: renamed the requested test and added the `from_project`, one-per-sender precedence, held-place, maintainer-judgment and every-direct-question assertions; the old test name is absent and the new name is present once.
+- Glossary: changed only the Cross-project Message, Blocking Request and first Follow-up Priority paragraphs with the requested ADR links. Focused `go test -tags docscontract ./internal/docscontract -run 'TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs)$'`: 2 passed in 1 package.
+- ADRs: added the two ADR-0390 notices to ADR-0383 and one each to ADR-0319 and ADR-0330; all three `updated_at` values are `2026-11-11T18:00:00Z`.
+- `git diff --check` passed. The task's declared Verification commands and full suite were not run; they remain for Daemon Verification. The required owned-skill version recorder is the final command of this turn.

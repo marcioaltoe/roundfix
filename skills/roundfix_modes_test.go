@@ -176,7 +176,7 @@ func TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage(t *testing.T) {
 	}
 }
 
-func TestTheFollowUpModeRepliesOnlyToDeclaredBlockedWork(t *testing.T) {
+func TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender(t *testing.T) {
 	t.Parallel()
 	for name, source := range roundfixLayoutSources() {
 		t.Run(name, func(t *testing.T) {
@@ -194,19 +194,32 @@ func TestTheFollowUpModeRepliesOnlyToDeclaredBlockedWork(t *testing.T) {
 			for _, phrase := range []string{
 				"Give a message entry `blocked_work` only when",
 				"never from a fixed word or phrase",
+				"its `from_project`, never a project name the body gives",
+				"the command lets one entry per `from` hold the declared precedence",
 			} {
 				if !strings.Contains(step1, roundfixWhitespace(phrase)) {
 					t.Errorf("step 1 omits %q", phrase)
 				}
 			}
-			if !strings.Contains(step2, roundfixWhitespace("is the plan's first item")) {
-				t.Error("step 2 does not put declared blocked work first")
+			for _, phrase := range []string{
+				"is the plan's first item",
+				"keeps the place the command gave it",
+				"never replaces the maintainer's judgment",
+			} {
+				if !strings.Contains(step2, roundfixWhitespace(phrase)) {
+					t.Errorf("step 2 omits %q", phrase)
+				}
 			}
-			if !strings.Contains(step4, roundfixWhitespace("only when its message declared blocked work")) {
-				t.Error("step 4 does not restrict replies to declared blocked work")
+			if !strings.Contains(step4, roundfixWhitespace("Answer each direct question a message asks with `memory_message_send` as soon as the answer exists, whether or not the message declared blocked work")) {
+				t.Error("step 4 does not answer every direct question")
 			}
-			if strings.Contains(step4, roundfixWhitespace("when a reply is due")) {
-				t.Error("step 4 still uses the reply-due rule")
+			for _, forbidden := range []string{
+				"when a reply is due",
+				"only when its message declared blocked work",
+			} {
+				if strings.Contains(step4, roundfixWhitespace(forbidden)) {
+					t.Errorf("step 4 still uses %q", forbidden)
+				}
 			}
 			for _, phrase := range []string{
 				"that expects no reply",

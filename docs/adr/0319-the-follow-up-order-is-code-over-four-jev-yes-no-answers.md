@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-22T22:00:00Z
-updated_at: 2026-11-10T19:00:00Z
+updated_at: 2026-11-11T18:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -40,6 +40,8 @@ without an answer. The report names the reason, and the command still exits
 `0`, as ADR-0200 requires of every advisory judgment.
 
 **Amended by [ADR-0383](0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md) (2026-11-10).** A message entry that carries `blocked_work`, the sender's own declaration that its work is blocked until this project answers, ranks in `unblocking` with basis `declared` without an answer: it comes before every other item, the oldest first, and is never sent to the judge. Every other item is still ordered from the four answers or, without an answer, by its type, which never places it in `unblocking`.
+
+**Amended by [ADR-0390](0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md) (2026-11-11).** Of the message entries that carry `blocked_work`, only the oldest of each sender ranks in `unblocking` with basis `declared`; a later one from the same sender is ordered from the four answers or, without an answer, by its type, like any other item.
 
 **The judge reads Follow-up Items, and nothing else changes.** A request's
 state is one item's kind, type, origin, title and an excerpt of its text: a
