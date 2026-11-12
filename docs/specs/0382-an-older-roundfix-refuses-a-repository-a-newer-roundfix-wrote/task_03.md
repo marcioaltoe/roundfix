@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -90,3 +90,13 @@ rises with the record command. This answers the message reported by conexus on
 - `_prd.md` → User Story 1; User Story 3; Core Feature 5; Success Metric 7
 - `_techspec.md` → API Contract 11; Build Order 3
 - ADR-0392
+
+## Result
+
+Skills loaded: implement-task, tech-writer, evidence-gate
+
+- Added the prescribed Recorded Roundfix Version paragraph immediately before `## Vendored skills` in the canonical `baseline` reference, including the higher-version plan rule, the configuration-loading command refusal, `roundfix init --scope project`, all six Baseline commands, the API refusal text, and the exact upgrade remedy.
+- Added the prescribed Update Check paragraph immediately after the Update Check paragraph in the canonical `setup` reference, including the `Baseline: failed:` report, `baseline-version: failed` Doctor line, and the Run-reader and `roundfix stop` recovery behavior.
+- Focused evidence: `git diff --check` passed; `make skills-sync` completed; `cmp` confirmed both canonical/mirror reference pairs are identical; the required text checks found the heading and sentences in both copies.
+- Focused evidence: `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed (`1 passed in 1 packages`) and recorded Roundfix skill version `0.1.222` in both skill copies and the owned-skill version record.
+- The required Behavior Surface Record command is the final step after this Result update; its fresh outcome is reported in the handoff.
