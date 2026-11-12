@@ -33,6 +33,7 @@ type reviewLineagePlan struct {
 	prior     *reviewRecord
 	candidate reviewRecord
 	ctx       context.Context
+	carry     reviewMeasurement
 }
 
 func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate reviewRecord, git preflight.GitRunner) (reviewLineagePlan, error) {
@@ -112,13 +113,9 @@ func decideReviewLineage(ctx context.Context, prior *reviewRecord, candidate rev
 				}
 			}
 		}
-		_, carried, err := reviewMeasuredFrom(ctx, git, candidate.Repository, candidate.BaseCommit, prior.HeadCommit, candidate.HeadCommit)
+		_, err = reviewMeasuredFrom(ctx, git, candidate.Repository, candidate.BaseCommit, prior.HeadCommit, candidate.HeadCommit)
 		if err != nil {
 			return plan, err
-		}
-		if !carried {
-			plan.Restart = fmt.Sprintf("the merge base moved from %s to %s and the reviewed head %s conflicts with it", prior.BaseCommit, candidate.BaseCommit, prior.HeadCommit)
-			return plan, nil
 		}
 	}
 	plan.prior = prior
@@ -188,6 +185,7 @@ func buildCorrectionReviewPrompt(plan reviewLineagePlan, delta string) string {
 	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review.\nThis is the Correction Review of this candidate: round 2 reviewed %s and raised the findings below, each fixed by the commit named. The diff below is the change since %s; it is reviewed once and no further review of this candidate follows.\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
 	if plan.Lineage.DeltaBase != "" {
 		fmt.Fprintf(&prompt, "The candidate merged the default branch since then; the diff starts from tree %s, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.\n", plan.Lineage.DeltaBase)
+		prompt.WriteString(reviewConflictedCarryNote(plan.carry))
 	}
 	for _, finding := range plan.Lineage.PreviousFindings {
 		for _, d := range plan.Lineage.PreviousDispositions {
@@ -214,6 +212,7 @@ func buildRoundTwoPrompt(plan reviewLineagePlan, delta string, previous []review
 	fmt.Fprintf(&prompt, "\n\nPrevious head: %s\nThis is round 2 of 2 of this review. The diff below is the change since round 1 reviewed %s.\n", plan.Lineage.PreviousHead, plan.Lineage.PreviousHead)
 	if plan.Lineage.DeltaBase != "" {
 		fmt.Fprintf(&prompt, "The candidate merged the default branch since then; the diff starts from tree %s, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.\n", plan.Lineage.DeltaBase)
+		prompt.WriteString(reviewConflictedCarryNote(plan.carry))
 	}
 	prompt.WriteString("Round 1 findings:\n")
 	for _, finding := range previous {

@@ -35,31 +35,31 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 	var segments []reviewSegment
 	var diffs, prompts []string
 	segmentBase, segmentHead, segmentDiff := base, "", ""
-	segmentMeasuredFrom := base
+	segmentMeasurement := reviewMeasurement{From: base}
 	var segmentOmitted []reviewOmittedPath
 	appendSegment := func() {
 		segment := reviewSegment{Base: segmentBase, Head: segmentHead, DiffBytes: len(segmentDiff)}
-		if segmentMeasuredFrom != segmentBase {
-			segment.MeasuredFrom = segmentMeasuredFrom
+		if segmentMeasurement.From != segmentBase {
+			segment.MeasuredFrom = segmentMeasurement.From
 		}
 		segments = append(segments, segment)
 		diffs = append(diffs, segmentDiff)
-		prompts = append(prompts, buildReviewPrompt(segmentBase, segmentHead, segmentDiff, segmentOmitted))
+		prompts = append(prompts, reviewConflictedCarryNote(segmentMeasurement)+buildReviewPrompt(segmentBase, segmentHead, segmentDiff, segmentOmitted))
 	}
-	segmentPrompt := func(index int, segmentBase, segmentHead, measuredFrom, diff string, omitted []reviewOmittedPath) string {
+	segmentPrompt := func(index int, segmentBase, segmentHead string, measurement reviewMeasurement, diff string, omitted []reviewOmittedPath) string {
 		// Any admitted total is one digit, so "of 4" has the sent header's length.
-		return reviewSegmentHeader(index, reviewSegmentLimit, segmentBase, segmentHead, base, head, measuredFrom) + buildReviewPrompt(segmentBase, segmentHead, diff, omitted)
+		return reviewSegmentHeader(index, reviewSegmentLimit, segmentBase, segmentHead, base, head, measurement.From) + reviewConflictedCarryNote(measurement) + buildReviewPrompt(segmentBase, segmentHead, diff, omitted)
 	}
 	previous := base
 	for _, commit := range strings.Fields(commits) {
 		// Keep generated declarations pinned to the candidate base, even when
 		// the range starts at an intermediate candidate commit. Every commit
 		// must fit on its own, including one a combined diff would shrink.
-		ownMeasuredFrom, _, err := reviewMeasuredFrom(ctx, git, root, base, previous, commit)
+		ownMeasurement, err := reviewMeasuredFrom(ctx, git, root, base, previous, commit)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		ownDiff, ownOmitted, err := reviewScopedDiff(ctx, root, ownMeasuredFrom, commit, specRoots, git, base)
+		ownDiff, ownOmitted, err := reviewScopedDiff(ctx, root, ownMeasurement.From, commit, specRoots, git, base)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -68,31 +68,31 @@ func planReviewSegments(ctx context.Context, root, base, head string, specRoots 
 			// A later commit can start a new segment without the first one's context.
 			ownIndex++
 		}
-		if !fit(ownIndex, segmentPrompt(ownIndex, previous, commit, ownMeasuredFrom, ownDiff, ownOmitted), ownDiff) {
+		if !fit(ownIndex, segmentPrompt(ownIndex, previous, commit, ownMeasurement, ownDiff, ownOmitted), ownDiff) {
 			if scope.estimatedPromptTokens > 0 {
 				return nil, nil, nil, reviewSizeRefusalForDiff(ctx, git, root, base, head, scope.omittedPaths, scope.candidateDiff, fmt.Sprintf("review prompt too large: %d estimated tokens after omitting %d path(s) exceeds the claude review budget of %d tokens, half of its %d-token context window", scope.estimatedPromptTokens, len(scope.omittedPaths), claudeReviewPromptBudget, claudeReviewContextTokens))
 			}
 			return nil, nil, nil, checkReviewDiffBound(ctx, git, root, base, head, scope.candidateDiff, scope.omittedPaths)
 		}
-		diff, omitted, measuredFrom := ownDiff, ownOmitted, ownMeasuredFrom
+		diff, omitted, measurement := ownDiff, ownOmitted, ownMeasurement
 		if segmentBase != previous {
-			measuredFrom, _, err = reviewMeasuredFrom(ctx, git, root, base, segmentBase, commit)
+			measurement, err = reviewMeasuredFrom(ctx, git, root, base, segmentBase, commit)
 			if err != nil {
 				return nil, nil, nil, err
 			}
-			diff, omitted, err = reviewScopedDiff(ctx, root, measuredFrom, commit, specRoots, git, base)
+			diff, omitted, err = reviewScopedDiff(ctx, root, measurement.From, commit, specRoots, git, base)
 			if err != nil {
 				return nil, nil, nil, err
 			}
 		}
 		index := len(segments) + 1
-		if !fit(index, segmentPrompt(index, segmentBase, commit, measuredFrom, diff, omitted), diff) {
+		if !fit(index, segmentPrompt(index, segmentBase, commit, measurement, diff, omitted), diff) {
 			appendSegment()
 			segmentBase = previous
-			diff, omitted, measuredFrom = ownDiff, ownOmitted, ownMeasuredFrom
+			diff, omitted, measurement = ownDiff, ownOmitted, ownMeasurement
 		}
 		segmentHead, segmentDiff, segmentOmitted = commit, diff, omitted
-		segmentMeasuredFrom = measuredFrom
+		segmentMeasurement = measurement
 		previous = commit
 	}
 	if segmentHead != "" {

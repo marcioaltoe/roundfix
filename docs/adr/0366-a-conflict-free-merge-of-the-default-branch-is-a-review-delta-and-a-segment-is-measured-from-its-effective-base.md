@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-05T12:00:00Z
-updated_at: 2026-11-05T12:00:00Z
+updated_at: 2026-11-11T18:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -72,6 +72,8 @@ start from that carried tree, recorded as `lineage.deltaBase`, and the prompt
 says so in one sentence. Any other move of the merge base, a rebase among
 them, starts round 1 as before.
 
+**Amended by [ADR-0391](0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md) (2026-11-11).** A carry that conflicts no longer measures from the earlier commit or restarts the lineage: the diff starts from its Conflicted Carry, the tree `git merge-tree --write-tree` writes with Git's conflict markers, and a merge of the default branch keeps the lineage with or without a conflict. The other lineage conditions, the Effective Base and the `Review:` line still hold.
+
 **The queue says so before a restart.** When the item's current head will
 open a new Reviewer Lineage at round 1 although a review of an earlier head is
 recorded, `roundfix deliver status` prints, for a parked or reviewing item, and
@@ -86,7 +88,8 @@ recorded, `roundfix deliver status` prints, for a parked or reviewing item, and
   same answer for a pure merge: an empty delta.
 - **Show the merge's `--remerge-diff`.** It works per merge commit only, needs
   Git 2.36, and leaves the commits before and after the merge to be combined
-  by hand.
+  by hand. ADR-0391 takes this option's idea, a diff from Git's re-merge with
+  conflict markers, over the whole range from the reviewed head.
 - **Raise the review bound or drop the oversized commit.** ADR-0282 measured
   why the bound exists, and dropping a commit leaves its change unreviewed.
 - **Let the operator rewrite the history.** A Delivery Retry accepts only a

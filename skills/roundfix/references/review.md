@@ -9,7 +9,15 @@ roundfix review dispose <finding-id> --fixed-by <commit>
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
 workflow computes the candidate diff from the merge base of the current head
 and the selected base, then hands that diff to the configured reviewer in a
-read-only session; it does not ask the reviewer to discover the candidate. The
+read-only session; it does not ask the reviewer to discover the candidate. Every
+review prompt lets the reviewer open repository files and, right after that
+line, adds: `A diff hunk shows only the lines near a change. Before a finding
+states that an import, declaration, symbol or closing part of a block is missing
+or undefined, read the whole file in the repository, which holds the head
+commit, and raise the finding only if the file confirms it. Before a finding
+states that a file, ADR or other record the change names or links to does not
+exist, look for it in the repository, which holds files the diff leaves out, and
+raise the finding only if it is not there.` The
 resulting record names the repository, that merge base as `baseCommit`, the
 resolved base tip as `baseTipCommit`, the head commit, effective provider, and
 policy source. A head with no shared history with the selected base exits `2`
@@ -78,7 +86,7 @@ both `segments` and the finding's `segment` field. Verdict reuse,
 dispositions, convention validation and round accounting remain per candidate
 head: all segments are one round.
 
-Each diff the segment plan measures starts from the Effective Base of the commit it ends at, the merge base of that commit with the review's merge base. A commit cut from an older default branch is measured from that older commit, and a merge of the default branch from the earlier commit's change carried onto the merged base with `git merge-tree --write-tree`, so no segment shows the default branch's own work. A segment whose diff starts elsewhere than its base records `measuredFrom`, the commit or tree it starts from, and its prompt adds a second header line: `This segment's diff starts from <measuredFrom> instead of <segment base>, so it leaves out what the default branch changed.` A carry that conflicts measures the segment from its base.
+Each diff the segment plan measures starts from the Effective Base of the commit it ends at, the merge base of that commit with the review's merge base. A commit cut from an older default branch is measured from that older commit, and a merge of the default branch from the earlier commit's change carried onto the merged base with `git merge-tree --write-tree`, so no segment shows the default branch's own work. A segment whose diff starts elsewhere than its base records `measuredFrom`, the commit or tree it starts from, and its prompt adds a second header line: `This segment's diff starts from <measuredFrom> instead of <segment base>, so it leaves out what the default branch changed.` A carry that conflicts measures the segment from its Conflicted Carry, and the prompt adds, after that header line, `Carrying <segment base> onto the default branch conflicted; where tree <measuredFrom> holds Git's conflict markers, the diff shows how the candidate resolved the conflict.` and, when Git lists conflicted paths, `Conflicted paths: <path>, <path>.`
 
 A single commit above the bound, or an oversized round-2 or Correction Review
 delta, still blocks with exit `2` before any provider call, readiness probe or
@@ -303,14 +311,14 @@ clears that head; the fix belongs to a changed candidate. The `none` and
 
 Reviews in one checkout form a **Reviewer Lineage** when the provider stays the same,
 each reviewed head descends from the last, and the merge base stays the same or
-moves only by a conflict-free merge of the default branch.
+moves only by a merge of the default branch, with or without a conflict.
 Round 1 reviews the full candidate diff. Round 2 reviews only the delta from
 the round-1 head to the current head; its prompt always includes every round-1
 finding with its validation and operator disposition. A fixed or dismissed
 finding is raised again only if the delta reintroduces it. For a segmented round 1, anchors are validated against their own segment
 diff; otherwise they are validated against the full merge-base candidate
 diff in either round.
-A merge of the default branch keeps the lineage when every merge the head gained since the reviewed head brings in only commits the new merge base contains and the reviewed head merges onto the new merge base without conflict. The round-2 or Correction Review delta then starts from the reviewed head carried onto the new merge base, recorded as `lineage.deltaBase`, and the prompt adds: `The candidate merged the default branch since then; the diff starts from tree <deltaBase>, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.` A rebase, a changed provider, a head that does not descend, or any other move of the merge base starts a new lineage at round 1, and `roundfix deliver status` and `roundfix deliver retry` name the reason before the review runs. A blocked review retries its own round with its recorded previous data.
+A merge of the default branch keeps the lineage when every merge the head gained since the reviewed head brings in only commits the new merge base contains. The round-2 or Correction Review delta then starts from the reviewed head carried onto the new merge base, recorded as `lineage.deltaBase`, and the prompt adds: `The candidate merged the default branch since then; the diff starts from tree <deltaBase>, the reviewed head with the default branch's changes applied, so it holds only the candidate's own change.` When the reviewed head conflicts with the new merge base, the delta starts from its **Conflicted Carry**, the tree `git merge-tree --write-tree` writes, read with `merge.conflictStyle=merge`, whose conflicted files hold Git's conflict markers, so the diff shows how the candidate resolved the conflict; the prompt then adds `Carrying <reviewed head> onto the default branch conflicted; where tree <deltaBase> holds Git's conflict markers, the diff shows how the candidate resolved the conflict.` and, when Git lists conflicted paths, `Conflicted paths: <path>, <path>.` A rebase, a changed provider, a head that does not descend, or any other move of the merge base starts a new lineage at round 1, and `roundfix deliver status` and `roundfix deliver retry` name the reason before the review runs. A blocked review retries its own round with its recorded previous data.
 
 A restart names one of these reasons:
 
@@ -321,7 +329,6 @@ A restart names one of these reasons:
 - `the merge base moved from <prior base> to <base> at the reviewed head`
 - `the merge base moved from <prior base> to <base>, which does not descend from it`
 - `the merge base moved from <prior base> to <base> through merge <merge> of <parent>, which the default branch does not contain`
-- `the merge base moved from <prior base> to <base> and the reviewed head <prior head> conflicts with it`
 
 A recorded commit is no longer in the repository only when the repository is neither shallow nor partial and `git cat-file -e` answers for its full object ID with exit `1` and no output. A complete repository holds every ancestor of every commit it holds, so a reviewed head it no longer holds is a head that does not descend. A shallow or partial clone cannot prove that, and Roundfix never asks a partial clone, because the question would fetch from its promisor remote; the review blocks with `check review lineage ancestry: a shallow or partial clone cannot prove that the recorded commit <commit> is gone; fetch the full history and try again`. Every other Git failure still blocks the review, so no failure resets the two-round ceiling.
 

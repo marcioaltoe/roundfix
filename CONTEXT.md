@@ -1007,8 +1007,12 @@ One of at most four consecutive first-parent commit ranges of a pre-PR review ca
 _Avoid_: Review round, independent review
 
 **Effective Base**:
-The merge base of one candidate commit with the Delivery Base: the commit of the default branch it was cut from or last merged. The pre-PR review measures each Review Segment and each round-2 delta from it, carrying the earlier commit's own change onto it, so neither shows the default branch's work as the candidate's ([ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md)).
+The merge base of one candidate commit with the Delivery Base: the commit of the default branch it was cut from or last merged. The pre-PR review measures each Review Segment and each round-2 delta from it, carrying the earlier commit's own change onto it, so neither shows the default branch's work as the candidate's, starting from the Conflicted Carry when that carry conflicts ([ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md), [ADR-0391](docs/adr/0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md)).
 _Avoid_: Segment base, merge base of the segment
+
+**Conflicted Carry**:
+The tree `git merge-tree --write-tree` writes, with Git's conflict markers in the conflicted files, when a candidate commit's own change does not carry onto a later Effective Base cleanly. A round-2 delta, a Correction Review delta or a Review Segment measured from it holds the candidate's own change and its conflict resolution and none of the default branch's work ([ADR-0391](docs/adr/0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md)).
+_Avoid_: Conflict restart, remerge diff
 
 **Review Omit Path**:
 A Project Config path in `pre_pr_review.omit_paths` at the review base whose matching changed files the pre-PR review leaves out with reason `omit-path`, distinct from a Derived Path Declaration ([ADR-0352](docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md)).
@@ -1027,7 +1031,7 @@ The one review of the fix after round 2 when every standing round-2 finding has 
 _Avoid_: Third round, new review lineage
 
 **Reviewer Lineage**:
-The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it. A conflict-free merge of the default branch keeps it, and the delta then starts from the round-1 head carried onto the new merge base. It may include one Correction Review when every standing round-2 finding was fixed ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md), [ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md), [ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md)).
+The at-most-two review rounds of one delivery candidate, where round 2 reviews only the delta since round 1 with round 1's findings and dispositions, continuing the same Agent Session when the runtime can resume it. A merge of the default branch keeps it, and the delta then starts from the round-1 head carried onto the new merge base, or from its Conflicted Carry when that merge conflicts. It may include one Correction Review when every standing round-2 finding was fixed ([ADR-0197](docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md), [ADR-0286](docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md), [ADR-0366](docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md), [ADR-0391](docs/adr/0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md)).
 _Avoid_: Review cache, third round
 
 **Turn Usage**:
