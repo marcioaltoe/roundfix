@@ -60,9 +60,11 @@ func RecordedRoundfixVersion(gitRoot string) (string, error) {
 }
 
 // CheckRecordedRoundfixVersion refuses only a strictly newer release or a
-// malformed record. Development builds skip the read entirely.
+// malformed record. A running binary that is not a plain release, a
+// development or pre-release build, skips the read entirely, just as a plan it
+// writes never records its version.
 func CheckRecordedRoundfixVersion(gitRoot string, running string) error {
-	if app.IsDevelopmentVersion(running) {
+	if !IsReleaseVersion(app.NormalizeVersion(running)) {
 		return nil
 	}
 	recorded, err := RecordedRoundfixVersion(gitRoot)

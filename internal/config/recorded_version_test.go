@@ -143,6 +143,24 @@ func TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion(t *testing.T) {
 	}
 }
 
+func TestAPreReleaseBuildIgnoresTheRecordedRoundfixVersion(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct{ recorded, running string }{
+		{"0.141.0", "0.141.0-rc.1"},
+		{"0.141.0", "v0.141.0-rc.1"},
+		{futureRecordedRoundfixVersion, futureRecordedRoundfixVersion + "-beta.2"},
+		{"malformed", "0.141.0-rc.1"},
+	} {
+		t.Run(tt.recorded+" by "+tt.running, func(t *testing.T) {
+			t.Parallel()
+			_, repo := recordedVersionConfigRepository(t, `{"roundfixVersion":"`+tt.recorded+`"}`, "")
+			if err := CheckRecordedRoundfixVersion(repo, tt.running); err != nil {
+				t.Fatalf("pre-release %q refused: %v", tt.running, err)
+			}
+		})
+	}
+}
+
 func recordedVersionConfigRepository(t *testing.T, manifest, project string) (home, repo string) {
 	t.Helper()
 	home, repo = t.TempDir(), t.TempDir()
