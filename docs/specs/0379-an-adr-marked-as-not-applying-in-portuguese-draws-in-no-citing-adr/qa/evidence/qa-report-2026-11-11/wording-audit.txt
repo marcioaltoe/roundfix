@@ -1,0 +1,19 @@
+Sentence checks across every ADR marker instruction in the search:
+.agents/skills/write-techspec/SKILL.md: True
+For an ADR the Spec lists only to record why it does not apply, begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese: the ADR stays listed, and `SC-ADR-RELATED` does not ask for the ADRs that cite only it.
+.agents/skills/write-techspec/references/techspec-template.md: True
+Begin the relation with Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply.
+.agents/skills/write-tasks/SKILL.md: True
+begin a not-applying ADR's line under the TechSpec's `## ADR Alternatives` with `not applicable`, or `não se aplica` in a Spec written in Portuguese, so it draws in no ADR that cites only it.
+.agents/skills/roundfix/references/spec.md: True
+A line whose relation begins with `not applicable` or `não se aplica`, matched without regard to case and also without the accent, keeps the ADR listed, and `SC-ADR-RELATED` reports no ADR that cites only ADRs marked that way.
+docs/user-guide/commands/spec.md: True
+A line whose relation begins with `not applicable` or `não se aplica`, matched without regard to case and also without the accent, keeps the ADR listed, and `SC-ADR-RELATED` then reports no ADR that cites only ADRs marked that way.
+docs/user-guide/context-driven-development.md: True
+Only an ADR the Spec applies or changes draws in the ADRs that cite it: an ADR whose line under the TechSpec's `## ADR Alternatives` begins with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, stays listed, and an ADR that cites only such ADRs opens no `SC-ADR-RELATED` gap.
+CONTEXT.md: True
+Only an ADR the Spec applies or changes draws in the ADRs that cite it: an ADR whose `## ADR Alternatives` line in the TechSpec begins with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, stays listed but opens no `SC-ADR-RELATED` gap for an ADR that cites only it ([ADR-0377](docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md), [ADR-0389](docs/adr/0389-an-adr-alternatives-line-marks-an-adr-as-not-applying-in-english-or-portuguese.md)). 
+Other not-applicable matches address the four Project Constraints rows, not ADR marker instructions; those are outside the changed token parser.
+roundfix canonical/mirror bytes equal
+write-tasks canonical/mirror bytes equal
+write-techspec canonical/mirror bytes equal

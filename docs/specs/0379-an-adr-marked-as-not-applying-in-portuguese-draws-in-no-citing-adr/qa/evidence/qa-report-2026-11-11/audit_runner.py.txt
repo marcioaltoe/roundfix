@@ -1,0 +1,113 @@
+from pathlib import Path
+import difflib, json, os, re, runpy, subprocess, tempfile
+D=runpy.run_path(str(Path(__file__).with_name('qa_runner.py.txt')))
+ROOT,SP,E,REPORT,HEAD,BASE=[D[k] for k in ['ROOT','SP','E','REPORT','HEAD','BASE']]
+run,save,settle=[D[k] for k in ['run','save','settle']]
+
+def show(rev,path):
+ p,out=run(['git','show',rev+':'+path]);assert p.returncode==0,out;return p.stdout
+
+def audit_history():
+ commits=subprocess.check_output(['git','rev-list','--reverse',BASE+'..'+HEAD],text=True).split()
+ log='commit_range: '+BASE+'..'+HEAD+'\n';paths=set();okay=True
+ auth=(SP/'_authorization.md').read_text();authorized=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+ for task,commit in zip(['task_01','task_02'],commits):
+  p,out=run(['git','diff-tree','--no-commit-id','--name-only','-r',commit]);log+=out
+  changed=set(p.stdout.splitlines());paths|=changed
+  taskpath=str((SP/(task+'.md')).relative_to(ROOT));tasktext=show(commit,taskpath)
+  declared=set(re.findall(r'^- (?:interface|creates|instruction): `([^`]+)`',tasktext,re.M))
+  if '## Recorded paths' in tasktext:
+   declared.update(re.findall(r'`([^`]+)`',tasktext.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+  outside=changed-declared-{taskpath};okay=okay and not outside
+  log+='Task '+task+' declared '+str(len(declared))+' paths; out-of-scope: '+repr(sorted(outside))+'\n'
+  p,out=run(['git','merge-base','--is-ancestor',BASE,commit]);log+=out;okay=okay and p.returncode==0
+ # Invoke the actual exported classifier, from a temporary Go entry point within the module.
+ with tempfile.TemporaryDirectory(prefix='qa-governed-',dir=ROOT/'bin') as td:
+  temp=Path(td);src=temp/'main.go'
+  src.write_text('package main\nimport("fmt";"roundfix/internal/speccheck")\nfunc main(){for _,p:=range []string{'+','.join(json.dumps(p) for p in sorted(paths))+'}{fmt.Printf("%s\\t%t\\n",p,speccheck.GovernedPath(p))}}\n')
+  executable=temp/'governed-probe'
+  p,out=run(['go','build','-o',str(executable),str(src)]);log+=out;assert p.returncode==0,out
+  t=REPORT.read_text(); oldline=re.search(r'^user_flow_executables: .*$',t,re.M)[0]; REPORT.write_text(t.replace(oldline,oldline[:-1]+', '+str(executable.relative_to(ROOT))+', '+str(Path(__file__).relative_to(ROOT))+']'))
+  p,out=run([str(executable)]);log+=out;okay=okay and p.returncode==0
+  governed=[line.split('\t')[0] for line in p.stdout.splitlines() if line.endswith('\ttrue')]
+  undeclared=set(governed)-authorized;okay=okay and not undeclared
+  log+='Governed changed paths: '+str(len(governed))+'; outside approved paths: '+repr(sorted(undeclared))+'\n'
+  save('governed-probe.go',src.read_text())
+ # Confirm approved authority predated both Task commits, rather than being folded into one.
+ authpath=str((SP/'_authorization.md').relative_to(ROOT));okay=okay and show(BASE,authpath)==auth
+ log+='Authorization byte-identical at Delivery Base and audited head; operative grant predates Tasks.\n'
+ excluded=[p for p in paths if p in ['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','internal/speccheck/constraints.go','docs/references/skill-coverage.json'] or p.startswith(('.github/workflows/','dist/npm/','internal/baseline/','docs/agents/'))]
+ okay=okay and not excluded;log+='Forbidden changed paths: '+repr(excluded)+'\n'
+ for number in ['0093','0168','0389']:
+  for path in ROOT.glob('docs/adr/'+number+'-*'):
+   rel=str(path.relative_to(ROOT));same=show(BASE,rel)==show(HEAD,rel);okay=okay and same;log+=rel+' byte-identical: '+str(same)+'\n'
+ for path in sorted(paths):
+  if not path.endswith('.md') or '/skills/' not in '/'+path:continue
+  before=show(BASE,path);after=show(HEAD,path)
+  def settlement(t):
+   m=re.search(r'^### QA settlement\n([\s\S]*?)(?=^###? |\Z)',t,re.M);return m[0] if m else None
+  same=settlement(before)==settlement(after);okay=okay and same;log+=path+' QA settlement unchanged: '+str(same)+'\n'
+ adrpath=next(ROOT.glob('docs/adr/0377-*'));rel=str(adrpath.relative_to(ROOT));before=show(BASE,rel);after=show(HEAD,rel)
+ okay=okay and '**Amended by [ADR-0389]' in after and 'updated_at: 2026-11-11T00:00:00Z' in after and 'updated_at: 2026-11-09T12:00:00Z' in before
+ log+='ADR-0377 amendment and updated_at transition checked.\n'
+ p,out=run(['git','diff',BASE+'..'+HEAD,'--','CONTEXT.md',rel,'.agents/skills/write-techspec/references/techspec-template.md']);log+=out
+ save('history-audit',log)
+ settle('Q11','pass' if okay else 'fail','Both Task commits inspected with diff-tree; scope matches declarations, all nine changed Governed Paths are approved at Delivery Base, protected paths/ADRs and QA settlement remain unchanged; ADR-0377 dated amendment verified.',['history-audit.txt','governed-probe.go.txt'])
+
+def glossary():
+ before=show(BASE,'CONTEXT.md');after=(ROOT/'CONTEXT.md').read_text();prd=(SP/'_prd.md').read_text()
+ needle='**Spec Consistency Check**:\n';a=before.index(needle);b=after.index(needle)
+ end1=before.index('\n_Avoid_',a);end2=after.index('\n_Avoid_',b)
+ identical=before[:a]==after[:b] and before[end1:]==after[end2:]
+ term=after[b:end2];okay=identical and 'changes: **Spec Consistency Check**' in prd and 'não se aplica' in term and 'ADR-0389' in term
+ log='PRD declaration: changes: **Spec Consistency Check**\nDefinition heading retained: '+str(needle in after)+'\nAll bytes outside that definition unchanged: '+str(identical)+'\nCurrent definition:\n'+term+'\n\n'+''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile='Delivery Base CONTEXT.md',tofile='audited CONTEXT.md'))
+ save('glossary',log);settle('Q10','pass' if okay else 'fail','Only Spec Consistency Check changed in the Task commit range; definition heading retained, Portuguese token and ADR-0389 present, all other glossary bytes unchanged.',['glossary.txt'])
+
+def wording():
+ surfaces=['docs/user-guide/','.agents/skills/write-techspec/','.agents/skills/write-tasks/','.agents/skills/roundfix/references/spec.md','CONTEXT.md']
+ p,out=run(['rg','-n','-C','2','not applicable',*surfaces]);save('wording-search',out)
+ files=[ROOT/'.agents/skills/write-techspec/SKILL.md',ROOT/'.agents/skills/write-techspec/references/techspec-template.md',ROOT/'.agents/skills/write-tasks/SKILL.md',ROOT/'.agents/skills/roundfix/references/spec.md',ROOT/'docs/user-guide/commands/spec.md',ROOT/'docs/user-guide/context-driven-development.md',ROOT/'CONTEXT.md']
+ log='Sentence checks across every ADR marker instruction in the search:\n';okay=True
+ for path in files:
+  # Match the full natural-language sentence across wrapped lines.
+  text=' '.join(path.read_text().split())
+  patterns=[r'For an ADR the Spec lists only.*?cite only it\.',r'Begin the relation with.*?does not apply\.',r'begin a not-applying ADR.*?cites only it\.',r'A line whose relation begins with.*?marked that way\.',r'Only an ADR the Spec applies or changes draws in.*?ADR-0389[^\n]*?\)\)\.',r'Only an ADR the Spec applies or changes draws in.*?SC-ADR-RELATED` gap\.']
+  found=[m[0] for pat in patterns for m in re.finditer(pat,text)]
+  if path.name=='spec.md':found=[m[0] for m in re.finditer(r'A line whose relation begins with.*?marked that way\.',text)]
+  if path.name=='CONTEXT.md':found=[text[text.index('Only an ADR the Spec applies or changes draws in'):text.index('\n_Avoid_')]] if False else [text[text.index('Only an ADR the Spec applies or changes draws in'):text.index('_Avoid_: QA gate',text.index('Only an ADR the Spec applies or changes draws in'))]]
+  valid=bool(found) and all('não se aplica' in s for s in found);okay=okay and valid
+  log+=str(path.relative_to(ROOT))+': '+str(valid)+'\n'+'\n'.join(found)+'\n'
+ log+='Other not-applicable matches address the four Project Constraints rows, not ADR marker instructions; those are outside the changed token parser.\n'
+ # Independent mirror check, byte for byte.
+ for name in ['roundfix','write-tasks','write-techspec']:
+  canonical=ROOT/'.agents/skills'/name;mirror=ROOT/'skills'/name
+  for path in canonical.rglob('*'):
+   if path.is_file():
+    other=mirror/path.relative_to(canonical);same=other.is_file() and path.read_bytes()==other.read_bytes();okay=okay and same
+  log+=name+' canonical/mirror bytes equal\n'
+ save('wording-audit',log)
+ settle('Q09','pass' if okay else 'fail','Seven ADR-marker instruction locations include the Portuguese token in the same sentence; unrelated matches are Project Constraints. All three skill trees match their mirrors.',['wording-search.txt','wording-audit.txt'])
+
+def outside():
+ backlog=next((SP/'references').glob('2026-11-10-*.md')).read_text();prd=(SP/'_prd.md').read_text()
+ okay='76 ADR lines' in backlog and 'não se aplica' in backlog and '2026-11-10' in backlog and '01a1c323' in backlog and 'https://unicode.org/reports/tr15/' in prd and 'Ç ↔ C+◌̧' in prd and 'https://pkg.go.dev/regexp/syntax' in prd and 'at ASCII word' in prd
+ focused=(E/'focused.txt').read_text();cli=(E/'cli-accented.txt').read_text();okay=okay and PORTPASS(focused,'decomposed') and 'SC-ADR-RELATED lines: 0' in cli and 'SC-ADR-RELATED lines: 1' in cli and '--- PASS: TestAMarkerOutsideTheClosedListStillDrawsIn/plural' in focused
+ log='Offline outside-evidence comparison, recorded sources dated 2026-11-10.\n\n1. Operator-adopted Backlog Entry, message id prefix 01a1c323 from Fiscus: 76 ADR lines use “não se aplica”. Independent adopter report predates this Spec; this QA did not read Fiscus. Compare cli-accented.txt: audited head zero related gaps, Delivery Base one. This corroborates the reported input form and reproduced closure; it does not remeasure Fiscus’s 76 lines.\n\n2. Unicode Standard Annex #15, https://unicode.org/reports/tr15/, passage preserved in _prd.md Acceptance evidence from 2026-11-10: canonical equivalence describes the same abstract character and appearance/behavior; example Ç ↔ C+◌̧. Compare focused.txt decomposed PASS and sabotage-decomposed.txt assertion failure: Go literal contains U+0061 U+0303, while the accented case contains U+00E3. No network reread.\n\n3. Go regexp/syntax, https://pkg.go.dev/regexp/syntax, passage preserved in _prd.md Acceptance evidence from 2026-11-10: \\b is at ASCII word boundary. Compare focused.txt plural PASS, sabotage-boundary.txt intended assertion failure, cli-plural.txt, cli-ascii-digit.txt and cli-ascii-underscore.txt: each retains one related gap. No network reread.\n'
+ save('outside-evidence',log);settle('Q08','pass' if okay else 'fail','All three external-origin sources checked offline against fresh accented/decomposed/plural observations, with source dates and provenance; no network needed.',['outside-evidence.txt','cli-accented.txt','focused.txt','sabotage-decomposed.txt','sabotage-boundary.txt'])
+
+def PORTPASS(text,sub):return '--- PASS: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/'+sub in text
+
+def pr():
+ log='Pull Request fact: none open (current QA assignment).\nApproval: Spec _authorization.md approved, operative grant at Delivery Base; delivery authority authorizes the declared bounded change.\nChecks/status: Daemon make verify-changed exit 0 at '+HEAD+'; QA focused and declared Task verifications exit 0.\nUnresolved threads: none because no Pull Request exists.\nMerge-Ready acceptance: none yet; no current-candidate Review Source acceptance supplied. This control has no equivalent evidence.\nCandidate/review ancestry: claimed candidate '+HEAD+'; approval antecedent '+BASE+'; no later Review Artifact acceptance exists in this assignment.\nUnblocking action: Supervisor completes configured current-candidate review, opens the Spec target-branch Pull Request and verifies required controls for its candidate; QA creates no PR.\n'
+ save('pull-request',log);settle('Q12','blocked (environment: no open Pull Request)','Pre-PR controls recorded; delivery approval and Daemon checks have equivalents, but Merge-Ready acceptance remains absent. This sole environment block permits a qualifying partial.',['pull-request.txt','history-audit.txt'])
+
+def archive_plan():
+ with D['cli_env']() as env:
+  p,out=run(['./bin/roundfix','archive',D['SPEC'],'--plan','--offline'],env=env)
+  log='Judge Key Variables and TYPESAFE_API_KEY unset by name; no values recorded.\n'+out
+  save('archive-plan',log)
+  okay=p.returncode==0 and 'judge: skipped (offline)' in p.stdout
+  settle('Q13','pass' if okay else 'fail','Offline archive plan exited '+str(p.returncode)+'; judge explicitly skipped. No archive mutation, provider request or release performed.',['archive-plan.txt'])
+
+if __name__=='__main__':
+ audit_history();glossary();wording();outside();pr();archive_plan()

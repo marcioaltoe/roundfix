@@ -1,0 +1,28 @@
+mutation: remove Portuguese fix clause
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20/bin/qa-0379-dflfuxy4/fix-text
+command: go test -count=1 -timeout 10m -v ./internal/speccheck -run '^TestAnAppliedADRStillDrawsInItsCitingADR$'
+stdout:
+=== RUN   TestAnAppliedADRStillDrawsInItsCitingADR
+=== PAUSE TestAnAppliedADRStillDrawsInItsCitingADR
+=== CONT  TestAnAppliedADRStillDrawsInItsCitingADR
+=== RUN   TestAnAppliedADRStillDrawsInItsCitingADR/applied;_kept.
+=== PAUSE TestAnAppliedADRStillDrawsInItsCitingADR/applied;_kept.
+=== RUN   TestAnAppliedADRStillDrawsInItsCitingADR/kept_as_recorded,_though_its_alternatives_are_not_applicable_here.
+=== PAUSE TestAnAppliedADRStillDrawsInItsCitingADR/kept_as_recorded,_though_its_alternatives_are_not_applicable_here.
+=== CONT  TestAnAppliedADRStillDrawsInItsCitingADR/applied;_kept.
+=== CONT  TestAnAppliedADRStillDrawsInItsCitingADR/kept_as_recorded,_though_its_alternatives_are_not_applicable_here.
+=== NAME  TestAnAppliedADRStillDrawsInItsCitingADR/applied;_kept.
+    adr_related_seed_test.go:44: fix = "Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.", want "Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in."
+=== NAME  TestAnAppliedADRStillDrawsInItsCitingADR/kept_as_recorded,_though_its_alternatives_are_not_applicable_here.
+    adr_related_seed_test.go:44: fix = "Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.", want "Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in."
+--- FAIL: TestAnAppliedADRStillDrawsInItsCitingADR (0.00s)
+    --- FAIL: TestAnAppliedADRStillDrawsInItsCitingADR/kept_as_recorded,_though_its_alternatives_are_not_applicable_here. (0.01s)
+    --- FAIL: TestAnAppliedADRStillDrawsInItsCitingADR/applied;_kept. (0.01s)
+FAIL
+suiteguard: guard cost: measured 3109 paths; fingerprint took 140.974791ms before and 141.114125ms after
+FAIL	roundfix/internal/speccheck	0.584s
+FAIL
+
+stderr:
+
+exit: 1

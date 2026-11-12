@@ -1,0 +1,51 @@
+pattern: (?i)^not applicable\b
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20/bin/qa-0379-dflfuxy4/english-only
+command: go test -count=1 -timeout 10m -v ./internal/speccheck -run '^TestAPortugueseNotApplicableADRDrawsInNoCitingADR$'
+stdout:
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/accented
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/accented
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/capitalized
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/capitalized
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/upper_case
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/upper_case
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/unaccented
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/unaccented
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/decomposed
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/decomposed
+=== RUN   TestAPortugueseNotApplicableADRDrawsInNoCitingADR/line_end
+=== PAUSE TestAPortugueseNotApplicableADRDrawsInNoCitingADR/line_end
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/accented
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/unaccented
+=== NAME  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/accented
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== NAME  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/unaccented
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/upper_case
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/capitalized
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== NAME  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/upper_case
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/decomposed
+=== CONT  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/line_end
+=== NAME  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/decomposed
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+=== NAME  TestAPortugueseNotApplicableADRDrawsInNoCitingADR/line_end
+    adr_related_marker_test.go:30: SC-ADR-RELATED findings = []speccheck.Finding{speccheck.Finding{Code:"SC-ADR-RELATED", Severity:"gap", Summary:"ADR-0003 (Fixture decision 0003) cites listed ADR-0002 but is not itself listed by the Spec", Where:[]speccheck.Location{speccheck.Location{Path:"docs/adr/0003-fixture-decision.md", Line:7}, speccheck.Location{Path:"docs/specs/adr-related-seeds/_prd.md", Line:12}}, Fix:"Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.", Expected:"", declaredVocabularySpec:""}}, want none
+--- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR (0.00s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/accented (0.01s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/unaccented (0.01s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/capitalized (0.01s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/upper_case (0.01s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/decomposed (0.01s)
+    --- FAIL: TestAPortugueseNotApplicableADRDrawsInNoCitingADR/line_end (0.01s)
+FAIL
+suiteguard: guard cost: measured 3109 paths; fingerprint took 160.061458ms before and 151.772ms after
+FAIL	roundfix/internal/speccheck	0.662s
+FAIL
+
+stderr:
+
+exit: 1

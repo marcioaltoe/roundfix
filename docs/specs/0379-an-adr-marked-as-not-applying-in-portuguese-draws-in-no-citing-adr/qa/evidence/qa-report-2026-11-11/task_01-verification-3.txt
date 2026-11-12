@@ -1,0 +1,7 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: sh -c 'grep -F -- '"'"'**Spec Consistency Check**'"'"' < CONTEXT.md | grep -qE '"'"'^([-*+] )?\*\*Spec Consistency Check\*\*(:| —( |$))'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- '"'"'in a Spec written in Portuguese, stays listed but opens no'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md | grep -qF -- '"'"'Amended by [ADR-0389](0389-an-adr-alternatives-line-marks-an-adr-as-not-applying-in-english-or-portuguese.md) (2026-11-11).'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md | grep -qF -- '"'"'ADR-0389 keeps this option rejected'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md | grep -qF -- '"'"'updated_at: 2026-11-11T00:00:00Z'"'"''
+stdout:
+
+stderr:
+
+exit: 0

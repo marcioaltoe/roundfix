@@ -1,0 +1,8 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: sh -c 'GOMAXPROCS=2 go test -count=1 -timeout 10m ./internal/speccheck && grep -qF -- '"'"'n(?:\x{00E3}|a\x{0303}|a)o se aplica'"'"' internal/speccheck/authoring_proof.go'
+stdout:
+ok  	roundfix/internal/speccheck	27.184s
+
+stderr:
+
+exit: 0

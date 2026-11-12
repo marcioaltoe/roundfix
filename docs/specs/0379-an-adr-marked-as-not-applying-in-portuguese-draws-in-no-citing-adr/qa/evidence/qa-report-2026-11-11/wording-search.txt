@@ -1,0 +1,85 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: rg -n -C 2 'not applicable' docs/user-guide/ .agents/skills/write-techspec/ .agents/skills/write-tasks/ .agents/skills/roundfix/references/spec.md CONTEXT.md
+stdout:
+.agents/skills/roundfix/references/spec.md-160-- `SC-ADR-ALTERNATIVES-UNRELATED` — a listed ADR has no line relating the
+.agents/skills/roundfix/references/spec.md-161-  design to that ADR's rejected alternatives. Runs from the TechSpec stage.
+.agents/skills/roundfix/references/spec.md:162:  A line whose relation begins with `not applicable` or `não se aplica`, matched without regard to case and also without the accent, keeps the ADR listed,
+.agents/skills/roundfix/references/spec.md-163-  and `SC-ADR-RELATED` reports no ADR that cites only ADRs marked that way.
+.agents/skills/roundfix/references/spec.md-164-- `SC-UNREACHABLE-UNREAD` — the PRD's `## Unreachable Acceptance` section
+--
+CONTEXT.md-311-
+CONTEXT.md-312-**Project Constraint**:
+CONTEXT.md:313:A confirmed project decision or universal Normative Clause that a Spec records as applicable, not applicable with a reason, or explicitly authorized for a bounded change before its Tasks can execute.
+CONTEXT.md-314-_Avoid_: Optional note, implementation suggestion, inferred permission
+CONTEXT.md-315-
+--
+CONTEXT.md-1113-
+CONTEXT.md-1114-**Spec Consistency Check**:
+CONTEXT.md:1115:The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It uses an ADR horizon: `SC-ADR-RELATED` reports an ADR for a committed Spec only when the commit that added the ADR is an ancestor of the commit that added the Spec's `_prd.md`. Its Claim Receipt and Surface Transcript declaration gaps begin at the contract horizon, the commit that added the concrete-contract guide to the write-techspec skill. It reports consistency findings and never edits artifacts or emits a QA verdict. Its Glossary Declaration gap begins at the glossary horizon, the commit that added the glossary guide to the write-prd skill, and a Spec that carries a Glossary Declaration is checked at any age. Only an ADR the Spec applies or changes draws in the ADRs that cite it: an ADR whose `## ADR Alternatives` line in the TechSpec begins with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, stays listed but opens no `SC-ADR-RELATED` gap for an ADR that cites only it ([ADR-0377](docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md), [ADR-0389](docs/adr/0389-an-adr-alternatives-line-marks-an-adr-as-not-applying-in-english-or-portuguese.md)).
+CONTEXT.md-1116-_Avoid_: QA gate, Spec validator, inference engine
+CONTEXT.md-1117-
+--
+.agents/skills/write-techspec/references/techspec-template.md-18-## Project Constraints
+.agents/skills/write-techspec/references/techspec-template.md-19-
+.agents/skills/write-techspec/references/techspec-template.md:20:<!-- Replace every placeholder. Each row must state applicable or not applicable, give the
+.agents/skills/write-techspec/references/techspec-template.md-21-     effective constraint or the reason it does not apply, and cite its operative source.
+.agents/skills/write-techspec/references/techspec-template.md-22-     Keep authorization in this section, never in frontmatter. -->
+.agents/skills/write-techspec/references/techspec-template.md-23-
+.agents/skills/write-techspec/references/techspec-template.md:24:- Identifier strategy: <applicable | not applicable> — <effective value and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`.
+.agents/skills/write-techspec/references/techspec-template.md:25:- Authentication and HTTP: <applicable | not applicable> — <effective policy and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`.
+.agents/skills/write-techspec/references/techspec-template.md:26:- Active ADR obligations: <applicable | not applicable> — <active obligations and reason they apply, or reason none apply>. Source: `docs/agents/<path>.md`.
+.agents/skills/write-techspec/references/techspec-template.md:27:- Tooling authority: <applicable | not applicable> — <effective constraint and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`; Spec-contained authorization record: `<spec-root>/<slug>/_authorization.md`; bounded files: <copy every exact repository-relative path from the record's `paths` list>.
+.agents/skills/write-techspec/references/techspec-template.md-28-
+.agents/skills/write-techspec/references/techspec-template.md-29-<!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
+--
+.agents/skills/write-techspec/references/techspec-template.md-86-<!-- One line for each ADR listed under Active ADR obligations. State how the design
+.agents/skills/write-techspec/references/techspec-template.md-87-     relates to the alternatives that ADR rejected. Begin the relation with
+.agents/skills/write-techspec/references/techspec-template.md:88:     Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
+.agents/skills/write-techspec/references/techspec-template.md-89-
+.agents/skills/write-techspec/references/techspec-template.md-90-- ADR-NNNN: <relation to the rejected alternatives>
+--
+.agents/skills/write-tasks/SKILL.md-42-   sections. Each section must record `Identifier strategy`,
+.agents/skills/write-tasks/SKILL.md-43-   `Authentication and HTTP`, `Active ADR obligations`, and `Tooling authority`
+.agents/skills/write-tasks/SKILL.md:44:   as applicable or not applicable with a reason, and each row must cite its
+.agents/skills/write-tasks/SKILL.md-45-   operative `docs/agents/` source path.
+.agents/skills/write-tasks/SKILL.md-46-3. If either active artifact is absent or incomplete, refuse to create or
+--
+.agents/skills/write-tasks/SKILL.md-497-blocking too; account for the named ADR or record why it does not apply, and
+.agents/skills/write-tasks/SKILL.md-498-begin a not-applying ADR's line under the TechSpec's `## ADR Alternatives` with
+.agents/skills/write-tasks/SKILL.md:499:`not applicable`, or `não se aplica` in a Spec written in Portuguese, so it draws in no ADR that cites only it. Skipped checks are
+.agents/skills/write-tasks/SKILL.md-500-informational.
+.agents/skills/write-tasks/SKILL.md-501-
+--
+.agents/skills/write-techspec/SKILL.md-77-authorization. The finished snapshot must classify identifier strategy,
+.agents/skills/write-techspec/SKILL.md-78-authentication and HTTP, active ADR obligations, and tooling authority as
+.agents/skills/write-techspec/SKILL.md:79:applicable or not applicable with a reason and cite the operative
+.agents/skills/write-techspec/SKILL.md-80-`docs/agents/` source path for each row.
+.agents/skills/write-techspec/SKILL.md-81-
+--
+.agents/skills/write-techspec/SKILL.md-146-  takes a rejected alternative, say so and supersede or amend the ADR.
+.agents/skills/write-techspec/SKILL.md-147-  `SC-ADR-ALTERNATIVES-UNRELATED` reports a listed ADR without its line.
+.agents/skills/write-techspec/SKILL.md:148:  For an ADR the Spec lists only to record why it does not apply, begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese: the ADR stays listed, and `SC-ADR-RELATED` does not ask for the ADRs that cite only it. The check reads these tokens without regard to case and also accepts `nao se aplica` without the accent; any other wording, such as `não se aplicam` or `n/a`, counts as an applied ADR.
+.agents/skills/write-techspec/SKILL.md-149-- Coverage Cross-Read. Before `write-tasks`, read each PRD user story, Core
+.agents/skills/write-techspec/SKILL.md-150-  Feature and Success Metric against the component the Coverage Map names. Add
+--
+.agents/skills/write-techspec/SKILL.md-159-this skill. You MUST NOT report completion or recommend `write-tasks` unless
+.agents/skills/write-techspec/SKILL.md-160-each new artifact has `Project Constraints`; all four rows state applicable or
+.agents/skills/write-techspec/SKILL.md:161:not applicable with a reason; every row cites an operative `docs/agents/`
+.agents/skills/write-techspec/SKILL.md-162-source; and any protected tooling mutation records express maintainer
+.agents/skills/write-techspec/SKILL.md-163-authorization plus bounded files. Keep authorization out of frontmatter.
+--
+docs/user-guide/commands/spec.md-220-| `SC-GLOSSARY-MISSING` | Every binding Task has completed but the glossary still lacks the declared term. The glossary must hold a Glossary Definition of the term in one of the forms above. Runs from the Tasks stage with a Task Graph. |
+docs/user-guide/commands/spec.md-221-| `SC-ABSENCE-UNPROVEN` | A TechSpec has no Absence Evidence declaration or an item lacks its search command or result. Runs from the TechSpec stage. |
+docs/user-guide/commands/spec.md:222:| `SC-ADR-ALTERNATIVES-UNRELATED` | A listed ADR has no line relating the design to that ADR's rejected alternatives. Runs from the TechSpec stage. A line whose relation begins with `not applicable` or `não se aplica`, matched without regard to case and also without the accent, keeps the ADR listed, and `SC-ADR-RELATED` then reports no ADR that cites only ADRs marked that way. |
+docs/user-guide/commands/spec.md-223-| `SC-UNREACHABLE-UNREAD` | The PRD's `## Unreachable Acceptance` section holds text that no fielded declaration reads, such as a numbered item, a prose paragraph or an unindented line inside a declaration, or a declaration lacks its `criterion:`, `reason:` or `satisfied-by:` field. One finding per run of consecutive unread lines, at its first line, and the fix shows the fielded form. Blank lines, HTML comments and a first paragraph that begins with `None.` in a section that holds no declaration are read. An error from the PRD stage; a missing PRD skips it with its path. |
+docs/user-guide/commands/spec.md-224-| `SC-COVERAGE-UNREAD` | A Coverage Map lacks its `Deviations from the PRD:` line or has a deviation that names no PRD unit. Runs from the TechSpec stage. |
+--
+docs/user-guide/context-driven-development.md-1057-the commit that added the Spec's `_prd.md`. Only an ADR the Spec applies or
+docs/user-guide/context-driven-development.md-1058-changes draws in the ADRs that cite it: an ADR whose line under the TechSpec's
+docs/user-guide/context-driven-development.md:1059:`## ADR Alternatives` begins with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, stays listed, and an ADR that
+docs/user-guide/context-driven-development.md-1060-cites only such ADRs opens no `SC-ADR-RELATED` gap.
+docs/user-guide/context-driven-development.md-1061-
+
+stderr:
+
+exit: 0

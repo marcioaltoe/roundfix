@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

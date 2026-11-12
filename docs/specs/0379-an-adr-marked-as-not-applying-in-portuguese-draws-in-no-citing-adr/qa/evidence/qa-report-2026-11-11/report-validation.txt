@@ -1,0 +1,8 @@
+18 contiguous table rows; 18 typed-input evidence blocks; 47 links exist and are not ignored; all evidence files decode as text.
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: ./bin/roundfix qa-report accept docs/specs/0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr/qa/qa-report-2026-11-11.md
+stdout:
+
+stderr:
+
+exit: 0

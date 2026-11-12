@@ -1,0 +1,8 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: sh -c 'GOMAXPROCS=2 go test -count=1 -timeout 10m -tags docscontract ./internal/docscontract -run '"'"'^TestTheSkillCoverageMapIsCurrent$'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/commands/spec.md | grep -qF -- '"'"'matched without regard to case and also without the accent, keeps the ADR listed'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < docs/user-guide/context-driven-development.md | grep -qF -- '"'"'in a Spec written in Portuguese, stays listed, and an ADR that cites only such ADRs'"'"''
+stdout:
+ok  	roundfix/internal/docscontract	0.475s
+
+stderr:
+
+exit: 0

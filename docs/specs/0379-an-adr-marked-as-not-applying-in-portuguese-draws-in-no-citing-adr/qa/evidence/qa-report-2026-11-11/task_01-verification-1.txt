@@ -1,0 +1,7 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr-a616b69a97daafad-cc454e6a-c2e6c49f/run_20261112T013135Z_de44f95657d80c20
+command: sh -c 'for f in .agents/skills/write-techspec/SKILL.md skills/write-techspec/SKILL.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$f" | grep -qF -- '"'"'any other wording, such as'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$f" | grep -qF -- '"'"'counts as an applied ADR'"'"' || { printf '"'"'missing phrase in %s\n'"'"' "$f" >&2; exit 1; }; done; for f in .agents/skills/write-techspec/references/techspec-template.md skills/write-techspec/references/techspec-template.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$f" | grep -qF -- '"'"'in a Spec written in Portuguese, for an ADR the Spec lists only'"'"' || { printf '"'"'missing phrase in %s\n'"'"' "$f" >&2; exit 1; }; done; for f in .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$f" | grep -qF -- '"'"'in a Spec written in Portuguese, so it draws in no ADR that cites only it'"'"' || { printf '"'"'missing phrase in %s\n'"'"' "$f" >&2; exit 1; }; done; for f in .agents/skills/roundfix/references/spec.md skills/roundfix/references/spec.md; do tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < "$f" | grep -qF -- '"'"'matched without regard to case and also without the accent, keeps the ADR listed'"'"' || { printf '"'"'missing phrase in %s\n'"'"' "$f" >&2; exit 1; }; done'
+stdout:
+
+stderr:
+
+exit: 0
