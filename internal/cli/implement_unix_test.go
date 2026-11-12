@@ -257,14 +257,16 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	}
 	releaseImplementNamedPipe(t, releasePaths[firstTask])
 
-	events = waitForImplementJournal(t, homeDir, runID, resultCh, func(events []store.JournalEvent) bool {
-		started := 0
+	// Each Task also emits a started event for its settlement checks, so a
+	// count of started events passes 2 between two polls on a slow machine.
+	// Wait for the queued Task's own start instead.
+	waitForImplementJournal(t, homeDir, runID, resultCh, func(events []store.JournalEvent) bool {
 		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
-			if event.phase == string(runevent.VerificationPhaseStarted) {
-				started++
+			if event.task == secondTask && event.phase == string(runevent.VerificationPhaseStarted) {
+				return true
 			}
 		}
-		return started == 2
+		return false
 	})
 	waitForFile(t, startedPaths[secondTask], resultCh)
 	releaseImplementNamedPipe(t, releasePaths[secondTask])
