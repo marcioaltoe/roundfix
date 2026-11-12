@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-12
-spec: null
+spec: 0385-a-queue-item-stops-only-for-its-own-work
 reason: null
 ---
 
