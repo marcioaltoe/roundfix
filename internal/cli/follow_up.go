@@ -37,25 +37,26 @@ type followUpSource struct {
 }
 
 type followUpItem struct {
-	Rank         int               `json:"rank"`
-	Priority     int               `json:"priority"`
-	PriorityName string            `json:"priority_name"`
-	Kind         string            `json:"kind"`
-	Ref          string            `json:"ref"`
-	Type         string            `json:"type"`
-	Date         string            `json:"date"`
-	Title        string            `json:"title"`
-	RequestedBy  *string           `json:"requested_by"`
-	Blocks       *string           `json:"blocks"`
-	BlockedWork  string            `json:"blocked_work,omitempty"`
-	Basis        string            `json:"basis"`
-	Answers      map[string]string `json:"answers"`
-	Reason       *string           `json:"reason"`
-	WaitingOn    string            `json:"waiting_on,omitempty"`
-	Since        string            `json:"since,omitempty"`
-	WaitingError string            `json:"waiting_error,omitempty"`
-	text         string
-	origin       string
+	Rank             int               `json:"rank"`
+	Priority         int               `json:"priority"`
+	PriorityName     string            `json:"priority_name"`
+	Kind             string            `json:"kind"`
+	Ref              string            `json:"ref"`
+	Type             string            `json:"type"`
+	Date             string            `json:"date"`
+	Title            string            `json:"title"`
+	RequestedBy      *string           `json:"requested_by"`
+	Blocks           *string           `json:"blocks"`
+	BlockedWork      string            `json:"blocked_work,omitempty"`
+	PrecedenceHeldBy string            `json:"precedence_held_by,omitempty"`
+	Basis            string            `json:"basis"`
+	Answers          map[string]string `json:"answers"`
+	Reason           *string           `json:"reason"`
+	WaitingOn        string            `json:"waiting_on,omitempty"`
+	Since            string            `json:"since,omitempty"`
+	WaitingError     string            `json:"waiting_error,omitempty"`
+	text             string
+	origin           string
 }
 
 type followUpJudge struct {
@@ -150,17 +151,15 @@ func runFollowUpCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	doc.all = req.all
 	waiting := []followUpItem{}
-	declared := []followUpItem{}
-	ranked := []followUpItem{}
+	pending := []followUpItem{}
 	for _, item := range items {
 		if item.WaitingOn != "" {
 			waiting = append(waiting, item)
-		} else if item.BlockedWork != "" {
-			declared = append(declared, item)
 		} else {
-			ranked = append(ranked, item)
+			pending = append(pending, item)
 		}
 	}
+	declared, ranked := followUpDeclaredPrecedence(pending)
 	items = ranked
 	doc.Items, doc.Sources = items, sources
 	progress, sources, err := readFollowUpProgress(ctx, loaded, environment)
@@ -281,6 +280,48 @@ func followUpString(value string) *string {
 	return &value
 }
 
+func followUpDeclaredPrecedence(items []followUpItem) (declared, ranked []followUpItem) {
+	declared, ranked = []followUpItem{}, []followUpItem{}
+	holders := make(map[string]int)
+	for index, item := range items {
+		if item.BlockedWork == "" || item.RequestedBy == nil {
+			continue
+		}
+		sender := followUpSender(item)
+		holder, exists := holders[sender]
+		if !exists || followUpDeclaredBefore(item, items[holder]) {
+			holders[sender] = index
+		}
+	}
+	for index, item := range items {
+		if item.BlockedWork != "" && item.RequestedBy != nil {
+			holder := holders[followUpSender(item)]
+			if index == holder {
+				declared = append(declared, item)
+				continue
+			}
+			item.PrecedenceHeldBy = items[holder].Ref
+		}
+		ranked = append(ranked, item)
+	}
+	return declared, ranked
+}
+
+func followUpSender(item followUpItem) string {
+	if item.RequestedBy == nil {
+		return ""
+	}
+	return strings.TrimSpace(*item.RequestedBy)
+}
+
+func followUpDeclaredBefore(a, b followUpItem) bool {
+	dateA, dateB := followUpDate(a.Date), followUpDate(b.Date)
+	if !dateA.Equal(dateB) {
+		return dateA.Before(dateB)
+	}
+	return a.Ref < b.Ref
+}
+
 func followUpDeclaredOrder(items []followUpItem) []followUpItem {
 	ordered := append([]followUpItem{}, items...)
 	for index := range ordered {
@@ -391,6 +432,9 @@ func renderFollowUpText(doc followUpDocument) string {
 				if item.Basis == "declared" {
 					fmt.Fprintf(&out, ": %s", item.BlockedWork)
 				}
+			}
+			if item.PrecedenceHeldBy != "" {
+				fmt.Fprintf(&out, " — declares blocked work: %s — precedence held by %s", item.BlockedWork, item.PrecedenceHeldBy)
 			}
 			if item.WaitingOn != "" {
 				fmt.Fprintf(&out, " — waiting on %s since %s", item.WaitingOn, item.Since)

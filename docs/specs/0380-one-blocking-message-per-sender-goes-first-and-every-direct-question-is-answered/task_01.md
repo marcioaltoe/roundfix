@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -109,3 +109,63 @@ and both `follow-up` reference copies document the bound.
 - `_prd.md` → Goal 2; Goal 4; User Story 2; User Story 3; Core Feature 3; Core Feature 5; Success Metric 2; Success Metric 3; Success Metric 5
 - `_techspec.md` → Current behavior 1-4; API Contracts 1-5; Surface Transcript 1; Invariants 1-4; Declared breaks; Testing Approach; Build Order 1
 - ADR-0390
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, typesafe-ai, golang-safety, systematic-debugging.
+
+The command selects one holding declaration per trimmed, byte-compared sender,
+using the earliest parsed date and then the lowest reference. Selection keeps
+both slices non-nil and in input order without mutating the inventory. Waiting
+Items retain their existing split. Later declarations reach the existing judge
+and ordering code, retain `blocked_work`, and name their holder through the
+optional `precedence_held_by` field and the prescribed text suffix. Neither
+sender selection nor declaration detection reads a message body.
+
+Acceptance evidence:
+
+- One declaration per sender: the new selection test covers the six prescribed
+  inputs, including the reference tie-break and trailing sender space, holder
+  references, retained blocked work, input order, unchanged input and empty
+  non-nil results. The fake-judge test requires exactly the two prescribed
+  requests and proves that the later declaration ranks as health with basis
+  `judge`, null `blocks`, and its holding reference. The third test matches the
+  entire Surface Transcript 1 stdout, empty stderr and exit 0 without a judge
+  request. Existing tests were not edited.
+- Byte compatibility: a temporary `go test -overlay` probe,
+  `TestFollowUpDistinctSenderCompatibilityProbe`, compared the distinct-sender
+  fixture against `013af3b4:internal/cli/follow_up.go`. Text and JSON were
+  identical after normalizing only the independently created fixture roots and
+  Git heads. Evidence: `/private/tmp/roundfix-0380-compat-3ww_0zzh/`.
+  The initial probe identified differing temporary commit hashes; correcting
+  that fixture normalization required no product change.
+- Documentation and records: all three guides have the exact prescribed
+  Declared blocked work section and JSON fields in struct order, checked by
+  a focused Python comparison. The canonical reference and embedded reference
+  match byte for byte. The version recorder raised both Roundfix SKILL.md
+  copies from `0.1.218` to `0.1.219` and recorded the new digest. The final
+  Behavior Surface Record regeneration changed only the follow-up guide's
+  fingerprint. No mirror, version field or generated record was hand-edited.
+
+Focused checks and regeneration (all exit 0 unless noted):
+
+- Initial red: `go test ./internal/cli -run '^TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender$' -count=1 -timeout=5m`
+  exited 1 because the selection function and field did not exist yet.
+- `go test ./internal/cli -run '^TestFollowUp(DeclaredPrecedence|SendsALater|LaterDeclared)' -count=1 -timeout=5m`
+- `go test ./internal/cli -run '^TestFollowUp(DeclaredBlockedWorkTranscripts|OnlyDeclaredItemsAskNoJudge|OrdersByTypeWithoutTheJudge|ListHelpMatchesTranscript|SaysNothingToDo)$' -count=1 -timeout=5m`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `make baseline-digests`: no derived changes.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  ran after the last guide edit as the final implementation step.
+- `git diff --check` and the bounded changed-path inspection: clean; only this
+  Task's declared paths changed, including the Daemon's pre-existing status
+  update in this Task file.
+
+The executor's symlinked writable-root rejection required running commands
+with escalation at the physical checkout. Judge requests used the existing
+per-test fake transport; no live API request or external documentation lookup
+was made under the Spec's network restriction. No Task status, Task Graph,
+other Task, commit, push or pull request was changed by this Agent. Declared
+Verification and settlement remain with the Daemon.

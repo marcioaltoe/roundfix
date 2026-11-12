@@ -61,7 +61,8 @@ The judge carries these JSON fields: `state`, `reason`, `model`, `calls`,
 `cost_usd`.
 Each item carries these JSON fields: `rank`, `priority`, `priority_name`,
 `kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `blocked_work`,
-`basis`, `answers`, `reason`, `waiting_on`, `since`, `waiting_error`.
+`precedence_held_by`, `basis`, `answers`, `reason`, `waiting_on`, `since`,
+`waiting_error`.
 
 ## Declared blocked work
 
@@ -76,18 +77,35 @@ without `from` with
 `message "<id>": blocked_work needs from, the project whose work is blocked`;
 both exit `2`.
 
-An entry with `blocked_work` ranks in `unblocking` without the judge and is
-never sent to it: priority `1`, `basis` `declared`, `blocks` its `from`,
-`blocked_work` its value, and null `answers` and `reason`. Declared entries come
-before every other item, oldest `created_at` first, then reference in byte
-order. Its text line appends `: <blocked_work>` after ` — blocks <from>`.
-When no item goes to the judge and an item declares blocked work, the judge is
-`not_asked` with reason `only declared or waiting items`.
+The declaration is the sender's own claim, so it takes precedence for one
+entry per sender. Of the entries with `blocked_work` whose trimmed `from` is
+the same, byte for byte, the one with the oldest `created_at`, then the
+lowest reference in byte order, holds the declared precedence. It ranks in
+`unblocking` without the judge and is never sent to it: priority `1`, `basis`
+`declared`, `blocks` its `from`, `blocked_work` its value, and null `answers`
+and `reason`. Entries that hold the declared precedence come before every
+other item, oldest `created_at` first, then reference in byte order. Its text
+line appends `: <blocked_work>` after ` — blocks <from>`. When no item goes to
+the judge and an item declares blocked work, the judge is `not_asked` with
+reason `only declared or waiting items`.
 
-An item that declares no blocked work omits `blocked_work`, so a file without
-the field gives the same report as before. An older `roundfix` that does not
-know the field ignores it, as it ignores any key it does not read, and orders
-that entry by the judge or by its type.
+Every other entry with `blocked_work` from that sender is ordered as if it
+declared nothing: it goes to the judge, and the answers or, without an answer,
+its type place it, with `basis` `judge` or `type`. It keeps `blocked_work`
+and adds `precedence_held_by`, the reference of the sender's entry that holds
+the declared precedence; its text line appends
+` — declares blocked work: <blocked_work> — precedence held by <reference>`.
+The command keeps nothing between runs and chooses again from each file it
+reads, so once the holding message is consumed and left out of the file, the
+sender's next oldest declared entry holds the precedence. The order is
+advice: the declared precedence never replaces the maintainer's judgment of
+what to handle first.
+
+An item that declares no blocked work omits `blocked_work` and
+`precedence_held_by`, so a file without the field gives the same report as
+before. An older `roundfix` that does not know the field ignores it, as it
+ignores any key it does not read, and orders that entry by the judge or by its
+type.
 
 ## Waiting Items
 
@@ -140,8 +158,8 @@ is `judge` or `type`.
 The status view reads no Backlog Entry or Finding and prints no waiting count.
 
 The four ranked classes are `unblocking`, `health`, `feature` and `other`. Without
-an answer, an item's declared type orders it, and only an entry that declares
-blocked work is unblocking:
+an answer, an item's declared type orders it, and only an entry that holds its
+sender's declared precedence is unblocking:
 `finding`, `fix` and `perf`, and any item whose kind is `finding`, are
 `health`; `feat` and `feature` are `feature`; `information`, `other` and
 `refactor` are `other`. An omitted type (`message`) and any unlisted type are
