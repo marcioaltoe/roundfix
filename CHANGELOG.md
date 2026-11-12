@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.141.1] - 2026-11-12
+
+### A conflicting merge of the default branch is a review delta
+
+- **Merging the default branch with a conflict no longer restarts the pre-PR review from round 1.** Before, a conflicting merge opened a new Reviewer Lineage and the candidate was reviewed in full again. Now the round-2 or Correction Review delta starts from the reviewed head carried onto the new merge base with Git's conflict markers (the Conflicted Carry), so the diff shows how the candidate resolved each conflict and nothing from the default branch. The prompt names the conflicted paths; a path with a control character or invalid UTF-8 is quoted. Review segments measured across a conflicting merge leave out the default branch's own work the same way.
+- The reviewer is also told to look for a file, ADR or other record the change names before reporting it missing, since the repository holds files the diff leaves out. `deliver status` no longer lists a conflicting merge among the reasons a lineage restarts. ADR-0391 amends ADR-0366 and ADR-0197.
+
 ## [0.141.0] - 2026-11-12
 
 ### One blocking message per sender goes first, and every direct question is answered
