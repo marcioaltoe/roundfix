@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"roundfix/internal/config"
 )
 
 const (
@@ -938,7 +940,8 @@ func parseManagedSetupManifest(content []byte) (SetupManifest, bool) {
 		!isRawSHA256(strings.TrimPrefix(manifest.CatalogDigest, "sha256:")) ||
 		manifest.Modules == nil || manifest.Decisions == nil ||
 		manifest.ManagedArtifacts == nil || manifest.LocalSkills == nil ||
-		manifest.Verification == nil {
+		manifest.Verification == nil ||
+		(manifest.RoundfixVersion != "" && !config.IsReleaseVersion(manifest.RoundfixVersion)) {
 		return SetupManifest{}, false
 	}
 	if manifestArtifactsByPath(manifest.ManagedArtifacts) == nil {

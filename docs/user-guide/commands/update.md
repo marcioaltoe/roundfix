@@ -72,6 +72,8 @@ User skills: copies older than this binary: <skill> <found> (binary <version>) a
 
 It does not change `next`; the `--update` Skill Mode asks before running a refresh.
 
+When a newer Roundfix wrote this repository's Baseline, the check prints `roundfix: warning: <refusal>; Project Config not read` on stderr, reads no Project Config, and its Baseline line is `Baseline: failed:` followed by the refusal.
+
 Only when a release is newer or the Baseline has a plan, the last line names
 the configured mode:
 

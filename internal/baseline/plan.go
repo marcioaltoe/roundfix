@@ -16,6 +16,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"roundfix/internal/app"
+	"roundfix/internal/config"
 )
 
 const (
@@ -40,6 +43,7 @@ const (
 type PlanRequest struct {
 	CarryRecordedDecisions bool
 	Repository             string
+	WriterVersion          string
 	ProfileID              string
 	ProfileDraft           *ProfileDraftInput
 	Decisions              []DecisionValue
@@ -193,6 +197,7 @@ type SetupManifest struct {
 	ManagedArtifacts []ManifestArtifact          `json:"managedArtifacts"`
 	LocalSkills      []string                    `json:"localSkills"`
 	Verification     []VerificationProjection    `json:"verification"`
+	RoundfixVersion  string                      `json:"roundfixVersion,omitempty"`
 }
 
 // PlanDocument is the complete portable approval artifact.
@@ -467,6 +472,9 @@ func buildPlanWithCatalog(
 		return PlanOutcome{}, err
 	}
 	manifest := buildSetupManifest(catalog, profile, decisions, activeModules, artifacts, alignment.Verification)
+	if recorded, err := config.RecordedRoundfixVersion(initial.Root); err == nil {
+		manifest.RoundfixVersion = recorded
+	}
 	manifestBytes, err := marshalSetupManifestBytes(manifest)
 	if err != nil {
 		return PlanOutcome{}, fmt.Errorf("serialize Setup Manifest: %w", err)
@@ -637,6 +645,27 @@ func buildPlanWithCatalog(
 	doc.FileChanges, err = deriveFileChanges(doc.ManagedEntries, doc.Preimages, doc.Postimages)
 	if err != nil {
 		return PlanOutcome{}, err
+	}
+	writerVersion := app.NormalizeVersion(request.WriterVersion)
+	if len(doc.FileChanges) != 0 && config.IsReleaseVersion(writerVersion) &&
+		(manifest.RoundfixVersion == "" || app.CompareVersions(writerVersion, manifest.RoundfixVersion) > 0) {
+		manifest.RoundfixVersion = writerVersion
+		manifestBytes, err = marshalSetupManifestBytes(manifest)
+		if err != nil {
+			return PlanOutcome{}, fmt.Errorf("serialize Setup Manifest: %w", err)
+		}
+		doc.SetupManifest = manifest
+		doc.Postimages, doc.ManagedEntries, err = assemblePostimages(
+			initial.Root, snapshot, artifacts, append(manifestBytes, '\n'),
+			preservation, repositoryPlan, repositoryRules, plannedDraft,
+		)
+		if err != nil {
+			return PlanOutcome{}, err
+		}
+		doc.FileChanges, err = deriveFileChanges(doc.ManagedEntries, doc.Preimages, doc.Postimages)
+		if err != nil {
+			return PlanOutcome{}, err
+		}
 	}
 	doc.PlanDigest, err = computePlanDigest(doc)
 	if err != nil {
@@ -3157,6 +3186,9 @@ func validatePlanRepositoryIdentity(identity RepositoryIdentity) error {
 
 func validateSetupManifest(document PlanDocument, catalog *Catalog) error {
 	manifest := document.SetupManifest
+	if manifest.RoundfixVersion != "" && !config.IsReleaseVersion(manifest.RoundfixVersion) {
+		return errors.New("Setup Manifest roundfixVersion must be a release version such as 0.140.0")
+	}
 	if manifest.SchemaVersion != ManifestSchema || manifest.Version != ManifestVersion ||
 		manifest.Generator.Skill != "setup-context-driven" ||
 		manifest.Generator.Version != ManifestVersion ||

@@ -283,6 +283,12 @@ git: ok (<version> >= 2.23.0)
 remote: warn (origin: github.com/<owner/repo>; DR-REMOTE-UNREACHABLE: git ls-remote origin failed: read did not answer; next: re-run roundfix doctor when github.com is reachable)
 ```
 
+When a newer Roundfix wrote this repository's Baseline, Doctor prints this line first, runs every other check without Project Config, and exits `1`:
+
+```text
+baseline-version: failed (Setup Manifest "<path>" records Roundfix <recorded>, newer than this binary's <running>; a newer roundfix wrote this repository's Baseline, so use that binary or run 'roundfix upgrade'; Project Config not read; next: roundfix upgrade)
+```
+
 ## Worktree Build Caches
 
 When `worktree.caches` declares rebuildable directories, `storage:` adds

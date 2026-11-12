@@ -21,6 +21,7 @@ const (
 	CheckStatusFound       CheckStatus = "found"
 	CheckStatusPartial     CheckStatus = "partial"
 
+	HealthCheckBaselineVersion      = "baseline-version"
 	HealthCheckNode                 = "node"
 	HealthCheckACPX                 = "acpx"
 	HealthCheckAdapter              = "adapter"

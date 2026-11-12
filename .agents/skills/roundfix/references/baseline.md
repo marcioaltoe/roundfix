@@ -368,6 +368,10 @@ maintainer intent. For Decision Documents, preservation, cross-clone safety,
 recovery, migration, security limits, and completion evidence, follow
 `docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
 
+### Recorded Roundfix Version
+
+The Setup Manifest records as `roundfixVersion` the release of the Roundfix that last applied a Baseline change to the repository. A Baseline Plan records the running release only when it changes a file and that release is higher than the recorded release. An older Roundfix binary refuses every command that loads the repository's configuration, `roundfix init --scope project`, and the six Baseline commands (`roundfix baseline`, `baseline update`, `baseline plan`, `baseline apply`, `baseline skills restore` and `baseline skills reconcile`) with this refusal: `Setup Manifest "<path>" records Roundfix <recorded>, newer than this binary's <running>; a newer roundfix wrote this repository's Baseline, so use that binary or run 'roundfix upgrade'`. The remedy is `roundfix upgrade`; never edit the field.
+
 ## Vendored skills
 
 A vendored skill is installed from an upstream source and never edited in the repository, because the next sync replaces its folder; the restore and the managed refresh only install, compare and restore it. When one diverges from what the repository needs, correct it in this order:

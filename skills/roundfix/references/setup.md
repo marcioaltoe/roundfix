@@ -296,6 +296,8 @@ storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build 
 
 `roundfix update check [--refresh] [--format <text|json>]` is the read-only Update Check a session runs before its first task, as the Baseline's agent instructions say. It compares the installed Roundfix with the latest published release, lists the `### ` titles of each newer release's notes, newest first, and summarizes this repository's `roundfix baseline update` preview with the installed binary. The release listing is one `gh api` call cached for 24 hours in `~/.roundfix/update-check.json` and shared by every repository on the machine; `--refresh` reads it now, and a failed lookup is one line ending `the session continues.` and is cached for the same 24 hours. Every report exits `0`; a usage error or an invalid configuration exits `2`. `update.mode` (Project Config over User Config) selects `notify`, the default, or `auto`; the `Next:` line names the `--update` Skill Mode when a release is newer or the Baseline has a plan. JSON uses `roundfix/update-check/v1` with `state` (`update_available`, `current`, `unknown` or `development`), `next` (`apply` or `none`), `releases`, `lookup` and `baseline`.
 
+When a newer Roundfix wrote the repository's Baseline, the check warns on stderr and reports `Baseline: failed:` with the refusal; run `roundfix upgrade` before anything else in that repository. Doctor reports the refusal on its `baseline-version: failed` line. The Run readers and `roundfix stop` warn and continue without Project Config.
+
 ## Pending History after upgrade
 
 The upgrade notice names every pending history unit, including a Reduced

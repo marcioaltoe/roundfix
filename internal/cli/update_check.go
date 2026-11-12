@@ -100,8 +100,12 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printPreflightFailure("update check", err, stderr)
 		return exitPreflight
 	}
-	loaded, err := loadCommandConfig(environment, io.Discard)
+	loaded, err := loadRecoveryCommandConfig(environment, io.Discard)
 	if err != nil {
+		printPreflightFailure("update check", err, stderr)
+		return exitPreflight
+	}
+	if err := warnRepositoryVersion(loaded, stderr); err != nil {
 		printPreflightFailure("update check", err, stderr)
 		return exitPreflight
 	}

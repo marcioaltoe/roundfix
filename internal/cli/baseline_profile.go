@@ -285,6 +285,10 @@ func runBaselinePlanCommand(
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
+	if err := refuseNewerBaselineRepository(req.repo); err != nil {
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
 	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
@@ -320,6 +324,7 @@ func runBaselinePlanCommand(
 		profileDraft = &input
 	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
+		WriterVersion:          app.Version,
 		Repository:             req.repo,
 		ProfileID:              req.profile,
 		ProfileDraft:           profileDraft,

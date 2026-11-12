@@ -161,6 +161,13 @@ func runBaselineUpdateCommandWithSkillsStage(
 		)
 	}
 
+	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+		return writeBaselineUpdateFailure(
+			newBaselineUpdateResult(), err, "version",
+			"run roundfix upgrade, then rerun roundfix baseline update",
+			exitPreflight, jsonOutput, stdout, stderr,
+		)
+	}
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
 		return writeBaselineUpdateFailure(
@@ -247,6 +254,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 		)
 	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
+		WriterVersion:         app.Version,
 		Repository:            request.repo,
 		ProfileID:             input.ProfileID,
 		Decisions:             input.Decisions,

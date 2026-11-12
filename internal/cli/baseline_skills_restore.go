@@ -76,6 +76,21 @@ func runBaselineSkillsRestoreCommandWith(
 			stderr,
 		)
 	}
+	if err := refuseNewerBaselineRepository(request.repo); err != nil {
+		payload := baseline.SkillsRestorePayload{
+			SchemaVersion:  baseline.SkillsRestoreSchemaVersion,
+			Profile:        request.profile,
+			Acquisitions:   []baseline.RestoreAcquisition{},
+			Skills:         []baseline.RestoreSkill{},
+			PlannedChanges: []baseline.RestorePlannedChange{},
+			Finding: &baseline.RestoreFinding{
+				Code:    "restore.roundfix-version-newer",
+				Message: err.Error(),
+				Action:  "Run roundfix upgrade, then rerun roundfix baseline skills restore.",
+			},
+		}
+		return writeBaselineSkillsRestoreFailure(payload, err, exitPreflight, jsonOutput, stdout, stderr)
+	}
 	payload, restoreErr := execute(ctx, baseline.SkillsRestoreRequest{
 		Repository:   request.repo,
 		ProfileID:    request.profile,
