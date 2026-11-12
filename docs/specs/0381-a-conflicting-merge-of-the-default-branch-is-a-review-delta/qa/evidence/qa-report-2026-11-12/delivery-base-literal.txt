@@ -1,0 +1,14 @@
+Delivery Base: f4075a7dec86489234a5aaad074bd58193907a84
+Initialized independent Git archive; copied full audited test file.
+$ go test -count=1 -timeout 20m -v -run ^(TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim)$ ./internal/cli
+FAIL	roundfix/internal/cli [build failed]
+FAIL
+# roundfix/internal/cli [roundfix/internal/cli.test]
+internal/cli/review_conflicted_carry_test.go:224:24: undefined: reviewConflictedCarry
+internal/cli/review_conflicted_carry_test.go:226:96: undefined: reviewMeasurement
+internal/cli/review_conflicted_carry_test.go:253:22: assignment mismatch: 2 variables but reviewMeasuredFrom returns 3 values
+internal/cli/review_conflicted_carry_test.go:262:13: undefined: reviewConflictedCarryNote
+internal/cli/review_conflicted_carry_test.go:266:13: undefined: reviewConflictedCarryNote
+internal/cli/review_conflicted_carry_test.go:270:13: undefined: reviewConflictedCarryNote
+
+exit: 1

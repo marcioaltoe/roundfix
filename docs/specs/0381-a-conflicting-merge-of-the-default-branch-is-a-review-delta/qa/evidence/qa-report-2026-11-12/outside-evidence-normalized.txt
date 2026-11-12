@@ -1,0 +1,5 @@
+Normalized whitespace of PRD Acceptance evidence; raw file unchanged.
+The earlier comparator split one cited sentence at a Markdown line break; its FAIL was a comparator error, not missing evidence.
+PASS retained Git manual quotation: If there were conflicts, then files within this tree may have embedded conflict markers
+PASS retained Git manual quotation: When the merge has conflicts, the exit status is 1
+All other source/date and behavioral comparisons in outside-evidence.txt passed. No network lookup or another repository used.

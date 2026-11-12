@@ -1,0 +1,16 @@
+Independent initialized git archive of d3738435665129813b1665308308066117beba68; exactly one mutation.
+$ go test -count=1 -timeout 20m -v -run ^TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange$/conflicting_carry$ ./internal/cli
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== PAUSE TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== CONT  TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange
+=== RUN   TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry
+    review_effective_base_test.go:50: measurement={From:7a52116d39bb65689107f337eb29e8f0836788ff Carried: Conflicted:false Conflicts:[]}, want origin= conflicted=true
+--- FAIL: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange (0.20s)
+    --- FAIL: TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry (0.02s)
+FAIL
+suiteguard: guard cost: measured 3089 paths; fingerprint took 149.293083ms before and 143.070708ms after
+FAIL	roundfix/internal/cli	0.907s
+FAIL
+
+exit: 1
+expected assertion failure verified: True

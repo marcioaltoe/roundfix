@@ -1,0 +1,11 @@
+--- a/internal/cli/review_effective_base.go
++++ b/internal/cli/review_effective_base.go
+@@ -63,7 +63,7 @@
+ // The runner folds stdout into its error on conflict; read Git's NUL-delimited
+ // tree and paths directly, with a fixed marker style independent of user config.
+ func reviewConflictedCarry(ctx context.Context, root, from, to, toBase string) (reviewMeasurement, error) {
+-	cmd := exec.CommandContext(ctx, "git", "-C", root, "-c", "core.fsmonitor=false", "-c", "merge.conflictStyle=merge", "merge-tree", "--write-tree", "--name-only", "--no-messages", "-z", from, toBase)
++	cmd := exec.CommandContext(ctx, "git", "-C", root, "-c", "core.fsmonitor=false", "merge-tree", "--write-tree", "--name-only", "--no-messages", "-z", from, toBase)
+ 	output, err := cmd.Output()
+ 	var exitErr *exec.ExitError
+ 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {

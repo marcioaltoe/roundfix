@@ -1,0 +1,11 @@
+$ ./bin/roundfix spec check 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta --strict
+stdout:
+Spec 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta/_techspec.md Vocabulary Contract
+stderr:
+exit: 0

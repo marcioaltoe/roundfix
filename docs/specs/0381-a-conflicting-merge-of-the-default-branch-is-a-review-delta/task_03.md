@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

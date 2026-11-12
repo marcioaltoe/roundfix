@@ -1,0 +1,77 @@
+from pathlib import Path
+import subprocess, os, shutil, difflib
+root=Path.cwd(); spec=root/'docs/specs/0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta'; ev=spec/'qa/evidence/qa-report-2026-11-12'; report=spec/'qa/qa-report-2026-11-12.md'
+head='d3738435665129813b1665308308066117beba68'; base='f4075a7dec86489234a5aaad074bd58193907a84'
+e=os.environ.copy(); e.update(GOPROXY='off',GOSUMDB='off')
+def fresh(rev):
+ d=Path(subprocess.check_output(['mktemp','-d'],text=True).strip())
+ subprocess.run(['tar','-xf','-','-C',str(d)],input=subprocess.check_output(['git','archive',rev]),check=True)
+ for a in [['init','-q'],['-c','core.hooksPath=/dev/null','add','-A'],['-c','user.name=QA','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false','-c','core.hooksPath=/dev/null','commit','-qm','test: initialize independent QA archive']]: subprocess.run(['git','-C',str(d),*a],check=True,capture_output=True)
+ return d
+def record(row,valid,name,note):
+ text=report.read_text()
+ import re
+ text=re.sub(r'\| '+row+r' \| (pending|fail) \|','| '+row+' | '+('pass' if valid else 'fail')+' |',text)
+ text+='\n'+row+': '+note+' [Evidence](evidence/qa-report-2026-11-12/'+name+'.txt).\n'
+ report.write_text(text)
+# Diagnostic-only baseline follow-up: preserve every required assertion.
+d=fresh(base)
+try:
+ src=(root/'internal/cli/review_conflicted_carry_test.go').read_text().split('func TestConflictedReviewCarryRequiresAConflictAndKeepsGitErrors',1)[0].replace('\t"context"\n','').replace('\t"reflect"\n','')
+ needle='\t\t\tcode, record, stderr := runDefaultBranchReview(t)\n'
+ assert src.count(needle)==1
+ src=src.replace(needle,needle+'\t\t\tt.Logf("QA baseline observed lineage=%+v", record.Lineage)\n')
+ (d/'internal/cli/review_conflicted_carry_test.go').write_text(src)
+ (ev/'delivery-base-diagnostic.go.txt').write_text(src)
+ cmd=['go','test','-count=1','-timeout','20m','-v','-run','^(TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim)$','./internal/cli']
+ r=subprocess.run(['rtk','proxy',*cmd],cwd=d,env=e,text=True,capture_output=True); out=r.stdout+r.stderr
+ names=['TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two','TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review','TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch','TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim']
+ valid=r.returncode==1 and all('--- FAIL: '+n+' ' in out for n in names) and out.count('QA baseline observed lineage=&{Round:1')==2 and 'MeasuredFrom: DiffBytes:' in out and '[build failed]' not in out
+ (ev/'delivery-base-diagnostic.txt').write_text('Delivery Base '+base+'; same three tests with only t.Logf of dereferenced lineage added. All assertions unchanged.\n$ '+' '.join(cmd)+'\n'+out+'\nexit: '+str(r.returncode)+'\nexpected behavioral failures verified: '+str(valid)+'\n')
+ record('Q12',valid,'delivery-base-diagnostic','A diagnostic-only follow-up exposes both Round:1 lineage values explicitly; the first harness classifier expected that value from a record that printed only a pointer. No target assertion changed. All four intended baseline failures are verified.' if valid else 'Baseline diagnostics did not establish the intended failures.')
+ print('Q12 baseline behavioral diagnostic:',valid,flush=True)
+finally: shutil.rmtree(d)
+
+def replace_once(src,a,b):
+ assert src.count(a)==1, (a,src.count(a))
+ return src.replace(a,b,1)
+def mutate(kind,src):
+ if kind=='restart':
+  a='\t\t_, err = reviewMeasuredFrom(ctx, git, candidate.Repository, candidate.BaseCommit, prior.HeadCommit, candidate.HeadCommit)\n\t\tif err != nil {\n\t\t\treturn plan, err\n\t\t}\n'
+  b='\t\tmeasurement, err := reviewMeasuredFrom(ctx, git, candidate.Repository, candidate.BaseCommit, prior.HeadCommit, candidate.HeadCommit)\n\t\tif err != nil {\n\t\t\treturn plan, err\n\t\t}\n\t\tif measurement.Conflicted {\n\t\t\tplan.Restart = fmt.Sprintf("the merge base moved from %s to %s and the reviewed head %s conflicts with it", prior.BaseCommit, candidate.BaseCommit, prior.HeadCommit)\n\t\t\treturn plan, nil\n\t\t}\n'
+  return replace_once(src,a,b)
+ if kind=='fallback': return replace_once(src,'return reviewConflictedCarry(ctx, root, from, to, toBase)','return reviewMeasurement{From: from}, nil')
+ if kind=='style': return replace_once(src,', "-c", "merge.conflictStyle=merge"','')
+ if kind=='round-note':
+  before,after=src.split('func buildRoundTwoPrompt',1)
+  return before+'func buildRoundTwoPrompt'+replace_once(after,'\t\tprompt.WriteString(reviewConflictedCarryNote(plan.carry))\n','')
+ if kind=='segment-note': return replace_once(src,'reviewConflictedCarryNote(segmentMeasurement)+buildReviewPrompt','buildReviewPrompt')
+ if kind=='absence':
+  lines=src.splitlines(True); removed=[l for l in lines if l.startswith('\tprompt.WriteString("A diff hunk shows')]; assert len(removed)==1
+  return ''.join(l for l in lines if l not in removed)
+ raise ValueError(kind)
+cases=[
+ ('Q03','restart','internal/cli/review_lineage.go','^(TestReviewLineageRestartNamesItsReason|TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage)/(conflict|round_two)$',['TestReviewLineageRestartNamesItsReason/conflict','TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two']),
+ ('Q04','fallback','internal/cli/review_effective_base.go','^TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange$/conflicting_carry$',['TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry']),
+ ('Q05','style','internal/cli/review_effective_base.go','^TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange$/conflicting_carry$',['TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange/conflicting_carry']),
+ ('Q06','round-note','internal/cli/review_lineage.go','^TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage$/round_two$',['TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two']),
+ ('Q07','segment-note','internal/cli/review_segments.go','^TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch$',['TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch']),
+ ('Q08','absence','internal/cli/review.go','^TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim$',['TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim'])]
+failed=[]
+for row,kind,path,pattern,names in cases:
+ d=fresh(head); name='sabotage-'+kind
+ try:
+  old=(d/path).read_text(); new=mutate(kind,old); (d/path).write_text(new)
+  patch=''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile='a/'+path,tofile='b/'+path))
+  (ev/(name+'.patch.txt')).write_text(patch)
+  cmd=['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./internal/cli']
+  r=subprocess.run(['rtk','proxy',*cmd],cwd=d,env=e,text=True,capture_output=True); out=r.stdout+r.stderr
+  valid=r.returncode==1 and all('--- FAIL: '+n+' ' in out for n in names) and '[build failed]' not in out and 'panic:' not in out
+  (ev/(name+'.txt')).write_text('Independent initialized git archive of '+head+'; exactly one mutation.\n$ '+' '.join(cmd)+'\n'+out+'\nexit: '+str(r.returncode)+'\nexpected assertion failure verified: '+str(valid)+'\n')
+  record(row,valid,name,'The isolated mutation was rejected by every named test at a behavioral assertion (exit 1), with no compile failure or panic.' if valid else 'The sabotage was not rejected as required; inspect the saved transcript.')
+  print(row,kind,'exit',r.returncode,'behavioral rejection:',valid,flush=True)
+  print('\n'.join(l for l in out.splitlines() if '--- FAIL:' in l or 'measurement=' in l or 'diff3 markers' in l or 'prompt lacks' in l)[:1200],flush=True)
+  if not valid: failed.append(row)
+ finally: shutil.rmtree(d)
+print('All scratch directories removed; failed probes:',failed,flush=True)
+raise SystemExit(bool(failed))

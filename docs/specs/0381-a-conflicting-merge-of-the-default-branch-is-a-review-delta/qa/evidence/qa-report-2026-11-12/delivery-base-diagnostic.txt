@@ -1,0 +1,39 @@
+Delivery Base f4075a7dec86489234a5aaad074bd58193907a84; same three tests with only t.Logf of dereferenced lineage added. All assertions unchanged.
+$ go test -count=1 -timeout 20m -v -run ^(TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim)$ ./internal/cli
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== RUN   TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch
+=== PAUSE TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch
+=== RUN   TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+=== PAUSE TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== CONT  TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== CONT  TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch
+=== NAME  TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+    review_conflicted_carry_test.go:131: prompt lacks the verbatim absence-claim instruction directly after its read-only line
+--- FAIL: TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim (0.00s)
+=== NAME  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+    review_conflicted_carry_test.go:55: QA baseline observed lineage=&{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session:roundfix-pre-pr-review-d3f002c02096-g3gogn3wwhg7lj4hbv6a4b62o7 Selection:0x772bb7f1fda8 SessionOpen:false ACPSessionIDs:[] Continued:false}
+    review_conflicted_carry_test.go:57: after merge exit=0 record={DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:634 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineager4002614739/002 BaseCommit:17cce83263a11265762ff0c0b0115a147289e4af BaseTipCommit:17cce83263a11265762ff0c0b0115a147289e4af HeadCommit:d3f002c02096f1dbfe811da90c3adf7b88878d3f Provider:codex Source:project Outcome:reviewed Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineager4002614739/003/artifacts/pre-pr-review/f0e600f774c5a096/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:0x772bb81eacf0 Lineage:0x772bb82ca0b0} stderr=""
+=== NAME  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+    review_conflicted_carry_test.go:55: QA baseline observed lineage=&{Round:1 Correction:false PreviousHead: DeltaBase: PreviousFindings:[] PreviousDispositions:[] ReviewedHead: Session:roundfix-pre-pr-review-3aa1a8bc5d61-72ivymbqkqlha7cingypg4c7jd Selection:0x772bb85ca1b8 SessionOpen:false ACPSessionIDs:[] Continued:false}
+    review_conflicted_carry_test.go:57: after merge exit=0 record={DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:780 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineagec3582966889/002 BaseCommit:17cce83263a11265762ff0c0b0115a147289e4af BaseTipCommit:17cce83263a11265762ff0c0b0115a147289e4af HeadCommit:3aa1a8bc5d61e7bef9f42e1f869c164f2cbdd1da Provider:codex Source:project Outcome:reviewed Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineagec3582966889/003/artifacts/pre-pr-review/a3fadfc8e9f991e8/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:0x772bb81eb080 Lineage:0x772bb7ef6000} stderr=""
+--- FAIL: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage (0.00s)
+    --- FAIL: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two (0.56s)
+    --- FAIL: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review (0.79s)
+=== NAME  TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch
+    review_conflicted_carry_test.go:102: segment={Base:60ca323a8f08df1e15e9204fea9a4d03c339ebe3 Head:40e511adb88bb4b213db092050b16e98c8f0b8d3 MeasuredFrom: DiffBytes:616833 EstimatedPromptTokens:0}, want base=60ca323a8f08df1e15e9204fea9a4d03c339ebe3 head=40e511adb88bb4b213db092050b16e98c8f0b8d3 tree=8b8c04861f32fe8ef046fa57426bb35cf7770cfd
+--- FAIL: TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch (1.09s)
+FAIL
+suiteguard: guard cost: measured 3089 paths; fingerprint took 164.894291ms before and 164.390375ms after
+FAIL	roundfix/internal/cli	1.892s
+FAIL
+
+exit: 1
+expected behavioral failures verified: True
