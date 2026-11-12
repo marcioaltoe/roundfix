@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -134,3 +134,73 @@ define and task_01's guides already describe.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 2; API Contract 3; Testing Approach; Build Order 2
 - ADR-0391; ADR-0366; ADR-0197; ADR-0282; ADR-0286
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, systematic-debugging, no-workarounds, testing-boss, tech-writer, evidence-gate.
+
+Implemented the assigned measurement and prompt slice. `reviewMeasuredFrom`
+returns a `reviewMeasurement`; a clean carry names its carried commit, and a
+conflict reads Git's NUL-delimited tree and paths directly with
+`merge.conflictStyle=merge` and `core.fsmonitor=false`. Tree IDs are checked
+for full lowercase SHA-1 or SHA-256 form, and conflicted paths are sorted and
+made unique. Unexpected exits or malformed trees return contextual errors.
+
+The conflicting-carry restart is removed while lineage still measures the
+carry and propagates Git errors. Round 2 and Correction Review retain the
+measurement in the unexported plan field, persist only the existing
+`deltaBase`, and place the conflict note directly after the merge line.
+Segments retain the measurement in memory and include its note in both fit
+checks and sent prompts. The common prompt includes the verbatim
+absence-claim instruction directly after its read-only line. No record field
+or command interface was added.
+
+Acceptance evidence from focused implementation checks:
+
+- Lineage and candidate-only delta: the new real-Git `round two` and
+  `correction review` subtests pass. Each independently computes Git's
+  expected conflict tree and checks the recorded previous head and delta
+  base, both exact conflict-note lines, removed conflict markers, explicit
+  resolution, the proper delta marker, no full-candidate marker, no
+  already-reviewed controller change and none of thirty landed files. The
+  Correction Review also carries its fixed finding and fixing disposition.
+- Segmentation: the new public-command regression produces two segments;
+  the second starts from the independently computed Conflicted Carry,
+  carries the exact header and note, includes the later candidate change
+  and resolution, and excludes the first segment's payload and every landed
+  file. Its additional planner probe confirms the fit check includes the
+  same conflict note.
+- Prompt guidance and failure behavior: the exact absence-claim instruction
+  passes its placement check, including in round-2, Correction Review and
+  segment prompts. Additional real-Git checks reject an unexpectedly clean
+  carry, a missing repository, a missing object and cancellation; preserve
+  error context and cancellation; and verify unquoted paths containing
+  spaces in byte order and the note's clean/pathless cases. The two declared
+  expectation changes pass, including forced merge markers under a
+  repository configured for `diff3`. The existing injected Git-failure
+  cases, including `git failures stay errors/carry`, remain unchanged and
+  pass. Existing clean carries, Codex/Claude segments, blocked-round retries
+  and disposition prompts also pass.
+
+Commands and observed outcomes:
+
+1. Before implementation,
+   `GOPROXY=off GOSUMDB=off go test ./internal/cli -count=1 -timeout=3m -run '^(TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim)$'`
+   exited 1: both lineage subtests reopened round 1, the segment did not name
+   the conflict tree, and the common prompt lacked the new instruction.
+2. After implementation,
+   `GOPROXY=off GOSUMDB=off go test ./internal/cli -count=1 -timeout=3m -v -run '^(TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestAReviewSegmentAcrossAConflictingMergeLeavesOutTheDefaultBranch|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim|TestConflictedReviewCarry.*)$'`
+   exited 0; all five top-level tests and both lineage subtests passed.
+3. `GOPROXY=off GOSUMDB=off go test ./internal/cli -count=1 -timeout=5m -v -run '^(TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange|TestReviewLineageRestartNamesItsReason|TestReviewSegmentsMeasureEachCommitFromItsEffectiveBase|TestReviewLineageContinuesAcrossAConflictFreeMergeOfTheDefaultBranch|TestCorrectionReviewAfterAMergeOfTheDefaultBranchReadsOnlyTheFix|TestReviewBlockedRoundTwoRepeatsItsOriginalDelta|TestReviewLineageDecidesEachRound|TestReviewRoundTwoPromptCarriesTheDeltaAndRoundOneFindings)$'`
+   exited 0; all eight top-level tests passed, including the conflicting
+   carry, conflict lineage, injected carry failure and both provider cases.
+4. `git diff --check` (through `rtk proxy`) exited 0.
+
+These checks used disposable local repositories and fake reviewers, with
+module downloads disabled. Every new top-level test calls `t.Parallel()`
+first. The initial worktree change was the assigned Task file; its status is
+preserved. Only this Task's declared implementation/test files and this
+Result were edited. Declared Verification, the repository gates and Windows
+vet were not run; the Daemon owns those checks and Task settlement. No
+follow-up work was identified.

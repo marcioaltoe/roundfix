@@ -160,7 +160,6 @@ func TestReviewLineageRestartNamesItsReason(t *testing.T) {
 				candidate.BaseCommit = commitLineageFile(t, fixture, "review.txt", "before review\nmain rewrote the second line\n")
 				gittest.Run(t, fixture.repository, "checkout", "feature/review")
 				gittest.Run(t, fixture.repository, "merge", "--no-edit", "-X", "ours", "main")
-				want = fmt.Sprintf("the merge base moved from %s to %s and the reviewed head %s conflicts with it", prior.BaseCommit, candidate.BaseCommit, prior.HeadCommit)
 			} else if name == "merge of another branch" {
 				var oldestMerge, oldestParent string
 				for _, branch := range []string{"test/other", "test/another"} {
@@ -204,7 +203,7 @@ func TestReviewLineageRestartNamesItsReason(t *testing.T) {
 				t.Fatal(err)
 			}
 			round := 1
-			if name == "clean merge" {
+			if name == "clean merge" || name == "conflict" {
 				round = 2
 			}
 			if plan.Restart != want || plan.Lineage.Round != round || plan.Reuse || plan.Ceiling {

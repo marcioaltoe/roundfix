@@ -1,5 +1,5 @@
 // Suite: Effective Base measurement through Git and the public review command.
-// Invariant: segments hold only the candidate's own change; conflicting carries keep their start.
+// Invariant: segments hold only the candidate's own change; conflicting carries start from Git's conflict tree.
 // Boundary IN: disposable Git repositories and a fake reviewer.
 // Boundary OUT: measured objects, segment records and prompts for both providers.
 package cli
@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -30,26 +31,53 @@ func TestReviewMeasuredFromCarriesOnlyTheCandidatesOwnChange(t *testing.T) {
 
 	for _, tc := range []struct {
 		name, from, to, want string
-		carried              bool
+		conflicted           bool
 	}{
-		{"same Effective Base", merged, later, merged, true},
-		{"start on the base", base, fixture.headCommit, fixture.baseCommit, true},
-		{"merge of the default branch", fixture.headCommit, merged, strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", merged+"^{tree}")), true},
-		{"conflicting carry", conflicting, merged, conflicting, false},
+		{"same Effective Base", merged, later, merged, false},
+		{"start on the base", base, fixture.headCommit, fixture.baseCommit, false},
+		{"merge of the default branch", fixture.headCommit, merged, strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", merged+"^{tree}")), false},
+		{"conflicting carry", conflicting, merged, "", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			measured, carried, err := reviewMeasuredFrom(t.Context(), preflight.ExecGitRunner{}, fixture.repository, base, tc.from, tc.to)
+			if tc.conflicted {
+				gittest.Run(t, fixture.repository, "config", "merge.conflictStyle", "diff3")
+			}
+			measured, err := reviewMeasuredFrom(t.Context(), preflight.ExecGitRunner{}, fixture.repository, base, tc.from, tc.to)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if measured != tc.want || carried != tc.carried {
-				t.Fatalf("measured=%s carried=%t, want %s %t", measured, carried, tc.want, tc.carried)
+			if (!tc.conflicted && measured.From != tc.want) || measured.Conflicted != tc.conflicted {
+				t.Fatalf("measurement=%+v, want origin=%s conflicted=%t", measured, tc.want, tc.conflicted)
+			}
+			wantCarried := ""
+			if tc.conflicted || tc.name == "merge of the default branch" {
+				wantCarried = tc.from
+			}
+			if measured.Carried != wantCarried {
+				t.Fatalf("carried=%s, want %s", measured.Carried, wantCarried)
+			}
+			if tc.conflicted {
+				if !reflect.DeepEqual(measured.Conflicts, []string{"upstream.txt"}) {
+					t.Fatalf("conflicted paths=%q, want [upstream.txt]", measured.Conflicts)
+				}
+				if kind := strings.TrimSpace(gittest.Run(t, fixture.repository, "cat-file", "-t", measured.From)); kind != "tree" {
+					t.Fatalf("conflicted carry kind=%s, want tree", kind)
+				}
+				content := gittest.Run(t, fixture.repository, "show", measured.From+":upstream.txt")
+				for _, marker := range []string{"<<<<<<< " + conflicting, ">>>>>>> " + base} {
+					if !strings.Contains(content, marker) {
+						t.Errorf("conflicted file lacks marker %q: %s", marker, content)
+					}
+				}
+				if strings.Contains(content, "||||||| ") {
+					t.Fatalf("conflicted carry inherited diff3 markers: %s", content)
+				}
 			}
 			if tc.name == "merge of the default branch" {
-				if kind := strings.TrimSpace(gittest.Run(t, fixture.repository, "cat-file", "-t", measured)); kind != "tree" {
+				if kind := strings.TrimSpace(gittest.Run(t, fixture.repository, "cat-file", "-t", measured.From)); kind != "tree" {
 					t.Fatalf("carried object kind=%s, want tree", kind)
 				}
-				if diff := gittest.Run(t, fixture.repository, "diff", measured, merged); diff != "" {
+				if diff := gittest.Run(t, fixture.repository, "diff", measured.From, merged); diff != "" {
 					t.Fatalf("carried tree differs from merge: %s", diff)
 				}
 			}
