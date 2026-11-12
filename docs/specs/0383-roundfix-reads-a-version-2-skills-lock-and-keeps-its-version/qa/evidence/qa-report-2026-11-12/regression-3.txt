@@ -1,4 +1,0 @@
-$ go test -count=1 -timeout 30m -run Doctor|Skills|Lock|Retired|OwnedSkill|MissingRequired|ReleasePlan ./internal/cli
-ok  	roundfix/internal/cli	22.160s
-
-exit: 0

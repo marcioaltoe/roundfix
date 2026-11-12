@@ -1,4 +1,0 @@
-$ go test -count=1 -timeout 30m -run Lock|Restore|Retired|Reconcile|OwnedSkill ./internal/baseline
-ok  	roundfix/internal/baseline	9.476s
-
-exit: 0

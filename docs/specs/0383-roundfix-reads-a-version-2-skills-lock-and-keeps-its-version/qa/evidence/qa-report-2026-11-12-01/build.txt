@@ -1,5 +1,0 @@
-Command: make build (foreground)
-Result: exit 0
-Built bin/roundfix from audited Run Worktree. BuildCommit=255a668e-dirty.
-Build cache bound warning: cache above 10 GiB with no entry idle for two hours; build continued successfully.
-Daemon static gate: make verify-changed; pass; exit 0; diagnostics removed on success. Not rerun.

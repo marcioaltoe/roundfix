@@ -1,9 +1,0 @@
-task_03 Verification 1: pass (exit 0)
-task_03 Verification 2: pass (exit 0)
-Required source assertion passed: internal/skillhash/lock.go
-Required source assertion passed: internal/cli/doctor_skills_lock_test.go
-Required source assertion passed: internal/cli/doctor.go
-Required source assertion passed: internal/cli/baseline_update.go
-Non-test obsolete version-1-only wording: zero matches
-Both glossary declarations, definition wording and accepted ADR-0393 link agree.
-Non-QA Verification test coverage: task_01 named pass assertions in named-tests.txt; all package selections in regression-1/2/3.txt and windows-vet.txt. task_02 CLI pass assertions in named-tests.txt and CLI selection in regression-3.txt; Windows vet covered all four packages. task_03 commands executed verbatim above.

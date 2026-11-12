@@ -1,8 +1,0 @@
-Pull Request fact: none open (supplied by Daemon; no lookup or mutation).
-Approval: recorded delivery authority in this Spec's approved _authorization.md at delivery base 73421db24d576ee75f6f5dbbe31043b1d570f715, unchanged in Task ancestry and audited head. Maintainer cycle BD authorization grants delivery operations; this child Agent performs none.
-Checks/status: Daemon make verify-changed at audited head passed, exit 0, diagnostics removed on success. Fresh focused tests, build and Windows vet passed in this gate.
-Unresolved threads: none because no Pull Request exists; no assertion of review approval.
-Merge-Ready acceptance: none yet; no Review Source acceptance or current-candidate review artifact was supplied.
-Claimed candidate and review-artifact ancestry: 255a668e2bc0d2e817755fd0f1ad3cf5da85f2ac, this report's audited head. No later head or review artifact is claimed.
-Blocked cause: no open Pull Request. Unblocking: operator opens a Pull Request from the Spec target branch after the configured review; verify current-head acceptance, required checks and threads there. Run Worktree branch is never published.
-This row has no equivalent Merge-Ready acceptance and remains environment-blocked; by the gate policy this pre-PR row alone permits a qualifying partial.
