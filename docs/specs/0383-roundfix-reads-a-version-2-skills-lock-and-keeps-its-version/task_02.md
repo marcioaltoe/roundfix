@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -67,14 +67,14 @@ reported by vortex), as `_techspec.md` → API Contract 2 defines.
 
 ## Subtasks
 
-- [ ] Name `roundfix upgrade` in Doctor's `skills:` next action for an unsupported lock version.
-- [ ] Name the upgrade in both lock failures of `roundfix baseline update`.
-- [ ] Add the command-level tests for a version 2 and a version 3 lock.
+- [x] Name `roundfix upgrade` in Doctor's `skills:` next action for an unsupported lock version.
+- [x] Name the upgrade in both lock failures of `roundfix baseline update`.
+- [x] Add the command-level tests for a version 2 and a version 3 lock.
 
 ## Acceptance Criteria
 
-- [ ] On a version 2 lock Doctor reads the lock, the bundle install repairs a stale Roundfix entry with the version 2 hash and keeps version 2, and the update succeeds.
-- [ ] On a version 3 lock Doctor's only next action is `roundfix upgrade` and the update names the upgrade; no next action names a skills command for it.
+- [x] On a version 2 lock Doctor reads the lock, the bundle install repairs a stale Roundfix entry with the version 2 hash and keeps version 2, and the update succeeds.
+- [x] On a version 3 lock Doctor's only next action is `roundfix upgrade` and the update names the upgrade; no next action names a skills command for it.
 
 ## Context
 
@@ -104,3 +104,64 @@ reported by vortex), as `_techspec.md` → API Contract 2 defines.
 - `_prd.md` → Goals; User Stories 1-3; Core Feature 3; Success Metric 1; Success Metric 3
 - `_techspec.md` → API Contract 2; Testing Approach; Build Order 2
 - ADR-0393; ADR-0359
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines
+
+### Implementation
+
+- `internal/cli/doctor.go`: imported `roundfix/internal/skillhash`. In
+  `doctorSkillReadinessResult`, after the detail is built and before the
+  owned/external next-action selection, added an early return that sets
+  `result.NextAction = "roundfix upgrade"` when
+  `errors.Is(checkErr, skillhash.ErrUnsupportedLockVersion)`. The status,
+  detail and `Err` are unchanged; every other next action falls through to the
+  existing logic. Because the release plan's `skills` check calls the same
+  `repositorySkillsCheck`, it needs no change.
+- `internal/cli/baseline_update.go`: imported `roundfix/internal/skillhash`.
+  Added `baselineUpdateSkillsLockNextAction(err error)` returning
+  `run roundfix upgrade, then rerun roundfix baseline update` when the error
+  matches `skillhash.ErrUnsupportedLockVersion`, and
+  `repair skills-lock.json and rerun roundfix baseline update` otherwise. Both
+  `baseline.InstalledRetiredSkills` failure sites (the pre-approval listing and
+  the post-skills-stage re-inspection) now use it.
+- `internal/cli/skills_lock_version_test.go` (new): the three command-level
+  tests of `_techspec.md` → Testing Approach. Each top-level test calls
+  `t.Parallel()` first. `TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock`
+  installs the bundle plus an external `testing-boss` folder, writes the
+  two-space-indented version 2 lock, checks the exact `warn …
+  DR-SKILL-LOCK-STALE … pins: roundfix; next: roundfix skills install --target
+  project` line, runs `roundfix skills install --target project` (exit 0),
+  asserts the lock is byte-for-byte the original except the `roundfix` entry
+  losing its `ref` line and gaining the version 2 digest computed in the test
+  with `skillhash.SumForLockVersion(2, …)`, confirms `"version": 2` is kept,
+  and re-checks the `ok` line.
+  `TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion` asserts API
+  Contract 2's line verbatim with its temporary path.
+  `TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion`
+  drives an adopted Baseline repository with its required external skills
+  installed and the lock's `version` set to 2 (`exitOK`, no stderr, no next
+  action, bytes unchanged) or 3 (`exitRunFailed`, category `execution`, the
+  upgrade next action, stderr carrying the version-3 refusal text). No test
+  reaches the network, runs the skills CLI, starts an Agent session, or writes
+  outside its temporary directories.
+
+### Focused checks (not the declared Verification)
+
+- `go build ./internal/cli/` → exit 0.
+- `go vet ./internal/cli/` → exit 0.
+- `go test -count=1 -timeout 10m -v -run '^(TestTheSkillsCommandsWorkOnAVersionTwoSkillsLock|TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion|TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion)$' ./internal/cli` → `ok`, with `--- PASS` for all three and for `version_2`/`version_3`.
+- `go test -count=1 -timeout 20m -run 'Doctor|Skills|Lock|Retired|OwnedSkill|MissingRequired|ReleasePlan' ./internal/cli` → `ok`.
+- `GOOS=windows go vet ./internal/cli` → exit 0.
+- `gofmt -l` on the two changed files and the new test → no output.
+
+### Follow-ups
+
+- None. task_03 owns the guide/reference/glossary text and the Behavior
+  Surface Record.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261112T212907Z_a8dd596719159f5e`
+- Source commit: `ddd371c956764149756e4037a545813c23609161`
