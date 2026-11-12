@@ -1,0 +1,58 @@
+git archive 69448e9049cfac55f27de579b75a8d7a8e1f40b8 extracted into this Run scratch directory
+$ git init -q /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-sabotage-drop.McrNrm/repo
+
+exit: 0
+$ git -C /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-sabotage-drop.McrNrm/repo add --all
+
+exit: 0
+$ git -C /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-sabotage-drop.McrNrm/repo -c core.hooksPath=/dev/null -c commit.gpgsign=false -c 'user.name=QA fixture' -c user.email=qa@example.invalid commit -q -m 'scratch QA fixture'
+
+exit: 0
+Sabotage: drop only the build immediately after the bump digests step.
+$ git diff --stat
+ Makefile | 1 -
+ 1 file changed, 1 deletion(-)
+
+exit: 0
+$ go test -count=1 -timeout 10m -v ./internal/verifyselect -run '^TestTheSkillsBump(PinsTheCatalogMainCommit|RefreshesWithABinaryBuiltAfterTheDigests)$'
+=== RUN   TestTheSkillsBumpPinsTheCatalogMainCommit
+=== PAUSE TestTheSkillsBumpPinsTheCatalogMainCommit
+=== RUN   TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+=== PAUSE TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+=== CONT  TestTheSkillsBumpPinsTheCatalogMainCommit
+=== CONT  TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+    skills_bump_makefile_test.go:92: the managed refresh ran a binary that embeds "before digests\n"; want the asset make baseline-digests regenerated, "regenerated\n"
+=== NAME  TestTheSkillsBumpPinsTheCatalogMainCommit
+    skills_bump_makefile_test.go:56: calls =
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/roundfix ./cmd/roundfix
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog/setups --format text
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog/setups --check --format text
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/roundfix ./cmd/roundfix
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog --repo . --format text
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog --repo . --format text --confirm-plan sha256:fixture-plan
+        go test probe -run Probe -update -count=1
+        go test ./internal/baseline -run TestCatalogCompatibility -count=1
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        
+        want =
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/roundfix ./cmd/roundfix
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog/setups --format text
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog/setups --check --format text
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/roundfix ./cmd/roundfix
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog --repo . --format text
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/catalog --repo . --format text --confirm-plan sha256:fixture-plan
+        go test probe -run Probe -update -count=1
+        go test ./internal/baseline -run TestCatalogCompatibility -count=1
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit1055339316/001/tmp/rf-skills.zRwwiH/roundfix ./cmd/roundfix
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+--- FAIL: TestTheSkillsBumpPinsTheCatalogMainCommit (0.75s)
+--- FAIL: TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests (0.75s)
+FAIL
+suiteguard: guard cost: measured 3117 paths; fingerprint took 173.204709ms before and 141.74775ms after
+FAIL	roundfix/internal/verifyselect	1.307s
+FAIL
+
+exit: 1
+ASSERT: both expected tests failed, including the exact before-digests asset diagnostic.

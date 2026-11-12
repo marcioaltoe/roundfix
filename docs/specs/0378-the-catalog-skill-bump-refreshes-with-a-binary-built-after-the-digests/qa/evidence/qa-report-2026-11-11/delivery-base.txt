@@ -1,0 +1,59 @@
+git archive 1a671ba45f24910720893185ee08f1d10ccae4b5 extracted into this Run scratch directory
+$ git init -q /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-delivery-base.z9IubJ/repo
+
+exit: 0
+$ git -C /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-delivery-base.z9IubJ/repo add --all
+
+exit: 0
+$ git -C /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-delivery-base.z9IubJ/repo -c core.hooksPath=/dev/null -c commit.gpgsign=false -c 'user.name=QA fixture' -c user.email=qa@example.invalid commit -q -m 'scratch QA fixture'
+
+exit: 0
+Only audited regression test file copied over Delivery Base.
+$ git diff --stat
+ internal/verifyselect/skills_bump_makefile_test.go | 32 +++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+exit: 0
+$ go test -count=1 -timeout 10m -v ./internal/verifyselect -run '^TestTheSkillsBump(PinsTheCatalogMainCommit|RefreshesWithABinaryBuiltAfterTheDigests)$'
+=== RUN   TestTheSkillsBumpPinsTheCatalogMainCommit
+=== PAUSE TestTheSkillsBumpPinsTheCatalogMainCommit
+=== RUN   TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+=== PAUSE TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+=== CONT  TestTheSkillsBumpPinsTheCatalogMainCommit
+=== CONT  TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+=== NAME  TestTheSkillsBumpPinsTheCatalogMainCommit
+    skills_bump_makefile_test.go:56: calls =
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/roundfix ./cmd/roundfix
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog/setups --format text
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog/setups --check --format text
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/roundfix ./cmd/roundfix
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog --repo . --format text
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog --repo . --format text --confirm-plan sha256:fixture-plan
+        go test probe -run Probe -update -count=1
+        go test ./internal/baseline -run TestCatalogCompatibility -count=1
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        
+        want =
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/roundfix ./cmd/roundfix
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog/setups --format text
+        roundfix baseline assets sync --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog/setups --check --format text
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/roundfix ./cmd/roundfix
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog --repo . --format text
+        roundfix baseline skills restore --profile fixture-profile --skill alpha --skill zeta --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/catalog --repo . --format text --confirm-plan sha256:fixture-plan
+        go test probe -run Probe -update -count=1
+        go test ./internal/baseline -run TestCatalogCompatibility -count=1
+        go build -o /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheSkillsBumpPinsTheCatalogMainCommit2659866398/001/tmp/rf-skills.OUxPgp/roundfix ./cmd/roundfix
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+        roundfix baseline update --repo . --no-skills --no-history --yes --format text
+=== NAME  TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests
+    skills_bump_makefile_test.go:92: the managed refresh ran a binary that embeds "before digests\n"; want the asset make baseline-digests regenerated, "regenerated\n"
+--- FAIL: TestTheSkillsBumpPinsTheCatalogMainCommit (0.73s)
+--- FAIL: TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests (0.73s)
+FAIL
+suiteguard: guard cost: measured 3117 paths; fingerprint took 172.494583ms before and 141.794167ms after
+FAIL	roundfix/internal/verifyselect	1.292s
+FAIL
+
+exit: 1
+ASSERT: both expected tests failed, including the exact before-digests asset diagnostic.

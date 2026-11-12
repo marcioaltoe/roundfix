@@ -1,0 +1,10 @@
+$ ./bin/roundfix spec check 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests --strict
+Spec 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests/_techspec.md Vocabulary Contract
+
+exit: 0

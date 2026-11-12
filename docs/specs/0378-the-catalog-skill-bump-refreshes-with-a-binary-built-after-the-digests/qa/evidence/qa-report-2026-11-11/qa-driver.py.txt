@@ -1,0 +1,188 @@
+import contextlib, hashlib, io, json, os, pathlib, re, shlex, shutil, subprocess, sys, tarfile
+ROOT=pathlib.Path.cwd()
+SPEC='0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests'
+SD=ROOT/'docs/specs'/SPEC
+REPORT=SD/'qa/qa-report-2026-11-11.md'
+EV=SD/'qa/evidence/qa-report-2026-11-11'
+HEAD='69448e9049cfac55f27de579b75a8d7a8e1f40b8'
+BASE='1a671ba45f24910720893185ee08f1d10ccae4b5'
+NAMES=['TestTheSkillsBumpPinsTheCatalogMainCommit','TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests']
+PATTERN='^TestTheSkillsBump(PinsTheCatalogMainCommit|RefreshesWithABinaryBuiltAfterTheDigests)$'
+ENV=os.environ.copy()
+ENV.update(GOPROXY='off',GOSUMDB='off')
+for key in ('ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','TYPESAFE_API_KEY'):
+ ENV.pop(key,None)
+CACHE={n:subprocess.check_output(['go','env',n],env=ENV,text=True).strip() for n in ('GOMODCACHE','GOCACHE')}
+
+def run(args,cwd=ROOT,log=None,expected=0,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env or ENV,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ text='$ '+shlex.join(map(str,args))+'\n'+p.stdout+'\nexit: '+str(p.returncode)+'\n'
+ if log: log.write(text); log.flush()
+ print(shlex.join(map(str,args[:5])), 'exit',p.returncode,flush=True)
+ if expected is not None and p.returncode!=expected: raise AssertionError(text)
+ return p
+
+def result(row,status,detail):
+ s=REPORT.read_text(); s,n=re.subn(r'(?m)^\| '+row+r' \| [^|]+ \|', '| '+row+' | '+status+' |',s)
+ assert n==1
+ s=s.replace('### '+row+'\n','### '+row+'\n\nObservation: '+detail+'\n',1)
+ REPORT.write_text(s)
+
+def executable(path):
+ rel=str(path.relative_to(ROOT))
+ s=REPORT.read_text()
+ if '\n  - '+rel+'\n' not in s:
+  s=s.replace('user_flow_executables:\n','user_flow_executables:\n  - '+rel+'\n',1)
+ REPORT.write_text(s)
+
+@contextlib.contextmanager
+def scratch(label):
+ p=pathlib.Path(subprocess.check_output(['mktemp','-d',str(ROOT/'bin'/('qa-'+label+'.XXXXXX'))],env=ENV,text=True).strip())
+ try: yield p
+ finally:
+  shutil.rmtree(p)
+  print('removed scratch '+label,flush=True)
+
+@contextlib.contextmanager
+def cli_env(tmp=False):
+ dirs=[]; e=ENV.copy(); e.update(CACHE)
+ try:
+  for name in (('HOME','TMPDIR') if tmp else ('HOME',)):
+   p=pathlib.Path(subprocess.check_output(['mktemp','-d'],env=ENV,text=True).strip()); dirs.append(p); e[name]=str(p)
+  yield e
+ finally:
+  for p in dirs: shutil.rmtree(p)
+
+def archive(revision,repo,log):
+ repo.mkdir()
+ data=subprocess.check_output(['git','archive',revision],cwd=ROOT,env=ENV)
+ with tarfile.open(fileobj=io.BytesIO(data)) as t: t.extractall(repo,filter='data')
+ log.write('git archive '+revision+' extracted into this Run scratch directory\n')
+ for args in (['git','init','-q',str(repo)],['git','-C',str(repo),'add','--all'],['git','-C',str(repo),'-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','user.name=QA fixture','-c','user.email=qa@example.invalid','commit','-q','-m','scratch QA fixture']): run(args,log=log)
+
+def regression(repo,log):
+ p=run(['go','test','-count=1','-timeout','10m','-v','./internal/verifyselect','-run',PATTERN],cwd=repo,log=log,expected=1)
+ for name in NAMES: assert '--- FAIL: '+name in p.stdout, p.stdout
+ assert 'the managed refresh ran a binary that embeds "before digests\\n"' in p.stdout,p.stdout
+ assert 'calls' in p.stdout or 'call' in p.stdout,p.stdout
+ log.write('ASSERT: both expected tests failed, including the exact before-digests asset diagnostic.\n')
+
+def static():
+ with (EV/'verification.txt').open('w') as log:
+  assert run(['git','rev-parse','HEAD'],log=log).stdout.strip()==HEAD
+  log.write('Source: assigned Daemon QA prompt.\ncommand: make verify-changed\nverdict: pass\nexit: 0\ndiagnostics: removed on success\nAudited head: '+HEAD+'\nAgent did not rerun repository Verification.\n')
+ result('1','pass','Daemon reports `make verify-changed` exit 0 at this head; fresh `make build` also exited 0. No static gate was rerun.')
+
+def head():
+ saved=(EV/'head-tests.txt').read_text() if (EV/'head-tests.txt').exists() else ''
+ with (EV/'head-tests.txt').open('a') as log:
+  if not saved:
+   p=run(['go','test','-count=1','-timeout','10m','-v','./internal/verifyselect','-run','^TestTheSkillsBump'],log=log); saved=p.stdout
+  for name in NAMES: assert '--- PASS: '+name in saved
+  assert len(re.findall(r'^--- PASS: TestTheSkillsBump[^/ ]+ ',saved,re.M))==5
+  log.write('Driver correction: count only top-level PASS lines, preserving the already passing suite output above.\n')
+  run(['go','test','-count=1','-timeout','10m','-tags','docscontract','./internal/docscontract','-run','^TestTheSetupManifestIsCurrent$'],log=log)
+  # Non-QA Task Verification test names, including its exact GOMAXPROCS setting.
+  e=ENV.copy(); e['GOMAXPROCS']='2'
+  p=run(['go','test','-count=1','-timeout','10m','./internal/verifyselect','-run',PATTERN,'-v'],log=log,env=e)
+  for name in NAMES: assert '--- PASS: '+name in p.stdout
+  run(['go','test','-count=1','-timeout','10m','-tags','docscontract','./internal/docscontract','-run','^TestTheSetupManifestIsCurrent$'],log=log,env=e)
+  awk='index($0, "baseline-digests >&2;") { seen = 1; next } seen && index($0, "build -o") { built = 1 } seen && index($0, "baseline update") { exit } END { exit !built }'
+  run(['awk',awk,'Makefile'],log=log)
+ result('2','pass','All five bump tests, including ten refusal subtests, pass; both named regression tests and Setup Manifest currency pass. Non-QA Verification test names and build-order assertion also pass.')
+
+def negative(mode):
+ row={'base':'3','drop':'4','move':'5'}[mode]; name={'base':'delivery-base','drop':'sabotage-drop','move':'sabotage-move'}[mode]
+ with (EV/(name+'.txt')).open('w') as log, scratch(name) as tmp:
+  repo=tmp/'repo'; archive(BASE if mode=='base' else HEAD,repo,log)
+  if mode=='base':
+   target=repo/'internal/verifyselect/skills_bump_makefile_test.go'; target.write_bytes((ROOT/'internal/verifyselect/skills_bump_makefile_test.go').read_bytes())
+   log.write('Only audited regression test file copied over Delivery Base.\n')
+  else:
+   f=repo/'Makefile'; s=f.read_text(); needle='\t$(MAKE) --no-print-directory -f "$(abspath $(firstword $(MAKEFILE_LIST)))" baseline-digests >&2; \\\n'; build='\t$(GO) build -o "$$tmp/roundfix" ./cmd/roundfix; \\\n'
+   assert s.count(needle+build)==1
+   s=s.replace(needle+build,needle if mode=='drop' else build+needle,1); f.write_text(s)
+   log.write('Sabotage: '+mode+' only the build immediately after the bump digests step.\n')
+  run(['git','diff','--stat'],cwd=repo,log=log)
+  regression(repo,log)
+ result(row,'pass','Both regression tests fail as required with the exact stale embedded asset diagnostic; call-list failure inspected. Disposable repository removed.')
+
+def real():
+ with (EV/'real-binary.txt').open('w') as log, scratch('real-binary') as tmp:
+  repo=tmp/'repo'; archive(HEAD,repo,log)
+  # This scratch-only authorization fixture implements the explicit QA Requirement 5
+  # using the recorder's own declaration mechanism, without changing its guard.
+  auth=repo/'docs/specs/qa-scratch-regeneration/_authorization.md'; auth.parent.mkdir()
+  auth.write_text('---\nstatus: approved\ngranted: 2026-11-11\nconsuming: qa-scratch-regeneration\naction: disposable reproduction expressly required by Spec 0378 QA Requirement 5\npaths:\n  - internal/baseline/assets/modules/backend.json\n  - internal/baseline/module-versions.json\noperations: [implement]\n---\n\n## Sanctioned regeneration\n\n```yaml\ncommand: go test ./internal/baseline -run \'^TestEveryBaselineModuleVersionIsRecorded$\' -record-module-versions -count=1\noutputs:\n  - internal/baseline/module-versions.json\n  - internal/baseline/assets/modules/backend.json\n```\n')
+  log.write('Scratch-only recorder declaration: QA Requirement 5 authorizes the backend clause experiment; the recorder keeps its suite guard and exact two outputs. No audited authorization changes.\n')
+  f=repo/'internal/baseline/assets/modules/backend.json'
+  old='Keep application use cases independent of HTTP request, response, router, and middleware types.'
+  new='Keep application use cases independent of HTTP request, response, router, middleware, and session types.'
+  s=f.read_text(); assert s.count(old)==1; f.write_text(s.replace(old,new))
+  run(['go','test','./internal/baseline','-run','^TestEveryBaselineModuleVersionIsRecorded$','-record-module-versions','-count=1','-timeout','10m'],cwd=repo,log=log)
+  before=tmp/'before'; after=tmp/'after'
+  executable(before); executable(after)
+  run(['go','build','-buildvcs=false','-o',str(before),'./cmd/roundfix'],cwd=repo,log=log)
+  manifest=json.loads((repo/'docs/agents/setup-context.json').read_text())
+  profile=repo/'internal/baseline/assets/profiles/standard-typescript-monorepo.json'
+  golden=repo/'internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md'
+  assert golden.exists(),str(golden)
+  golden_before=golden.read_bytes(); profile_before=json.loads(profile.read_text())
+  # make's internal test commands all receive explicit timeouts through GO.
+  wrapper=tmp/'go-with-timeout'; wrapper.write_text('#!/bin/sh\nif [ "$1" = test ]; then shift; if [ "$QA_TEST_TMPDIR_SET" = yes ]; then export TMPDIR="$QA_TEST_TMPDIR"; else unset TMPDIR; fi; exec '+shlex.quote(shutil.which('go'))+' test -timeout 10m "$@"; fi\nexec '+shlex.quote(shutil.which('go'))+' "$@"\n'); wrapper.chmod(0o755); executable(wrapper)
+  # Isolate make's temporary files while keeping session TMPDIR for its Go tests.
+  with cli_env(tmp=True) as temporary:
+   make_env=ENV.copy(); make_env['TMPDIR']=temporary['TMPDIR']
+   make_env['QA_TEST_TMPDIR_SET']='yes' if 'TMPDIR' in ENV else 'no'
+   make_env['QA_TEST_TMPDIR']=ENV.get('TMPDIR','')
+   run(['make','baseline-digests','GO='+str(wrapper)],cwd=repo,log=log,env=make_env)
+  profile_after=json.loads(profile.read_text())
+  assert golden.read_bytes()!=golden_before
+  def field(obj,key):
+   if isinstance(obj,dict):
+    if key in obj: return obj[key]
+    for v in obj.values():
+     got=field(v,key)
+     if got is not None:return got
+   if isinstance(obj,list):
+    for v in obj:
+     got=field(v,key)
+     if got is not None:return got
+  assert field(profile_before,'goldenDigest')!=field(profile_after,'goldenDigest')
+  log.write('ASSERT: backend.md formatter golden changed; profile goldenDigest changed.\n')
+  log.write('golden SHA256 before: '+hashlib.sha256(golden_before).hexdigest()+'\ngolden SHA256 after: '+hashlib.sha256(golden.read_bytes()).hexdigest()+'\n')
+  run(['git','diff','--stat'],cwd=repo,log=log)
+  run(['git','diff','--','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md','internal/baseline/assets/profiles/standard-typescript-monorepo.json'],cwd=repo,log=log)
+  entry=repo/'bin/roundfix'; entry.parent.mkdir(exist_ok=True); entry.symlink_to(before); executable(entry)
+  with cli_env() as e: run(['./bin/roundfix','--version'],cwd=repo,log=log,env=e)
+  for idx in (1,2):
+   with cli_env() as e: p=run(['./bin/roundfix','baseline','update','--repo','.','--no-skills','--no-history','--yes','--format','text'],cwd=repo,log=log,env=e)
+   if idx==2: assert 'File changes: 0' in p.stdout,p.stdout
+  stale=json.loads((repo/'docs/agents/setup-context.json').read_text())
+  p=run(['go','test','-count=1','-timeout','10m','-tags','docscontract','./internal/docscontract','-run','^TestTheSetupManifestIsCurrent$'],cwd=repo,log=log,expected=1)
+  assert 'Setup Manifest is stale' in p.stdout,p.stdout
+  run(['go','build','-buildvcs=false','-o',str(after),'./cmd/roundfix'],cwd=repo,log=log)
+  entry.unlink(); entry.symlink_to(after)
+  with cli_env() as e: run(['./bin/roundfix','--version'],cwd=repo,log=log,env=e)
+  for idx in (1,2):
+   with cli_env() as e: p=run(['./bin/roundfix','baseline','update','--repo','.','--no-skills','--no-history','--yes','--format','text'],cwd=repo,log=log,env=e)
+   if idx==2: assert 'File changes: 0' in p.stdout
+  run(['go','test','-count=1','-timeout','10m','-tags','docscontract','./internal/docscontract','-run','^TestTheSetupManifestIsCurrent$'],cwd=repo,log=log)
+  current=json.loads((repo/'docs/agents/setup-context.json').read_text())
+  assert stale!=current
+  log.write('ASSERT: stale-binary refresh converged but currency failed; rebuilt-binary refresh persisted and currency passed.\n')
+  log.write('before binary SHA256: '+hashlib.sha256(before.read_bytes()).hexdigest()+'\nafter binary SHA256: '+hashlib.sha256(after.read_bytes()).hexdigest()+'\n')
+  outside=SD/'references/2026-11-10-the-catalog-skill-bump-leaves-a-stale-catalog-digest-in-the-setup-manifest.md'
+  src=outside.read_text(); assert 'Recorded by the operator on 2026-11-10' in src
+  assert 'a binary it built before `make baseline-digests` rewrote the profile' in src
+  prd=(SD/'_prd.md').read_text(); assert 'at compile time.' in prd
+  catalog=(repo/'internal/baseline/catalog.go').read_text(); assert '//go:embed assets' in catalog
+  log.write('\nOutside-evidence comparison (offline):\nOperator Backlog Entry, recorded 2026-11-10 from the 0370 TechSpec step 5 / Session Handoff: its documented before-digests binary mechanism reproduced above.\nGo embed package documentation https://pkg.go.dev/embed, passage read 2026-11-10 and quoted in PRD Acceptance evidence: files are embedded at compile time. The before binary compiled before regenerated assets; the after binary compiled after them. Their independent currency checks disagree exactly as this source predicts. No network lookup.\n')
+ result('6','pass','The real stale binary converged on its second refresh yet manifest currency failed. Regeneration changed the formatter golden and profile goldenDigest. The rebuilt binary refreshed successfully and currency passed; second refresh had zero changes. Observed mechanism matches both dated outside sources, checked offline.')
+
+mode=sys.argv[1]
+try:
+ {'static':static,'head':head,'base':lambda:negative('base'),'drop':lambda:negative('drop'),'move':lambda:negative('move'),'real':real}[mode]()
+except Exception as exc:
+ print(type(exc).__name__+': '+str(exc),flush=True)
+ raise

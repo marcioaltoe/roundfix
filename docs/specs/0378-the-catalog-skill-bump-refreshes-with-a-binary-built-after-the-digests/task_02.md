@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

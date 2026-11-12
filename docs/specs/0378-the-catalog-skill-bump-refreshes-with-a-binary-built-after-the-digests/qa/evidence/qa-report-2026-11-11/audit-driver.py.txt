@@ -1,0 +1,85 @@
+import hashlib, json, os, pathlib, re, runpy, subprocess, sys
+# Reuse only definitions from the fresh driver written by this QA pass.
+p=pathlib.Path('docs/specs/0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests/qa/evidence/qa-report-2026-11-11/qa-driver.py.txt')
+ns={}; exec(compile(p.read_text().split('\nmode=sys.argv[1]')[0],str(p),'exec'),ns)
+ROOT,EV,REPORT,SD,HEAD,BASE=(ns[k] for k in ('ROOT','EV','REPORT','SD','HEAD','BASE'))
+run,result,cli_env,executable=(ns[k] for k in ('run','result','cli_env','executable'))
+
+def audit():
+ with (EV/'scope-audit.txt').open('w') as log:
+  commits=run(['git','rev-list','--reverse',BASE+'..'+HEAD],log=log).stdout.splitlines()
+  assert commits==[HEAD]
+  task=SD/'task_01.md'; text=task.read_text()
+  declared=set(re.findall(r'^- (?:interface|creates|instruction): `([^`]+)`',text,re.M))
+  allowed=declared|{str(task.relative_to(ROOT))}
+  for commit in commits:
+   changed=run(['git','diff-tree','--no-commit-id','--name-only','-r',commit],log=log).stdout.splitlines()
+   assert set(changed)<=allowed,(changed,allowed)
+   assert set(changed)=={'Makefile','docs/agents/setup-context.json','internal/verifyselect/skills_bump_makefile_test.go',str(task.relative_to(ROOT))}
+  auth_path=str((SD/'_authorization.md').relative_to(ROOT))
+  auth=run(['git','show',BASE+':'+auth_path],log=log).stdout
+  granted=set(re.findall(r'^  - (Makefile|docs/agents/setup-context.json)$',auth,re.M))
+  assert granted=={'Makefile','docs/agents/setup-context.json'}
+  assert 'status: approved' in auth
+  # Reuse the seeded mechanical authorization audit; verify its source is in ancestry.
+  run(['git','merge-base','--is-ancestor',BASE,HEAD],log=log)
+  revision=run(['git','log','-1','--format=%H','--',auth_path],log=log).stdout.strip()
+  run(['git','merge-base','--is-ancestor',revision,BASE],log=log)
+  log.write('Seeded mechanical audit remains authoritative: operative grant at Delivery Base; authorization last changed at '+revision+' before the Task. No separate authorization/prerequisite/consequent fix was folded into this Task.\n')
+  before=run(['git','show',BASE+':Makefile'],log=None).stdout
+  after=(ROOT/'Makefile').read_text()
+  build='\t$(GO) build -o "$$tmp/roundfix" ./cmd/roundfix; \\\n'
+  marker='\t$(MAKE) --no-print-directory -f "$(abspath $(firstword $(MAKEFILE_LIST)))" baseline-digests >&2; \\\n'
+  assert before.count(marker)==1
+  assert before.replace(marker,marker+build,1)==after
+  log.write('ASSERT: Makefile differs by exactly the required one build line after baseline-digests; all refusal and final-line bytes preserved.\n')
+  before=json.loads(run(['git','show',BASE+':docs/agents/setup-context.json']).stdout)
+  after=json.loads((ROOT/'docs/agents/setup-context.json').read_text())
+  paths=[]
+  def compare(a,b,path=''):
+   if type(a)!=type(b): paths.append(path); return
+   if isinstance(a,dict):
+    assert a.keys()==b.keys()
+    for k in a:compare(a[k],b[k],path+'/'+k)
+   elif isinstance(a,list):
+    assert len(a)==len(b)
+    for i,(x,y) in enumerate(zip(a,b)):compare(x,y,path+'/'+str(i))
+   elif a!=b:paths.append(path)
+  compare(before,after)
+  assert paths==['/verification/0/declarationDigest','/verification/1/declarationDigest'],paths
+  log.write('ASSERT: Setup Manifest changes exactly '+', '.join(paths)+'; catalog digest unchanged.\n')
+  run(['git','diff',BASE+'..'+HEAD,'--','Makefile','docs/agents/setup-context.json'],log=log)
+  prohibited=re.compile(r'^(?:\.github/|\.roundfixrc\.yml$|go\.(?:mod|sum)$|skills-lock\.json$|CHANGELOG\.md$|internal/app/version\.go$|dist/npm/|\.agents/skills/|skills/|CONTEXT\.md$|docs/adr/|internal/baseline/)')
+  assert not any(prohibited.search(path) for path in changed),changed
+  log.write('ASSERT: no workflow, module/lock/config/version/release/skill/ADR/CONTEXT/Baseline-module-or-derived-asset change. No skill changed, therefore no QA settlement section changed.\n')
+  for name in ('_prd.md','_techspec.md'):
+   s=(SD/name).read_text(); assert re.search(r'^## Glossary\n\nNone\.\s*(?:\n## |\Z)',s,re.M)
+   log.write('Glossary declaration '+name+': None.\n')
+  assert run(['git','diff','--name-only',BASE+'..'+HEAD,'--','CONTEXT.md'],log=log).stdout.strip()==''
+  # Audit current working-tree delta as well as the committed Task change.
+  assert run(['git','diff','--name-only'],log=log).stdout.strip()==''
+  assert run(['git','diff','--cached','--name-only'],log=log).stdout.strip()==''
+  status=run(['git','status','--porcelain','--untracked-files=all'],log=log).stdout
+  for line in status.splitlines(): assert line[3:].startswith(str((SD/'qa').relative_to(ROOT))+'/'),line
+  log.write('ASSERT: every current untracked file is this QA pass report/evidence; no audited source or Task/graph mutation.\n')
+ result('7','pass','History shows exactly the declared Task file, Makefile, Setup Manifest and bump test file. The Makefile adds one recipe line; JSON changes exactly two declarationDigest leaves. Governed paths match the operative grant; prohibited paths and CONTEXT are unchanged, both Glossary declarations are None. The current delta is QA report/evidence only.')
+
+def pr():
+ with (EV/'pull-request.txt').open('w') as log:
+  assert run(['git','rev-parse','HEAD'],log=log).stdout.strip()==HEAD
+  log.write('Source: assigned QA prompt, Pull Request: none open. No gh, network lookup or PR mutation.\nApproval: maintainer delivery authorization in the Spec _authorization.md grants bounded implement/commit/push/pull_request/merge/release. This is delivery authority, not current-candidate code review acceptance.\nChecks and status: Daemon-supplied make verify-changed passed, exit 0 at audited head. Focused suites and real-binary reproduction recorded separately in this pass. No remote required-check result exists before an open PR.\nUnresolved review threads: none exists because no Pull Request exists.\nMerge-Ready acceptance: none yet.\nReview-artifact ancestry: no current-candidate Review Source acceptance artifact exists yet; claimed candidate is '+HEAD+'. The Run Worktree branch is never the PR branch.\nUnblocking action: supervisor completes configured current-candidate review and opens a PR on the Spec target branch, then checks remote controls. No publishing action performed by QA.\nEquivalent evidence answers each control, but does not establish Merge-Ready acceptance.\n')
+ result('8','blocked (environment: no open Pull Request)','All five pre-PR controls are accounted for. Recorded delivery authority and Daemon checks exist; no threads exist, while current-candidate review and Merge-Ready acceptance are absent. This pre-PR row alone yields a qualifying partial.')
+
+def outcome():
+ with (EV/'archive-plan.txt').open('w') as log:
+  with cli_env(tmp=True) as e:
+   log.write('HOME/TMPDIR: fresh owned mktemp directories; GOMODCACHE/GOCACHE: retained at go env values (values omitted). Judge Key Variables and TYPESAFE_API_KEY unset.\n')
+   run(['./bin/roundfix','archive',ns['SPEC'],'--plan','--offline'],log=log,env=e)
+  log.write('Temporary HOME/TMPDIR removed; no archive mutation or judge/provider request.\n')
+ s=REPORT.read_text()
+ s+='\n## Outcome\n\nThe Catalog Skill Bump rebuilds its refresh binary after digest generation so the Setup Manifest reflects the regenerated assets. Both sabotage cases and the Delivery Base fail the regression checks, while the real rebuilt binary leaves a current manifest. The offline archive plan lists the cut and candidates with the judge skipped; the existing glossary and ADR already own the durable knowledge, so no promotion is needed. Current-candidate review and Pull Request controls remain for the Supervisor after this qualifying partial QA gate.\n'
+ REPORT.write_text(s)
+
+executable(p.resolve())
+executable(pathlib.Path(__file__).resolve())
+{'audit':audit,'pr':pr,'outcome':outcome}[sys.argv[1]]()
