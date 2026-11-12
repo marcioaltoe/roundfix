@@ -39,7 +39,7 @@ func TestAnAppliedADRStillDrawsInItsCitingADR(t *testing.T) {
 			repoRoot := writeADRRelatedSeedFixture(t, relation)
 			result := checkADRRelatedSeeds(t, repoRoot)
 			finding := requireADRRelatedSeedFinding(t, result, "0003", "0002")
-			const wantFix = `Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with "not applicable", so the ADRs that cite only it are not drawn in.`
+			const wantFix = `Account for ADR-0003 in the Active ADR obligations row in docs/specs/adr-related-seeds/_prd.md by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with "not applicable" or "não se aplica", so the ADRs that cite only it are not drawn in.`
 			if finding.Fix != wantFix {
 				t.Errorf("fix = %q, want %q", finding.Fix, wantFix)
 			}

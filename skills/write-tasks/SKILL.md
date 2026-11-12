@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.31
+  version: 0.0.32
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.31
+version: 0.0.32
 ---
 
 # Write Tasks
@@ -496,7 +496,7 @@ Treat every reported error as blocking: fix the artifact and re-run until it is
 clean, and do not report the breakdown while a finding stands. A `[gap]` is
 blocking too; account for the named ADR or record why it does not apply, and
 begin a not-applying ADR's line under the TechSpec's `## ADR Alternatives` with
-`not applicable` so it draws in no ADR that cites only it. Skipped checks are
+`not applicable`, or `não se aplica` in a Spec written in Portuguese, so it draws in no ADR that cites only it. Skipped checks are
 informational.
 
 This is not a substitute for the list below, which covers what the checker does

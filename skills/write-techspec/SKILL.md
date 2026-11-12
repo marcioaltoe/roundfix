@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.18
+  version: 0.0.19
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.18
+version: 0.0.19
 ---
 
 # Write TechSpec
@@ -145,9 +145,7 @@ structure; whether a proof is right stays with the reader.
   how the design relates to the alternatives that ADR rejected. When the design
   takes a rejected alternative, say so and supersede or amend the ADR.
   `SC-ADR-ALTERNATIVES-UNRELATED` reports a listed ADR without its line.
-  For an ADR the Spec lists only to record why it does not apply, begin the
-  relation with `not applicable`: the ADR stays listed, and `SC-ADR-RELATED`
-  does not ask for the ADRs that cite only it.
+  For an ADR the Spec lists only to record why it does not apply, begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese: the ADR stays listed, and `SC-ADR-RELATED` does not ask for the ADRs that cite only it. The check reads these tokens without regard to case and also accepts `nao se aplica` without the accent; any other wording, such as `não se aplicam` or `n/a`, counts as an applied ADR.
 - Coverage Cross-Read. Before `write-tasks`, read each PRD user story, Core
   Feature and Success Metric against the component the Coverage Map names. Add
   the line `Deviations from the PRD:` to the Coverage Map, followed by `None.`

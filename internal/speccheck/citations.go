@@ -1187,7 +1187,7 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 				{Path: record.DisplayPath, Line: record.CitationLines[relatedNumber]},
 				rowLocation,
 			},
-			Fix: "Account for ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\", so the ADRs that cite only it are not drawn in.",
+			Fix: "Account for ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " by listing it or recording why it does not apply; when it does not apply, begin its ADR Alternatives line in the TechSpec with \"not applicable\" or \"não se aplica\", so the ADRs that cite only it are not drawn in.",
 		})
 	}
 	return nil
