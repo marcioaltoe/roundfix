@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.140.0] - 2026-11-11
+
+### An ADR marked as not applying in Portuguese draws in no citing ADR
+
+- **`roundfix spec check` now reads the Portuguese "does not apply" marker.** A TechSpec line whose relation to a listed ADR begins with `não se aplica` (matched without regard to case, with or without the accent) keeps the ADR listed, as `not applicable` already did, and `SC-ADR-RELATED` no longer reports ADRs that cite only ADRs marked that way. Before, a Portuguese Spec had to list every citing ADR or reword the line in English.
+- Any other wording keeps the existing closure, and the fix message names both forms. The write-techspec and write-tasks skills and the TechSpec template describe the marker. ADR-0389 amends ADR-0377.
+
 ## [0.139.3] - 2026-11-11
 
 ### The Catalog Skill Bump refreshes with a binary built after the digests
