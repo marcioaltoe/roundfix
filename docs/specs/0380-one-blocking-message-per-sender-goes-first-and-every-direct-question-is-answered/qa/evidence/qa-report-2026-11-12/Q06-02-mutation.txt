@@ -1,0 +1,15 @@
+diff --git a/internal/cli/follow_up.go b/internal/cli/follow_up.go
+index defe334..261a5c5 100644
+--- a/internal/cli/follow_up.go
++++ b/internal/cli/follow_up.go
+@@ -288,8 +288,8 @@ func followUpDeclaredPrecedence(items []followUpItem) (declared, ranked []follow
+ 			continue
+ 		}
+ 		sender := followUpSender(item)
+-		holder, exists := holders[sender]
+-		if !exists || followUpDeclaredBefore(item, items[holder]) {
++		_, exists := holders[sender]
++		if !exists {
+ 			holders[sender] = index
+ 		}
+ 	}

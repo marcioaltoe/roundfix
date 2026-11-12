@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage$' ./skills
+exit: 0
+stdout:
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+--- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+PASS
+ok  	roundfix/skills	0.152s
+
+stderr:

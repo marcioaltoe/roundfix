@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 20m -v -run '^TestEveryBaselineModuleVersionIsRecorded$' ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+PASS
+suiteguard: guard cost: measured 3119 paths; fingerprint took 152.2745ms before and 146.856875ms after
+ok  	roundfix/internal/baseline	0.453s
+
+stderr:

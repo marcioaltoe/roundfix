@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheMessageClausesAskForAReplyOnlyForBlockedWork$' ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== PAUSE TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== CONT  TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+--- PASS: TestTheMessageClausesAskForAReplyOnlyForBlockedWork (0.07s)
+PASS
+suiteguard: guard cost: measured 3114 paths; fingerprint took 155.736958ms before and 138.256666ms after
+ok  	roundfix/internal/baseline	0.537s
+
+stderr:

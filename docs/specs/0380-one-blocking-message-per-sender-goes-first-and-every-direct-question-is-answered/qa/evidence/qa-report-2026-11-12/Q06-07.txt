@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== PAUSE TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== CONT  TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+    follow_up_declared_precedence_test.go:32: ranked=[{Rank:0 Priority:0 PriorityName: Kind:message Ref:message:j1 Type: Date:2026-10-01 Title: RequestedBy:0x4bf653e907c0 Blocks:<nil> BlockedWork: PrecedenceHeldBy: Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:}], want [{Rank:0 Priority:0 PriorityName: Kind:message Ref:message:a3 Type: Date:2026-10-25 Title: RequestedBy:0x4bf653e907b0 Blocks:<nil> BlockedWork:release 1.5 waits on the label PrecedenceHeldBy:message:a1 Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:} {Rank:0 Priority:0 PriorityName: Kind:message Ref:message:j1 Type: Date:2026-10-01 Title: RequestedBy:0x4bf653e907c0 Blocks:<nil> BlockedWork: PrecedenceHeldBy: Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:} {Rank:0 Priority:0 PriorityName: Kind:message Ref:message:a2 Type: Date:2026-10-10 Title: RequestedBy:0x4bf653e907e0 Blocks:<nil> BlockedWork:release 1.4 waits on another answer PrecedenceHeldBy:message:a1 Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:} {Rank:0 Priority:0 PriorityName: Kind:message Ref:message:a5 Type: Date:2026-10-30 Title: RequestedBy:0x4bf653e90800 Blocks:<nil> BlockedWork:release 1.6 waits on the label PrecedenceHeldBy:message:a1 Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:}]
+--- FAIL: TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender (0.00s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 158.3335ms before and 143.794166ms after
+FAIL	roundfix/internal/cli	0.745s
+FAIL
+
+stderr:

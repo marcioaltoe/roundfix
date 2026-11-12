@@ -1,0 +1,13 @@
+diff --git a/internal/cli/follow_up.go b/internal/cli/follow_up.go
+index defe334..d166e31 100644
+--- a/internal/cli/follow_up.go
++++ b/internal/cli/follow_up.go
+@@ -311,7 +311,7 @@ func followUpSender(item followUpItem) string {
+ 	if item.RequestedBy == nil {
+ 		return ""
+ 	}
+-	return strings.TrimSpace(*item.RequestedBy)
++	return "one-key"
+ }
+ 
+ func followUpDeclaredBefore(a, b followUpItem) bool {

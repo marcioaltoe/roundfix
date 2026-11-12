@@ -1,0 +1,5 @@
+command: ./bin/roundfix qa-report accept docs/specs/0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered/qa/qa-report-2026-11-12.md
+exit: 0
+stdout:
+
+stderr:

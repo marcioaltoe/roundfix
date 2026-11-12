@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence$' ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== PAUSE TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== CONT  TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+--- PASS: TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence (0.08s)
+PASS
+suiteguard: guard cost: measured 3113 paths; fingerprint took 140.909208ms before and 140.165833ms after
+ok  	roundfix/internal/baseline	0.635s
+
+stderr:

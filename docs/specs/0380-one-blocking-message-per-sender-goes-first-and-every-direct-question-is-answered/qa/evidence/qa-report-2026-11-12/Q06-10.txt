@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence$' ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== PAUSE TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== CONT  TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+    message_reply_clause_test.go:53: agent instructions contain "so it takes precedence for one message per sender at a time: triage first, from each sending project, the oldest message that declares its work blocked until this project answers" 0 times, want once
+    message_reply_clause_test.go:53: agent instructions contain "then the rest oldest first, a later blocking message from the same sender included." 0 times, want once
+    message_reply_clause_test.go:53: agent instructions contain "The precedence orders the triage and never replaces the maintainer's judgment of what this project handles first." 0 times, want once
+    message_reply_clause_test.go:53: agent instructions contain "Answer each direct question a message asks with `memory_message_send` as soon as the answer exists, whether or not the message declared blocked work" 0 times, want once
+    message_reply_clause_test.go:61: agent instructions still contain "Triage first each message whose sender declares its work blocked"
+    message_reply_clause_test.go:61: agent instructions still contain "as soon as the answer exists when its message declared blocked work"
+--- FAIL: TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence (0.08s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 160.495542ms before and 157.643458ms after
+FAIL	roundfix/internal/baseline	0.566s
+FAIL
+
+stderr:

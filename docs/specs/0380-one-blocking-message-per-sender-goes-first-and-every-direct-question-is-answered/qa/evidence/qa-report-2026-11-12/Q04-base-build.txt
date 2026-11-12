@@ -1,0 +1,5 @@
+command: go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered-7dafec2fe1c82e29-a1f3681b-161daa94/run_20261112T032652Z_b7d027eed6571a55/bin/qa380-base-o816ma8n/bin/roundfix ./cmd/roundfix
+exit: 0
+stdout:
+
+stderr:

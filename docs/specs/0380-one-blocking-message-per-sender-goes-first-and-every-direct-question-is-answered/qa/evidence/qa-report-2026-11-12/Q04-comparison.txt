@@ -1,0 +1,5 @@
+Surface Transcript 1: stdout full match (only declared angle placeholders), empty stderr, exit 0.
+JSON: holders d1/d2 priority 1, declared, absent holding key; d3 type, blocked work and message:d1 holder; j1 neither optional key.
+Three-entry text equals the four-entry transcript after exactly the prescribed removals.
+Delivery Base freshly built: text and JSON byte-identical on the same three-entry fixture, no normalization.
+Fresh process after d1 removal: d3 becomes declared; the command keeps no holder state.

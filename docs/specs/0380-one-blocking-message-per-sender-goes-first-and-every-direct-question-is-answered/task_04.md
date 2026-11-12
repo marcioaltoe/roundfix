@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

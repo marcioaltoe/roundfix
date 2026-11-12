@@ -1,0 +1,30 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpSendsALaterDeclaredMessageToTheJudge$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== PAUSE TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== CONT  TestFollowUpSendsALaterDeclaredMessageToTheJudge
+    follow_up_declared_precedence_test.go:80: stdout=Follow-up for widget in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpSendsALaterDeclaredMessageToTheJudge1367047671/001
+        Items: 3
+          1. unblocking information 2026-10-10 message:d1: Export field — from argus — blocks argus: release 1.4 waits on the answer
+          2. health message 2026-10-25 message:d3: Second question — from argus
+          3. feature feat 2026-10-01 message:j1: Judged feature — from fluxus
+        In progress: 0
+        Judge: answered 2 of 2 item(s) with jev-1.13.0
+        Sources:
+          ai-memory-messages: checked 3
+          backlog: checked 0
+          findings: checked 0
+          repository-inbox: checked 0
+          specs: checked 0
+          runs: checked 0
+          delivery-queue: checked 0
+          pull-requests: checked 0
+          git: checked 0
+--- FAIL: TestFollowUpSendsALaterDeclaredMessageToTheJudge (0.06s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 148.571792ms before and 143.183375ms after
+FAIL	roundfix/internal/cli	0.781s
+FAIL
+
+stderr:

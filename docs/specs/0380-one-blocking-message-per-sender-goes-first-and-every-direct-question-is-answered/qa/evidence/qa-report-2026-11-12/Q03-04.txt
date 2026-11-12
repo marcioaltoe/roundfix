@@ -1,0 +1,24 @@
+command: go test -count=1 -timeout 30m -v -tags docscontract -run TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+=== RUN   TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== PAUSE TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md
+=== CONT  TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md
+--- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/docs/user-guide/commands/follow-up.md (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/skills/roundfix/references/follow-up.md (0.00s)
+    --- PASS: TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes/.agents/skills/roundfix/references/follow-up.md (0.00s)
+PASS
+suiteguard: guard cost: measured 3123 paths; fingerprint took 157.825542ms before and 157.628417ms after
+ok  	roundfix/internal/cli	0.742s
+
+stderr:

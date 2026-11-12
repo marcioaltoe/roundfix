@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== PAUSE TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== CONT  TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+    follow_up_declared_precedence_test.go:23: declared=[{Rank:0 Priority:0 PriorityName: Kind:message Ref:message:a1 Type: Date:2026-10-10 Title: RequestedBy:0x5a116d1563d0 Blocks:<nil> BlockedWork:release 1.4 waits on the answer PrecedenceHeldBy: Basis: Answers:map[] Reason:<nil> WaitingOn: Since: WaitingError: text: origin:}], want q2 and a1 unchanged in input order
+--- FAIL: TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender (0.00s)
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 156.888583ms before and 143.741916ms after
+FAIL	roundfix/internal/cli	0.760s
+FAIL
+
+stderr:

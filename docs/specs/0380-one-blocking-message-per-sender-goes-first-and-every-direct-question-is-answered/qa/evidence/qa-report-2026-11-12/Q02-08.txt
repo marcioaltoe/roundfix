@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender$' ./skills
+exit: 0
+stdout:
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+--- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded (0.00s)
+PASS
+ok  	roundfix/skills	0.263s
+
+stderr:

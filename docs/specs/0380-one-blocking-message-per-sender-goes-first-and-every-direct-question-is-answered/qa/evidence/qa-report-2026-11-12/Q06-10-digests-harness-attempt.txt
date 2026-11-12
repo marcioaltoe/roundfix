@@ -1,0 +1,19 @@
+command: make baseline-digests GO=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered-7dafec2fe1c82e29-a1f3681b-161daa94/run_20261112T032652Z_b7d027eed6571a55/bin/qa380-go-timeout
+exit: 2
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:^TestCatalogDiagnosticCharacterization$","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+
+stderr:
+ok  	roundfix/internal/baseline	1.112s
+ok  	roundfix/skills	0.331s
+ok  	roundfix/internal/baseline	1.805s
+ok  	roundfix/internal/baseline	0.630s
+ok  	roundfix/internal/baseline	0.937s
+--- FAIL: TestCatalogDiagnosticCharacterization (0.06s)
+    catalog_test.go:743: asset "modules/core.json" has 0 occurrences of "\"classifications\": [\"domain-language\", \"identifier-policy\"]", want 1
+FAIL
+suiteguard: guard cost: measured 3100 paths; fingerprint took 160.900125ms before and 145.536958ms after
+FAIL	roundfix/internal/baseline	0.663s
+FAIL
+baseline-digests: regeneration failed at ./internal/baseline:^TestCatalogDiagnosticCharacterization$
+make: *** [baseline-digests] Error 1

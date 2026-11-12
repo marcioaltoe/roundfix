@@ -1,0 +1,231 @@
+{
+  "rows": [
+    [
+      "Q01",
+      "repository Verification",
+      "Daemon static gate and required build"
+    ],
+    [
+      "Q02-01",
+      "Requirement 2",
+      "TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender"
+    ],
+    [
+      "Q02-02",
+      "Requirement 2",
+      "TestFollowUpSendsALaterDeclaredMessageToTheJudge"
+    ],
+    [
+      "Q02-03",
+      "Requirement 2",
+      "TestFollowUpLaterDeclaredMessageTranscript"
+    ],
+    [
+      "Q02-04",
+      "Requirement 2",
+      "TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence"
+    ],
+    [
+      "Q02-05",
+      "Requirement 2",
+      "TestTheMessageClausesAskForAReplyOnlyForBlockedWork"
+    ],
+    [
+      "Q02-06",
+      "Requirement 2",
+      "TestEveryInboxClauseAnAdopterHoldsIsReplaced"
+    ],
+    [
+      "Q02-07",
+      "Requirement 2",
+      "TestTheGuidesSendCrossProjectWorkThroughAiMemory"
+    ],
+    [
+      "Q02-08",
+      "Requirement 2",
+      "TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender"
+    ],
+    [
+      "Q02-09",
+      "Requirement 2",
+      "TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage"
+    ],
+    [
+      "Q02-10",
+      "Requirement 2",
+      "TestEveryBaselineModuleVersionIsRecorded"
+    ],
+    [
+      "Q03-01",
+      "Requirement 2",
+      "FollowUp command regression"
+    ],
+    [
+      "Q03-02",
+      "Requirement 2",
+      "whole Baseline package"
+    ],
+    [
+      "Q03-03",
+      "Requirement 2",
+      "whole skills package"
+    ],
+    [
+      "Q03-04",
+      "Requirement 2",
+      "follow-up guide JSON-field docscontract"
+    ],
+    [
+      "Q03-05",
+      "Requirement 2",
+      "whole docscontract package"
+    ],
+    [
+      "Q03-06",
+      "Requirement 2",
+      "Baseline|Guidance|SetupManifest command regression"
+    ],
+    [
+      "Q04",
+      "Requirement 2",
+      "Surface Transcript 1, JSON, three-item byte compatibility and holder turnover"
+    ],
+    [
+      "Q05",
+      "Requirement 2",
+      "managed refresh of committed Delivery Base and idempotence"
+    ],
+    [
+      "Q06-01",
+      "Requirement 5",
+      "isolated sabotage 1"
+    ],
+    [
+      "Q06-02",
+      "Requirement 5",
+      "isolated sabotage 2"
+    ],
+    [
+      "Q06-03",
+      "Requirement 5",
+      "isolated sabotage 3"
+    ],
+    [
+      "Q06-04",
+      "Requirement 5",
+      "isolated sabotage 4"
+    ],
+    [
+      "Q06-05",
+      "Requirement 5",
+      "isolated sabotage 5"
+    ],
+    [
+      "Q06-06",
+      "Requirement 5",
+      "isolated sabotage 6"
+    ],
+    [
+      "Q06-07",
+      "Requirement 5",
+      "isolated sabotage 7"
+    ],
+    [
+      "Q06-08",
+      "Requirement 5",
+      "isolated sabotage 8"
+    ],
+    [
+      "Q06-09",
+      "Requirement 5",
+      "isolated sabotage 9"
+    ],
+    [
+      "Q06-10",
+      "Requirement 5",
+      "isolated sabotage 10"
+    ],
+    [
+      "Q06-11",
+      "Requirement 5",
+      "isolated sabotage 11"
+    ],
+    [
+      "Q07",
+      "Requirement 2",
+      "API Contracts 5-9 exact wording, mirrors, unchanged clause and obsolete-phrase search"
+    ],
+    [
+      "Q08-01",
+      "outside-evidence row",
+      "Kubernetes fairness passage compared with observed report"
+    ],
+    [
+      "Q08-02",
+      "outside-evidence row",
+      "Enterprise Integration Patterns Request-Reply passage compared with receiving clause"
+    ],
+    [
+      "Q09",
+      "after the release that carries this Spec, an adopter's roundfix baseline update writes the reworded receiving clause, and a real /roundfix --follow-up session that holds two declared messages from one sender lists the older one first and the newer one with precedence_held_by.",
+      "PRD Unreachable Acceptance"
+    ],
+    [
+      "Q10",
+      "Requirement 2",
+      "Glossary declarations, definitions, and TestGlossaryPhrasesAreDefinedTerms"
+    ],
+    [
+      "Q11",
+      "Requirement 11",
+      "Task changed paths, bounded authority and forbidden scope"
+    ],
+    [
+      "Q12",
+      "Pull Request row",
+      "pre-PR equivalent controls"
+    ]
+  ],
+  "named_tests": [
+    [
+      "internal/cli",
+      "TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender"
+    ],
+    [
+      "internal/cli",
+      "TestFollowUpSendsALaterDeclaredMessageToTheJudge"
+    ],
+    [
+      "internal/cli",
+      "TestFollowUpLaterDeclaredMessageTranscript"
+    ],
+    [
+      "internal/baseline",
+      "TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence"
+    ],
+    [
+      "internal/baseline",
+      "TestTheMessageClausesAskForAReplyOnlyForBlockedWork"
+    ],
+    [
+      "internal/baseline",
+      "TestEveryInboxClauseAnAdopterHoldsIsReplaced"
+    ],
+    [
+      "internal/baseline",
+      "TestTheGuidesSendCrossProjectWorkThroughAiMemory"
+    ],
+    [
+      "skills",
+      "TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender"
+    ],
+    [
+      "skills",
+      "TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage"
+    ],
+    [
+      "internal/baseline",
+      "TestEveryBaselineModuleVersionIsRecorded"
+    ]
+  ]
+}

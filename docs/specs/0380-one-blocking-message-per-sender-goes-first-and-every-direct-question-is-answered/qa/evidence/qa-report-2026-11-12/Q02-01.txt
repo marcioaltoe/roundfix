@@ -1,0 +1,12 @@
+command: go test -count=1 -timeout 20m -v -run '^TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender$' ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== PAUSE TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== CONT  TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+--- PASS: TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender (0.00s)
+PASS
+suiteguard: guard cost: measured 3110 paths; fingerprint took 211.918541ms before and 139.8235ms after
+ok  	roundfix/internal/cli	0.872s
+
+stderr:

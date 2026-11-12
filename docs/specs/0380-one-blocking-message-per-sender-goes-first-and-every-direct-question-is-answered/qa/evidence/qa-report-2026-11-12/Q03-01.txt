@@ -1,0 +1,448 @@
+command: go test -count=1 -timeout 30m -v -run FollowUp ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== PAUSE TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== PAUSE TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== RUN   TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== PAUSE TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== RUN   TestFollowUpLaterDeclaredMessageTranscript
+=== PAUSE TestFollowUpLaterDeclaredMessageTranscript
+=== RUN   TestFollowUpHelpTranscript
+=== PAUSE TestFollowUpHelpTranscript
+=== RUN   TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== PAUSE TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== RUN   TestFollowUpStatusReportsTheNextRelease
+=== PAUSE TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusNamesTheManualClassification
+=== PAUSE TestFollowUpStatusNamesTheManualClassification
+=== RUN   TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== PAUSE TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== RUN   TestFollowUpStatusNeverAsksTheJudge
+=== PAUSE TestFollowUpStatusNeverAsksTheJudge
+=== RUN   TestFollowUpStatusWritesNothing
+=== PAUSE TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusRefusesMessages
+=== PAUSE TestFollowUpStatusRefusesMessages
+=== RUN   TestFollowUpListsEveryPendingItemOnce
+=== PAUSE TestFollowUpListsEveryPendingItemOnce
+=== RUN   TestFollowUpOrdersItemsByTheFourAnswers
+=== PAUSE TestFollowUpOrdersItemsByTheFourAnswers
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge
+=== RUN   TestFollowUpSaysNothingToDo
+=== PAUSE TestFollowUpSaysNothingToDo
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== RUN   TestFollowUpReadsNoUnavailableSourceAsAFailure
+=== PAUSE TestFollowUpReadsNoUnavailableSourceAsAFailure
+=== RUN   TestFollowUpWritesNothing
+=== PAUSE TestFollowUpWritesNothing
+=== RUN   TestFollowUpRefusesAnUnknownFormat
+=== PAUSE TestFollowUpRefusesAnUnknownFormat
+=== RUN   TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== PAUSE TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile
+=== RUN   TestFollowUpListHelpMatchesTranscript
+=== PAUSE TestFollowUpListHelpMatchesTranscript
+=== RUN   TestFollowUpListsInProgressAndParkActions
+=== PAUSE TestFollowUpListsInProgressAndParkActions
+=== RUN   TestFollowUpReadsCommittedWALWithoutWriting
+=== PAUSE TestFollowUpReadsCommittedWALWithoutWriting
+=== RUN   TestFollowUpRefusesAnUnreadableRunDatabase
+=== PAUSE TestFollowUpRefusesAnUnreadableRunDatabase
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== RUN   TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+=== PAUSE TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+=== RUN   TestFollowUpIgnoresHiddenInboxEntries
+=== PAUSE TestFollowUpIgnoresHiddenInboxEntries
+=== RUN   TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+=== PAUSE TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+=== RUN   TestFollowUpSnapshotHonorsCancellation
+=== PAUSE TestFollowUpSnapshotHonorsCancellation
+=== RUN   TestFollowUpReadsNoSecondbrainInbox
+=== PAUSE TestFollowUpReadsNoSecondbrainInbox
+=== RUN   TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== PAUSE TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItems
+=== PAUSE TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpAllListsWaitingItemsLast
+=== PAUSE TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItemsTranscript
+=== PAUSE TestFollowUpHoldsBackWaitingItemsTranscript
+=== RUN   TestFollowUpAllListsWaitingItemsTranscript
+=== PAUSE TestFollowUpAllListsWaitingItemsTranscript
+=== RUN   TestFollowUpStatusRefusesAllTranscript
+=== PAUSE TestFollowUpStatusRefusesAllTranscript
+=== CONT  TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== CONT  TestFollowUpWritesNothing
+=== CONT  TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+=== CONT  TestFollowUpReadsCommittedWALWithoutWriting
+=== CONT  TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+--- PASS: TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge (0.08s)
+=== CONT  TestFollowUpReadsNoUnavailableSourceAsAFailure
+--- PASS: TestFollowUpSnapshotKeepsCommittedWALAndCleansUp (0.10s)
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+=== CONT  TestFollowUpSaysNothingToDo
+--- PASS: TestFollowUpReadsCommittedWALWithoutWriting (0.13s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/Run
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/Run
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpOrdersItemsByTheFourAnswers
+--- PASS: TestFollowUpWritesNothing (0.16s)
+=== CONT  TestFollowUpListsEveryPendingItemOnce
+--- PASS: TestFollowUpReadsNoUnavailableSourceAsAFailure (0.08s)
+=== CONT  TestFollowUpStatusRefusesMessages
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== RUN   TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== PAUSE TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages=
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages=
+=== CONT  TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusWritesNothing/no_database
+=== PAUSE TestFollowUpStatusWritesNothing/no_database
+=== RUN   TestFollowUpStatusWritesNothing/at_tag
+=== PAUSE TestFollowUpStatusWritesNothing/at_tag
+=== RUN   TestFollowUpStatusWritesNothing/release
+=== PAUSE TestFollowUpStatusWritesNothing/release
+=== RUN   TestFollowUpStatusWritesNothing/dirty
+=== PAUSE TestFollowUpStatusWritesNothing/dirty
+=== RUN   TestFollowUpStatusWritesNothing/live_WAL
+=== PAUSE TestFollowUpStatusWritesNothing/live_WAL
+=== CONT  TestFollowUpStatusNeverAsksTheJudge
+--- PASS: TestFollowUpStatusListsBlockersAndTheMaintainersQuestion (0.19s)
+=== CONT  TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== RUN   TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== RUN   TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== CONT  TestFollowUpStatusRefusesAllTranscript
+--- PASS: TestFollowUpOrdersItemsByTheFourAnswers (0.09s)
+=== CONT  TestFollowUpAllListsWaitingItemsTranscript
+--- PASS: TestFollowUpStatusRefusesAllTranscript (0.04s)
+=== CONT  TestFollowUpHoldsBackWaitingItemsTranscript
+--- PASS: TestFollowUpListsEveryPendingItemOnce (0.12s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/missing
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/missing
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/id
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/id
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/date
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/date
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/type
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/type
+=== CONT  TestFollowUpListsInProgressAndParkActions
+--- PASS: TestFollowUpSaysNothingToDo (0.21s)
+=== CONT  TestFollowUpListHelpMatchesTranscript
+--- PASS: TestFollowUpStatusNeverAsksTheJudge (0.16s)
+=== CONT  TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+--- PASS: TestFollowUpAllListsWaitingItemsTranscript (0.11s)
+=== CONT  TestFollowUpIgnoresHiddenInboxEntries
+--- PASS: TestFollowUpHoldsBackWaitingItemsTranscript (0.11s)
+=== CONT  TestFollowUpLaterDeclaredMessageTranscript
+--- PASS: TestFollowUpListHelpMatchesTranscript (0.05s)
+=== CONT  TestFollowUpStatusNamesTheManualClassification
+--- PASS: TestFollowUpListsRepositoryNotesAndMessageTitleFallback (0.08s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== RUN   TestFollowUpStatusReportsTheNextRelease/feature
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/feature
+=== RUN   TestFollowUpStatusReportsTheNextRelease/dirty
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/dirty
+=== RUN   TestFollowUpStatusReportsTheNextRelease/patch
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/patch
+=== RUN   TestFollowUpStatusReportsTheNextRelease/maintenance
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/maintenance
+=== RUN   TestFollowUpStatusReportsTheNextRelease/manual
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/manual
+=== RUN   TestFollowUpStatusReportsTheNextRelease/no_tag
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+--- PASS: TestFollowUpIgnoresHiddenInboxEntries (0.08s)
+=== CONT  TestFollowUpHelpTranscript
+--- PASS: TestFollowUpListsInProgressAndParkActions (0.13s)
+=== CONT  TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+--- PASS: TestFollowUpLaterDeclaredMessageTranscript (0.08s)
+=== CONT  TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== PAUSE TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== RUN   TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== PAUSE TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== RUN   TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== PAUSE TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== CONT  TestFollowUpSendsALaterDeclaredMessageToTheJudge
+--- PASS: TestFollowUpHelpTranscript (0.04s)
+=== CONT  TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+--- PASS: TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender (0.00s)
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== CONT  TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+--- PASS: TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes (0.05s)
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork/line_break
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork/line_break
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork/without_from
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork/without_from
+=== CONT  TestFollowUpReadsNoSecondbrainInbox
+--- PASS: TestFollowUpSendsALaterDeclaredMessageToTheJudge (0.08s)
+=== CONT  TestFollowUpSnapshotHonorsCancellation
+--- PASS: TestFollowUpSnapshotHonorsCancellation (0.06s)
+=== CONT  TestFollowUpRefusesAnUnknownFormat
+--- PASS: TestFollowUpStatusListsPendingSpecsInDeliveryOrder (0.17s)
+=== CONT  TestFollowUpRefusesAnUnreadableRunDatabase
+--- PASS: TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration (0.16s)
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+--- PASS: TestFollowUpReadsNoSecondbrainInbox (0.09s)
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+--- PASS: TestFollowUpRefusesAnUnknownFormat (0.04s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+--- PASS: TestFollowUpRefusesAnUnreadableRunDatabase (0.06s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/Run
+--- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName (0.00s)
+    --- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName/origin (0.09s)
+    --- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName/directory (0.09s)
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+--- PASS: TestFollowUpStatusNamesTheManualClassification (0.41s)
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/perf
+--- PASS: TestFollowUpOrdersByTypeWithoutTheJudge (0.00s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/no_key (0.13s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/ceiling (0.13s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/Run (0.12s)
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages=
+=== CONT  TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== CONT  TestFollowUpStatusWritesNothing/no_database
+=== CONT  TestFollowUpStatusWritesNothing/dirty
+=== CONT  TestFollowUpStatusWritesNothing/live_WAL
+--- PASS: TestFollowUpAcceptsEveryDocumentedMessageType (0.00s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/other (0.08s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/information (0.08s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/refactor (0.08s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/message (0.08s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/perf (0.08s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/finding (0.07s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/fix (0.07s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feat (0.07s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feature (0.08s)
+=== CONT  TestFollowUpStatusWritesNothing/release
+--- PASS: TestFollowUpStatusRefusesMessages (0.00s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages_messages.json (0.04s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages= (0.04s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--messages=messages.json_--status (0.04s)
+=== CONT  TestFollowUpStatusWritesNothing/at_tag
+=== CONT  TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== CONT  TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== CONT  TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+--- PASS: TestFollowUpStatusWritesNothing (0.00s)
+    --- PASS: TestFollowUpStatusWritesNothing/dirty (0.17s)
+    --- PASS: TestFollowUpStatusWritesNothing/no_database (0.21s)
+    --- PASS: TestFollowUpStatusWritesNothing/live_WAL (0.23s)
+    --- PASS: TestFollowUpStatusWritesNothing/at_tag (0.22s)
+    --- PASS: TestFollowUpStatusWritesNothing/release (0.32s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+--- PASS: TestFollowUpAllListsWaitingItemsLast (0.00s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference (0.13s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/only_waiting_items (0.12s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting (0.13s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/missing
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/type
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/date
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/id
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== CONT  TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== CONT  TestFollowUpStatusReportsTheNextRelease/maintenance
+=== CONT  TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/manual
+--- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration (0.00s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank (0.13s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map_date (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair (0.13s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on (0.13s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone (0.13s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/datetime (0.13s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list_date (0.15s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date (0.15s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_since (0.15s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines (0.15s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline (0.16s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map (0.14s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list (0.16s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/dirty
+--- PASS: TestFollowUpRefusesAnInvalidMessagesFile (0.00s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/missing (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/duplicate (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/type (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/date (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/schema (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/id (0.05s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/oversize (0.05s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/patch
+=== CONT  TestFollowUpStatusReportsTheNextRelease/feature
+=== CONT  TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== CONT  TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+--- PASS: TestFollowUpHoldsBackWaitingItems (0.00s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/mixed_inventory (0.11s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked (0.12s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/only_waiting_items (0.15s)
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+--- PASS: TestFollowUpDeclaredBlockedWorkTranscripts (0.00s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/declared_first (0.09s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/without_from (0.05s)
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork/line_break
+--- PASS: TestFollowUpStatusReportsTheNextRelease (0.00s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/dirty (0.15s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/no_tag (0.19s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/HEAD_at_release (0.21s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/maintenance (0.30s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/manual (0.32s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/patch (0.31s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/feature (0.35s)
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork/without_from
+--- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge (0.00s)
+    --- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret (0.08s)
+    --- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge/service (0.08s)
+--- PASS: TestFollowUpRefusesAMalformedBlockedWork (0.00s)
+    --- PASS: TestFollowUpRefusesAMalformedBlockedWork/line_break (0.05s)
+    --- PASS: TestFollowUpRefusesAMalformedBlockedWork/without_from (0.04s)
+--- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge (0.00s)
+    --- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false (0.08s)
+    --- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true (0.09s)
+PASS
+suiteguard: guard cost: measured 3120 paths; fingerprint took 154.247625ms before and 152.38875ms after
+ok  	roundfix/internal/cli	2.945s
+
+stderr:

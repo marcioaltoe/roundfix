@@ -1,0 +1,12 @@
+diff --git a/internal/cli/follow_up.go b/internal/cli/follow_up.go
+index defe334..30e7ea6 100644
+--- a/internal/cli/follow_up.go
++++ b/internal/cli/follow_up.go
+@@ -300,7 +300,6 @@ func followUpDeclaredPrecedence(items []followUpItem) (declared, ranked []follow
+ 				declared = append(declared, item)
+ 				continue
+ 			}
+-			item.PrecedenceHeldBy = items[holder].Ref
+ 		}
+ 		ranked = append(ranked, item)
+ 	}
