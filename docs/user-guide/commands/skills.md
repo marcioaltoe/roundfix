@@ -38,3 +38,5 @@ owned skill receives the installed folder's `computedHash` and loses its
 matching lock entry exists. Each name whose hash changed is reported as
 `Updated skills-lock.json computedHash: <name>`, followed by
 `Removed skills-lock.json ref: <name>` for each entry whose `ref` was removed.
+
+Roundfix reads a `skills-lock.json` of version 1 or 2, the version the skills CLI 1.8 writes; every `computedHash` it writes into the lock or compares with an installed folder follows the hash algorithm of the version the file declares, and it never changes that version.

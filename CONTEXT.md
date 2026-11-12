@@ -1476,7 +1476,7 @@ A required external skill whose installed tree differs from the `treeDigest` its
 _Avoid_: Trailing skill, outdated skill, stale skill
 
 **Stale Owned Lock Entry**:
-A `skills-lock.json` entry of an installed Roundfix-owned skill that carries a `ref` or a `computedHash` other than the installed copy's, so `skills update` would replace the installed copy with the one the entry pins. `roundfix doctor` warns `DR-SKILL-LOCK-STALE`, and the bundle install of `roundfix baseline update` or `roundfix skills install` rewrites the entry with the installed hash and no `ref` ([ADR-0359](docs/adr/0359-an-installed-owned-skill-keeps-an-unpinned-lock-entry-and-doctor-names-a-stale-one.md)).
+A `skills-lock.json` entry of an installed Roundfix-owned skill that carries a `ref` or a `computedHash` other than the hash of the installed copy in the algorithm of the lock version, so `skills update` would replace the installed copy with the one the entry pins. `roundfix doctor` warns `DR-SKILL-LOCK-STALE`, and the bundle install of `roundfix baseline update` or `roundfix skills install` rewrites the entry with the installed hash and no `ref` ([ADR-0359](docs/adr/0359-an-installed-owned-skill-keeps-an-unpinned-lock-entry-and-doctor-names-a-stale-one.md), [ADR-0393](docs/adr/0393-roundfix-reads-skills-lock-versions-1-and-2-and-keeps-the-version-it-found.md)).
 _Avoid_: Stale skill, Setup Snapshot Difference, unpinned external lock entry
 
 **Interactive Input**:

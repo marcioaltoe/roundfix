@@ -186,6 +186,8 @@ its Setup Snapshot, and never replaces a present copy unasked; `roundfix
 baseline skills restore --profile <id> --skill <name>` replaces one
 deliberately.
 
+Roundfix reads a `skills-lock.json` of version 1 or 2, the version the skills CLI 1.8 writes; every `computedHash` it writes into the lock or compares with an installed folder follows the hash algorithm of the version the file declares, and it never changes that version. Any other lock version fails the `skills:` line with the version named and `roundfix upgrade` as its only next action, because the skills command would write that version again.
+
 With a Setup Manifest, Doctor also checks installed Roundfix-owned lock entries
 and appends the exact suffix
 `; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: <names>`,
