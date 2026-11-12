@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0380-one-blocking-message-per-sender-goes-first-and-every-direct-question-is-answered
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -102,3 +102,17 @@ guide and setup manifest are refreshed the same way.
 - `_prd.md` → Goals 1, 2, 3 and 5; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Success Metric 1
 - `_techspec.md` → Current behavior 5; API Contract 6; Invariant 5; Declared breaks; Testing Approach; Build Order 2
 - ADR-0390
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, setup-context-driven, roundfix, evidence-gate
+
+Implementation and focused evidence:
+
+- Acceptance criterion 1: changed only the two requested core-clause `guidance` values and raised `rule.core.cross-project-continuity` to version 3. The generated agent-instructions guide contains each new reply, per-sender precedence and maintainer-judgment phrase once; the two old triage/reply phrases are absent.
+- Acceptance criterion 2: the three message clause ids retain their existing `mandatory` enforcement and `replaces` lists; `clause.core.messages-are-self-contained` was not changed. The new `TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence` calls `t.Parallel()` first and checks all five required phrases plus both absent phrases. The existing `TestTheMessageClausesAskForAReplyOnlyForBlockedWork` was unchanged.
+- Acceptance criterion 3: `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1` passed and recorded core version 29; `make baseline-digests` passed and regenerated the declared derived Baseline files; the mandated managed refresh verified its postimages and changed only the guide and setup manifest. A second identical refresh reported `File changes: 0` and `Idempotence: verified`.
+- Focused checks: `gofmt -w internal/baseline/message_reply_clause_test.go` and `git diff --check` passed; focused runs of the new clause test and the unchanged existing clause test each passed.
+- Changed-path audit: only the assigned Task file, the requested core/test files, module record, declared derived Baseline files, generated profile/golden, guide and setup manifest changed. No other Task file or `_tasks.md` was edited.
+
+The Task's declared Verification commands were not run; they remain Daemon-owned under the execution invariants.
