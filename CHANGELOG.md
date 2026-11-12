@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.139.3] - 2026-11-11
+
+### The Catalog Skill Bump refreshes with a binary built after the digests
+
+- **A skill version bump in the Roundfix repository now leaves a current Setup Manifest.** The Catalog Skill Bump rebuilt its refresh binary before the skill digests were regenerated, so the refresh recorded the old digests and the next check reported the Baseline as stale. The binary is now built after the digests. This affects only contributors who bump a Roundfix-owned skill; adopters see no change.
+
 ## [0.139.2] - 2026-11-11
 
 ### A stale user-level skill copy is reported with its refresh command
