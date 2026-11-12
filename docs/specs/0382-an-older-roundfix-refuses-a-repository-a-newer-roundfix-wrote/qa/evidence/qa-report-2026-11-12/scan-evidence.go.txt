@@ -1,9 +1,0 @@
-package main
-import ("fmt"; "os"; "path/filepath"; "roundfix/internal/secretscan")
-func main() {
- matches:=0;files:=0
- err:=filepath.WalkDir(os.Args[1],func(path string,d os.DirEntry,err error) error {
-  if err!=nil{return err};if d.IsDir(){return nil};b,err:=os.ReadFile(path);if err!=nil{return err};files++
-  for _,m:=range secretscan.ScanContent(path,b){fmt.Println(m.String());matches++};return nil
- });if err!=nil{fmt.Println(err);os.Exit(2)};fmt.Printf("files scanned: %d; Secret Matches: %d\n",files,matches);if matches!=0{os.Exit(1)}
-}

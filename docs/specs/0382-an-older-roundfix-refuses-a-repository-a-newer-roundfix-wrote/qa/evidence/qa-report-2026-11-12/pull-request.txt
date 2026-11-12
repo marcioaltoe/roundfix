@@ -1,8 +1,0 @@
-Pull Request: none open, supplied by Daemon for Spec target branch.
-Approval equivalent: approved authorization at Delivery Base grants implement, commit, push, pull_request, merge and release; this child performs none of those delivery operations.
-Checks equivalent: Daemon make verify-changed at 83e98809c8f35d6d5efdeee3559670350a1ba326 passed, exit 0.
-Unresolved threads: none, because no Pull Request exists.
-Merge-Ready acceptance: none yet; only the pre-PR candidate is being audited. No provider/reviewer called.
-Claimed candidate: 83e98809c8f35d6d5efdeee3559670350a1ba326
-Review-artifact ancestry: no Merge-Ready review artifact yet; no later head or review approval is claimed.
-Unblock live control: Supervisor opens the Spec target-branch Pull Request and observes its checks and configured review at the published head.

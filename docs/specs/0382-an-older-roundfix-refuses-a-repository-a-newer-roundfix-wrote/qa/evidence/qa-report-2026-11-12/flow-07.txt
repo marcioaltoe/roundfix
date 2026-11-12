@@ -1,7 +1,0 @@
-command: ./bin/roundfix --version
-stdout:
-roundfix 0.141.1 (83e98809-dirty, built 2026-11-12 06:51:07 -0300)
-stderr:
-exit: 0
-repository tree unchanged: True
-assertions: True
