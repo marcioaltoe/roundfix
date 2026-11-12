@@ -41,9 +41,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "835"
 type: feat
 ---
 
 # One blocking message per sender goes first, and every direct question is answered
 
-The audited implementation bounds declared precedence to the oldest blocking message of e…
+The audited implementation bounds declared precedence to the oldest b…
