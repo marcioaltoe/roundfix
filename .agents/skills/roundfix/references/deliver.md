@@ -447,7 +447,7 @@ to read it`. Read the `Turn:` lines before acting on a stage that looks stuck:
 an item that waits for a review slot or the owner's turn needs no retry and no
 stop.
 
-When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the eight the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the seven the `review` guide lists; a merge of the default branch keeps the lineage, with or without a conflict, and prints nothing.
 
 When the retried item returns to `reviewing` and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver retry` prints the same `Review:` line right after `Retried <slug>: <blocker> -> reviewing`, before the owner runs the review.
 

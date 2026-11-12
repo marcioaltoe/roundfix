@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-11-05T12:00:00Z
+updated_at: 2026-11-11T18:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -58,3 +58,5 @@ ADR-0018. It supersedes none of them.
 **Amended by [ADR-0286](0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md) (2026-10-18).** When round 2 ends with findings and every standing round-2 finding is disposed as fixed by a commit the current head contains, the next review is one Correction Review of the delta from the round-2 head instead of the ceiling; it never repeats, and the ceiling's purpose, no unbounded review loop, stays.
 
 **Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** A conflict-free merge of the default branch into a descending head keeps the Reviewer Lineage although it moves the merge base; round 2 reviews the delta from the reviewed head carried onto the new merge base. A rebase, or a merge that brings in another branch or conflicts, still starts round 1.
+
+**Amended by [ADR-0391](0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md) (2026-11-11).** A merge of the default branch that conflicts keeps the Reviewer Lineage too; its delta starts from the reviewed head's Conflicted Carry. A rebase or a merge that brings in another branch still starts round 1, and the two-round ceiling is unchanged.

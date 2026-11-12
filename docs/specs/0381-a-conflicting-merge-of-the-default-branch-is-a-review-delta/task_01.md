@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -131,16 +131,16 @@ reported by conexus).
 
 ## Subtasks
 
-- [ ] Write the absence-claim sentence, the Conflicted Carry text and the seven reasons into both `review` texts, and the count into both `deliver` texts.
-- [ ] Add **Conflicted Carry** to the glossary and reword **Effective Base** and **Reviewer Lineage**.
-- [ ] Write the amendment notices in ADR-0366 and ADR-0197.
-- [ ] Sync the mirrors, record the skill version and re-record the Behavior Surface Record.
+- [x] Write the absence-claim sentence, the Conflicted Carry text and the seven reasons into both `review` texts, and the count into both `deliver` texts.
+- [x] Add **Conflicted Carry** to the glossary and reword **Effective Base** and **Reviewer Lineage**.
+- [x] Write the amendment notices in ADR-0366 and ADR-0197.
+- [x] Sync the mirrors, record the skill version and re-record the Behavior Surface Record.
 
 ## Acceptance Criteria
 
-- [ ] Both `review` texts describe the Conflicted Carry for the delta and for segments, the absence-claim sentence and seven restart reasons, and both `deliver` texts name seven reasons.
-- [ ] The glossary defines **Conflicted Carry** and its two neighbours use it; ADR-0366 and ADR-0197 carry the ADR-0391 notice.
-- [ ] The mirrors match the canonical references, the owned skill version record is current, and the Behavior Surface Record is current.
+- [x] Both `review` texts describe the Conflicted Carry for the delta and for segments, the absence-claim sentence and seven restart reasons, and both `deliver` texts name seven reasons.
+- [x] The glossary defines **Conflicted Carry** and its two neighbours use it; ADR-0366 and ADR-0197 carry the ADR-0391 notice.
+- [x] The mirrors match the canonical references, the owned skill version record is current, and the Behavior Surface Record is current.
 
 ## Context
 
@@ -174,3 +174,19 @@ reported by conexus).
 - `_prd.md` → Core Feature 5; Glossary
 - `_techspec.md` → API Contract 2; API Contract 3; API Contract 4; Build Order 1
 - ADR-0391; ADR-0366; ADR-0197
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, evidence-gate
+
+Implementation changed the `review` and `deliver` guides and canonical references with the absence-claim prompt, Conflicted Carry delta and segment wording, the seven restart reasons, and the conflict-inclusive lineage rule. `CONTEXT.md` now defines Conflicted Carry and links it from Effective Base and Reviewer Lineage. ADR-0366 and ADR-0197 contain the ADR-0391 amendment notices with `updated_at: 2026-11-11T18:00:00Z`.
+
+Focused checks and sanctioned recorders:
+
+- `make skills-sync` — passed; generated mirrors updated.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed (`1 passed`); both Roundfix skill versions and `skills/testdata/owned-skill-versions.json` record `0.1.221`.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed (`1 passed`); Behavior Surface Record re-recorded.
+- `git diff --check` — passed.
+- SHA-256-equivalent `shasum` outputs confirmed `.agents/skills/roundfix/references/review.md` matches `skills/roundfix/references/review.md`, and the corresponding `deliver.md` files match.
+
+Acceptance evidence: the three guide/reference families contain the requested Conflicted Carry, absence-claim and seven-reason text; the glossary and both ADR notices are present; and the sanctioned version and coverage recorders passed. The Daemon-owned Verification section was not run, and Task status was left unchanged for Daemon settlement.

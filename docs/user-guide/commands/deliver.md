@@ -547,7 +547,7 @@ record prints no `Turn:` line; a record that cannot be read writes
 `roundfix: Delivery Queue turn record <path> could not be read: <error>` to
 stderr, and status still exits `0`.
 
-When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the eight the `review` guide lists; a conflict-free merge of the default branch keeps the lineage and prints nothing.
+When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the seven the `review` guide lists; a merge of the default branch keeps the lineage, with or without a conflict, and prints nothing.
 
 After any `Owner:` line and before `Limits:`, it prints one line per parked
 item in queue order, except `queue-token-ceiling` (see Token usage below):
