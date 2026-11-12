@@ -1,3 +1,0 @@
-$ GOOS=windows go vet ./internal/cli
-
-exit: 0

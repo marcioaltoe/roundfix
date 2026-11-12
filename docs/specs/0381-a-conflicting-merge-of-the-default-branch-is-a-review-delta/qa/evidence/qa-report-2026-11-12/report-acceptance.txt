@@ -1,5 +1,0 @@
-Structural audit: 12 contiguous Results rows; 11 pass, 1 environment-blocked; typed inputs per row; seeded auditor identity unchanged; all local links resolve to unignored text files; tracked source unchanged; git diff --check exit 0.
-$ ./bin/roundfix qa-report accept docs/specs/0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta/qa/qa-report-2026-11-12.md
-stdout:
-stderr:
-exit: 0

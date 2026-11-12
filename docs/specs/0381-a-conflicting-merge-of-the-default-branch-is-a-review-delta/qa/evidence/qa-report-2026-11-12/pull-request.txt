@@ -1,7 +1,0 @@
-Pull Request row; supplied assignment says no open Pull Request. No remote query or publication attempted.
-Approval: maintainer delivery authority recorded in the approved Spec _authorization.md, already operative at f4075a7dec86489234a5aaad074bd58193907a84.
-Checks/status: Daemon-supplied make verify-changed pass, exit 0 at d3738435665129813b1665308308066117beba68; diagnostics removed on success.
-Unresolved review threads: none, because no Pull Request exists (supplied fact).
-Merge-Ready acceptance: none yet; terminal QA precedes pre-PR review/publication, so this control has no equivalent acceptance evidence.
-Review-artifact ancestry: this gate claims candidate d3738435665129813b1665308308066117beba68; no Review Source artifact or Merge-Ready evidence is claimed.
-Unblock: Supervisor obtains the configured pre-PR review of that candidate and observes the target-branch Pull Request controls after authorized publication. The Run branch is never published.

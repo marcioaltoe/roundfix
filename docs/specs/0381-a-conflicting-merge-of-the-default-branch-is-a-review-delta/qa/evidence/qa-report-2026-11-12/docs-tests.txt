@@ -1,4 +1,0 @@
-$ go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run ^(TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce|TestGlossaryAvoidLinesArePlainLists)$
-ok  	roundfix/internal/docscontract	0.454s
-
-exit: 0
