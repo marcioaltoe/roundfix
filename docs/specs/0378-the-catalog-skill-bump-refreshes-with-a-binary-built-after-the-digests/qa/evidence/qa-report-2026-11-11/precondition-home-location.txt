@@ -1,5 +1,0 @@
-$ ./bin/roundfix spec check 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests --strict
-roundfix: spec check failed: worktree.location must not be inside the repository tree: "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/bin/qa-precondition.0t3Tip/.roundfix/worktrees" is inside the Git root "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba" (found "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests-0d63fbf535481ffa-b11a5cad-111fb55e/run_20261111T235601Z_6dbb7148bd85f8ba/.git")
-Run 'roundfix spec check --help' for usage.
-
-exit: 2

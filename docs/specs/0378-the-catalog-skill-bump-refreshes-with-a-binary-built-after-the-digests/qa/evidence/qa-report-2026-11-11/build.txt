@@ -1,2 +1,0 @@
-gocache-bound: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-go-build-501: removed 2227 idle entries (1392134130 bytes)
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=69448e90-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-11 21:19:18 -0300'" -o bin/roundfix ./cmd/roundfix
