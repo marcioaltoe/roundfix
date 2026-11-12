@@ -1404,8 +1404,12 @@ The digest over a Baseline Plan that the operator confirms before apply and that
 _Avoid_: File hash, approval token, repository checksum
 
 **Setup Manifest**:
-The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote. It also carries the Recorded Roundfix Version ([ADR-0392](docs/adr/0392-an-older-roundfix-refuses-a-repository-whose-baseline-a-newer-roundfix-wrote.md)).
 _Avoid_: Project Config, lock file, generated guide
+
+**Recorded Roundfix Version**:
+The release of the Roundfix that last applied a Baseline change to a repository, recorded as `roundfixVersion` in its Setup Manifest. A plan that changes a file records the running release when it is higher, and a plan that changes none keeps the value. An older Roundfix refuses, naming both releases and `roundfix upgrade`, every command that loads the repository's configuration and every Baseline command, while the Doctor Command, the Update Check, the Run readers and `roundfix stop` report it and continue without Project Config ([ADR-0392](docs/adr/0392-an-older-roundfix-refuses-a-repository-whose-baseline-a-newer-roundfix-wrote.md)).
+_Avoid_: Minimum version, required version, writer stamp
 
 **Managed Region**:
 The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.

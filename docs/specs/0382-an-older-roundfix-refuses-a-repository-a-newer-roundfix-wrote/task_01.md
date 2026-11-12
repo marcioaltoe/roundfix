@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -169,3 +169,35 @@ a 0.96.0 binary ran against a repository configured for 0.137.7.
 - `_techspec.md` → Current behavior 1, 4, 5, 7; Interfaces; API Contracts 1-5; API Contract 10; API Contract 12; Surface Transcript 1; Invariants 1, 2, 5; Declared breaks; Testing Approach; Build Order 1
 - ADR-0392
 - [The adopted message](references/2026-11-11-conexus-an-older-roundfix-ran-against-a-newer-repository.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate.
+
+### Starting-tree characterization
+
+- Before implementation, inspection found no repository compatibility release record: `docs/agents/setup-context.json`, `.roundfixrc.yml` and `skills-lock.json` contain no `roundfixVersion`; the Setup Manifest carries schema/generator versions rather than a Roundfix release. No reader or guard exists in `internal/config` or `internal/cli`.
+- A temporary `go test -overlay` probe, `TestRecordedVersionStartingTreeCharacterization`, used an empty temporary home and a temporary Git repository with `future_section: {enabled: true}` in Project Config. `config.Load` returned `parse config "<repo>/.roundfixrc.yml": yaml: unmarshal errors: line 1: field future_section not found in type config.configOverlay`. The probe passed (exit 0); it wrote no repository test file.
+- The initial worktree change was solely the Daemon's `status: in_progress` in this Task file; it is preserved.
+
+### Implementation and acceptance evidence
+
+1. Configuration-loading commands refuse before Project Config is read: added the read-only Setup Manifest reader, release predicate and typed refusal, with the specified messages and absolute path; `Load` checks after User Config, returns the refusal unwrapped, and retains `ProjectConfigPath`. `Init` checks before any project write. The new config refusal test proves the version error precedes an unknown YAML key; the command test covers `spec check x`, `follow-up` and forced project `init`, each exiting 2 with unchanged Project Config bytes. Other command loaders are unchanged.
+2. Recovery commands report and continue without Project Config: the Run reader loader opts in and warns before any worktree-location warning; `stop` and the Update Check use the new recovery loader and stderr warning. The CLI regression asserts Surface Transcript 1 in full, the Update Check's exact warning and development release line with exit 0, a successful `stop` that records a Stop Request, and Doctor's exact first failure line followed by `node: ok`, exit 1 and execution of the remaining health checks. Doctor's test uses the existing fake-readiness seam, an empty profile proof and an option-checking loader that calls real `config.Load`. The Update Check report format is unchanged; its Baseline preview guard belongs to task_02.
+3. Equal, older and absent records retain prior behavior: the six new config tests cover the running release via `app.Version`, an older release, absent/unreadable/non-object/non-JSON manifests, malformed fields, recovery loads with valid and unknown Project Config keys, retained User Config, and development builds that accept both newer and malformed records. Future releases use the test constant `999999.0.0`; tests use temporary homes and repositories. Existing precedence, init, stop, Run reader, Doctor and Update Check transcript checks also pass.
+4. Documentation: through domain-modeling, added the exact Recorded Roundfix Version definition immediately after Setup Manifest and its required sentence with accepted ADR links. Added the prescribed Doctor sentence/block and the upgrade paragraph. Focused glossary phrase, ADR-link, Avoid-line and guide-link checks pass. No Baseline source, manifest, existing test or golden was changed.
+
+### Focused checks
+
+All commands below exited 0. They are implementation checks, not Daemon Verification.
+
+- `go test -count=1 -timeout 10m ./internal/config ./internal/cli -run 'RecordedRoundfixVersion|RecordedByANewerRoundfix|AllowNewerRepository'` — new config/CLI regressions before adding the successful-stop subtest.
+- `go test -count=1 -timeout 5m ./internal/config -run '^(TestLoadAppliesConfigPrecedence|TestProjectInitThenLoadWarnsNothing|TestARepositoryRecordedByANewerRoundfixRefusesLoad|TestAnEqualOrOlderRecordedRoundfixVersionLoadsProjectConfig|TestARepositoryWithoutARecordedRoundfixVersionLoads|TestAMalformedRecordedRoundfixVersionRefusesLoad|TestAllowNewerRepositoryLoadsWithoutProjectConfig|TestADevelopmentBuildIgnoresTheRecordedRoundfixVersion)$'` — all six new config tests and selected existing behavior.
+- `go test -count=1 -timeout 10m ./internal/cli -run '^(TestACommandRefusesARepositoryRecordedByANewerRoundfix|TestReadOnlyCommandsWarnOfARepositoryRecordedByANewerRoundfix|TestRunStopByRunIDRecordsStopRequest|TestRunInitForceOverwritesExistingConfig|TestRunRunsListEmptyResultExitsZero|TestRunDoctorContinuesChecksAfterProfileReadinessFailure|TestUpdateCheckTranscripts)$'` — both new command tests, including successful stop, and selected existing public contracts.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryAvoidLinesArePlainLists|TestUserGuideLinksResolve)$'` — focused glossary and guide contracts.
+- `git diff --check` — no whitespace errors.
+
+The required Behavior Surface regeneration is the final implementation step after the last guide edit; its outcome is recorded below. Task status and declared Verification remain Daemon-owned. No commit, push or Pull Request was made.
+
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — exited 0 after the final guide edit. The generated diff changes only the Doctor and upgrade guide fingerprints.
+- Final scope inspection includes all tracked and untracked paths: exactly the Task's declared interfaces/creates and this Task file; status remains `in_progress`. `git diff --check` exited 0.

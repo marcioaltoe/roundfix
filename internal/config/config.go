@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/app"
 )
 
 // Distribution image reference grammar without IPv6 hosts. Validate before
@@ -297,12 +299,13 @@ type Runs struct {
 }
 
 type Loaded struct {
-	Config              Config
-	GitRoot             string
-	HomeDir             string
-	UserConfigPath      string
-	ProjectConfigPath   string
-	WorktreeLocationErr error // the refusal when the option was set; Location is then ""
+	Config               Config
+	GitRoot              string
+	HomeDir              string
+	UserConfigPath       string
+	ProjectConfigPath    string
+	RepositoryVersionErr error // the refusal when AllowNewerRepository is set; Project Config is not read
+	WorktreeLocationErr  error // the refusal when the option was set; Location is then ""
 }
 
 type SpecsRoot struct {
@@ -319,6 +322,8 @@ type LoadOptions struct {
 	// WorktreeLocationOptional keeps a worktree.location refusal from failing
 	// Load, for a Read-Only Run Command that never creates a Run Worktree.
 	WorktreeLocationOptional bool
+	// AllowNewerRepository reports a version refusal without reading Project Config.
+	AllowNewerRepository bool
 }
 
 type InitOptions struct {
@@ -928,7 +933,12 @@ func Load(opts LoadOptions) (Loaded, error) {
 
 	if loaded.GitRoot != "" {
 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
-		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings, ProfileSourceProject); err != nil {
+		if err := CheckRecordedRoundfixVersion(loaded.GitRoot, app.Version); err != nil {
+			if !opts.AllowNewerRepository {
+				return loaded, err
+			}
+			loaded.RepositoryVersionErr = err
+		} else if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings, ProfileSourceProject); err != nil {
 			return Loaded{}, err
 		}
 	}
@@ -994,6 +1004,9 @@ func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
 		gitRoot := FindGitRoot(workDir)
 		if gitRoot == "" {
 			return InitResult{}, errors.New("project init requires a Git root; use --scope user outside a repository")
+		}
+		if err := CheckRecordedRoundfixVersion(gitRoot, app.Version); err != nil {
+			return InitResult{}, err
 		}
 		path = filepath.Join(gitRoot, projectConfigName)
 	}

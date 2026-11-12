@@ -491,6 +491,27 @@ func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundc
 	return roundconfig.Load(options)
 }
 
+// loadRecoveryCommandConfig preserves User Config while skipping Project Config
+// when the repository records an incompatible Roundfix release.
+func loadRecoveryCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	options.AllowNewerRepository = true
+	return roundconfig.Load(options)
+}
+
+func warnRepositoryVersion(loaded roundconfig.Loaded, stderr io.Writer) error {
+	if loaded.RepositoryVersionErr == nil {
+		return nil
+	}
+	if _, err := fmt.Fprintf(stderr, "roundfix: warning: %v; Project Config not read\n", loaded.RepositoryVersionErr); err != nil {
+		return fmt.Errorf("write repository version warning: %w", err)
+	}
+	return nil
+}
+
 // loadRunReaderCommandConfig keeps worktree-location refusals visible without
 // blocking commands that only read the Run Database.
 func loadRunReaderCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
@@ -499,8 +520,12 @@ func loadRunReaderCommandConfig(environment commandEnvironment, stderr io.Writer
 		return roundconfig.Loaded{}, err
 	}
 	options.WorktreeLocationOptional = true
+	options.AllowNewerRepository = true
 	loaded, err := roundconfig.Load(options)
 	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	if err := warnRepositoryVersion(loaded, stderr); err != nil {
 		return roundconfig.Loaded{}, err
 	}
 	if loaded.WorktreeLocationErr != nil {
@@ -851,8 +876,12 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := loadCommandConfig(environment, stderr)
+	loaded, err := loadRecoveryCommandConfig(environment, stderr)
 	if err != nil {
+		printStopFailure(err, stderr)
+		return exitPreflight
+	}
+	if err := warnRepositoryVersion(loaded, stderr); err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}

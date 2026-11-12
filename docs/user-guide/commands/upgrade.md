@@ -29,3 +29,5 @@ pending sanitize and does not apply it or change the upgrade result.
 A Reduced History Entry counts as Pending History. The notice includes retired
 ADRs and uncited superseded Archive Records without regeneration grants, as
 well as legacy folders and the other retired families.
+
+A binary older than the Recorded Roundfix Version of a repository refuses every command that loads that repository's configuration and `roundfix init --scope project`, naming `roundfix upgrade`. The `roundfix upgrade` command reads no configuration before it installs. The commands `roundfix doctor`, `roundfix update check`, `roundfix runs`, `attach`, `events` and `stop` warn and continue without Project Config.

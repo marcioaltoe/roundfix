@@ -80,6 +80,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printDoctorFailure(err, stderr)
 		return exitRunFailed
 	}
+	loadOptions.AllowNewerRepository = true
 	loaded, err := dependencies.loadConfig(loadOptions)
 	if err != nil {
 		printDoctorFailure(err, stderr)
@@ -99,6 +100,14 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	// Keep independent checks eager and ordered.
 	results := make([]CheckResult, 0, 10)
+	if loaded.RepositoryVersionErr != nil {
+		results = append(results, CheckResult{
+			Name:       HealthCheckBaselineVersion,
+			Status:     CheckStatusFailed,
+			Detail:     loaded.RepositoryVersionErr.Error() + "; Project Config not read",
+			NextAction: "roundfix upgrade",
+		})
+	}
 	results = append(results, checker.Node(ctx))
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
