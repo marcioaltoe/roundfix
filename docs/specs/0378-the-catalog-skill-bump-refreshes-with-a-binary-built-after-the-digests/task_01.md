@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0378-the-catalog-skill-bump-refreshes-with-a-binary-built-after-the-digests
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -98,3 +98,59 @@ Setup Manifest that records the `Makefile` digest.
 - `_prd.md` → Goals; User Stories 1-2; Core Features 1-2; Success Metric 1; Success Metric 2
 - `_techspec.md` → Interfaces; API Contract 1; Testing Approach; Build Order 1
 - ADR-0360
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, no-workarounds, systematic-debugging, setup-context-driven, roundfix, evidence-gate, tech-writer.
+
+The Catalog Skill Bump now rebuilds its temporary Roundfix binary immediately
+following `baseline-digests`, before either Managed Refresh. The recording Go
+stub snapshots `embedded-asset` at build time (or `absent\n`), the probe digests
+step writes `regenerated\n`, and the refresh stub copies the embedded snapshot
+to `refreshed-from`. The pinned call list includes the new build, and the new
+parallel test checks the refreshed asset and temporary-directory cleanup.
+
+Focused evidence by acceptance criterion:
+
+1. Bump ordering and freshness: compiled the affected package with
+   `go test -c -o <probe-dir>/verifyselect.test ./internal/verifyselect`, then
+   ran the binary from `internal/verifyselect` with
+   `-test.run '^TestTheSkillsBump' -test.v -test.timeout 3m -test.parallel 2`.
+   Before the recipe edit, both changed contract tests failed: the pinned
+   sequence lacked the new build, and the refresh embedded `"before digests\n"`
+   instead of `"regenerated\n"`. With the recipe edit, all five bump tests and
+   all ten refusal subtests passed (exit 0). Separate negative probes dropped
+   the added build and moved it before `baseline-digests`: each exited 1 with
+   both named tests failing, including the exact stale-asset diagnostic. Each
+   probe restored the fixed Makefile bytes in `finally`; all five bump tests
+   passed again after restoration. These tests use only their fixture-owned
+   catalog, PATH, HOME and TMPDIR; no real bump or network was used.
+2. Setup Manifest currency: compiled the focused contract with
+   `go test -c -tags docscontract -o <probe-dir>/docscontract.test ./internal/docscontract`
+   and ran that binary from `internal/docscontract` with
+   `-test.run '^TestTheSetupManifestIsCurrent$' -test.v -test.timeout 3m`.
+   After the Makefile edit and before regeneration it failed with
+   `Setup Manifest is stale`; after regeneration it passed (exit 0).
+3. Exact diff scope: byte comparison against HEAD proves the Makefile differs
+   only by the required recipe line. The three other bump-test bodies and
+   `skillsBumpCommand` remain byte-identical, preserving their assertions and
+   environment isolation. `gofmt -l` reports no files. Structural JSON comparison
+   and the text diff show exactly `/verification/0/declarationDigest` and
+   `/verification/1/declarationDigest` changed; the catalog digest is unchanged.
+
+As the final implementation step, ran the sanctioned generator twice:
+`go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`.
+Both runs exited 0. The first reported `File changes: 1`, updating only the
+Setup Manifest; the second reported `File changes: 0` and `Idempotence: verified`.
+No digest was hand-edited. The subsequent manifest check and diff inspection
+were read-only; this Result records their evidence.
+
+The probe binaries live in a task-owned temporary directory. An initial direct
+binary invocation from the repository root was refused by suiteguard because
+its relative repository path requires the package directory; the focused runs
+above used the package directory.
+
+Declared Task Verification and repository Verification were not run; the Daemon
+owns them and Task settlement. No Task status, Task Graph, other Task file,
+commit, push or pull request was changed by this Agent. No follow-up work was
+added to this slice.

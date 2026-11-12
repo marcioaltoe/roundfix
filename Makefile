@@ -350,6 +350,7 @@ skills-third-party-bump: ## Pin the vendored catalog skills and Setup Snapshots 
 	unpinned=$$(jq -r --arg ref "$$ref" '.skills | to_entries | map(select(.value.source == "marcioaltoe/skills" and .value.ref != $$ref) | .key) | sort | .[]' skills-lock.json); \
 	[ -z "$$unpinned" ] || refuse "not pinned to $$ref: $$unpinned"; \
 	$(MAKE) --no-print-directory -f "$(abspath $(firstword $(MAKEFILE_LIST)))" baseline-digests >&2; \
+	$(GO) build -o "$$tmp/roundfix" ./cmd/roundfix; \
 	roundfix baseline update --repo . --no-skills --no-history --yes --format text >&2; \
 	roundfix baseline update --repo . --no-skills --no-history --yes --format text > "$$tmp/refresh"; cat "$$tmp/refresh" >&2; \
 	awk '$$0 == "File changes: 0" { current = 1 } END { exit !current }' "$$tmp/refresh" || refuse 'second managed refresh must report File changes: 0'; \

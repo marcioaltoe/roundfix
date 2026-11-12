@@ -48,6 +48,7 @@ func TestTheSkillsBumpPinsTheCatalogMainCommit(t *testing.T) {
 		restore + " --confirm-plan sha256:fixture-plan",
 		"go test probe -run Probe -update -count=1",
 		"go test ./internal/baseline -run TestCatalogCompatibility -count=1",
+		build,
 		"roundfix baseline update --repo . --no-skills --no-history --yes --format text",
 		"roundfix baseline update --repo . --no-skills --no-history --yes --format text",
 	}
@@ -70,6 +71,25 @@ func TestTheSkillsBumpPinsTheCatalogMainCommit(t *testing.T) {
 	}
 	if got := readSkillsBumpCalls(t, root); got != calls {
 		t.Fatalf("retired target ran a stub:\n%s", got)
+	}
+	assertSkillsBumpTemporaryDirectoryRemoved(t, root)
+}
+
+func TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests(t *testing.T) {
+	t.Parallel()
+	root, catalog, _ := newSkillsBumpFixture(t)
+	repo := filepath.Join(root, "repo")
+	writeFile(t, repo, "embedded-asset", "before digests\n")
+	output, err := skillsBumpCommand(t, root, catalog).CombinedOutput()
+	if err != nil {
+		t.Fatalf("bump: %v\n%s", err, output)
+	}
+	refreshed, err := os.ReadFile(filepath.Join(repo, "refreshed-from"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(refreshed) != "regenerated\n" {
+		t.Fatalf("the managed refresh ran a binary that embeds %q; want the asset make baseline-digests regenerated, %q", refreshed, "regenerated\n")
 	}
 	assertSkillsBumpTemporaryDirectoryRemoved(t, root)
 }
@@ -224,7 +244,14 @@ func newSkillsBumpFixture(t *testing.T) (string, string, string) {
 if [ "$1" = build ]; then
     test "$2" = -o
     cp "$fixture/roundfix-stub" "$3"
+    if [ -f embedded-asset ]; then
+        cp embedded-asset "$3.embedded"
+    else
+        printf 'absent\n' > "$3.embedded"
+    fi
     chmod +x "$3"
+elif [ "$1" = test ] && [ "$2" = probe ]; then
+    printf 'regenerated\n' > embedded-asset
 fi
 `)
 	writeFile(t, root, "roundfix-stub", prefix+`printf 'roundfix %s\n' "$*" >> "$fixture/calls"
@@ -267,7 +294,10 @@ case "$*" in
             cp "$source_dir/skills/"*/"$name/SKILL.md" ".agents/skills/$name/SKILL.md"
         done
         ;;
-    'baseline update '*) printf 'File changes: 0\n' ;;
+    'baseline update '*)
+        cp "$0.embedded" refreshed-from
+        printf 'File changes: 0\n'
+        ;;
     *) exit 1 ;;
 esac
 `)
