@@ -1,2 +1,0 @@
-make build: exit 0; see build.txt
-make verify-changed: Daemon supplied pass (exit 0) at 92a248537b6220ce8af0ff40cc5b6997737f22e9; diagnostics removed on success. Not re-executed by QA.

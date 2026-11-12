@@ -1,6 +1,0 @@
-76 QA files checked: UTF-8 text, no NUL bytes, no ignored path.
-All report local links resolve.
-37 contiguous Results rows; 35 pass, 1 environment-blocked, 1 declared-blocked; all typed inputs present.
-Repository Secret Patterns: zero matches.
-One seeded QA Report, unchanged auditor metadata and mechanical audit/skips.
-No tracked source, Task status or Task Graph delta; no commit, push or PR.

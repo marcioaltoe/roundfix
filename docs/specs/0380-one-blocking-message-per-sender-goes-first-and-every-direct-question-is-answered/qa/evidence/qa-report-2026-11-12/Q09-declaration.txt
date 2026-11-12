@@ -1,5 +1,0 @@
-criterion: after the release that carries this Spec, an adopter's `roundfix baseline update` writes the reworded receiving clause, and a real `/roundfix --follow-up` session that holds two declared messages from one sender lists the older one first and the newer one with `precedence_held_by`.
-reason: it needs a released binary, real ai-memory messages, the ai-memory MCP server and a live Agent session, which no Verification or QA row may reach.
-satisfied-by: the operator's follow-up session evidence after the release, recorded session evidence.
-Observed constraints: only the unreleased audited Run build and local fixtures were exercised; the Task and Spec authorization forbid live Agent sessions, ai-memory, network access, other repositories and credentials. The temporary fixture demonstrates command behavior, not released adopter compliance. No attempt was made to breach that restriction.
-Unblocking: after release, the operator records an adopter baseline update and real follow-up session with two blocking messages from one sender, proving older precedence and the later holding reference.

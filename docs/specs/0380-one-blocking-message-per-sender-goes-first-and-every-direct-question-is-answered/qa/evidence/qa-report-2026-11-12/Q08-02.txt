@@ -1,5 +1,0 @@
-Source: Gregor Hohpe and Bobby Woolf, Enterprise Integration Patterns, Request-Reply.
-URL: https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html
-Read by Spec author: 2026-11-11. QA uses the quoted passage preserved in PRD Acceptance evidence, offline; no claim of live refetch.
-Passage: The applications may want a two-way conversation.
-Comparison: refreshed receiving clause requires an answer to each direct question whether or not blocked work was declared. This follows the request/reply distinction without adding acknowledgments or completion notices for undeclared work. Real agent compliance remains the declared post-release row.

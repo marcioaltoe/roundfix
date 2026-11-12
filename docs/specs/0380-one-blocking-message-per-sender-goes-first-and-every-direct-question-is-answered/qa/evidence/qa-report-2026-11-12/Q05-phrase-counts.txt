@@ -1,6 +1,0 @@
-1 the answer to a direct question the message asks included
-1 takes precedence for one message per sender at a time
-1 a later blocking message from the same sender included
-1 never replaces the maintainer's judgment
-1 Answer each direct question a message asks with `memory_message_send` as soon as the answer exists, whether or not the message declared blocked work
-second confirmed refresh: verified and zero file changes; read-only preview: current; guide and setup manifest byte-identical
