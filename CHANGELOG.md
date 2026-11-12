@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.141.0] - 2026-11-12
+
+### One blocking message per sender goes first, and every direct question is answered
+
+- **`roundfix follow-up` gives the declared precedence to one message per sender.** When several messages from the same project declare `blocked_work`, only the oldest one (then the lowest reference) ranks first as `declared`. The sender's other declared messages are ordered by the judge or their type, keep `blocked_work`, and carry a new `precedence_held_by` field naming the message that holds the precedence; their text line says so. Nothing is kept between runs, so once the holding message is consumed the sender's next declared message takes its place. A file without `blocked_work` gives the same report as before.
+- The Baseline's message-reading clause and the `--follow-up` Skill Mode now say the same thing: the precedence orders triage but never replaces the maintainer's judgment. A direct question in a message is answered as soon as the answer exists, whether or not the message declared blocked work, and no acknowledgment or completion notice goes to a message that declared none.
+- A capacity test that waited for an exact count of Verification start events no longer times out on a slow Linux machine.
+
 ## [0.140.0] - 2026-11-11
 
 ### An ADR marked as not applying in Portuguese draws in no citing ADR
