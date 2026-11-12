@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.142.0] - 2026-11-12
+
+### An older Roundfix refuses a repository a newer Roundfix wrote
+
+- **A binary older than the release that last changed a repository's Baseline now refuses early and says how to recover.** The Setup Manifest records the Recorded Roundfix Version (`roundfixVersion`) whenever a Baseline plan changes a file, and a configuration-loading command run by an older binary stops before any side effect, naming both versions and `roundfix upgrade`. `roundfix doctor` opens with a `baseline-version:` line. The commands needed to recover (`upgrade`, `doctor`, `update check`, `--version`, `stop`, run readers) keep working, and a development or pre-release build never records a version and is never refused. ADR-0392.
+
 ## [0.141.1] - 2026-11-12
 
 ### A conflicting merge of the default branch is a review delta
