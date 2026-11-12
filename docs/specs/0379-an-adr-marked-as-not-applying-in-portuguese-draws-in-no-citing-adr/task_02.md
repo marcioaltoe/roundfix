@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0379-an-adr-marked-as-not-applying-in-portuguese-draws-in-no-citing-adr
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -88,3 +88,55 @@ outside the list.
 - `_prd.md` → Goals; User Stories 1-3; Core Features 1-3; Success Metric 1; Success Metric 2
 - `_techspec.md` → Interfaces; API Contract 1; API Contract 2; Testing Approach; Build Order 2
 - ADR-0389
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, no-workarounds, tech-writer, evidence-gate.
+
+The marker now uses the exact closed-list pattern from ADR-0389. The
+`SC-ADR-RELATED` fix names both tokens; only its token clause and the existing
+`wantFix` literal changed. The new parallel fixture tests exercise the six
+accepted Portuguese forms and four forms outside the list through
+`speccheck.Check`, reusing the existing helpers.
+
+Focused implementation evidence:
+
+- Before the production edit,
+  `go test -count=1 -timeout 2m ./internal/speccheck -run '^TestAPortugueseNotApplicableADRDrawsInNoCitingADR$' -v`
+  exited 1: all six Portuguese subtests reported an unwanted
+  `SC-ADR-RELATED` gap for ADR-0003 citing ADR-0002.
+- After the edit,
+  `go test -count=1 -timeout 2m ./internal/speccheck -run '^Test(APortugueseNotApplicableADRDrawsInNoCitingADR|AMarkerOutsideTheClosedListStillDrawsIn|AnAppliedADRStillDrawsInItsCitingADR|ANotApplicableADRDrawsInNoCitingADR|WithoutATechSpecEveryListedADRSeeds|AnADRCitingAnAppliedADRIsStillRelated)$' -v`
+  exited 0. This supports acceptance criterion 1: all six accepted forms
+  produced none of `CodeADRRelated`, `CodeADRUnlisted` or
+  `CodeADRAlternativesUnrelated`, and all four guards retained the expected
+  ADR-0003 gap. It also supports acceptance criterion 2: the English cases,
+  no-TechSpec case, applied-ADR case and exact bilingual fix assertion passed.
+- Acceptance criterion 3: five disposable Go overlays each changed only the
+  pattern and ran
+  `go test -overlay <overlay.json> -count=1 -timeout 2m ./internal/speccheck -run '^<test>$/^<subtest>$' -v`.
+  Every invocation exited 1 at its intended assertion, with the named subtest
+  reporting `FAIL` (not a compilation or environment failure):
+
+  | Pattern mutation | Test | Subtest | Observed failure |
+  | --- | --- | --- | --- |
+  | English-only pattern | `TestAPortugueseNotApplicableADRDrawsInNoCitingADR` | `accented` | Unwanted `SC-ADR-RELATED` gap |
+  | Remove `(?i)` | `TestAPortugueseNotApplicableADRDrawsInNoCitingADR` | `upper_case` | Unwanted `SC-ADR-RELATED` gap |
+  | Remove `a\x{0303}` alternative | `TestAPortugueseNotApplicableADRDrawsInNoCitingADR` | `decomposed` | Unwanted `SC-ADR-RELATED` gap |
+  | Remove unaccented `a` alternative | `TestAPortugueseNotApplicableADRDrawsInNoCitingADR` | `unaccented` | Unwanted `SC-ADR-RELATED` gap |
+  | Remove trailing `\b` | `TestAMarkerOutsideTheClosedListStillDrawsIn` | `plural` | Missing expected `SC-ADR-RELATED` gap |
+
+  The overlays never changed the repository source. Their local JSON files,
+  replacement sources and full failure transcripts are under
+  `/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0379-task02-xhnbcghh/`.
+- Diff inspection confirms `appliedADRNumbers`, all other pattern callers,
+  `constraints.go`, the three required unchanged tests and every assertion
+  other than the declared `wantFix` change retain their bytes. The new tests
+  call `t.Parallel()` first at both test levels, including each subtest, and
+  the decomposed literal contains U+0061 followed by U+0303.
+- `git diff --check` exited 0. The changed paths are the four declared Go
+  files and this Task file; the initial Task status edit remains Daemon-owned.
+
+Declared Task Verification and repository Verification were not run; the
+Daemon owns those checks and Task settlement. No follow-up work identified.
