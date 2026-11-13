@@ -1,6 +1,0 @@
-command: GOOS=windows go vet ./internal/verifyselect
-stdout:
-
-stderr:
-
-exit: 0

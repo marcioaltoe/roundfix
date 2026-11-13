@@ -1,7 +1,0 @@
-command: go test -count=1 -timeout 20m ./internal/verifyselect
-stdout:
-ok  	roundfix/internal/verifyselect	8.752s
-
-stderr:
-
-exit: 0

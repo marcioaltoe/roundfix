@@ -1,9 +1,0 @@
-Pull Request equivalent-evidence record
-
-Supplied assignment fact: no open Pull Request. No network, gh, push or PR mutation was performed.
-Claimed candidate: 982d498c1b73eca98a9c6abf5f16bb69c5fbe832.
-Approval: approved Spec-contained _authorization.md at Delivery Base 32b39e5403226cc3f56fa278db3ba158cd44d707, unchanged through both Task commits; delivery operations explicitly granted. This grant belongs to the delivery owner, and does not authorize this QA Agent to publish.
-Checks: Daemon supplied make verify-changed, pass, exit 0 at the audited head; successful diagnostics removed. The Agent did not rerun it.
-Review threads: no unresolved threads exist because no Pull Request exists; no review completion is inferred.
-Merge-Ready: acceptance has not occurred; it needs the later PR/current-candidate delivery controls.
-Unblock: the delivery owner opens a PR on the Spec target branch after the graph and review settle, and verifies its required checks and Merge-Ready acceptance. The Run Worktree branch is never a PR source.

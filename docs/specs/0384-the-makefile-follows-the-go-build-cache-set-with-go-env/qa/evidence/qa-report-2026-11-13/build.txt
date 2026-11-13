@@ -1,5 +1,0 @@
-command: make build
-gocache-bound: <selected cache>: removed 4480 idle entries (1390642789 bytes)
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=982d498c-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-13 00:20:45 -0300'" -o bin/roundfix ./cmd/roundfix
-
-exit: 0

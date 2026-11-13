@@ -1,7 +1,0 @@
-command: go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run ^TestTheSetupManifestIsCurrent$
-stdout:
-ok  	roundfix/internal/docscontract	0.340s
-
-stderr:
-
-exit: 0
