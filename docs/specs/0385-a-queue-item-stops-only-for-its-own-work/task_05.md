@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0385-a-queue-item-stops-only-for-its-own-work
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

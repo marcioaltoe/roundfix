@@ -1,0 +1,306 @@
+import os, sys, subprocess, tempfile, pathlib, json, re, shutil, tarfile, io, shlex
+ROOT=pathlib.Path(__file__).resolve().parents[6]
+SPEC="0385-a-queue-item-stops-only-for-its-own-work"
+S=ROOT/"docs/specs"/SPEC
+E=S/"qa/evidence/qa-report-2026-11-12"
+REPORT=S/"qa/qa-report-2026-11-12.md"
+HEAD="34b2e91e71ae6181dbbfec3295595b038d499854"
+BASE="3a9ca717111f6ac52d84b2668e99ac169e116960"
+UNSET=["GH_TOKEN","GITHUB_TOKEN","TYPESAFE_API_KEY","ROUNDFIX_OPENROUTER_JUDGE_API_KEY","ROUNDFIX_OPENROUTER_API_KEY","ROUNDFIX_TYPESAFE_API_KEY"]
+def call(args,cwd=ROOT,environ=None):
+    return subprocess.run(args,cwd=cwd,env=environ,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+def save(name,args,result,extra=""):
+    (E/(name+".txt")).write_text("command: "+shlex.join(args)+"\nexit: "+str(result.returncode)+"\nstdout:\n"+result.stdout+"\nstderr:\n"+result.stderr+"\n"+extra)
+    print(name+": exit "+str(result.returncode),flush=True)
+def cli(name,args):
+    cache={k:call(["go","env",k]).stdout.strip() for k in ["GOCACHE","GOMODCACHE"]}
+    with tempfile.TemporaryDirectory(prefix="qa0385-home-") as h,tempfile.TemporaryDirectory(prefix="qa0385-tmp-") as t:
+        fake=pathlib.Path(h)/"bin"; fake.mkdir()
+        gh=fake/"gh"; gh.write_text("#!/bin/sh\nprintf '[]\\n'\n"); gh.chmod(0o700)
+        environ=dict(os.environ)
+        for k in UNSET: environ.pop(k,None)
+        environ.update(cache,HOME=h,TMPDIR=t,PATH=str(fake)+os.pathsep+environ["PATH"])
+        cmd=["./bin/roundfix"]+args
+        r=call(cmd,environ=environ)
+        save(name,cmd,r,"Isolation: HOME and TMPDIR fresh and removed; GOCACHE and GOMODCACHE retained; fake gh first on PATH; unset names: "+", ".join(UNSET)+".\n")
+        return r
+
+CRITERION="a review validator session that runs after the release is recorded by ai-memory under this repository's project, and no new roundfix-review-validator-<n> project appears"
+ROWS=[
+("R01","repository Verification","Daemon static gate at audited head"),
+("R02","Requirement 2","Named CLI regressions, every subtest"),
+("R03","Requirement 2","Named sealed-directory regressions, every subtest"),
+("R04","Requirement 2","Whole internal/cli package; Task 01, 02 and 03 named tests"),
+("R05","Requirement 2","Whole internal/agent and internal/baselineacp packages"),
+("R06","Requirement 2","Whole skills package"),
+("R07","Requirement 2","Whole docscontract package and glossary contract"),
+("R08","Requirement 2","Built CLI companion smoke and offline archive outcome"),
+]+[("S%02d"%i,"Requirement 4","Sabotage %d"%i) for i in range(1,11)]+[
+("R09","Requirement 2","Documentation contract companion wording and confinement assertions"),
+("R10","Requirement 10","Task changed-file scope, authority, forbidden paths and settlement sections"),
+("E01","outside-evidence row","Go specification Selectors rule 6; supplied passage read 2026-11-12"),
+("E02","outside-evidence row","Go specification Handling panics; supplied passage read 2026-11-12"),
+("E03","outside-evidence row","ai-memory Marker file; supplied passage read 2026-11-12"),
+("D01","PRD Unreachable Acceptance: "+CRITERION,"Post-release operator observation"),
+("P01","Pull Request row","Pre-PR equivalent controls; no open Pull Request"),
+]
+def status(row,value,note=""):
+    s=REPORT.read_text(); pat=r"(?m)^\| "+re.escape(row)+r" \| [^|]* \|"
+    s,n=re.subn(pat,"| "+row+" | "+value+" |",s); assert n==1,(row,n)
+    if note: s+="\nObservation for "+row+": "+note+"\n"
+    REPORT.write_text(s)
+def plan():
+    s=REPORT.read_text()
+    assert "| R01 |" not in s
+    s=s.replace("verdict: pending","spec: "+SPEC+"\ndate: 2026-11-12\nbuild: \""+HEAD+"\"\nstatus: in-progress\nverdict: pending\nuser_flow_binary: \""+re.search(r"roundfix 0[^\n]+",(E/"version.txt").read_text())[0]+"\"\nuser_flow_executables:\n  - bin/roundfix\n  - docs/specs/"+SPEC+"/qa/evidence/qa-report-2026-11-12/qa_runner.py.txt\nsurfaces: [backend, cli, docs]")
+    table="| - | --- | --- |\n"+"".join("| "+rid+" | pending | "+src+" — "+title+" |\n" for rid,src,title in ROWS)
+    s=s.replace("| - | --- | --- |\n",table,1)
+    s+="\n## Scope and environment\n\nFull declared matrix at the audited head, on macOS; no frontend declared. The QA Task is task_05, terminal after task_04 and transitively all four completed dependencies. Strict Spec check passed without executing authored Verification. Its skipped detectors have absent artifacts: no unresolved Findings or Rollups, no legacy findings archive, and no Vocabulary Contract (no new output vocabulary or Surface Transcript). This run changes only the seeded report and fresh text evidence. The build dirty suffix is from the untracked seeded qa directory; production sources match the audited commit.\n\nAll public CLI invocations use ./bin/roundfix, fresh HOME and TMPDIR, retained GOCACHE and GOMODCACHE, a fake gh returning [], and withheld GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY and ROUNDFIX_TYPESAFE_API_KEY. Go tests retain the session toolchain configuration and create their own disposable fixtures. No live service, Agent, adapter, credential, other repository or network is used. No checkout writes occur while a suite runs; captured output is saved only after it exits.\n\nBuild and precondition evidence: [build](evidence/qa-report-2026-11-12/build.txt), [version](evidence/qa-report-2026-11-12/version.txt), [strict check](evidence/qa-report-2026-11-12/precondition.txt).\n\n## Row details\n"
+    for rid,src,title in ROWS:
+        s+="\n### "+rid+"\n\n"+title+". Actor: operator or maintainer; surface: CLI/backend/docs. Entry point and steps: the fresh runner phase named in the observation and linked transcript. Expected: every named assertion or control below holds; independent confirmation: stored output, postcondition assertions and scope checks; persistence: real store/file rereads in fixtures where applicable, otherwise not applicable to help or static content.\n\n```yaml\ninputs:\n  - kind: repository_path\n    ref: '**'\n"
+        if rid in ["R10","P01"]:
+            s+="  - kind: commit_range\n    ref: "+BASE+".."+HEAD+"\n"
+        s+="```\n"
+    REPORT.write_text(s)
+def testrow(rid,name,args,required=()):
+    cmd=["go","test","-count=1","-timeout","40m","-v"]+args
+    r=call(cmd); save(name,cmd,r)
+    text=r.stdout+r.stderr
+    missing=[x for x in required if not re.search(r"--- PASS: "+re.escape(x)+r" ",text)]
+    ok=r.returncode==0 and not missing
+    status(rid,"pass" if ok else "fail","[transcript](evidence/qa-report-2026-11-12/"+name+".txt); exit "+str(r.returncode)+"; required missing: "+str(missing)+". All test and subtest names are retained verbatim.")
+    return ok
+CLI_NAMES=["TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate","TestADeliveryWorkflowWithoutALogWritesToStandardError","TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord","TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait","TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns","TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning","TestReviewFindingAnchorParsesEachForm","TestReviewReadsAnAnchorFollowedBySentencePunctuation","TestReviewBlocksFindingsThatNameNoFileAndLine","TestTheReviewValidatorSessionCarriesTheRepositoryMarker"]
+AGENT_NAMES=["TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker","TestCopySealedIdentityMarkerCopiesOnlyARegularMarker"]
+def tests():
+    static="command: make verify-changed\norigin: Daemon-supplied repository Verification; not rerun by QA\naudited head: "+HEAD+"\nverdict: pass\nexit: 0\ndiagnostics: removed on success\n"
+    (E/"static-gate.txt").write_text(static); status("R01","pass","[Daemon gate](evidence/qa-report-2026-11-12/static-gate.txt), exit 0; not rerun.")
+    testrow("R02","named-cli",["-run","^("+"|".join(CLI_NAMES)+")$","./internal/cli"],CLI_NAMES)
+    testrow("R03","named-agent",["-run","^("+"|".join(AGENT_NAMES)+")$","./internal/agent"],AGENT_NAMES)
+    testrow("R04","whole-cli",["./internal/cli"],CLI_NAMES+["TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker","TestTheReviewValidatorSessionCarriesTheRepositoryMarker/no_marker"])
+    testrow("R05","whole-agent-baselineacp",["./internal/agent","./internal/baselineacp"],AGENT_NAMES)
+    testrow("R06","whole-skills",["./skills"])
+    testrow("R07","whole-docscontract",["-tags","docscontract","./internal/docscontract"],["TestGlossaryPhrasesAreDefinedTerms"])
+def smoke():
+    a=cli("deliver-help",["deliver","--help"])
+    b=cli("review-help",["review","--help"])
+    c=cli("archive-plan",["archive",SPEC,"--plan","--offline"])
+    ok=a.returncode==0 and b.returncode==0 and c.returncode==0
+    status("R08","pass" if ok else "fail","[deliver help](evidence/qa-report-2026-11-12/deliver-help.txt), [review help](evidence/qa-report-2026-11-12/review-help.txt), [offline archive plan](evidence/qa-report-2026-11-12/archive-plan.txt). Every invocation used a distinct fresh home; archive plan must print judge skipped (offline).")
+
+def mutate(d,i):
+    def change(path,old,new):
+        p=d/path; s=p.read_text(); assert s.count(old)==1,(i,path,s.count(old)); p.write_text(s.replace(old,new,1))
+    wf="internal/cli/deliver_workflow.go"; anchor="internal/cli/review_validation.go"; sealed="internal/agent/sealed.go"
+    if i==1: change(wf,"\t\tlog:    log,\n","")
+    elif i==2: change(wf,"\t\tLog:            log,","\t\tLog:            os.Stderr,")
+    elif i==3:
+        p=d/wf; s=p.read_text(); s,n=re.subn(r"func \(workflow \*commandDeliveryWorkflow\) console\(\) io.Writer \{.*?\n\}","func (workflow *commandDeliveryWorkflow) console() io.Writer {\nreturn workflow.log\n}",s,count=1,flags=re.S); assert n==1; p.write_text(s)
+    elif i==4: change("internal/cli/deliver.go","runStore.ReleaseIdleDeliveryQueueOwner(context.WithoutCancel(ctx), loaded.GitRoot, pid, identity)","runStore.ReleaseDeliveryQueueOwner(context.WithoutCancel(ctx), loaded.GitRoot, pid, identity)")
+    elif i==5:
+        p=d/anchor; s=p.read_text(); start=s.index("\t\tif next == '.' || next == ';' {"); end=s.index("} else if !unicode.IsSpace(next)",start)
+        s=s[:start]+"\t\tif !unicode.IsSpace(next)"+s[end+len("} else if !unicode.IsSpace(next)"):]; s=s.replace("next, size := utf8.DecodeRuneInString(rest)","next, _ := utf8.DecodeRuneInString(rest)"); p.write_text(s)
+    elif i==6: change(anchor,"if size < len(rest) {","if false && size < len(rest) {")
+    elif i==7: change("internal/cli/review_convention_validator.go","\tif err := agent.CopySealedIdentityMarker(repo.Root, workDir); err != nil {\n\t\treturn unavailable(err)\n\t}\n","")
+    elif i==8:
+        p=d/sealed; s=p.read_text(); start=s.index("\tif len(entries) != 0 {"); end=s.index("\n\treturn nil",start); s=s[:start]+"\t_ = entries\n"+s[end:]; p.write_text(s)
+    elif i==9: change(sealed," || !entries[0].Type().IsRegular()","")
+    elif i==10: change(sealed,"info, err := os.Lstat(marker)","info, err := os.Stat(marker)")
+def sabotages():
+    cases={
+      1:("./internal/cli","^TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate$",["TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate"]),
+      2:("./internal/cli","^TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate$",["TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate"]),
+      3:("./internal/cli","^TestADeliveryWorkflowWithoutALogWritesToStandardError$",["TestADeliveryWorkflowWithoutALogWritesToStandardError"]),
+      4:("./internal/cli","^TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord$/(panic|error)$",["TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic","TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/error"]),
+      5:("./internal/cli","^(TestReviewFindingAnchorParsesEachForm|TestReviewReadsAnAnchorFollowedBySentencePunctuation)$",["TestReviewFindingAnchorParsesEachForm/path.go:2._Failure:_broken","TestReviewReadsAnAnchorFollowedBySentencePunctuation"]),
+      6:("./internal/cli","^TestReviewFindingAnchorParsesEachForm$/^path.go:2.5_broken$",["TestReviewFindingAnchorParsesEachForm/path.go:2.5_broken"]),
+      7:("./internal/cli","^TestTheReviewValidatorSessionCarriesTheRepositoryMarker$/^marker$",["TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker"]),
+      8:("./internal/agent","^TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker$/^other_file$",["TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file"]),
+      9:("./internal/agent","^TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker$/^marker_symbolic_link$",["TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/marker_symbolic_link"]),
+      10:("./internal/agent","^TestCopySealedIdentityMarkerCopiesOnlyARegularMarker$/^symbolic_link$",["TestCopySealedIdentityMarkerCopiesOnlyARegularMarker/symbolic_link"])}
+    archive=subprocess.run(["git","archive",HEAD],cwd=ROOT,check=True,stdout=subprocess.PIPE).stdout
+    for i,(package,pattern,required) in cases.items():
+        rid="S%02d"%i; name="sabotage-%02d"%i
+        with tempfile.TemporaryDirectory(prefix=".qa0385-sabotage-",dir=ROOT) as td:
+            d=pathlib.Path(td)
+            with tarfile.open(fileobj=io.BytesIO(archive)) as tar: tar.extractall(d,filter="data")
+            environ=dict(os.environ,GIT_CONFIG_NOSYSTEM="1",GIT_CONFIG_GLOBAL="/dev/null",GOPROXY="off",GOSUMDB="off")
+            for k in UNSET: environ.pop(k,None)
+            for args in [["init","--quiet","--initial-branch=main"],["add","-A"],["-c","user.name=QA Fixture","-c","user.email=qa@roundfix.invalid","-c","commit.gpgsign=false","-c","core.hooksPath=/dev/null","commit","--quiet","-m","audited head fixture"]]:
+                result=call(["git"]+args,cwd=d,environ=environ); assert result.returncode==0,result.stderr
+            mutate(d,i)
+            diff=call(["git","diff","--no-ext-diff"],cwd=d,environ=environ)
+            cmd=["go","test","-count=1","-timeout","5m","-v","-run",pattern,package]
+            r=call(cmd,cwd=d,environ=environ)
+            combined=r.stdout+r.stderr
+            missing=[x for x in required if not re.search(r"--- FAIL: "+re.escape(x)+r" ",combined)]
+            ok=r.returncode!=0 and not missing and "[build failed]" not in combined
+            save(name,cmd,r,"Fixture: independent git archive of "+HEAD+", git init/add/commit before one mutation. GOPROXY and GOSUMDB offline; no earlier Run evidence.\nMutation diff:\n"+diff.stdout+"\nExpected failure cases: "+str(required)+"\nMissing expected failures: "+str(missing)+"\n")
+            print("\n".join(x for x in combined.splitlines() if "--- FAIL:" in x or "_test.go:" in x)[:1600],flush=True)
+        status(rid,"pass" if ok else "fail","[mutation and failing transcript](evidence/qa-report-2026-11-12/"+name+".txt); expected failing cases: "+", ".join(required)+"; actual exit "+str(r.returncode)+"; all expected failures observed: "+str(not missing)+". Fresh fixture removed after test exit.")
+
+def wording():
+    lines=[]; errors=[]
+    def check(ok,label):
+        lines.append(("PASS " if ok else "FAIL ")+label)
+        if not ok: errors.append(label)
+    texts={
+    "deliver":["A Queue Owner that stops while an item can still advance, because its engine returned an error or the process panicked, keeps its owner record, so status reports it with the line above. It releases the record when it exits with no item left to advance, and `deliver stop` releases it after the owner it stopped has exited.","The queue log is the Queue Owner's console log, the file `deliver start` and `deliver resume` print as `Console Log:`."],
+    "review":["An anchor followed by a period or a semicolon reads as one followed by a space when a space or the end of the finding comes next, so an anchor may end a sentence; `path:2.5` and `path:2.md` are not anchors.","The session works in a new private directory outside every checkout. When the reviewed checkout's root holds a regular `.ai-memory.toml` of at most 64 KiB, Roundfix copies it into that directory, which holds nothing else, so a tool that names its project from the working directory records the session under the reviewed repository."]}
+    norm=lambda s:" ".join(s.split())
+    for family,phrases in texts.items():
+        for rel in ["docs/user-guide/commands/"+family+".md",".agents/skills/roundfix/references/"+family+".md","skills/roundfix/references/"+family+".md"]:
+            s=norm((ROOT/rel).read_text())
+            for n,text in enumerate(phrases,1): check(norm(text) in s,rel+" exact contract paragraph "+str(n))
+        a=ROOT/(".agents/skills/roundfix/references/"+family+".md"); b=ROOT/("skills/roundfix/references/"+family+".md")
+        check(a.read_bytes()==b.read_bytes(),family+" canonical and mirror byte identity")
+    glossary=norm((ROOT/"CONTEXT.md").read_text())
+    check("A Queue Owner that stops while an item can still advance keeps that record, so the report names it" in glossary,"Queue Owner definition revised")
+    check("docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md" in glossary,"Queue Owner accepted ADR link")
+    adr=(ROOT/"docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md").read_text(); check("status: accepted" in adr,"ADR-0395 accepted")
+    for file in ["_prd.md","_techspec.md"]: check("changes: **Queue Owner**" in (S/file).read_text(),file+" declares changed Queue Owner")
+    matches=[]
+    for p in (ROOT/"internal/cli").glob("*.go"):
+        if p.name.endswith("_test.go"): continue
+        s=p.read_text()
+        for n,line in enumerate(s.splitlines(),1):
+            if "workflow.log" in line: matches.append(str(p.relative_to(ROOT))+":"+str(n)+":"+line)
+        if "workflow.log" in s:
+            match=re.search(r"func \(workflow \*commandDeliveryWorkflow\) console\(\) io.Writer \{.*?\n\}",s,re.S)
+            check(match is not None and "workflow.log" not in s[:match.start()]+s[match.end():],str(p.relative_to(ROOT))+" only console reads workflow.log")
+    lines.extend(matches); check(len(matches)==2,"exactly two production workflow.log reads, both console")
+    refusal="sealed Agent working directory must be empty apart from its .ai-memory.toml"
+    count=sum(p.read_text().count(refusal) for p in (ROOT/"internal/agent").glob("*.go") if not p.name.endswith("_test.go"))
+    check(count==1,"exact sealed refusal occurs once in production agent code")
+    check(all("CopySealedIdentityMarker" not in p.read_text() for p in (ROOT/"internal/baselineacp").rglob("*.go")),"Baseline has no marker-copy reference")
+    for rel in [".agents/skills/roundfix/SKILL.md","skills/roundfix/SKILL.md"]:
+        versions=re.findall(r"^  ?version: (.+)$",(ROOT/rel).read_text(),re.M); lines.append(rel+" version: "+str(versions))
+    (E/"wording.txt").write_text("Assertions: exact normalized contract paragraphs, canonical byte comparison, source-wide absence checks and glossary declarations.\n"+"\n".join(lines)+"\n")
+    status("R09","pass" if not errors else "fail","[wording and confinement assertions](evidence/qa-report-2026-11-12/wording.txt). Contract 6–9 text, mirror identity, accepted ADR, source-wide log/refusal checks and unchanged Baseline boundary checked with assertions. Package contracts independently exercise the documented behavior.")
+def scope():
+    lines=[]; errors=[]
+    def check(ok,label):
+        lines.append(("PASS " if ok else "FAIL ")+label)
+        if not ok: errors.append(label)
+    commits=call(["git","rev-list","--reverse",BASE+".."+HEAD]).stdout.splitlines()
+    check(len(commits)==4,"exactly four Task commits in range")
+    authority=call(["git","show",BASE+":docs/specs/"+SPEC+"/_authorization.md"]).stdout
+    granted=re.search(r"(?ms)^paths:\n(.*?)^operations:",authority).group(1)
+    bounded=set(re.findall(r"^  - (.+)$",granted,re.M)); check("status: approved" in authority,"approved authority exists at delivery base before every Task")
+    governed=(ROOT/"internal/speccheck/governed.go").read_text()
+    patterns=[re.compile(x) for x in re.findall(r"regexp\.MustCompile\(\s*`([^`]+)`",governed)]
+    historical=governed[governed.index("paths: exactGovernedPaths("):]
+    historical=set(re.findall(r'"([^"\n]+)"',historical.split("),",1)[0]))
+    gov=lambda p:any(x.search(p) for x in patterns) or p in historical
+    forbidden_exact={"Makefile","go.mod","go.sum",".roundfixrc.yml","skills-lock.json","CHANGELOG.md","internal/app/version.go","dist/npm/roundfix/package.json","docs/agents/setup-context.json","docs/references/coverage-record.json"}
+    forbidden_prefixes=(".github/workflows/","docs/agents/","internal/baseline/","internal/baselineacp/","internal/delivery/")
+    allpaths=set()
+    for i,c in enumerate(commits,1):
+        task=S/("task_%02d.md"%i); content=task.read_text()
+        declared=set(re.findall(r"^- (?:creates|interface|instruction|deletes): `([^`]+)`",content,re.M)); declared.add(str(task.relative_to(ROOT)))
+        if "## Recorded paths" in content:
+            section=content.split("## Recorded paths",1)[1].split("\n## ",1)[0]; declared.update(re.findall(r"`([^`]+)`",section))
+        paths=call(["git","diff-tree","--no-commit-id","--name-only","-r",c]).stdout.splitlines(); allpaths.update(paths)
+        lines.append("\nTask %02d commit %s; actual git diff-tree paths:"%(i,c))
+        for path in paths:
+            check(path in declared,"declared: "+path)
+            if gov(path): check(path in bounded,"Governed Path authorized: "+path)
+            check(path not in forbidden_exact and not path.startswith(forbidden_prefixes),"excluded-surface unchanged by path: "+path)
+            if path.startswith(".agents/skills/"): check(path.startswith(".agents/skills/roundfix/"),"only owned Roundfix skill changed")
+            if path.startswith("skills/") and path!="skills/testdata/owned-skill-versions.json": check(path.startswith("skills/roundfix/"),"only Roundfix mirror changed")
+        check(call(["git","merge-base","--is-ancestor",BASE,c]).returncode==0,"authority chronologically precedes Task %02d"%i)
+        check("docs/specs/"+SPEC+"/_authorization.md" not in paths,"authority not folded into Task")
+    def section(s):
+        m=re.search(r"(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)",s); return m.group(0) if m else None
+    for path in sorted(allpaths):
+        if path.startswith(("skills/",".agents/skills/")) and path.endswith(".md"):
+            before=call(["git","show",BASE+":"+path]).stdout; after=(ROOT/path).read_text()
+            check(section(before)==section(after),"QA settlement unchanged: "+path)
+    delta=call(["git","diff","--name-only",HEAD]).stdout.splitlines(); check(not delta,"no tracked QA delta outside report/evidence")
+    untracked=call(["git","ls-files","--others","--exclude-standard"]).stdout.splitlines()
+    check(all(p.startswith("docs/specs/"+SPEC+"/qa/") for p in untracked),"all untracked QA paths are report/evidence")
+    lines.append("\nAuthored Task Verification test coverage: whole-cli runs every selected Task 01, 02 and 03 test; whole-agent-baselineacp runs Task 03 packages; whole-skills and whole-docscontract run Task 01–04 contracts. No regeneration flag or declared repository Verification was rerun. Mechanical Task 04 grant remains seeded; this row checks scope rather than repeating that mechanical decision.")
+    (E/"scope-audit.txt").write_text("Range: "+BASE+".."+HEAD+"\nClassifier: current governed.go regexp and exact historical paths, evaluated over every actual changed path.\n"+"\n".join(lines)+"\n")
+    status("R10","pass" if not errors else "fail","[Task history and bounded paths](evidence/qa-report-2026-11-12/scope-audit.txt); all four actual diff-tree path lists checked, operative grant precedes them, forbidden surfaces and QA settlement unchanged.")
+def external_and_blocks():
+    sources=[
+      ("E01","https://go.dev/ref/spec#Selectors","Go specification, Selectors rule 6","calling or evaluating the method `x.f` causes a run-time panic","The adopted owner trace names Gate.func1 at deliver_workflow.go:1713 and fmt.Fprintf on a nil interface. The production wiring assertion requires the workflow and engine to share the supplied writer before entering Gate. The observed passing test reaches the real gate, logs the exact holder and rereads an empty capacity store. S01 and S02 remove either writer and fail that assertion.","TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate","named-cli"),
+      ("E02","https://go.dev/ref/spec#Handling_panics","Go specification, Handling panics","Any functions deferred by `F` are then executed as usual.","The panic subtest recovers only in the fixture, after runDeliveryOwner has unwound its real deferred release. A fresh store read must still name the original owner PID and identity at gating; idle clears both. S04 restores unconditional deferred release and the panic and error cases fail their owner-record assertion.","TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic","named-cli"),
+      ("E03","https://github.com/akitaonrails/ai-memory/blob/main/docs/marker-file.md","ai-memory, Marker file: .ai-memory.toml; What the marker file does NOT do","A non-git directory outside `$HOME` needs a marker in its exact cwd.","The marker fixture commits the repository marker, runs the public review flow with a fake sealed runner and checks its exact private working directory holds those bytes, then observes directory cleanup. The absent-marker case stays empty. S07 removes the copy and the marker case fails. Actual ai-memory project attribution remains the separately declared post-release check.","TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker","named-cli")]
+    prd=(S/"_prd.md").read_text()
+    for rid,url,title,quote,comparison,test,log in sources:
+        assert url.split("#")[0] in prd
+        transcript=(E/(log+".txt")).read_text(); assert re.search(r"--- PASS: "+re.escape(test)+r" ",transcript)
+        text="Outside source: "+title+"\nURL: "+url+"\nSource read date: 2026-11-12 (author's supplied passage, PRD Acceptance evidence). No network lookup attempted under Spec authorization.\nPassage: "+quote+"\nComparison with observed behavior: "+comparison+"\nObserved test: "+test+" PASS in fresh "+log+" transcript.\n"
+        (E/(rid.lower()+"-outside.txt")).write_text(text)
+        status(rid,"pass","[independent published passage and observed comparison](evidence/qa-report-2026-11-12/"+rid.lower()+"-outside.txt), source read 2026-11-12, supplied in PRD; evaluated offline against fresh fixtures, no source authored by this Spec substituted.")
+    status("D01","blocked (declared: "+CRITERION+")","PRD Unreachable Acceptance and authorization Limits prohibit a real Agent session, ai-memory call and host configuration access. Fresh fake-runner marker evidence proves the local copy boundary only. Operator must list projects before and after the first released delivery that runs its validator; actual session attribution is unproven.")
+    text="Pull Request row\nClaimed candidate: "+HEAD+"\nEnvironment: no open Pull Request (supplied QA assignment fact).\nApproval: maintainer cycle BD authority, approved _authorization.md at "+BASE+"; accepted implementation/delivery, not an unrecorded review approval.\nChecks/status: Daemon make verify-changed pass exit 0 at claimed candidate; focused and whole-package tests additionally observed here.\nUnresolved review threads: none, because no Pull Request exists.\nMerge-Ready acceptance: none yet; no Review Source acceptance or current-candidate review artifact is claimed.\nReview-artifact ancestry: no PR review artifact exists yet; all QA observations identify the claimed candidate above.\nUnblock: supervising delivery completes configured candidate review and opens a Pull Request, then observes its required controls. No real gh, provider or network called.\n"
+    (E/"pull-request-controls.txt").write_text(text)
+    status("P01","blocked (environment: no open Pull Request)","[Pull Request equivalent controls](evidence/qa-report-2026-11-12/pull-request-controls.txt); authority, checks, unresolved threads, absent Merge-Ready acceptance and claimed-head ancestry all recorded. No PR or acceptance inferred.")
+
+
+def close_report():
+    s=REPORT.read_text()
+    observations=dict(re.findall(r"(?m)^Observation for ([A-Z][0-9]{2}): (.*)$",s))
+    s=re.sub(r"(?m)^Observation for [A-Z][0-9]{2}: .*\n?","",s)
+    for rid,note in observations.items():
+        pattern=r"(?ms)(^### "+rid+r"\n.*?```yaml\n.*?```)(?=\n)"
+        s,n=re.subn(pattern,lambda m:m.group(1)+"\n\nObserved: "+note,s,count=1); assert n==1,rid
+    rows=re.findall(r"(?m)^\| ([A-Z][0-9]{2}) \| ([^|]+) \|",s)
+    assert len(rows)==25,len(rows)
+    assert sum(v.strip()=="pass" for _,v in rows)==23,rows
+    assert all("pending" not in v and "fail"!=v.strip() for _,v in rows)
+    s=s.replace("status: in-progress","status: closed").replace("verdict: pending","verdict: partial").replace("rows_blocked_environment: 0","rows_blocked_environment: 1").replace("rows_blocked_declared: 0","rows_blocked_declared: 1")
+    s=s.rstrip()+"\n\n## Static gate\n\nThe Daemon supplied `make verify-changed`: pass, exit 0 at the audited head; successful diagnostics were removed. QA did not rerun it. `make build` and the isolated built binary's strict Spec check passed; the cache-bound warning allowed the build to continue. Every required focused and whole-package test command has an explicit timeout and exited 0.\n\n## Verification detail\n\nThe whole CLI run includes every test selected by Task 01's delivery/gate/owner pattern, Task 02's anchor/validation/permission pattern, and Task 03's validator/convention/result-status pattern. The whole agent/Baseline ACP, skills and docscontract runs execute the remaining Task 01–04 Verification tests; all required new named cases are explicitly checked in the runner. Their shell wording predicates are independently checked by the stronger complete-paragraph assertions in wording.txt. No record/regeneration flag ran during QA.\n\nThe whole agent suite intentionally skipped `TestRealACPXCommandOverrideRoundTripCancelCrashResume`: its opt-in ROUNDFIX_REAL_ACPX switch was not enabled, and this Spec prohibits a real ACP adapter. This is an unrelated internal integration opt-in; every named QA regression executed, and no matrix row was skipped. The packages passed with their fake-adapter fixtures.\n\nAll ten negative probes failed at the specified assertion and named case on separate archived-head repositories. Missing writer wiring failed before entering the gate; unconditional release lost PID and identity in both panic and error; sentence punctuation became unreadable or malformed suffixes became readable; removing the marker copy lost its bytes; permissive sealed validation accepted prohibited entries; following a source symbolic link copied an ineligible marker. None was classified from a compilation error. Each temporary repository was removed after its foreground test exited.\n\n## Findings\n\nNone. No implementation, Task file, manifest, generated record, commit, push or Pull Request was changed by QA. The seeded authorization table, mechanical findings and mechanical skips remain intact.\n\n## Blocked and skipped\n\nD01 matches the PRD's sole Unreachable Acceptance: actual post-release ai-memory attribution requires the operator's machine and a real Agent session; authorization forbids both during QA. The marker-copy fixture does not establish that attribution. The operator must compare project lists before and after the first released validator run. P01 is blocked only because no Pull Request exists; its equivalent-controls record identifies the approved authority, passing Daemon gate, no threads, no Merge-Ready acceptance yet, and the audited candidate. No outside-evidence row is blocked.\n\n## Coverage\n\n25 rows: 23 pass, 1 environment-blocked Pull Request row, 1 declared-blocked criterion; 0 failed, finding-blocked, skipped or pending. Declared coverage sources are Requirements 2, 4 and 10 plus repository Verification, the three outside-source passages, the Pull Request row and the PRD's sole unreachable criterion. All are named in the Results table. Requirements 1, 3, 5–9, 11 and 12 constrain execution and are accounted for by the build/static evidence, companion smoke checks, package/wording assertions, outside comparisons, blocked rows, history audit and offline archive plan. No frontend sweep applies.\n\n## Outcome\n\nThe gate records a qualifying declared partial: all runnable rows passed, all ten sabotages exposed the expected regression, and the only unmet rows are the declared post-release ai-memory attribution and the pre-PR Pull Request row. The Archive Record must retain that attribution as unproven. The offline archive plan listed the Spec's core, QA evidence and four adopted source candidates with judge advice skipped; no archive or promotion was performed. Reusable decisions already live upstream in accepted ADR-0395, CONTEXT.md, the command guides and the synchronized Roundfix skill references, so the adopted reports need no new promotion.\n\n## Final verdict\n\n`partial` qualifies under the authored declaration and pre-PR exception; actual post-release session attribution remains with the operator. Daemon settlement and any later delivery review remain separate.\n"
+    REPORT.write_text(s)
+    print("Closed 25 rows: 23 pass, 1 environment, 1 declared; qualifying partial.")
+def integrity():
+    s=REPORT.read_text(); lines=[]; errors=[]
+    def check(ok,label):
+        lines.append(("PASS " if ok else "FAIL ")+label)
+        if not ok: errors.append(label)
+    check(s.startswith("---\n") and s.count("\n---\n")==1,"one frontmatter block")
+    table=s.split("## Results\n",1)[1].lstrip("\n").split("\n\n",1)[0]
+    check(len(re.findall(r"(?m)^\| [A-Z][0-9]{2} \|",table))==25,"25 rows contiguous inside Results table")
+    check("| pending |" not in s,"no pending rows")
+    check("rows_blocked_environment: 1" in s and "rows_blocked_declared: 1" in s and "rows_blocked_finding: 0" in s,"exact typed blocked counts")
+    check("evidence_snapshots" not in s,"Daemon snapshots not authored")
+    for target in re.findall(r"\]\(([^)]+)\)",s):
+        if "://" in target: continue
+        p=(REPORT.parent/target).resolve(); check(p.exists(),"link exists: "+target)
+        r=call(["git","check-ignore",str(p)]); check(r.returncode==1,"link not ignored: "+target)
+    for rid,_,_ in ROWS:
+        section=s.split("### "+rid+"\n",1)[1].split("\n### ",1)[0]
+        check("```yaml\ninputs:\n  - kind: repository_path" in section,"typed inputs: "+rid)
+    forbidden=[]
+    pattern_text=(ROOT/"internal/secretscan/patterns.go").read_text()
+    expressions=re.findall(r'\{"([^"\n]+)", regexp\.MustCompile\(`([^`]+)`\)\}',pattern_text)
+    for p in sorted((S/"qa").rglob("*")):
+        if not p.is_file(): continue
+        body=p.read_bytes(); check(b"\0" not in body,"text evidence: "+str(p.relative_to(ROOT)))
+        for n,line in enumerate(body.decode().splitlines(),1):
+            for kind,pattern in expressions:
+                m=re.search(pattern,line)
+                if m and (kind!="credential-assignment" or (re.search(r"[A-Za-z]",m.group(1)) and re.search(r"[0-9]",m.group(1)))):
+                    forbidden.append(str(p.relative_to(ROOT))+":"+str(n)+": "+kind); break
+    check(not forbidden,"no Secret Pattern matches; current repository pattern table")
+    lines.extend(forbidden)
+    check(not call(["git","diff","--name-only",HEAD]).stdout.strip(),"tracked implementation and Task files unchanged")
+    check(call(["git","diff","--check"]).returncode==0,"git diff --check")
+    (E/"report-integrity.txt").write_text("\n".join(lines)+"\n")
+    print("Report integrity: "+str(len(errors))+" errors; "+str(len(forbidden))+" Secret Matches.")
+    return not errors
+if __name__=="__main__":
+    phase=sys.argv[1]
+    if phase=="close": close_report()
+    elif phase=="preflight":
+        v=cli("version",["--version"]); assert v.returncode==0
+        sys.exit(cli("precondition",["spec","check",SPEC,"--strict"]).returncode)
+    elif phase=="integrity": sys.exit(0 if integrity() else 1)
+    elif phase=="accept": sys.exit(cli("report-accept",["qa-report","accept",str(REPORT.relative_to(ROOT))]).returncode)
+    elif phase=="smoke": smoke()
+    elif phase=="sabotages": sabotages()
+    elif phase=="audit":
+        wording(); scope(); external_and_blocks()
+    elif phase=="tests": tests()

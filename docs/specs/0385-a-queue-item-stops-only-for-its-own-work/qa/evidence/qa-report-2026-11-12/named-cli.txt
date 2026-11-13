@@ -1,0 +1,125 @@
+command: go test -count=1 -timeout 40m -v -run '^(TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate|TestADeliveryWorkflowWithoutALogWritesToStandardError|TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord|TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait|TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns|TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning|TestReviewFindingAnchorParsesEachForm|TestReviewReadsAnAnchorFollowedBySentencePunctuation|TestReviewBlocksFindingsThatNameNoFileAndLine|TestTheReviewValidatorSessionCarriesTheRepositoryMarker)$' ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+=== PAUSE TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+=== RUN   TestADeliveryWorkflowWithoutALogWritesToStandardError
+=== PAUSE TestADeliveryWorkflowWithoutALogWritesToStandardError
+=== RUN   TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord
+=== PAUSE TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== RUN   TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait
+=== PAUSE TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait
+=== RUN   TestTheReviewValidatorSessionCarriesTheRepositoryMarker
+=== PAUSE TestTheReviewValidatorSessionCarriesTheRepositoryMarker
+=== RUN   TestReviewFindingAnchorParsesEachForm
+=== PAUSE TestReviewFindingAnchorParsesEachForm
+=== RUN   TestReviewReadsAnAnchorFollowedBySentencePunctuation
+=== PAUSE TestReviewReadsAnAnchorFollowedBySentencePunctuation
+=== RUN   TestReviewBlocksFindingsThatNameNoFileAndLine
+=== PAUSE TestReviewBlocksFindingsThatNameNoFileAndLine
+=== CONT  TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+=== CONT  TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait
+=== CONT  TestReviewBlocksFindingsThatNameNoFileAndLine
+=== CONT  TestReviewFindingAnchorParsesEachForm
+=== RUN   TestReviewFindingAnchorParsesEachForm/`path.go:2`_Failure:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2:_broken
+=== CONT  TestReviewReadsAnAnchorFollowedBySentencePunctuation
+=== RUN   TestReviewFindingAnchorParsesEachForm/`path.go:2-4`_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2-4,8-9_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2)
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/bad_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2a_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2-4a_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/finding_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/_path.go:2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:4-2_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:9999999999999999999999999999_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2._Failure:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2;_Failure:_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/`path.go:2-4`._broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2.
+=== RUN   TestReviewFindingAnchorParsesEachForm/notes.v2.md:3._
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2.5_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2.md_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2;x_broken
+=== RUN   TestReviewFindingAnchorParsesEachForm/path.go:2.._broken
+--- PASS: TestReviewFindingAnchorParsesEachForm (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/`path.go:2`_Failure:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/`path.go:2-4`_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2-4,8-9_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2) (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2 (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/bad_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2a_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2-4a_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/finding_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/_path.go:2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:4-2_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:9999999999999999999999999999_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2._Failure:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2;_Failure:_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/`path.go:2-4`._broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2. (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/notes.v2.md:3._ (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2.5_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2.md_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2;x_broken (0.00s)
+    --- PASS: TestReviewFindingAnchorParsesEachForm/path.go:2.._broken (0.00s)
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning (0.08s)
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+=== RUN   TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+=== PAUSE TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+=== CONT  TestTheReviewValidatorSessionCarriesTheRepositoryMarker
+=== RUN   TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker
+=== PAUSE TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker
+=== RUN   TestTheReviewValidatorSessionCarriesTheRepositoryMarker/no_marker
+=== PAUSE TestTheReviewValidatorSessionCarriesTheRepositoryMarker/no_marker
+=== CONT  TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord
+=== RUN   TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic
+=== PAUSE TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic
+=== RUN   TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/error
+=== PAUSE TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/error
+=== RUN   TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/idle
+=== PAUSE TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/idle
+=== CONT  TestADeliveryWorkflowWithoutALogWritesToStandardError
+--- PASS: TestADeliveryWorkflowWithoutALogWritesToStandardError (0.00s)
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate
+--- PASS: TestReviewBlocksFindingsThatNameNoFileAndLine (0.20s)
+=== CONT  TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate
+--- PASS: TestReviewReadsAnAnchorFollowedBySentencePunctuation (0.21s)
+=== CONT  TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker
+--- PASS: TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait (0.21s)
+=== CONT  TestTheReviewValidatorSessionCarriesTheRepositoryMarker/no_marker
+--- PASS: TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate (0.28s)
+=== CONT  TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic
+=== CONT  TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/error
+=== CONT  TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/idle
+--- PASS: TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord (0.00s)
+    --- PASS: TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic (0.06s)
+    --- PASS: TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/error (0.05s)
+    --- PASS: TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/idle (0.05s)
+--- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns (0.00s)
+    --- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/passing_gate (0.27s)
+    --- PASS: TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns/failing_gate (0.22s)
+--- PASS: TestTheReviewValidatorSessionCarriesTheRepositoryMarker (0.00s)
+    --- PASS: TestTheReviewValidatorSessionCarriesTheRepositoryMarker/no_marker (0.21s)
+    --- PASS: TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker (0.23s)
+PASS
+suiteguard: guard cost: measured 3144 paths; fingerprint took 477.905709ms before and 140.591542ms after
+ok  	roundfix/internal/cli	1.735s
+
+stderr:
+

@@ -1,0 +1,7 @@
+command: ./bin/roundfix qa-report accept docs/specs/0385-a-queue-item-stops-only-for-its-own-work/qa/qa-report-2026-11-12.md
+exit: 0
+stdout:
+
+stderr:
+
+Isolation: HOME and TMPDIR fresh and removed; GOCACHE and GOMODCACHE retained; fake gh first on PATH; unset names: GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY.

@@ -1,0 +1,16 @@
+command: ./bin/roundfix archive 0385-a-queue-item-stops-only-for-its-own-work --plan --offline
+exit: 0
+stdout:
+archive plan for 0385-a-queue-item-stops-only-for-its-own-work: removes 28 file(s) (1425654 bytes) and writes docs/history/specs/0385-a-queue-item-stops-only-for-its-own-work.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-12.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 13 file(s) (1297514 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-11-a-review-finding-anchored-as-path-line-and-a-period-blocks-the-item.md 1498 bytes: no advice (offline)
+candidate references/2026-11-12-pantheon-the-review-validator-becomes-a-stray-ai-memory-project.md 1697 bytes: no advice (offline)
+candidate references/2026-11-12-quaestor-the-delivery-owner-panics-at-the-gate.md 2342 bytes: no advice (offline)
+candidate references/2026-11-12-the-delivery-owner-crashes-when-the-repository-gate-waits-for-machine-verification.md 1895 bytes: no advice (offline)
+promote with: roundfix archive 0385-a-queue-item-stops-only-for-its-own-work --promote <path>
+
+stderr:
+
+Isolation: HOME and TMPDIR fresh and removed; GOCACHE and GOMODCACHE retained; fake gh first on PATH; unset names: GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY.

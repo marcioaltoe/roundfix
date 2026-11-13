@@ -1,0 +1,32 @@
+command: go test -count=1 -timeout 5m -v -run '^TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+=== PAUSE TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+=== CONT  TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate
+    deliver_owner_log_test.go:73: workflow type=*cli.commandDeliveryWorkflow engine log=*cli.machineCapacityReleaseLog; expected a command workflow with the owner's log
+--- FAIL: TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate (0.16s)
+FAIL
+suiteguard: guard cost: measured 3135 paths; fingerprint took 153.610417ms before and 137.900958ms after
+FAIL	roundfix/internal/cli	0.916s
+FAIL
+
+stderr:
+
+Fixture: independent git archive of 34b2e91e71ae6181dbbfec3295595b038d499854, git init/add/commit before one mutation. GOPROXY and GOSUMDB offline; no earlier Run evidence.
+Mutation diff:
+diff --git a/internal/cli/deliver_workflow.go b/internal/cli/deliver_workflow.go
+index d83f87d..5746cbe 100644
+--- a/internal/cli/deliver_workflow.go
++++ b/internal/cli/deliver_workflow.go
+@@ -67,7 +67,6 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
+ 		loaded: loaded,
+ 		git:    preflight.ExecGitRunner{},
+ 		gh:     github,
+-		log:    log,
+ 	}
+ 	return delivery.EngineDependencies{
+ 		Merges:         workflow,
+
+Expected failure cases: ['TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate']
+Missing expected failures: []

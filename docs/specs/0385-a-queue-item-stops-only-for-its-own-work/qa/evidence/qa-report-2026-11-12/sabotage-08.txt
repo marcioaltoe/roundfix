@@ -1,0 +1,42 @@
+command: go test -count=1 -timeout 5m -v -run '^TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker$/^other_file$' ./internal/agent
+exit: 1
+stdout:
+=== RUN   TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker
+=== PAUSE TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker
+=== CONT  TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker
+=== RUN   TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file
+=== PAUSE TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file
+=== CONT  TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file
+    sealed_identity_test.go:56: refusal = <nil>, want exact sealed directory refusal
+--- FAIL: TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker (0.00s)
+    --- FAIL: TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file (0.00s)
+FAIL
+suiteguard: guard cost: measured 3135 paths; fingerprint took 154.55225ms before and 139.169792ms after
+FAIL	roundfix/internal/agent	0.595s
+FAIL
+
+stderr:
+
+Fixture: independent git archive of 34b2e91e71ae6181dbbfec3295595b038d499854, git init/add/commit before one mutation. GOPROXY and GOSUMDB offline; no earlier Run evidence.
+Mutation diff:
+diff --git a/internal/agent/sealed.go b/internal/agent/sealed.go
+index 2e1b8bd..203db10 100644
+--- a/internal/agent/sealed.go
++++ b/internal/agent/sealed.go
+@@ -266,11 +266,8 @@ func validateSealedPromptRequest(ctx context.Context, request SealedPromptReques
+ 	if err != nil {
+ 		return fmt.Errorf("inspect sealed Agent working directory entries: %w", err)
+ 	}
+-	if len(entries) != 0 {
+-		if len(entries) != 1 || entries[0].Name() != SealedIdentityMarker || !entries[0].Type().IsRegular() {
+-			return errors.New("sealed Agent working directory must be empty apart from its .ai-memory.toml")
+-		}
+-	}
++	_ = entries
++
+ 	return nil
+ }
+ 
+
+Expected failure cases: ['TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker/other_file']
+Missing expected failures: []

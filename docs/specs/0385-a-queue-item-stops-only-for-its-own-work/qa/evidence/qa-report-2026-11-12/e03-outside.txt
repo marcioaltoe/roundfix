@@ -1,0 +1,6 @@
+Outside source: ai-memory, Marker file: .ai-memory.toml; What the marker file does NOT do
+URL: https://github.com/akitaonrails/ai-memory/blob/main/docs/marker-file.md
+Source read date: 2026-11-12 (author's supplied passage, PRD Acceptance evidence). No network lookup attempted under Spec authorization.
+Passage: A non-git directory outside `$HOME` needs a marker in its exact cwd.
+Comparison with observed behavior: The marker fixture commits the repository marker, runs the public review flow with a fake sealed runner and checks its exact private working directory holds those bytes, then observes directory cleanup. The absent-marker case stays empty. S07 removes the copy and the marker case fails. Actual ai-memory project attribution remains the separately declared post-release check.
+Observed test: TestTheReviewValidatorSessionCarriesTheRepositoryMarker/marker PASS in fresh named-cli transcript.

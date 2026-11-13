@@ -1,0 +1,106 @@
+Range: 3a9ca717111f6ac52d84b2668e99ac169e116960..34b2e91e71ae6181dbbfec3295595b038d499854
+Classifier: current governed.go regexp and exact historical paths, evaluated over every actual changed path.
+PASS exactly four Task commits in range
+PASS approved authority exists at delivery base before every Task
+
+Task 01 commit 32131999b4f15abe1dce073c60d362da1637416a; actual git diff-tree paths:
+PASS declared: CONTEXT.md
+PASS excluded-surface unchanged by path: CONTEXT.md
+PASS declared: docs/references/behavior-surfaces.json
+PASS excluded-surface unchanged by path: docs/references/behavior-surfaces.json
+PASS declared: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_01.md
+PASS excluded-surface unchanged by path: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_01.md
+PASS declared: docs/user-guide/commands/deliver.md
+PASS excluded-surface unchanged by path: docs/user-guide/commands/deliver.md
+PASS declared: internal/cli/deliver.go
+PASS excluded-surface unchanged by path: internal/cli/deliver.go
+PASS declared: internal/cli/deliver_archived_resume_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_archived_resume_test.go
+PASS declared: internal/cli/deliver_check_timeout_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_check_timeout_test.go
+PASS declared: internal/cli/deliver_free_space_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_free_space_test.go
+PASS declared: internal/cli/deliver_linux_lane.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_linux_lane.go
+PASS declared: internal/cli/deliver_owner_log_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_owner_log_test.go
+PASS declared: internal/cli/deliver_review_capacity_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_review_capacity_test.go
+PASS declared: internal/cli/deliver_turn_test.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_turn_test.go
+PASS declared: internal/cli/deliver_workflow.go
+PASS excluded-surface unchanged by path: internal/cli/deliver_workflow.go
+PASS authority chronologically precedes Task 01
+PASS authority not folded into Task
+
+Task 02 commit c5c4e6daa38feec67e82dd946f7fb78616779464; actual git diff-tree paths:
+PASS declared: docs/references/behavior-surfaces.json
+PASS excluded-surface unchanged by path: docs/references/behavior-surfaces.json
+PASS declared: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_02.md
+PASS excluded-surface unchanged by path: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_02.md
+PASS declared: docs/user-guide/commands/review.md
+PASS excluded-surface unchanged by path: docs/user-guide/commands/review.md
+PASS declared: internal/cli/review_validation.go
+PASS excluded-surface unchanged by path: internal/cli/review_validation.go
+PASS declared: internal/cli/review_validation_test.go
+PASS excluded-surface unchanged by path: internal/cli/review_validation_test.go
+PASS authority chronologically precedes Task 02
+PASS authority not folded into Task
+
+Task 03 commit ab7d4e09aeeec70ee6764156b41fc37fcc1d668d; actual git diff-tree paths:
+PASS declared: docs/references/behavior-surfaces.json
+PASS excluded-surface unchanged by path: docs/references/behavior-surfaces.json
+PASS declared: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_03.md
+PASS excluded-surface unchanged by path: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_03.md
+PASS declared: docs/user-guide/commands/review.md
+PASS excluded-surface unchanged by path: docs/user-guide/commands/review.md
+PASS declared: internal/agent/sealed.go
+PASS excluded-surface unchanged by path: internal/agent/sealed.go
+PASS declared: internal/agent/sealed_identity_test.go
+PASS excluded-surface unchanged by path: internal/agent/sealed_identity_test.go
+PASS declared: internal/cli/review_convention_validator.go
+PASS excluded-surface unchanged by path: internal/cli/review_convention_validator.go
+PASS declared: internal/cli/review_convention_validator_test.go
+PASS excluded-surface unchanged by path: internal/cli/review_convention_validator_test.go
+PASS authority chronologically precedes Task 03
+PASS authority not folded into Task
+
+Task 04 commit 34b2e91e71ae6181dbbfec3295595b038d499854; actual git diff-tree paths:
+PASS declared: .agents/skills/roundfix/SKILL.md
+PASS Governed Path authorized: .agents/skills/roundfix/SKILL.md
+PASS excluded-surface unchanged by path: .agents/skills/roundfix/SKILL.md
+PASS only owned Roundfix skill changed
+PASS declared: .agents/skills/roundfix/references/deliver.md
+PASS Governed Path authorized: .agents/skills/roundfix/references/deliver.md
+PASS excluded-surface unchanged by path: .agents/skills/roundfix/references/deliver.md
+PASS only owned Roundfix skill changed
+PASS declared: .agents/skills/roundfix/references/review.md
+PASS Governed Path authorized: .agents/skills/roundfix/references/review.md
+PASS excluded-surface unchanged by path: .agents/skills/roundfix/references/review.md
+PASS only owned Roundfix skill changed
+PASS declared: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_04.md
+PASS excluded-surface unchanged by path: docs/specs/0385-a-queue-item-stops-only-for-its-own-work/task_04.md
+PASS declared: skills/roundfix/SKILL.md
+PASS Governed Path authorized: skills/roundfix/SKILL.md
+PASS excluded-surface unchanged by path: skills/roundfix/SKILL.md
+PASS only Roundfix mirror changed
+PASS declared: skills/roundfix/references/deliver.md
+PASS excluded-surface unchanged by path: skills/roundfix/references/deliver.md
+PASS only Roundfix mirror changed
+PASS declared: skills/roundfix/references/review.md
+PASS excluded-surface unchanged by path: skills/roundfix/references/review.md
+PASS only Roundfix mirror changed
+PASS declared: skills/testdata/owned-skill-versions.json
+PASS excluded-surface unchanged by path: skills/testdata/owned-skill-versions.json
+PASS authority chronologically precedes Task 04
+PASS authority not folded into Task
+PASS QA settlement unchanged: .agents/skills/roundfix/SKILL.md
+PASS QA settlement unchanged: .agents/skills/roundfix/references/deliver.md
+PASS QA settlement unchanged: .agents/skills/roundfix/references/review.md
+PASS QA settlement unchanged: skills/roundfix/SKILL.md
+PASS QA settlement unchanged: skills/roundfix/references/deliver.md
+PASS QA settlement unchanged: skills/roundfix/references/review.md
+PASS no tracked QA delta outside report/evidence
+PASS all untracked QA paths are report/evidence
+
+Authored Task Verification test coverage: whole-cli runs every selected Task 01, 02 and 03 test; whole-agent-baselineacp runs Task 03 packages; whole-skills and whole-docscontract run Task 01–04 contracts. No regeneration flag or declared repository Verification was rerun. Mechanical Task 04 grant remains seeded; this row checks scope rather than repeating that mechanical decision.

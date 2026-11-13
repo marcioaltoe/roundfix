@@ -1,0 +1,9 @@
+Pull Request row
+Claimed candidate: 34b2e91e71ae6181dbbfec3295595b038d499854
+Environment: no open Pull Request (supplied QA assignment fact).
+Approval: maintainer cycle BD authority, approved _authorization.md at 3a9ca717111f6ac52d84b2668e99ac169e116960; accepted implementation/delivery, not an unrecorded review approval.
+Checks/status: Daemon make verify-changed pass exit 0 at claimed candidate; focused and whole-package tests additionally observed here.
+Unresolved review threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet; no Review Source acceptance or current-candidate review artifact is claimed.
+Review-artifact ancestry: no PR review artifact exists yet; all QA observations identify the claimed candidate above.
+Unblock: supervising delivery completes configured candidate review and opens a Pull Request, then observes its required controls. No real gh, provider or network called.
