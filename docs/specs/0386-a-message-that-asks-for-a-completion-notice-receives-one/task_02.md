@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0386-a-message-that-asks-for-a-completion-notice-receives-one
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -103,3 +103,25 @@ ADR-0383 and ADR-0330 carry ADR-0396's amendment notices.
 - `_prd.md` → Goals 1 to 4; User Story 2; User Story 3; Core Feature 3; Core Feature 4; Core Feature 5; Success Metric 3; Success Metric 4; Glossary
 - `_techspec.md` → Current behavior 3 to 5; API Contracts 2-5; Invariant 1; Testing Approach; Declared breaks; Build Order 2
 - ADR-0396
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, testing-boss, golang-testing, coding-guidelines
+
+Implementation:
+
+- Changed only the canonical follow-up and release references, added the required two-copy contract test, defined **Notice Request** beside **Blocking Request**, changed the **Cross-project Message** exception, and inserted the three dated ADR-0396 amendments.
+- The pre-change focused filter for `TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest` reported `Go test: No tests found`.
+
+Focused checks:
+
+- `gofmt -w skills/roundfix_modes_test.go` completed successfully.
+- `go test -count=1 -run '^TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest$/canonical$' ./skills` passed both the parent and canonical subtest.
+- `go test -count=1 -run '^TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest$' ./skills` reached the expected pre-sync state: canonical passed and embedded failed because the required `make skills-sync` had not yet run.
+- `git diff --check` passed.
+
+Acceptance evidence:
+
+- Both canonical follow-up steps now retain the Notice Request record and post-delivery notice rule; the release reference contains the exact `## Completion notices` contract. The embedded copies remain pending the required final sync.
+- `CONTEXT.md` now contains the changed **Cross-project Message** wording and the new **Notice Request** entry immediately after **Blocking Request**.
+- ADR-0390, ADR-0383 and ADR-0330 each contain one dated ADR-0396 amendment and `updated_at: 2026-11-12T21:40:00Z`.

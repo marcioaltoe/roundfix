@@ -233,6 +233,51 @@ func TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender(t *t
 	}
 }
 
+func TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest(t *testing.T) {
+	t.Parallel()
+	for name, source := range roundfixLayoutSources() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			modesData, err := fs.ReadFile(source, "roundfix/references/modes.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			followUp := roundfixSection(string(modesData), "--follow-up")
+			step4 := roundfixWhitespace(roundfixNumberedItem(followUp, 4))
+			step7 := roundfixWhitespace(roundfixNumberedItem(followUp, 7))
+			for _, phrase := range []string{
+				"to a message that declared no blocked work, unless it is a Notice Request.",
+				"says that the sender asked to be told when the work is done and what it asked the notice to carry",
+				"After the release that carries a Spec adopting a Notice Request is published, or after that Spec merges when it releases nothing, send its completion notice",
+				"[release reference](release.md)",
+			} {
+				if !strings.Contains(step4+" "+step7, roundfixWhitespace(phrase)) {
+					t.Errorf("follow-up steps omit %q", phrase)
+				}
+			}
+
+			releaseData, err := fs.ReadFile(source, "roundfix/references/release.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			completionNotices := roundfixWhitespace(roundfixSection(string(releaseData), "Completion notices"))
+			for _, phrase := range []string{
+				"git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>",
+				"git show <source_revision>:<source>/_prd.md",
+				"what changed, the released version, and anything else the request asked the notice to carry",
+				"naming the merge commit instead of a version",
+				"its notice follows the last of them",
+				"the notice says so instead",
+				"never from a Daemon-assigned Run, and only to the project that asked: a completion notice is not a release note",
+			} {
+				if !strings.Contains(completionNotices, roundfixWhitespace(phrase)) {
+					t.Errorf("completion notices omits %q", phrase)
+				}
+			}
+		})
+	}
+}
+
 func TestTheUnattendedModeAsksWithinTheBaselineLimit(t *testing.T) {
 	t.Parallel()
 	for name, source := range roundfixLayoutSources() {

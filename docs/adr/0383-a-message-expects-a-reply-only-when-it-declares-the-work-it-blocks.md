@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-10T19:00:00Z
-updated_at: 2026-11-11T18:00:00Z
+updated_at: 2026-11-12T21:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -62,6 +62,8 @@ no acknowledgment, adoption notice or completion notice to a message that
 declared no blocked work.
 
 **Amended by [ADR-0390](0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md) (2026-11-11).** The receiving clause triages first only the oldest message of each sender that declares blocked work, then the rest oldest first, a later blocking message from the same sender included, and says that the precedence never replaces the maintainer's judgment. It answers each direct question a message asks as soon as the answer exists, whether or not the message declared blocked work; acknowledgments, adoption notices and completion notices stay forbidden for a message that declared none. The sender's and the content clauses still hold.
+
+**Amended by [ADR-0396](0396-a-message-that-asks-to-be-told-when-its-work-is-done-receives-one-completion-notice.md) (2026-11-12).** A message that asks to be told when its work is done receives one completion notice once that work is delivered, whether or not it declared blocked work; acknowledgments and adoption notices stay forbidden for a message that declared none.
 
 **The declaration is prose, never a marker.** Adopters write messages in
 their own language, so no code reads a message body for a fixed word or

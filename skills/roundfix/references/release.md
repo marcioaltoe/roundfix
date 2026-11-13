@@ -113,3 +113,30 @@ follow the repository release runbook. Preserve the existing tag-triggered
 workflow: validate the tag, keep artifact versions in agreement, publish npm
 packages through the release workflow, upload GitHub Release assets, and leave
 the Upgrade Command asset contract unchanged.
+
+## Completion notices
+
+A Notice Request, a Cross-project Message that asks to be told when its work
+is done, receives one completion notice under the cross-project continuity
+rule of `docs/agents/agent-instructions.md`. Until then the request lives in
+its record: the Backlog Entry or Finding that records the message, or the
+`## Sources` entry of the PRD that adopts it.
+
+After a release is published, list the Archive Records the release adds since
+the previous release tag with
+`git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>`,
+read each record's Spec PRD at the record's `source_revision` with
+`git show <source_revision>:<source>/_prd.md`, and send one completion notice
+with `memory_message_send` to each sending project whose message its
+`## Sources` records as a Notice Request: what changed, the released version,
+and anything else the request asked the notice to carry. A Spec whose delivery
+releases nothing sends its notices after it merges, naming the merge
+commit instead of a version. When the work of one Notice Request spans
+several Specs, its notice follows the last of them; when that work is closed
+without being delivered, such as a declined Backlog Entry, the notice says so
+instead.
+
+Send each notice once, from the session that follows the delivery and never
+from a Daemon-assigned Run, and only to the project that asked: a completion
+notice is not a release note. When the session exposes no ai-memory tools,
+put each notice's text in the report for the user to deliver.
