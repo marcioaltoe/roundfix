@@ -24,6 +24,7 @@ regeneration:
       - skills/testdata/owned-skill-versions.json
       - skills/write-techspec/SKILL.md
 promoted: []
+pull_request: "852"
 type: fix
 ---
 
