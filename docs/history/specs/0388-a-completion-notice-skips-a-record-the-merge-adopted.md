@@ -25,6 +25,7 @@ regeneration:
       - skills/roundfix/SKILL.md
       - skills/testdata/owned-skill-versions.json
 promoted: []
+pull_request: "861"
 type: fix
 ---
 
