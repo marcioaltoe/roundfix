@@ -240,7 +240,8 @@ func newSkillsBumpFixture(t *testing.T) (string, string, string) {
 	writeFile(t, root, "repo/.agents/skills/zeta/SKILL.md", "stale\n")
 	writeFile(t, root, "calls", "")
 	prefix := "#!/bin/sh\nset -eu\nfixture='" + strings.ReplaceAll(root, "'", "'\"'\"'") + "'\n"
-	writeFile(t, root, "bin/go", prefix+`printf 'go %s\n' "$*" >> "$fixture/calls"
+	writeFile(t, root, "bin/go", prefix+`if [ "$1" = env ]; then exit 0; fi
+printf 'go %s\n' "$*" >> "$fixture/calls"
 if [ "$1" = build ]; then
     test "$2" = -o
     cp "$fixture/roundfix-stub" "$3"

@@ -9,13 +9,33 @@ GO_HUMAN := $(RTK) go
 GOFMT := gofmt
 
 ifeq ($(origin GOCACHE),undefined)
-GOCACHE := $(shell root="$${TMPDIR:-/tmp}"; cache="$${root%/}/roundfix-go-build-$$(id -u)"; \
+# ADR-0394: a Go build cache set with `go env -w GOCACHE` comes first when it is
+# an existing writable directory, under the same bound. make never creates it:
+# when the disk that holds it is not mounted, make warns once and falls back to
+# the shared temporary cache under a 2048 MiB bound. With nothing set, make
+# chooses as ADR-0370 decided.
+GOCACHE_FROM_GO_ENV := $(shell [ -n "$$($(GO) env -changed GOCACHE 2>/dev/null)" ] || exit 0; \
+	cache=$$($(GO) env GOCACHE 2>/dev/null) || exit 0; \
+	case "$$cache" in (/*) ;; (*) exit 0;; esac; \
+	if [ -d "$$cache" ] && probe=$$(mktemp "$$cache/.write-test.XXXXXX" 2>/dev/null) && rm -f "$$probe" 2>/dev/null; then \
+		printf '%s' "$$cache"; \
+	fi)
+ifneq ($(GOCACHE_FROM_GO_ENV),)
+GOCACHE := $(GOCACHE_FROM_GO_ENV)
+GOCACHE_BOUND_MB ?= 10240
+else
+GOCACHE_FALLBACK := $(shell root="$${TMPDIR:-/tmp}"; cache="$${root%/}/roundfix-go-build-$$(id -u)"; \
 	if mkdir -p "$$cache" 2>/dev/null && probe=$$(mktemp "$$cache/.write-test.XXXXXX" 2>/dev/null) && rm -f "$$probe" 2>/dev/null; then \
 		printf '%s' "$$cache"; \
 	else \
 		printf '%s' "$(CURDIR)/.gocache"; \
 	fi)
-GOCACHE_BOUND_MB ?= 10240
+GOCACHE_DEFAULT_BOUND_MB := $(shell [ -n "$$($(GO) env -changed GOCACHE 2>/dev/null)" ] || { printf 10240; exit 0; }; \
+	printf 'gocache: warning: GOCACHE set with go env (%s) is not a writable directory; using %s with a 2048 MiB default bound\n' "$$($(GO) env GOCACHE 2>/dev/null)" '$(GOCACHE_FALLBACK)' >&2; \
+	printf 2048)
+GOCACHE := $(GOCACHE_FALLBACK)
+GOCACHE_BOUND_MB ?= $(GOCACHE_DEFAULT_BOUND_MB)
+endif
 endif
 # ADR-0370: bound only the cache make chose unless the caller opts in.
 GOCACHE_BOUND_MB ?= 0

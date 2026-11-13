@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0384-the-makefile-follows-the-go-build-cache-set-with-go-env
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -196,3 +196,56 @@ manifest. The authorized tooling paths are exactly `Makefile` and the derived
 - `_prd.md` → Goals; User Story 1; User Story 2; User Story 3; Core Feature 1; Core Feature 2; Core Feature 3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → API Contract 1; API Contract 2; API Contract 3; Invariants; Declared breaks; Testing Approach; Build Order 1
 - ADR-0394; ADR-0370; ADR-0327; ADR-0392
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, no-workarounds, tech-writer, setup-context-driven, roundfix, evidence-gate.
+
+Replaced only the authorized `GOCACHE` block with the exact authored bytes.
+The surrounding Makefile bytes match `HEAD`. Added the seven parallel,
+isolated Go-environment cases and the six `env` guards in the five declared
+existing test files; their assertions and remaining content stay unchanged.
+The pre-existing task-file change was the Daemon's `pending` to `in_progress`
+transition, which this turn preserved.
+
+Acceptance evidence:
+
+- Usable and unusable configured caches: all seven new subtests passed in
+  the focused run below. They assert exact ordered invocations and stderr,
+  including 10240/2048/4096 bounds, paths with spaces, the absent mount
+  staying absent, and immediate probe cleanup. Read-only and regular-file
+  cache cases both exercised the warning and fallback.
+- Unchanged default and explicit-cache behavior: `nothing set` and
+  `environment wins` passed, together with the unchanged
+  `TestMakeSharesOneGoBuildCache` and the existing bound cases (including
+  explicit cache, sub-make, idle override and disabled bound).
+- Package compatibility and manifest: the focused affected-test selection
+  passed, and the package compiled for Windows. The sanctioned manifest
+  regeneration ran twice after the final Makefile edit: first exit 0,
+  `File changes: 1`; second exit 0, `File changes: 0`,
+  `Idempotence: verified`. Only the two Makefile declaration digests and
+  `roundfixVersion: 0.142.1` changed in the generated manifest. Full-package
+  tests, the docscontract manifest check and Windows vet remain for Daemon
+  Verification; no terminal verdict is claimed.
+
+Focused commands and outcomes:
+
+- Before the Makefile edit,
+  `go test -count=1 -timeout 5m -run '^TestMakeFollowsTheGoBuildCacheSetWithGoEnv$/^(set_and_writable|nothing_set|environment_wins)$' ./internal/verifyselect`
+  exited 1: `set_and_writable` recorded the temporary cache instead of the
+  configured writable cache, demonstrating the original regression.
+- After the edit,
+  `go test -count=1 -timeout 5m -v -run '^(TestMakeFollowsTheGoBuildCacheSetWithGoEnv|TestMakeBoundsItsOwnGoBuildCache|TestMakeSharesOneGoBuildCache|TestVerifyContractsRunsEveryContract|TestVerifyChangedRunsTheSelectedContracts|TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped|TestTheSkillsBumpPinsTheCatalogMainCommit|TestTheSkillsBumpRefusesWhatItMustNotPin)$' ./internal/verifyselect`
+  exited 0: all eight selected top-level tests and their subtests passed.
+- `GOOS=windows GOPROXY=off GOSUMDB=off go test -c -o "$task_compile_dir/verifyselect.test.exe" ./internal/verifyselect`
+  exited 0; `task_compile_dir` was a fresh `mktemp -d` directory.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+  exited 0 on both runs. Both reported the same two nested-carrier warnings
+  for existing Baseline fixture AGENTS.md files; those files were unchanged.
+- Exact-byte comparison against the authored block and against the Makefile
+  prefix/suffix in `HEAD` passed. `gofmt -l` on the new test emitted nothing;
+  `git diff --check` exited 0.
+
+No declared Verification command, repository gate, commit, push, pull request,
+Task status edit, Task Graph edit, or other Task edit was performed. No
+follow-up implementation was added to this slice.

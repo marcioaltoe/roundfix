@@ -32,6 +32,7 @@ import (
  "os"
 )
 func main() {
+ if len(os.Args) > 1 && os.Args[1] == "env" { return }
  record, err := os.OpenFile(os.Getenv("ROUNDFIX_BOUND_RECORD"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
  if err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(2) }
  err = json.NewEncoder(record).Encode(os.Args[1:])

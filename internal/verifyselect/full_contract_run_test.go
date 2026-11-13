@@ -38,7 +38,7 @@ func TestVerifyContractsRunsEveryContract(t *testing.T) {
 			if scenario.selectorFail {
 				selector += "exit 17\n"
 			}
-			goStub := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> calls\n"
+			goStub := "#!/bin/sh\n[ \"$1\" = env ] && exit 0\nprintf '%s\\n' \"$*\" >> calls\n"
 			if scenario.goFail {
 				goStub += "exit 19\n"
 			}
