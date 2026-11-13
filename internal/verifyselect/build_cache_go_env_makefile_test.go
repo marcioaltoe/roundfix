@@ -61,15 +61,21 @@ func main() {
 		}
 		environment = append(environment, entry)
 	}
-	for _, name := range []string{"set and writable", "set and not mounted", "set and read-only", "set to a file", "set with a bound", "environment wins", "nothing set"} {
+	for _, name := range []string{"set and writable", "set and not mounted", "set and read-only", "set to a file", "fallback path with an apostrophe", "set with a bound", "environment wins", "nothing set"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
 			tmpRoot := t.TempDir()
+			if name == "fallback path with an apostrophe" {
+				tmpRoot = filepath.Join(tmpRoot, "it's tmp")
+				if err := os.Mkdir(tmpRoot, 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
 			setPath := filepath.Join(dir, "external disk", "cache", "go-build")
 			fallback := filepath.Join(tmpRoot, cacheName)
 			cache, maxMB, wantStderr := setPath, "10240", ""
-			if name == "set and not mounted" {
+			if name == "set and not mounted" || name == "fallback path with an apostrophe" {
 				if err := os.Mkdir(filepath.Join(dir, "Volumes"), 0700); err != nil {
 					t.Fatal(err)
 				}
@@ -110,7 +116,7 @@ func main() {
 			command.Dir = dir
 			command.Env = append(append([]string{}, environment...), "TMPDIR="+tmpRoot+"/", "GOENV="+goenv, "ROUNDFIX_CACHE_REAL_GO="+realGo, "ROUNDFIX_CACHE_RECORD="+record)
 			switch name {
-			case "set and not mounted", "set and read-only", "set to a file":
+			case "set and not mounted", "set and read-only", "set to a file", "fallback path with an apostrophe":
 				cache, maxMB = fallback, "2048"
 				wantStderr = fmt.Sprintf("gocache: warning: GOCACHE set with go env (%s) is not a writable directory; using %s with a 2048 MiB default bound\n", setPath, fallback)
 			case "set with a bound":
