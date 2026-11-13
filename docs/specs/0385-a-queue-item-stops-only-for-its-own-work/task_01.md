@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0385-a-queue-item-stops-only-for-its-own-work
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -133,3 +133,84 @@ and the message reported by quaestor on 2026-11-12
 - ADR-0395
 - [The adopted Backlog Entry](references/2026-11-12-the-delivery-owner-crashes-when-the-repository-gate-waits-for-machine-verification.md)
 - [The adopted quaestor message](references/2026-11-12-quaestor-the-delivery-owner-panics-at-the-gate.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-context, golang-safety, golang-concurrency, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, agentic-cli-design, domain-modeling, tech-writer, evidence-gate.
+
+Starting-tree characterization (before implementation):
+
+- `commandDeliveryEngineDependencies` initializes the workflow without `log`,
+  while the engine's `Log` is `os.Stderr`; the capacity wait callback writes
+  directly to the nil workflow writer.
+- `runDeliveryOwner` defers unconditional `ReleaseDeliveryQueueOwner`, which
+  clears the PID and identity even when an engine error leaves an item at
+  `gating`. The focused starting-tree regression run below observed PID `0`
+  and an empty identity in both `error` and `panic`; `idle` already passed.
+- The only pre-existing change was the Daemon's `pending` to `in_progress`
+  status transition in this Task file; it is preserved.
+
+Pre-fix focused check:
+
+- `go test -count=1 -timeout 5m -v -run '^(TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate|TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord)$' ./internal/cli`
+  exited `1`: the production-wiring assertion found `log:<nil>` before
+  running the gate, and `panic` and `error` found PID `0`, empty identity,
+  stage `gating`. The `idle` subtest passed. This used the original
+  two-argument builder, before its signature or owner cleanup changed.
+
+Implementation and acceptance evidence:
+
+- Capacity wait and gate continuation: the production dependency builder now
+  gives the workflow and engine the same writer; the owner constructor passes
+  `os.Stderr`. `TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate`
+  checks that wiring before entering the gate, acquires a real capacity lease,
+  releases it synchronously on the writer's first write, asserts the exact
+  wait line naming the specified Run, and finds no capacity entries afterwards.
+  Its lane is disabled in the committed fixture and Verification is `exit 0`.
+- Nil safety: `console()` supplies the configured writer or `os.Stderr`;
+  the gate, item-binary selection and both Linux Lane writers use it.
+  `TestADeliveryWorkflowWithoutALogWritesToStandardError` checks both branches.
+  A focused source assertion found no production read of `workflow.log` outside
+  that accessor, and verified that the capacity wait text is unchanged.
+- Owner lifetime: the deferred cleanup uses
+  `ReleaseIdleDeliveryQueueOwner(context.WithoutCancel(ctx), ...)`, with the
+  specified explanatory comment. The new owner regression invokes
+  `runDeliveryOwner` with `&detachChild{}` and an injected engine; `panic`
+  and `error` keep the claimed PID and exact identity with the item at `gating`,
+  while `idle` merges the item, clears both fields and exits `0`. The panic
+  is recovered only in the test. The error still exits `exitPreflight`.
+- Documentation: the two guide texts were inserted word for word at their
+  prescribed anchors. Through `domain-modeling`, only the Queue Owner
+  definition gained the specified sentence and accepted ADR-0395 link.
+  Exact-text assertions and the focused glossary phrase/link contracts passed.
+- Caller inventory: six existing test calls in exactly the five declared test
+  files now pass `io.Discard`; only those calls and the four missing `io`
+  imports changed. No additional existing caller was found anywhere in the
+  repository; the production constructor and the new regression supply their
+  specified writers.
+
+Post-change focused checks (all exited `0`):
+
+- `go test -count=1 -timeout 5m -v -run '^(TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate|TestADeliveryWorkflowWithoutALogWritesToStandardError|TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord)$' ./internal/cli`
+  passed all three tests and all three owner subtests.
+- `go test -count=1 -timeout 5m -run '^(TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate|TestADeliveryWorkflowWithoutALogWritesToStandardError|TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord|TestRepositoryGateNamesCapacityHoldersBeforeACancelledWait|TestTheDeliveryEngineReceivesTheConfiguredCheckWait|TestTheDeliveryEngineGetsTheTurnRecorder|TestTheDeliveryEngineGetsTheReviewCapacity|TestCommandFreeSpaceNamesEachLocationBelowTheFloor|TestDeliveryStepRunsTheItemBinary|TestGateWithoutTheLaneStartsNoDocker|TestGateSkipsTheLaneWhenTheFetchedDefaultCannotBeRead|TestLinuxLaneSkipsWithANamedReason|TestDeliverStartResumesAnArchivedItemBranchAtReview)$' ./internal/cli`
+  passed the 13 selected top-level regressions and compatibility checks after
+  the final code and guide edits.
+- `go test -count=1 -timeout 5m -tags docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs)$' ./internal/docscontract`
+  passed both selected contracts.
+- Focused Python source-scope assertions passed for accessor-only log reads,
+  call/import-only changes in the five existing tests, unchanged wait text
+  and exact guide/glossary wording. `git diff --check` passed.
+
+The new tests use temporary homes/repositories and injected command
+environments; no live configuration, provider, Agent session, network or
+elapsed-time wait is used. Task status, other Task files and `_tasks.md` were
+not edited. Declared Verification and repository Verification remain the
+Daemon's responsibility; no commit, push, PR or cross-project message was made.
+No follow-up work was added to this slice.
+
+Final implementation step:
+
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited `0` after the last guide edit and regenerated
+  `docs/references/behavior-surfaces.json` through its sanctioned writer.

@@ -71,10 +71,7 @@ func (workflow *commandDeliveryWorkflow) runLinuxLane(ctx context.Context, reque
 		return result, fmt.Errorf("create Linux Lane log: %w", err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, log.Close()) }()
-	console := workflow.log
-	if console == nil {
-		console = os.Stderr
-	}
+	console := workflow.console()
 	skip := func(reason string) (linuxLaneResult, error) {
 		result.Skip = reason
 		result.Passed = true
@@ -458,10 +455,7 @@ func (workflow *commandDeliveryWorkflow) recordLinuxLaneSkip(specSlug, reason st
 		return fmt.Errorf("create Linux Lane log: %w", err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, log.Close()) }()
-	console := workflow.log
-	if console == nil {
-		console = os.Stderr
-	}
+	console := workflow.console()
 	line := fmt.Sprintf("roundfix: notice: Delivery Queue item %s: Linux Lane skipped: %s\n", specSlug, reason)
 	_, err = io.WriteString(io.MultiWriter(console, log), line)
 	return err

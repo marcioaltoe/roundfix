@@ -125,7 +125,7 @@ func startArchivedResumeQueue(t *testing.T, home, repo string, forge *archivedRe
 			}
 			defer db.Close()
 			workflow := &commandDeliveryWorkflow{store: db, loaded: loaded, git: preflight.ExecGitRunner{}}
-			dependencies := commandDeliveryEngineDependencies(db, loaded)
+			dependencies := commandDeliveryEngineDependencies(db, loaded, io.Discard)
 			if dependencies.ArchivedItems == nil {
 				t.Fatal("command engine lacks archive prover")
 			}

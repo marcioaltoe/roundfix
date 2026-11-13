@@ -57,16 +57,17 @@ var deliveryPullRequestNumber = regexp.MustCompile(`^[1-9][0-9]{0,9}$`)
 const deliveryBranchPrefix = "roundfix/deliver-"
 
 func newCommandDeliveryEngine(runStore *store.Store, loaded roundconfig.Loaded) deliveryEngine {
-	return delivery.NewEngine(runStore, commandDeliveryEngineDependencies(runStore, loaded))
+	return delivery.NewEngine(runStore, commandDeliveryEngineDependencies(runStore, loaded, os.Stderr))
 }
 
-func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig.Loaded) delivery.EngineDependencies {
+func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig.Loaded, log io.Writer) delivery.EngineDependencies {
 	github := delivery.NewGitHubCLI(loaded.GitRoot)
 	workflow := &commandDeliveryWorkflow{
 		store:  runStore,
 		loaded: loaded,
 		git:    preflight.ExecGitRunner{},
 		gh:     github,
+		log:    log,
 	}
 	return delivery.EngineDependencies{
 		Merges:         workflow,
@@ -94,8 +95,15 @@ func commandDeliveryEngineDependencies(runStore *store.Store, loaded roundconfig
 		CheckTimeout:   loaded.Config.Delivery.CheckTimeout,
 		ReviewCapacity: loaded.Config.Delivery.ReviewConcurrency,
 		TurnRecorder:   &ownerTurnRecorder{loaded: loaded},
-		Log:            os.Stderr,
+		Log:            log,
 	}
+}
+
+func (workflow *commandDeliveryWorkflow) console() io.Writer {
+	if workflow.log != nil {
+		return workflow.log
+	}
+	return os.Stderr
 }
 
 func (workflow *commandDeliveryWorkflow) ObserveMerge(ctx context.Context, gitRoot string, item store.DeliveryQueueItem) (delivery.MergeObservation, error) {
@@ -1698,7 +1706,7 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		reports := trimSharedCaches(trimCtx, workflow.loaded, false)
 		cancel()
 		for _, report := range reports {
-			printSharedCacheTrim(workflow.log, report, budget, "Delivery Queue item "+specSlug+": ", "before the repository gate", "the gate continues")
+			printSharedCacheTrim(workflow.console(), report, budget, "Delivery Queue item "+specSlug+": ", "before the repository gate", "the gate continues")
 		}
 	}
 
@@ -1710,14 +1718,14 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		for _, entry := range wait.Holding {
 			holders = append(holders, store.DescribeMachineVerificationHolder(entry.Holder)+", "+entry.Holder.Step)
 		}
-		fmt.Fprintf(workflow.log, "roundfix: Delivery Queue item %s: waiting for the Machine Verification Capacity; %d of %d held by %s\n", specSlug, len(wait.Holding), wait.Capacity, strings.Join(holders, "; "))
+		fmt.Fprintf(workflow.console(), "roundfix: Delivery Queue item %s: waiting for the Machine Verification Capacity; %d of %d held by %s\n", specSlug, len(wait.Holding), wait.Capacity, strings.Join(holders, "; "))
 	})
 	if err != nil {
 		return delivery.GateResult{}, fmt.Errorf("wait for the Machine Verification Capacity: %w", err)
 	}
 	defer func() {
 		if err := lease.Release(); err != nil {
-			fmt.Fprintf(workflow.log, "roundfix: warning: %v\n", err)
+			fmt.Fprintf(workflow.console(), "roundfix: warning: %v\n", err)
 		}
 	}()
 
@@ -1938,10 +1946,7 @@ func (workflow *commandDeliveryWorkflow) stepExecutable(ctx context.Context, wor
 	if err != nil {
 		return "", fmt.Errorf("run item binary %q: %w", executable, err)
 	}
-	log := workflow.log
-	if log == nil {
-		log = os.Stderr
-	}
+	log := workflow.console()
 	if probe.exitCode == exitOK {
 		if _, err := fmt.Fprintf(log, "roundfix: Delivery Queue item %s: %s runs the item binary %s\n", specSlug, step, executable); err != nil {
 			return "", fmt.Errorf("write item binary selection: %w", err)

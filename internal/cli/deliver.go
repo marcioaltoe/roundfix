@@ -681,7 +681,9 @@ func runDeliveryOwner(
 		return printDeliverFailure("resume", err, stderr)
 	}
 	defer func() {
-		_, _ = runStore.ReleaseDeliveryQueueOwner(context.WithoutCancel(ctx), loaded.GitRoot, pid, identity)
+		// An owner that fails or panics while an item can still advance keeps
+		// its record so status, resume, retry and start can prove it gone.
+		_, _ = runStore.ReleaseIdleDeliveryQueueOwner(context.WithoutCancel(ctx), loaded.GitRoot, pid, identity)
 	}()
 
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(loaded.Config.Defaults.ArtifactDir, loaded.GitRoot, loaded.HomeDir)

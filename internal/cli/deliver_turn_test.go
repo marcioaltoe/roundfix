@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -335,7 +336,7 @@ func TestTheTurnRecorderWritesBesideTheConsoleLog(t *testing.T) {
 func TestTheDeliveryEngineGetsTheTurnRecorder(t *testing.T) {
 	t.Parallel()
 	loaded := roundconfig.Loaded{Config: roundconfig.Builtin(), HomeDir: t.TempDir(), GitRoot: t.TempDir()}
-	dependencies := commandDeliveryEngineDependencies(nil, loaded)
+	dependencies := commandDeliveryEngineDependencies(nil, loaded, io.Discard)
 	recorder, ok := dependencies.TurnRecorder.(*ownerTurnRecorder)
 	if !ok || recorder == nil {
 		t.Fatalf("TurnRecorder = %T, want *ownerTurnRecorder", dependencies.TurnRecorder)
