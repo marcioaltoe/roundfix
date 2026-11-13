@@ -390,7 +390,7 @@ func completionNoticeClassify(t *testing.T, root, mergeCommit, renames string, c
 			if _, path, ok := strings.Cut(match, ":"); ok {
 				addedPath = path
 			}
-			if !addedSet[addedPath] || (filepath.Base(addedPath) != fileName && !strings.HasSuffix(addedPath, "/_prd.md")) {
+			if !strings.HasSuffix(addedPath, "/_prd.md") && (!addedSet[addedPath] || filepath.Base(addedPath) != fileName) {
 				continue
 			}
 			foundCopy = true
@@ -450,6 +450,8 @@ func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit s
 	write("docs/backlog/2026-01-02-declined-entry.md", "---\ntype: fix\nstatus: open\n---\ndeclined entry\n")
 	write("docs/backlog/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nunconfirmed entry\n")
 	write("docs/backlog/2026-01-05-named-entry.md", "---\ntype: fix\nstatus: open\n---\nnamed entry\n")
+	write("docs/backlog/2026-01-06-existing-prd-entry.md", "---\ntype: fix\nstatus: open\n---\nentry an existing PRD adopts\n")
+	write("docs/specs/0002-existing/_prd.md", "---\nspec: 0002-existing\n---\n# Existing\n\n## Sources\n\n- an earlier source\n")
 	write("docs/findings/2026-01-03-adopted-finding.md", "---\nstatus: pending\n---\nold adopted finding\n")
 	gittest.Run(t, root, "add", "-A")
 	gittest.Run(t, root, "commit", "-q", "-m", "base")
@@ -464,6 +466,8 @@ func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit s
 		write("docs/specs/0001-example/references/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nsource record: 2026-01-04-unconfirmed-entry.md\nnew unconfirmed entry with changed content\n")
 		remove("docs/backlog/2026-01-02-declined-entry.md")
 		remove("docs/backlog/2026-01-05-named-entry.md")
+		write("docs/specs/0002-existing/_prd.md", "---\nspec: 0002-existing\n---\n# Existing\n\n## Sources\n\n- an earlier source\n- 2026-01-06-existing-prd-entry.md\n")
+		remove("docs/backlog/2026-01-06-existing-prd-entry.md")
 	}
 	if !mergeShape {
 		applyChange()
@@ -535,6 +539,7 @@ func TestACompletionNoticeSkipsARecordTheMergeAdopted(t *testing.T) {
 								"adopted": {
 									"docs/backlog/2026-01-01-adopted-entry.md",
 									"docs/backlog/2026-01-05-named-entry.md",
+									"docs/backlog/2026-01-06-existing-prd-entry.md",
 									"docs/findings/2026-01-03-adopted-finding.md",
 								},
 								"closed": {"docs/backlog/2026-01-02-declined-entry.md"},
