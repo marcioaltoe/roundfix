@@ -146,11 +146,34 @@ finds the requests due with Git alone:
   Finding is deleted in the change that records its disposition, so after
   each merge list the records it deletes with
   `git diff --name-only --diff-filter=D <merge commit>^ <merge commit> -- docs/backlog docs/findings`,
-  read each one with `git show <merge commit>^:<path>`, and send one notice
-  for each Notice Request it holds, naming the merge commit: what was
+  read each one with `git show <merge commit>^:<path>`, set aside each record
+  the merge adopted, as the next paragraph says, and send one notice for each
+  Notice Request each other record holds, naming the merge commit: what was
   delivered when its work shipped without a Spec or, when the work is closed
   without being delivered, such as a declined Backlog Entry, the notice says
   so instead.
+
+A record the merge adopted is not closed: its notice follows the Spec that
+adopted it, and the closure event sends nothing for it. The adoption contract
+of `docs/agents/docs-layout.md` moves an adopted Backlog Entry or Finding into
+a Spec's `references/` folder, and a diff limited to `docs/backlog` and
+`docs/findings` cannot pair that move with its destination under any rename
+setting, so the listing of deleted records names every adopted record too.
+The record read at `<merge commit>^` still carries the status it had before
+the merge, so it cannot tell an adopted record from a closed one. List the
+files the merge adds under the Spec root with
+`git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>`
+and the files there that mention a record with
+`git grep -l -F -e <file name> <merge commit> -- <spec root>`. A listed record
+was adopted when the merge adds a file of the same name under a Spec's
+`references/` folder whose frontmatter, read with
+`git show <merge commit>:<added path>`, records the adoption: `status: promoted`
+with `spec` naming that Spec for a Backlog Entry, or `status: done` or
+`status: partial` for a Finding. It was also adopted when a PRD's `## Sources`
+entry names it at the merge commit. When the merge adds a file of the same
+name whose frontmatter cannot be read or records another status, and no PRD's
+`## Sources` entry names the record, the event sends no notice for it, and the
+session names the record and the added file and asks the user.
 
 A Notice Request's work is delivered at the event after which none of the
 Specs its `## Sources` entry names is still under the Spec root: while one of
@@ -163,17 +186,17 @@ record whose disposition is `cancelled`, written by `roundfix cancel`, sends
 no notice: the cancel returns each adopted Backlog Entry and Finding to its
 folder, and the request stays there.
 
-Send each notice once, from the session that follows the event and never
-from a Daemon-assigned Run, and only to the project that asked: a completion
-notice is not a release note. Each notice names the record that kept its
-request, so two requests from the same project receive two notices. A tag
-and a merge commit each occur once, so each request falls due at exactly one
-event, and a session sends notices only for the event it follows. Before
-sending, list the outbox with `memory_message_list` and `box: "outbox"`: a
-pending notice to the same project that names the same record and the same
-event was already sent, and is not sent again. A session that cannot tell
-whether a notice for that request already went, because an earlier session
-for the same event may have sent it and the recipient may have consumed it,
-asks the user instead of sending a second one. When the session exposes no
-ai-memory tools, put each notice's text in the report for the user to
-deliver.
+Send each notice once with `memory_message_send`, from the session that
+follows the event and never from a Daemon-assigned Run, and only to the
+project that asked: a completion notice is not a release note. Each notice
+names the record that kept its request, so two requests from the same project
+receive two notices. A tag and a merge commit each occur once, so each request
+falls due at exactly one event, and a session sends notices only for the event
+it follows. Before sending, list the outbox with `memory_message_list` and
+`box: "outbox"`: a pending notice to the same project that names the same
+record and the same event was already sent, and is not sent again. A session
+that cannot tell whether a notice for that request already went, because an
+earlier session for the same event may have sent it and the recipient may have
+consumed it, asks the user instead of sending a second one. When the session
+exposes no ai-memory tools, put each notice's text in the report for the user
+to deliver.

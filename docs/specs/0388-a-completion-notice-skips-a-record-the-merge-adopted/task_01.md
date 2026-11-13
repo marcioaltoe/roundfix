@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0388-a-completion-notice-skips-a-record-the-merge-adopted
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -104,3 +104,25 @@ the section's Git commands on a temporary repository.
 
 - `_prd.md` → Sources; Goals; Core Features 1-4; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-4; Guarantee inventory; Invariants 1-4; Sabotages; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging
+
+Implementation evidence:
+
+- Rewrote the canonical `## Completion notices` closure rule with the adopted-record exception, Git-only adoption checks, the user-question case, and `memory_message_send`; ran `make skills-sync` and confirmed the canonical and shipped references are byte-identical.
+- Added the 16 guarantee pins and the executable adoption fixture/test. The fixture uses `roundfix/internal/gittest` and covers canonical/embedded layouts, squash/merge shapes, and `diff.renames=false`, `true`, and `copies`.
+- Ran the owned-skill version recorder once after the last skill edit; it raised both `roundfix/SKILL.md` copies and appended the recorded version/digest entry.
+
+Focused checks:
+
+- `go test ./skills -run '^TestACompletionNoticeSkipsARecordTheMergeAdopted$' -count=1 -v`: passed for both layouts, both merge shapes, and all three rename settings.
+- `go test ./skills -run '^TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest$' -count=1 -v`: passed for canonical and embedded layouts.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed while recording the raised skill version.
+- `git diff --check` and `cmp -s .agents/skills/roundfix/references/release.md skills/roundfix/references/release.md`: passed.
+
+Daemon handoff:
+
+- The Task status remains `in_progress`; the Daemon owns settlement.
+- The commands in `## Verification`, the repository-wide verification, and any commit/push/PR action were not run.

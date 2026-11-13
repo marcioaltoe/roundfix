@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
+	"roundfix/internal/gittest"
 )
 
 func roundfixSection(text, heading string) string {
@@ -282,10 +286,260 @@ func TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest(t *testing.T) 
 				"each request falls due at exactly one event",
 				"list the outbox with `memory_message_list` and `box: \"outbox\"`",
 				"asks the user instead of sending a second one",
+				"receives one completion notice under the cross-project continuity rule of `docs/agents/agent-instructions.md`",
+				"Until then the request lives in its record: the Backlog Entry or Finding that records the message, or the `## Sources` entry of the PRD that adopts it.",
+				"so the Spec's own record keeps it after the Backlog Entry or Finding moves into the Spec",
+				"Each notice falls due at one event, and the session that follows that event finds the requests due with Git alone",
+				"send one notice for each Notice Request its `## Sources` records",
+				"When the release plan for the range that holds the merge answers `no_release`, or the maintainer decides that no release carries it",
+				"Every terminal Backlog Entry or Finding is deleted in the change that records its disposition",
+				"send one notice for each Notice Request each other record holds, naming the merge commit",
+				"what was delivered when its work shipped without a Spec",
+				"while one of them remains there at the new tag or merge commit, the event sends nothing for that request",
+				"entries in several Specs that the same event archives and that record the same message are one request",
+				"the cancel returns each adopted Backlog Entry and Finding to its folder, and the request stays there",
+				"Send each notice once with `memory_message_send`, from the session that follows the event",
+				"a session sends notices only for the event it follows",
+				"a pending notice to the same project that names the same record and the same event was already sent, and is not sent again",
+				"When the session exposes no ai-memory tools, put each notice's text in the report for the user to deliver.",
 			} {
 				if !strings.Contains(completionNotices, roundfixWhitespace(phrase)) {
 					t.Errorf("completion notices omits %q", phrase)
 				}
+			}
+		})
+	}
+}
+
+func completionNoticeGitCommands(section string) []string {
+	commands := make([]string, 0)
+	for _, match := range regexp.MustCompile("`([^`]+)`").FindAllStringSubmatch(section, -1) {
+		command := roundfixWhitespace(match[1])
+		if strings.HasPrefix(command, "git ") {
+			commands = append(commands, command)
+		}
+	}
+	return commands
+}
+
+func completionNoticeRun(t *testing.T, root, renames string, commands []string, prefix string, values map[string]string) []string {
+	t.Helper()
+	var command string
+	for _, candidate := range commands {
+		if strings.HasPrefix(candidate, prefix) {
+			command = candidate
+			break
+		}
+	}
+	if command == "" {
+		t.Fatalf("completion notices prescribe no command starting %q", prefix)
+	}
+	for placeholder, value := range values {
+		command = strings.ReplaceAll(command, placeholder, value)
+	}
+	args := strings.Fields(command)
+	cmd := exec.CommandContext(t.Context(), args[0], append([]string{
+		"-C", root,
+		"-c", "diff.renames=" + renames,
+	}, append(gittest.ConfigArgs(), args[1:]...)...)...)
+	cmd.Env = gittest.IsolatedEnv()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if strings.HasPrefix(prefix, "git grep ") && len(output) == 0 {
+			return nil
+		}
+		t.Fatalf("git command %q: %v\n%s", command, err, output)
+	}
+	text := strings.TrimSpace(string(output))
+	if text == "" {
+		return nil
+	}
+	return strings.Split(text, "\n")
+}
+
+func completionNoticeClassify(t *testing.T, root, mergeCommit, renames string, commands []string) (adopted, closed, ask []string) {
+	t.Helper()
+	values := map[string]string{
+		"<merge commit>": mergeCommit,
+		"<spec root>":    "docs/specs",
+	}
+	deleted := completionNoticeRun(t, root, renames, commands, "git diff --name-only --diff-filter=D", values)
+	added := completionNoticeRun(t, root, renames, commands, "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>", values)
+	addedSet := make(map[string]bool, len(added))
+	for _, path := range added {
+		addedSet[path] = true
+	}
+	for _, record := range deleted {
+		fileName := filepath.Base(record)
+		matches := completionNoticeRun(t, root, renames, commands, "git grep -l -F -e", map[string]string{
+			"<merge commit>": mergeCommit,
+			"<spec root>":    "docs/specs",
+			"<file name>":    fileName,
+		})
+		foundCopy := false
+		adoptedRecord := false
+		for _, match := range matches {
+			addedPath := match
+			if _, path, ok := strings.Cut(match, ":"); ok {
+				addedPath = path
+			}
+			if !addedSet[addedPath] || (filepath.Base(addedPath) != fileName && !strings.HasSuffix(addedPath, "/_prd.md")) {
+				continue
+			}
+			foundCopy = true
+			content := strings.Join(completionNoticeRun(t, root, renames, commands, "git show <merge commit>:<added path>", map[string]string{
+				"<merge commit>": mergeCommit,
+				"<added path>":   addedPath,
+			}), "\n")
+			if strings.Contains(addedPath, "/references/") {
+				if strings.HasPrefix(record, "docs/backlog/") {
+					adoptedRecord = strings.Contains(content, "status: promoted") && strings.Contains(content, "spec:")
+				} else {
+					adoptedRecord = strings.Contains(content, "status: done") || strings.Contains(content, "status: partial")
+				}
+			}
+			if strings.HasSuffix(addedPath, "/_prd.md") {
+				if _, sources, ok := strings.Cut(content, "## Sources"); ok {
+					adoptedRecord = strings.Contains(strings.SplitN(sources, "\n## ", 2)[0], fileName)
+				}
+			}
+			if adoptedRecord {
+				break
+			}
+		}
+		switch {
+		case adoptedRecord:
+			adopted = append(adopted, record)
+		case foundCopy:
+			ask = append(ask, record)
+		default:
+			closed = append(closed, record)
+		}
+	}
+	return adopted, closed, ask
+}
+
+func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit string) {
+	t.Helper()
+	root = filepath.Join(t.TempDir(), "repo")
+	gittest.InitRepo(t, root, "-b", "main")
+	write := func(path, content string) {
+		t.Helper()
+		fullPath := filepath.Join(root, filepath.FromSlash(path))
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	remove := func(path string) {
+		t.Helper()
+		if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("docs/backlog/2026-01-01-adopted-entry.md", "---\ntype: fix\nstatus: open\n---\nold adopted entry\n")
+	write("docs/backlog/2026-01-02-declined-entry.md", "---\ntype: fix\nstatus: open\n---\ndeclined entry\n")
+	write("docs/backlog/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nunconfirmed entry\n")
+	write("docs/backlog/2026-01-05-named-entry.md", "---\ntype: fix\nstatus: open\n---\nnamed entry\n")
+	write("docs/findings/2026-01-03-adopted-finding.md", "---\nstatus: pending\n---\nold adopted finding\n")
+	gittest.Run(t, root, "add", "-A")
+	gittest.Run(t, root, "commit", "-q", "-m", "base")
+
+	applyChange := func() {
+		write("docs/specs/0001-example/_prd.md", "---\nspec: 0001-example\n---\n# Example\n\n## Sources\n\n- 2026-01-01-adopted-entry.md\n- 2026-01-03-adopted-finding.md\n- 2026-01-05-named-entry.md\n")
+		remove("docs/backlog/2026-01-01-adopted-entry.md")
+		write("docs/specs/0001-example/references/2026-01-01-adopted-entry.md", "---\ntype: fix\nstatus: promoted\nspec: 0001-example\n---\nsource record: 2026-01-01-adopted-entry.md\nnew adopted entry with changed content\n")
+		remove("docs/findings/2026-01-03-adopted-finding.md")
+		write("docs/specs/0001-example/references/2026-01-03-adopted-finding.md", "---\nstatus: done\n---\nsource record: 2026-01-03-adopted-finding.md\nnew adopted finding with changed content\n")
+		remove("docs/backlog/2026-01-04-unconfirmed-entry.md")
+		write("docs/specs/0001-example/references/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nsource record: 2026-01-04-unconfirmed-entry.md\nnew unconfirmed entry with changed content\n")
+		remove("docs/backlog/2026-01-02-declined-entry.md")
+		remove("docs/backlog/2026-01-05-named-entry.md")
+	}
+	if !mergeShape {
+		applyChange()
+		gittest.Run(t, root, "add", "-A")
+		gittest.Run(t, root, "commit", "-q", "-m", "squash")
+	} else {
+		gittest.Run(t, root, "checkout", "-q", "-b", "adopt")
+		applyChange()
+		gittest.Run(t, root, "add", "-A")
+		gittest.Run(t, root, "commit", "-q", "-m", "adopt")
+		gittest.Run(t, root, "checkout", "-q", "main")
+		write("README.md", "main branch change\n")
+		gittest.Run(t, root, "add", "README.md")
+		gittest.Run(t, root, "commit", "-q", "-m", "main")
+		gittest.Run(t, root, "merge", "--no-ff", "-q", "adopt", "-m", "merge")
+	}
+	mergeCommit = strings.TrimSpace(gittest.Run(t, root, "rev-parse", "HEAD"))
+	return root, mergeCommit
+}
+
+func TestACompletionNoticeSkipsARecordTheMergeAdopted(t *testing.T) {
+	t.Parallel()
+	for name, source := range roundfixLayoutSources() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			data, err := fs.ReadFile(source, "roundfix/references/release.md")
+			if err != nil {
+				t.Fatal(err)
+			}
+			section := roundfixSection(string(data), "Completion notices")
+			for _, phrase := range []string{
+				"set aside each record the merge adopted, as the next paragraph says",
+				"A record the merge adopted is not closed: its notice follows the Spec that adopted it, and the closure event sends nothing for it.",
+				"cannot pair that move with its destination under any rename setting, so the listing of deleted records names every adopted record too",
+				"The record read at `<merge commit>^` still carries the status it had before the merge, so it cannot tell an adopted record from a closed one.",
+				"git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>",
+				"git grep -l -F -e <file name> <merge commit> -- <spec root>",
+				"git show <merge commit>:<added path>",
+				"`status: promoted` with `spec` naming that Spec for a Backlog Entry, or `status: done` or `status: partial` for a Finding",
+				"It was also adopted when a PRD's `## Sources` entry names it at the merge commit.",
+				"the event sends no notice for it, and the session names the record and the added file and asks the user",
+				"moves an adopted Backlog Entry or Finding into a Spec's `references/` folder",
+				"A listed record was adopted when the merge adds a file of the same name under a Spec's `references/` folder whose frontmatter",
+				"When the merge adds a file of the same name whose frontmatter cannot be read or records another status, and no PRD's `## Sources` entry names the record",
+			} {
+				if !strings.Contains(roundfixWhitespace(section), roundfixWhitespace(phrase)) {
+					t.Errorf("completion notices omits %q", phrase)
+				}
+			}
+			commands := completionNoticeGitCommands(section)
+			for _, shape := range []struct {
+				name  string
+				merge bool
+			}{
+				{name: "squash"},
+				{name: "merge", merge: true},
+			} {
+				shape := shape
+				t.Run(shape.name, func(t *testing.T) {
+					t.Parallel()
+					for _, renames := range []string{"false", "true", "copies"} {
+						renames := renames
+						t.Run("diff.renames="+renames, func(t *testing.T) {
+							t.Parallel()
+							root, mergeCommit := completionNoticeFixture(t, shape.merge)
+							adopted, closed, ask := completionNoticeClassify(t, root, mergeCommit, renames, commands)
+							want := map[string][]string{
+								"adopted": {
+									"docs/backlog/2026-01-01-adopted-entry.md",
+									"docs/backlog/2026-01-05-named-entry.md",
+									"docs/findings/2026-01-03-adopted-finding.md",
+								},
+								"closed": {"docs/backlog/2026-01-02-declined-entry.md"},
+								"ask":    {"docs/backlog/2026-01-04-unconfirmed-entry.md"},
+							}
+							for class, got := range map[string][]string{"adopted": adopted, "closed": closed, "ask": ask} {
+								if !slices.Equal(got, want[class]) {
+									t.Errorf("diff.renames=%s: %s records are %v, want %v", renames, class, got, want[class])
+								}
+							}
+						})
+					}
+				})
 			}
 		})
 	}
