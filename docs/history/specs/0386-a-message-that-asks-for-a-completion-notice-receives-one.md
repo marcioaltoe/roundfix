@@ -37,6 +37,7 @@ regeneration:
       - skills/roundfix/SKILL.md
       - skills/testdata/owned-skill-versions.json
 promoted: []
+pull_request: "854"
 type: feat
 ---
 
