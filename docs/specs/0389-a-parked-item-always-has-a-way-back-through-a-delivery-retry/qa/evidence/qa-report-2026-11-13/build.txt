@@ -1,5 +1,0 @@
-command: make build
-exit: 0
-Produced bin/roundfix in this Run Worktree.
-BuildCommit: a9ff7eac-dirty
-Version line is preserved in version.txt. The untracked seeded report caused the dirty suffix; tracked implementation unchanged.

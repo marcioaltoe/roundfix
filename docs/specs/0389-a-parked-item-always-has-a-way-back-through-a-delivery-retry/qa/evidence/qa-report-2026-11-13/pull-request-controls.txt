@@ -1,5 +1,0 @@
-Approval: the approved Spec _authorization.md grants implement, commit, push, pull_request and merge.
-Checks: Daemon make verify-changed passed at a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0.
-Unresolved threads: none can exist because no Pull Request exists (assignment fact, no real gh called).
-Merge-Ready acceptance: not established; requires the later live Pull Request journey.
-Claimed candidate: a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0.

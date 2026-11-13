@@ -1,6 +1,0 @@
-Read 2026-11-13. Source: actions/checkout src/retry-helper.ts at 11bd71901bbe5b1630ceea73d27597364c9af683.
-https://github.com/actions/checkout/blob/11bd71901bbe5b1630ceea73d27597364c9af683/src/retry-helper.ts
-Access: PRD Acceptance evidence quoted passage, offline; no network lookup.
-Quoted defaults: defaultMaxAttempts = 3; defaultMinSeconds = 10; defaultMaxSeconds = 20.
-Compared its cited fetch/getDefaultBranch/lfsFetch policy with ADR-0398 rejected fetch-retry option and PRD Non-Goals. A uniform owner network policy is explicitly deferred.
-Constants, pinned source and declared exclusion agree: True
