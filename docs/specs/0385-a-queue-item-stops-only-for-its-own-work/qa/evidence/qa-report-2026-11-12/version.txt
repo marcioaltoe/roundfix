@@ -1,8 +1,0 @@
-command: ./bin/roundfix --version
-exit: 0
-stdout:
-roundfix 0.142.1 (34b2e91e-dirty, built 2026-11-12 22:41:32 -0300)
-
-stderr:
-
-Isolation: HOME and TMPDIR fresh and removed; GOCACHE and GOMODCACHE retained; fake gh first on PATH; unset names: GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, ROUNDFIX_OPENROUTER_JUDGE_API_KEY, ROUNDFIX_OPENROUTER_API_KEY, ROUNDFIX_TYPESAFE_API_KEY.

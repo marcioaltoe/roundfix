@@ -1,6 +1,0 @@
-command: make verify-changed
-origin: Daemon-supplied repository Verification; not rerun by QA
-audited head: 34b2e91e71ae6181dbbfec3295595b038d499854
-verdict: pass
-exit: 0
-diagnostics: removed on success

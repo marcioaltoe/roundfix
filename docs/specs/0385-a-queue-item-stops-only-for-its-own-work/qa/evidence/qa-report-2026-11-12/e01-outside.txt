@@ -1,6 +1,0 @@
-Outside source: Go specification, Selectors rule 6
-URL: https://go.dev/ref/spec#Selectors
-Source read date: 2026-11-12 (author's supplied passage, PRD Acceptance evidence). No network lookup attempted under Spec authorization.
-Passage: calling or evaluating the method `x.f` causes a run-time panic
-Comparison with observed behavior: The adopted owner trace names Gate.func1 at deliver_workflow.go:1713 and fmt.Fprintf on a nil interface. The production wiring assertion requires the workflow and engine to share the supplied writer before entering Gate. The observed passing test reaches the real gate, logs the exact holder and rereads an empty capacity store. S01 and S02 remove either writer and fail that assertion.
-Observed test: TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate PASS in fresh named-cli transcript.

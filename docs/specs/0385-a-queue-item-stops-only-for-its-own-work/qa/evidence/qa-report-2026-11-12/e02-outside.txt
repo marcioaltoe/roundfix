@@ -1,6 +1,0 @@
-Outside source: Go specification, Handling panics
-URL: https://go.dev/ref/spec#Handling_panics
-Source read date: 2026-11-12 (author's supplied passage, PRD Acceptance evidence). No network lookup attempted under Spec authorization.
-Passage: Any functions deferred by `F` are then executed as usual.
-Comparison with observed behavior: The panic subtest recovers only in the fixture, after runDeliveryOwner has unwound its real deferred release. A fresh store read must still name the original owner PID and identity at gating; idle clears both. S04 restores unconditional deferred release and the panic and error cases fail their owner-record assertion.
-Observed test: TestAQueueOwnerThatStopsWithAnItemLeftKeepsItsOwnerRecord/panic PASS in fresh named-cli transcript.
