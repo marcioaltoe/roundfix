@@ -4,6 +4,7 @@
 package cli
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -168,4 +169,40 @@ func TestOperatorArchiveHistoryReadsTheRunStartAndAncestry(t *testing.T) {
 		t.Fatal("missing ancestor must report a Git error")
 	}
 
+}
+
+func TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot(t *testing.T) {
+	t.Parallel()
+	if !archiveLocatorTestHome(t) {
+		return
+	}
+	repo, _, _ := commitLinkRewritingArchive(t, nil, nil)
+	workflow := newItemRecoveryWorkflowForRepository(t, t.TempDir(), repo)
+	source, destination, err := workflow.archivePaths(repo, implementTestSlug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gittest.Run(t, repo, "mv", destination, source)
+	mustWrite(t, filepath.Join(repo, filepath.FromSlash(source), "_authorization.md"), implementFixtureAuthorization(implementTestSlug, "implement", "commit", "push", "pull_request", "merge"))
+	gittest.Run(t, repo, "add", "-A")
+	gittest.Run(t, repo, "commit", "-m", "docs: active delivery grant")
+	gittest.Run(t, repo, "mv", source, destination)
+	gittest.Run(t, repo, "commit", "-m", "docs: archive delivery grant")
+	if tracked := strings.TrimSpace(gittest.Run(t, repo, "ls-files", "--", "docs/specs")); tracked != "" {
+		t.Fatalf("tracked files remain under the Spec Root: %s", tracked)
+	}
+	specsRoot := filepath.Join(repo, "docs", "specs")
+	if err := os.RemoveAll(specsRoot); err != nil {
+		t.Fatal(err)
+	}
+	authorization, err := workflow.Authorization(t.Context(), repo, implementTestSlug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"push", "pull_request", "merge"}; !reflect.DeepEqual(authorization.Operations, want) {
+		t.Fatalf("operations=%v want %v", authorization.Operations, want)
+	}
+	if _, err := os.Lstat(specsRoot); !os.IsNotExist(err) {
+		t.Fatalf("authorization read recreated the Spec Root: %v", err)
+	}
 }

@@ -62,7 +62,7 @@ func TestPendingQuestionAnswersEachBlockerClass(t *testing.T) {
 			item: store.DeliveryQueueItem{
 				SpecSlug: "needs-retry",
 				Stage:    store.DeliveryStageParked,
-				Blocker:  BlockerReviewStale,
+				Blocker:  BlockerReviewBlocked,
 			},
 			want: "resolve the blocker, then run roundfix deliver retry needs-retry",
 		},

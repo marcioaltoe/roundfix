@@ -1801,7 +1801,8 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 }
 
 func (workflow *commandDeliveryWorkflow) Authorization(ctx context.Context, gitRoot, specSlug string) (delivery.Authorization, error) {
-	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+	// The grant is read from Git history, so the Spec Root may be absent.
+	specsRoot, err := roundconfig.ResolveSpecsRootOrAbsent(workflow.loaded, gitRoot)
 	if err != nil {
 		return delivery.Authorization{}, err
 	}

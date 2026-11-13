@@ -410,8 +410,15 @@ Request can continue to merge without manual intervention.
 
 Delivery authorization is read from the parent of the newest first-parent
 commit that deleted the active Spec's `_prd.md`. A later operator commit does
-not hide that pre-archive grant. A moved archived head that does not descend
-from its newest candidate remains refused.
+not hide that pre-archive grant.
+
+The grant is read from Git history, so it needs no Spec Root in
+the working tree: when the last file under the Spec Root leaves the item
+branch, as after a conflict resolution that keeps the archive, Git
+removes the empty directory and the read still finds the grant.
+
+A moved archived head that does not descend from its newest candidate remains
+refused.
 
 GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
 `UNKNOWN` stays pending. The owner starts from a clean item worktree at the
@@ -590,6 +597,10 @@ A `disk-full` park's next action is `free space on the filesystem that holds the
 
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
 
+A `review-stale` park's next action is `in <worktree>, merge
+into the item branch any commit its Pull Request's head branch holds that
+the item branch lacks, then run roundfix deliver retry <slug>`.
+
 A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
 
 A `run-unresolved` park names each Task the Run settled `failed`, with its
@@ -715,6 +726,7 @@ in parentheses, naming paths and line numbers without values.
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Recorded Pull Request merged from the item branch, or Spec archived on the local default branch through a delivery commit outside the item branch | `merged`, without counting a retry; owner runs post-merge cleanup |
+| Item parked before it has an Item Branch | `queued`, counting a retry |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
@@ -725,6 +737,17 @@ in parentheses, naming paths and line numbers without values.
 | Archived Spec with unchanged candidate and a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
 | `corrective-spec-required` with a moved head | `reviewing` when API Contract 5 and API Contract 6 prove the correction answers only the review recorded in the Reviewed Head Record of the parked candidate, descends from the parked candidate, every standing finding has exactly one valid disposition, and every changed path lies under an archived Spec the blocker names or among the paths its Tasks declared (`creates:`, `interface:` and recorded paths read at the recorded revision), except that a round-2 park that is not a Correction Review and has only `fixed` dispositions accepts any changed path for its one Correction Review; review and repository checks still follow; otherwise refused with exit `2`, the item stays unchanged, and the refusal names the path and requires a corrective Spec with its own authorization and QA gate |
+
+An item parked before it has an Item Branch re-enters at
+`queued`, counting a retry, and the owner creates its branch as on a
+first start.
+
+At `checking`, a Pull Request whose head is an earlier candidate
+of the item never received the current one: the owner logs `roundfix:
+Delivery Queue item <slug>: pull request #<n> holds earlier candidate
+<sha>, not candidate <sha>; returning to gating to push it`, and the item
+returns to `gating`, whose repository gate runs again before the push.
+Any other Pull Request head parks the item `review-stale`.
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the

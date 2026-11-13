@@ -130,13 +130,36 @@ func TestExistingGenericParkAnswersAreUnchanged(t *testing.T) {
 		BlockerRunUnresolved, BlockerReviewFindings, BlockerCorrectiveSpecRequired,
 		BlockerGateFailed, BlockerChecksFailed, BlockerChecksTimeout,
 		BlockerUnauthorized, BlockerDeliveryError, BlockerItemWorktreeMissing,
-		BlockerRunBudgetExceeded, BlockerReviewBlocked, BlockerReviewStale,
+		BlockerRunBudgetExceeded, BlockerReviewBlocked,
 	} {
 		t.Run(blocker, func(t *testing.T) {
 			item := store.DeliveryQueueItem{SpecSlug: "example", Blocker: blocker, Stage: store.DeliveryStageParked}
 			question, found := PendingQuestionFor(store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}})
 			if !found || question.Answer != "resolve the blocker, then run roundfix deliver retry example" {
 				t.Fatalf("question=%+v found=%t", question, found)
+			}
+		})
+	}
+}
+
+func TestAReviewStaleParkNamesItsNextAction(t *testing.T) {
+	t.Parallel()
+	const want = "in /worktrees/example, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry example"
+	for _, blocker := range []string{BlockerReviewStale, BlockerReviewStale + ": details"} {
+		t.Run(blocker, func(t *testing.T) {
+			t.Parallel()
+			item := store.DeliveryQueueItem{
+				SpecSlug: "example", Worktree: "/worktrees/example",
+				Stage: store.DeliveryStageParked, Blocker: blocker,
+			}
+			queue := store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
+			park := ClassifyPark(queue, item)
+			if park.Class != ParkClassReview || park.Next != want {
+				t.Fatalf("classification = %+v, want review with next action %q", park, want)
+			}
+			question, found := PendingQuestionFor(queue)
+			if !found || question.Answer != want {
+				t.Fatalf("Pending Question = %+v found=%t, want answer %q", question, found, want)
 			}
 		})
 	}

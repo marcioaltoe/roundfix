@@ -45,7 +45,7 @@ func TestDeliverStatusPrintsAParkLinePerParkedItem(t *testing.T) {
 	want := "first\tparked\tchecks-timeout\t-\nactive\tqueued\t-\t-\nlast\tparked\treview-stale\t-\n" +
 		"Warning: first premise-changed: internal/example.go\n" +
 		"Park: first environment: resolve the blocker, then run roundfix deliver retry first\n" +
-		"Park: last review: resolve the blocker, then run roundfix deliver retry last\n" +
+		"Park: last review: in , merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry last\n" +
 		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n" +
 		"Pending question: first parked checks-timeout\nAnswer: resolve the blocker, then run roundfix deliver retry first\nWaiting behind it: 1 parked item(s)\n"
