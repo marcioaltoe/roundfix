@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -277,6 +278,15 @@ func validateSealedPromptRequest(ctx context.Context, request SealedPromptReques
 // CopySealedIdentityMarker copies only a bounded regular repository marker
 // into the private working directory, without interpreting its contents.
 func CopySealedIdentityMarker(repositoryRoot, workDir string) error {
+	return copySealedIdentityMarker(repositoryRoot, workDir, nil)
+}
+
+// copySealedIdentityMarker reads the marker through the handle it inspected:
+// the opened file must be the regular file the path named, and at most one
+// byte past the limit is read, so a concurrent replacement by a symbolic link
+// or growth past the limit copies nothing. afterInspect lets tests replace the
+// marker between the path inspection and the open.
+func copySealedIdentityMarker(repositoryRoot, workDir string, afterInspect func()) error {
 	marker := filepath.Join(repositoryRoot, SealedIdentityMarker)
 	info, err := os.Lstat(marker)
 	if errors.Is(err, os.ErrNotExist) {
@@ -288,9 +298,30 @@ func CopySealedIdentityMarker(repositoryRoot, workDir string) error {
 	if !info.Mode().IsRegular() || info.Size() > sealedIdentityMarkerMaxBytes {
 		return nil
 	}
-	body, err := os.ReadFile(marker)
+	if afterInspect != nil {
+		afterInspect()
+	}
+	file, err := os.Open(marker)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("open sealed identity marker: %w", err)
+	}
+	defer file.Close()
+	opened, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("inspect opened sealed identity marker: %w", err)
+	}
+	if !opened.Mode().IsRegular() || !os.SameFile(info, opened) {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(file, sealedIdentityMarkerMaxBytes+1))
 	if err != nil {
 		return fmt.Errorf("read sealed identity marker: %w", err)
+	}
+	if len(body) > sealedIdentityMarkerMaxBytes {
+		return nil
 	}
 	if err := os.WriteFile(filepath.Join(workDir, SealedIdentityMarker), body, 0o600); err != nil {
 		return fmt.Errorf("write sealed identity marker: %w", err)

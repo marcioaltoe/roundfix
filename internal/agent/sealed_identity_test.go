@@ -141,3 +141,49 @@ func TestCopySealedIdentityMarkerCopiesOnlyARegularMarker(t *testing.T) {
 		})
 	}
 }
+
+func TestCopySealedIdentityMarkerReadsOnlyTheMarkerItInspected(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"replaced by a symbolic link", "grown past the limit"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			repositoryRoot := t.TempDir()
+			workDir := newPrivateEmptyDirectory(t)
+			marker := filepath.Join(repositoryRoot, SealedIdentityMarker)
+			if err := os.WriteFile(marker, []byte("project = 'example'\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			replace := func() {
+				switch name {
+				case "replaced by a symbolic link":
+					target := filepath.Join(t.TempDir(), "outside")
+					if err := os.WriteFile(target, []byte("outside = true\n"), 0o600); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Remove(marker); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Symlink(target, marker); err != nil {
+						t.Fatal(err)
+					}
+				case "grown past the limit":
+					grown := bytes.Repeat([]byte("x"), sealedIdentityMarkerMaxBytes+1)
+					if err := os.WriteFile(marker, grown, 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if err := copySealedIdentityMarker(repositoryRoot, workDir, replace); err != nil {
+				t.Fatalf("copy marker: %v", err)
+			}
+			entries, err := os.ReadDir(workDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(entries) != 0 {
+				t.Fatalf("replaced marker copied: %v", entries)
+			}
+		})
+	}
+}
