@@ -151,9 +151,13 @@ Every `make` target that builds or tests first holds the Makefile's Go
 build cache to its Build Cache Bound, `GOCACHE_BOUND_MB` (10240 MiB), by
 removing entries no build used for `GOCACHE_BOUND_IDLE` (2h); set
 `GOCACHE_BOUND_MB=0` to turn it off. To keep the cache off a small
-system disk, point `TMPDIR` or `GOCACHE` at another volume; Go's own
-user cache, which `go` commands outside `make` fill, can be declared in
-User Config under `worktree.shared_caches`.
+system disk, set it on another volume with `go env -w GOCACHE=<dir>`:
+`make` then uses that cache, under the same bound, whenever it is an
+existing writable directory, and `go` commands outside `make` share it.
+When that volume is not mounted, `make` never creates the directory; it
+warns once and falls back to `$TMPDIR/roundfix-go-build-<uid>` with a
+2048 MiB default bound. A `GOCACHE` in the environment still wins, and
+`make` bounds it only when `GOCACHE_BOUND_MB` is also set.
 
 Project layout:
 

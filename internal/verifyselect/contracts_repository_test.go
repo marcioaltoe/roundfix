@@ -257,7 +257,7 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			if scenario.selectorFail {
 				selector += "exit 17\n"
 			}
-			goStub := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> calls\n"
+			goStub := "#!/bin/sh\n[ \"$1\" = env ] && exit 0\nprintf '%s\\n' \"$*\" >> calls\n"
 			if scenario.goFail {
 				goStub += "exit 19\n"
 			}
@@ -295,7 +295,7 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			dir := t.TempDir()
 			writeFile(t, dir, "calls", "")
 			writeFile(t, dir, "selector", "#!/bin/sh\ncase \"$1\" in\n-base) exit 0 ;;\n-contracts) printf '%s\\n' 'docscontract ^(TestDocs)$ ./internal/docscontract' ;;\n*) exit 92 ;;\nesac\n")
-			goStub := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> calls\n"
+			goStub := "#!/bin/sh\n[ \"$1\" = env ] && exit 0\nprintf '%s\\n' \"$*\" >> calls\n"
 			if fail {
 				goStub += "exit 19\n"
 			}

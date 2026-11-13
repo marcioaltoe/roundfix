@@ -31,7 +31,7 @@ func TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped(t *testing.T) 
 			dir := t.TempDir()
 			writeFile(t, dir, "calls", "")
 			for _, name := range []string{"go", "roundfix-stub"} {
-				writeFile(t, dir, name, "#!/bin/sh\nprintf '%s\\n' \"$*\" >> calls\n")
+				writeFile(t, dir, name, "#!/bin/sh\n[ \"$1\" = env ] && exit 0\nprintf '%s\\n' \"$*\" >> calls\n")
 				if err := os.Chmod(filepath.Join(dir, name), 0o755); err != nil {
 					t.Fatal(err)
 				}
