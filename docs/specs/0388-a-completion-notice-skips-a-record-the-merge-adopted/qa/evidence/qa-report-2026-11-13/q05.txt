@@ -1,6 +1,0 @@
-command: go vet ./skills
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
-stdout:
-stderr:
-
-exit: 0

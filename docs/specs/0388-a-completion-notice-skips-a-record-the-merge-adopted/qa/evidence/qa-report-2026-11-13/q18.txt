@@ -1,5 +1,0 @@
-Source: Linus Torvalds, Git mailing list, Re: [PATCH] Diff updates, fixing pathspec and rename/copy interaction (2005-05-27).
-
-URL: https://public-inbox.org/git/Pine.LNX.4.58.0505270848220.17402@ppc970.osdl.org/
-
-The Spec quotes the passage that a directory-limited diff excludes potential rename sources outside that directory. No lookup attempted: _authorization.md Limits prohibits reaching the network. Supplied quotation is not independently obtained literature evidence. The local rename-setting results agree with that mechanism but cannot prove the publication. Unblocking: a maintainer may provide an authorized offline copy or approve a later lookup outside this Run.
