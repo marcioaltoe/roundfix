@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0385-a-queue-item-stops-only-for-its-own-work
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -115,3 +115,75 @@ pantheon on 2026-11-12
 - `_techspec.md` → Current behavior 6; Interfaces; API Contracts 4, 5 and 7; Invariant 5; Declared breaks; Testing Approach; Build Order 3
 - ADR-0395
 - [The adopted pantheon message](references/2026-11-12-pantheon-the-review-validator-becomes-a-stray-ai-memory-project.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-testing, testing-boss, tech-writer, no-workarounds, systematic-debugging, evidence-gate.
+
+Starting-tree characterization (recorded before implementation):
+`validateReviewConventions` creates its working directory with
+`os.MkdirTemp("", "roundfix-review-validator-")` and immediately passes the
+empty directory to the sealed runner after registering cleanup.
+`validateSealedPromptRequest` reads that directory with `os.ReadDir` and
+refuses every nonempty directory with `sealed Agent working directory must be
+empty`. `internal/baselineacp/analyzer.go` independently creates empty private
+directories with `withPrivateDirectory`; it copies no repository marker.
+The starting worktree held only this Task's Daemon-owned status change.
+
+Implementation:
+
+- The sealed directory admits only an empty directory or one regular
+  `SealedIdentityMarker`. All other entries retain a refusal, with the exact
+  new message. Privacy, absolute-path validation, input bounds and denied
+  tools are unchanged.
+- `CopySealedIdentityMarker` uses `os.Lstat`, copies only a regular marker of
+  at most 65536 bytes, preserves its bytes in a 0600 file, and returns wrapped
+  inspection, read and write errors. Absent, non-regular and oversized
+  markers copy nothing.
+- The validator copies the reviewed repository's marker immediately after
+  creating its private directory and registering cleanup. A copy error uses
+  the existing unavailable path. The fake runner checks privacy and the
+  single regular marker rule and captures marker bytes, or nil when absent.
+- The review guide carries API Contract 7's second text verbatim. The
+  Behavior Surface Record was regenerated through its sanctioned recorder
+  after the last guide edit. No Baseline caller or other sealed caller was
+  changed.
+
+Focused checks (commands executed through `rtk proxy`; these are not the
+Task's declared Verification):
+
+1. `go test -count=1 ./internal/agent -run '^(TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker|TestCopySealedIdentityMarkerCopiesOnlyARegularMarker)$'`
+   initially exited 1 because the new marker constant and helper did not
+   exist. With the agent implementation present but before wiring the
+   validator, `go test -count=1 -v ./internal/cli -run '^TestTheReviewValidatorSessionCarriesTheRepositoryMarker$'`
+   exited 1: `/marker` received nil instead of the committed bytes, while
+   `/no_marker` passed.
+2. `go test -count=1 -v ./internal/agent -run '^(TestASealedWorkingDirectoryHoldsNothingButTheIdentityMarker|TestCopySealedIdentityMarkerCopiesOnlyARegularMarker)$'`
+   exited 0. Acceptance criterion 2: empty and marker directories accepted;
+   another file, marker plus another file, marker directory and marker
+   symbolic link refused with the exact message. Copy cases for absent,
+   directory, symbolic link and 65537 bytes wrote nothing; regular and
+   exactly 65536-byte markers retained their bytes, mode 0600 and sealed
+   validity. Inspection and destination-write failures returned errors.
+3. `go test -count=1 -v ./internal/cli -run '^Test(TheReviewValidatorSessionCarriesTheRepositoryMarker|ReviewValidatorDismissesADaemonSettlementAsC2|ReviewValidatorFailureLeavesEveryAskedFindingStanding|ReviewValidatorUsesTheSuccessfulFallbackSelection|ReviewValidatorCanDismissNoFailureOnlyWhenEligible)$'`
+   exited 0 after wiring the copy. Acceptance criterion 1: `/marker` and
+   `/no_marker` passed with exactly the committed bytes or nil, a private
+   directory outside the reviewed checkout, the selected runtime, and
+   directory cleanup. The selected existing dismissal, fail-closed and
+   fallback-selection checks also passed.
+4. `go test -count=1 -v ./internal/baselineacp -run '^Test(RuleSegmentationUsesPrivateCheckoutFreeDirectories|AnalyzerNoPersistenceOrRepositoryMutation|ACPXReadOnlyArguments)$'`
+   exited 0. Acceptance criterion 3: existing Baseline checks still observe
+   fresh empty private directories, no checkout mutation or exposure, and
+   the unchanged denied-tools arguments; `internal/baselineacp` has no diff.
+5. `git diff --check` exited 0.
+6. As the final implementation step, after the last guide edit,
+   `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+   exited 0 and refreshed `docs/references/behavior-surfaces.json`.
+
+All new tests use temporary directories and fake runners; no Agent session,
+ACP adapter, ai-memory call, network lookup or host-home read was introduced.
+Live session attribution remains the operator's post-release check under the
+PRD's Unreachable Acceptance. No follow-up outside this Task was implemented.
+
+Task status remains `in_progress` and Daemon-owned. Declared Verification and
+repository Verification were not run; there is no terminal Task verdict.

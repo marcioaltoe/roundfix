@@ -263,7 +263,12 @@ dismissed this way reads `findings-dismissed`, and its `validator` stays
 Only anchored findings inside a convention region or lacking a failure
 clause, and not dismissed as a Result Status Note, are sent to the
 validator. It uses the review's selected runtime in a sealed
-session and may use no tools. The validator fails closed: an unavailable
+session and may use no tools. The session works in a new private directory
+outside every checkout. When the reviewed checkout's root holds a regular
+`.ai-memory.toml` of at most 64 KiB, Roundfix copies it into that
+directory, which holds nothing else, so a tool that names its project from
+the working directory records the session under the reviewed repository.
+The validator fails closed: an unavailable
 runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
 ineligible rule or blank reason leaves every asked finding standing. The
 record's `validation` identifies the conventions version and reports

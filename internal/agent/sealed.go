@@ -15,13 +15,19 @@ import (
 	"time"
 )
 
+// SealedIdentityMarker is the one file a sealed working directory may hold:
+// a copy of the repository's marker so session tooling keyed by the working
+// directory records the session under that repository.
+const SealedIdentityMarker = ".ai-memory.toml"
+
 const (
 	SealedPromptMaxInputBytes  = 2 << 20
 	SealedPromptMaxOutputBytes = 512 << 10
 	SealedPromptTimeout        = 5 * time.Minute
 
-	sealedACPStreamMaxBytes = 2 << 20
-	sealedSessionPrefix     = "roundfix-baseline-"
+	sealedACPStreamMaxBytes      = 2 << 20
+	sealedSessionPrefix          = "roundfix-baseline-"
+	sealedIdentityMarkerMaxBytes = 64 << 10
 )
 
 var (
@@ -261,7 +267,33 @@ func validateSealedPromptRequest(ctx context.Context, request SealedPromptReques
 		return fmt.Errorf("inspect sealed Agent working directory entries: %w", err)
 	}
 	if len(entries) != 0 {
-		return errors.New("sealed Agent working directory must be empty")
+		if len(entries) != 1 || entries[0].Name() != SealedIdentityMarker || !entries[0].Type().IsRegular() {
+			return errors.New("sealed Agent working directory must be empty apart from its .ai-memory.toml")
+		}
+	}
+	return nil
+}
+
+// CopySealedIdentityMarker copies only a bounded regular repository marker
+// into the private working directory, without interpreting its contents.
+func CopySealedIdentityMarker(repositoryRoot, workDir string) error {
+	marker := filepath.Join(repositoryRoot, SealedIdentityMarker)
+	info, err := os.Lstat(marker)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect sealed identity marker: %w", err)
+	}
+	if !info.Mode().IsRegular() || info.Size() > sealedIdentityMarkerMaxBytes {
+		return nil
+	}
+	body, err := os.ReadFile(marker)
+	if err != nil {
+		return fmt.Errorf("read sealed identity marker: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(workDir, SealedIdentityMarker), body, 0o600); err != nil {
+		return fmt.Errorf("write sealed identity marker: %w", err)
 	}
 	return nil
 }
