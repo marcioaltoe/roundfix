@@ -645,7 +645,9 @@ func (engine *Engine) Retry(ctx context.Context, gitRoot, specSlug string) (Retr
 		)
 	}
 
-	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) {
+	// An item parked before it has an Item Branch never started; the owner
+	// creates its branch as on a first start.
+	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) || strings.TrimSpace(item.Branch) == "" {
 		blocker := item.Blocker
 		item.Stage = store.DeliveryStageQueued
 		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)

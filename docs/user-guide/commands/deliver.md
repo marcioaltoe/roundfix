@@ -715,6 +715,7 @@ in parentheses, naming paths and line numbers without values.
 | Recorded evidence | Re-entry stage |
 | --- | --- |
 | Recorded Pull Request merged from the item branch, or Spec archived on the local default branch through a delivery commit outside the item branch | `merged`, without counting a retry; owner runs post-merge cleanup |
+| Item parked before it has an Item Branch | `queued`, counting a retry |
 | Active Spec with any unfinished Task | `running` |
 | Active Spec with every Task completed | `reviewing` |
 | Archived Spec with a post-archive correction descended from its newest candidate | `reviewing` |
@@ -725,6 +726,10 @@ in parentheses, naming paths and line numbers without values.
 | Archived Spec with unchanged candidate and a recorded pull request | `checking` |
 | `corrective-spec-required` with the parked candidate head unchanged | `reviewing`, without Task Carry-Forward |
 | `corrective-spec-required` with a moved head | `reviewing` when API Contract 5 and API Contract 6 prove the correction answers only the review recorded in the Reviewed Head Record of the parked candidate, descends from the parked candidate, every standing finding has exactly one valid disposition, and every changed path lies under an archived Spec the blocker names or among the paths its Tasks declared (`creates:`, `interface:` and recorded paths read at the recorded revision), except that a round-2 park that is not a Correction Review and has only `fixed` dispositions accepts any changed path for its one Correction Review; review and repository checks still follow; otherwise refused with exit `2`, the item stays unchanged, and the refusal names the path and requires a corrective Spec with its own authorization and QA gate |
+
+An item parked before it has an Item Branch re-enters at
+`queued`, counting a retry, and the owner creates its branch as on a
+first start.
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the

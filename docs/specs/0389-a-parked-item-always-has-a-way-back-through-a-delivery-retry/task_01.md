@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -103,3 +103,32 @@ Entry reported by fiscus on 2026-11-13
 - `_techspec.md` → Current behavior 1-3; API Contracts 1, 2, 6 and 8; Invariants 1 and 2; Testing Approach; Build Order 1
 - ADR-0398
 - [The adopted fiscus Backlog Entry](references/2026-11-13-a-retry-refuses-an-item-parked-before-it-has-a-branch.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, systematic-debugging, no-workarounds, golang-cli, golang-testing, testing-boss, golang-error-handling, domain-modeling, tech-writer, evidence-gate.
+
+Characterization before production edits:
+
+- `go test -count=1 -v ./internal/cli -run '^TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch$'` exited 1. Both `no_workspace` and `worktree_without_branch` called the production engine built by `commandDeliveryEngineDependencies` over a temporary local repository with a bare local origin. Both returned `retry Delivery Queue item "0001-widget-flow": use item branch "": use item branch: branch is required`. The stored item stayed `parked`, blocker unchanged, retry count 0, branch empty. The first had no worktree; the second retained its recorded worktree and `worktree_provisioned=true`.
+- `go test -count=1 -v ./internal/delivery -run '^TestRetryRequeuesAnItemParkedBeforeItHasABranch$'` exposed the same premature workspace path through the fake, returning `item worktree is empty` instead of requeueing.
+
+Implementation and acceptance evidence:
+
+1. A branchless parked item requeues with one counted retry and no workspace. `Engine.Retry` now includes the trimmed empty-branch condition after the existing merge and limit checks, bypassing workspace/recovery calls. `RetryDeliveryQueueItem` clears `worktree` and `worktree_provisioned` inside the transaction before the stage update, only for a `queued` target whose stored branch is empty. Its counter rule is unchanged. The two new regression checks below passed after the change; the engine check also asserts no recovery event or workspace use.
+2. The owner creates a new Item Branch at the default branch. Both production-engine subtests passed, including the fixture that records a pair, marks it provisioned, then parks with an empty branch. Each asserts the cleared stored workspace and calls the unchanged `CreateItemBranch`, which returns a fresh branch and a worktree whose head equals `origin/main`. All repositories, homes and worktree locations are disposable; origin is local and bare.
+3. The guide and glossary describe the new retry path. Added the exact retry table row before the unfinished-Task row, Text A immediately after the table, and the exact definition sentence with the accepted ADR-0398 link at the end of **Delivery Retry** through `domain-modeling`. Focused glossary contracts passed, and the diff was inspected for wording and anchors. No new domain term was added.
+
+Focused checks after the production edits (all exited 0):
+
+- `go test -count=1 -v ./internal/delivery -run '^TestRetryRequeuesAnItemParkedBeforeItHasABranch$'`.
+- `go test -count=1 -v ./internal/cli -run '^TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch$'`: both `no_workspace` and `worktree_without_branch` passed.
+- `go test -count=1 ./internal/delivery ./internal/store -run '^(TestRetryReturnsADependencyParkToTheQueue|TestRetryCarriesForwardBeforeReenteringTheRun|TestRetryAfterArchiveReentersCheckingWithAPullRequest|TestRetryRefusesAnItemWhoseBranchIsGone|TestRetryDeliveryQueueItemReentersAParkedItem|TestRetryDeliveryQueueItemRefusesAChangedBlocker|TestRetryIncrementsTheItemRetryCount|TestRetryAtTheLimitIsRefusedAndLeavesTheItemUnchanged|TestTheStoreDoesNotCountADiskFullRetry)$'`: existing prerequisite, recorded-branch, archive, blocker, retry-count and retry-limit behavior passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|StatesEachRuleOnce)$'`.
+- `go test -count=1 -v -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-task01-workspace-dbc89q6o/overlay.json ./internal/delivery -run '^TestTask01RequeueKeepsARecordedWorkspace$'`: a temporary test overlay, with no extra repository file, proved a `queued` retry preserves a stored branch/worktree/provisioning pair even when the caller supplies an empty branch; it still counts one retry.
+- `git diff --check`.
+
+Scope: only this Task's declared implementation, tests, guide, glossary and derived record, plus this Result. The starting task-file difference was the Daemon's `pending` → `in_progress` transition and was preserved. No existing test or branch/worktree method changed. The skill reference update remains assigned to task_04. Declared Verification, repository Verification and terminal Task status remain Daemon-owned; no commit, push or Pull Request was performed.
+
+
+Final implementation step: after the last guide edit, ran `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`; exit 0 (`ok roundfix/internal/docscontract`). It regenerated `docs/references/behavior-surfaces.json` through the sanctioned writer. Only this evidence note follows the regeneration; no guide or implementation edit follows it.

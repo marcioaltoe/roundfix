@@ -915,7 +915,7 @@ The one operator decision presented for the lowest-position parked Delivery Queu
 _Avoid_: Warning, automatic recommendation, blocker list
 
 **Delivery Retry**:
-The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)).
+The explicit act that returns one parked Delivery Queue item to the stage supported by its recorded evidence and hands it to a live or newly started Queue Owner. It may perform Task Carry-Forward from every Run of the item's Spec, newest first, and is never automatic. It refuses a Spec whose Archive Record is `cancelled` ([ADR-0262](docs/adr/0262-a-cancelled-spec-leaves-an-archive-record-and-returns-its-sources.md)). An item parked before it has an Item Branch returns to `queued`, and its owner creates the branch as on a first start ([ADR-0398](docs/adr/0398-a-parked-item-always-has-a-way-back-through-a-delivery-retry.md)).
 _Avoid_: Resume Command, automatic retry, replay
 
 **Judge Log**:

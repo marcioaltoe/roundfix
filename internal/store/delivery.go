@@ -721,6 +721,16 @@ WHERE item.git_root = ? AND item.position = ?`, gitRoot, item.Position).Scan(
 			)
 		}
 
+		if item.Stage == DeliveryStageQueued {
+			// A worktree recorded without its branch is half of a pair the
+			// owner never finished.
+			if _, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items SET worktree = '', worktree_provisioned = 0
+WHERE git_root = ? AND position = ? AND branch = ''`, gitRoot, item.Position); err != nil {
+				return fmt.Errorf("clear unfinished workspace for Delivery Queue item %q: %w", item.SpecSlug, err)
+			}
+		}
+
 		if _, err := tx.ExecContext(ctx, `
 UPDATE delivery_queue_items
 SET stage = ?, blocker = '', run_id = ?, candidate_commits = ?, retry_count = retry_count + ?
