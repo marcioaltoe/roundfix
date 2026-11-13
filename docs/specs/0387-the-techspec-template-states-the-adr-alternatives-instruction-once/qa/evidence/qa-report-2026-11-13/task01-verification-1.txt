@@ -1,8 +1,0 @@
-command: /bin/sh -c 'out="$(go test -timeout 10m -count=1 -v ./skills 2>&1)" || { printf '"'"'%s\n'"'"' "$out"; exit 1; }; for name in TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/doubled-instruction TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/one-repeated-word TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/command-listing TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/table-rows TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/single-instruction TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped TestEveryOwnedSkillVersionIsRecorded TestAuthorialSkillSync/write-techspec; do printf '"'"'%s\n'"'"' "$out" | grep -q -- "--- PASS: $name " || { printf '"'"'missing pass: %s\n'"'"' "$name" >&2; exit 1; }; done; go test -timeout 10m -count=1 -run '"'"'^(TestAPortugueseNotApplicableADRDrawsInNoCitingADR|TestAMarkerOutsideTheClosedListStillDrawsIn|TestANotApplicableADRDrawsInNoCitingADR|TestAnAppliedADRStillDrawsInItsCitingADR)$'"'"' ./internal/speccheck'
-working directory: Run Worktree
---- stdout ---
-ok  	roundfix/internal/speccheck	0.495s
-
---- stderr ---
-
-exit: 0

@@ -1,5 +1,0 @@
-External source: Matt Might, 3 shell scripts: Kill weasel words, avoid the passive, eliminate duplicates; A script to find lexical illusions. URL: https://matt.might.net/articles/shell-scripts-for-passive-voice-weasel-words-duplicates/
-Source passage retained in PRD Acceptance evidence, retrieved during authoring; no network request in QA.
-Quote: a second instance of the word "the" / when it starts a new line.
-Quote: cut and paste accidents.
-Comparison: fresh positive doubled-instruction and two-words-in-another-case cases pass. Independent sabotages disabling output or case folding fail the named cases. This observes line-boundary and case-insensitive detection. The Spec intentionally narrows the article's single-word rule to phrases of at least two words, retaining whole-line and table exemptions; fresh one-repeated-word, command-listing and table-rows cases pass. This is an offline comparison with a quoted external passage, not a new reading of the live page.

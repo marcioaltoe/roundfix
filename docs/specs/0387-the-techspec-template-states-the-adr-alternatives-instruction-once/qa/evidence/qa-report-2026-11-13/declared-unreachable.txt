@@ -1,5 +1,0 @@
-criterion: after the release that carries this Spec, an adopter's `roundfix baseline update` installs `write-techspec` at its new version, and its TechSpec template states "Begin the relation with" once.
-reason: it needs a released binary and another repository's managed refresh, which no Verification or QA row may run or read.
-satisfied-by: the operator's or Argus's first managed refresh after the release, recorded session evidence.
-Observed boundary: only a local, unreleased audited-head build and this repository are authorized. The authority explicitly forbids another repository and the network. A local skills install proves the shipped artifact but cannot prove a released managed refresh in an adopter repository. No attempt was made to cross this boundary.
-Unblocking action: operator or Argus performs the first managed refresh after release and records the session evidence.

@@ -1,7 +1,0 @@
-command: cmp .agents/skills/write-techspec/references/techspec-template.md skills/write-techspec/references/techspec-template.md
-working directory: Run Worktree
---- stdout ---
-
---- stderr ---
-
-exit: 0

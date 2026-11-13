@@ -1,5 +1,0 @@
-Installed SKILL.md metadata.version/version: 0.0.20, 0.0.20
-Fresh disk reads agree with the shipped head SKILL version and template bytes.
-Normalized installed comment:
-<!-- One line for each ADR listed under Active ADR obligations. State how the design relates to the alternatives that ADR rejected. Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
-Temporary target, HOME and TMPDIR removed at row exit.

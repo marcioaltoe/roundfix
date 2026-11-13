@@ -1,7 +1,0 @@
-command: /bin/sh -c 'tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < .agents/skills/write-techspec/references/techspec-template.md | grep -qE -- '"'"'rejected[.] Begin the relation with .not applicable., or with .{1,4}o se aplica. in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply[.]'"'"' || { printf '"'"'missing corrected comment in the canonical template\n'"'"' >&2; exit 1; }; tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < skills/write-techspec/references/techspec-template.md | grep -qE -- '"'"'rejected[.] Begin the relation with .not applicable., or with .{1,4}o se aplica. in a Spec written in Portuguese'"'"' || { printf '"'"'missing corrected comment in the shipped template\n'"'"' >&2; exit 1; }; ! tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < .agents/skills/write-techspec/references/techspec-template.md | grep -qiF -- '"'"'Begin the relation with Begin'"'"' && ! tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < skills/write-techspec/references/techspec-template.md | grep -qiF -- '"'"'Begin the relation with Begin'"'"' && cmp -s .agents/skills/write-techspec/references/techspec-template.md skills/write-techspec/references/techspec-template.md'
-working directory: Run Worktree
---- stdout ---
-
---- stderr ---
-
-exit: 0

@@ -1,7 +1,0 @@
-.agents/skills/write-techspec/SKILL.md
-  Delivery Base metadata.version/version: 0.0.19, 0.0.19
-  Audited head metadata.version/version: 0.0.20, 0.0.20
-skills/write-techspec/SKILL.md
-  Delivery Base metadata.version/version: 0.0.19, 0.0.19
-  Audited head metadata.version/version: 0.0.20, 0.0.20
-Recorded version 0.0.20 found; recorder digest consistency independently passes TestEveryOwnedSkillVersionIsRecorded.

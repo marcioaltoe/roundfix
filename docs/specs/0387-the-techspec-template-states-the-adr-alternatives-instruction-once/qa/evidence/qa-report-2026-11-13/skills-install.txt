@@ -1,8 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0387-the-techspec-template-states-the-adr-alternatives-instruction-once-cdd016bf7227bd03-52f12fb4-28f29225/run_20261113T070247Z_8907369019f37139/bin/roundfix skills install --target project
-working directory: fresh temporary repository
---- stdout ---
-Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0387-install-6rt341xz/.agents/skills (41 file(s))
-
---- stderr ---
-
-exit: 0
