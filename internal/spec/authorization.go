@@ -114,7 +114,7 @@ func ReadSpecAuthorization(ctx context.Context, projectRepoRoot string, specsRoo
 }
 
 func resolveAuthorizationLocation(ctx context.Context, projectRepoRoot string, specsRoot string, specSlug string, deliveryTarget string) (AuthorizationLocation, AuthorizationReason, error) {
-	specRepoRoot, specPrefix, specCommonDir, err := authorizationRepositoryLocation(ctx, specsRoot)
+	specRepoRoot, specPrefix, specCommonDir, err := authorizationSpecsRootLocation(ctx, specsRoot)
 	if err != nil {
 		return AuthorizationLocation{}, AuthorizationReason{Field: "spec_root"}, fmt.Errorf("resolve Spec Root %q: %w", specsRoot, err)
 	}
@@ -151,6 +151,34 @@ func resolveAuthorizationLocation(ctx context.Context, projectRepoRoot string, s
 
 	location.SpecRevision = resolvedRevision
 	return location, AuthorizationReason{}, nil
+}
+
+// authorizationSpecsRootLocation locates a historical Spec Root without creating
+// directories that have left the working tree.
+func authorizationSpecsRootLocation(ctx context.Context, specsRoot string) (repoRoot, prefix, commonDir string, err error) {
+	ancestor := specsRoot
+	var missing []string
+	for {
+		if _, statErr := os.Lstat(ancestor); statErr == nil {
+			repoRoot, prefix, commonDir, err = authorizationRepositoryLocation(ctx, ancestor)
+			if err != nil {
+				return "", "", "", err
+			}
+			for i := len(missing) - 1; i >= 0; i-- {
+				prefix = path.Join(prefix, missing[i])
+			}
+			return repoRoot, prefix, commonDir, nil
+		} else if !os.IsNotExist(statErr) {
+			break
+		}
+		parent := filepath.Dir(ancestor)
+		if parent == ancestor {
+			break
+		}
+		missing = append(missing, filepath.Base(ancestor))
+		ancestor = parent
+	}
+	return authorizationRepositoryLocation(ctx, specsRoot)
 }
 
 func authorizationRepositoryLocation(ctx context.Context, workDir string) (string, string, string, error) {

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -98,3 +98,72 @@ Backlog Entry reported by quaestor on 2026-11-12
 - `_techspec.md` → Current behavior 4; API Contracts 3 and 6; Invariant 3; Testing Approach; Build Order 2
 - ADR-0398
 - [The adopted quaestor Backlog Entry](references/2026-11-12-a-retry-after-resolving-a-pull-request-conflict-finds-no-specs-root-and-no-pushed-head.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+### Starting-tree characterization
+
+Before changing production code, ran an isolated overlay probe with the archive
+fixture of `TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit`, an
+explicit pre-archive grant, an empty `git ls-files -- docs/specs`, and
+`docs/specs` removed. Command:
+
+```sh
+go test -count=1 -timeout 5m -v -overlay /tmp/roundfix-task02-characterization-hdyy2v6t/overlay.json ./internal/cli -run '^TestCharacterizeArchivedAuthorizationWithoutSpecsRoot$'
+```
+
+The probe intentionally exited 1 after reporting both starting-tree signals:
+
+- `commandDeliveryWorkflow.Authorization`: `specs.root resolved to "<repo>/docs/specs", which does not exist; create the directory or update specs.root`.
+- `spec.ReadSpecAuthorization` with that root and the pre-archive revision:
+  `unresolved`, reason `unreadable_record`, field `spec_root`; Git reported
+  `fatal: cannot change to '<repo>/docs/specs': No such file or directory`.
+
+The overlay lived outside the repository. The sole pre-existing worktree edit
+was this Task's Daemon-owned `status: in_progress`; it is preserved.
+
+### Implementation and focused evidence
+
+- Criterion 1: `Authorization` now uses `ResolveSpecsRootOrAbsent`, with the
+  Git-history comment; the parent of the newest archive transition is still
+  the revision read. `TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot`
+  asserts an empty tracked Spec Root, grants exactly `push`, `pull_request`,
+  and `merge`, and asserts that the read leaves the root absent.
+- Criterion 2: `authorizationSpecsRootLocation` walks missing components with
+  `os.Lstat`, locates Git at the nearest existing ancestor, and joins the
+  missing components to its prefix in order. Existing entries and non-absence
+  errors use the existing Git location boundary. Project-root resolution and
+  `authorizationRepositoryLocation` are unchanged. The new Spec regression
+  checks the same grant, path, and revision before and after removing all of
+  `docs`, and confirms that `docs` stays absent. Both new tests begin with
+  `t.Parallel()` and reuse private-HOME subprocess helpers with isolated Git
+  configuration; all repositories and the Run Database are temporary.
+- Criterion 3: Text B is inserted verbatim immediately after
+  "not hide that pre-archive grant." A focused Python assertion checked the
+  complete normalized paragraph and its anchor, with exit 0.
+
+The two new regression tests were run before the production change and both
+exited 1 at the expected boundary (the existing-root Spec case already read
+successfully). After the change, this focused check exited 0; all eight named
+top-level tests passed, including the archive-head and later-operator-commit
+cases:
+
+```sh
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_NOSYSTEM=1 GOPROXY=off GOSUMDB=off go test -count=1 -timeout 5m -v ./internal/spec ./internal/cli -run '^(TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree|TestOperationAuthorityDefaultRootUnchanged|TestOperationAuthorityResolvesExternalSpecRoot|TestSpecAuthorizationNamesUnavailableRevision|TestOperationAuthorityReportsUnresolvableSpecRoot|TestUnresolvedRecordNamesAPathUnderTheSpecRoot|TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot|TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit)$'
+```
+
+Go formatting and `git diff --check` reported no issues. No existing test was
+changed. No config resolver, other authorization caller, exit code, Task
+Graph, other Task, or skill was changed. No follow-up work was identified.
+Declared Verification and repository gates are left to the Daemon. Task
+status is unchanged; no commit, push, or Pull Request was made.
+
+Final implementation step, after the last guide edit: the required sanctioned
+recorder exited 0 (`ok roundfix/internal/docscontract`), regenerating only
+`docs/references/behavior-surfaces.json`:
+
+```sh
+go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+```

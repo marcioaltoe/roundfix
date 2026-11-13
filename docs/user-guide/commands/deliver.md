@@ -410,8 +410,15 @@ Request can continue to merge without manual intervention.
 
 Delivery authorization is read from the parent of the newest first-parent
 commit that deleted the active Spec's `_prd.md`. A later operator commit does
-not hide that pre-archive grant. A moved archived head that does not descend
-from its newest candidate remains refused.
+not hide that pre-archive grant.
+
+The grant is read from Git history, so it needs no Spec Root in
+the working tree: when the last file under the Spec Root leaves the item
+branch, as after a conflict resolution that keeps the archive, Git
+removes the empty directory and the read still finds the grant.
+
+A moved archived head that does not descend from its newest candidate remains
+refused.
 
 GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
 `UNKNOWN` stays pending. The owner starts from a clean item worktree at the
