@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.143.1] - 2026-11-13
+
+### A completion notice skips a record the merge adopted
+
+- **The Roundfix skill's completion-notice rule no longer reads an adopted Backlog Entry or Finding as closed.** In v0.143.0 the rule for a record closed without a Spec sent a notice for every Backlog Entry or Finding a merge deleted, and the adoption contract moves an adopted record into a Spec's `references/` folder, which that listing always reports as a deletion. The rule now finds the adopted copy by its file name among the files the merge adds and reads its frontmatter, or a PRD the merge adds or changes that names the record in its `## Sources`; an unclear case sends nothing and asks the user. It also restores two guarantees the 0386 review rounds had dropped: the PRD `## Sources` route and the `memory_message_send` channel. Every guarantee of the section is now pinned by a contract test, and an executable check runs the section's own Git commands on a temporary repository. Adopters receive the corrected skill (0.1.231) through `roundfix baseline update`.
+
 ## [0.143.0] - 2026-11-13
 
 ### A message that asks for a completion notice receives one
