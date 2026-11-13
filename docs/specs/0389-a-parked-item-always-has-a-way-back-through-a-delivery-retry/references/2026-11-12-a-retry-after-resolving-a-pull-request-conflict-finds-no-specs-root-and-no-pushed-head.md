@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-12
-spec: null
+spec: 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry
 reason: null
 ---
 
