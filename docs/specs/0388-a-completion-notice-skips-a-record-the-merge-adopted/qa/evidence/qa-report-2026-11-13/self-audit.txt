@@ -1,0 +1,73 @@
+command: ./bin/roundfix qa-report accept docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/qa-report-2026-11-13.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+stderr:
+
+exit: 0
+
+command: ./bin/roundfix spec check 0388-a-completion-notice-skips-a-record-the-merge-adopted --strict
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+Spec 0388-a-completion-notice-skips-a-record-the-merge-adopted
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/_techspec.md Vocabulary Contract
+stderr:
+
+exit: 0
+
+command: git diff --check
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+stderr:
+
+exit: 0
+
+command: git status --porcelain --untracked-files=all
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/archive-plan.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/build.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/matrix.json
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q01.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q02.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q03.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q04.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q05.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q06.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q07.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q08.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q09.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q10.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q11.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q12.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q13.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q14.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q15.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q16.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q17.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q18.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q19.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q20.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q21.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q22.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/qa-driver.py.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/strict.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/version.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/qa-report-2026-11-13.md
+stderr:
+
+exit: 0
+
+Self-audit: read-only product report acceptance exit 0; strict Spec check exit 0. Exactly 22 contiguous three-column rows; counts match frontmatter; all local evidence links exist and are not ignored; all evidence files are text; auditor identity preserved; no pending observation or Agent-authored evidence snapshot; only report/evidence paths changed.
+
+Final acceptance after adding the self-audit link:
+command: ./bin/roundfix qa-report accept docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/qa-report-2026-11-13.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+stderr:
+
+exit: 0

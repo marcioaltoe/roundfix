@@ -1,0 +1,112 @@
+[
+  [
+    "Q01",
+    "repository Verification",
+    "Daemon static gate"
+  ],
+  [
+    "Q02",
+    "Requirement 2",
+    "Skills package and named passes"
+  ],
+  [
+    "Q03",
+    "Requirement 2",
+    "Repository contracts"
+  ],
+  [
+    "Q04",
+    "Requirement 2",
+    "Documentation contracts and glossary"
+  ],
+  [
+    "Q05",
+    "Requirement 2",
+    "Windows vet"
+  ],
+  [
+    "Q06",
+    "Requirement 3",
+    "Reference diff, mirror and exact interfaces"
+  ],
+  [
+    "Q07",
+    "Requirement 4",
+    "Recorded version rise"
+  ],
+  [
+    "Q08",
+    "Requirement 2",
+    "Shipped skill installation"
+  ],
+  [
+    "Q09",
+    "Requirement 2",
+    "Delivery Base characterization and documented Git journey"
+  ],
+  [
+    "Q10",
+    "Requirement 7",
+    "Sabotage 1"
+  ],
+  [
+    "Q11",
+    "Requirement 7",
+    "Sabotage 2"
+  ],
+  [
+    "Q12",
+    "Requirement 7",
+    "Sabotage 3"
+  ],
+  [
+    "Q13",
+    "Requirement 7",
+    "Sabotage 4"
+  ],
+  [
+    "Q14",
+    "Requirement 7",
+    "Sabotage 5"
+  ],
+  [
+    "Q15",
+    "Requirement 7",
+    "Sabotage 6"
+  ],
+  [
+    "Q16",
+    "Requirement 7",
+    "Sabotage 7"
+  ],
+  [
+    "Q17",
+    "outside-evidence row",
+    "Four historical planning merges"
+  ],
+  [
+    "Q18",
+    "outside-evidence row",
+    "Published Git explanation"
+  ],
+  [
+    "Q19",
+    "outside-evidence row",
+    "Argus expected behavior and measured correction"
+  ],
+  [
+    "Q20",
+    "after the v0.143.1 release, an adopter's `roundfix baseline update` installs the `roundfix` skill at its new version, and its release reference sets aside a record the merge adopted.",
+    "Post-release managed refresh"
+  ],
+  [
+    "Q21",
+    "Requirement 12",
+    "Task scope and authorization ancestry"
+  ],
+  [
+    "Q22",
+    "Pull Request row",
+    "Pre-PR controls"
+  ]
+]

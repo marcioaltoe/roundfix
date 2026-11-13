@@ -1,0 +1,290 @@
+import os,sys,re,json,subprocess,tempfile,pathlib,shutil,tarfile,io,shlex,difflib,traceback
+ROOT=pathlib.Path.cwd()
+SPEC='0388-a-completion-notice-skips-a-record-the-merge-adopted'
+SD=ROOT/'docs/specs'/SPEC
+ED=SD/'qa/evidence/qa-report-2026-11-13'
+REPORT=SD/'qa/qa-report-2026-11-13.md'
+HEAD='430905c9f46454b9cd02474a22e8c018aab7c264'
+BASE='a87773d4edc26951168cc4f8dfd61b310e8ef89f'
+RELEASE='.agents/skills/roundfix/references/release.md'
+MIRROR='skills/roundfix/references/release.md'
+ADOPTION='TestACompletionNoticeSkipsARecordTheMergeAdopted'
+NOTICE='TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest'
+NORMAL=lambda s:' '.join(s.split())
+LOG=[]
+def run(args,cwd=ROOT,env=None,allowed=(0,)):
+    p=subprocess.run(args,cwd=cwd,env=env,text=True,capture_output=True)
+    LOG.append('command: '+shlex.join([str(a) for a in args])+'\ncwd: '+str(cwd)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n')
+    if p.returncode not in allowed:raise AssertionError('unexpected exit '+str(p.returncode)+' from '+shlex.join(args)+'\n'+p.stdout[-1800:]+p.stderr[-1800:])
+    return p
+
+def git(*args,cwd=ROOT):return run(['git',*args],cwd=cwd).stdout
+
+def observe(message):LOG.append(message+'\n')
+
+def finish(row,status,summary):
+    filename=row.lower()+'.txt';(ED/filename).write_text('\n'.join(LOG))
+    text=REPORT.read_text();text=re.sub(r'(?m)^\| '+row+r' \| [^|]* \|', '| '+row+' | '+status+' |',text)
+    start=text.index('### '+row+' evidence');end=text.find('\n### ',start+1)
+    if end<0:end=len(text)
+    block=text[start:end].replace('Observation: pending.','Observation: '+summary+' [Transcript](evidence/qa-report-2026-11-13/'+filename+').')
+    REPORT.write_text(text[:start]+block+text[end:]);print(row,status,summary,flush=True)
+
+def isolated(h,t):
+    e=os.environ.copy()
+    for key in list(e):
+        if key in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY'] or key.startswith('ROUNDFIX_') and key.endswith(('KEY','TOKEN','HOME','CONFIG','ROOT')):e.pop(key,None)
+    for key in ['ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']:e.pop(key,None)
+    for k in ['GOMODCACHE','GOCACHE']:e[k]=subprocess.check_output(['go','env',k],text=True).strip()
+    e.update(HOME=h,TMPDIR=t)
+    return e
+
+def archive(rev,dest):
+    p=subprocess.run(['git','archive',rev],cwd=ROOT,capture_output=True,check=True)
+    with tarfile.open(fileobj=io.BytesIO(p.stdout)) as tf:tf.extractall(dest,filter='data')
+    observe('Fresh git archive '+rev+' extracted; no earlier Run artifact used.')
+    git('init','-q',cwd=dest);git('add','-A',cwd=dest)
+
+def row01():
+    observe('Daemon-provided repository Verification: make verify-changed; audited head '+HEAD+'; pass; exit 0; diagnostics removed on success. Not rerun by Agent.')
+    finish('Q01','pass','Daemon repository Verification passed at the audited head (exit 0); not rerun.')
+
+def positive(row,args,expected=(),environment=None):
+    p=run(args,env=environment)
+    for name in expected:
+        assert re.search(r'--- PASS: '+re.escape(name)+r' ',p.stdout), 'missing pass: '+name
+    if row=='Q04':
+        # The first required whole docscontract pass establishes these named tests;
+        # a focused verbose read confirms their individual identities.
+        q=run(['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','-run','^(TestGlossaryPhrasesAreDefinedTerms|TestTheSkillCoverageMapIsCurrent)$','./internal/docscontract'])
+        for name in ['TestGlossaryPhrasesAreDefinedTerms','TestTheSkillCoverageMapIsCurrent']:
+            assert '--- PASS: '+name+' ' in q.stdout
+    finish(row,'pass','Required command exited 0; all requested named observables confirmed.')
+
+def row06():
+    diff=git('diff','--unified=3',BASE,HEAD,'--',RELEASE);observe(diff)
+    old=git('show',BASE+':'+RELEASE);new=(ROOT/RELEASE).read_text()
+    marker='## Completion notices\n';assert old.split(marker)[0]==new.split(marker)[0]
+    run(['cmp',RELEASE,MIRROR]);tech=(SD/'_techspec.md').read_text();blocks=re.findall(r'```markdown\n(.*?)```',tech,re.S)
+    for block in blocks:assert NORMAL(block) in NORMAL(new),'interface block mismatch'
+    observe('All changed bytes are in Completion notices; both TechSpec Interfaces blocks match after whitespace normalization; mirror identical.')
+    task=(SD/'task_01.md').read_text();verification=task.split('## Verification\n',1)[1].split('\n## ',1)[0]
+    # Run the exact second task_01 Verification command; the first is run in Q02.
+    line=next(x for x in verification.splitlines() if x.startswith('- `for f in '))
+    command=line[3:].split('` — expected:',1)[0]
+    run(['zsh','-f','-c',command])
+    observe('Old-rule wording sweep over docs/agents, user guides, canonical and shipped skills:')
+    p=run(['rg','-n','-F','for each Notice Request it holds, naming the merge commit','.agents/skills','skills','docs/agents','docs/user-guide'],allowed=(0,1));assert p.returncode==1,'stale closure wording remains'
+    finish('Q06','pass','Only Completion notices changed; mirrors and both normalized Interface blocks match; exact task_01 prose check and stale-wording sweep passed.')
+
+def row07():
+    vals=[]
+    for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+        for rev in [BASE,HEAD]:
+            text=git('show',rev+':'+path);versions=re.findall(r'^\s*version: (\S+)',text,re.M);assert len(versions)==2
+            vals.append(versions);observe(rev+' '+path+' version fields: '+', '.join(versions))
+    assert vals[0]==vals[2] and vals[1]==vals[3] and vals[1][0]==vals[1][1]
+    assert tuple(map(int,vals[1][0].split('.')))>tuple(map(int,vals[0][0].split('.')))
+    entries=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())['skills']['roundfix']
+    matching=[v for v in entries if v['version']==vals[1][0]];assert matching
+    observe('Recorded head entry: '+json.dumps(matching))
+    finish('Q07','pass','Both version fields in both layouts rise from '+vals[0][0]+' to '+vals[1][0]+'; the head version and digest are recorded.')
+
+def row08():
+    with tempfile.TemporaryDirectory(prefix='qa0388-install-',dir=ROOT/'bin') as d:
+        scratch=pathlib.Path(d)
+        for name in ['home','tmp','repo']:(scratch/name).mkdir()
+        e=isolated(str(scratch/'home'),str(scratch/'tmp'));repo=scratch/'repo'
+        run(['git','-c','core.hooksPath=/dev/null','init','-q','-b','main'],cwd=repo,env=e)
+        run([str(ROOT/'bin/roundfix'),'skills','install','--target','project'],cwd=repo,env=e)
+        installed=repo/'.agents/skills/roundfix';assert installed.is_dir()
+        data=(installed/'SKILL.md').read_text();ref=(installed/'references/release.md').read_text()
+        assert data==(ROOT/'skills/roundfix/SKILL.md').read_text();assert ref==(ROOT/MIRROR).read_text()
+        assert 'A record the merge adopted is not closed' in NORMAL(ref)
+        assert 'Send each notice once with `memory_message_send`' in NORMAL(ref)
+        observe('Independent read after process exit: installed SKILL.md equals audited embedded SKILL.md; installed release.md equals audited embedded reference; version 0.1.229; adoption exception and send channel present.')
+        # A second invocation confirms installed-state persistence and replay behavior.
+        run([str(ROOT/'bin/roundfix'),'skills','install','--target','project'],cwd=repo,env=e)
+        assert (installed/'references/release.md').read_text()==ref
+    finish('Q08','pass','Built product installed version 0.1.229 and the corrected reference into a fresh Git project; independent read and repeated install preserved it.')
+
+def negative(number):
+    row='Q%02d'%(9+number)
+    with tempfile.TemporaryDirectory(prefix='qa0388-sabotage-',dir=ROOT/'bin') as d:
+        dest=pathlib.Path(d);archive(HEAD,dest)
+        path=dest/(MIRROR if number==2 else RELEASE);text=path.read_text()
+        sentence='A record the merge adopted is not closed: its notice follows the Spec that\nadopted it, and the closure event sends nothing for it.'
+        if number in [1,2]:assert sentence in text;text=text.replace(sentence,'',1)
+        elif number==3:
+            old='-- <spec root>`\nand the files there';assert old in text;text=text.replace(old,'-- <spec root>/*/_prd.md`\nand the files there',1)
+        elif number==4:text=git('show',BASE+':'+RELEASE)
+        elif number==5:
+            old='Send each notice once with `memory_message_send`';assert old in text;text=text.replace(old,'Send each notice once',1)
+        elif number==6:
+            old="It was also adopted when a PRD's `## Sources`\nentry names it at the merge commit.";assert old in text;text=text.replace(old,'',1)
+        elif number==7:
+            old='`status: promoted`\nwith `spec` naming that Spec for a Backlog Entry, or `status: done` or\n`status: partial` for a Finding';assert old in text;text=text.replace(old,'`status: promoted`',1)
+        path.write_text(text)
+        observe('Sabotage '+str(number)+' changes only '+str(path.relative_to(dest))+'.\n'+''.join(difflib.unified_diff((ROOT/path.relative_to(dest)).read_text().splitlines(True),text.splitlines(True))))
+        pattern='^'+(NOTICE if number==5 else ADOPTION)+'$'
+        if number==4:pattern='^('+NOTICE+'|'+ADOPTION+')$'
+        p=run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./skills'],cwd=dest,allowed=(1,))
+        out=p.stdout+p.stderr;layout='embedded' if number==2 else 'canonical'
+        for test in ([NOTICE,ADOPTION] if number==4 else [NOTICE if number==5 else ADOPTION]):
+            assert re.search(r'--- FAIL: '+test+'/'+layout+r' ',out),'named failure absent'
+        if number in [1,2]:assert 'completion notices omits "A record the merge adopted is not closed:' in out
+        elif number==3:
+            for shape in ['squash','merge']:assert '--- FAIL: '+ADOPTION+'/canonical/'+shape+' ' in out
+            assert 'closed records are' in out and '2026-01-04-unconfirmed-entry.md' in out
+        elif number==4:assert 'completion notices prescribe no command starting' in out
+        elif number==5:assert 'memory_message_send' in out and 'completion notices omits' in out
+        elif number==6:assert "It was also adopted when a PRD's" in out
+        elif number==7:assert 'status: partial' in out and 'completion notices omits' in out
+        assert 'panic:' not in out and 'build failed' not in out.lower()
+    finish(row,'pass','Sabotage '+str(number)+' failed its named test and required diagnostic; captured output confirms the intended regression, not a harness failure.')
+
+def base_red():
+    with tempfile.TemporaryDirectory(prefix='qa0388-base-',dir=ROOT/'bin') as d:
+        dest=pathlib.Path(d);archive(BASE,dest);shutil.copyfile(ROOT/'skills/roundfix_modes_test.go',dest/'skills/roundfix_modes_test.go')
+        p=run(['go','test','-count=1','-timeout','20m','-v','-run','^'+ADOPTION+'$','./skills'],cwd=dest,allowed=(1,));out=p.stdout+p.stderr
+        for layout in ['canonical','embedded']:assert '--- FAIL: '+ADOPTION+'/'+layout+' ' in out
+        assert 'completion notices omits "A record the merge adopted is not closed:' in out
+        assert 'completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"' in out
+    # Follow the reference's public Git commands independently in a newly-created repository.
+    with tempfile.TemporaryDirectory(prefix='qa0388-flow-',dir=ROOT/'bin') as d:
+        r=pathlib.Path(d)
+        ge=os.environ.copy();ge.update(GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_TERMINAL_PROMPT='0')
+        def g(*a):return run(['git','-c','core.hooksPath=/dev/null','-c','user.name=QA','-c','user.email=qa@example.invalid',*a],cwd=r,env=ge).stdout
+        def write(path,text):p=r/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+        records={'adopted-entry':'docs/backlog/adopted-entry.md','declined-entry':'docs/backlog/declined-entry.md','unconfirmed-entry':'docs/backlog/unconfirmed-entry.md','named-entry':'docs/backlog/named-entry.md','adopted-finding':'docs/findings/adopted-finding.md'}
+        g('init','-q','-b','main')
+        for name,path in records.items():write(path,'---\nstatus: '+('pending' if name=='adopted-finding' else 'open')+'\n---\n'+name+'\n')
+        g('add','-A');g('commit','-q','-m','base')
+        for path in records.values():(r/path).unlink()
+        write('docs/specs/example/_prd.md','---\nspec: example\n---\n## Sources\n- named-entry.md\n')
+        for name,status in [('adopted-entry','promoted'),('adopted-finding','done'),('unconfirmed-entry','open')]:
+            write('docs/specs/example/references/'+name+'.md','---\nstatus: '+status+'\nspec: example\n---\nSource: '+name+'.md\n')
+        g('add','-A');g('commit','-q','-m','adopt and close');c=g('rev-parse','HEAD').strip()
+        for setting in ['false','true','copies']:
+            deleted=g('-c','diff.renames='+setting,'diff','--name-only','--diff-filter=D',c+'^',c,'--','docs/backlog','docs/findings').splitlines();assert sorted(deleted)==sorted(records.values())
+            added=g('-c','diff.renames='+setting,'diff','--name-only','--diff-filter=A',c+'^',c,'--','docs/specs').splitlines()
+            assert 'docs/specs/example/references/unconfirmed-entry.md' in added
+            classes={'adopted':[],'closed':[],'ask':[]}
+            for name,path in records.items():
+                prior=g('show',c+'^:'+path);assert ('status: pending' if name=='adopted-finding' else 'status: open') in prior
+                matches=g('grep','-l','-F','-e',name+'.md',c,'--','docs/specs') if name!='declined-entry' else ''
+                copied=[a for a in added if a.endswith('/'+name+'.md')]
+                if copied:
+                    content=g('show',c+':'+copied[0]);confirmed='status: promoted' in content or 'status: done' in content or 'status: partial' in content
+                    classes['adopted' if confirmed else 'ask'].append(name)
+                elif '/_prd.md' in matches:classes['adopted'].append(name)
+                else:classes['closed'].append(name)
+            assert sorted(classes['adopted'])==['adopted-entry','adopted-finding','named-entry'];assert classes['closed']==['declined-entry'];assert classes['ask']==['unconfirmed-entry']
+            observe('Independent operator interpretation diff.renames='+setting+': '+json.dumps(classes)+'. No notice sent; user-question outcome recorded only.')
+    finish('Q09','pass','Head test fails on the Delivery Base in both layouts with both named diagnostics; independent public-Git journey exposes the old overbroad deletion list and applies the corrected rule under all three rename settings.')
+
+def historical(commit):
+    c=git('rev-parse',commit).strip()
+    deleted=git('diff','--name-only','--diff-filter=D',c+'^',c,'--','docs/backlog','docs/findings').splitlines()
+    changes=git('diff','--name-status',c+'^',c).splitlines()
+    found=[]
+    for path in deleted:
+        pairs=[x.split('\t') for x in changes if re.match(r'R\d+\t',x) and x.split('\t')[1]==path and '/references/' in x.split('\t')[2]]
+        for pair in pairs:
+            previous=git('show',c+'^:'+path);status=re.search(r'^status: .+$',previous,re.M).group()
+            current=git('show',c+':'+pair[2]);now=re.search(r'^status: .+$',current,re.M).group()
+            observe('Historical comparison: '+path+' is deleted in path-limited listing, '+pair[0]+' to '+pair[2]+' without path limit; parent '+status+'; adopted copy '+now+'.')
+            assert status in ['status: open','status: pending']
+            assert now in ['status: promoted','status: done','status: partial']
+            found.append((path,pair[2],status,now))
+    assert found, 'no claimed adopted record in '+commit
+    return found
+
+def remaining():
+    for c in ['73421db2','a99c17b2','dfb4dbac','62bc941a']:historical(c)
+    finish('Q17','pass','All four planning merges list adopted records as deleted; unrestricted diffs pair their moves (R094–R096), and parent records remain open while adopting copies are promoted.')
+    LOG.clear()
+    observe('Source: Linus Torvalds, Git mailing list, Re: [PATCH] Diff updates, fixing pathspec and rename/copy interaction (2005-05-27).')
+    observe('URL: https://public-inbox.org/git/Pine.LNX.4.58.0505270848220.17402@ppc970.osdl.org/')
+    observe('The Spec quotes the passage that a directory-limited diff excludes potential rename sources outside that directory. No lookup attempted: _authorization.md Limits prohibits reaching the network. Supplied quotation is not independently obtained literature evidence. The local rename-setting results agree with that mechanism but cannot prove the publication. Unblocking: a maintainer may provide an authorized offline copy or approve a later lookup outside this Run.')
+    finish('Q18','blocked (environment: network prohibited by Spec authorization)','The authorization forbids the network lookup; the supplied passage agrees with local pathspec observations but independent publication evidence was not obtained.')
+    LOG.clear()
+    reference=SD/'references/2026-11-13-a-completion-notice-reads-an-adopted-record-as-closed.md'
+    text=reference.read_text();observe('Argus Expected section:\n'+text.split('## Expected\n',1)[1].split('\n## ',1)[0])
+    results=historical('73421db2');current=NORMAL((ROOT/RELEASE).read_text())
+    assert 'set aside each record the merge adopted' in current and "It was also adopted when a PRD's `## Sources` entry names it at the merge commit." in current
+    observe('Compared to Argus: exclusion and regression pin are met. The deliberate departure reads adoption status from the added copy and PRD Sources, not the deleted record at merge parent; the measured parent is open and adopting copy promoted, proving parent frontmatter cannot decide. The defect also occurs with successful unrestricted rename detection, not just rename-pairing failure.')
+    finish('Q19','pass','Compared Argus Expected with the corrected closure rule and an independently re-read historical adoption; the change in frontmatter source is justified by open parent/promoted copy evidence.')
+    LOG.clear()
+    declaration=(SD/'_prd.md').read_text().split('## Unreachable Acceptance\n',1)[1].split('\n## ',1)[0]
+    observe(declaration);observe((ED/'version.txt').read_text())
+    observe('The audited binary is 0.143.0 before the requested v0.143.1 release; this Run may not release, run managed refresh, or read another repository. A fresh-project skills installation proves embedded content only, not a post-release managed refresh. satisfied-by: the operator or Argus first managed refresh after release, recorded session evidence. No refresh attempted and no declaration was shown wrongly unreachable.')
+    finish('Q20',"blocked (declared: after the v0.143.1 release, an adopter's `roundfix baseline update` installs the `roundfix` skill at its new version, and its release reference sets aside a record the merge adopted.)",'Declared criterion remains unreachable before release; satisfied-by is the operator or Argus first managed refresh after release, recorded session evidence.')
+    LOG.clear()
+    paths=git('diff-tree','--no-commit-id','--name-only','-r',HEAD).splitlines()
+    task=(SD/'task_01.md').read_text();declared=set(re.findall(r'^- (?:interface|creates|deletes): `([^`]+)`',task,re.M));declared.add(str((SD/'task_01.md').relative_to(ROOT)))
+    assert set(paths)<=declared, 'undeclared paths: '+str(set(paths)-declared)
+    observe('Actual Task commit paths all occur under task_01 interface declarations or the assigned Task file: '+json.dumps(paths))
+    authpath=str((SD/'_authorization.md').relative_to(ROOT));auth=git('show',BASE+':'+authpath)
+    assert auth==(ROOT/authpath).read_text();git('merge-base','--is-ancestor',BASE,HEAD)
+    observe('Authorization predates the Task and equals the operative frozen record. Daemon mechanical authorization table already grants the Task at this revision; no mechanical refusal rechecked.')
+    allowed={'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/release.md','skills/roundfix/SKILL.md'}
+    listed=auth.split('\npaths:\n',1)[1].split('\noperations:',1)[0]
+    for path in allowed:assert '\n  - '+path in '\n'+listed
+    assert {x for x in paths if x.startswith('.agents/skills/')}<=allowed
+    forbidden=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md','docs/references/coverage-record.json','docs/references/behavior-surfaces.json']
+    assert not set(paths).intersection(forbidden)
+    assert not any(x.startswith(('internal/','docs/agents/','docs/user-guide/','docs/adr/','.github/workflows/')) for x in paths)
+    assert not any(x.endswith('.go') and not x.endswith('_test.go') for x in paths)
+    for path in paths:
+        if path.startswith(('.agents/skills/','skills/roundfix/')):assert path in allowed or path==MIRROR
+    diff=git('diff','--unified=0',BASE,HEAD,'--',*paths)
+    changed=[x for x in diff.splitlines() if x.startswith(('+','-')) and not x.startswith(('+++','---'))]
+    assert not any('### QA settlement' in x for x in changed)
+    for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+        before=git('show',BASE+':'+path);after=git('show',HEAD+':'+path)
+        def section(t):return t.split('### QA settlement\n',1)[1].split('\n## ',1)[0]
+        assert section(before)==section(after)
+    assert (SD/'_prd.md').read_text().split('## Glossary\n',1)[1].split('\n## ',1)[0].strip()=='None.'
+    assert not git('diff','--name-only',BASE,HEAD,'--','CONTEXT.md')
+    observe('No glossary term declared; CONTEXT unchanged. Named glossary and coverage-map tests passed in required docscontract run. All forbidden paths, other skills, other roundfix references and production Go remain unchanged; QA settlement bytes equal parent.')
+    delta=git('status','--porcelain','--untracked-files=all');observe('QA delta contains report/evidence only.');assert all(line[3:].startswith(str((SD/'qa').relative_to(ROOT))+'/') for line in delta.splitlines())
+    finish('Q21','pass','Actual Task commit changes only declared paths; governed paths are authorized by the prior record; all forbidden surfaces, glossary and QA settlement remain unchanged; QA delta is report/evidence only.')
+    LOG.clear()
+    observe('Pull Request fact: no open Pull Request, supplied by Daemon for the target branch; no real gh or network attempted.')
+    auth=(SD/'_authorization.md').read_text();assert 'status: approved' in auth and '  - pull_request' in auth
+    observe('Approval: approved delivery authority in _authorization.md, recorded maintainer decisions; this is delivery authority, not a current-candidate review approval. Checks/status: Daemon make verify-changed pass exit 0 at '+HEAD+'. Unresolved review threads: none because no Pull Request exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: no Review Source artifact or review-artifact commit yet; claimed candidate is '+HEAD+'; no false ancestry credit. Unblocking: supervisor opens the target-branch Pull Request after review and QA, then observes all controls for its current head.')
+    finish('Q22','blocked (environment: no open Pull Request)','Recorded all five pre-PR controls; Merge-Ready review acceptance and a review artifact do not exist yet, so equivalent evidence is incomplete.')
+    LOG.clear()
+    with tempfile.TemporaryDirectory(prefix='qa0388-archive-home-') as h,tempfile.TemporaryDirectory(prefix='qa0388-archive-tmp-') as t:
+        e=isolated(h,t)
+        before=git('status','--porcelain','--untracked-files=all')
+        p=run(['./bin/roundfix','archive',SPEC,'--plan','--offline'],env=e)
+        assert 'judge: skipped (offline)' in p.stdout+p.stderr
+        after=git('status','--porcelain','--untracked-files=all');assert before==after
+        observe('Offline plan changed no tracked/untracked path and invoked no judge. Candidates are Spec-local report/evidence and adopted source; durable behavior belongs to the corrected release reference already upstream. No new reusable reference needs promotion.')
+    (ED/'archive-plan.txt').write_text('\n'.join(LOG));print('archive offline plan pass',flush=True)
+
+def main():
+    mode=sys.argv[1]
+    if mode=='static':row01()
+    elif mode=='skills':
+        expected=[ADOPTION+'/'+layout+suffix for layout in ['canonical','embedded'] for suffix in ['','/squash','/merge']]+[NOTICE+'/'+x for x in ['canonical','embedded']]+['TestEveryOwnedSkillVersionIsRecorded','TestAuthorialSkillSync/roundfix']
+        p=run(['go','test','-count=1','-timeout','20m','-v','./skills'])
+        for name in expected:assert re.search(r'--- PASS: '+re.escape(name)+r' ',p.stdout),'missing pass '+name
+        task=(SD/'task_01.md').read_text();v=task.split('## Verification\n',1)[1].split('\n## ',1)[0];line=next(x for x in v.splitlines() if x.startswith('- `out='));command=line[3:].split('` — expected:',1)[0];run(['zsh','-f','-c',command])
+        finish('Q02','pass','Whole skills suite and every required named layout/shape/version/sync test passed; task_01 first Verification command also exited 0.')
+    elif mode=='repo':positive('Q03',['go','test','-count=1','-timeout','20m','-tags','repocontract','./skills'])
+    elif mode=='docs':positive('Q04',['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract'])
+    elif mode=='windows':
+        e=os.environ.copy();e['GOOS']='windows';positive('Q05',['go','vet','./skills'],environment=e)
+    elif mode=='text':row06();LOG.clear();row07()
+    elif mode=='remaining':remaining()
+    elif mode=='install':row08()
+    elif mode=='base':base_red()
+    elif mode.startswith('sabotage'):negative(int(mode.removeprefix('sabotage')))
+    else:raise ValueError(mode)
+if __name__=='__main__':
+    try:main()
+    except Exception:
+        (ED/('failure-'+sys.argv[1]+'.txt')).write_text('\n'.join(LOG)+'\n'+traceback.format_exc());raise

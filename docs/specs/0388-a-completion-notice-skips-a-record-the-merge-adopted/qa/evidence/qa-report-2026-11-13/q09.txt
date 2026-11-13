@@ -1,0 +1,662 @@
+Fresh git archive a87773d4edc26951168cc4f8dfd61b310e8ef89f extracted; no earlier Run artifact used.
+
+command: git init -q
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-base-e69ycujm
+stdout:
+stderr:
+
+exit: 0
+
+command: git add -A
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-base-e69ycujm
+stdout:
+stderr:
+
+exit: 0
+
+command: go test -count=1 -timeout 20m -v -run '^TestACompletionNoticeSkipsARecordTheMergeAdopted$' ./skills
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-base-e69ycujm
+stdout:
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "set aside each record the merge adopted, as the next paragraph says"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "set aside each record the merge adopted, as the next paragraph says"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "A record the merge adopted is not closed: its notice follows the Spec that adopted it, and the closure event sends nothing for it."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "A record the merge adopted is not closed: its notice follows the Spec that adopted it, and the closure event sends nothing for it."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "cannot pair that move with its destination under any rename setting, so the listing of deleted records names every adopted record too"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "cannot pair that move with its destination under any rename setting, so the listing of deleted records names every adopted record too"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "The record read at `<merge commit>^` still carries the status it had before the merge, so it cannot tell an adopted record from a closed one."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "The record read at `<merge commit>^` still carries the status it had before the merge, so it cannot tell an adopted record from a closed one."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "git grep -l -F -e <file name> <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "git grep -l -F -e <file name> <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "git show <merge commit>:<added path>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "git show <merge commit>:<added path>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "`status: promoted` with `spec` naming that Spec for a Backlog Entry, or `status: done` or `status: partial` for a Finding"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "`status: promoted` with `spec` naming that Spec for a Backlog Entry, or `status: done` or `status: partial` for a Finding"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "It was also adopted when a PRD's `## Sources` entry names it at the merge commit."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "It was also adopted when a PRD's `## Sources` entry names it at the merge commit."
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "the event sends no notice for it, and the session names the record and the added file and asks the user"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "the event sends no notice for it, and the session names the record and the added file and asks the user"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "moves an adopted Backlog Entry or Finding into a Spec's `references/` folder"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "moves an adopted Backlog Entry or Finding into a Spec's `references/` folder"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "A listed record was adopted when the merge adds a file of the same name under a Spec's `references/` folder whose frontmatter"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+    roundfix_modes_test.go:506: completion notices omits "A listed record was adopted when the merge adds a file of the same name under a Spec's `references/` folder whose frontmatter"
+    roundfix_modes_test.go:506: completion notices omits "When the merge adds a file of the same name whose frontmatter cannot be read or records another status, and no PRD's `## Sources` entry names the record"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "When the merge adds a file of the same name whose frontmatter cannot be read or records another status, and no PRD's `## Sources` entry names the record"
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+=== NAME  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+    roundfix_modes_test.go:525: completion notices prescribe no command starting "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>"
+--- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted (0.00s)
+    --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical (0.00s)
+        --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash (0.00s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true (0.09s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies (0.09s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false (0.09s)
+        --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge (0.00s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false (0.16s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true (0.16s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies (0.16s)
+    --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded (0.00s)
+        --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash (0.00s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false (0.09s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies (0.09s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true (0.10s)
+        --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge (0.00s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false (0.16s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies (0.12s)
+            --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true (0.11s)
+FAIL
+FAIL	roundfix/skills	0.629s
+FAIL
+stderr:
+
+exit: 1
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid init -q -b main
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid add -A
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid commit -q -m base
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid add -A
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid commit -q -m 'adopt and close'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid rev-parse HEAD
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=false diff --name-only --diff-filter=D '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/backlog docs/findings
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/backlog/adopted-entry.md
+docs/backlog/declined-entry.md
+docs/backlog/named-entry.md
+docs/backlog/unconfirmed-entry.md
+docs/findings/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=false diff --name-only --diff-filter=A '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/specs/example/_prd.md
+docs/specs/example/references/adopted-entry.md
+docs/specs/example/references/adopted-finding.md
+docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/adopted-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+adopted-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: promoted
+spec: example
+---
+Source: adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/declined-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+declined-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/unconfirmed-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+unconfirmed-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e unconfirmed-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+spec: example
+---
+Source: unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/named-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+named-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e named-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/_prd.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/findings/adopted-finding.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: pending
+---
+adopted-finding
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-finding.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: done
+spec: example
+---
+Source: adopted-finding.md
+stderr:
+
+exit: 0
+
+Independent operator interpretation diff.renames=false: {"adopted": ["adopted-entry", "named-entry", "adopted-finding"], "closed": ["declined-entry"], "ask": ["unconfirmed-entry"]}. No notice sent; user-question outcome recorded only.
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=true diff --name-only --diff-filter=D '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/backlog docs/findings
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/backlog/adopted-entry.md
+docs/backlog/declined-entry.md
+docs/backlog/named-entry.md
+docs/backlog/unconfirmed-entry.md
+docs/findings/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=true diff --name-only --diff-filter=A '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/specs/example/_prd.md
+docs/specs/example/references/adopted-entry.md
+docs/specs/example/references/adopted-finding.md
+docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/adopted-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+adopted-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: promoted
+spec: example
+---
+Source: adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/declined-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+declined-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/unconfirmed-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+unconfirmed-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e unconfirmed-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+spec: example
+---
+Source: unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/named-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+named-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e named-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/_prd.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/findings/adopted-finding.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: pending
+---
+adopted-finding
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-finding.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: done
+spec: example
+---
+Source: adopted-finding.md
+stderr:
+
+exit: 0
+
+Independent operator interpretation diff.renames=true: {"adopted": ["adopted-entry", "named-entry", "adopted-finding"], "closed": ["declined-entry"], "ask": ["unconfirmed-entry"]}. No notice sent; user-question outcome recorded only.
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=copies diff --name-only --diff-filter=D '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/backlog docs/findings
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/backlog/adopted-entry.md
+docs/backlog/declined-entry.md
+docs/backlog/named-entry.md
+docs/backlog/unconfirmed-entry.md
+docs/findings/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid -c diff.renames=copies diff --name-only --diff-filter=A '005d5461baa72a97695cea679805e0fb10372eb8^' 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+docs/specs/example/_prd.md
+docs/specs/example/references/adopted-entry.md
+docs/specs/example/references/adopted-finding.md
+docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/adopted-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+adopted-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: promoted
+spec: example
+---
+Source: adopted-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/declined-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+declined-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/unconfirmed-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+unconfirmed-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e unconfirmed-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/unconfirmed-entry.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+spec: example
+---
+Source: unconfirmed-entry.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/backlog/named-entry.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: open
+---
+named-entry
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e named-entry.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/_prd.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show '005d5461baa72a97695cea679805e0fb10372eb8^:docs/findings/adopted-finding.md'
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: pending
+---
+adopted-finding
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid grep -l -F -e adopted-finding.md 005d5461baa72a97695cea679805e0fb10372eb8 -- docs/specs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+stderr:
+
+exit: 0
+
+command: git -c core.hooksPath=/dev/null -c user.name=QA -c user.email=qa@example.invalid show 005d5461baa72a97695cea679805e0fb10372eb8:docs/specs/example/references/adopted-finding.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-flow-qfomk7ir
+stdout:
+---
+status: done
+spec: example
+---
+Source: adopted-finding.md
+stderr:
+
+exit: 0
+
+Independent operator interpretation diff.renames=copies: {"adopted": ["adopted-entry", "named-entry", "adopted-finding"], "closed": ["declined-entry"], "ask": ["unconfirmed-entry"]}. No notice sent; user-question outcome recorded only.

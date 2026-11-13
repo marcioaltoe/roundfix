@@ -1,0 +1,19 @@
+
+- criterion: after the v0.143.1 release, an adopter's `roundfix baseline
+  update` installs the `roundfix` skill at its new version, and its release
+  reference sets aside a record the merge adopted.
+  reason: it needs a released binary and another repository's managed
+  refresh, which no Verification or QA row may run or read.
+  satisfied-by: the operator's or Argus's first managed refresh after the
+  release, recorded session evidence.
+
+
+command: ./bin/roundfix --version
+stdout:
+roundfix 0.143.0 (430905c9-dirty, built 2026-11-13 09:12:26 -0300)
+stderr:
+
+exit: 0
+
+
+The audited binary is 0.143.0 before the requested v0.143.1 release; this Run may not release, run managed refresh, or read another repository. A fresh-project skills installation proves embedded content only, not a post-release managed refresh. satisfied-by: the operator or Argus first managed refresh after release, recorded session evidence. No refresh attempted and no declaration was shown wrongly unreachable.

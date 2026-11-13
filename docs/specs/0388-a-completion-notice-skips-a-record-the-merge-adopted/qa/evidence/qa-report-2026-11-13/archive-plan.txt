@@ -1,0 +1,84 @@
+command: git status --porcelain --untracked-files=all
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/build.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/matrix.json
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q01.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q02.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q03.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q04.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q05.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q06.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q07.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q08.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q09.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q10.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q11.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q12.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q13.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q14.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q15.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q16.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q17.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q18.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q19.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q20.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q21.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q22.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/qa-driver.py.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/strict.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/version.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/qa-report-2026-11-13.md
+stderr:
+
+exit: 0
+
+command: ./bin/roundfix archive 0388-a-completion-notice-skips-a-record-the-merge-adopted --plan --offline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+archive plan for 0388-a-completion-notice-skips-a-record-the-merge-adopted: removes 36 file(s) (596679 bytes) and writes docs/history/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted.md
+core 8 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-13.md, references/_index.md, task_01.md, task_02.md
+evidence 27 file(s) (501343 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-13-a-completion-notice-reads-an-adopted-record-as-closed.md 2474 bytes: no advice (offline)
+promote with: roundfix archive 0388-a-completion-notice-skips-a-record-the-merge-adopted --promote <path>
+stderr:
+
+exit: 0
+
+command: git status --porcelain --untracked-files=all
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7
+stdout:
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/build.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/matrix.json
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q01.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q02.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q03.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q04.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q05.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q06.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q07.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q08.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q09.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q10.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q11.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q12.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q13.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q14.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q15.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q16.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q17.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q18.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q19.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q20.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q21.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/q22.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/qa-driver.py.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/strict.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/evidence/qa-report-2026-11-13/version.txt
+?? docs/specs/0388-a-completion-notice-skips-a-record-the-merge-adopted/qa/qa-report-2026-11-13.md
+stderr:
+
+exit: 0
+
+Offline plan changed no tracked/untracked path and invoked no judge. Candidates are Spec-local report/evidence and adopted source; durable behavior belongs to the corrected release reference already upstream. No new reusable reference needs promotion.

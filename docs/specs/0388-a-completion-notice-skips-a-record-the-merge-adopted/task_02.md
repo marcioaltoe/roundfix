@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0388-a-completion-notice-skips-a-record-the-merge-adopted
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

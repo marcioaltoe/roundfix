@@ -1,0 +1,117 @@
+Fresh git archive 430905c9f46454b9cd02474a22e8c018aab7c264 extracted; no earlier Run artifact used.
+
+command: git init -q
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-sabotage-66g86_hl
+stdout:
+stderr:
+
+exit: 0
+
+command: git add -A
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-sabotage-66g86_hl
+stdout:
+stderr:
+
+exit: 0
+
+Sabotage 2 changes only skills/roundfix/references/release.md.
+--- 
++++ 
+@@ -153,8 +153,7 @@
+   without being delivered, such as a declined Backlog Entry, the notice says
+   so instead.
+ 
+-A record the merge adopted is not closed: its notice follows the Spec that
+-adopted it, and the closure event sends nothing for it. The adoption contract
++ The adoption contract
+ of `docs/agents/docs-layout.md` moves an adopted Backlog Entry or Finding into
+ a Spec's `references/` folder, and a diff limited to `docs/backlog` and
+ `docs/findings` cannot pair that move with its destination under any rename
+
+
+command: go test -count=1 -timeout 20m -v -run '^TestACompletionNoticeSkipsARecordTheMergeAdopted$' ./skills
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0388-a-completion-notice-skips-a-record-the-merge-adopted-4201096f34a8bcc1-86559d7c-254dae35/run_20261113T113913Z_e5d17bf232ecdfc7/bin/qa0388-sabotage-66g86_hl
+stdout:
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+    roundfix_modes_test.go:506: completion notices omits "A record the merge adopted is not closed: its notice follows the Spec that adopted it, and the closure event sends nothing for it."
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+--- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted (0.00s)
+    --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical (0.00s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true (0.23s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false (0.24s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies (0.24s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies (0.17s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false (0.17s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true (0.16s)
+    --- FAIL: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded (0.00s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies (0.22s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false (0.23s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true (0.21s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false (0.16s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true (0.13s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies (0.13s)
+FAIL
+FAIL	roundfix/skills	0.821s
+FAIL
+stderr:
+
+exit: 1
