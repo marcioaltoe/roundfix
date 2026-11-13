@@ -1,0 +1,5 @@
+Unreachable Acceptance: None. Every criterion is proved with temporary repositories, the Run Database
+and fake Pull Request boundaries; no criterion needs the network, an open
+Pull Request or another repository.
+PRD surfaces: cli, docs. Surface Transcripts: None.
+Rows Q02-Q05 and S01-S08 exercise the authored fixture criteria; no declared-blocked row.

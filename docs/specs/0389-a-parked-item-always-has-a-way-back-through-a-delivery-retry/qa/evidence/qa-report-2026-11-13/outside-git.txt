@@ -1,0 +1,8 @@
+Fresh measurement observed during this pass, read 2026-11-13:
+git --version
+git version 2.56.1
+Disposable repository initialized; committed docs/specs/example/only.txt.
+git rm -r -q docs/specs/example
+exit: 0
+docs/specs exists: False
+Temporary repository removed.

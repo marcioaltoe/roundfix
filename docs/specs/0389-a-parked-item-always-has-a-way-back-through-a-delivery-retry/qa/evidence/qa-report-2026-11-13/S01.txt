@@ -1,0 +1,44 @@
+Audited source: a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+Fresh fixture: git archive; git init; git add -A; git commit with local fixture identity and hooks disabled. Fixture removed after probe.
+Mutation:
+--- internal/delivery/engine.go
++++ internal/delivery/engine.go
+@@ -647,7 +647,7 @@
+ 
+ 	// An item parked before it has an Item Branch never started; the owner
+ 	// creates its branch as on a first start.
+-	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) || strings.TrimSpace(item.Branch) == "" {
++	if blockerMatches(item.Blocker, BlockerArchivedItemUnproven) || prerequisitePark(item.Blocker) {
+ 		blocker := item.Blocker
+ 		item.Stage = store.DeliveryStageQueued
+ 		pid, identity, err := engine.store.RetryDeliveryQueueItem(ctx, gitRoot, item, blocker)
+
+
+command: go test -count=1 -timeout 40m -v ./internal/delivery -run ^TestRetryRequeuesAnItemParkedBeforeItHasABranch$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestRetryRequeuesAnItemParkedBeforeItHasABranch
+=== PAUSE TestRetryRequeuesAnItemParkedBeforeItHasABranch
+=== CONT  TestRetryRequeuesAnItemParkedBeforeItHasABranch
+    branchless_retry_test.go:34: retry branchless item: retry Delivery Queue item "branchless-retry": item worktree is empty
+--- FAIL: TestRetryRequeuesAnItemParkedBeforeItHasABranch (0.01s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 160.740291ms before and 158.65375ms after
+FAIL	roundfix/internal/delivery	0.586s
+FAIL
+
+
+command: go test -count=1 -timeout 40m -v ./internal/cli -run ^TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch$/^no_workspace$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch
+=== PAUSE TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch
+=== CONT  TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch
+=== RUN   TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/no_workspace
+    deliver_branchless_retry_test.go:62: production retry: retry Delivery Queue item "0001-widget-flow": use item branch "": use item branch: branch is required; stored stage=parked blocker="delivery-error: read prerequisites: refresh prerequisite default branch \"main\": git fetch origin main: Operation timed out" retry_count=0 branch="" worktree="" provisioned=false
+--- FAIL: TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch (0.16s)
+    --- FAIL: TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/no_workspace (0.16s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 146.179334ms before and 160.790917ms after
+FAIL	roundfix/internal/cli	0.902s
+FAIL

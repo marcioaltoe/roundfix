@@ -1,0 +1,25 @@
+from pathlib import Path
+import subprocess, re, sys
+root=Path.cwd(); folder=Path(__file__).parent
+report=folder.parent.parent/'qa-report-2026-11-13.md'
+def finish(row,status,detail):
+ t=report.read_text(); t=t.replace('| '+row+' | pending |','| '+row+' | '+status+' |'); t+='\n### '+row+'\n\ninputs:\n  repository_path: '+str(root)+'\n\n'+detail+'\n'; report.write_text(t)
+def run(name,args):
+ p=subprocess.run(args,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ out='command: '+' '.join(args)+'\nexit: '+str(p.returncode)+'\n'+p.stdout
+ (folder/(name+'.txt')).write_text(out)
+ print(name,'exit',p.returncode,flush=True)
+ return p
+finish('Q01','pass','Daemon-owned make verify-changed: pass (exit 0) at the audited head; diagnostics removed on success. It was not rerun.')
+cases=[('Q02','named-delivery','./internal/delivery',['TestRetryRequeuesAnItemParkedBeforeItHasABranch','TestCheckingReturnsACandidateThePullRequestLacksToTheGate','TestAReviewStaleParkNamesItsNextAction','TestExistingGenericParkAnswersAreUnchanged','TestPendingQuestionAnswersEachBlockerClass','TestRetryAfterArchiveReentersCheckingWithAPullRequest','TestDeliveryEngineParksAStaleReview']),('Q03','named-cli','./internal/cli',['TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch','TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot','TestTheDeliveryAuthorizationIsReadBeforeTheArchiveCommit','TestDeliverStatusPrintsTheItemWorktree','TestDeliverStatusPrintsAParkLinePerParkedItem']),('Q04','named-spec','./internal/spec',['TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree','TestOperationAuthorityDefaultRootUnchanged'])]
+for row,name,pkg,names in cases:
+ p=run(name,['go','test','-count=1','-timeout','40m','-v',pkg,'-run','^('+'|'.join(names)+')$'])
+ missing=[n for n in names if not re.search(r'--- PASS: '+re.escape(n)+r' ',p.stdout)]
+ passes=re.findall(r'--- PASS: (\S+)',p.stdout)
+ finish(row,'pass' if p.returncode==0 and not missing else 'fail','Actor: operator via production command/engine fixtures and temporary Run Databases. Independent confirmation: fixtures re-read stored items, worktree heads, authorization revision and captured stdout/stderr. Evidence: ['+name+'](evidence/qa-report-2026-11-13/'+name+'.txt). Every passing test/subtest:\n\n'+'\n'.join('- '+n for n in passes)+('\nMissing tests: '+str(missing) if missing else ''))
+# These whole-package runs execute the union of every Task 01-04 Verification selector.
+p=run('whole-packages',['go','test','-count=1','-timeout','40m','-v','./internal/delivery','./internal/store','./internal/spec','./internal/cli','./skills'])
+q=run('docscontract',['go','test','-count=1','-timeout','30m','-v','-tags','docscontract','./internal/docscontract'])
+asserted=['TestRetryRequeuesAnItemParkedBeforeItHasABranch','TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/no_workspace','TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/worktree_without_branch','TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate','TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head','TestAReviewStaleParkNamesItsNextAction','TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree','TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot']
+missing=[n for n in asserted if not re.search(r'--- PASS: '+re.escape(n)+r' ',p.stdout)]
+finish('Q05','pass' if p.returncode==q.returncode==0 and not missing else 'fail','The full uncached package runs subsume every test selector Tasks 01–04 name, including their required named-pass checks. No recorder was run. [Whole-package evidence](evidence/qa-report-2026-11-13/whole-packages.txt), [documentation contract evidence](evidence/qa-report-2026-11-13/docscontract.txt). Package results: '+str(re.findall(r'^ok\s+\S+.*',p.stdout+'\n'+q.stdout,re.M))+'; missing required passes: '+str(missing)+'. Glossary contract: '+str(bool(re.search(r'--- PASS: TestGlossaryPhrasesAreDefinedTerms ',q.stdout)))+'.')

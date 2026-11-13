@@ -1,0 +1,46 @@
+from pathlib import Path
+import subprocess, tempfile, tarfile, io, re, difflib
+root=Path.cwd(); folder=Path(__file__).parent; report=folder.parent.parent/'qa-report-2026-11-13.md'
+head='a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0'
+archive=subprocess.check_output(['git','archive',head])
+D='./internal/delivery'; C='./internal/cli'; S='./internal/spec'
+specs=[
+ (1,'internal/delivery/engine.go',' || strings.TrimSpace(item.Branch) == ""','',[(D,'^TestRetryRequeuesAnItemParkedBeforeItHasABranch$',['TestRetryRequeuesAnItemParkedBeforeItHasABranch']),(C,'^TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch$/^no_workspace$',['TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/no_workspace'])]),
+ (2,'internal/store/delivery.go','if item.Stage == DeliveryStageQueued {','if false {',[(C,'^TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch$/^worktree_without_branch$',['TestADeliveryRetryRequeuesAnItemParkedBeforeItHasABranch/worktree_without_branch'])]),
+ (3,'internal/cli/deliver_workflow.go','// The grant is read from Git history, so the Spec Root may be absent.\n\tspecsRoot, err := roundconfig.ResolveSpecsRootOrAbsent(workflow.loaded, gitRoot)','// The grant is read from Git history, so the Spec Root may be absent.\n\tspecsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)',[(C,'^TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot$',['TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot'])]),
+ (4,'internal/spec/authorization.go','specRepoRoot, specPrefix, specCommonDir, err := authorizationSpecsRootLocation(ctx, specsRoot)','specRepoRoot, specPrefix, specCommonDir, err := authorizationRepositoryLocation(ctx, specsRoot)',[(S,'^TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree$',['TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree']),(C,'^TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot$',['TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot'])]),
+ (5,'internal/delivery/engine.go','if earlierCandidate(*item, report.HeadSHA) {','if false {',[(D,'^TestCheckingReturnsACandidateThePullRequestLacksToTheGate$/^earlier_candidate$',['TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate'])]),
+ (6,'internal/delivery/engine.go',None,None,[(D,'^TestCheckingReturnsACandidateThePullRequestLacksToTheGate$/^foreign_head$',['TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head'])]),
+ (7,'internal/delivery/engine.go',None,None,[(D,'^TestCheckingReturnsACandidateThePullRequestLacksToTheGate$/^earlier_candidate$',['TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate'])]),
+ (8,'internal/delivery/park_class.go','\t\tif blocker == BlockerReviewStale {\n\t\t\tclassification.Next = "in " + item.Worktree + ", merge into the item branch any commit its Pull Request\'s head branch holds that the item branch lacks, then run roundfix deliver retry " + item.SpecSlug\n\t\t}\n','',[(D,'^TestAReviewStaleParkNamesItsNextAction$',['TestAReviewStaleParkNamesItsNextAction'])])]
+for number,file,old,new,cases in specs:
+ row=f'S{number:02}'; transcripts=[]; okay=True
+ with tempfile.TemporaryDirectory(prefix=f'qa0389-sabotage-{number}-') as scratch:
+  tree=Path(scratch)
+  with tarfile.open(fileobj=io.BytesIO(archive)) as tar: tar.extractall(tree,filter='data')
+  def git(*args): return subprocess.run(['git','-c','core.hooksPath=/dev/null',*args],cwd=tree,capture_output=True,text=True,check=True)
+  git('init','-q');git('add','-A');git('-c','user.name=QA','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false','commit','-qm','audited fixture')
+  target=tree/file; before=target.read_text()
+  if number==6:
+   old=re.search(r'func earlierCandidate\(item store.DeliveryQueueItem, head string\) bool \{.*?\n\}',before,re.S).group(0)
+   new='func earlierCandidate(item store.DeliveryQueueItem, head string) bool {\n\treturn head != ""\n}'
+  if number==7:
+   old=re.search(r'if earlierCandidate\(\*item, report.HeadSHA\) \{.*?\n\s*\}',before,re.S).group(0)
+   new=old.replace('store.DeliveryStageGating','store.DeliveryStagePublishing')
+  assert before.count(old)==1,(number,'mutation match count',before.count(old))
+  after=before.replace(old,new,1);assert after!=before;target.write_text(after)
+  patch=''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile=file,tofile=file))
+  for pkg,selector,names in cases:
+   args=['go','test','-count=1','-timeout','40m','-v',pkg,'-run',selector]
+   result=subprocess.run(args,cwd=tree,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+   named=all(re.search(r'--- FAIL: '+re.escape(name)+r'(?:\s|$)',result.stdout) for name in names)
+   good=result.returncode!=0 and named and '[build failed]' not in result.stdout and 'suite guard:' not in result.stdout.lower()
+   okay=okay and good
+   transcripts.append('command: '+' '.join(args)+'\nexit: '+str(result.returncode)+'\nnamed assertion failures observed: '+str(named)+'\n'+result.stdout)
+   print(row,pkg,'exit',result.returncode,'named failures',named,flush=True)
+  payload='Audited source: '+head+'\nFresh fixture: git archive; git init; git add -A; git commit with local fixture identity and hooks disabled. Fixture removed after probe.\nMutation:\n'+patch+'\n\n'+'\n\n'.join(transcripts)
+ (folder/(row+'.txt')).write_text(payload)
+ status='pass' if okay else 'fail'
+ text=report.read_text().replace('| '+row+' | pending |','| '+row+' | '+status+' |')
+ text+='\n### '+row+'\n\ninputs:\n  repository_path: '+str(root)+'\n\nSabotage '+str(number)+' ran alone on its own fresh committed archive of the audited head. Expected nonzero exits and the named failing assertion(s) were '+('observed' if okay else 'NOT all observed')+'. The actual failing transcript was inspected; a compilation or suite-guard refusal does not count. Evidence: ['+row+'](evidence/qa-report-2026-11-13/'+row+'.txt).\n'
+ report.write_text(text)

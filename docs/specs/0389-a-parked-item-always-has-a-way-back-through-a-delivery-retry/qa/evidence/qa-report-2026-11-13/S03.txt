@@ -1,0 +1,32 @@
+Audited source: a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+Fresh fixture: git archive; git init; git add -A; git commit with local fixture identity and hooks disabled. Fixture removed after probe.
+Mutation:
+--- internal/cli/deliver_workflow.go
++++ internal/cli/deliver_workflow.go
+@@ -1802,7 +1802,7 @@
+ 
+ func (workflow *commandDeliveryWorkflow) Authorization(ctx context.Context, gitRoot, specSlug string) (delivery.Authorization, error) {
+ 	// The grant is read from Git history, so the Spec Root may be absent.
+-	specsRoot, err := roundconfig.ResolveSpecsRootOrAbsent(workflow.loaded, gitRoot)
++	specsRoot, err := roundconfig.ResolveSpecsRoot(workflow.loaded, gitRoot)
+ 	if err != nil {
+ 		return delivery.Authorization{}, err
+ 	}
+
+
+command: go test -count=1 -timeout 40m -v ./internal/cli -run ^TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+=== PAUSE TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+=== CONT  TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+    deliver_operator_archive_test.go:176: isolated archive test: exit status 1
+        --- FAIL: TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot (0.13s)
+            deliver_operator_archive_test.go:200: specs.root resolved to "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot3311701167/002/docs/specs", which does not exist; create the directory or update specs.root
+        FAIL
+        suiteguard: guard cost: measured 3113 paths; fingerprint took 150.809542ms before and 143.587167ms after
+--- FAIL: TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot (0.44s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 165.002458ms before and 149.536041ms after
+FAIL	roundfix/internal/cli	1.220s
+FAIL

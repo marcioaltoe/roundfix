@@ -1,0 +1,5 @@
+Read 2026-11-13. External author: Junio C Hamano, Re: Unexpected empty directory removal.
+Source: https://public-inbox.org/git/7vehrs6bt1.fsf@alter.siamese.dyndns.org/
+Access: PRD Acceptance evidence quoted passage, offline; no network lookup.
+Compared last-file directory removal claim with TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot PASS and the installed Git measurement.
+Quoted passage and independent regression agree: True

@@ -1,0 +1,41 @@
+commit_range: 2e7a2a7a32e748647ac950488e9fe481408cf9c6..a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+Bounded governed paths: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', 'skills/roundfix/SKILL.md']
+task_01 b2b551f9e97bc815c55e970c04a1c29e3812fb42
+changed: ['CONTEXT.md', 'docs/references/behavior-surfaces.json', 'docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/task_01.md', 'docs/user-guide/commands/deliver.md', 'internal/cli/deliver_branchless_retry_test.go', 'internal/delivery/branchless_retry_test.go', 'internal/delivery/engine.go', 'internal/store/delivery.go']
+outside declarations: []
+governed: []
+ungranted: []
+excluded paths: []
+QA settlement changes: []
+parent grant identical: True
+authored Task binding unchanged: True
+
+task_02 7e5021f32d2aaf7e40e577e8fa8df2054e685332
+changed: ['docs/references/behavior-surfaces.json', 'docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/task_02.md', 'docs/user-guide/commands/deliver.md', 'internal/cli/deliver_operator_archive_test.go', 'internal/cli/deliver_workflow.go', 'internal/spec/authorization.go', 'internal/spec/authorization_absent_root_test.go']
+outside declarations: []
+governed: []
+ungranted: []
+excluded paths: []
+QA settlement changes: []
+parent grant identical: True
+authored Task binding unchanged: True
+
+task_03 b2e15dbeed343b819493f53998941ee20460f719
+changed: ['docs/references/behavior-surfaces.json', 'docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/task_03.md', 'docs/user-guide/commands/deliver.md', 'internal/cli/deliver_park_status_test.go', 'internal/cli/deliver_test.go', 'internal/delivery/engine.go', 'internal/delivery/park_class.go', 'internal/delivery/park_class_test.go', 'internal/delivery/question_test.go', 'internal/delivery/unpushed_candidate_test.go']
+outside declarations: []
+governed: []
+ungranted: []
+excluded paths: []
+QA settlement changes: []
+parent grant identical: True
+authored Task binding unchanged: True
+
+task_04 a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+changed: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', 'docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/task_04.md', 'skills/roundfix/SKILL.md', 'skills/roundfix/references/deliver.md', 'skills/testdata/owned-skill-versions.json']
+outside declarations: []
+governed: ['.agents/skills/roundfix/SKILL.md', '.agents/skills/roundfix/references/deliver.md', 'skills/roundfix/SKILL.md']
+ungranted: []
+excluded paths: []
+QA settlement changes: []
+parent grant identical: True
+authored Task binding unchanged: True

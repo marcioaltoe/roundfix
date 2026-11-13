@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,42 @@
+True four contract texts extracted
+True docs/user-guide/commands/deliver.md Text A word for word
+True docs/user-guide/commands/deliver.md Text B word for word
+True docs/user-guide/commands/deliver.md Text C word for word
+True docs/user-guide/commands/deliver.md Text D word for word
+True docs/user-guide/commands/deliver.md A then C as consecutive paragraphs
+True guide table row
+True guide table ordering
+True guide Text B anchor
+True docs/user-guide/commands/deliver.md Text D anchor
+True .agents/skills/roundfix/references/deliver.md Text A word for word
+True .agents/skills/roundfix/references/deliver.md Text B word for word
+True .agents/skills/roundfix/references/deliver.md Text C word for word
+True .agents/skills/roundfix/references/deliver.md Text D word for word
+True .agents/skills/roundfix/references/deliver.md A then C as consecutive paragraphs
+True .agents/skills/roundfix/references/deliver.md Text A anchor
+True .agents/skills/roundfix/references/deliver.md Text B anchor
+True .agents/skills/roundfix/references/deliver.md Text C one line
+True .agents/skills/roundfix/references/deliver.md Text D one line
+True .agents/skills/roundfix/references/deliver.md Text D anchor
+True skills/roundfix/references/deliver.md Text A word for word
+True skills/roundfix/references/deliver.md Text B word for word
+True skills/roundfix/references/deliver.md Text C word for word
+True skills/roundfix/references/deliver.md Text D word for word
+True skills/roundfix/references/deliver.md A then C as consecutive paragraphs
+True skills/roundfix/references/deliver.md Text A anchor
+True skills/roundfix/references/deliver.md Text B anchor
+True skills/roundfix/references/deliver.md Text C one line
+True skills/roundfix/references/deliver.md Text D one line
+True skills/roundfix/references/deliver.md Text D anchor
+True deliver mirror byte equality
+True accepted ADR
+True both Glossary declarations
+True complete glossary sentence
+True production log statement exactly once
+True no non-test producer of old compound refusal
+True glossary test pass
+True skill versions both 0.1.232
+mirror sha256: f35a47de375519ecdb61972cefef33a8fee3836a2523a9310c46b884bed59398
+production log locations: [('internal/delivery/engine.go', 1748)]
+old refusal literal historical citations: [('docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/_prd.md', 116), ('docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/_prd.md', 201), ('docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/references/2026-11-13-a-retry-refuses-an-item-parked-before-it-has-a-branch.md', 17), ('docs/specs/0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry/task_01.md', 113)]
+skill versions: [('.agents/skills/roundfix/SKILL.md', ['0.1.232']), ('skills/roundfix/SKILL.md', ['0.1.232'])]

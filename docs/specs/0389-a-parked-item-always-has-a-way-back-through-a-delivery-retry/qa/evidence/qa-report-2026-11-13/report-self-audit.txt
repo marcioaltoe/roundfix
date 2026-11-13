@@ -1,0 +1,15 @@
+{
+  "rows": 22,
+  "passed": 21,
+  "blocked_environment": 1,
+  "blocked_finding": 0,
+  "blocked_declared": 0,
+  "failed": 0,
+  "pending": 0,
+  "skipped": 0,
+  "local_links_resolve": true,
+  "evidence_not_ignored": true,
+  "tracked_implementation_unchanged": true,
+  "secret_pattern_matches": 0,
+  "synthetic_test_name_redactions": 8
+}

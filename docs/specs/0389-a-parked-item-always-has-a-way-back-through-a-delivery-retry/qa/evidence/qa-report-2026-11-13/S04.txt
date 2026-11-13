@@ -1,0 +1,51 @@
+Audited source: a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+Fresh fixture: git archive; git init; git add -A; git commit with local fixture identity and hooks disabled. Fixture removed after probe.
+Mutation:
+--- internal/spec/authorization.go
++++ internal/spec/authorization.go
+@@ -114,7 +114,7 @@
+ }
+ 
+ func resolveAuthorizationLocation(ctx context.Context, projectRepoRoot string, specsRoot string, specSlug string, deliveryTarget string) (AuthorizationLocation, AuthorizationReason, error) {
+-	specRepoRoot, specPrefix, specCommonDir, err := authorizationSpecsRootLocation(ctx, specsRoot)
++	specRepoRoot, specPrefix, specCommonDir, err := authorizationRepositoryLocation(ctx, specsRoot)
+ 	if err != nil {
+ 		return AuthorizationLocation{}, AuthorizationReason{Field: "spec_root"}, fmt.Errorf("resolve Spec Root %q: %w", specsRoot, err)
+ 	}
+
+
+command: go test -count=1 -timeout 40m -v ./internal/spec -run ^TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree
+=== PAUSE TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree
+=== CONT  TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree
+    authorization_absent_root_test.go:11: isolated test: exit status 1
+        --- FAIL: TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree (0.09s)
+            --- FAIL: TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree/absent_root (0.00s)
+                authorization_absent_root_test.go:33: authorization={Outcome:unresolved Record:{Role:spec Status: GrantedAt:0001-01-01 00:00:00 +0000 UTC Action: Consuming:[] Executables:[] ReleaseCeiling: ReleasePaths:[] Paths:[] Operations:[] PreconditionRepairs:[] Regenerations:[] Source:{Path:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWo4146510358/001/docs/specs/asking-spec/_authorization.md Revision:}} Reason:{Code:unreadable_record Field:spec_root Value:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWo4146510358/001/docs/specs Detail:resolve Spec Root "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWo4146510358/001/docs/specs": git rev-parse --show-toplevel: fatal: cannot change to '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWo4146510358/001/docs/specs': No such file or directory: exit status 128}}, want granted implement and push
+        FAIL
+        suiteguard: guard cost: measured 3113 paths; fingerprint took 158.26475ms before and 149.576375ms after
+--- FAIL: TestASpecAuthorizationIsReadAtARevisionWhenTheSpecsRootLeftTheWorkingTree (0.41s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 169.354083ms before and 144.418583ms after
+FAIL	roundfix/internal/spec	1.095s
+FAIL
+
+
+command: go test -count=1 -timeout 40m -v ./internal/cli -run ^TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+=== PAUSE TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+=== CONT  TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot
+    deliver_operator_archive_test.go:176: isolated archive test: exit status 1
+        --- FAIL: TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot (0.16s)
+            deliver_operator_archive_test.go:203: operations=[] want [push pull_request merge]
+        FAIL
+        suiteguard: guard cost: measured 3113 paths; fingerprint took 150.481417ms before and 159.343334ms after
+--- FAIL: TestTheDeliveryAuthorizationOfAnArchivedSpecNeedsNoSpecsRoot (0.48s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 158.389333ms before and 158.357375ms after
+FAIL	roundfix/internal/cli	1.255s
+FAIL

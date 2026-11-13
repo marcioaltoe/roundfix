@@ -1,0 +1,40 @@
+Audited source: a9ff7eace0623cb2b94b1a5b97e61c0ae11177b0
+Fresh fixture: git archive; git init; git add -A; git commit with local fixture identity and hooks disabled. Fixture removed after probe.
+Mutation:
+--- internal/delivery/park_class.go
++++ internal/delivery/park_class.go
+@@ -100,9 +100,6 @@
+ 		classification.Next = "record a new queue for the remaining Specs with roundfix deliver start and a higher --max-tokens"
+ 	case BlockerReviewBlocked, BlockerReviewStale:
+ 		classification.Class = ParkClassReview
+-		if blocker == BlockerReviewStale {
+-			classification.Next = "in " + item.Worktree + ", merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry " + item.SpecSlug
+-		}
+ 	case BlockerUnauthorized:
+ 		classification.Class = ParkClassAuthorization
+ 	}
+
+
+command: go test -count=1 -timeout 40m -v ./internal/delivery -run ^TestAReviewStaleParkNamesItsNextAction$
+exit: 1
+named assertion failures observed: True
+=== RUN   TestAReviewStaleParkNamesItsNextAction
+=== PAUSE TestAReviewStaleParkNamesItsNextAction
+=== CONT  TestAReviewStaleParkNamesItsNextAction
+=== RUN   TestAReviewStaleParkNamesItsNextAction/review-stale
+=== PAUSE TestAReviewStaleParkNamesItsNextAction/review-stale
+=== RUN   TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+=== PAUSE TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+=== CONT  TestAReviewStaleParkNamesItsNextAction/review-stale
+=== CONT  TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+=== NAME  TestAReviewStaleParkNamesItsNextAction/review-stale
+    park_class_test.go:158: classification = {Class:review Next:resolve the blocker, then run roundfix deliver retry example}, want review with next action "in /worktrees/example, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry example"
+=== NAME  TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+    park_class_test.go:158: classification = {Class:review Next:resolve the blocker, then run roundfix deliver retry example}, want review with next action "in /worktrees/example, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry example"
+--- FAIL: TestAReviewStaleParkNamesItsNextAction (0.00s)
+    --- FAIL: TestAReviewStaleParkNamesItsNextAction/review-stale (0.00s)
+    --- FAIL: TestAReviewStaleParkNamesItsNextAction/review-stale:_details (0.00s)
+FAIL
+suiteguard: guard cost: measured 3113 paths; fingerprint took 162.545417ms before and 159.585458ms after
+FAIL	roundfix/internal/delivery	0.592s
+FAIL
