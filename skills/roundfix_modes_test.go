@@ -269,6 +269,15 @@ func TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest(t *testing.T) 
 				"its notice follows the last of them",
 				"the notice says so instead",
 				"never from a Daemon-assigned Run, and only to the project that asked: a completion notice is not a release note",
+				"carries the request into its `## Sources` entry",
+				"git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <archive root>",
+				"git log --diff-filter=D --name-only --format=%H <previous tag>..<new tag> -- docs/backlog docs/findings",
+				"git show <deleting commit>^:<path>",
+				"A record whose disposition is `cancelled`",
+				"its notice follows the Spec instead",
+				"each request falls due at exactly one event",
+				"list the outbox with `memory_message_list` and `box: \"outbox\"`",
+				"asks the user instead of sending a second one",
 			} {
 				if !strings.Contains(completionNotices, roundfixWhitespace(phrase)) {
 					t.Errorf("completion notices omits %q", phrase)

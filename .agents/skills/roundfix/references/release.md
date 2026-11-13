@@ -120,23 +120,52 @@ A Notice Request, a Cross-project Message that asks to be told when its work
 is done, receives one completion notice under the cross-project continuity
 rule of `docs/agents/agent-instructions.md`. Until then the request lives in
 its record: the Backlog Entry or Finding that records the message, or the
-`## Sources` entry of the PRD that adopts it.
+`## Sources` entry of the PRD that adopts it. A PRD that adopts a Backlog
+Entry or Finding holding a Notice Request carries the request into its
+`## Sources` entry, so the Spec's own record keeps it after the Backlog Entry
+or Finding is deleted.
 
-After a release is published, list the Archive Records the release adds since
-the previous release tag with
-`git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>`,
-read each record's Spec PRD at the record's `source_revision` with
-`git show <source_revision>:<source>/_prd.md`, and send one completion notice
-with `memory_message_send` to each sending project whose message its
-`## Sources` records as a Notice Request: what changed, the released version,
-and anything else the request asked the notice to carry. A Spec whose delivery
-releases nothing sends its notices after it merges, naming the merge
-commit instead of a version. When the work of one Notice Request spans
-several Specs, its notice follows the last of them; when that work is closed
-without being delivered, such as a declined Backlog Entry, the notice says so
-instead.
+Each notice falls due at one event, and the session that follows that event
+finds the requests due with Git alone:
 
-Send each notice once, from the session that follows the delivery and never
+- **A release is published.** List the Archive Records the release adds with
+  `git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>`,
+  read each record's Spec PRD at the record's `source_revision` with
+  `git show <source_revision>:<source>/_prd.md`, and send one notice to each
+  sending project whose message its `## Sources` records as a Notice Request:
+  what changed, the released version, and anything else the request asked the
+  notice to carry. A record whose disposition is `cancelled`, written by
+  `roundfix cancel`, delivered nothing, and its notice says that the work was
+  closed without being delivered.
+- **A Spec merges and releases nothing.** When the release plan for the range
+  that holds the merge answers `no_release`, or the maintainer decides that no
+  release carries it, read the Archive Records the merge adds with
+  `git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <archive root>`
+  the same way and send each notice naming the merge commit instead of a
+  version.
+- **A record is closed without a Spec.** List the Backlog Entries and Findings
+  the range deletes with
+  `git log --diff-filter=D --name-only --format=%H <previous tag>..<new tag> -- docs/backlog docs/findings`,
+  read each one before its deleting commit with
+  `git show <deleting commit>^:<path>`, and send one notice for each Notice
+  Request it holds: what was delivered and where when its work shipped without
+  a Spec, or, when the work is closed without being delivered, such as a
+  declined Backlog Entry, the notice says so instead. A record that a PRD's
+  `## Sources` names was adopted by that Spec, and its notice follows the Spec
+  instead.
+
+When the work of one Notice Request spans several Specs, its notice follows
+the last of them.
+
+Send each notice once, from the session that follows the event and never
 from a Daemon-assigned Run, and only to the project that asked: a completion
-notice is not a release note. When the session exposes no ai-memory tools,
-put each notice's text in the report for the user to deliver.
+notice is not a release note. A tag, a merge commit and a deleting commit
+each occur once, so each request falls due at exactly one event, and a
+session sends notices only for the event it follows. Before sending, list the
+outbox with `memory_message_list` and `box: "outbox"`: a pending notice to the
+same project naming the same version, merge or closure was already sent, and
+is not sent again. A session that cannot tell whether a notice for that event
+already went, because an earlier session for the same event may have sent it
+and the recipient may have consumed it, asks the user instead of sending a
+second one. When the session exposes no ai-memory tools, put each notice's
+text in the report for the user to deliver.

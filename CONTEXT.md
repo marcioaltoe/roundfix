@@ -178,7 +178,7 @@ A Cross-project Message whose subject and first lines say that the sending proje
 _Avoid_: Urgent message, reply request, priority flag
 
 **Notice Request**:
-A Cross-project Message that asks to be told when the work it asks for is done. It receives one completion notice and no acknowledgment or adoption notice: the record that keeps its content, a Backlog Entry, a Finding or the `## Sources` entry of the PRD that adopts it, keeps the request, and once that work is delivered, when the release that carries it is published or, when it releases nothing, when it merges, the session that follows the delivery sends the notice with `memory_message_send`, naming what changed and the version or merge; when the work is closed without being delivered, the notice says so. A Daemon-assigned Run never sends one (ADR-0396).
+A Cross-project Message that asks to be told when the work it asks for is done. It receives one completion notice and no acknowledgment or adoption notice: the record that keeps its content, a Backlog Entry, a Finding or the `## Sources` entry of the PRD that adopts it, keeps the request, and once that work is delivered, when the release that carries it is published or, when it releases nothing, when it merges, the session that follows the delivery sends the notice with `memory_message_send`, naming what changed and the version or merge; when the work is closed without being delivered, the notice says so. A Daemon-assigned Run never sends one ([ADR-0396](docs/adr/0396-a-message-that-asks-to-be-told-when-its-work-is-done-receives-one-completion-notice.md)).
 _Avoid_: Read receipt, release note, subscription
 
 **Session Handoff**:
