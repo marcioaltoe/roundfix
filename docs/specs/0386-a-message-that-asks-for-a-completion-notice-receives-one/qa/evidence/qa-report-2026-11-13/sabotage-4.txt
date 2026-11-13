@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt$' ./internal/baseline
+exit: 1
+stdout:
+=== RUN   TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+=== PAUSE TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+=== CONT  TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+    message_reply_clause_test.go:54: agent instructions contain "A message may also ask to be told when the work it asks for is done; ask for that only when the sending project will act on the notice, and do not wait or watch for it either: the receiving project sends it once that work is delivered." 0 times, want once
+--- FAIL: TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt (0.09s)
+FAIL
+suiteguard: guard cost: measured 3112 paths; fingerprint took 157.551ms before and 161.378708ms after
+FAIL	roundfix/internal/baseline	0.542s
+FAIL
+
+stderr:

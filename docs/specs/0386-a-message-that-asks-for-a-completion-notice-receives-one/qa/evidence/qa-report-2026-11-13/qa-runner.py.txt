@@ -1,0 +1,374 @@
+import contextlib, hashlib, io, json, os, re, shlex, shutil, subprocess, sys, tarfile, tempfile
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[6]
+SLUG='0386-a-message-that-asks-for-a-completion-notice-receives-one'
+SPEC=ROOT/'docs/specs'/SLUG
+E=SPEC/'qa/evidence/qa-report-2026-11-13'
+REPORT=SPEC/'qa/qa-report-2026-11-13.md'
+HEAD='77b19e34c8d84a183bca832c7e7a80d6bb8cd882'
+KEYS=['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']
+def base_env():
+    v=os.environ.copy()
+    for key in KEYS: v.pop(key,None)
+    v.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local')
+    return v
+ENV=base_env()
+def call(args,cwd=ROOT,env=None):
+    return subprocess.run(args,cwd=cwd,env=env or ENV,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+def checked(args,cwd=ROOT,env=None):
+    p=call(args,cwd,env)
+    if p.returncode: raise RuntimeError('command failed: '+repr(args)+'\n'+p.stdout+p.stderr)
+    return p.stdout
+@contextlib.contextmanager
+def isolated():
+    with tempfile.TemporaryDirectory(prefix='roundfix-0386-home-') as h, tempfile.TemporaryDirectory(prefix='roundfix-0386-tmp-') as t:
+        v=ENV.copy(); v['HOME']=h; v['TMPDIR']=t
+        for k in ['GOMODCACHE','GOCACHE']: v[k]=checked(['go','env',k]).strip()
+        v['PATH']=str(ROOT/'bin/qa-0386')+os.pathsep+v['PATH']
+        yield v
+
+def record(name,args,cwd=ROOT,env=None):
+    p=call(args,cwd,env)
+    content='command: '+shlex.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+    (E/(name+'.txt')).write_text(content)
+    print(name+': exit '+str(p.returncode),flush=True)
+    return p
+
+def update(row,status,detail):
+    text=REPORT.read_text()
+    text=re.sub(r'(?m)^\| '+re.escape(row)+r' \| [^|]* \|',lambda _: '| '+row+' | '+status+' |',text)
+    text=text.replace('<!-- '+row+' observations -->',detail+'\n\n<!-- '+row+' observations -->')
+    REPORT.write_text(text)
+
+def init():
+    assert checked(['git','rev-parse','HEAD']).strip()==HEAD
+    default=checked(['git','symbolic-ref','refs/remotes/origin/HEAD']).strip()
+    base=checked(['git','merge-base',HEAD,default]).strip()
+    (E/'revision-inputs.txt').write_text('audited_head: '+HEAD+'\ndefault_branch: '+default+'\ndelivery_base: '+base+'\n')
+    (E/'state.json.txt').write_text(json.dumps({'head':HEAD,'base':base}))
+    fake=ROOT/'bin/qa-0386/gh'; fake.parent.mkdir(parents=True,exist_ok=True)
+    fake.write_text("#!/bin/sh\nprintf '[]\\n'\n"); fake.chmod(0o755)
+    (E/'fake-gh.sh.txt').write_text(fake.read_text())
+    with isolated() as v:
+        p=record('version',['./bin/roundfix','--version'],env=v); assert p.returncode==0
+        q=record('spec-check',['./bin/roundfix','spec','check',SLUG,'--strict'],env=v)
+        print(q.stdout);print(q.stderr)
+        assert q.returncode==0
+    text=REPORT.read_text(); text=text.replace('verdict: pending','spec: '+SLUG+'\ndate: 2026-11-13\nbuild: '+HEAD+'\nstatus: in-progress\nverdict: pending\nsurfaces: [docs]\nuser_flow_binary: '+json.dumps(p.stdout.strip())+'\nuser_flow_executables: [bin/roundfix, bin/qa-0386/gh, docs/specs/'+SLUG+'/qa/evidence/qa-report-2026-11-13/qa-runner.py.txt]')
+    REPORT.write_text(text)
+
+BASELINE_NAMES=['TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt','TestTheMessageClausesAskForAReplyOnlyForBlockedWork','TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence','TestEveryInboxClauseAnAdopterHoldsIsReplaced','TestTheGuidesSendCrossProjectWorkThroughAiMemory','TestEveryBaselineModuleVersionIsRecorded']
+SKILL_NAMES=['TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest','TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender','TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage']
+def named():
+    for name,names,package,rows in [('baseline-named',BASELINE_NAMES,'./internal/baseline',range(2,7)),('skills-named',SKILL_NAMES,'./skills',range(7,10))]:
+        p=record(name,['go','test','-count=1','-timeout','20m','-v','-run','^('+'|'.join(names)+')$',package])
+        for index,row in enumerate(rows):
+            test=names[index]; passed=p.returncode==0 and re.search(r'--- PASS: '+re.escape(test)+r' ',p.stdout)
+            update('Q%02d'%row,'pass' if passed else 'fail','`'+test+'`: '+('passed' if passed else 'failed')+'. Command, full output and exit code: [transcript](evidence/qa-report-2026-11-13/'+name+'.txt).')
+def suite_baseline(): suite('Q10','baseline-full',['go','test','-count=1','-timeout','30m','./internal/baseline'])
+def suite_skills(): suite('Q11','skills-full',['go','test','-count=1','-timeout','20m','./skills'])
+def suite_cli(): suite('Q12','cli-baseline',['go','test','-count=1','-timeout','30m','-run','Baseline|Guidance|SetupManifest','./internal/cli'])
+def suite_docs(): suite('Q13','docscontract',['go','test','-count=1','-timeout','30m','-tags','docscontract','./internal/docscontract'])
+def suite(row,name,args):
+    p=record(name,args)
+    update(row,'pass' if p.returncode==0 else 'fail','Executed `'+shlex.join(args)+'`; exit '+str(p.returncode)+'. [Transcript](evidence/qa-report-2026-11-13/'+name+'.txt).')
+def static():
+    (E/'static-gate.txt').write_text('source: Daemon result supplied in QA assignment\ncommand: make verify-changed\naudited_head: '+HEAD+'\nverdict: pass\nexit: 0\ndiagnostics: removed on success\nNot rerun by QA Agent.\n')
+    update('Q01','pass','Daemon supplied `make verify-changed`: pass, exit 0 at the audited head, diagnostics removed on success. [Static gate](evidence/qa-report-2026-11-13/static-gate.txt).')
+
+def state(): return json.loads((E/'state.json.txt').read_text())
+def archive(rev,destination):
+    data=subprocess.check_output(['git','archive',rev],cwd=ROOT,env=ENV)
+    with tarfile.open(fileobj=io.BytesIO(data)) as t: t.extractall(destination,filter='data')
+def clauses(data):
+    return {c['id']:c for r in data['rules'] for c in r.get('clauses',[])}
+def norm(s): return ' '.join(s.split())
+def refresh():
+    phrases=['unless it asks to be told when its work is done','receives one completion notice and no acknowledgment or adoption notice','keep that request in the record of its content','when the release that carries that work is published or, when that work releases nothing, when it merges','a Daemon-assigned turn never sends one','A message may also ask to be told when the work it asks for is done','send no acknowledgment, adoption notice or completion notice to a message that declared none','takes precedence for one message per sender at a time']
+    with tempfile.TemporaryDirectory(prefix='roundfix-0386-refresh-') as d:
+        scratch=Path(d); archive(state()['base'],scratch)
+        with isolated() as v:
+            v.update(GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null')
+            checked(['git','init','-b','test/qa-fixture'],scratch,v)
+            checked(['git','add','-A'],scratch,v)
+            checked(['git','-c','core.hooksPath=/dev/null','-c','user.name=Roundfix QA','-c','user.email=qa@example.invalid','commit','-qm','test: seed the Delivery Base fixture'],scratch,v)
+            guide=scratch/'docs/agents/agent-instructions.md'; before=guide.read_bytes()
+            first=record('managed-refresh-first-r2',['./bin/roundfix','baseline','update','--repo',str(scratch),'--no-skills','--no-history','--yes'],env=v)
+            after=guide.read_bytes(); checks=[]
+            for phrase in phrases:
+                count=norm(after.decode()).count(phrase); checks.append(phrase+': '+str(count)); assert count==1,checks[-1]
+            assert first.returncode==0 and before!=after
+            (E/'managed-guide.md.txt').write_bytes(after)
+            second=record('managed-refresh-second-r2',['./bin/roundfix','baseline','update','--repo',str(scratch),'--no-skills','--no-history','--format','json'],env=v)
+            assert second.returncode==0 and json.loads(second.stdout)['state']=='current'
+            assert guide.read_bytes()==after
+            current=record('audited-guide-preview',['./bin/roundfix','baseline','update','--repo','.','--no-skills','--no-history','--format','json'],env=v)
+            assert current.returncode==0 and json.loads(current.stdout)['state']=='current'
+            b=clauses(json.loads(checked(['git','show',state()['base']+':internal/baseline/assets/modules/core.json'])))
+            a=clauses(json.loads((ROOT/'internal/baseline/assets/modules/core.json').read_text()))
+            for key in ['clause.core.message-the-owning-project','clause.core.consume-messages-after-recording','clause.core.messages-are-self-contained']:
+                for field in ['id','enforcement','replaces']: assert a[key].get(field)==b[key].get(field)
+                checks.append(key+': id, force and replacements unchanged')
+            (E/'managed-refresh-checks.txt').write_text('Delivery Base: '+state()['base']+'\nFixture: git archive, initialized, staged and committed with hooks disabled\nRun-built ./bin/roundfix operated on --repo <temporary fixture> from its own Run Worktree\nFirst refresh changed the guide; second returned current with unchanged bytes.\nAudited repository preview also returned current.\n'+'\n'.join(checks)+'\n')
+    update('Q14','pass','An adopter fixture committed from the actual Delivery Base changed on first refresh. All eight phrases occur exactly once; the second public CLI refresh reports `current` and preserves the guide bytes. The audited repository preview also reports `current`. The three message-clause ids, force and replacements match the Delivery Base. [Checks](evidence/qa-report-2026-11-13/managed-refresh-checks.txt), [first](evidence/qa-report-2026-11-13/managed-refresh-first-r2.txt), [second](evidence/qa-report-2026-11-13/managed-refresh-second-r2.txt), [persisted guide](evidence/qa-report-2026-11-13/managed-guide.md.txt), [audited preview](evidence/qa-report-2026-11-13/audited-guide-preview.txt). Task Verification tests run in Q02-Q13; its source-run preview is exercised through the mandated Run-built binary.')
+
+def sabotage(number):
+    number=int(number); notes=[]
+    with tempfile.TemporaryDirectory(prefix='roundfix-0386-sabotage-'+str(number)+'-') as d:
+        scratch=Path(d);archive(HEAD,scratch)
+        v=ENV.copy();v.update(GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null')
+        checked(['git','init','-b','test/qa-sabotage'],scratch,v)
+        checked(['git','add','-A'],scratch,v)
+        checked(['git','-c','core.hooksPath=/dev/null','-c','user.name=Roundfix QA','-c','user.email=qa@example.invalid','commit','-qm','test: seed the audited-head sabotage fixture'],scratch,v)
+        baseline_test='TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt'
+        skill_test='TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest'
+        if number<=4:
+            f=scratch/'internal/baseline/assets/modules/core.json';data=json.loads(f.read_text()); cs=clauses(data)
+            old=clauses(json.loads(checked(['git','show','73421db2:internal/baseline/assets/modules/core.json'])))
+            receiver=cs['clause.core.consume-messages-after-recording'];sender=cs['clause.core.message-the-owning-project']
+            if number==1: receiver['guidance']=old[receiver['id']]['guidance'];want='unless it asks to be told when its work is done'
+            if number==2:
+                phrase='when the release that carries that work is published or, when that work releases nothing, when it merges';assert receiver['guidance'].count(phrase)==1
+                receiver['guidance']=receiver['guidance'].replace(phrase,'when it merges');want='once the work recorded from it is delivered, when the release'
+            if number==3:
+                phrase='; a Daemon-assigned turn never sends one';assert receiver['guidance'].count(phrase)==1
+                receiver['guidance']=receiver['guidance'].replace(phrase,'');want='a Daemon-assigned turn never sends one'
+            if number==4: sender['guidance']=old[sender['id']]['guidance'];want='A message may also ask to be told when the work it asks for is done'
+            original_text=f.read_text(); original=clauses(json.loads(original_text))
+            for key,clause in cs.items():
+                previous=original[key]['guidance']
+                if previous!=clause['guidance']:
+                    before=json.dumps(previous,ensure_ascii=False);after=json.dumps(clause['guidance'],ensure_ascii=False)
+                    assert original_text.count(before)==1
+                    original_text=original_text.replace(before,after)
+            f.write_text(original_text)
+            module=record('sabotage-'+str(number)+'-module',['go','test','./internal/baseline','-run','^TestEveryBaselineModuleVersionIsRecorded$','-record-module-versions','-count=1','-timeout','20m'],scratch)
+            assert module.returncode==0
+            wrapper=ROOT/'bin/qa-0386/go-timeout'
+            regen=record('sabotage-'+str(number)+'-digests',['make','baseline-digests','GO='+str(wrapper)],scratch)
+            assert regen.returncode==0
+            args=['go','test','-count=1','-timeout','20m','-v','-run','^'+baseline_test+'$','./internal/baseline']; test=baseline_test
+        else:
+            if number==5:
+                file=scratch/'.agents/skills/roundfix/references/modes.md'; text=file.read_text();old=checked(['git','show','73421db2:.agents/skills/roundfix/references/modes.md'])
+                def step4(s): return re.search(r'(?ms)^4\. .*?(?=^5\. )',s).group(0)
+                file.write_text(text.replace(step4(text),step4(old)));want='to a message that declared no blocked work, unless it is a Notice Request.';sub='canonical'
+            elif number==6:
+                file=scratch/'skills/roundfix/references/release.md';text=file.read_text();assert '## Completion notices' in text
+                file.write_text(text.split('## Completion notices')[0].rstrip()+'\n');want='completion notices omits';sub='embedded'
+            elif number==7:
+                file=scratch/'.agents/skills/roundfix/references/release.md';text=file.read_text();needle=r'never\s+from a Daemon-assigned Run,\s+and\s+only to the project that asked';changed,count=re.subn(needle,'and to every project',text);assert count==1
+                file.write_text(changed);want='never from a Daemon-assigned Run, and only to the project that asked';sub='canonical'
+            else:
+                file=scratch/'CONTEXT.md';text=file.read_text();pattern=r'(?ms)^\*\*Notice Request\*\*:\n.*?^_Avoid_:.*?(?:\n|$)';text,n=re.subn(pattern,'',text);assert n==1;file.write_text(text);want='Notice Request';sub=None
+            test='TestGlossaryPhrasesAreDefinedTerms' if number==8 else skill_test
+            args=['go','test','-count=1','-timeout','20m','-v']+(['-tags','docscontract'] if number==8 else [])+['-run','^'+test+'$','./internal/docscontract' if number==8 else './skills']
+        p=record('sabotage-'+str(number),args,scratch)
+        combined=p.stdout+p.stderr
+        good=p.returncode!=0 and ('--- FAIL: '+test) in combined and want in combined
+        if number in (5,6,7): good=good and test+'/'+sub in combined
+        excerpts='\n'.join(line for line in combined.splitlines() if '--- FAIL:' in line or want in line or 'omits' in line or 'Glossary' in line)
+        (E/('sabotage-'+str(number)+'-diagnosis.txt')).write_text('fresh copy: git archive '+HEAD+'\nmutation: TechSpec Testing Approach sabotage '+str(number)+'\nintended failure detected: '+str(good)+'\n'+excerpts+'\n')
+    detail='Fresh `git archive` copy; sabotage '+str(number)+' made `'+test+'` fail on its intended missing contract'+(' in `'+sub+'`' if number in (5,6,7) else '')+'. [Test transcript](evidence/qa-report-2026-11-13/sabotage-'+str(number)+'.txt), [failure diagnosis](evidence/qa-report-2026-11-13/sabotage-'+str(number)+'-diagnosis.txt).'
+    if number<=4: detail+=' The sanctioned [module record](evidence/qa-report-2026-11-13/sabotage-'+str(number)+'-module.txt) and [digest regeneration](evidence/qa-report-2026-11-13/sabotage-'+str(number)+'-digests.txt) both exited 0 before the negative test. Nested Go tests use the Run-local wrapper to add an explicit 20m timeout.'
+    update('Q%02d'%(14+number),'pass' if good else 'fail',detail)
+    print('sabotage '+str(number)+' intended failure: '+str(good),flush=True)
+def sabotage_1(): sabotage(1)
+def sabotage_2(): sabotage(2)
+def sabotage_3(): sabotage(3)
+def sabotage_4(): sabotage(4)
+def sabotage_5(): sabotage(5)
+def sabotage_6(): sabotage(6)
+def sabotage_7(): sabotage(7)
+def sabotage_8(): sabotage(8)
+
+def sabotages_rest():
+    for number in range(2,9): sabotage(number)
+
+def raw_clause(text,key):
+    index=text.index('"id": '+json.dumps(key));start=text.rfind('{',0,index)
+    _,length=json.JSONDecoder().raw_decode(text[start:]);return text[start:start+length]
+def wording():
+    notes=[]; tech=(SPEC/'_techspec.md').read_text();base=state()['base'];core_path='internal/baseline/assets/modules/core.json'
+    core=(ROOT/core_path).read_text(); old=checked(['git','show',base+':'+core_path]);a=clauses(json.loads(core));b=clauses(json.loads(old))
+    expected=re.findall(r'- `(clause\.core\.(?:message-the-owning-project|consume-messages-after-recording))`: "(.*?)"\n(?=   -|2\.)',tech,re.S)
+    assert len(expected)==2,len(expected)
+    for key,value in expected:
+        assert a[key]['guidance']==norm(value),key
+        for path in ['docs/agents/agent-instructions.md','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md']:
+            assert norm((ROOT/path).read_text()).count(a[key]['guidance'])==1,(key,path)
+        notes.append(key+': exact API Contract 1 guidance in core, managed guide and formatter golden')
+    for key in ['clause.core.message-the-owning-project','clause.core.consume-messages-after-recording','clause.core.messages-are-self-contained']:
+        for field in ['id','enforcement','replaces']:assert a[key].get(field)==b[key].get(field)
+    key='clause.core.messages-are-self-contained';assert raw_clause(core,key)==raw_clause(old,key)
+    notes.append('Three clause ids, force and replaces unchanged; self-contained JSON object byte-identical to Delivery Base')
+    current=json.loads(core);prior=json.loads(old);current['version']=prior['version']
+    for rule in current['rules']:
+        previous=next(x for x in prior['rules'] if x['id']==rule['id'])
+        if rule['id']=='rule.core.cross-project-continuity':assert rule['version']==4;rule['version']=previous['version']
+        for clause in rule.get('clauses',[]):
+            if clause['id'] in dict(expected):clause['guidance']=b[clause['id']]['guidance']
+    assert current==prior
+    notes.append('Other module fields unchanged after accounting for module/rule version and the two guidance edits')
+    release_block=re.search(r'```markdown\n(.*?)```',tech.split('3. **Release reference.**',1)[1].split('4. **Glossary.**',1)[0],re.S).group(1)
+    for ref in ['modes.md','release.md']:
+        canonical=(ROOT/'.agents/skills/roundfix/references'/ref).read_bytes();embedded=(ROOT/'skills/roundfix/references'/ref).read_bytes();assert canonical==embedded
+        notes.append(ref+': canonical and embedded bytes identical')
+    for prefix in ['.agents/skills/roundfix','skills/roundfix']:
+        modes=(ROOT/prefix/'references/modes.md').read_text();part=modes.split('## --follow-up',1)[1].split('\n## ',1)[0]
+        step4=norm(re.search(r'(?ms)^4\. .*?(?=^5\. )',part).group(0));step7=norm(re.search(r'(?ms)^7\. .*?(?=^8\. |\Z)',part).group(0))
+        for phrase in ['unless it is a Notice Request.','A Notice Request keeps its request in its record:','says that the sender asked to be told when the work is done and what it asked the notice to carry']:
+            assert phrase in step4,(prefix,phrase)
+        assert 'After the release that carries a Spec adopting a Notice Request is published, or after that Spec merges when it releases nothing, send its completion notice as the [release reference](release.md) says.' in step7
+        release=(ROOT/prefix/'references/release.md').read_text();assert norm(release[release.index('## Completion notices'):])==norm(release_block)
+        notes.append(prefix+': follow-up steps 4 and 7, and ending Completion notices section match API Contracts 2 and 3')
+    context=(ROOT/'CONTEXT.md').read_text()
+    assert 'except the one completion notice a Notice Request receives' in norm(context)
+    assert norm(context).count('A Cross-project Message that asks to be told when the work it asks for is done.')==1
+    assert '**Blocking Request**' in context and context.index('**Blocking Request**')<context.index('**Notice Request**')
+    amendments=re.search(r'```text\n(.*?)```',tech.split('5. **Amendment notices.**',1)[1],re.S).group(1).strip().split('\n\n')
+    for number,notice in zip(['0390','0383','0330'],amendments):
+        path=next((ROOT/'docs/adr').glob(number+'-*.md'));data=path.read_text();plain=re.sub(r'\[([^]]+)\]\([^)]+\)',r'\1',data)
+        assert norm(plain).count(norm(notice))==1,(number,notice)
+        assert 'updated_at: 2026-11-12T21:40:00Z' in data
+        notes.append(number+': exact API Contract 5 amendment once, expected updated_at')
+    adr=next((ROOT/'docs/adr').glob('0396-*.md'));assert re.search(r'(?m)^status: accepted$',adr.read_text());notes.append('ADR-0396: accepted')
+    paths=['.agents/skills/roundfix','skills/roundfix','docs/agents','docs/user-guide','internal/baseline/assets/modules','internal/baseline/assets/formatter-fixtures']
+    files=checked(['git','ls-files','--']+paths).splitlines();stale='completion notice to a message that declared none. An empty inbox is rest'
+    matches=[f for f in files if stale in norm((ROOT/f).read_text())];assert not matches,matches
+    notes.append('Old uninterrupted prohibition: zero matches in '+str(len(files))+' tracked files across the six exact authored search roots; ADR, Spec and history quotation paths excluded')
+    (E/'wording-checks.txt').write_text('\n'.join(notes)+'\n')
+    update('Q23','pass','Exact contract comparison validates core, both rendered guides, both mode/release copies, glossary wording, three amendment notices and accepted ADR-0396. Scoped stale-wording search found zero matches; self-contained clause bytes and all three identities/forces/replacements match the Delivery Base. [Assertions and search scope](evidence/qa-report-2026-11-13/wording-checks.txt). Existing compatibility tests and the real refresh independently confirm these contents.')
+
+def glossary():
+    for file in ['_prd.md','_techspec.md']:
+        section=(SPEC/file).read_text().split('## Glossary',1)[1].split('\n## ',1)[0]
+        assert '- adds: **Notice Request**' in section and '- changes: **Cross-project Message**' in section
+    c=(ROOT/'CONTEXT.md').read_text()
+    definition=re.search(r'(?ms)^\*\*Notice Request\*\*:\n(.*?)^_Avoid_:',c).group(1)
+    expected='A Cross-project Message that asks to be told when the work it asks for is done. It receives one completion notice and no acknowledgment or adoption notice: the record that keeps its content, a Backlog Entry, a Finding or the `## Sources` entry of the PRD that adopts it, keeps the request, and once that work is delivered, when the release that carries it is published or, when it releases nothing, when it merges, the session that follows the delivery sends the notice with `memory_message_send`, naming what changed and the version or merge; when the work is closed without being delivered, the notice says so. A Daemon-assigned Run never sends one (ADR-0396).'
+    plain=re.sub(r'\[([^]]+)\]\([^)]+\)',r'\1',definition);assert norm(plain)==expected
+    p=record('glossary-named',['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$','./internal/docscontract'])
+    assert p.returncode==0 and '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in p.stdout
+    (E/'glossary-checks.txt').write_text('PRD and TechSpec both declare adds: Notice Request; changes: Cross-project Message.\nCONTEXT.md defines Notice Request word for word per API Contract 4 after resolving the ADR link.\nCross-project Message retains the one-notice exception (Q23).\nNamed glossary contract passed.\n')
+    update('Q24','pass','Both glossary declarations agree, the Notice Request definition matches API Contract 4 word for word after resolving its ADR link, and the changed Cross-project Message definition has the one-notice exception. `TestGlossaryPhrasesAreDefinedTerms` passed by name. [Checks](evidence/qa-report-2026-11-13/glossary-checks.txt), [named test](evidence/qa-report-2026-11-13/glossary-named.txt).')
+
+def history():
+    auth=(SPEC/'_authorization.md').read_text();grant=set(re.search(r'(?ms)^paths:\n(.*?)(?=^\S)',auth).group(1).replace('  - ','').splitlines());notes=[]
+    classifier=(ROOT/'internal/speccheck/governed.go').read_text()
+    patterns=[re.compile(x) for x in re.findall(r'regexp\.MustCompile\(\s*`(.*?)`\s*,?\s*\)',classifier,re.S)]
+    historical=set(re.findall(r'"([^"\n]+)"',classifier.split('paths: exactGovernedPaths(',1)[1].split('),',1)[0]))
+    def governed(path):return path in historical or any(p.search(path) for p in patterns)
+    tasks=[('task_01','5d6898a8568353d4d2ab0b086f6cdeaaa6a658b4','6905bb068605dfca337513b56a6e74c9f6d9fa66'),('task_02',HEAD,'9627a3605e441158e01b66d2711c1f271a01dad5')]
+    changed_all=set();error=[]
+    for task,commit,revision in tasks:
+        content=checked(['git','show',commit+':docs/specs/'+SLUG+'/'+task+'.md'])
+        declared=set(re.findall(r'(?m)^- (?:instruction|interface): `([^`]+)`',content));declared.add('docs/specs/'+SLUG+'/'+task+'.md')
+        if '## Recorded paths' in content:declared.update(re.findall(r'`([^`]+)`',content.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+        paths=checked(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines();changed_all.update(paths)
+        notes.append(task+' '+commit+' — diff-tree paths:')
+        for path in paths:
+            covered=path in declared;bounded=not governed(path) or path in grant
+            notes.append('  '+path+'; declared='+str(covered)+'; governed='+str(governed(path))+'; granted='+str(bounded))
+            if not covered or not bounded:error.append(task+': '+path)
+        # The seeded mechanical audit already establishes authorization; check its operative record and ancestry without repeating its detector.
+        record_path='docs/specs/'+SLUG+'/_authorization.md'
+        assert checked(['git','show',revision+':'+record_path])==checked(['git','show',commit+'^:'+record_path])
+        assert call(['git','merge-base','--is-ancestor',revision,commit]).returncode==0
+        notes.append('  seeded operative authorization revision is an ancestor and equals the Task parent record: '+revision)
+    forbidden_exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json','docs/references/behavior-surfaces.json'}
+    prefixes=['.github/workflows/','internal/cli/','internal/judge/','internal/baseline/assets/source-baselines/','docs/user-guide/','.claude/','.codex/','.opencode/']
+    for path in changed_all:
+        forbidden=path in forbidden_exact or any(path.startswith(x) for x in prefixes)
+        if path.startswith('internal/baseline/assets/modules/') and path!='internal/baseline/assets/modules/core.json':forbidden=True
+        if path.startswith('.agents/skills/') and not path.startswith('.agents/skills/roundfix/'):forbidden=True
+        if path.startswith('skills/') and '/' in path[len('skills/'):]:
+            owner=path.split('/')[1]
+            if owner not in ('roundfix','testdata'):forbidden=True
+        for prefix in ['.agents/skills/roundfix/references/','skills/roundfix/references/']:
+            if path.startswith(prefix) and path[len(prefix):] not in ('modes.md','release.md'):forbidden=True
+        if forbidden:error.append('forbidden path: '+path)
+        if path.endswith('.md'):
+            def settlement(data):
+                m=re.search(r'(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)',data);return m.group(0) if m else ''
+            for task,commit,_ in tasks:
+                if path in checked(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines():
+                    before=checked(['git','show',commit+'^:'+path]);after=checked(['git','show',commit+':'+path]);assert settlement(before)==settlement(after),path
+    notes+=['Task commit union: '+str(len(changed_all))+' paths','Undeclared/ungoverned changes: '+str(error),'No forbidden file class or QA settlement section changed.','No production message parser, ai-memory call, schema, follow-up command, rank, judge or wait implementation changed; changed Go files are the two declared tests.','Mechanical audit covers both Task commits; there are no Task commits omitted from its seeded audit table.']
+    (E/'history-scope.txt').write_text('\n'.join(notes)+'\n');assert not error,error
+    update('Q25','pass','Both Task commits were read with `git diff-tree --no-commit-id --name-only -r`. Every path is declared or is its assigned Task file; all nine changed Governed Paths are authorized. The seeded operative grant revisions match the Task-parent records and precede consumption. No Recorded paths exceptions, forbidden files, other skills/references, runtime implementation or QA settlement sections changed. [Per-file audit](evidence/qa-report-2026-11-13/history-scope.txt).')
+
+def outside():
+    prd=(SPEC/'_prd.md').read_text();guide=norm((E/'managed-guide.md.txt').read_text());release=norm((ROOT/'.agents/skills/roundfix/references/release.md').read_text())
+    rfc=['The presence of a Disposition-Notification-To header field in a message is merely a request for an MDN.','A user agent MUST NOT issue more than one MDN on behalf of each particular recipient.']
+    assert all(x in norm(prd) for x in rfc)
+    assert 'receives one completion notice and no acknowledgment or adoption notice' in guide and 'unless it asks to be told when its work is done' in guide
+    (E/'outside-rfc8098.txt').write_text('Source: RFC 8098, Message Disposition Notification, section 2.1\nURL: https://www.rfc-editor.org/rfc/rfc8098.html\nPublished: February 2017; source read during authoring: 2026-11-12\nInput: passages committed in PRD Acceptance evidence, checked offline on 2026-11-13\nComparison: request-only and at-most-one MDN are external analogues of the rendered guide\'s explicitly requested one completion notice.\nObserved: refreshed guide retains the prohibition for every other message and permits one notice only when asked.\nLimit: RFC receipt semantics do not establish this Spec\'s delivery timing, obligation, Agent compliance or actual sends.\n')
+    update('Q26','pass','Offline comparison of the published RFC 8098 section 2.1 passages quoted in PRD Acceptance evidence (source read 2026-11-12) against Q14’s newly rendered guide confirms the request-only, at-most-one analogy. This uses literature the Spec did not write and makes no claim of live source retrieval or actual messaging. [Comparison](evidence/qa-report-2026-11-13/outside-rfc8098.txt).')
+    phrase='The request message should contain a Return Address that indicates where to send the reply message.';assert phrase in norm(prd)
+    assert 'keep that request in the record of its content' in guide and 'git show <source_revision>:<source>/_prd.md' in release and 'each sending project whose message its `## Sources` records as a Notice Request' in release
+    (E/'outside-return-address.txt').write_text('Source: Gregor Hohpe and Bobby Woolf, Enterprise Integration Patterns, Return Address\nURL: https://www.enterpriseintegrationpatterns.com/patterns/messaging/ReturnAddress.html\nSource read during authoring: 2026-11-12; offline comparison: 2026-11-13\nInput: cited passage quoted in PRD Acceptance evidence\nComparison: retaining reply routing with the request supports keeping the notice request beside message provenance and later reading the PRD Sources at source_revision.\nObserved: the refreshed guide keeps the request in the record; the release section reads that historical record and addresses only the requesting sending project.\nLimit: the pattern does not prove future Agent behavior or an actual delivery.\n')
+    update('Q27','pass','Offline comparison of Hohpe and Woolf’s Return Address passage quoted in PRD Acceptance evidence (source read 2026-11-12) against Q14’s guide and the validated release section confirms request-associated reply routing and retained provenance. This is a supporting analogy, not production messaging proof. [Comparison](evidence/qa-report-2026-11-13/outside-return-address.txt).')
+
+def blocked():
+    prd=(SPEC/'_prd.md').read_text();section=prd.split('## Unreachable Acceptance',1)[1].split('\n## ',1)[0]
+    criterion=norm(re.search(r'- criterion:\s*(.*?)\n  reason:',section,re.S).group(1))
+    reason=norm(re.search(r'  reason:\s*(.*?)\n  satisfied-by:',section,re.S).group(1));satisfied=norm(section.split('  satisfied-by:',1)[1])
+    assert 'reaches the network, calls ai-memory' in (SPEC/'_authorization.md').read_text()
+    (E/'declared-acceptance.txt').write_text('criterion: '+criterion+'\nreason: '+reason+'\nsatisfied-by: '+satisfied+'\nObserved constraint: this QA has no published binary carrying the unmerged Spec and authorization expressly prohibits the real session, network and ai-memory calls. Local refresh is independently runnable and passed Q14; the full post-release conjunction is unproven. No live session or send was attempted.\n')
+    update('Q28','blocked (declared: '+criterion+')','The complete post-release criterion requires a released binary and a real release session through ai-memory; task_03 and its authorization prohibit those operations. Local refresh passed Q14, but does not satisfy that full conjunction. `satisfied-by`: '+satisfied+' [Declaration and constraint](evidence/qa-report-2026-11-13/declared-acceptance.txt).')
+    (E/'pull-request-controls.txt').write_text('Pull Request fact: none open, supplied by QA assignment\napproval: maintainer instruction and approved delivery authorization, granted 2026-11-12; actions implement/commit/push/pull_request/merge/release and minor release ceiling recorded\nchecks: Daemon make verify-changed pass, exit 0 at '+HEAD+'\nunresolved threads: none, since no Pull Request exists\nMerge-Ready acceptance: none yet; no equivalent review-source evidence supplied\nreview-artifact ancestry: claimed candidate '+HEAD+'; no review artifact exists to establish ancestry\nUnblocking: delivery owner opens the target-branch Pull Request after QA and review, obtains current-head review and Merge-Ready acceptance, and verifies required checks\nNo GitHub command, API call or mutation was made.\n')
+    update('Q29','blocked (environment: no open Pull Request)','Approval is recorded in the operative delivery authority; checks come from the Daemon’s passing repository Verification at the audited head; there are no unresolved threads because no Pull Request exists. Merge-Ready acceptance and review-artifact ancestry are not yet established. Claimed candidate: `'+HEAD+'`. [All five controls and unblocking action](evidence/qa-report-2026-11-13/pull-request-controls.txt).')
+
+def archive_plan():
+    with isolated() as v:
+        p=record('archive-plan',['./bin/roundfix','archive',SLUG,'--plan','--offline'],env=v)
+    print(p.stdout);print(p.stderr)
+    REPORT.write_text(REPORT.read_text()+'\n## Archive planning evidence\n\ninputs:\n  repository_path: .\n\nThe required `./bin/roundfix archive '+SLUG+' --plan --offline` ran with temporary HOME/TMPDIR, fake gh and all Judge Key Variables removed. Exit '+str(p.returncode)+'. [Offline plan](evidence/qa-report-2026-11-13/archive-plan.txt). No archive mutation or judge request was made.\n')
+
+def close_report():
+    text=REPORT.read_text()
+    for row in ['Q15','Q18','Q23']:
+        heading='### '+row+' evidence\n\n```yaml\ninputs:\n';start=text.index(heading)+len(heading);end=text.index('```',start)
+        declaration='  - kind: commit_range\n    ref: '+('73421db2' if row in ('Q15','Q18') else state()['base'])+'..'+HEAD+'\n'
+        text=text[:end]+declaration+text[end:]
+    rows=re.findall(r'(?m)^\| (Q\d\d) \| (.*?) \| (.*?) \|$',text)
+    assert len(rows)==29 and len({x[0] for x in rows})==29
+    assert all(status!='pending' for _,status,_ in rows)
+    counts={'pass':sum(status=='pass' for _,status,_ in rows),'environment':sum(status.startswith('blocked (environment:') for _,status,_ in rows),'declared':sum(status.startswith('blocked (declared:') for _,status,_ in rows),'finding':sum(status.startswith('blocked (finding:') for _,status,_ in rows),'fail':sum(status=='fail' for _,status,_ in rows),'skipped':sum(status=='skipped' for _,status,_ in rows)}
+    assert counts=={'pass':27,'environment':1,'declared':1,'finding':0,'fail':0,'skipped':0},counts
+    text=text.replace('status: in-progress','status: closed').replace('verdict: pending','verdict: partial').replace('rows_blocked_environment: 0','rows_blocked_environment: 1').replace('rows_blocked_declared: 0','rows_blocked_declared: 1')
+    text+=(E/'report-footer.md.txt').read_text()
+    REPORT.write_text(text)
+    links=re.findall(r'\]\(([^)]+)\)',text);missing=[];ignored=[]
+    for target in links:
+        if '://' in target or target.startswith('#'):continue
+        target=target.split('#',1)[0];path=(REPORT.parent/target).resolve()
+        if not path.exists():missing.append(target);continue
+        relative=path.relative_to(ROOT)
+        if call(['git','check-ignore','--quiet','--',str(relative)]).returncode==0:ignored.append(target)
+    assert not missing and not ignored,(missing,ignored)
+    lines=text.splitlines();table_start=lines.index('| # | Status | Provenance |');table=[]
+    for line in lines[table_start+2:]:
+        if not line:break
+        assert line.startswith('| Q') and len(line.split('|'))==5,line
+        table.append(line)
+    assert len(table)==29
+    for row,_,_ in rows:
+        block=re.search(r'(?ms)^### '+row+r' evidence\n\n```yaml\n(.*?)```',text);assert block,row
+        assert '- kind: repository_path\n    ref:' in block[1],row
+        if row in ['Q14','Q15','Q18','Q23','Q25']:assert '- kind: commit_range\n    ref:' in block[1],row
+    assert 'evidence_snapshots:' not in text
+    assert text.startswith('---\n') and text.split('---\n',2)[1].count('verdict:')==1
+    assert 'auditing_binary: "0.142.2 (22741816, built 2026-11-13 02:45:14 -0300)"' in text
+    assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in text
+    assert checked(['git','rev-parse','HEAD']).strip()==HEAD
+    assert call(['git','diff','--exit-code','HEAD','--','.']).returncode==0
+    for path in E.iterdir():
+        if path.is_file():
+            path.read_text();assert call(['git','check-ignore','--quiet','--',str(path.relative_to(ROOT))]).returncode!=0,path
+    status=checked(['git','status','--short','--untracked-files=all'])
+    assert all(line[3:].startswith('docs/specs/'+SLUG+'/qa/') for line in status.splitlines()),status
+    (E/'report-validation.txt').write_text('Audited head unchanged: '+HEAD+'\nTracked product tree unchanged.\nResults: '+json.dumps(counts)+'\n29 adjacent three-column Results rows; no pending or orphan row.\nEvery row has repository_path input; history-dependent rows have commit_range.\nDaemon auditor fields preserved; no snapshots written.\nAll '+str(len(links))+' report links resolve and are not ignored.\nEvery evidence file is readable UTF-8 text and unignored.\nOnly this Spec qa/ report and evidence are untracked changes.\nArchive plan exit 0; judge skipped offline.\nAll started foreground commands exited.\n')
+    print(json.dumps(counts));print('Final structure, links, input declarations and unchanged tracked tree: passed')
+if __name__=='__main__': globals()[sys.argv[1]]()

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0386-a-message-that-asks-for-a-completion-notice-receives-one
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

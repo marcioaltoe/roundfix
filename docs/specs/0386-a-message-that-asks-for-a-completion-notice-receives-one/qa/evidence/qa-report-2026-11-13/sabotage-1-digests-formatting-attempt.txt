@@ -1,0 +1,19 @@
+command: make baseline-digests GO=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0386-a-message-that-asks-for-a-completion-notice-receives-one-69c397275560e6ae-15487c51-55161c1d/run_20261113T054722Z_d4b392714e0b93f9/bin/qa-0386/go-timeout
+exit: 2
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:^TestCatalogDiagnosticCharacterization$","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+
+stderr:
+ok  	roundfix/internal/baseline	1.120s
+ok  	roundfix/skills	0.273s
+ok  	roundfix/internal/baseline	1.730s
+ok  	roundfix/internal/baseline	0.597s
+ok  	roundfix/internal/baseline	0.977s
+--- FAIL: TestCatalogDiagnosticCharacterization (0.06s)
+    catalog_test.go:743: asset "modules/core.json" has 0 occurrences of "\"classifications\": [\"domain-language\", \"identifier-policy\"]", want 1
+FAIL
+suiteguard: guard cost: measured 3112 paths; fingerprint took 150.457166ms before and 153.251041ms after
+FAIL	roundfix/internal/baseline	0.649s
+FAIL
+baseline-digests: regeneration failed at ./internal/baseline:^TestCatalogDiagnosticCharacterization$
+make: *** [baseline-digests] Error 1

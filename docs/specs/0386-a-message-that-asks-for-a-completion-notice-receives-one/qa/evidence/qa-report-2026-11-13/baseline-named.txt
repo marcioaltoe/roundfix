@@ -1,0 +1,30 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt|TestTheMessageClausesAskForAReplyOnlyForBlockedWork|TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence|TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestTheGuidesSendCrossProjectWorkThroughAiMemory|TestEveryBaselineModuleVersionIsRecorded)$' ./internal/baseline
+exit: 0
+stdout:
+=== RUN   TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== PAUSE TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== RUN   TestTheGuidesSendCrossProjectWorkThroughAiMemory
+=== PAUSE TestTheGuidesSendCrossProjectWorkThroughAiMemory
+=== RUN   TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== PAUSE TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== RUN   TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+=== PAUSE TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+=== RUN   TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== PAUSE TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.01s)
+=== CONT  TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== CONT  TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt
+=== CONT  TestTheMessageClausesAskForAReplyOnlyForBlockedWork
+=== CONT  TestTheGuidesSendCrossProjectWorkThroughAiMemory
+=== CONT  TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence
+--- PASS: TestEveryInboxClauseAnAdopterHoldsIsReplaced (0.06s)
+--- PASS: TestTheMessageClausesAskForAReplyOnlyForBlockedWork (0.12s)
+--- PASS: TestTheReceivingClauseAnswersQuestionsAndBoundsTheDeclaredPrecedence (0.12s)
+--- PASS: TestTheGuidesSendCrossProjectWorkThroughAiMemory (0.12s)
+--- PASS: TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt (0.12s)
+PASS
+suiteguard: guard cost: measured 3124 paths; fingerprint took 729.715458ms before and 183.946417ms after
+ok  	roundfix/internal/baseline	1.366s
+
+stderr:

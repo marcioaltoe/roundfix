@@ -1,0 +1,43 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest|TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender|TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage)$' ./skills
+exit: 0
+stdout:
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+--- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical (0.00s)
+--- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+--- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical (0.00s)
+PASS
+ok  	roundfix/skills	0.256s
+
+stderr:

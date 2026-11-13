@@ -1,0 +1,22 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest$' ./skills
+exit: 1
+stdout:
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== NAME  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+    roundfix_modes_test.go:274: completion notices omits "never from a Daemon-assigned Run, and only to the project that asked: a completion notice is not a release note"
+--- FAIL: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded (0.00s)
+    --- FAIL: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical (0.00s)
+FAIL
+FAIL	roundfix/skills	0.268s
+FAIL
+
+stderr:

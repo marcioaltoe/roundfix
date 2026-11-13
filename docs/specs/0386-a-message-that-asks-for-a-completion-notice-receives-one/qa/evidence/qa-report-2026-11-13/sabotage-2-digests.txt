@@ -1,0 +1,24 @@
+command: make baseline-digests GO=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0386-a-message-that-asks-for-a-completion-notice-receives-one-69c397275560e6ae-15487c51-55161c1d/run_20261113T054722Z_d4b392714e0b93f9/bin/qa-0386/go-timeout
+exit: 0
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}
+
+stderr:
+ok  	roundfix/internal/baseline	1.160s
+ok  	roundfix/skills	0.300s
+ok  	roundfix/internal/baseline	1.788s
+ok  	roundfix/internal/baseline	0.609s
+ok  	roundfix/internal/baseline	1.013s
+ok  	roundfix/internal/baseline	1.535s
+ok  	roundfix/internal/baseline	2.297s
+ok  	roundfix/internal/baseline	0.636s
+baseline-digests: regenerated
+  internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+  internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  internal/baseline/testdata/catalog.diagnostics.golden.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+  internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+  internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+  internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
