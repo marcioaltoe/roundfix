@@ -1459,6 +1459,10 @@
       {
         "version": "0.0.19",
         "digest": "18d1074ce7cbf243e48caca00d167f3f3c01a86c8d0afc395d4af3ac3c681ead"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "ca8cfe9a3a049e9c2dab9b50c84848cec2b0af85da1e39fc6ed561e9f37ddb32"
       }
     ]
   }
