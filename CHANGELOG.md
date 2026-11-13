@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.143.2] - 2026-11-13
+
+### A parked item always has a way back through a delivery retry
+
+- **`roundfix deliver retry` requeues an item that parked before it had an item branch.** Before, an item parked by a failure such as a network timeout while refreshing its prerequisites was refused with `use item branch: branch is required` and could only leave through a new queue. The retry now returns it to `queued` and counts the retry, and the owner creates the branch as on a first start; an item whose worktree creation failed and left a worktree without a branch is cleared the same way.
+- The delivery authorization of an already archived Spec is read even when the Specs Root directory no longer exists, as after a pull-request conflict resolution that removes the last file under `docs/specs/`.
+- An item whose pull request still holds an earlier candidate of the same item returns to the gate and is pushed through publication instead of parking as `review-stale`; any other head still parks `review-stale`, which now has its own next action in `deliver status`. ADR-0398.
+
 ## [0.143.1] - 2026-11-13
 
 ### A completion notice skips a record the merge adopted
