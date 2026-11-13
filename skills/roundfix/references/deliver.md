@@ -296,6 +296,8 @@ lost acknowledgement from creating a second pull request or merge. Before
 publication, the Spec authorization record must grant all three operations:
 `push`, `pull_request`, and `merge`.
 
+The grant is read from Git history, so it needs no Spec Root in the working tree: when the last file under the Spec Root leaves the item branch, as after a conflict resolution that keeps the archive, Git removes the empty directory and the read still finds the grant.
+
 GitHub's `CONFLICTING` mergeable state stops the check wait on its first read;
 `UNKNOWN` stays pending. The owner starts from a clean item worktree at the
 candidate head, fetches the default branch, and merges it without rebasing or
@@ -487,6 +489,8 @@ A `disk-full` park's next action is `free space on the filesystem that holds the
 
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
 
+A `review-stale` park's next action is `in <worktree>, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry <slug>`.
+
 A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
 
 A `run-unresolved` park names each Task the Run settled `failed`, with its
@@ -516,6 +520,10 @@ not change a recorded `premise-changed` or `owner-older-than-main` warning. The
 item re-enters at `running` when any Task is unfinished or at `reviewing` when
 every Task is completed. An archived Spec with an unchanged candidate
 re-enters at `gating` without a recorded pull request or at `checking` with one.
+
+An item parked before it has an Item Branch re-enters at `queued`, counting a retry, and the owner creates its branch as on a first start.
+
+At `checking`, a Pull Request whose head is an earlier candidate of the item never received the current one: the owner logs `roundfix: Delivery Queue item <slug>: pull request #<n> holds earlier candidate <sha>, not candidate <sha>; returning to gating to push it`, and the item returns to `gating`, whose repository gate runs again before the push. Any other Pull Request head parks the item `review-stale`.
 
 Before those retry rules, Roundfix asks whether the parked item already merged.
 It first reads the recorded Pull Request through `gh pr view` in the repository
