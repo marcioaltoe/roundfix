@@ -174,8 +174,11 @@ A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
 asks for one `- ` list item per finding. Start each item with `path:line` or
 `path:start-end`, optionally backticked, naming a line of the candidate diff.
-For a comma-listed anchor, only the first range counts. Describe what breaks
-in a clause beginning with `Failure:`. An older record without `findingItems` derives the same identities from its findings text when
+For a comma-listed anchor, only the first range counts. An anchor followed by
+a period or a semicolon reads as one followed by a space when a space or the
+end of the finding comes next, so an anchor may end a sentence; `path:2.5` and
+`path:2.md` are not anchors. Describe what breaks in a clause beginning with
+`Failure:`. An older record without `findingItems` derives the same identities from its findings text when
 Roundfix reads it.
 
 The prompt carries Delivery Conventions version
@@ -250,7 +253,12 @@ dismissed this way reads `findings-dismissed`, and its `validator` stays
 Only anchored findings inside a convention region or lacking a failure
 clause, and not dismissed as a Result Status Note, are sent to the
 validator. It uses the review's selected runtime in a sealed
-session and may use no tools. The validator fails closed: an unavailable
+session and may use no tools. The session works in a new private directory
+outside every checkout. When the reviewed checkout's root holds a regular
+`.ai-memory.toml` of at most 64 KiB, Roundfix copies it into that
+directory, which holds nothing else, so a tool that names its project from
+the working directory records the session under the reviewed repository.
+The validator fails closed: an unavailable
 runner, timeout, tool use, malformed answer, missing or duplicate finding ID,
 ineligible rule or blank reason leaves every asked finding standing. The
 record's `validation` identifies the conventions version and reports

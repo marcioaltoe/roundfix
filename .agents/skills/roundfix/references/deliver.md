@@ -424,6 +424,12 @@ be checked, status adds no `Owner:` line and writes
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
 the recorded owner PID and identity for `deliver resume` to recover.
 
+A Queue Owner that stops while an item can still advance, because its
+engine returned an error or the process panicked, keeps its owner record,
+so status reports it with the line above. It releases the record when it
+exits with no item left to advance, and `deliver stop` releases it after
+the owner it stopped has exited.
+
 `deliver start` releases the recorded owner of an existing queue whose owner is
 gone, because its PID is no longer alive or is alive with a different start
 identity, before it starts the new queue; a recorded owner proven live is left
@@ -1065,6 +1071,8 @@ roundfix: Delivery Queue item <spec>: waiting for the Machine Verification Capac
 ```
 
 Each holder in `<holders>` is `<holder description>, <step>`, joined by `; `.
+The queue log is the Queue Owner's console log, the file `deliver start` and
+`deliver resume` print as `Console Log:`.
 The Run slot wait below is a separate wait for `runs.max_active`.
 
 ## Run slot wait

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0385-a-queue-item-stops-only-for-its-own-work
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -77,3 +77,36 @@ skill's version rises once, through the record command.
 - `_prd.md` → User Story 2; Core Feature 5; Success Metric 5
 - `_techspec.md` → API Contracts 6, 7 and 8; Build Order 4
 - ADR-0395
+
+## Result
+
+Skills loaded: implement-task, tech-writer, ai-memory-handoff.
+
+Starting-tree characterization: the four API Contract 6 and 7 texts were
+present at their named anchors in the two user guides, but absent from both
+Roundfix reference copies.
+
+Implementation evidence:
+
+- Added the owner-record and queue-log texts to the canonical `deliver`
+  reference at the corresponding anchors.
+- Added the punctuation-anchor and validator-working-directory texts to the
+  canonical `review` reference at the corresponding anchors; no `### QA
+  settlement` text changed.
+- `make skills-sync` completed successfully; `cmp -s` confirmed both synced
+  reference pairs are identical.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$'
+  -record-skill-versions` passed and recorded Roundfix skill version `0.1.224`
+  in both skill copies and the owned-skill version record.
+
+Focused checks:
+
+- `git diff --check` passed.
+- Direct normalized-text checks found all four required texts in both copies
+  of the `deliver` and `review` references.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run
+  '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` passed and
+  re-recorded the Behavior Surface Record.
+
+The Task status remains `in_progress` and Daemon-owned. The declared
+`## Verification` commands were not run; Daemon Verification remains pending.
