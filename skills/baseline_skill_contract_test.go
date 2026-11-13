@@ -179,7 +179,9 @@ func TestBaselineDigestTargetReportsMachineReadableOutcomes(t *testing.T) {
 		derivedRoot := t.TempDir()
 		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
 		regenerator := filepath.Join(t.TempDir(), "regenerate")
-		writeBaselineDigestTargetFile(t, regenerator, []byte("#!/bin/sh\nset -eu\ntouch \"$DERIVED_DIGEST_PROBE/after\"\n"), 0o700)
+		// The Makefile also runs `$(GO) env` while it is parsed (ADR-0394), before
+		// the target's first scan; only a regeneration step (`$(GO) test`) writes.
+		writeBaselineDigestTargetFile(t, regenerator, []byte("#!/bin/sh\nset -eu\n[ \"${1:-}\" = test ] || exit 0\ntouch \"$DERIVED_DIGEST_PROBE/after\"\n"), 0o700)
 
 		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, regenerator)
 		if exitCode != 0 {
