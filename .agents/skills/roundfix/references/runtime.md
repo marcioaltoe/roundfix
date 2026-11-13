@@ -127,6 +127,7 @@ prints its own
 does not identify specific skill names, Doctor instead prints
 `bunx skills experimental_install && bunx skills update -p -y`; a mixed named
 failure prints the owned action followed by the skill-scoped external actions.
+A lock of version 1 or 2 is read. Any other lock version fails the `skills:` line with the version named and `roundfix upgrade` as its only next action, because the skills command would write that version again.
 Doctor is diagnosis-only: it never runs these commands, accesses the network,
 installs or updates skills, or writes repository state. Apply remediation only
 after explicit workflow authorization, then rerun Doctor.

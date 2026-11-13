@@ -149,7 +149,7 @@ func TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable(t *testing.T) 
 			case "malformed":
 				mustWrite(t, filename, "{broken")
 			case "schema":
-				mustWrite(t, filename, `{"version":2,"skills":{}}`)
+				mustWrite(t, filename, `{"version":3,"skills":{}}`)
 			case "symlink":
 				mustWrite(t, filepath.Join(root, "target"), `{"version":1,"skills":{}}`)
 				if err := os.Symlink("target", filename); err != nil {

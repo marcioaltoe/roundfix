@@ -73,7 +73,10 @@ func RecordInstalledOwnedSkills(ctx context.Context, root string, names []string
 		if !exists {
 			continue
 		}
-		digest := externalSkillsLockDigest(files)
+		digest, err := document.digest(files)
+		if err != nil {
+			return OwnedSkillsLockUpdate{}, fmt.Errorf("hash installed skill %q for skills-lock.json: %w", name, err)
+		}
 		entry := entries[name]
 		offset := skillsField.start + entry.start
 		raw := document.before[offset : skillsField.start+entry.end]
@@ -189,7 +192,11 @@ func StaleOwnedLockEntries(ctx context.Context, root string, names []string) ([]
 			continue
 		}
 		ref, pinned := entry["ref"]
-		hash := stringMapValue(entry, "computedHash") != externalSkillsLockDigest(files)
+		digest, err := document.digest(files)
+		if err != nil {
+			return nil, fmt.Errorf("compare installed skill %q with skills-lock.json: %w", name, err)
+		}
+		hash := stringMapValue(entry, "computedHash") != digest
 		if !pinned && !hash {
 			continue
 		}

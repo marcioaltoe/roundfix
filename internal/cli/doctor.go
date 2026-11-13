@@ -21,6 +21,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/lighttier"
 	"roundfix/internal/preflight"
+	"roundfix/internal/skillhash"
 	"roundfix/internal/store"
 	"roundfix/skills"
 )
@@ -765,6 +766,13 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 		result.Err = checkErr
 	}
 	result.Detail = strings.Join(details, "; ")
+
+	// A lock Roundfix cannot read is fixed only by a newer Roundfix, so the
+	// refusal names roundfix upgrade and no skills command.
+	if errors.Is(checkErr, skillhash.ErrUnsupportedLockVersion) {
+		result.NextAction = "roundfix upgrade"
+		return result
+	}
 
 	ownedFailure := len(readiness.MissingOwned) > 0 || len(below) > 0
 	externalFailure := len(readiness.MissingExternal) > 0

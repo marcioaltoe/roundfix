@@ -192,6 +192,8 @@ names are reported as `Updated skills-lock.json computedHash: <name>` followed
 by `Removed skills-lock.json ref: <name>` for each entry whose `ref` was
 removed.
 
+Roundfix reads a `skills-lock.json` of version 1 or 2, the version the skills CLI 1.8 writes; every `computedHash` it writes into the lock or compares with an installed folder follows the hash algorithm of the version the file declares, and it never changes that version.
+
 With a Setup Manifest, Doctor appends
 `DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills
 with the copy their skills-lock.json entry pins: <names>` when an installed

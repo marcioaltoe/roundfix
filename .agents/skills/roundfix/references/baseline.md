@@ -79,6 +79,7 @@ other field is kept. No entry or lock is created when none exists. The result
 reports `skills.lockUpdated` and `skills.lockUnpinned` and prints `Skills lock
 updated: <count>` followed by one `- lock updated <name>` line for each name,
 then one `- lock ref removed <name>` line for each name whose `ref` was removed.
+Roundfix reads a `skills-lock.json` of version 1 or 2, the version the skills CLI 1.8 writes; every `computedHash` it writes into the lock or compares with an installed folder follows the hash algorithm of the version the file declares, and it never changes that version. Any other lock version stops the update with the next action `run roundfix upgrade, then rerun roundfix baseline update`.
 `--skills-source-dir <path>` selects an offline Git checkout or bare object store for external skill restoration. `--repo`
 defaults to the current directory, and `--format` accepts `text` or `json`.
 

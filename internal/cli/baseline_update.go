@@ -15,6 +15,7 @@ import (
 
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
+	"roundfix/internal/skillhash"
 	roundskills "roundfix/skills"
 )
 
@@ -296,7 +297,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 	if !request.skipSkills {
 		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
 		if err != nil {
-			return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+			return writeBaselineUpdateFailure(result, err, "execution", baselineUpdateSkillsLockNextAction(err), exitRunFailed, jsonOutput, stdout, stderr)
 		}
 		for _, entry := range result.Skills.Retired {
 			if entry.Action == baseline.RetiredSkillDelete {
@@ -445,7 +446,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 		}
 		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
 		if err != nil {
-			return writeBaselineUpdateFailure(result, err, "execution", "repair skills-lock.json and rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+			return writeBaselineUpdateFailure(result, err, "execution", baselineUpdateSkillsLockNextAction(err), exitRunFailed, jsonOutput, stdout, stderr)
 		}
 	}
 	return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
@@ -987,6 +988,16 @@ func baselineUpdateJSONRequested(args []string) bool {
 		}
 	}
 	return false
+}
+
+// baselineUpdateSkillsLockNextAction names the only step that can make a lock
+// of an unsupported version readable; every other lock failure is repaired in
+// place.
+func baselineUpdateSkillsLockNextAction(err error) string {
+	if errors.Is(err, skillhash.ErrUnsupportedLockVersion) {
+		return "run roundfix upgrade, then rerun roundfix baseline update"
+	}
+	return "repair skills-lock.json and rerun roundfix baseline update"
 }
 
 func retiredSkillsPlanDigest(digest string, retired []baseline.InstalledRetiredSkill) string {

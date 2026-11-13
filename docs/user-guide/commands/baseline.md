@@ -190,6 +190,8 @@ each name. Entries whose `ref` was removed also appear in
 `skills.lockUnpinned`, with one `- lock ref removed <name>` line after the
 lock-updated lines.
 
+Roundfix reads a `skills-lock.json` of version 1 or 2, the version the skills CLI 1.8 writes; every `computedHash` it writes into the lock or compares with an installed folder follows the hash algorithm of the version the file declares, and it never changes that version. Any other lock version stops the update with the next action `run roundfix upgrade, then rerun roundfix baseline update`.
+
 The history plan names every file it will remove before approval. Each pending
 unit carries sorted repository-relative `paths` in JSON: the files a removal
 or conversion deletes, the Archive Records `record-links` rewrites, or the live pages `live-links`

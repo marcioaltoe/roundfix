@@ -135,7 +135,7 @@ func TestRecordInstalledOwnedSkillsRefusesAnUnsafeLock(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "schema":
-				original = []byte(`{"version":2,"skills":{}}`)
+				original = []byte(`{"version":3,"skills":{}}`)
 				fallthrough
 			default:
 				if err := os.WriteFile(filename, original, 0o644); err != nil {
