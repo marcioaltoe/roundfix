@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-11T18:00:00Z
-updated_at: 2026-11-11T18:00:00Z
+updated_at: 2026-11-12T21:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -53,6 +53,8 @@ acknowledgment, adoption notice or completion notice to a message that
 declared none. The sender's clause adds that the receiving project owns the
 answer to a direct question too, so a sender that does not depend on it still
 neither waits for it nor watches for it. Both clauses keep their identities.
+
+**Amended by [ADR-0396](0396-a-message-that-asks-to-be-told-when-its-work-is-done-receives-one-completion-notice.md) (2026-11-12).** A message that asks to be told when its work is done receives one completion notice once that work is delivered, when the release that carries it is published or, when it releases nothing, when it merges, and still no acknowledgment or adoption notice; the request is kept in the record of the message's content, and the sender's clause lets a sender ask for the notice without waiting or watching for it. Every direct question is still answered.
 
 **One blocking message per sender takes precedence.** The receiving clause
 triages first, from each sending project, the oldest message that declares

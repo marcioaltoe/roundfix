@@ -113,3 +113,67 @@ follow the repository release runbook. Preserve the existing tag-triggered
 workflow: validate the tag, keep artifact versions in agreement, publish npm
 packages through the release workflow, upload GitHub Release assets, and leave
 the Upgrade Command asset contract unchanged.
+
+## Completion notices
+
+A Notice Request, a Cross-project Message that asks to be told when its work
+is done, receives one completion notice under the cross-project continuity
+rule of `docs/agents/agent-instructions.md`. Until then the request lives in
+its record: the Backlog Entry or Finding that records the message, or the
+`## Sources` entry of the PRD that adopts it. A PRD that adopts a Backlog
+Entry or Finding holding a Notice Request carries the request into its
+`## Sources` entry, so the Spec's own record keeps it after the Backlog Entry
+or Finding moves into the Spec. When the work of one Notice Request spans
+several Specs, each of their `## Sources` entries for it names the other
+Specs.
+
+Each notice falls due at one event, and the session that follows that event
+finds the requests due with Git alone:
+
+- **A release is published.** List the Archive Records the release adds with
+  `git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>`,
+  read each record's Spec PRD at the record's `source_revision` with
+  `git show <source_revision>:<source>/_prd.md`, and send one notice for each
+  Notice Request its `## Sources` records: what changed, the released
+  version, and anything else the request asked the notice to carry.
+- **A change merges and releases nothing.** When the release plan for the
+  range that holds the merge answers `no_release`, or the maintainer decides
+  that no release carries it, read the Archive Records the merge adds with
+  `git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <archive root>`
+  the same way and send each notice naming the merge commit instead of a
+  version.
+- **A record is closed without a Spec.** Every terminal Backlog Entry or
+  Finding is deleted in the change that records its disposition, so after
+  each merge list the records it deletes with
+  `git diff --name-only --diff-filter=D <merge commit>^ <merge commit> -- docs/backlog docs/findings`,
+  read each one with `git show <merge commit>^:<path>`, and send one notice
+  for each Notice Request it holds, naming the merge commit: what was
+  delivered when its work shipped without a Spec or, when the work is closed
+  without being delivered, such as a declined Backlog Entry, the notice says
+  so instead.
+
+A Notice Request's work is delivered at the event after which none of the
+Specs its `## Sources` entry names is still under the Spec root: while one of
+them remains there at the new tag or merge commit, the event sends nothing for
+that request. Before sending, group the requests an event finds by the
+ai-memory message each one records: entries in several Specs that the same
+event archives and that record the same message are one request, which
+receives one notice naming every Spec that delivered it. A
+record whose disposition is `cancelled`, written by `roundfix cancel`, sends
+no notice: the cancel returns each adopted Backlog Entry and Finding to its
+folder, and the request stays there.
+
+Send each notice once, from the session that follows the event and never
+from a Daemon-assigned Run, and only to the project that asked: a completion
+notice is not a release note. Each notice names the record that kept its
+request, so two requests from the same project receive two notices. A tag
+and a merge commit each occur once, so each request falls due at exactly one
+event, and a session sends notices only for the event it follows. Before
+sending, list the outbox with `memory_message_list` and `box: "outbox"`: a
+pending notice to the same project that names the same record and the same
+event was already sent, and is not sent again. A session that cannot tell
+whether a notice for that request already went, because an earlier session
+for the same event may have sent it and the recipient may have consumed it,
+asks the user instead of sending a second one. When the session exposes no
+ai-memory tools, put each notice's text in the report for the user to
+deliver.

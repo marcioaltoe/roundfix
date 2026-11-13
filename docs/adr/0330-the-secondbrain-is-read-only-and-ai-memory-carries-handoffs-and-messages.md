@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-24T17:30:00Z
-updated_at: 2026-11-11T18:00:00Z
+updated_at: 2026-11-12T21:40:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -44,6 +44,8 @@ the same force, so an adopter's next refresh accounts every clause it held.
 **Amended by [ADR-0383](0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md) (2026-11-10).** A message is one-way unless the sending project's own work depends on the answer: the sender then says so in the subject and first lines and names the blocked work, and otherwise neither waits for a reply nor watches whether the other project acted. The receiving project triages such a message first and the others oldest first, handles it next after the work already running, and answers only it. Recording before consuming, and the rest of this decision, still hold.
 
 **Amended by [ADR-0390](0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md) (2026-11-11).** The receiving project triages first only the oldest blocking message of each sender, and it answers each direct question a message asks, not only a blocking one; it still sends no acknowledgment, adoption notice or completion notice to a message that declared no blocked work.
+
+**Amended by [ADR-0396](0396-a-message-that-asks-to-be-told-when-its-work-is-done-receives-one-completion-notice.md) (2026-11-12).** The receiving project sends one completion notice to a message that asks to be told when its work is done, once that work is delivered; it still sends no acknowledgment or adoption notice to a message that declared no blocked work.
 
 **ai-memory is optional and detected at run time.** It is not a Baseline
 decision: a repository renders the same guidance with or without it. A
