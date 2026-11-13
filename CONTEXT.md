@@ -1280,7 +1280,7 @@ first ([ADR-0327](docs/adr/0327-gc-trims-a-declared-shared-build-cache.md),
 _Avoid_: global cache, Go cache cleanup, cache GC
 
 **Build Cache Bound**:
-The size, 10,240 MiB by default, to which this repository's Makefile holds the Go build cache it chose before each top-level make that builds or tests, removing with the Shared Build Cache rules only entries no build used for two hours; the cache stays above it while its entries are younger ([ADR-0370](docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md)).
+The size, 10,240 MiB by default, to which this repository's Makefile holds the Go build cache it chose before each top-level make that builds or tests, removing with the Shared Build Cache rules only entries no build used for two hours; the cache stays above it while its entries are younger. The cache it chose is the one set with `go env -w GOCACHE` when that is an existing writable directory, and otherwise its temporary cache; when the cache set with `go env` is unusable, the Makefile warns and the default is 2,048 MiB ([ADR-0370](docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md), [ADR-0394](docs/adr/0394-the-makefile-follows-the-go-build-cache-set-with-go-env-and-falls-back-small.md)).
 _Avoid_: cache limit, cache cleanup, gocache trim
 
 **Free-Space Floor**:

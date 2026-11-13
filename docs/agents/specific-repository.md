@@ -15,7 +15,7 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 
 - A test that runs an External Test Tool, a tool outside the Base Test Tools, resolves it with `testfixture.RequireTool`, which skips naming the tool when it is absent; the External Test Tool rule in `internal/testfixture` enforces it.
 
-- `make` shares `roundfix-go-build-<uid>` under `$TMPDIR` (or `/tmp`), falls back to `$(CURDIR)/.gocache` when it cannot create and write the shared cache, and exports an explicit `GOCACHE` unchanged; a sandboxed Agent sets nothing; before it builds or tests, the top-level `make` holds the cache it chose to the Build Cache Bound with `cmd/gocache-bound` and never clears it (ADR-0370).
+- `make` uses the Go build cache set with `go env -w GOCACHE` when it is an existing writable directory and never creates it; when that cache is set but unusable, `make` warns once and uses the shared cache below with a 2048 MiB default bound. Otherwise `make` shares `roundfix-go-build-<uid>` under `$TMPDIR` (or `/tmp`), falls back to `$(CURDIR)/.gocache` when it cannot create and write the shared cache, and exports an explicit `GOCACHE` unchanged; a sandboxed Agent sets nothing; before it builds or tests, the top-level `make` holds the cache it chose to the Build Cache Bound with `cmd/gocache-bound` and never clears it (ADR-0370, ADR-0394).
 
 - A test signals a process only through the `*os.Process` of an unreaped child it started or a Proven Signal, and a helper that waits has a Helper Lifeline; the Signal rule and the suite guard enforce both.
 

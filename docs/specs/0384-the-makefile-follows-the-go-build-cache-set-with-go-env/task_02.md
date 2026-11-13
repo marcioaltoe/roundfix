@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0384-the-makefile-follows-the-go-build-cache-set-with-go-env
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -115,3 +115,17 @@ amendment notice of ADR-0394. The authorized tooling path is exactly
 - `_prd.md` → Core Feature 4; Glossary; Decisions
 - `_techspec.md` → System Architecture; Coverage Map; Build Order 2
 - ADR-0394; ADR-0370
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, crafting-effective-readmes, tech-writer, knowledge-workspace, evidence-gate.
+
+Rewrote the repository cache rule, README cache paragraph, Build Cache Bound glossary definition, and ADR-0370 amendment exactly within the requested documentation scope. Preserved the Daemon-owned `status: in_progress` and did not edit any other Task, `_tasks.md`, Makefile, test, manifest, guide, skill, ADR, or user-guide page.
+
+Focused checks after the edit: inspected the four changed documentation blocks and the worktree diff; all required new cache-set, no-create, warning, 2048 MiB fallback, dated amendment, option note, and ADR link text is present. The Task's declared Verification and repository Verification were not run because this is a Daemon-assigned handoff; the Daemon runs them at settlement.
+
+Acceptance evidence:
+
+- Guide, README, and glossary: each now states that `make` follows a usable `go env -w GOCACHE` directory without creating it, and warns before the 2048 MiB fallback when unusable.
+- ADR-0370: `updated_at` is `2026-11-12T21:00:00Z`, the dated ADR-0394 notice follows the Decision paragraph, and the Considered Option includes the requested two-line note.
+- Documentation contracts: not run in this Daemon turn; the focused diff inspection confirms the authored contract text is present for the Daemon's declared Verification.

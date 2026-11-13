@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-06T12:00:00Z
-updated_at: 2026-11-06T12:00:00Z
+updated_at: 2026-11-12T21:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -67,6 +67,8 @@ Disk-Full Park.**
 The Build Cache Bound is this repository's own: adopters keep their own build
 caches. The Free-Space Floor and the Disk-Full Park reach every repository.
 
+**Amended by [ADR-0394](0394-the-makefile-follows-the-go-build-cache-set-with-go-env-and-falls-back-small.md) (2026-11-12).** When the environment does not define `GOCACHE`, the cache the Makefile chooses is first the one set with `go env -w GOCACHE`, if it is an existing writable directory, under the same 10,240 MiB default bound; when that cache is set but unusable, the Makefile warns once and falls back to the shared `roundfix-go-build-<uid>` or the `.gocache` fallback under a 2,048 MiB default bound. An explicit `GOCACHE`, the Free-Space Floor and the Disk-Full Park are unchanged, and every other decision of this record still holds.
+
 ## Considered Options
 
 - Clearing the cache above the bound (`go clean -cache`). Rejected: three Runs
@@ -86,6 +88,8 @@ caches. The Free-Space Floor and the Disk-Full Park reach every repository.
   leaves the decision to the operator stops no work.
 - Moving the cache to another volume. Left to each machine: `GOCACHE` and
   `TMPDIR` choose it, and the user guide names the option.
+  ADR-0394 takes this option for a cache set with `go env -w GOCACHE`: the
+  Makefile now follows it when it is an existing writable directory.
 
 ## Consequences
 
