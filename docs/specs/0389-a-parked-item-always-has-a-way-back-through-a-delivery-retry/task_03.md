@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -101,3 +101,46 @@ This answers item 2 of the Backlog Entry reported by quaestor on 2026-11-12
 - `_techspec.md` → Current behavior 5 and 6; API Contracts 4, 5 and 6; Invariants 4 and 5; Declared breaks; Testing Approach; Build Order 3
 - ADR-0398
 - [The adopted quaestor Backlog Entry](references/2026-11-12-a-retry-after-resolving-a-pull-request-conflict-finds-no-specs-root-and-no-pushed-head.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, systematic-debugging, no-workarounds, agentic-cli-design, tech-writer, evidence-gate.
+
+Starting-tree characterization (before implementation): a temporary Go overlay
+added `TestCharacterizeCheckingAnUnpushedCandidate` without changing repository
+sources. An item at `checking` with candidates `pushed-head`, `resolved-head`
+and Pull Request `318` holding `pushed-head` ended at `parked`, blocker
+`review-stale`, with zero pushes and remote head `pushed-head`.
+
+- Focused command: `go test -count=1 -v -overlay /private/tmp/roundfix-task03-characterization-ex6bxa04/overlay.json ./internal/delivery -run '^TestCharacterizeCheckingAnUnpushedCandidate$'` — exit 0; the asserted starting behavior was observed with the real temporary SQLite store and existing offline workflow/Pull Request fakes.
+
+Implementation and acceptance evidence:
+
+- Criterion 1: `checkCandidate` recognizes only a non-empty head among candidates before the last, writes API Contract 4's exact log line, and persists `gating`. The earlier-candidate subtest observes the same PR `318` merge as `merge-318` after exactly one push, remote head `resolved-head`, and ordered events `checks`, `gate`, `authorization`, `publication`, `push`, `pull-request`, `checks`, `authorization`, `merge`. It asserts the exact owner log line naming both heads and no unmatched action intents.
+- Criterion 2: the foreign-head subtest observes `review-stale`, zero pushes and merges, unchanged remote head, only a `checks` event, and no return-to-gating log. No other stale park, publication/push implementation, `createPullRequest`, retry implementation or exit code changed.
+- Criterion 3: `ClassifyPark` retains the `review` class and supplies API Contract 5's exact action for `review-stale`, including colon-suffixed details. The new Park Class test checks both the action and Pending Question answer at `/worktrees/example`; the two existing CLI status tests assert their whole stdout, empty stderr and exit 0 with the new action (including the empty-worktree `in ,` case). `review-blocked` retains the generic answer.
+- The guide carries Text C immediately after Text A and Text D immediately after the `secret-found` paragraph. A focused Python check confirmed both complete texts word for word after whitespace normalization and their exact anchors.
+
+Declared expectation changes only:
+
+- `TestExistingGenericParkAnswersAreUnchanged`: removed only `BlockerReviewStale` from the generic-answer list.
+- `TestPendingQuestionAnswersEachBlockerClass`: changed only the `other blocker` fixture to `BlockerReviewBlocked`.
+- `TestDeliverStatusPrintsTheItemWorktree`: changed only the `Park:` and `Answer:` expected actions.
+- `TestDeliverStatusPrintsAParkLinePerParkedItem`: changed only the last item's expected `Park:` action.
+- Searched repository Go tests for `review-stale`, `BlockerReviewStale` and `resolve the blocker`; no additional test pinned the generic `review-stale` answer.
+
+Focused checks:
+
+- Before the production change, `go test -count=1 -v ./internal/delivery -run '^(TestCheckingReturnsACandidateThePullRequestLacksToTheGate|TestAReviewStaleParkNamesItsNextAction)$'` — exit 1 as expected: earlier candidate still parked with zero pushes, both stale-action cases still returned the generic answer; the foreign-head subtest passed.
+- After the production change, `go test -count=1 -v ./internal/delivery -run '^(TestCheckingReturnsACandidateThePullRequestLacksToTheGate|TestAReviewStaleParkNamesItsNextAction|TestExistingGenericParkAnswersAreUnchanged|TestPendingQuestionAnswersEachBlockerClass)$'` — exit 0, all selected tests and subtests passed.
+- `go test -count=1 -v ./internal/cli -run '^(TestDeliverStatusPrintsTheItemWorktree|TestDeliverStatusPrintsAParkLinePerParkedItem)$'` — exit 0, both whole-transcript tests passed.
+- `go test -count=1 -v ./internal/delivery -run '^(TestDeliveryEngineParksAStaleReview|TestDeliveryParksAnInexactPullRequestRecordCommit|TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead|TestEveryBlockerHasAParkClass|TestParkClassesAndNextActions|TestParkClassRequiresAnExactBlockerOrColonPrefix)$'` — exit 0, all selected tests and subtests passed.
+- `git diff --check` — exit 0. Scope inspection found only declared task_03 paths; the authored Task content and Daemon-owned `in_progress` status were preserved. New tests call `t.Parallel()` first and use offline fakes with a temporary SQLite store, without network access or elapsed-time waits.
+
+The required Behavior Surface Record regeneration is the final implementation
+step after the last guide edit; its outcome is recorded below. The declared
+Verification commands, repository Verification and incremental Verification
+remain for the Daemon. No Task Graph, other Task, status, commit, push or Pull
+Request mutation was performed. No follow-up work was found in this slice.
+
+- Final implementation step: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — exit 0; regenerated `docs/references/behavior-surfaces.json` after the final guide edit.

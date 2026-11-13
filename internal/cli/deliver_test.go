@@ -102,11 +102,11 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 		t.Fatalf("deliver status exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
 	if got, want := stdout.String(), implementTestSlug+"\tparked\treview-stale\t/worktrees/delivery-item\n"+
-		"Park: "+implementTestSlug+" review: resolve the blocker, then run roundfix deliver retry "+implementTestSlug+"\n"+
+		"Park: "+implementTestSlug+" review: in /worktrees/delivery-item, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry "+implementTestSlug+"\n"+
 		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n"+
 		"Usage: no Runs recorded\n"+
 		"Pending question: "+implementTestSlug+" parked review-stale\n"+
-		"Answer: resolve the blocker, then run roundfix deliver retry "+implementTestSlug+"\n"; got != want {
+		"Answer: in /worktrees/delivery-item, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry "+implementTestSlug+"\n"; got != want {
 		t.Fatalf("deliver status = %q, want %q", got, want)
 	}
 }

@@ -100,6 +100,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 		classification.Next = "record a new queue for the remaining Specs with roundfix deliver start and a higher --max-tokens"
 	case BlockerReviewBlocked, BlockerReviewStale:
 		classification.Class = ParkClassReview
+		if blocker == BlockerReviewStale {
+			classification.Next = "in " + item.Worktree + ", merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry " + item.SpecSlug
+		}
 	case BlockerUnauthorized:
 		classification.Class = ParkClassAuthorization
 	}

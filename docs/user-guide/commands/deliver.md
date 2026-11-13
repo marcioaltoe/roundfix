@@ -597,6 +597,10 @@ A `disk-full` park's next action is `free space on the filesystem that holds the
 
 A `secret-found` park's next action is `in <worktree>, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry <slug>`.
 
+A `review-stale` park's next action is `in <worktree>, merge
+into the item branch any commit its Pull Request's head branch holds that
+the item branch lacks, then run roundfix deliver retry <slug>`.
+
 A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
 
 A `run-unresolved` park names each Task the Run settled `failed`, with its
@@ -737,6 +741,13 @@ in parentheses, naming paths and line numbers without values.
 An item parked before it has an Item Branch re-enters at
 `queued`, counting a retry, and the owner creates its branch as on a
 first start.
+
+At `checking`, a Pull Request whose head is an earlier candidate
+of the item never received the current one: the owner logs `roundfix:
+Delivery Queue item <slug>: pull request #<n> holds earlier candidate
+<sha>, not candidate <sha>; returning to gating to push it`, and the item
+returns to `gating`, whose repository gate runs again before the push.
+Any other Pull Request head parks the item `review-stale`.
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the

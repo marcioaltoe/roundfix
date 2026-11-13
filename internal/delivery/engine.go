@@ -1744,6 +1744,10 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 		if err == nil {
 			lastReadError = ""
 			if report.HeadSHA != head {
+				if earlierCandidate(*item, report.HeadSHA) {
+					fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: pull request #%s holds earlier candidate %s, not candidate %s; returning to gating to push it\n", item.SpecSlug, item.PullRequestNumber, report.HeadSHA, head)
+					return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+				}
 				return engine.park(ctx, gitRoot, item, BlockerReviewStale)
 			}
 			if report.MergeState != lastMergeState {
@@ -2057,6 +2061,18 @@ func itemWorkDir(item store.DeliveryQueueItem) (string, error) {
 		return "", errors.New("recorded item worktree is missing")
 	}
 	return workDir, nil
+}
+
+func earlierCandidate(item store.DeliveryQueueItem, head string) bool {
+	if head == "" {
+		return false
+	}
+	for index, candidate := range item.CandidateCommits {
+		if index < len(item.CandidateCommits)-1 && candidate == head {
+			return true
+		}
+	}
+	return false
 }
 
 func candidateHead(item store.DeliveryQueueItem) (string, error) {
