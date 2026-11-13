@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0386-a-message-that-asks-for-a-completion-notice-receives-one
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -107,3 +107,36 @@ repository's own guide and setup manifest are refreshed the same way.
 - `_prd.md` → Goals 1, 2, 4 and 5; User Story 1; User Story 2; Core Feature 1; Core Feature 2; Success Metric 1; Success Metric 2
 - `_techspec.md` → Current behavior 1 and 2; API Contract 1; Invariants 2 to 4; Declared breaks; Testing Approach; Build Order 1
 - ADR-0396
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, setup-context-driven, roundfix, tech-writer, evidence-gate
+
+Implementation:
+
+- Reworded only the sender and receiving guidance in `core.json`, raised `rule.core.cross-project-continuity` from version 3 to 4, and preserved the clause ids, enforcement, replacements, self-contained clause, and other module content. The sanctioned module recorder recorded core version 30.
+- Added `TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt` with `t.Parallel()` first, the six required phrases, and the absent legacy phrase assertion.
+- Regenerated the declared Baseline catalog, profile, formatter golden, plan goldens, module record, repository guide, and setup manifest through their sanctioned commands.
+
+Focused checks:
+
+- `gofmt -d internal/baseline/message_reply_clause_test.go`: passed with no output.
+- `go test -count=1 -run '^TestTheReceivingClauseSendsOneCompletionNoticeOnlyWhenAMessageAsksForIt$' ./internal/baseline`: passed (`Go test: 1 passed in 1 packages`).
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`: passed.
+- `make baseline-digests`: passed and regenerated the declared derived files.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`: passed (`Baseline update: verified`).
+- Second managed-refresh preview, `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --format text`: passed (`Baseline update: current`, `File changes: 0`).
+- `git diff --check`: passed. Final changed paths are the assigned Task file, the requested Baseline source/test, and the sanctioned module/catalog/profile/formatter/guide/setup derived outputs.
+
+Acceptance evidence:
+
+1. The focused clause test passed with the sender request, one completion notice after release or merge, closure wording, Daemon-turn prohibition, old no-notice exception, and absent legacy phrase each checked in the rendered agent instructions. The final managed refresh reports current with zero file changes.
+2. The final source diff keeps the three message clause ids, mandatory enforcement, and replacement lists; `clause.core.messages-are-self-contained` is unchanged. Existing reply, precedence, replacement, and ai-memory guide tests were not edited; the Daemon-owned Verification remains not run here.
+3. The module recorder, `make baseline-digests`, final managed refresh, and idempotent preview all passed. The authored `## Verification` commands and repository settlement checks were not run because the Daemon owns them for this assigned turn.
+
+Handoff: implementation-ready work is recorded for Daemon Verification and settlement. Task status and the authored Verification section remain unchanged.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261113T045011Z_cf0fd882ba9fb7d9`
+- Source commit: `7626e6463b73d7c154b227191f97f3bb660b3cd7`
