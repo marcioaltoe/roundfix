@@ -171,11 +171,16 @@ was adopted when the merge adds a file of the same name under a Spec's
 `references/` folder whose frontmatter, read with
 `git show <merge commit>:<added path>`, records the adoption: `status: promoted`
 with `spec` naming that Spec for a Backlog Entry, or `status: done` or
-`status: partial` for a Finding. It was also adopted when a PRD's `## Sources`
-entry names it at the merge commit. When the merge adds a file of the same
-name whose frontmatter cannot be read or records another status, and no PRD's
-`## Sources` entry names the record, the event sends no notice for it, and the
-session names the record and the added file and asks the user.
+`status: partial` for a Finding. It was also adopted when a PRD that the
+merge adds or changes names it in its `## Sources` entry at the merge commit;
+list those PRDs with
+`git diff --name-only --diff-filter=AM <merge commit>^ <merge commit> -- <spec root>`,
+since every adoption writes the adopting Spec's `## Sources` in the same
+change, and a PRD the merge leaves untouched never adopts a record. When the
+merge adds a file of the same name whose frontmatter cannot be read or records
+another status, and no such PRD's `## Sources` entry names the record, the
+event sends no notice for it, and the session names the record and the added
+file and asks the user.
 
 A Notice Request's work is delivered at the event after which none of the
 Specs its `## Sources` entry names is still under the Spec root: while one of

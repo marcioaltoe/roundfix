@@ -365,6 +365,10 @@ func completionNoticeClassify(t *testing.T, root, mergeCommit, renames string, c
 	}
 	deleted := completionNoticeRun(t, root, renames, commands, "git diff --name-only --diff-filter=D", values)
 	added := completionNoticeRun(t, root, renames, commands, "git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>", values)
+	changedPRDs := make(map[string]bool)
+	for _, path := range completionNoticeRun(t, root, renames, commands, "git diff --name-only --diff-filter=AM <merge commit>^ <merge commit> -- <spec root>", values) {
+		changedPRDs[path] = true
+	}
 	addedSet := make(map[string]bool, len(added))
 	for _, path := range added {
 		addedSet[path] = true
@@ -390,7 +394,8 @@ func completionNoticeClassify(t *testing.T, root, mergeCommit, renames string, c
 			if _, path, ok := strings.Cut(match, ":"); ok {
 				addedPath = path
 			}
-			if !strings.HasSuffix(addedPath, "/_prd.md") && (!addedSet[addedPath] || filepath.Base(addedPath) != fileName) {
+			isChangedPRD := strings.HasSuffix(addedPath, "/_prd.md") && changedPRDs[addedPath]
+			if !isChangedPRD && (!addedSet[addedPath] || filepath.Base(addedPath) != fileName) {
 				continue
 			}
 			foundCopy = true
@@ -451,6 +456,8 @@ func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit s
 	write("docs/backlog/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nunconfirmed entry\n")
 	write("docs/backlog/2026-01-05-named-entry.md", "---\ntype: fix\nstatus: open\n---\nnamed entry\n")
 	write("docs/backlog/2026-01-06-existing-prd-entry.md", "---\ntype: fix\nstatus: open\n---\nentry an existing PRD adopts\n")
+	write("docs/backlog/2026-01-07-stale-mention-entry.md", "---\ntype: fix\nstatus: open\n---\nentry an untouched PRD mentions\n")
+	write("docs/specs/0003-untouched/_prd.md", "---\nspec: 0003-untouched\n---\n# Untouched\n\n## Sources\n\n- 2026-01-07-stale-mention-entry.md\n")
 	write("docs/specs/0002-existing/_prd.md", "---\nspec: 0002-existing\n---\n# Existing\n\n## Sources\n\n- an earlier source\n")
 	write("docs/findings/2026-01-03-adopted-finding.md", "---\nstatus: pending\n---\nold adopted finding\n")
 	gittest.Run(t, root, "add", "-A")
@@ -468,6 +475,7 @@ func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit s
 		remove("docs/backlog/2026-01-05-named-entry.md")
 		write("docs/specs/0002-existing/_prd.md", "---\nspec: 0002-existing\n---\n# Existing\n\n## Sources\n\n- an earlier source\n- 2026-01-06-existing-prd-entry.md\n")
 		remove("docs/backlog/2026-01-06-existing-prd-entry.md")
+		remove("docs/backlog/2026-01-07-stale-mention-entry.md")
 	}
 	if !mergeShape {
 		applyChange()
@@ -508,11 +516,13 @@ func TestACompletionNoticeSkipsARecordTheMergeAdopted(t *testing.T) {
 				"that listing, by file name and never by content, finds the copy of an adopted record",
 				"git show <merge commit>:<added path>",
 				"`status: promoted` with `spec` naming that Spec for a Backlog Entry, or `status: done` or `status: partial` for a Finding",
-				"It was also adopted when a PRD's `## Sources` entry names it at the merge commit.",
+				"It was also adopted when a PRD that the merge adds or changes names it in its `## Sources` entry at the merge commit",
+				"git diff --name-only --diff-filter=AM <merge commit>^ <merge commit> -- <spec root>",
+				"a PRD the merge leaves untouched never adopts a record",
 				"the event sends no notice for it, and the session names the record and the added file and asks the user",
 				"moves an adopted Backlog Entry or Finding into a Spec's `references/` folder",
 				"A listed record was adopted when the merge adds a file of the same name under a Spec's `references/` folder whose frontmatter",
-				"When the merge adds a file of the same name whose frontmatter cannot be read or records another status, and no PRD's `## Sources` entry names the record",
+				"When the merge adds a file of the same name whose frontmatter cannot be read or records another status, and no such PRD's `## Sources` entry names the record",
 			} {
 				if !strings.Contains(roundfixWhitespace(section), roundfixWhitespace(phrase)) {
 					t.Errorf("completion notices omits %q", phrase)
@@ -542,7 +552,7 @@ func TestACompletionNoticeSkipsARecordTheMergeAdopted(t *testing.T) {
 									"docs/backlog/2026-01-06-existing-prd-entry.md",
 									"docs/findings/2026-01-03-adopted-finding.md",
 								},
-								"closed": {"docs/backlog/2026-01-02-declined-entry.md"},
+								"closed": {"docs/backlog/2026-01-02-declined-entry.md", "docs/backlog/2026-01-07-stale-mention-entry.md"},
 								"ask":    {"docs/backlog/2026-01-04-unconfirmed-entry.md"},
 							}
 							for class, got := range map[string][]string{"adopted": adopted, "closed": closed, "ask": ask} {
