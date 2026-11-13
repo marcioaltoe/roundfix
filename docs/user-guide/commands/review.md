@@ -184,8 +184,11 @@ A findings record keeps the reviewer's original `findings` text and also lists
 each finding as `F1`, `F2`, and so on in `findingItems`. The reviewer prompt
 asks for one `- ` list item per finding. Start each item with `path:line` or
 `path:start-end`, optionally backticked, naming a line of the candidate diff.
-For a comma-listed anchor, only the first range counts. Describe what breaks
-in a clause beginning with `Failure:`. An older record without `findingItems` derives the same identities from its findings text when
+For a comma-listed anchor, only the first range counts. An anchor followed by
+a period or a semicolon reads as one followed by a space when a space or the end
+of the finding comes next, so an anchor may end a sentence; `path:2.5` and
+`path:2.md` are not anchors. Describe what breaks in a clause beginning with
+`Failure:`. An older record without `findingItems` derives the same identities from its findings text when
 Roundfix reads it.
 
 The prompt carries Delivery Conventions version

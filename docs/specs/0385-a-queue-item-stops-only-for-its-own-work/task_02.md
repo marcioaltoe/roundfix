@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0385-a-queue-item-stops-only-for-its-own-work
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -81,3 +81,53 @@ answers the Backlog Entry recorded by the operator on 2026-11-11
 - `_techspec.md` → Current behavior 5; API Contracts 3 and 7; Invariant 4; Declared breaks; Testing Approach; Build Order 2
 - ADR-0395
 - [The adopted Backlog Entry](references/2026-11-11-a-review-finding-anchored-as-path-line-and-a-period-blocks-the-item.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Starting-tree characterization, before changing the parser:
+
+- Added only the nine specified table rows and the specified review regression
+  test, then ran
+  `go test -count=1 -timeout 5m -v ./internal/cli -run '^TestReview(FindingAnchorParsesEachForm|ReadsAnAnchorFollowedBySentencePunctuation)$'`.
+  Exit 1: `path.go:2. Failure: broken`, `path.go:2; Failure: broken` and
+  `path.go:2.` each returned an empty anchor and `readable=false`.
+- The backticked range and tab-followed dotted filename also returned
+  `readable=false`. All existing table rows and the four new malformed-suffix
+  rows passed. The new review test returned exit 2, outcome `blocked`, reason
+  `findings name no file and line`.
+- The parser's post-match delimiter check rejects both punctuation runes;
+  the regular expression already captures the intended path and line range.
+
+Task status and declared Verification remain Daemon-owned.
+
+Implementation and focused evidence:
+
+- Acceptance criterion 1: only `parseReviewFindingAnchor`'s post-match
+  delimiter check changed. `.` and `;` require end-of-text or a following
+  `unicode.IsSpace` rune. The pattern, path capture, line conversion and
+  range validation are unchanged. The same focused command above now exits
+  0: all 24 parser rows pass, including the five newly readable forms with
+  their expected paths and lines. All 15 original rows remain unchanged.
+- Acceptance criterion 2: the four new negative rows (`path.go:2.5 broken`,
+  `path.go:2.md broken`, `path.go:2;x broken`, `path.go:2.. broken`) pass by
+  remaining unreadable.
+- Acceptance criterion 3: `TestReviewReadsAnAnchorFollowedBySentencePunctuation`
+  calls `t.Parallel()` first and uses `validationReviewFixture` with
+  `review.txt:2.` and backticked `review.txt:2` followed by `;`, each with
+  `Failure:`. It passes, asserting `exitRunFailed`, outcome `findings`, the
+  original findings text and two standing findings anchored to `review.txt`
+  line 2.
+- Inserted API Contract 7's first text verbatim (apart from line wrapping)
+  immediately after the comma-listed anchor sentence. A focused text check
+  confirmed the wording and location, and an original-row comparison confirmed
+  exactly nine additions without modifying an existing row.
+- No declared Verification, repository Verification, commit, push or PR was
+  run. The starting tree's only change was the Daemon's `task_02.md` status.
+  No other Task or Task Graph file was edited. No follow-up work identified.
+- Final implementation step, after the last guide edit:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 (`ok roundfix/internal/docscontract`, 0.475s), regenerating
+  `docs/references/behavior-surfaces.json` through its sanctioned recorder.
+  Only this evidence note was added afterwards.

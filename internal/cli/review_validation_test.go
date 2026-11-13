@@ -37,6 +37,15 @@ func TestReviewFindingAnchorParsesEachForm(t *testing.T) {
 		{" path.go:2 broken", "", 0, 0, false},
 		{"path.go:4-2 broken", "", 0, 0, false},
 		{"path.go:9999999999999999999999999999 broken", "", 0, 0, false},
+		{"path.go:2. Failure: broken", "path.go", 2, 2, true},
+		{"path.go:2; Failure: broken", "path.go", 2, 2, true},
+		{"`path.go:2-4`. broken", "path.go", 2, 4, true},
+		{"path.go:2.", "path.go", 2, 2, true},
+		{"notes.v2.md:3.\t", "notes.v2.md", 3, 3, true},
+		{"path.go:2.5 broken", "", 0, 0, false},
+		{"path.go:2.md broken", "", 0, 0, false},
+		{"path.go:2;x broken", "", 0, 0, false},
+		{"path.go:2.. broken", "", 0, 0, false},
 	}
 	for _, test := range tests {
 		t.Run(test.text, func(t *testing.T) {
@@ -162,6 +171,24 @@ func TestReviewDismissesAnUnanchoredFindingAndKeepsTheAnchoredOne(t *testing.T) 
 	disk, err := readReviewRecord(filepath.Join(reviewCheckoutDir(fixture.artifactDir, fixture.repository), reviewRecordFileName))
 	if err != nil || disk.FindingItems[0].Validation.Rule != "unanchored" {
 		t.Fatalf("persisted record=%+v err=%v", disk, err)
+	}
+}
+
+func TestReviewReadsAnAnchorFollowedBySentencePunctuation(t *testing.T) {
+	t.Parallel()
+	const findings = "- review.txt:2. Failure: broken.\n- `review.txt:2`; Failure: broken."
+	fixture, _ := validationReviewFixture(t, "Findings:\n"+findings)
+	code, record, stderr := fixture.run(t)
+	if code != exitRunFailed || record.Outcome != reviewOutcomeFindings || record.Findings != findings {
+		t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
+	}
+	if len(record.FindingItems) != 2 {
+		t.Fatalf("items=%+v", record.FindingItems)
+	}
+	for _, finding := range record.FindingItems {
+		if finding.Anchor == nil || *finding.Anchor != (reviewFindingAnchor{"review.txt", 2, 2}) || finding.Validation == nil || finding.Validation.Status != "stands" || finding.Validation.Reason != "anchored in the candidate diff" {
+			t.Fatalf("finding=%+v", finding)
+		}
 	}
 }
 
