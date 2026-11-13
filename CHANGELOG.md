@@ -2,6 +2,18 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.142.2] - 2026-11-13
+
+### A queue item stops only for its own work
+
+- **The Queue Owner no longer dies while its gate waits for the Machine Verification Capacity.** Before, the wait line was written to a nil writer and the detached owner panicked whenever another repository held the capacity, leaving the item at `gating` with no owner. The owner now logs the wait and continues. An owner that stops while an item can still advance keeps its record, so `deliver status` names it and says to run `roundfix deliver resume`.
+- A review finding anchored as `path:line` may end its sentence with a period; it no longer blocks the item as naming no file and line.
+- The review validator's sealed session holds a copy of the reviewed repository's `.ai-memory.toml` (a regular file of at most 64 KiB, read through the handle it inspected), so its runs are recorded under that repository instead of becoming a new ai-memory project each time. ADR-0395.
+
+### The Makefile follows the Go build cache set with go env
+
+- **`make` uses the Go build cache set with `go env -w GOCACHE` when it is an existing writable directory**, under the same 10240 MiB bound. `make` never creates it: when the disk that holds it is not mounted, it warns once and falls back to the shared temporary cache under a 2048 MiB bound. With nothing set, `make` chooses as before (ADR-0370). ADR-0394.
+
 ## [0.142.1] - 2026-11-12
 
 ### Roundfix reads a version 2 skills lock and keeps its version
