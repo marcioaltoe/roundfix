@@ -85,7 +85,7 @@ Deviations from the PRD: None.
 
 <!-- One line for each ADR listed under Active ADR obligations. State how the design
      relates to the alternatives that ADR rejected. Begin the relation with
-     Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
+     `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
 
 - ADR-NNNN: <relation to the rejected alternatives>
 

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0387-the-techspec-template-states-the-adr-alternatives-instruction-once
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -67,15 +67,15 @@ two or more words that the next line begins with.
 
 ## Subtasks
 
-- [ ] Delete the repeated prefix in the canonical template.
-- [ ] Sync the mirror and record the raised version.
-- [ ] Add the detector, its unit cases and the owned-skill guard.
+- [x] Delete the repeated prefix in the canonical template.
+- [x] Sync the mirror and record the raised version.
+- [x] Add the detector, its unit cases and the owned-skill guard.
 
 ## Acceptance Criteria
 
-- [ ] Both template copies state "Begin the relation with" once in the ADR Alternatives comment and keep both tokens.
-- [ ] `write-techspec` carries its next version, recorded, with the mirror equal to the canonical copy.
-- [ ] The guard passes on every owned skill, canonical and shipped, and each detector case passes.
+- [x] Both template copies state "Begin the relation with" once in the ADR Alternatives comment and keep both tokens.
+- [x] `write-techspec` carries its next version, recorded, with the mirror equal to the canonical copy.
+- [x] The guard passes on every owned skill, canonical and shipped, and each detector case passes.
 
 ## Context
 
@@ -103,3 +103,12 @@ two or more words that the next line begins with.
 
 - `_prd.md` → Sources; Goals; Core Features 1-3; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4
 - `_techspec.md` → Current behavior; Interfaces; API Contracts 1-4; Invariants 1-3; Sabotages; Testing Approach; Build Order 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, evidence-gate
+
+- Removed only the repeated `Begin the relation with` prefix from the canonical TechSpec template comment, synchronized the shipped mirror with `make skills-sync`, and confirmed both copies are byte-identical with one occurrence of the phrase while retaining both `not applicable` and `não se aplica` tokens.
+- Ran `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` successfully. The recorder raised both `write-techspec` copies to `0.0.20` and appended the generated digest record.
+- Added `repeatedLinePhrase`, `repeatedLinePhrases`, the six named detector cases, and the canonical/shipped owned-skill guard. Focused post-change check `go test ./skills -run '^(TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak|TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak|TestEveryOwnedSkillVersionIsRecorded|TestAuthorialSkillSync/write-techspec)$' -count=1 -v` passed with 11 tests.
+- The Task's declared `## Verification` commands were not run; the Daemon owns that verification and settlement.
