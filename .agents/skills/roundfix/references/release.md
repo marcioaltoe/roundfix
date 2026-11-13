@@ -162,8 +162,10 @@ setting, so the listing of deleted records names every adopted record too.
 The record read at `<merge commit>^` still carries the status it had before
 the merge, so it cannot tell an adopted record from a closed one. List the
 files the merge adds under the Spec root with
-`git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>`
-and the files there that mention a record with
+`git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>`:
+that listing, by file name and never by content, finds the copy of an adopted
+record. To find a PRD that names a record, list the files there that mention
+it with
 `git grep -l -F -e <file name> <merge commit> -- <spec root>`. A listed record
 was adopted when the merge adds a file of the same name under a Spec's
 `references/` folder whose frontmatter, read with

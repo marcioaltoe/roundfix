@@ -376,9 +376,16 @@ func completionNoticeClassify(t *testing.T, root, mergeCommit, renames string, c
 			"<spec root>":    "docs/specs",
 			"<file name>":    fileName,
 		})
+		candidates := make([]string, 0, len(added)+len(matches))
+		for _, path := range added {
+			if strings.Contains(path, "/references/") && filepath.Base(path) == fileName {
+				candidates = append(candidates, path)
+			}
+		}
+		candidates = append(candidates, matches...)
 		foundCopy := false
 		adoptedRecord := false
-		for _, match := range matches {
+		for _, match := range candidates {
 			addedPath := match
 			if _, path, ok := strings.Cut(match, ":"); ok {
 				addedPath = path
@@ -448,11 +455,11 @@ func completionNoticeFixture(t *testing.T, mergeShape bool) (root, mergeCommit s
 	gittest.Run(t, root, "commit", "-q", "-m", "base")
 
 	applyChange := func() {
-		write("docs/specs/0001-example/_prd.md", "---\nspec: 0001-example\n---\n# Example\n\n## Sources\n\n- 2026-01-01-adopted-entry.md\n- 2026-01-03-adopted-finding.md\n- 2026-01-05-named-entry.md\n")
+		write("docs/specs/0001-example/_prd.md", "---\nspec: 0001-example\n---\n# Example\n\n## Sources\n\n- 2026-01-01-adopted-entry.md\n- 2026-01-05-named-entry.md\n")
 		remove("docs/backlog/2026-01-01-adopted-entry.md")
 		write("docs/specs/0001-example/references/2026-01-01-adopted-entry.md", "---\ntype: fix\nstatus: promoted\nspec: 0001-example\n---\nsource record: 2026-01-01-adopted-entry.md\nnew adopted entry with changed content\n")
 		remove("docs/findings/2026-01-03-adopted-finding.md")
-		write("docs/specs/0001-example/references/2026-01-03-adopted-finding.md", "---\nstatus: done\n---\nsource record: 2026-01-03-adopted-finding.md\nnew adopted finding with changed content\n")
+		write("docs/specs/0001-example/references/2026-01-03-adopted-finding.md", "---\nstatus: done\n---\nnew adopted finding with changed content\n")
 		remove("docs/backlog/2026-01-04-unconfirmed-entry.md")
 		write("docs/specs/0001-example/references/2026-01-04-unconfirmed-entry.md", "---\ntype: fix\nstatus: open\n---\nsource record: 2026-01-04-unconfirmed-entry.md\nnew unconfirmed entry with changed content\n")
 		remove("docs/backlog/2026-01-02-declined-entry.md")
@@ -494,6 +501,7 @@ func TestACompletionNoticeSkipsARecordTheMergeAdopted(t *testing.T) {
 				"The record read at `<merge commit>^` still carries the status it had before the merge, so it cannot tell an adopted record from a closed one.",
 				"git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <spec root>",
 				"git grep -l -F -e <file name> <merge commit> -- <spec root>",
+				"that listing, by file name and never by content, finds the copy of an adopted record",
 				"git show <merge commit>:<added path>",
 				"`status: promoted` with `spec` naming that Spec for a Backlog Entry, or `status: done` or `status: partial` for a Finding",
 				"It was also adopted when a PRD's `## Sources` entry names it at the merge commit.",
