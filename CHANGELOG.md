@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.142.1] - 2026-11-12
+
+### Roundfix reads a version 2 skills lock and keeps its version
+
+- **`skills-lock.json` version 2, which the skills CLI 1.8 writes, is accepted.** Doctor, `baseline update`, the release plan's skills check and `skills install --target project` read versions 1 and 2. Every `computedHash` Roundfix writes or compares follows the hash algorithm of the version the file declares, and Roundfix never changes that version. Any other version is refused by name. For a refused version, Doctor's only next action is `roundfix upgrade` and `baseline update` says to run it and rerun the update, instead of naming the skills command that writes that version again. ADR-0393.
+
 ## [0.142.0] - 2026-11-12
 
 ### An older Roundfix refuses a repository a newer Roundfix wrote
