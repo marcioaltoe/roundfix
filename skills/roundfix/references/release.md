@@ -152,10 +152,13 @@ finds the requests due with Git alone:
   without being delivered, such as a declined Backlog Entry, the notice says
   so instead.
 
-A Spec delivers a Notice Request's work only when it is the last of the Specs
-its `## Sources` entry names: while another of them is still under the Spec
-root at the new tag or merge commit, the event sends nothing for that
-request, and the event that delivers the last of them sends its notice. A
+A Notice Request's work is delivered at the event after which none of the
+Specs its `## Sources` entry names is still under the Spec root: while one of
+them remains there at the new tag or merge commit, the event sends nothing for
+that request. Before sending, group the requests an event finds by the
+ai-memory message each one records: entries in several Specs that the same
+event archives and that record the same message are one request, which
+receives one notice naming every Spec that delivered it. A
 record whose disposition is `cancelled`, written by `roundfix cancel`, sends
 no notice: the cancel returns each adopted Backlog Entry and Finding to its
 folder, and the request stays there.
