@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-13
-spec: null
+spec: 0388-a-completion-notice-skips-a-record-the-merge-adopted
 reason: null
 ---
 
