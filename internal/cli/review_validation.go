@@ -37,8 +37,16 @@ func parseReviewFindingAnchor(text string) (reviewFindingAnchor, bool) {
 		return reviewFindingAnchor{}, false
 	}
 	if len(match[0]) < len(text) {
-		next, _ := utf8.DecodeRuneInString(text[len(match[0]):])
-		if !unicode.IsSpace(next) && next != ':' && next != ',' && next != ')' {
+		rest := text[len(match[0]):]
+		next, size := utf8.DecodeRuneInString(rest)
+		if next == '.' || next == ';' {
+			if size < len(rest) {
+				after, _ := utf8.DecodeRuneInString(rest[size:])
+				if !unicode.IsSpace(after) {
+					return reviewFindingAnchor{}, false
+				}
+			}
+		} else if !unicode.IsSpace(next) && next != ':' && next != ',' && next != ')' {
 			return reviewFindingAnchor{}, false
 		}
 	}

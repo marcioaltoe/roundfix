@@ -5,6 +5,7 @@
 package cli
 
 import (
+	"io"
 	"testing"
 
 	roundconfig "roundfix/internal/config"
@@ -14,7 +15,7 @@ func TestTheDeliveryEngineGetsTheReviewCapacity(t *testing.T) {
 	t.Parallel()
 	var loaded roundconfig.Loaded
 	loaded.Config.Delivery.ReviewConcurrency = 3
-	dependencies := commandDeliveryEngineDependencies(nil, loaded)
+	dependencies := commandDeliveryEngineDependencies(nil, loaded, io.Discard)
 	if dependencies.ReviewCapacity != 3 {
 		t.Fatalf("ReviewCapacity = %d, want 3", dependencies.ReviewCapacity)
 	}

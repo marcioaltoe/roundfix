@@ -4,6 +4,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -42,7 +43,7 @@ func TestCommandFreeSpaceNamesEachLocationBelowTheFloor(t *testing.T) {
 					return tc.available, nil
 				},
 			})
-			checker := commandDeliveryEngineDependencies(nil, loaded).FreeSpace
+			checker := commandDeliveryEngineDependencies(nil, loaded, io.Discard).FreeSpace
 			if checker == nil {
 				t.Fatal("command engine has no free-space checker")
 			}

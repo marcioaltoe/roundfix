@@ -333,6 +333,9 @@ func validateReviewConventions(ctx context.Context, repo reviewRepository, recor
 		return unavailable(fmt.Errorf("create sealed working directory: %w", err))
 	}
 	defer os.RemoveAll(workDir)
+	if err := agent.CopySealedIdentityMarker(repo.Root, workDir); err != nil {
+		return unavailable(err)
+	}
 	verdicts, err := runConventionValidator(ctx, sealed, runtime, workDir, asked)
 	if err != nil {
 		return unavailable(err)

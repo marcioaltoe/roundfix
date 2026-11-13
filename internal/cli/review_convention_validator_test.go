@@ -27,17 +27,28 @@ type conventionValidatorRunner struct {
 	sealedRequests []agent.SealedPromptRequest
 	sealedResult   agent.SealedPromptResult
 	sealedErr      error
+	sealedMarker   []byte
 }
 
 func (runner *conventionValidatorRunner) RunSealedPrompt(_ context.Context, request agent.SealedPromptRequest) (agent.SealedPromptResult, error) {
 	runner.sealedRequests = append(runner.sealedRequests, request)
 	info, err := os.Stat(request.WorkDir)
-	if err != nil || info.Mode().Perm() != 0700 {
+	if err != nil || !info.IsDir() || info.Mode().Perm() != 0700 {
 		return agent.SealedPromptResult{}, errors.New("workdir is not private")
 	}
 	entries, err := os.ReadDir(request.WorkDir)
-	if err != nil || len(entries) != 0 {
-		return agent.SealedPromptResult{}, errors.New("workdir is not empty")
+	if err != nil {
+		return agent.SealedPromptResult{}, err
+	}
+	runner.sealedMarker = nil
+	if len(entries) != 0 {
+		if len(entries) != 1 || entries[0].Name() != agent.SealedIdentityMarker || !entries[0].Type().IsRegular() {
+			return agent.SealedPromptResult{}, errors.New("workdir holds an entry other than a regular identity marker")
+		}
+		runner.sealedMarker, err = os.ReadFile(filepath.Join(request.WorkDir, agent.SealedIdentityMarker))
+		if err != nil {
+			return agent.SealedPromptResult{}, err
+		}
 	}
 	return runner.sealedResult, runner.sealedErr
 }
@@ -106,6 +117,36 @@ func validatorQuestions(t *testing.T, runner *conventionValidatorRunner) []valid
 		t.Fatalf("workdir not removed: %v", err)
 	}
 	return input.Findings
+}
+
+func TestTheReviewValidatorSessionCarriesTheRepositoryMarker(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"marker", "no marker"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			fixture, runner := validatorFixture(t, "- review.txt:2 A concern without a failure", validatorAnswer(validatorVerdict{"F1", "dismiss", "no-failure", "states no failure"}))
+			var want []byte
+			if name == "marker" {
+				want = []byte("workspace = 'default'\nproject = 'reviewed-example'\n")
+				validatorWrite(t, fixture.repository, agent.SealedIdentityMarker, string(want))
+				gittest.Run(t, fixture.repository, "add", agent.SealedIdentityMarker)
+				gittest.Run(t, fixture.repository, "commit", "-m", "test: repository identity")
+				fixture.headCommit = strings.TrimSpace(gittest.Run(t, fixture.repository, "rev-parse", "HEAD"))
+			}
+			code, record, stderr := fixture.run(t)
+			if code != exitOK || record.Outcome != reviewOutcomeFindingsDismissed || record.Validation.Validator != "ran" {
+				t.Fatalf("exit=%d record=%+v stderr=%q", code, record, stderr)
+			}
+			validatorQuestions(t, runner) // Checks one request, selected runtime and directory cleanup.
+			if !reflect.DeepEqual(runner.sealedMarker, want) {
+				t.Fatalf("sealed marker = %q, want %q", runner.sealedMarker, want)
+			}
+			relative, err := filepath.Rel(fixture.repository, runner.sealedRequests[0].WorkDir)
+			if err != nil || filepath.IsLocal(relative) {
+				t.Fatalf("sealed working directory is not outside the reviewed checkout: %q, %v", relative, err)
+			}
+		})
+	}
 }
 
 func TestReviewValidatorDismissesADaemonSettlementAsC2(t *testing.T) {

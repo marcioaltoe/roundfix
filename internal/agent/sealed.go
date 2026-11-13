@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,13 +16,19 @@ import (
 	"time"
 )
 
+// SealedIdentityMarker is the one file a sealed working directory may hold:
+// a copy of the repository's marker so session tooling keyed by the working
+// directory records the session under that repository.
+const SealedIdentityMarker = ".ai-memory.toml"
+
 const (
 	SealedPromptMaxInputBytes  = 2 << 20
 	SealedPromptMaxOutputBytes = 512 << 10
 	SealedPromptTimeout        = 5 * time.Minute
 
-	sealedACPStreamMaxBytes = 2 << 20
-	sealedSessionPrefix     = "roundfix-baseline-"
+	sealedACPStreamMaxBytes      = 2 << 20
+	sealedSessionPrefix          = "roundfix-baseline-"
+	sealedIdentityMarkerMaxBytes = 64 << 10
 )
 
 var (
@@ -261,7 +268,63 @@ func validateSealedPromptRequest(ctx context.Context, request SealedPromptReques
 		return fmt.Errorf("inspect sealed Agent working directory entries: %w", err)
 	}
 	if len(entries) != 0 {
-		return errors.New("sealed Agent working directory must be empty")
+		if len(entries) != 1 || entries[0].Name() != SealedIdentityMarker || !entries[0].Type().IsRegular() {
+			return errors.New("sealed Agent working directory must be empty apart from its .ai-memory.toml")
+		}
+	}
+	return nil
+}
+
+// CopySealedIdentityMarker copies only a bounded regular repository marker
+// into the private working directory, without interpreting its contents.
+func CopySealedIdentityMarker(repositoryRoot, workDir string) error {
+	return copySealedIdentityMarker(repositoryRoot, workDir, nil)
+}
+
+// copySealedIdentityMarker reads the marker through the handle it inspected:
+// the opened file must be the regular file the path named, and at most one
+// byte past the limit is read, so a concurrent replacement by a symbolic link
+// or growth past the limit copies nothing. afterInspect lets tests replace the
+// marker between the path inspection and the open.
+func copySealedIdentityMarker(repositoryRoot, workDir string, afterInspect func()) error {
+	marker := filepath.Join(repositoryRoot, SealedIdentityMarker)
+	info, err := os.Lstat(marker)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect sealed identity marker: %w", err)
+	}
+	if !info.Mode().IsRegular() || info.Size() > sealedIdentityMarkerMaxBytes {
+		return nil
+	}
+	if afterInspect != nil {
+		afterInspect()
+	}
+	file, err := os.Open(marker)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("open sealed identity marker: %w", err)
+	}
+	defer file.Close()
+	opened, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("inspect opened sealed identity marker: %w", err)
+	}
+	if !opened.Mode().IsRegular() || !os.SameFile(info, opened) {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(file, sealedIdentityMarkerMaxBytes+1))
+	if err != nil {
+		return fmt.Errorf("read sealed identity marker: %w", err)
+	}
+	if len(body) > sealedIdentityMarkerMaxBytes {
+		return nil
+	}
+	if err := os.WriteFile(filepath.Join(workDir, SealedIdentityMarker), body, 0o600); err != nil {
+		return fmt.Errorf("write sealed identity marker: %w", err)
 	}
 	return nil
 }
