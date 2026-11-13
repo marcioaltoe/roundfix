@@ -123,7 +123,9 @@ its record: the Backlog Entry or Finding that records the message, or the
 `## Sources` entry of the PRD that adopts it. A PRD that adopts a Backlog
 Entry or Finding holding a Notice Request carries the request into its
 `## Sources` entry, so the Spec's own record keeps it after the Backlog Entry
-or Finding is deleted.
+or Finding moves into the Spec. When the work of one Notice Request spans
+several Specs, each of their `## Sources` entries for it names the other
+Specs.
 
 Each notice falls due at one event, and the session that follows that event
 finds the requests due with Git alone:
@@ -131,41 +133,44 @@ finds the requests due with Git alone:
 - **A release is published.** List the Archive Records the release adds with
   `git diff --name-only --diff-filter=A <previous tag> <new tag> -- <archive root>`,
   read each record's Spec PRD at the record's `source_revision` with
-  `git show <source_revision>:<source>/_prd.md`, and send one notice to each
-  sending project whose message its `## Sources` records as a Notice Request:
-  what changed, the released version, and anything else the request asked the
-  notice to carry. A record whose disposition is `cancelled`, written by
-  `roundfix cancel`, delivered nothing, and its notice says that the work was
-  closed without being delivered.
-- **A Spec merges and releases nothing.** When the release plan for the range
-  that holds the merge answers `no_release`, or the maintainer decides that no
-  release carries it, read the Archive Records the merge adds with
+  `git show <source_revision>:<source>/_prd.md`, and send one notice for each
+  Notice Request its `## Sources` records: what changed, the released
+  version, and anything else the request asked the notice to carry.
+- **A change merges and releases nothing.** When the release plan for the
+  range that holds the merge answers `no_release`, or the maintainer decides
+  that no release carries it, read the Archive Records the merge adds with
   `git diff --name-only --diff-filter=A <merge commit>^ <merge commit> -- <archive root>`
   the same way and send each notice naming the merge commit instead of a
   version.
-- **A record is closed without a Spec.** List the Backlog Entries and Findings
-  the range deletes with
-  `git log --diff-filter=D --name-only --format=%H <previous tag>..<new tag> -- docs/backlog docs/findings`,
-  read each one before its deleting commit with
-  `git show <deleting commit>^:<path>`, and send one notice for each Notice
-  Request it holds: what was delivered and where when its work shipped without
-  a Spec, or, when the work is closed without being delivered, such as a
-  declined Backlog Entry, the notice says so instead. A record that a PRD's
-  `## Sources` names was adopted by that Spec, and its notice follows the Spec
-  instead.
+- **A record is closed without a Spec.** Every terminal Backlog Entry or
+  Finding is deleted in the change that records its disposition, so after
+  each merge list the records it deletes with
+  `git diff --name-only --diff-filter=D <merge commit>^ <merge commit> -- docs/backlog docs/findings`,
+  read each one with `git show <merge commit>^:<path>`, and send one notice
+  for each Notice Request it holds, naming the merge commit: what was
+  delivered when its work shipped without a Spec or, when the work is closed
+  without being delivered, such as a declined Backlog Entry, the notice says
+  so instead.
 
-When the work of one Notice Request spans several Specs, its notice follows
-the last of them.
+A Spec delivers a Notice Request's work only when it is the last of the Specs
+its `## Sources` entry names: while another of them is still under the Spec
+root at the new tag or merge commit, the event sends nothing for that
+request, and the event that delivers the last of them sends its notice. A
+record whose disposition is `cancelled`, written by `roundfix cancel`, sends
+no notice: the cancel returns each adopted Backlog Entry and Finding to its
+folder, and the request stays there.
 
 Send each notice once, from the session that follows the event and never
 from a Daemon-assigned Run, and only to the project that asked: a completion
-notice is not a release note. A tag, a merge commit and a deleting commit
-each occur once, so each request falls due at exactly one event, and a
-session sends notices only for the event it follows. Before sending, list the
-outbox with `memory_message_list` and `box: "outbox"`: a pending notice to the
-same project naming the same version, merge or closure was already sent, and
-is not sent again. A session that cannot tell whether a notice for that event
-already went, because an earlier session for the same event may have sent it
-and the recipient may have consumed it, asks the user instead of sending a
-second one. When the session exposes no ai-memory tools, put each notice's
-text in the report for the user to deliver.
+notice is not a release note. Each notice names the record that kept its
+request, so two requests from the same project receive two notices. A tag
+and a merge commit each occur once, so each request falls due at exactly one
+event, and a session sends notices only for the event it follows. Before
+sending, list the outbox with `memory_message_list` and `box: "outbox"`: a
+pending notice to the same project that names the same record and the same
+event was already sent, and is not sent again. A session that cannot tell
+whether a notice for that request already went, because an earlier session
+for the same event may have sent it and the recipient may have consumed it,
+asks the user instead of sending a second one. When the session exposes no
+ai-memory tools, put each notice's text in the report for the user to
+deliver.
