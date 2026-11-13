@@ -1,0 +1,15 @@
+diff --git a/skills/repeated_phrase_test.go b/skills/repeated_phrase_test.go
+index d2488fd..13802eb 100644
+--- a/skills/repeated_phrase_test.go
++++ b/skills/repeated_phrase_test.go
+@@ -24,8 +24,7 @@ func repeatedLinePhrases(text string) []repeatedLinePhrase {
+ 	for line := 0; line+1 < len(lines); line++ {
+ 		trailing := strings.Fields(lines[line])
+ 		leading := strings.Fields(lines[line+1])
+-		if len(trailing) == 0 || len(leading) == 0 ||
+-			strings.HasPrefix(trailing[0], "|") || strings.HasPrefix(leading[0], "|") {
++		if len(trailing) == 0 || len(leading) == 0 {
+ 			continue
+ 		}
+ 
+

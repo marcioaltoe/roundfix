@@ -1,0 +1,14 @@
+command: git diff-tree --no-commit-id --name-only -r 8f7db5c413c35d635e5acf4eb7a21cbab24410e2
+working directory: Run Worktree
+--- stdout ---
+.agents/skills/write-techspec/SKILL.md
+.agents/skills/write-techspec/references/techspec-template.md
+docs/specs/0387-the-techspec-template-states-the-adr-alternatives-instruction-once/task_01.md
+skills/repeated_phrase_test.go
+skills/testdata/owned-skill-versions.json
+skills/write-techspec/SKILL.md
+skills/write-techspec/references/techspec-template.md
+
+--- stderr ---
+
+exit: 0

@@ -1,0 +1,8 @@
+Report acceptance: exit 0.
+Matrix: 17 contiguous rows, 15 pass, 1 environment-blocked, 1 declared-blocked, no fail/skipped/pending.
+Typed inputs: all 17 rows; history rows include commit_range.
+Seeded auditor fields, authorization audit and mechanical skips preserved.
+Evidence: 39 UTF-8 text files; all links exist, none ignored. No binary evidence remains.
+Secret Pattern matches: 0 across all QA artifacts, using all 10 canonical expressions and the credential letter/digit rule.
+Tracked worktree diff: empty; untracked paths confined to this Spec QA directory.
+No commit, push, PR or Task-status mutation.

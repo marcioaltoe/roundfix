@@ -1,0 +1,115 @@
+from pathlib import Path
+import re, subprocess, os, tempfile
+ROOT=Path(__file__).resolve().parents[6]
+SPEC='0387-the-techspec-template-states-the-adr-alternatives-instruction-once'
+QA=ROOT/'docs/specs'/SPEC/'qa'
+REPORT=QA/'qa-report-2026-11-13.md'
+EV=REPORT.parent/'evidence/qa-report-2026-11-13'
+
+s=REPORT.read_text().split('\n## Findings\n',1)[0]
+assert s.count('verdict: pending')+s.count('verdict: partial')==1
+s=s.replace('verdict: pending','verdict: partial',1).replace('status: in-progress','status: closed',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 1',1).replace('rows_blocked_declared: 0','rows_blocked_declared: 1',1)
+if str((EV/'final-audit.py.txt').relative_to(ROOT)) not in s:
+ s=s.replace('user_flow_executables:\n','user_flow_executables:\n  - '+str((EV/'final-audit.py.txt').relative_to(ROOT))+'\n',1)
+s+='''
+## Findings
+
+None. All seven negative probes failed at their expected assertions; those deliberate failures are successful sabotage detections, not product findings.
+
+## Blocked and skipped
+
+Q10 is declared-blocked by the PRD's exact adopter-refresh criterion. Its satisfied-by is the operator's or Argus's first managed refresh after the release, recorded session evidence. No released adopter refresh was attempted: it requires a released binary and another repository, outside the gate's authority. Local installation is observed separately in Q05 and is not credited as that release journey.
+
+Q11 is environment-blocked because no Pull Request is open. Approved delivery authority, the Daemon's passing checks, the absence of PR threads and the audited candidate are recorded as pre-PR controls; Merge-Ready acceptance and review-artifact evidence do not exist yet. Opening the target-branch PR and obtaining its current-candidate review/checks belongs to subsequent authorized delivery.
+
+There are no finding-blocked or skipped matrix rows. Mechanical skips are preserved above and are not skipped QA rows. No frontend sweep is applicable to surfaces: [docs].
+
+## Coverage
+
+All five declared verification sources (Requirements 2, 3, 4, 7 and 12) were observed. Requirement 2: Q02 and Q06; Requirement 3: Q03 and Q05; Requirement 4: Q04 and Q05; Requirement 7: S01 through S07; Requirement 12: Q09. The non-waivable sources are repository Verification (Q01), both offline outside-evidence comparisons (Q06 and Q08), the exact PRD Unreachable Acceptance criterion (Q10) and the Pull Request row (Q11). Other numbered Requirements constrain execution; their build, exact Task Verification, install, characterization, glossary, isolated execution and offline archive steps are recorded in the associated evidence. No unrelated source was added to provenance.
+
+The six detector cases, both owned-skill guards, version record, mirror sync, four ADR marker/seed tests, full skills package and tagged docscontract suite passed. Both exact Task Verification commands passed. The Delivery Base emits exactly two expected reports, and seven of seven independently archived sabotage cases expose their named failures. Installed files survive fresh disk reads and equal the shipped artifacts. Read-only history and test results need no persistent application state.
+
+The scope audit preserves the Non-Goals: single repeated words, whole command lines and table rows remain exempt; no production Go, other skill, guide, ADR, CONTEXT, configuration, token-list or QA settlement change is shipped. No fresh live reading of Matt Might's page, released adopter refresh, real home state, external repository, provider or reviewer request was performed.
+
+Counts: 17 matrix rows; 15 pass; 0 fail; 1 environment-blocked; 0 finding-blocked; 1 declared-blocked; 0 skipped; 0 pending. Findings by impact: Blocks-Completion 0, Data-Loss 0, Trust-Damage 0, Friction 0, Cosmetic 0.
+
+## Outcome for the Archive Record
+
+The TechSpec template now states the ADR Alternatives instruction once, preserves both tokens, and ships as write-techspec 0.0.20; the new guard detects the reported defect and every declared sabotage. The offline archive preview exits 0, writes no archive and skips the judge; its candidate adopted reference is the Argus report, and no promotion was performed. This gate closes as a qualifying declared partial: the first managed adopter refresh after release remains unproven, and the pre-PR Pull Request row remains environment-blocked. See [archive preview](evidence/qa-report-2026-11-13/archive-plan.txt).
+
+## Artifact audit
+
+The final audit checks the single seeded report, contiguous Results rows, typed inputs, preserved auditor fields and mechanical skips, complete source coverage, exact blocked counts, local evidence links, file visibility, UTF-8 text evidence, repository Secret Patterns and unchanged tracked implementation. Read-only public report acceptance is recorded in [acceptance](evidence/qa-report-2026-11-13/report-acceptance.txt); detailed integrity results are in [integrity](evidence/qa-report-2026-11-13/report-integrity.txt).
+
+## Final verdict
+
+Qualifying declared partial: all 15 runnable rows pass without findings; the released adopter refresh and the absent Pull Request remain explicitly blocked. The Daemon owns QA settlement and any report commit; this session changed only the QA report and its evidence.
+'''
+REPORT.write_text(s)
+for name in ['report-acceptance','report-integrity']:
+ if not (EV/(name+'.txt')).exists(): (EV/(name+'.txt')).write_text('Audit artifact materialized; execution follows.\n')
+
+# The two CLI checks retain this Run's binary and isolated, credential-free homes.
+e=os.environ.copy(); e.update(GOPROXY='off',GOSUMDB='off')
+for k in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']: e.pop(k,None)
+for k in ['GOMODCACHE','GOCACHE']: e[k]=subprocess.check_output(['go','env',k],cwd=ROOT,env=e,text=True).strip()
+for name,args in [('archive-plan',['archive',SPEC,'--plan','--offline']),('report-acceptance',['qa-report','accept',str(REPORT.relative_to(ROOT))])]:
+ with tempfile.TemporaryDirectory(prefix='qa0387-home-') as h,tempfile.TemporaryDirectory(prefix='qa0387-tmp-') as t:
+  ce=e.copy(); ce.update(HOME=h,TMPDIR=t)
+  p=subprocess.run(['./bin/roundfix',*args],cwd=ROOT,env=ce,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  (EV/(name+'.txt')).write_text('command: ./bin/roundfix '+' '.join(args)+'\n--- stdout ---\n'+p.stdout+'\n--- stderr ---\n'+p.stderr+f'\nexit: {p.returncode}\n')
+  print(name,'exit',p.returncode,p.stderr,flush=True)
+  assert p.returncode==0
+
+# All checks below are read-only, except this pass's integrity summary itself.
+text=REPORT.read_text()
+assert text.startswith('---\n') and text.count('\n---\n')==1
+assert 'auditing_binary: "0.142.2 (9627a360, built 2026-11-13 04:00:39 -0300)"' in text
+assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in text
+for line in ['| consequent-fix commit order | consequent-fix declaration |','| QA Report structure | QA Report |','| QA evidence paths | QA Report |']: assert line in text
+assert not re.search(r'^evidence_snapshots:',text,re.M)
+result=text.split('## Results\n',1)[1].split('\n## ',1)[0].strip().splitlines()
+assert result[:2]==['| # | Status | Provenance |','| - | --- | --- |']
+rows=[line.split('|')[1:4] for line in result[2:]]
+assert len(rows)==17 and all(len(r)==3 for r in rows)
+assert sum(r[1].strip()=='pass' for r in rows)==15
+assert sum('blocked (environment:' in r[1] for r in rows)==1
+assert sum('blocked (declared:' in r[1] for r in rows)==1
+assert not any(r[1].strip() in ['pending','fail','skipped'] for r in rows)
+for rid,_,_ in rows:
+ block=text.split('### '+rid.strip()+'\n',1)[1].split('\n### ',1)[0]
+ assert block.count('```yaml\ninputs:\n')==1
+ assert '  - kind: repository_path\n' in block
+for rid in ['Q03','Q04','Q06','Q09','Q11']:
+ block=text.split('### '+rid+'\n',1)[1].split('\n### ',1)[0]
+ assert 'kind: commit_range' in block
+assert len(list(QA.glob('qa-report-*.md')))==1
+# Presence assertions for the artifacts that this audit has not written yet.
+(EV/'report-integrity.txt').write_text('Integrity audit in progress.\n')
+files=[f for f in QA.rglob('*') if f.is_file()]
+for f in files:
+ data=f.read_bytes(); assert b'\x00' not in data
+ data.decode('utf-8')
+ p=subprocess.run(['git','check-ignore','--quiet','--',str(f.relative_to(ROOT))],cwd=ROOT)
+ assert p.returncode==1, str(f)
+for link in re.findall(r'\]\(([^)]+)\)',text):
+ if '://' not in link: assert (REPORT.parent/link.split('#')[0]).is_file(),link
+# Parse the canonical scanner expressions without persisting their matched text.
+source=(ROOT/'internal/secretscan/patterns.go').read_text()
+patterns=re.findall(r'\{"([a-z-]+)", regexp.MustCompile\(`([^`]+)`\)\}',source)
+assert len(patterns)==10
+matches=[]
+for f in files:
+ for n,line in enumerate(f.read_text().splitlines(),1):
+  for kind,expression in patterns:
+   found=list(re.finditer(expression,line,flags=re.ASCII))
+   if kind=='credential-assignment': found=[m for m in found if re.search('[A-Za-z]',m.group(1)) and re.search('[0-9]',m.group(1))]
+   if found: matches.append(f'{f.relative_to(ROOT)}:{n}: {kind}'); break
+assert not matches,'\n'.join(matches)
+assert subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT,text=True)==''
+status=subprocess.check_output(['git','status','--porcelain','--untracked-files=all'],cwd=ROOT,text=True)
+assert all(line[3:].startswith('docs/specs/'+SPEC+'/qa/') for line in status.splitlines())
+summary='Report acceptance: exit 0.\nMatrix: 17 contiguous rows, 15 pass, 1 environment-blocked, 1 declared-blocked, no fail/skipped/pending.\nTyped inputs: all 17 rows; history rows include commit_range.\nSeeded auditor fields, authorization audit and mechanical skips preserved.\nEvidence: '+str(len(files)-1)+' UTF-8 text files; all links exist, none ignored. No binary evidence remains.\nSecret Pattern matches: 0 across all QA artifacts, using all 10 canonical expressions and the credential letter/digit rule.\nTracked worktree diff: empty; untracked paths confined to this Spec QA directory.\nNo commit, push, PR or Task-status mutation.\n'
+(EV/'report-integrity.txt').write_text(summary)
+print(summary)

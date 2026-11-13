@@ -1,0 +1,14 @@
+diff --git a/skills/repeated_phrase_test.go b/skills/repeated_phrase_test.go
+index d2488fd..cee81df 100644
+--- a/skills/repeated_phrase_test.go
++++ b/skills/repeated_phrase_test.go
+@@ -44,7 +44,7 @@ func repeatedLinePhrases(text string) []repeatedLinePhrase {
+ 			if !equal {
+ 				continue
+ 			}
+-			if size != len(trailing) && size != len(leading) {
++			if true {
+ 				phrases = append(phrases, repeatedLinePhrase{
+ 					Line:   line + 1,
+ 					Phrase: strings.Join(leading[:size], " "),
+

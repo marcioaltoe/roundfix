@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak$/^canonical$' ./skills
+working directory: fresh temporary repository
+--- stdout ---
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+    repeated_phrase_test.go:135: ../.agents/skills/write-techspec/references/techspec-template.md:87 ends with "Begin the relation with" and the next line begins with it; write the phrase once
+--- FAIL: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak (0.00s)
+    --- FAIL: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical (0.02s)
+FAIL
+FAIL	roundfix/skills	0.315s
+FAIL
+
+--- stderr ---
+
+exit: 1

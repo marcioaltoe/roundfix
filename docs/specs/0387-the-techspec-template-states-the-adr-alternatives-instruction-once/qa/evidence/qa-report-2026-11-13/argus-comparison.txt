@@ -1,0 +1,3 @@
+Origin: verbatim Argus message 01a1d159-62c4-7732-8632-65f2ddfba6fe, adopted reference under this Spec.
+Quoted observation: A linha 87 termina com ela e a linha 88 começa de novo com ela
+Observed Delivery Base failure: exactly two reports at line 87, canonical and shipped, each naming Begin the relation with. This independently reproduces the adopter measurement; no other repository was read.

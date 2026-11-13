@@ -1,0 +1,202 @@
+from pathlib import Path
+import subprocess, os, tempfile, tarfile, io, re, json, sys, shutil, shlex
+
+ROOT=Path(__file__).resolve().parents[6]
+SPEC='0387-the-techspec-template-states-the-adr-alternatives-instruction-once'
+SP=ROOT/'docs/specs'/SPEC
+REPORT=SP/'qa/qa-report-2026-11-13.md'
+EV=REPORT.parent/'evidence/qa-report-2026-11-13'
+HEAD='8f7db5c413c35d635e5acf4eb7a21cbab24410e2'
+BASE='9627a3605e441158e01b66d2711c1f271a01dad5'
+CAN='.agents/skills/write-techspec/references/techspec-template.md'
+MIR='skills/write-techspec/references/techspec-template.md'
+TEST='skills/repeated_phrase_test.go'
+UNIT='TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak'
+GUARD='TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak'
+KEYS=['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']
+ENV=os.environ.copy()
+ENV.update(GOPROXY='off',GOSUMDB='off')
+for k in KEYS: ENV.pop(k,None)
+
+def git(*args):
+ return subprocess.check_output(['git',*args],cwd=ROOT,env=ENV,text=True)
+
+def run(args, name, cwd=ROOT, env=ENV):
+ p=subprocess.run(args,cwd=cwd,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ (EV/(name+'.txt')).write_text('command: '+shlex.join(args)+'\nworking directory: '+('Run Worktree' if cwd==ROOT else 'fresh temporary repository')+'\n--- stdout ---\n'+p.stdout+'\n--- stderr ---\n'+p.stderr+f'\nexit: {p.returncode}\n')
+ print(name,'exit',p.returncode,flush=True)
+ return p
+
+def note(name,text):
+ (EV/(name+'.txt')).write_text(text+'\n')
+
+def row(rid,status,detail,files):
+ text=REPORT.read_text()
+ text,n=re.subn(r'(?m)^\| '+re.escape(rid)+r' \| [^|]+ \|', '| '+rid+' | '+status+' |',text)
+ assert n==1,(rid,n)
+ heading='### '+rid+'\n'; start=text.index(heading); end=text.find('\n### ',start+len(heading))
+ if end<0: end=len(text)
+ block=text[start:end]
+ assert 'Observation: pending.' in block,rid
+ block=block[:block.index('Observation: pending.')]+ 'Observation: '+detail+' Evidence: '+', '.join('['+f+'](evidence/qa-report-2026-11-13/'+f+')' for f in files)+'.\n'
+ REPORT.write_text(text[:start]+block+text[end:])
+ print(rid,status,flush=True)
+
+def cli_env(h,t):
+ e=ENV.copy(); e.update(HOME=h,TMPDIR=t)
+ for k in ['GOMODCACHE','GOCACHE']:
+  e[k]=subprocess.check_output(['go','env',k],cwd=ROOT,env=ENV,text=True).strip()
+ return e
+
+def archive(rev,dest):
+ data=subprocess.check_output(['git','archive',rev],cwd=ROOT,env=ENV)
+ with tarfile.open(fileobj=io.BytesIO(data)) as tf: tf.extractall(dest,filter='data')
+ subprocess.run(['git','init','--quiet'],cwd=dest,env=ENV,check=True)
+ subprocess.run(['git','add','--all'],cwd=dest,env=ENV,check=True)
+
+def versions(text):
+ vals=re.findall(r'^\s*(?:version):\s*([^\s]+)',text.split('---',2)[1],flags=re.M)
+ assert len(vals)==2,vals
+ return vals
+
+def corrected(data):
+ section=data.split('## ADR Alternatives',1)[1]
+ comment=section[section.index('<!--'):section.index('-->')+3]
+ norm=' '.join(comment.split())
+ expected='rejected. Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply.'
+ assert expected in norm,norm
+ assert norm.count('Begin the relation with')==1,norm
+ assert norm.index('not applicable')<norm.index('não se aplica')
+ return norm
+
+def positive():
+ row('Q01','pass','make build exited 0; the binary identifies the audited head with a dirty suffix from the seeded QA directory. Daemon supplied make verify-changed pass (exit 0), recorded without rerunning. Strict precondition exits 0.',['build.txt','version.txt','precondition.txt'])
+ named=[UNIT+'/'+s for s in ['doubled-instruction','two-words-in-another-case','one-repeated-word','command-listing','table-rows','single-instruction']]+[GUARD+'/canonical',GUARD+'/shipped','TestEveryOwnedSkillVersionIsRecorded','TestAuthorialSkillSync/write-techspec']
+ p=run(['go','test','-count=1','-timeout','20m','-v','./skills'],'positive-skills')
+ assert p.returncode==0
+ for n in named: assert re.search(r'--- PASS: '+re.escape(n)+r' \(',p.stdout),n
+ markers=['TestAPortugueseNotApplicableADRDrawsInNoCitingADR','TestAMarkerOutsideTheClosedListStillDrawsIn','TestANotApplicableADRDrawsInNoCitingADR','TestAnAppliedADRStillDrawsInItsCitingADR']
+ p=run(['go','test','-count=1','-timeout','20m','-v','-run','^('+'|'.join(markers)+')$','./internal/speccheck'],'positive-markers')
+ assert p.returncode==0
+ for n in markers: assert '--- PASS: '+n+' (' in p.stdout,n
+ p=run(['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','./internal/docscontract'],'positive-docscontract')
+ assert p.returncode==0
+ for n in ['TestGlossaryPhrasesAreDefinedTerms','TestTheSkillCoverageMapIsCurrent']: assert '--- PASS: '+n+' (' in p.stdout,n
+ task=(SP/'task_01.md').read_text().split('## Verification\n',1)[1].split('## References',1)[0]
+ commands=re.findall(r'^- `(.*)` — expected:',task,re.M); assert len(commands)==2
+ for i,c in enumerate(commands,1):
+  p=run(['/bin/sh','-c',c],f'task01-verification-{i}'); assert p.returncode==0
+ row('Q02','pass','All ten required skills cases, all four unchanged ADR marker/seed tests, both named glossary/coverage tests and the full tagged docscontract suite passed. Both exact task_01 Verification shell commands independently exited 0. The Spec declares no glossary term; no glossary mutation was required.',['positive-skills.txt','positive-markers.txt','positive-docscontract.txt','task01-verification-1.txt','task01-verification-2.txt'])
+
+def templates():
+ assert git('rev-parse','HEAD').strip()==HEAD
+ assert git('merge-base',HEAD,'refs/remotes/origin/HEAD').strip()==BASE
+ base=git('show',BASE+':'+CAN); head=git('show',HEAD+':'+CAN)
+ diff=git('diff','--no-ext-diff','--unified=3',BASE,HEAD,'--',CAN)
+ removed=[l[1:] for l in diff.splitlines() if l.startswith('-') and not l.startswith('---')]
+ added=[l[1:] for l in diff.splitlines() if l.startswith('+') and not l.startswith('+++')]
+ assert len(removed)==len(added)==1
+ assert removed[0].replace('Begin the relation with ','',1)==added[0]
+ iface=(SP/'_techspec.md').read_text().split('### Interfaces',1)[1].split('```markdown\n',1)[1].split('```',1)[0].splitlines()
+ assert added[0]==iface[-1]
+ assert base.replace(removed[0],added[0],1)==head
+ assert head==(ROOT/CAN).read_text()==(ROOT/MIR).read_text()
+ p=run(['cmp',CAN,MIR],'template-cmp'); assert p.returncode==0
+ norm=corrected(head)
+ note('template-diff',diff+'\nNormalized comment:\n'+norm+'\nExactly one removed line and one added line; added line equals TechSpec Interfaces byte for byte; all other bytes preserved. Delivery Base is merge-base(HEAD, origin/HEAD).')
+ row('Q03','pass','The canonical diff removes one line and adds one line equal to Interfaces; replacing that single line reconstructs HEAD byte for byte. cmp exits 0 for the mirror. The independently normalized comment has one instruction followed by both tokens in order.',['template-diff.txt','template-cmp.txt','task01-verification-2.txt'])
+ out=[]; hv=[]; bv=[]
+ for path in ['.agents/skills/write-techspec/SKILL.md','skills/write-techspec/SKILL.md']:
+  b=versions(git('show',BASE+':'+path)); h=versions(git('show',HEAD+':'+path)); bv+=b; hv+=h
+  out.append(path+'\n  Delivery Base metadata.version/version: '+', '.join(b)+'\n  Audited head metadata.version/version: '+', '.join(h))
+ assert len(set(hv))==1 and len(set(bv))==1
+ assert tuple(map(int,hv[0].split('.')))>tuple(map(int,bv[0].split('.')))
+ records=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())['skills']['write-techspec']
+ assert any(r['version']==hv[0] for r in records)
+ out.append('Recorded version '+hv[0]+' found; recorder digest consistency independently passes TestEveryOwnedSkillVersionIsRecorded.')
+ note('version-history','\n'.join(out))
+ row('Q04','pass','All four version fields rise from '+bv[0]+' to '+hv[0]+'. The head value is present in the generated record and its digest is validated by the positive suite.',['version-history.txt','positive-skills.txt'])
+
+def install():
+ with tempfile.TemporaryDirectory(prefix='qa0387-home-') as h, tempfile.TemporaryDirectory(prefix='qa0387-tmp-') as t, tempfile.TemporaryDirectory(prefix='qa0387-install-') as r:
+  e=cli_env(h,t); subprocess.run(['git','init','--quiet'],cwd=r,env=e,check=True)
+  # Executable is the absolute form of ./bin/roundfix from this Run Worktree, because cwd is the fresh target repository.
+  p=run([str(ROOT/'bin/roundfix'),'skills','install','--target','project'],'skills-install',cwd=Path(r),env=e)
+  assert p.returncode==0
+  f=Path(r)/'.agents/skills/write-techspec'
+  v=versions((f/'SKILL.md').read_text()); expect=versions((ROOT/'skills/write-techspec/SKILL.md').read_text()); assert v==expect
+  data=(f/'references/techspec-template.md').read_text(); norm=corrected(data)
+  assert data==(ROOT/MIR).read_text()
+  first=(f/'SKILL.md').read_bytes(); assert (f/'SKILL.md').read_bytes()==first
+  note('installed-artifact','Installed SKILL.md metadata.version/version: '+', '.join(v)+'\nFresh disk reads agree with the shipped head SKILL version and template bytes.\nNormalized installed comment:\n'+norm+'\nTemporary target, HOME and TMPDIR removed at row exit.')
+ row('Q05','pass','The built product installed the shipped skill into a fresh Git repository, exit 0. Fresh file reads show version 0.0.20 in both fields, a byte-identical shipped template, and the corrected instruction once with both tokens. Temporary directories were removed.',['skills-install.txt','installed-artifact.txt'])
+
+def negative():
+ with tempfile.TemporaryDirectory(prefix='qa0387-base-') as d:
+  d=Path(d); archive(BASE,d); (d/TEST).write_bytes((ROOT/TEST).read_bytes()); subprocess.run(['git','add',TEST],cwd=d,env=ENV,check=True)
+  p=run(['go','test','-count=1','-timeout','20m','-v','-run','^'+GUARD+'$','./skills'],'base-characterization',cwd=d)
+  assert p.returncode!=0
+  reports=re.findall(r'([^\s]+techspec-template.md):87 ends with "Begin the relation with" and the next line begins with it; write the phrase once',p.stdout)
+  assert sorted(reports)==sorted(['../'+CAN,MIR[len('skills/'):]]),reports
+  assert p.stdout.count('ends with "Begin the relation with"')==2
+  assert '--- FAIL: '+GUARD+'/canonical' in p.stdout and '--- FAIL: '+GUARD+'/shipped' in p.stdout
+  quote='A linha 87 termina com ela e a linha 88 começa de novo com ela'
+  assert quote in (SP/'references/2026-11-12-argus-the-techspec-template-repeats-begin-the-relation-with.md').read_text()
+  note('argus-comparison','Origin: verbatim Argus message 01a1d159-62c4-7732-8632-65f2ddfba6fe, adopted reference under this Spec.\nQuoted observation: '+quote+'\nObserved Delivery Base failure: exactly two reports at line 87, canonical and shipped, each naming Begin the relation with. This independently reproduces the adopter measurement; no other repository was read.')
+ row('Q06','pass','The head guard copied onto a fresh Delivery Base archive fails with exactly two diagnostic reports at line 87, one per template copy, both naming the Argus phrase. The adopted external report matches these observed failures.',['base-characterization.txt','argus-comparison.txt'])
+ for i in range(1,8):
+  with tempfile.TemporaryDirectory(prefix=f'qa0387-s{i}-') as d:
+   d=Path(d); archive(HEAD,d)
+   if i in [1,2]:
+    path=d/(CAN if i==1 else MIR); text=path.read_text(); lines=text.splitlines(keepends=True); assert lines[87].startswith('     `not applicable`'); lines[87]=lines[87].replace('     `not applicable`','     Begin the relation with `not applicable`',1); path.write_text(''.join(lines)); target=GUARD+('/canonical' if i==1 else '/shipped')
+   else:
+    path=d/TEST; text=path.read_text()
+    if i==3: old='if size != len(trailing) && size != len(leading) {'; new='if false {'; target=UNIT+'/doubled-instruction'
+    elif i==4: old='if size != len(trailing) && size != len(leading) {'; new='if true {'; target=UNIT+'/command-listing'
+    elif i==5: old='size >= 2'; new='size >= 1'; target=UNIT+'/one-repeated-word'
+    elif i==6: old='if len(trailing) == 0 || len(leading) == 0 ||\n\t\t\tstrings.HasPrefix(trailing[0], "|") || strings.HasPrefix(leading[0], "|") {'; new='if len(trailing) == 0 || len(leading) == 0 {'; target=UNIT+'/table-rows'
+    else: old='strings.ToLower(trailing[len(trailing)-size+word]) != strings.ToLower(leading[word])'; new='trailing[len(trailing)-size+word] != leading[word]'; target=UNIT+'/two-words-in-another-case'
+    assert text.count(old)==1,(i,old); path.write_text(text.replace(old,new,1))
+   patch=subprocess.check_output(['git','diff','--no-ext-diff'],cwd=d,env=ENV,text=True)
+   note(f'sabotage-{i}-patch',patch)
+   pattern='^'+target.split('/')[0]+'$/^'+target.split('/')[1]+'$'
+   if i==4: pattern='^('+UNIT+'|'+GUARD+')$'
+   p=run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,'./skills'],f'sabotage-{i}',cwd=d)
+   assert p.returncode!=0
+   assert '--- FAIL: '+target+' (' in p.stdout,(i,target,p.stdout)
+   if i==4:
+    for sub in ['canonical','shipped']: assert '--- FAIL: '+GUARD+'/'+sub+' (' in p.stdout
+   assert '[build failed]' not in p.stdout+p.stderr
+   row(f'S{i:02}','pass','A separate fresh audited-head archive received only sabotage '+str(i)+'. The named case '+target+' failed by assertion (exit 1), proving detection; no compile failure was credited.'+(' Both canonical and shipped guards also failed on command listings.' if i==4 else ''),[f'sabotage-{i}-patch.txt',f'sabotage-{i}.txt'])
+
+def history():
+ p=run(['git','diff-tree','--no-commit-id','--name-only','-r',HEAD],'task-changed-files'); assert p.returncode==0
+ changed=p.stdout.splitlines()
+ task=(SP/'task_01.md').read_text()
+ declared=re.findall(r'^- (?:interface|creates): `([^`]+)`',task,re.M)+[str((SP/'task_01.md').relative_to(ROOT))]
+ assert set(changed)<=set(declared),(changed,declared)
+ auth=(SP/'_authorization.md').read_text(); allowed=re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M)
+ governed=[f for f in changed if f.startswith('.agents/skills/') or f.startswith('skills/write-techspec/')]; assert set(governed)==set(allowed)
+ # The seeded mechanical authorization audit already covers this Task commit; no duplicate authorization command is run.
+ assert git('merge-base','--is-ancestor',BASE,HEAD)==''
+ prohibited={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md','docs/references/coverage-record.json','docs/references/behavior-surfaces.json'}
+ for f in changed:
+  assert f not in prohibited
+  assert not f.startswith(('.github/workflows/','internal/','docs/agents/','docs/user-guide/','docs/adr/'))
+  assert not (f.endswith('.go') and not f.endswith('_test.go'))
+  if f.startswith(('.agents/skills/','skills/')) and f not in [TEST,'skills/testdata/owned-skill-versions.json']: assert '/write-techspec/' in f
+  if f.endswith('SKILL.md'):
+   before=git('show',BASE+':'+f); after=git('show',HEAD+':'+f)
+   def settlement(t):
+    m=re.search(r'^### QA settlement\n(.*?)(?=^###? |\Z)',t,re.M|re.S); return m.group(0) if m else None
+   assert settlement(before)==settlement(after)
+   # SKILL.md changes only the two owned version fields.
+   assert re.sub(r'(?m)^(\s*version:) .+$',r'\1 <version>',before)==re.sub(r'(?m)^(\s*version:) .+$',r'\1 <version>',after)
+ assert git('diff','--name-only',HEAD,'--',':(exclude)docs/specs/'+SPEC+'/qa')==''
+ assert '\n## Glossary\n\nNone.' in (SP/'_prd.md').read_text()
+ note('scope-audit','Task range: '+BASE+'..'+HEAD+'\nChanged files:\n'+'\n'.join(changed)+'\n\nAll seven paths match declared interfaces/creates plus assigned task_01.md. The four measured Governed Paths exactly match the approved bounded list. The seeded mechanical authorization audit covers the Task commit and resolves the operative grant at '+BASE+'.\nNo prohibited configuration, production Go, CONTEXT, guide, ADR, other skill or QA settlement change. SKILL.md changes only version fields. No tracked worktree delta outside QA. Glossary: None.\nAuthoritative authorization content at Delivery Base:\n'+git('show',BASE+':'+str((SP/'_authorization.md').relative_to(ROOT))))
+ row('Q09','pass','diff-tree reports exactly the seven declared Task paths. The four Governed Paths match the grant; the seed already audits this Task commit. History preserves every prohibited surface, CONTEXT and all QA settlement text. SKILL.md content changes only its version fields. No glossary term was introduced.',['task-changed-files.txt','scope-audit.txt'])
+
+if __name__=='__main__':
+ assert ROOT.name=='run_20261113T070247Z_8907369019f37139',ROOT
+ globals()[sys.argv[1]]()

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0387-the-techspec-template-states-the-adr-alternatives-instruction-once
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,14 @@
+diff --git a/skills/repeated_phrase_test.go b/skills/repeated_phrase_test.go
+index d2488fd..09d138e 100644
+--- a/skills/repeated_phrase_test.go
++++ b/skills/repeated_phrase_test.go
+@@ -36,7 +36,7 @@ func repeatedLinePhrases(text string) []repeatedLinePhrase {
+ 		for size := limit; size >= 2; size-- {
+ 			equal := true
+ 			for word := 0; word < size; word++ {
+-				if strings.ToLower(trailing[len(trailing)-size+word]) != strings.ToLower(leading[word]) {
++				if trailing[len(trailing)-size+word] != leading[word] {
+ 					equal = false
+ 					break
+ 				}
+

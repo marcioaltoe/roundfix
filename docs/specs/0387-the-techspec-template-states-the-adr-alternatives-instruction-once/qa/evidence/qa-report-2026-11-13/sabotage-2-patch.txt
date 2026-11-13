@@ -1,0 +1,14 @@
+diff --git a/skills/write-techspec/references/techspec-template.md b/skills/write-techspec/references/techspec-template.md
+index e80a0ac..5ac3af3 100644
+--- a/skills/write-techspec/references/techspec-template.md
++++ b/skills/write-techspec/references/techspec-template.md
+@@ -85,7 +85,7 @@ Deviations from the PRD: None.
+ 
+ <!-- One line for each ADR listed under Active ADR obligations. State how the design
+      relates to the alternatives that ADR rejected. Begin the relation with
+-     `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
++     Begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese, for an ADR the Spec lists only to record why it does not apply. -->
+ 
+ - ADR-NNNN: <relation to the rejected alternatives>
+ 
+

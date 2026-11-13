@@ -1,0 +1,26 @@
+command: go test -count=1 -timeout 20m -v -run '^TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak$' ./skills
+working directory: fresh temporary repository
+--- stdout ---
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== NAME  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+    repeated_phrase_test.go:135: ../.agents/skills/write-techspec/references/techspec-template.md:87 ends with "Begin the relation with" and the next line begins with it; write the phrase once
+=== NAME  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+    repeated_phrase_test.go:135: write-techspec/references/techspec-template.md:87 ends with "Begin the relation with" and the next line begins with it; write the phrase once
+--- FAIL: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak (0.00s)
+    --- FAIL: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical (0.02s)
+    --- FAIL: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped (0.02s)
+FAIL
+FAIL	roundfix/skills	0.356s
+FAIL
+
+--- stderr ---
+
+exit: 1

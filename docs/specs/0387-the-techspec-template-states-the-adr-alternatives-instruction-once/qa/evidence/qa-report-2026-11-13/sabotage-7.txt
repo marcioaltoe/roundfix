@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak$/^two-words-in-another-case$' ./skills
+working directory: fresh temporary repository
+--- stdout ---
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+    repeated_phrase_test.go:101: repeatedLinePhrases() = []skills.repeatedLinePhrase(nil), want []skills.repeatedLinePhrase{skills.repeatedLinePhrase{Line:1, Phrase:"the task"}}
+--- FAIL: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak (0.00s)
+    --- FAIL: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case (0.00s)
+FAIL
+FAIL	roundfix/skills	0.292s
+FAIL
+
+--- stderr ---
+
+exit: 1
