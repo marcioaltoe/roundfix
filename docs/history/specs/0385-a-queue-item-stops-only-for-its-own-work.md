@@ -32,9 +32,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "847"
 type: fix
 ---
 
 # A queue item stops only for its own work
 
-The gate records a qualifying declared partial: all runnable rows passed, all ten sabotages exposed the expected regression, and the only unmet rows are the declared post-release ai-memory attribution and the pre-PR Pull Request row. The Archive Record must retain that attribution as unproven. The offline archive plan listed the Spec's core, QA evidence and four adopted source candidates with judge advice skipped; no archive or promotion was performed.
+The gate records a qualifying declared partial: all runnable rows passed, all ten sabotages exposed the expected regression, and the only unmet rows are the declared post-release ai-memory attribution and the pre-PR Pull Request row. The Archive Record must retain that attribution as unproven.
