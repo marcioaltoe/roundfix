@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.143.0] - 2026-11-13
+
+### A message that asks for a completion notice receives one
+
+- **A Cross-project Message that asks to be told when its work is done (a Notice Request) now receives one completion notice.** Every other message that declares no blocked work still receives no acknowledgment, adoption notice or completion notice. The Baseline's cross-project continuity rule says so in its sender and receiving clauses, which adopters receive at their next `roundfix baseline update`. The Roundfix skill's follow-up mode keeps the request in the record of the message, and its release reference says when the notice falls due (the release that carries the work, or the merge when it releases nothing, or the change that closes the record without delivering it), how a session finds each request with Git, and how it sends one notice per request, never from a Daemon-assigned Run. ADR-0396 amends ADR-0390, ADR-0383 and ADR-0330.
+
+### The TechSpec template states the ADR Alternatives instruction once
+
+- The `write-techspec` template's `## ADR Alternatives` comment no longer repeats "Begin the relation with" across two lines. Adopters receive the correction with the skill's new version at their next `roundfix baseline update`, and a contract test now fails when a line of any Roundfix-owned skill ends with a phrase of two or more words that the next line begins with.
+
 ## [0.142.2] - 2026-11-13
 
 ### A queue item stops only for its own work
