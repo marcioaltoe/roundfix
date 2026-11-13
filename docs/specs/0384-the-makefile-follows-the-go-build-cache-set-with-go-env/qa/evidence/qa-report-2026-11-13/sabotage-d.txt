@@ -1,0 +1,47 @@
+command: go test -count=1 -timeout 20m -v -run ^TestMakeFollowsTheGoBuildCacheSetWithGoEnv$ ./internal/verifyselect
+stdout:
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== NAME  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+    build_cache_go_env_makefile_test.go:147: invocations = [["test" "-parallel" "16" "./..." "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvset_and_writable3007484242/001/external disk/cache/go-build"]], want [["run" "-buildvcs=false" "./cmd/gocache-bound" "-dir" "<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvset_and_writable3007484242/001/external disk/cache/go-build" "-max-mb" "10240" "-idle" "2h" "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvset_and_writable3007484242/001/external disk/cache/go-build"] ["test" "-parallel" "16" "./..." "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvset_and_writable3007484242/001/external disk/cache/go-build"]]
+        stdout: <session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnv825802900/001/go-env-stub test -parallel 16 ./...
+        
+        stderr: 
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+--- FAIL: TestMakeFollowsTheGoBuildCacheSetWithGoEnv (0.11s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins (0.24s)
+    --- FAIL: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable (0.29s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set (0.30s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file (0.33s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only (0.33s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted (0.10s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound (0.06s)
+FAIL
+suiteguard: guard cost: measured 3121 paths; fingerprint took 148.750375ms before and 147.4075ms after
+FAIL	roundfix/internal/verifyselect	0.986s
+FAIL
+
+stderr:
+
+exit: 1

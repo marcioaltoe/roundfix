@@ -1,0 +1,13 @@
+command: tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- '**Build Cache Bound**: The size, 10,240 MiB by default' || { echo 'CONTEXT.md lost the Build Cache Bound entry' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qE -- 'when the cache set with .go env. is unusable, the Makefile warns and the default is 2,048 MiB' || { echo 'CONTEXT.md lacks the cache set with go env' >&2; exit 1; }; tr -s '[:space:]' ' ' < README.md | grep -qF -- 'it warns once and falls back to' || { echo 'README.md lacks the fallback' >&2; exit 1; }
+stdout:
+
+stderr:
+
+exit: 0
+
+command: tr -s '[:space:]' ' ' < docs/agents/specific-repository.md | grep -qE -- 'when that cache is set but unusable, .make. warns once and uses the shared cache below with a 2048 MiB default bound' || { echo 'the repository rule lacks the fallback' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md | grep -qF -- '**Amended by [ADR-0394](0394-the-makefile-follows-the-go-build-cache-set-with-go-env-and-falls-back-small.md) (2026-11-12).**' || { echo 'ADR-0370 lacks the notice' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md | grep -qF -- 'ADR-0394 takes this option for a cache set with' || { echo 'ADR-0370 lacks the option note' >&2; exit 1; }
+stdout:
+
+stderr:
+
+exit: 0

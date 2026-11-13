@@ -1,0 +1,41 @@
+command: go test -count=1 -timeout 20m -v -run ^TestMakeFollowsTheGoBuildCacheSetWithGoEnv$ ./internal/verifyselect
+stdout:
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+--- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv (0.14s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins (0.23s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable (0.28s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound (0.28s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set (0.29s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only (0.31s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file (0.10s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted (0.09s)
+PASS
+suiteguard: guard cost: measured 3129 paths; fingerprint took 611.339667ms before and 140.277708ms after
+ok  	roundfix/internal/verifyselect	1.672s
+
+stderr:
+
+exit: 0

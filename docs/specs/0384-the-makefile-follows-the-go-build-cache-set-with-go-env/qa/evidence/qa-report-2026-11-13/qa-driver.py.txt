@@ -1,0 +1,210 @@
+import io, json, os, pathlib, re, shutil, subprocess, sys, tarfile, tempfile
+ROOT=pathlib.Path(__file__).resolve().parents[6]
+SPEC='0384-the-makefile-follows-the-go-build-cache-set-with-go-env'
+SP=ROOT/'docs/specs'/SPEC
+E=SP/'qa/evidence/qa-report-2026-11-13'
+REPORT=SP/'qa/qa-report-2026-11-13.md'
+HEAD='982d498c1b73eca98a9c6abf5f16bb69c5fbe832'
+BASE='32b39e5403226cc3f56fa278db3ba158cd44d707'
+TEST='TestMakeFollowsTheGoBuildCacheSetWithGoEnv'
+CASES=['set_and_writable','set_and_not_mounted','set_and_read-only','set_to_a_file','set_with_a_bound','environment_wins','nothing_set']
+ENV=os.environ.copy()
+for k in list(ENV):
+    if k.endswith(('API_KEY','TOKEN','SECRET','PASSWORD')): ENV.pop(k,None)
+ENV.update(GOPROXY='off',GOSUMDB='off')
+
+def run(args,cwd=ROOT,env=None):
+    print('RUN', ' '.join(map(str,args)),flush=True)
+    p=subprocess.run(args,cwd=cwd,env=env or ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    print('EXIT',p.returncode,flush=True)
+    return p
+
+def keep(name,p,args):
+    text='command: '+' '.join(map(str,args))+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+    # Host paths are not needed to reproduce fixture results.
+    for key in ['GOCACHE','GOMODCACHE','TMPDIR']:
+        value=os.environ.get(key)
+        if value: text=text.replace(value,'<session '+key+'>')
+    (E/name).write_text(text)
+
+def note(row,text,status=None):
+    s=REPORT.read_text(); marker='### '+row+'\n'
+    start=s.index(marker)+len(marker); nxt=s.find('\n### ',start)
+    if nxt<0: nxt=len(s)
+    s=s[:nxt]+'\n'+text+'\n'+s[nxt:]
+    if status:
+        s=re.sub(r'^\| '+re.escape(row)+r' \| pending \|',lambda _: '| '+row+' | '+status+' |',s,flags=re.M)
+    REPORT.write_text(s)
+
+def git(*args,cwd=ROOT):
+    p=run(['git',*args],cwd); assert p.returncode==0,p.stderr
+    return p.stdout
+
+def unpack(rev,dir):
+    b=subprocess.check_output(['git','archive',rev],cwd=ROOT)
+    with tarfile.open(fileobj=io.BytesIO(b)) as tar: tar.extractall(dir,filter='data')
+
+def init_fixture(d):
+    git('init','-q',cwd=d); git('add','-A',cwd=d)
+
+def positive():
+    note('Q01','Observed: supplied make verify-changed pass (exit 0); fresh make build, --version and strict precondition all exited 0. [Build](evidence/qa-report-2026-11-13/build.txt), [version](evidence/qa-report-2026-11-13/version.txt), [precondition](evidence/qa-report-2026-11-13/precondition.txt).','pass')
+    cmds=[('cache-cases.txt',['go','test','-count=1','-timeout','20m','-v','-run','^'+TEST+'$','./internal/verifyselect']),('verifyselect.txt',['go','test','-count=1','-timeout','20m','./internal/verifyselect']),('docscontract.txt',['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract']),('manifest.txt',['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract','-run','^TestTheSetupManifestIsCurrent$']),('windows-vet.txt',['go','vet','./internal/verifyselect'])]
+    for filename,args in cmds:
+        env=ENV.copy()
+        if filename=='windows-vet.txt': env['GOOS']='windows'
+        p=run(args,env=env);keep(filename,p,args)
+        if p.returncode: note('Q02','Failure: ['+filename+'](evidence/qa-report-2026-11-13/'+filename+').','fail'); return False
+        if filename=='cache-cases.txt':
+            for case in CASES: assert '--- PASS: '+TEST+'/'+case+' ' in p.stdout,case
+    with tempfile.TemporaryDirectory(prefix='roundfix-qa-base-') as tmp:
+        d=pathlib.Path(tmp);unpack(BASE,d)
+        rel='internal/verifyselect/build_cache_go_env_makefile_test.go'
+        shutil.copyfile(ROOT/rel,d/rel);init_fixture(d)
+        args=cmds[0][1]; p=run(args,cwd=d);keep('delivery-base.txt',p,args)
+        out=p.stdout+p.stderr
+        assert p.returncode!=0
+        for case in CASES[:5]: assert '--- FAIL: '+TEST+'/'+case+' ' in out,case
+        for case in CASES[5:]: assert '--- PASS: '+TEST+'/'+case+' ' in out,case
+        assert 'panic:' not in out
+    with tempfile.TemporaryDirectory(prefix='roundfix-qa-warning-') as tmp:
+        d=pathlib.Path(tmp); (d/'Volumes').mkdir();(d/'tmp').mkdir()
+        cache=d/'Volumes/missing/cache/go-build';(d/'go.env').write_text('GOCACHE='+str(cache)+'\n')
+        env=ENV.copy();env.pop('GOCACHE',None);env.update(GOENV=str(d/'go.env'),TMPDIR=str(d/'tmp')+'/',GOCACHE_BOUND_MB='0')
+        args=['make','--no-print-directory','-f',str(ROOT/'Makefile'),'help']
+        p=run(args,cwd=d,env=env);keep('warning.txt',p,args)
+        expected=f'gocache: warning: GOCACHE set with go env ({cache}) is not a writable directory; using {d}/tmp/roundfix-go-build-{os.getuid()} with a 2048 MiB default bound\n'
+        assert p.returncode==0 and p.stderr==expected,repr(p.stderr)
+        assert not (d/'Volumes/missing').exists()
+        with (E/'warning.txt').open('a') as f:f.write('Checks: exactly one expected stderr line; Volumes/missing absent after make; fixture removed on exit.\n')
+    # Execute all non-Go documentation assertions from the two Task 02 Verification commands.
+    task=(SP/'task_02.md').read_text(); block=task.split('## Verification\n',1)[1].split('## References',1)[0]
+    commands=[]
+    for line in block.splitlines():
+        if line.startswith('- `'):
+            command=line[3:].split('` — expected:',1)[0]
+            command=command.split('; go test -count=1',1)[0]
+            commands.append(command)
+    assert len(commands)==2
+    text=[]
+    for command in commands:
+        p=run(['/bin/sh','-c',command]);text.append('command: '+command+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode))
+        assert p.returncode==0
+    (E/'documentation-assertions.txt').write_text('\n\n'.join(text)+'\n')
+    assert 'env -changed GOCACHE' in (ROOT/'Makefile').read_text()
+    note('Q02','Observed: all seven new subtests passed, the entire verifyselect package and docscontract passed, the named setup-manifest check passed, and GOOS=windows go vet passed. The five changed baseline cases failed on the actual Delivery Base; nothing_set and environment_wins passed there and at the audited head. The separate make help probe produced exactly the warning and left Volumes/missing absent. Both Task 02 documentation assertion commands passed. Every test named by the non-QA Verification sections was exercised; the repository Verification was not repeated. Evidence: [seven cases](evidence/qa-report-2026-11-13/cache-cases.txt), [package](evidence/qa-report-2026-11-13/verifyselect.txt), [documentation contracts](evidence/qa-report-2026-11-13/docscontract.txt), [manifest](evidence/qa-report-2026-11-13/manifest.txt), [Windows vet](evidence/qa-report-2026-11-13/windows-vet.txt), [Delivery Base](evidence/qa-report-2026-11-13/delivery-base.txt), [warning and filesystem check](evidence/qa-report-2026-11-13/warning.txt), [documentation assertions](evidence/qa-report-2026-11-13/documentation-assertions.txt).','pass')
+    return True
+
+def sabotage():
+    original=(ROOT/'Makefile').read_text()
+    first='[ -d "$$cache" ] && probe=$$(mktemp "$$cache/.write-test.XXXXXX" 2>/dev/null) && rm -f "$$probe" 2>/dev/null'
+    mutations=[('a','[ -d "$$cache" ]','mkdir -p "$$cache" 2>/dev/null',['set_and_not_mounted']),('b','printf 2048)','printf 10240)',CASES[1:4]),('c',"printf 'gocache: warning:"+original.split("printf 'gocache: warning:",1)[1].split('; \\\n',1)[0],':',CASES[1:4]),('d','GOCACHE := $(GOCACHE_FROM_GO_ENV)\nGOCACHE_BOUND_MB ?= 10240','GOCACHE := $(GOCACHE_FROM_GO_ENV)\nGOCACHE_BOUND_MB ?= 0',['set_and_writable']),('e',first,'[ -d "$$cache" ]',['set_and_read-only']),('f','ifeq ($(origin GOCACHE),undefined)','ifneq ($(origin GOCACHE),command line)',['environment_wins'])]
+    for letter,old,new,expected in mutations:
+        row='Q06'+letter
+        assert old in original,(letter,old)
+        with tempfile.TemporaryDirectory(prefix='roundfix-qa-sabotage-'+letter+'-') as tmp:
+            d=pathlib.Path(tmp);unpack(HEAD,d);init_fixture(d)
+            (d/'Makefile').write_text(original.replace(old,new,1))
+            changed=git('diff','--name-only',cwd=d).splitlines();assert changed==['Makefile'],changed
+            patch=git('diff','--','Makefile',cwd=d)
+            args=['go','test','-count=1','-timeout','20m','-v','-run','^'+TEST+'$','./internal/verifyselect']
+            p=run(args,cwd=d);keep('sabotage-'+letter+'.txt',p,args)
+            (E/('sabotage-'+letter+'.patch.txt')).write_text(patch)
+            out=p.stdout+p.stderr
+            ok=p.returncode!=0 and 'panic:' not in out and all('--- FAIL: '+TEST+'/'+case+' ' in out for case in expected)
+            status='pass' if ok else 'fail'
+            note(row,'Observed: mutant test exit '+str(p.returncode)+'; required failures: '+', '.join(expected)+'. Only Makefile changed in this independent archive. Transcript inspected for the expected assertion failures and absence of panic. [Transcript](evidence/qa-report-2026-11-13/sabotage-'+letter+'.txt), [mutation](evidence/qa-report-2026-11-13/sabotage-'+letter+'.patch.txt).',status)
+            print(row,status,flush=True)
+
+if __name__=='__main__':
+    assert ROOT.joinpath('Makefile').exists(),ROOT
+    if sys.argv[1]=='positive': positive()
+    elif sys.argv[1]=='sabotage': sabotage()
+
+def close_report():
+    prd=(SP/'_prd.md').read_text()
+    message=(SP/'references/2026-11-12-gesttione-drive-the-roundfix-go-build-cache-fills-the-mini-internal-disk.md').read_text()
+    criterion=' '.join(re.search(r'## Unreachable Acceptance\n\n- criterion: (.*?)\n  reason:',prd,re.S).group(1).split())
+    cases=(E/'cache-cases.txt').read_text(); warning=(E/'warning.txt').read_text(); base=(E/'delivery-base.txt').read_text()
+    assert '01a1d0ad-dd6f-7bb0-ad09-8a1e38911657' in message and '10G' in message and '66 GiB' in message
+    assert 'The -changed' in prd and 'Must be' in prd and 'absolute path.' in prd
+    assert '2026-10-12' in prd and 'negou' in prd
+    assert all('--- PASS: '+TEST+'/'+c+' ' in cases for c in CASES)
+    assert 'Checks: exactly one expected stderr line; Volumes/missing absent' in warning
+    outside='''Outside evidence concordance (read only, no network or Secondbrain access)
+
+1. gesttione-drive message 01a1d0ad-dd6f-7bb0-ad09-8a1e38911657, measured 2026-11-12, copied with attribution in references/. The independently measured temporary cache was 10 GB while Go had a configured cache on the external volume; disk free space was 66 GiB. The copied source is historical evidence, not a live measurement of this gate. The Delivery Base run reproduces the causal disagreement: set_and_writable ignores the configured cache and fails; the audited run passes that case and asserts a 10240 MiB bound, so the Makefile now follows the operator's stored setting.
+
+2. Published Go command documentation, cited in PRD Acceptance evidence, checked during authoring 2026-11-12. Source: https://pkg.go.dev/cmd/go . The quoted -changed contract compares the effective setting with an empty environment and no prior -w setting; GOCACHE must be an absolute path. The Makefile asks env -changed GOCACHE before reading env GOCACHE, rejects non-absolute paths and only uses an existing directory after a removable probe. Real Go env is used behind the recording stub. The seven observed audited cases pass, including the unchanged empty GOENV and caller override cases. No live web fetch was made.
+
+3. Secondbrain digest wiki/sources/digest-roundfix-pid-reutilizado-e-cache-go-no-sandbox-2026-10-12.md, dated 2026-10-12, quoted in PRD Acceptance evidence: the earlier sandbox permitted cwd/TMPDIR and denied the home build cache. This supports testing writability rather than assuming a configured cache is writable. The independently executed read-only case falls back at 2048, and the separate make help probe warns once without creating the missing mount path. The digest was not reopened in another repository. This historical evidence does not prove post-merge Mac mini writes, which remain declared unreachable.
+
+Concordance: source facts, current Makefile boundary and observed outputs agree. No outside row depends only on reading a file. All comparisons are bounded to the adopted source text and this pass's observations.
+'''
+    (E/'outside-evidence.txt').write_text(outside)
+    note('Q08','Observed: the independently measured message of 2026-11-12 explains the defect reproduced on the Delivery Base; the published Go documentation cited on 2026-11-12 supports the two env queries and absolute-path check; the quoted 2026-10-12 sandbox digest supports the writability check and small fallback. Compared each source against the real Makefile results, including the read-only and separate warning probes. No external checkout or service was read. [Source-to-observation concordance](evidence/qa-report-2026-11-13/outside-evidence.txt).','pass')
+    reason="blocked (environment: the Mac mini's Go environment file, its external disk and the operator's deletion after the merge required)"
+    # Task 03 Requirement 9 prescribes environmental wording but explicitly counts
+    # this single operator-only declaration in rows_blocked_declared.
+    s=REPORT.read_text().replace('| Q09 | pending | PRD Unreachable Acceptance: '+criterion+' |','| Q09 | pending | PRD Unreachable Acceptance: '+criterion+'; declared: '+criterion+' |')
+    REPORT.write_text(s)
+    note('Q09','Declared criterion: '+criterion+'\n\nReason and proof: the PRD reserves the machine-specific environment file, mounted external disk and cache deletion for the operator after merge. The assigned candidate is unmerged, and this QA is explicitly forbidden to access those real files or perform deletion. The scratch GOENV tests prove only the hermetic behavior. Satisfied-by: after merge and approved deletion, the operator runs make build in the Mac mini main checkout, then uses a marker, find and du on the three named caches and records which gained new entries. This criterion remains unproven. Requirement 9 expressly prescribes the environmental status wording retained in this row and counts this cause once in rows_blocked_declared; it is not also counted as an environment block.',reason)
+    authority=(SP/'_authorization.md').read_text()
+    for operation in ['implement','commit','push','pull_request','merge']:
+        assert '  - '+operation+'\n' in authority
+    pr='''Pull Request equivalent-evidence record
+
+Supplied assignment fact: no open Pull Request. No network, gh, push or PR mutation was performed.
+Claimed candidate: 982d498c1b73eca98a9c6abf5f16bb69c5fbe832.
+Approval: approved Spec-contained _authorization.md at Delivery Base 32b39e5403226cc3f56fa278db3ba158cd44d707, unchanged through both Task commits; delivery operations explicitly granted. This grant belongs to the delivery owner, and does not authorize this QA Agent to publish.
+Checks: Daemon supplied make verify-changed, pass, exit 0 at the audited head; successful diagnostics removed. The Agent did not rerun it.
+Review threads: no unresolved threads exist because no Pull Request exists; no review completion is inferred.
+Merge-Ready: acceptance has not occurred; it needs the later PR/current-candidate delivery controls.
+Unblock: the delivery owner opens a PR on the Spec target branch after the graph and review settle, and verifies its required checks and Merge-Ready acceptance. The Run Worktree branch is never a PR source.
+'''
+    (E/'pull-request.txt').write_text(pr)
+    note('Q12','Observed: the assignment confirms no open Pull Request. The approved authority covers delivery operations, the Daemon reports the candidate checks passed, and the absence of a PR means there are no unresolved threads. Merge-Ready acceptance has not happened. Candidate: '+HEAD+'. [Control-by-control pre-PR record](evidence/qa-report-2026-11-13/pull-request.txt). This single pre-PR block does not prevent a qualifying declared partial.','blocked (environment: no open Pull Request)')
+    # Only the authored offline archive-plan command; the shell waits and removes
+    # only the two directories it created, regardless of the product exit status.
+    command='h="$(mktemp -d)"; t="$(mktemp -d)"; HOME="$h" TMPDIR="$t" GOMODCACHE="$(go env GOMODCACHE)" GOCACHE="$(go env GOCACHE)" ./bin/roundfix archive '+SPEC+' --plan --offline; qa_exit=$?; rm -rf "$h" "$t"; exit "$qa_exit"'
+    args=['/bin/sh','-c',command];p=run(args);keep('archive-plan.txt',p,['./bin/roundfix','archive',SPEC,'--plan','--offline'])
+    assert p.returncode==0 and 'judge: skipped (offline)' in p.stdout,p.stderr
+    s=REPORT.read_text().replace('verdict: pending','verdict: partial',1).replace('status: in-progress','status: closed',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 1',1).replace('rows_blocked_declared: 0','rows_blocked_declared: 1',1)
+    assert '| pending |' not in s
+    s+='''
+## Findings
+
+None. Expected baseline and sabotage failures are negative evidence, not product findings. All six transcripts show the required observable regressions, without panic or suite-guard mutation failures. The QA harness needed two local path/Python-loader corrections before those respective checks ran; no product source was repaired.
+
+## Blocked and skipped
+
+Environment: Q12 is blocked because no Pull Request is open; its pre-PR equivalent controls and remaining Merge-Ready gap are recorded above.
+
+Declared: Q09 remains the one post-merge Mac mini operator criterion. Its exact authored environmental wording is retained, with its declaration text in provenance and its explicitly authored single declared count. It does not count twice. No row was skipped and no finding blocks a row. The seeded mechanical skips remain unchanged.
+
+## Coverage
+
+The coverage sources are the declared verification Requirements 2, 6 and 11, plus repository Verification, outside-evidence row, Pull Request row and the one PRD Unreachable Acceptance criterion. All seven source types have provenance in the Results table. Q02 covers Requirement 2 using seven audited cache cases, the full package, documentation contracts and Windows vet, with the additional required baseline/warning/documentation observations. Q06a-Q06f cover every named sabotage of Requirement 6. Q11 covers the exact history/scope checks of Requirement 11, including the declared stub breaks and glossary change. Requirements 1, 3-5, 7-10 and 12-13 constrain those observations or the report and are recorded in the matching details and Outcome. No frontend sweep applies to the declared infra/docs surfaces. Non-Goal scope was checked against the full actual Task range. No earlier row was carried and no earlier Run evidence was reused.
+
+Rows: 12 total; 10 pass; 0 fail; 1 environment-blocked; 1 declared-blocked; 0 finding-blocked; 0 skipped; 0 pending. The Q09 count follows its explicit pre-run Requirement 9 declaration despite that Requirement's requested environment-style status spelling.
+
+## Outcome
+
+The Makefile now follows a usable cache configured with go env under the existing 10240 MiB bound and warns once before using the 2048 MiB temporary fallback when that cache is unusable, without creating a missing mount path. The seven cache cases, baseline comparison, six sabotage probes, documentation checks and exact Task scope audit support this behavior; the real post-merge Mac mini observation remains unproven and the pre-PR control remains blocked. Offline archive planning completed without judge contact; its candidates are the adopted source index and two source records, whose reusable cache policy is already recorded in ADR-0394, the glossary and repository guide, so no additional promotion is needed. [Offline archive plan](evidence/qa-report-2026-11-13/archive-plan.txt).
+
+## Final verdict
+
+Partial: all runnable checks passed with no findings; the sole declared operator check and the absent Pull Request remain, qualifying under the declared-partial settlement policy after report acceptance. No commit, push, Pull Request, Task status or Task Graph mutation was performed by this QA Agent.
+'''
+    REPORT.write_text(s)
+    # Acceptance is read-only and uses its own disposable public-CLI environment.
+    env=ENV.copy(); cache=subprocess.check_output(['go','env','GOCACHE'],text=True).strip();mod=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+    with tempfile.TemporaryDirectory(prefix='roundfix-qa-accept-home-') as h,tempfile.TemporaryDirectory(prefix='roundfix-qa-accept-tmp-') as t:
+        env.update(HOME=h,TMPDIR=t,GOCACHE=cache,GOMODCACHE=mod)
+        args=['./bin/roundfix','qa-report','accept',str(REPORT.relative_to(ROOT))];p=run(args,env=env);keep('report-acceptance.txt',p,args)
+        print(p.stdout,p.stderr,flush=True)
+        assert p.returncode==0
+    s=REPORT.read_text();s+='\nReport acceptance: ./bin/roundfix qa-report accept exited 0. [Acceptance evidence](evidence/qa-report-2026-11-13/report-acceptance.txt).\n';REPORT.write_text(s)
+    print('CLOSED: partial; 10 pass, one declared block and one no-PR block',flush=True)
+
+if __name__=='__main__' and sys.argv[1]=='close': close_report()

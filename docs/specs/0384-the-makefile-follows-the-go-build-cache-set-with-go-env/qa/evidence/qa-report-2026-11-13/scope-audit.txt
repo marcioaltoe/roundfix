@@ -1,0 +1,93 @@
+PASS: audited head equals assigned head
+PASS: Delivery Base is current local merge base with main; no fetch
+PASS: operative authorization bounds exactly the three governed changed paths
+PASS: approved grant names this Spec
+PASS: exactly two Task commits in delivery range
+PASS: task_01 actual diff-tree paths fit declarations or Recorded paths: Makefile, docs/agents/setup-context.json, docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/task_01.md, internal/verifyselect/build_cache_bound_makefile_test.go, internal/verifyselect/build_cache_go_env_makefile_test.go, internal/verifyselect/contracts_repository_test.go, internal/verifyselect/full_contract_run_test.go, internal/verifyselect/skills_bump_makefile_test.go, internal/verifyselect/verify_docs_makefile_test.go
+PASS: task_01 carries the earlier byte-identical grant; no folded authorization
+PASS: task_01 grant predates Task in ancestry
+commit a92c7c08df0e31142709b0325a2873b55b92e5a3
+Author:     Marcio Altoe <marcio.altoe@gmail.com>
+AuthorDate: Thu Nov 12 23:52:54 2026 -0300
+Commit:     Marcio Altoe <marcio.altoe@gmail.com>
+CommitDate: Thu Nov 12 23:52:54 2026 -0300
+
+    feat: the Makefile uses the Go build cache set with go env and falls back small with a warning
+    
+    Roundfix-Spec: 0384-the-makefile-follows-the-go-build-cache-set-with-go-env
+    Roundfix-Task: task_01
+
+ Makefile                                           |  24 ++-
+ docs/agents/setup-context.json                     |   7 +-
+ .../task_01.md                                     |  55 ++++++-
+ .../build_cache_bound_makefile_test.go             |   1 +
+ .../build_cache_go_env_makefile_test.go            | 168 +++++++++++++++++++++
+ internal/verifyselect/contracts_repository_test.go |   4 +-
+ internal/verifyselect/full_contract_run_test.go    |   2 +-
+ internal/verifyselect/skills_bump_makefile_test.go |   3 +-
+ internal/verifyselect/verify_docs_makefile_test.go |   2 +-
+ 9 files changed, 255 insertions(+), 11 deletions(-)
+
+PASS: task_02 actual diff-tree paths fit declarations or Recorded paths: CONTEXT.md, README.md, docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md, docs/agents/specific-repository.md, docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/task_02.md
+PASS: task_02 carries the earlier byte-identical grant; no folded authorization
+PASS: task_02 grant predates Task in ancestry
+commit 982d498c1b73eca98a9c6abf5f16bb69c5fbe832
+Author:     Marcio Altoe <marcio.altoe@gmail.com>
+AuthorDate: Fri Nov 13 00:11:57 2026 -0300
+Commit:     Marcio Altoe <marcio.altoe@gmail.com>
+CommitDate: Fri Nov 13 00:11:57 2026 -0300
+
+    docs: the guide, README, glossary and ADR-0370 describe the cache set with go env
+    
+    Roundfix-Spec: 0384-the-makefile-follows-the-go-build-cache-set-with-go-env
+    Roundfix-Task: task_02
+
+ CONTEXT.md                                               |  2 +-
+ README.md                                                | 10 +++++++---
+ ...d-the-queue-warns-of-low-disk-and-names-a-full-one.md |  6 +++++-
+ docs/agents/specific-repository.md                       |  2 +-
+ .../task_02.md                                           | 16 +++++++++++++++-
+ 5 files changed, 29 insertions(+), 7 deletions(-)
+
+PASS: Task range contains exactly the declared implementation/docs paths plus its own Task records; no Non-Goal surface changed
+PASS: Makefile prefix and suffix outside authorized block are byte-identical
+PASS: Makefile block equals exact authored replacement
+PASS: build_cache_bound_makefile_test.go differs only by its env guard
+PASS: full_contract_run_test.go differs only by 1 env guard(s)
+PASS: contracts_repository_test.go differs only by 2 env guard(s)
+PASS: verify_docs_makefile_test.go differs only by 1 env guard(s)
+PASS: skills_bump_makefile_test.go differs only by its env guard
+PASS: existing shared-cache test is byte-identical
+PASS: manifest list length unchanged at /managedArtifacts
+PASS: manifest list length unchanged at /verification
+PASS: manifest list length unchanged at /modules
+PASS: manifest list length unchanged at /localSkills
+PASS: manifest changes exactly two Makefile digests plus roundfixVersion, with digests independently reproduced from final Makefile bytes
+PASS: new manifest version equals audited app.Version
+Manifest deltas: [
+  [
+    "/verification/0/declarationDigest",
+    "sha256:fde0561f34108d1e3ff95f31169808973fadf1e86f39f44dbf8aeb6d2b22e06d",
+    "sha256:31c282f412948840009a6c341a395d018e687924aa81006686eb985bec393884"
+  ],
+  [
+    "/verification/1/declarationDigest",
+    "sha256:fde0561f34108d1e3ff95f31169808973fadf1e86f39f44dbf8aeb6d2b22e06d",
+    "sha256:31c282f412948840009a6c341a395d018e687924aa81006686eb985bec393884"
+  ],
+  [
+    "/roundfixVersion",
+    null,
+    "0.142.1"
+  ]
+]
+PASS: five exact authored documentation blocks found
+PASS: docs/agents/specific-repository.md changes only its one exact authored line
+PASS: CONTEXT.md changes only its one exact authored line
+PASS: README changes only exact three-line replacement with authored paragraph
+PASS: ADR-0370 changes only updated_at, authored amendment and option note
+PASS: _prd.md declares the changed glossary term
+PASS: _techspec.md declares the changed glossary term
+PASS: no tracked worktree edits outside QA evidence
+?? docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/
+

@@ -1,0 +1,13 @@
+diff --git a/Makefile b/Makefile
+index dd61fbb..89d11e8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -8,7 +8,7 @@ GO := go
+ GO_HUMAN := $(RTK) go
+ GOFMT := gofmt
+ 
+-ifeq ($(origin GOCACHE),undefined)
++ifneq ($(origin GOCACHE),command line)
+ # ADR-0394: a Go build cache set with `go env -w GOCACHE` comes first when it is
+ # an existing writable directory, under the same bound. make never creates it:
+ # when the disk that holds it is not mounted, make warns once and falls back to

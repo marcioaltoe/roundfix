@@ -1,0 +1,47 @@
+command: go test -count=1 -timeout 20m -v -run ^TestMakeFollowsTheGoBuildCacheSetWithGoEnv$ ./internal/verifyselect
+stdout:
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+=== RUN   TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== PAUSE TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted
+=== CONT  TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins
+    build_cache_go_env_makefile_test.go:147: invocations = [["run" "-buildvcs=false" "./cmd/gocache-bound" "-dir" "<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/002/roundfix-go-build-501" "-max-mb" "2048" "-idle" "2h" "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/002/roundfix-go-build-501"] ["test" "-parallel" "16" "./..." "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/002/roundfix-go-build-501"]], want [["test" "-parallel" "16" "./..." "GOCACHE=<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/001/explicit cache"]]
+        stdout: <session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnv3631163117/001/go-env-stub test -parallel 16 ./...
+        
+        stderr: gocache: warning: GOCACHE set with go env (<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/001/explicit cache) is not a writable directory; using <session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/002/roundfix-go-build-501 with a 2048 MiB default bound
+    build_cache_go_env_makefile_test.go:150: stderr = "gocache: warning: GOCACHE set with go env (<session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/001/explicit cache) is not a writable directory; using <session TMPDIR>TestMakeFollowsTheGoBuildCacheSetWithGoEnvenvironment_wins3850402752/002/roundfix-go-build-501 with a 2048 MiB default bound\n", want ""
+--- FAIL: TestMakeFollowsTheGoBuildCacheSetWithGoEnv (0.11s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_with_a_bound (0.27s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_writable (0.28s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/nothing_set (0.29s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_to_a_file (0.31s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_read-only (0.31s)
+    --- PASS: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/set_and_not_mounted (0.09s)
+    --- FAIL: TestMakeFollowsTheGoBuildCacheSetWithGoEnv/environment_wins (0.09s)
+FAIL
+suiteguard: guard cost: measured 3121 paths; fingerprint took 150.377125ms before and 148.069916ms after
+FAIL	roundfix/internal/verifyselect	1.003s
+FAIL
+
+stderr:
+
+exit: 1

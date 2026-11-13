@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0384-the-makefile-follows-the-go-build-cache-set-with-go-env
-status: pending
+status: completed
 type: qa
 complexity: low
 ---

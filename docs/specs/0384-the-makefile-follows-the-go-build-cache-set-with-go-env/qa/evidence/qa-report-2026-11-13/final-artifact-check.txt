@@ -1,0 +1,39 @@
+Final artifact audit
+12 rows; 10 pass; one authored declared operator block; one no-PR environment block; zero failed/finding-blocked/skipped/pending.
+Every row is contiguous in Results and has typed repository inputs; commit-dependent rows have commit_range.
+All 33 report links resolve and are unignored. All evidence is UTF-8 text, with no null bytes or secret-shaped credential assignments.
+No tracked file changed; git diff --check exit 0.
+Files:
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/qa-report-2026-11-13.md
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/cache-cases.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/windows-vet.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/final-static-observation.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-c.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-e.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/pull-request.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/report-acceptance.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/manifest.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/outside-evidence.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/warning.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/scope-audit.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-b.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-d.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/scope-audit.py.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/build.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/docscontract.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-a.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-a.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/delivery-base.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-b.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/verifyselect.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/task-range.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-c.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-f.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-d.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/archive-plan.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-e.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/documentation-assertions.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/version.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/qa-driver.py.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/sabotage-f.patch.txt
+docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/evidence/qa-report-2026-11-13/precondition.txt

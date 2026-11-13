@@ -1,0 +1,6 @@
+command: ./bin/roundfix qa-report accept docs/specs/0384-the-makefile-follows-the-go-build-cache-set-with-go-env/qa/qa-report-2026-11-13.md
+stdout:
+
+stderr:
+
+exit: 0

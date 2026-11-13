@@ -1,0 +1,13 @@
+diff --git a/Makefile b/Makefile
+index dd61fbb..0770b81 100644
+--- a/Makefile
++++ b/Makefile
+@@ -17,7 +17,7 @@ ifeq ($(origin GOCACHE),undefined)
+ GOCACHE_FROM_GO_ENV := $(shell [ -n "$$($(GO) env -changed GOCACHE 2>/dev/null)" ] || exit 0; \
+ 	cache=$$($(GO) env GOCACHE 2>/dev/null) || exit 0; \
+ 	case "$$cache" in (/*) ;; (*) exit 0;; esac; \
+-	if [ -d "$$cache" ] && probe=$$(mktemp "$$cache/.write-test.XXXXXX" 2>/dev/null) && rm -f "$$probe" 2>/dev/null; then \
++	if [ -d "$$cache" ]; then \
+ 		printf '%s' "$$cache"; \
+ 	fi)
+ ifneq ($(GOCACHE_FROM_GO_ENV),)
