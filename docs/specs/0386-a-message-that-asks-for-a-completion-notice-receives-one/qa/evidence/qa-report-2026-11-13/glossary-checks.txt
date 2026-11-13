@@ -1,4 +1,0 @@
-PRD and TechSpec both declare adds: Notice Request; changes: Cross-project Message.
-CONTEXT.md defines Notice Request word for word per API Contract 4 after resolving the ADR link.
-Cross-project Message retains the one-notice exception (Q23).
-Named glossary contract passed.

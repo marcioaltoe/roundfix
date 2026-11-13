@@ -1,4 +1,0 @@
-criterion: after the release that carries this Spec, an adopter's `roundfix baseline update` writes the reworded clauses, and a real session that publishes a release carrying a Spec that adopted a Notice Request sends that sender one completion notice through ai-memory.
-reason: it needs a released binary, real ai-memory messages, the ai-memory MCP server and a live Agent session, which no Verification or QA row may reach.
-satisfied-by: the operator's release session evidence after the release, recorded session evidence.
-Observed constraint: this QA has no published binary carrying the unmerged Spec and authorization expressly prohibits the real session, network and ai-memory calls. Local refresh is independently runnable and passed Q14; the full post-release conjunction is unproven. No live session or send was attempted.

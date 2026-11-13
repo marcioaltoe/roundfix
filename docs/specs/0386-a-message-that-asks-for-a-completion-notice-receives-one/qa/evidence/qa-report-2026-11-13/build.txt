@@ -1,5 +1,0 @@
-command: make build
-exit: 0
-gocache-bound completed; go build -buildvcs=false wrote bin/roundfix
-BuildCommit=77b19e34-dirty (the seeded, untracked QA report makes the tree dirty)
-BuildTime=2026-11-13 03:19:06 -0300

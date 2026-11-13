@@ -1,6 +1,0 @@
-fresh copy: git archive 77b19e34c8d84a183bca832c7e7a80d6bb8cd882
-mutation: TechSpec Testing Approach sabotage 5
-intended failure detected: True
-    roundfix_modes_test.go:255: follow-up steps omit "to a message that declared no blocked work, unless it is a Notice Request."
---- FAIL: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest (0.00s)
-    --- FAIL: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical (0.00s)

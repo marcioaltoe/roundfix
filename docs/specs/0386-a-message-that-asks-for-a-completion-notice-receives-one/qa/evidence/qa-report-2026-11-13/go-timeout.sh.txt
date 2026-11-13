@@ -1,6 +1,0 @@
-#!/bin/sh
-if [ "$1" = test ]; then
-  shift
-  exec /usr/local/go/bin/go test -timeout 20m "$@"
-fi
-exec /usr/local/go/bin/go "$@"

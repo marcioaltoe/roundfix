@@ -1,7 +1,0 @@
-Source: Gregor Hohpe and Bobby Woolf, Enterprise Integration Patterns, Return Address
-URL: https://www.enterpriseintegrationpatterns.com/patterns/messaging/ReturnAddress.html
-Source read during authoring: 2026-11-12; offline comparison: 2026-11-13
-Input: cited passage quoted in PRD Acceptance evidence
-Comparison: retaining reply routing with the request supports keeping the notice request beside message provenance and later reading the PRD Sources at source_revision.
-Observed: the refreshed guide keeps the request in the record; the release section reads that historical record and addresses only the requesting sending project.
-Limit: the pattern does not prove future Agent behavior or an actual delivery.

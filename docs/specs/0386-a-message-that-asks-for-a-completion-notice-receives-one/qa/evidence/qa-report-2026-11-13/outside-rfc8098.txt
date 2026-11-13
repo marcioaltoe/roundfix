@@ -1,7 +1,0 @@
-Source: RFC 8098, Message Disposition Notification, section 2.1
-URL: https://www.rfc-editor.org/rfc/rfc8098.html
-Published: February 2017; source read during authoring: 2026-11-12
-Input: passages committed in PRD Acceptance evidence, checked offline on 2026-11-13
-Comparison: request-only and at-most-one MDN are external analogues of the rendered guide's explicitly requested one completion notice.
-Observed: refreshed guide retains the prohibition for every other message and permits one notice only when asked.
-Limit: RFC receipt semantics do not establish this Spec's delivery timing, obligation, Agent compliance or actual sends.
