@@ -125,6 +125,8 @@ A repository profile must list every decision a template it renders requires. Wh
 
 A guide under `docs/agents/` that has no `setup-context-driven` marker line and sits at a path the Baseline does not manage belongs to the repository and raises no `baseline.inventory.nested-carrier-conflict`; naming the marker in its prose changes nothing. A nested `AGENTS.md` or `CLAUDE.md`, an unmarked guide at a managed path and a guide with an unknown marker still warn.
 
+A nested `AGENTS.md` or `CLAUDE.md` enters the inventory only when `git ls-files --cached --others --exclude-standard` lists it: a tracked one, or an untracked one Git does not ignore. A copy in a path Git ignores, and a carrier inside a linked worktree, a nested repository or a submodule, is not a file of the repository: it raises no `baseline.inventory.nested-carrier-conflict` and does not enter the Plan Digest.
+
 `baseline skills restore` is a separate confirmation-gated Repository Skill
 Set operation. Its non-empty preview exits `3` with a current Plan Digest;
 `--confirm-plan` applies only that exact preview. `--source-dir` selects an

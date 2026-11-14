@@ -98,8 +98,10 @@ func TestInventoryBudget(t *testing.T) {
 		)
 
 		snapshot, err := inspectRepositorySnapshot(
+			context.Background(),
 			repository,
 			InventoryRequest{MutablePaths: paths},
+			nil,
 		)
 		if err != nil {
 			t.Fatalf("inspect over-budget inventory: %v", err)
@@ -247,6 +249,161 @@ func TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths(t *testing.
 		if hasRepositoryPreimage(inspection.Snapshot.Preimages, excluded) {
 			t.Fatalf("unbounded path %q entered preimages", excluded)
 		}
+	}
+}
+
+func TestNestedCarrierInventoryKeepsOnlyCarriersGitLists(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	excludes := filepath.Join(t.TempDir(), "empty-excludes")
+	if err := os.WriteFile(excludes, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gittest.Run(t, repo, "config", "--local", "core.excludesFile", excludes)
+	writeInspectionFile(t, repo, ".gitignore", ".storage/\nforced/\n")
+	writeInspectionFile(t, repo, "AGENTS.md", "root policy\n")
+	writeInspectionFile(t, repo, "packages/api/AGENTS.md", "tracked nested policy\n")
+	writeInspectionFile(t, repo, "forced/AGENTS.md", "tracked ignored policy\n")
+	gittest.Run(t, repo, "add", "--force", "forced/AGENTS.md")
+	commitInspectionRepository(t, repo, "seed carriers")
+	writeInspectionFile(t, repo, "packages/web/CLAUDE.md", "untracked nested policy\n")
+	writeInspectionFile(t, repo, " lead/AGENTS.md", "leading space policy\n")
+
+	before, err := InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect repository before foreign carriers: %v", err)
+	}
+	gittest.Run(t, repo, "worktree", "add", "--detach", filepath.Join(repo, ".storage/simulation/wt-ignored"), "HEAD")
+	writeInspectionFile(t, repo, ".storage/copy/CLAUDE.md", "ignored copy\n")
+	gittest.Run(t, repo, "worktree", "add", "--detach", filepath.Join(repo, "trees/wt-visible"), "HEAD")
+	nested := filepath.Join(repo, "nested")
+	gittest.InitRepo(t, nested)
+	writeInspectionFile(t, nested, "AGENTS.md", "nested repository policy\n")
+	submodule := newInspectionRepository(t)
+	writeInspectionFile(t, submodule, "AGENTS.md", "submodule policy\n")
+	commitInspectionRepository(t, submodule, "seed submodule")
+	gittest.Run(t, repo, "-c", "protocol.file.allow=always", "submodule", "add", submodule, "modules/sub")
+
+	after, err := InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect repository with foreign carriers: %v", err)
+	}
+	want := []string{" lead/AGENTS.md", "forced/AGENTS.md", "packages/api/AGENTS.md", "packages/web/CLAUDE.md"}
+	for _, tt := range []struct {
+		name     string
+		snapshot RepositorySnapshot
+	}{
+		{name: "before foreign carriers", snapshot: before.Snapshot},
+		{name: "after foreign carriers", snapshot: after.Snapshot},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var carriers, warnings []string
+			for _, carrier := range tt.snapshot.Carriers {
+				if carrier.Scope == "nested" {
+					carriers = append(carriers, carrier.Path)
+				}
+			}
+			for _, warning := range tt.snapshot.Warnings {
+				if warning.Code == "baseline.inventory.nested-carrier-conflict" {
+					warnings = append(warnings, warning.Path)
+				}
+			}
+			if !reflect.DeepEqual(carriers, want) {
+				t.Errorf("nested carriers = %q, want %q", carriers, want)
+			}
+			if !reflect.DeepEqual(warnings, want) {
+				t.Errorf("nested conflict paths = %q, want %q", warnings, want)
+			}
+			if len(tt.snapshot.Blocking) != 0 {
+				t.Errorf("unexpected blocking findings: %+v", tt.snapshot.Blocking)
+			}
+		})
+	}
+	if !reflect.DeepEqual(after.Snapshot.Warnings, before.Snapshot.Warnings) {
+		t.Errorf("foreign carriers changed warnings: before=%+v after=%+v", before.Snapshot.Warnings, after.Snapshot.Warnings)
+	}
+	if after.Snapshot.Digest != before.Snapshot.Digest {
+		t.Errorf("foreign carriers changed snapshot digest: before=%s after=%s", before.Snapshot.Digest, after.Snapshot.Digest)
+	}
+}
+
+func TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name       string
+		nested     bool
+		listingErr error
+	}{
+		{name: "one listing for two candidates", nested: true},
+		{name: "listing failure stops inspection", nested: true, listingErr: errors.New("listing failed")},
+		{name: "root carriers and agent guides need no listing"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			if !tt.nested {
+				writeInspectionFile(t, root, "AGENTS.md", "root policy\n")
+				writeInspectionFile(t, root, "CLAUDE.md", "root Claude policy\n")
+				writeInspectionFile(t, root, "docs/agents/backend.md", "agent guide\n")
+			}
+			if tt.nested {
+				writeInspectionFile(t, root, "packages/api/AGENTS.md", "nested API policy\n")
+				writeInspectionFile(t, root, "packages/web/CLAUDE.md", "nested web policy\n")
+			}
+			head := strings.Repeat("a", 40)
+			var calls [][]string
+			runner := inspectionGitRunnerFunc(func(_ context.Context, dir string, args ...string) (string, error) {
+				if dir != root {
+					t.Errorf("Git directory = %q, want %q", dir, root)
+				}
+				calls = append(calls, append([]string(nil), args...))
+				switch args[0] {
+				case "rev-parse":
+					return strings.Join([]string{root, "sha1", head}, "\n"), nil
+				case "rev-list":
+					return head, nil
+				case "ls-files":
+					return "packages/api/AGENTS.md\x00", tt.listingErr
+				default:
+					return "", errors.New("unexpected Git command")
+				}
+			})
+			inspection, err := InspectRepository(context.Background(), root, runner)
+			wantCalls := [][]string{
+				{"rev-parse", "--show-toplevel", "--show-object-format", "--verify", "HEAD^{commit}"},
+				{"rev-list", "--max-parents=0", "HEAD"},
+			}
+			if tt.nested {
+				wantCalls = append(wantCalls, []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ":(glob)**/AGENTS.md", ":(glob)**/CLAUDE.md"})
+			}
+			if !reflect.DeepEqual(calls, wantCalls) {
+				t.Errorf("Git calls = %v, want %v", calls, wantCalls)
+			}
+			if tt.listingErr != nil {
+				const want = "inspect bounded repository state: walk bounded carriers: list repository instruction carriers: listing failed"
+				if err == nil || err.Error() != want || !errors.Is(err, tt.listingErr) {
+					t.Fatalf("inspection error = %v, want %q wrapping listing failure", err, want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantCarriers := []string{"AGENTS.md", "CLAUDE.md", "docs/agents/backend.md"}
+			if tt.nested {
+				wantCarriers = []string{"packages/api/AGENTS.md"}
+			}
+			var carriers []string
+			for _, carrier := range inspection.Snapshot.Carriers {
+				carriers = append(carriers, carrier.Path)
+			}
+			if !reflect.DeepEqual(carriers, wantCarriers) {
+				t.Errorf("carrier paths = %q, want %q", carriers, wantCarriers)
+			}
+		})
 	}
 }
 

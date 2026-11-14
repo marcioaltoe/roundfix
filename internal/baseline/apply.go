@@ -235,7 +235,7 @@ func inspectApplyPreimage(
 	for _, move := range document.HistoryMoves {
 		paths = append(paths, move.From, move.To)
 	}
-	snapshot, err := inspectRepositorySnapshot(root, InventoryRequest{MutablePaths: paths})
+	snapshot, err := inspectRepositorySnapshot(ctx, root, InventoryRequest{MutablePaths: paths}, nil)
 	if err != nil {
 		return applyPreimageApproved, applyError(
 			ApplyErrorInvalid,
@@ -772,7 +772,7 @@ func expectedRootBackups(
 	return expected, nil
 }
 
-func verifyAppliedPlanState(root string, document PlanDocument) error {
+func verifyAppliedPlanState(ctx context.Context, root string, document PlanDocument) error {
 	if err := validatePlanApplyContract(document); err != nil {
 		return err
 	}
@@ -780,7 +780,7 @@ func verifyAppliedPlanState(root string, document PlanDocument) error {
 	for index, preimage := range document.Preimages {
 		paths[index] = preimage.Path
 	}
-	snapshot, err := inspectRepositorySnapshot(root, InventoryRequest{MutablePaths: paths})
+	snapshot, err := inspectRepositorySnapshot(ctx, root, InventoryRequest{MutablePaths: paths}, nil)
 	if err != nil {
 		return fmt.Errorf("verify applied Baseline repository: %w", err)
 	}

@@ -199,7 +199,9 @@ func beginTransactionWithCatalog(
 		document,
 		nil,
 		validate,
-		verifyAppliedPlanState,
+		func(root string, document PlanDocument) error {
+			return verifyAppliedPlanState(ctx, root, document)
+		},
 	)
 }
 
@@ -215,7 +217,9 @@ func beginTransaction(
 		document,
 		phaseHook,
 		ValidatePlanRepository,
-		verifyAppliedPlanState,
+		func(root string, document PlanDocument) error {
+			return verifyAppliedPlanState(ctx, root, document)
+		},
 	)
 }
 
