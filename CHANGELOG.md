@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.145.0] - 2026-11-14
+
+### A feature is judged for the Idea stage before its PRD
+
+- **New `roundfix spec judge --stage idea (--item <reference> [--messages <path>] | --request <path>) [--format <text|json>]`.** Before the PRD of a feature is written, the Advisory Judge answers three criteria for one item that is not yet a Spec: the right shape of the solution is still open (`shape_open`), the request rests on an assumption about its users, the business or the market that it gives no evidence for (`unverified_assumption`), and deciding to build it depends on a market or competitive question (`market_question`). An answer is yes at 0.70 or more, no at 0.30 or less and unsure between; the verdict is `indicated` when any criterion is yes, `not indicated` when every one is no and `undecided` otherwise. `--item` takes a reference `roundfix follow-up` lists (an open Backlog Entry, a `docs/_inbox/` note or a message entry of the same `--messages` file) and nothing outside that inventory; `--request` takes a file holding a request typed in the session, of which only the first line and the first 4,000 characters reach the judge, after the secret scan, with the project's name. The output shows every answer with its probability and ends with a `Record:` block for the `## Idea-stage judgment` section; `--format json` prints `roundfix/idea-stage-judgment/v1`. When the judge does not answer, the command says why and lists the criteria for the agent to answer, marked as its own. A fix, a refactor, a Finding and a Waiting Item are not judged; the judgment never gates.
+- **The Spec routing and the authoring skills judge a feature for the Idea stage.** The Baseline's spec routing clause, `brainstorming`, `write-idea`, `write-prd` and the Roundfix skill's `--follow-up` mode run the judgment before a feature's PRD: indicated starts `write-idea` (the user may dismiss it at its first question), undecided asks the user, not indicated goes to `write-prd`. Every feature Idea and PRD now carries a fielded `## Idea-stage judgment` section with the item, who judged, each answer, the verdict, whether the stage ran and what it did to the request's shape. Adopters receive the new clause and skills at their next `roundfix baseline update`. ADR-0403 and ADR-0404, which amends ADR-0201.
+
 ## [0.144.0] - 2026-11-14
 
 ### Each authoring phase runs on the model the repository declares
