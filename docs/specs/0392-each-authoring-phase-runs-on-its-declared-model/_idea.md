@@ -1,7 +1,7 @@
 ---
 spec: 0392-each-authoring-phase-runs-on-its-declared-model
 created: 2026-11-14
-status: proposed
+status: promoted
 leverage: strategic-bet
 ---
 
