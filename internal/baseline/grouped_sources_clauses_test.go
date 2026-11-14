@@ -10,8 +10,41 @@ import (
 // These literals lock the authored contract, independently of the module assets.
 var groupingClauses = []struct{ id, guidance, module, rule, guide string }{
 	{"clause.spec.sources-01-group-by-shared-context", "One Spec may adopt several Backlog Entries and Findings whose context is similar or complementary: they change the same component or contract, share a root cause, or one completes the other. One Spec per source is neither required nor preferred, so before minting a Spec for a source, look among the open Backlog Entries and unresolved Findings for others that share its context. A grouping suggestion from `roundfix spec judge` is advisory: adopt the suggested source or state why it stays apart.", "spec-workflow", "rule.spec.routing", "spec-routing.md"},
-	{"clause.spec.sources-02-bound-the-group", "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec. When a Spec's Verification or premise depends on another Spec that has not merged, name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order.", "spec-workflow", "rule.spec.routing", "spec-routing.md"},
+	{"clause.spec.sources-02-bound-the-group", "Size a Spec by two criteria, never by a count of its Tasks. One context: the sources a Spec adopts and the work it holds change the same component or contract, share a root cause, or complete one another. Tasks that each earn their verification cycle: every Task pays an Agent turn, its declared Verification and the repository Verification at settlement, so a change too small to justify that cost joins a neighbouring Task of the same context instead of becoming its own Task, and a small source of the same context joins a Spec that is open or being planned instead of becoming a one-Task Spec that pays a whole Run, QA gate, review and release. The criteria answer two costs: a Spec that holds several contexts grows giant, and a Spec of small Tasks spends Runs on long verification and takes much longer than its work needs. Four implementation Tasks plus the QA gate is a reference, not a cap: a Spec that needs more is a signal to check whether it holds more than one context, never a refusal by count. When the scope holds more than one context, split it into Specs that each hold one and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec. When a Spec's Verification or premise depends on another Spec that has not merged, name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order.", "spec-workflow", "rule.spec.routing", "spec-routing.md"},
 	{"clause.context.inbox-03-extend-before-minting", "Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its message into that entry, which cites the message's provenance.", "context-workflow", "rule.context.docs-layout", "docs-layout.md"},
+}
+
+var groupingBoundPhrases = []struct{ name, phrase string }{
+	{"no-count", "Size a Spec by two criteria, never by a count of its Tasks."},
+	{"one-context", "One context: the sources a Spec adopts and the work it holds change the same component or contract, share a root cause, or complete one another."},
+	{"earned-cycle", "Tasks that each earn their verification cycle: every Task pays an Agent turn, its declared Verification and the repository Verification at settlement,"},
+	{"small-change-joins-a-task", "a change too small to justify that cost joins a neighbouring Task of the same context instead of becoming its own Task,"},
+	{"small-source-joins-a-spec", "a small source of the same context joins a Spec that is open or being planned instead of becoming a one-Task Spec that pays a whole Run, QA gate, review and release."},
+	{"two-reasons", "a Spec that holds several contexts grows giant, and a Spec of small Tasks spends Runs on long verification and takes much longer than its work needs."},
+	{"reference-not-cap", "Four implementation Tasks plus the QA gate is a reference, not a cap: a Spec that needs more is a signal to check whether it holds more than one context, never a refusal by count."},
+	{"split-by-context", "When the scope holds more than one context, split it into Specs that each hold one"},
+	{"one-owner", "give each source exactly one owning Spec;"},
+	{"no-unrelated-source", "never add a source that shares no context with the Spec only to save a Spec."},
+	{"requires", "name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order."},
+}
+
+func TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee(t *testing.T) {
+	t.Parallel()
+	asset, ok := mustEmbeddedCatalog(t).Asset("formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md")
+	if !ok {
+		t.Fatal("missing spec-routing.md guide")
+	}
+	guide := strings.Join(strings.Fields(string(asset.Data)), " ")
+	if strings.Contains(guide, "only while the Spec fits four implementation Tasks plus its QA gate") {
+		t.Fatal("guide still bounds grouping by a count")
+	}
+	for _, want := range groupingBoundPhrases {
+		t.Run(want.name, func(t *testing.T) {
+			if got := strings.Count(guide, want.phrase); got != 1 {
+				t.Fatalf("phrase %q occurs %d times, want exactly once", want.phrase, got)
+			}
+		})
+	}
 }
 
 func TestTheGroupingClausesCarryTheirForceAndText(t *testing.T) {

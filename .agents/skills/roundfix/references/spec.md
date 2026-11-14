@@ -219,8 +219,9 @@ At every stage, the `source-grouping` question pairs each Finding or Backlog
 Entry the Spec adopted with every open Backlog Entry or unresolved Finding.
 A `suggested` line at `P(same Spec)` of 0.3 or more is answered by adopting
 the open source within the grouping bound or by stating why it stays apart.
-The grouping bound is four implementation Tasks plus its QA gate. A
-suggestion never gates. Only Findings and Backlog Entries are sent for this
+The grouping bound is a criterion, not a count: one context, and Tasks that
+each earn their verification cycle; four implementation Tasks plus its QA gate
+is a reference, not a cap. A suggestion never gates. Only Findings and Backlog Entries are sent for this
 question; its recall is low, so no suggestion does not prove no source fits.
 
 An unknown stage fails with `unsupported --stage "<value>"; use prd, techspec

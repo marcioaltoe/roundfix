@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-01T00:00:00Z
-updated_at: 2026-10-01T00:00:00Z
+updated_at: 2026-11-14T10:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -41,6 +41,8 @@ The bound is a limit on grouping, not a size rule for every Spec. Four
 implementation Tasks plus the gate is the limit this repository's Spec
 authoring already works to, so the clause writes down a limit in use rather
 than inventing one.
+
+**Amended by [ADR-0400](0400-a-spec-is-sized-by-one-context-and-by-tasks-that-earn-their-verification-cycle.md) (2026-11-14).** The fixed bound of four implementation Tasks plus the QA gate is gone. Grouping stops at one context, and each Task earns its verification cycle: a change too small for its own Task joins a neighbouring Task of the same context, and a small source of the same context joins a Spec that is open or being planned. Four implementation Tasks plus the gate stays as a reference, not a cap. Each source still keeps exactly one owning Spec, a split still gives each source one owner, and a source that shares no context is still never added only to save a Spec.
 
 ## Consequences
 

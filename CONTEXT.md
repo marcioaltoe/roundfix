@@ -931,8 +931,8 @@ An Advisory Judgment that an open Finding or Backlog Entry shares the context of
 _Avoid_: Merge rule, automatic grouping
 
 **Grouping Bound**:
-The size limit on grouping sources into one Spec: four implementation Tasks plus its QA gate. A grouped scope that needs more is split into Specs that each fit, and each source keeps exactly one owning Spec ([ADR-0208](docs/adr/0208-work-items-that-share-a-context-share-a-spec.md)).
-_Avoid_: Spec size rule, Task cap
+The limit on grouping sources into one Spec, set by two criteria and not by a count of Tasks: one context, where the sources and the work change the same component or contract, share a root cause, or complete one another, and Tasks that each earn their verification cycle, so a change too small for its own Task joins a neighbouring Task of the same context and a small source joins a Spec of its context that is open or being planned. Four implementation Tasks plus the QA gate is a reference, not a cap. A scope that holds more than one context is split into Specs that each hold one, and each source keeps exactly one owning Spec ([ADR-0208](docs/adr/0208-work-items-that-share-a-context-share-a-spec.md), [ADR-0400](docs/adr/0400-a-spec-is-sized-by-one-context-and-by-tasks-that-earn-their-verification-cycle.md)).
+_Avoid_: Spec size rule, Task cap, four-Task limit
 
 **Setup Snapshot**:
 The Baseline's embedded mirror of one upstream skills setup, written only by the asset sync, that lists by name the skills a Baseline Profile takes, with the tree digest of each ([ADR-0191](docs/adr/0191-a-setup-snapshot-follows-its-upstream-by-name.md), [ADR-0241](docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md)).

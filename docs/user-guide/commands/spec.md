@@ -26,8 +26,10 @@ characters. Inbox Entries, terminal sources, and source code are excluded.
 A pair with `P(same Spec)` at or above 0.3 prints
 `suggested source-grouping <anchor> → <candidate>: P(same Spec) <probability>`,
 with the probability to two decimal places. Answer it by adopting the open
-source within the bound of four implementation Tasks plus its QA gate, or by
-stating why it stays apart. A suggestion never gates. Its recall is low:
+source within the grouping bound, one context and Tasks that each earn their
+verification cycle, or by stating why it stays apart. Four implementation Tasks
+plus its QA gate is a reference, not a cap.
+A suggestion never gates. Its recall is low:
 the measured question found 27% of true pairs, so no suggestion does not
 mean no source fits.
 

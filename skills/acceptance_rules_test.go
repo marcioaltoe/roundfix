@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,4 +91,96 @@ func TestWriteTasksComparesByteInvariantsWithTheDeliveryBase(t *testing.T) {
 
 func normalizeAcceptanceText(content string) string {
 	return strings.Join(strings.Fields(content), " ")
+}
+
+func TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle(t *testing.T) {
+	t.Parallel()
+
+	type skillContract struct {
+		path    string
+		phrases []string
+	}
+
+	contracts := []skillContract{
+		{
+			path: "write-idea/SKILL.md",
+			phrases: []string{
+				"The bound on grouping is a criterion, not a count:",
+				"one context, where the sources and the work change the same component or contract, share a root cause, or complete one another,",
+				"and Tasks that each earn their verification cycle.",
+				"joins a neighbouring Task of the same context,",
+				"small source of the same context joins a Spec that is open or being planned rather than becoming a one-Task Spec.",
+				"Four implementation Tasks plus the QA gate is a reference, not a cap: needing more is a signal to check whether the Spec holds more than one context.",
+				"When it holds more than one, split the scope and give each source one owning Spec.",
+			},
+		},
+		{
+			path: "write-prd/SKILL.md",
+			phrases: []string{
+				"The bound on grouping is a criterion, not a count:",
+				"one context, where the sources and the work change the same component or contract, share a root cause, or complete one another,",
+				"and Tasks that each earn their verification cycle.",
+				"joins a neighbouring Task of the same context,",
+				"small source of the same context joins a Spec that is open or being planned rather than becoming a one-Task Spec.",
+				"Four implementation Tasks plus the QA gate is a reference, not a cap: needing more is a signal to check whether the Spec holds more than one context.",
+				"When it holds more than one, split the scope and give each source one owning Spec.",
+			},
+		},
+		{
+			path: "write-techspec/SKILL.md",
+			phrases: []string{
+				"The bound on grouping is a criterion, not a count:",
+				"one context, where the sources and the work change the same component or contract, share a root cause, or complete one another,",
+				"and Tasks that each earn their verification cycle.",
+				"joins a neighbouring Task of the same context,",
+				"small source of the same context joins a Spec that is open or being planned rather than becoming a one-Task Spec.",
+				"Four implementation Tasks plus the QA gate is a reference, not a cap: needing more is a signal to check whether the Spec holds more than one context.",
+				"When it holds more than one, split the scope and give each source one owning Spec.",
+			},
+		},
+		{
+			path: "write-tasks/SKILL.md",
+			phrases: []string{
+				"**Sized for one fresh session.**",
+				"**Earns its verification cycle.** Every Task pays an Agent turn, its declared Verification and the repository Verification at settlement.",
+				"joins a neighbouring Task of the same context instead of becoming its own Task.",
+				"It joins only a Task whose slice it belongs to, so the vertical-slice rule holds, and Tasks that declare the same file still run in series under the Wave collision rule.",
+				"a graph that needs more is a signal to check whether the Spec holds more than one context, never a refusal by count.",
+			},
+		},
+		{
+			path: "roundfix/references/spec.md",
+			phrases: []string{
+				"The grouping bound is a criterion, not a count: one context, and Tasks that each earn their verification cycle; four implementation Tasks plus its QA gate is a reference, not a cap.",
+			},
+		},
+	}
+
+	for name, source := range roundfixLayoutSources() {
+		for _, contract := range contracts {
+			contract := contract
+			t.Run(name+"/"+contract.path, func(t *testing.T) {
+				t.Parallel()
+				data, err := fs.ReadFile(source, contract.path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				text := normalizeAcceptanceText(string(data))
+				for _, absent := range []string{
+					"fits four implementation Tasks plus its QA gate",
+					"The grouping bound is four implementation Tasks",
+				} {
+					if strings.Contains(text, normalizeAcceptanceText(absent)) {
+						t.Errorf("contains absent phrase %q", absent)
+					}
+				}
+				for _, phrase := range contract.phrases {
+					want := normalizeAcceptanceText(phrase)
+					if got := strings.Count(text, want); got != 1 {
+						t.Errorf("phrase %q count = %d, want 1", phrase, got)
+					}
+				}
+			})
+		}
+	}
 }

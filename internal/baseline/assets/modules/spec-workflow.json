@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 24,
+  "version": 25,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 10,
+      "version": 11,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -114,7 +114,7 @@
         {
           "id": "clause.spec.sources-02-bound-the-group",
           "enforcement": "mandatory",
-          "guidance": "Group sources into one Spec only while the Spec fits four implementation Tasks plus its QA gate. When the grouped scope needs more, split it into Specs that each fit and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec. When a Spec's Verification or premise depends on another Spec that has not merged, name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order."
+          "guidance": "Size a Spec by two criteria, never by a count of its Tasks. One context: the sources a Spec adopts and the work it holds change the same component or contract, share a root cause, or complete one another. Tasks that each earn their verification cycle: every Task pays an Agent turn, its declared Verification and the repository Verification at settlement, so a change too small to justify that cost joins a neighbouring Task of the same context instead of becoming its own Task, and a small source of the same context joins a Spec that is open or being planned instead of becoming a one-Task Spec that pays a whole Run, QA gate, review and release. The criteria answer two costs: a Spec that holds several contexts grows giant, and a Spec of small Tasks spends Runs on long verification and takes much longer than its work needs. Four implementation Tasks plus the QA gate is a reference, not a cap: a Spec that needs more is a signal to check whether it holds more than one context, never a refusal by count. When the scope holds more than one context, split it into Specs that each hold one and give each source exactly one owning Spec; never add a source that shares no context with the Spec only to save a Spec. When a Spec's Verification or premise depends on another Spec that has not merged, name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order."
         },
         {
           "id": "clause.spec.name-the-finding-a-task-answers",

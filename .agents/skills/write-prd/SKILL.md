@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.18
+  version: 0.0.19
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.18
+version: 0.0.19
 ---
 
 # Write PRD
@@ -48,9 +48,17 @@ Whenever the PRD names a concept the glossary does not define, activate domain-m
 A Spec may adopt several Backlog Entries and Findings whose
 context is similar or complementary; one Spec per source is neither required
 nor preferred. Before minting a Spec, look among the open Backlog Entries and
-unresolved Findings for sources that share the context. Group only while the
-scope fits four implementation Tasks plus its QA gate; past that bound, split
-the scope and give each source one owning Spec.
+unresolved Findings for sources that share the context. The bound on grouping
+is a criterion, not a count: one context, where the sources and the work change
+the same component or contract, share a root cause, or complete one another,
+and Tasks that each earn their verification cycle. A change too small to
+justify a Task's Agent turn, its declared Verification and the repository
+Verification at settlement joins a neighbouring Task of the same context, and a
+small source of the same context joins a Spec that is open or being planned
+rather than becoming a one-Task Spec. Four implementation Tasks plus the QA
+gate is a reference, not a cap: needing more is a signal to check whether the
+Spec holds more than one context. When it holds more than one, split the scope
+and give each source one owning Spec.
 
 Before minting a new Finding or Backlog Entry, extend one that fits: revise an
 open Backlog Entry in place, or give an unresolved Finding a dated addendum.
