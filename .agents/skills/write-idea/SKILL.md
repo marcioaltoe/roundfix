@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Write Idea
@@ -18,6 +18,14 @@ Turn a raw idea into `docs/specs/<slug>/_idea.md` — the Stage 0 artifact that 
 ## When this stage earns its cost
 
 Use it for product-level ideas: greenfield features, ideas with real market/competitive questions, or anything where the right _shape_ of the solution is still open. For a well-understood feature in a known area, say so and go straight to `grilling`/`grill-with-docs` → `write-prd` — a full idea study of an obvious feature is ceremony, not insight.
+
+## When the Idea-stage judgment starts this stage
+
+The repository's Spec routing starts this stage without the user asking when the Idea-stage judgment of a feature reads indicated, and when the user chose it for an undecided one. Then open the first question by showing the judgment: the verdict, each criterion's answer, with its probability when the judge answered, and who judged, the judge with its model or the agent because the judge did not answer. Give that first question one last option that dismisses the stage, and say that a dismissal is recorded with its reason. When the user dismisses, stop: write no `_idea.md`, and hand the judgment and the user's reason to `write-prd`, which records them.
+
+Never answer this stage's questions for the user. When no user is present, as in a delegated subagent, do not run the stage: the feature stays a Backlog Entry that records the judgment and waits, with `waiting_on` and `since` in its frontmatter.
+
+Write the judgment into the `## Idea-stage judgment` section of `_idea.md`, in the fielded form the template shows. When the draft is approved, set its `shape` line to what this stage did to the request as it arrived, `changed`, `split`, `shelved` or `unchanged`, followed by one line that says what.
 
 ## Ground rules
 

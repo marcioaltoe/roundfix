@@ -112,6 +112,56 @@
       "no_at_most": 0.3,
       "item_max_chars": 4000,
       "max_items": 100
+    },
+    "idea-stage": {
+      "question_id": "idea_stage",
+      "criteria": [
+        {
+          "id": "shape_open",
+          "summary": "the right shape of the solution is still open",
+          "question": {
+            "type": "noul",
+            "instructions": "`item` is one pending request addressed to the software project `project`. Is the right shape of the solution for `item` still open?",
+            "criteria": {
+              "true": "At least two materially different designs could satisfy the item, and the item does not settle which one to build.",
+              "false": "The item names one concrete design, or only one reasonable design exists."
+            }
+          }
+        },
+        {
+          "id": "unverified_assumption",
+          "summary": "it rests on an assumption about its users, the business or the market that it gives no evidence for",
+          "question": {
+            "type": "noul",
+            "instructions": "`item` is one pending request addressed to the software project `project`. Does `item` rest on an assumption about its users, the business or the market that it gives no evidence for?",
+            "criteria": {
+              "true": "A claim about what users need, will adopt or will pay for is taken for granted, and the work would be useless if that claim were wrong.",
+              "false": "The need is shown by evidence in the item itself, such as a measured defect, a reported failure or a decision the product owner already made."
+            }
+          }
+        },
+        {
+          "id": "market_question",
+          "summary": "deciding to build it depends on a market or competitive question",
+          "question": {
+            "type": "noul",
+            "instructions": "`item` is one pending request addressed to the software project `project`. Does deciding whether to build `item` depend on a market or competitive question?",
+            "criteria": {
+              "true": "The decision needs to know what other tools already offer, how the product would be positioned, or whether people outside the team would adopt it.",
+              "false": "The decision depends only on the product's own behavior and its current users."
+            }
+          }
+        }
+      ],
+      "yes_at_least": 0.7,
+      "no_at_most": 0.3,
+      "item_max_chars": 4000,
+      "not_judged_types": [
+        "fix",
+        "perf",
+        "refactor",
+        "finding"
+      ]
     }
   }
 }

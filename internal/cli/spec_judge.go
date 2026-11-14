@@ -16,14 +16,25 @@ import (
 
 const specJudgeUsage = `Usage:
   roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
+  roundfix spec judge --stage idea (--item <reference> [--messages <path>] | --request <path>) [--format <text|json>]
 
 Raises advisory judgments for one active Spec. Never fails for a judgment.
 Also asks whether each open Finding or Backlog Entry belongs with a source
 the Spec adopted. A suggestion never gates.
 
+With --stage idea it judges, before a PRD exists, whether a feature request
+needs the Idea stage: an open Backlog Entry, a note in docs/_inbox/ or,
+with --messages, a message entry, named with --item by the reference that
+'roundfix follow-up' prints, or a request of the session, written to a file
+and named with --request. Of a request file only the first line and the
+first 4,000 characters are sent. It never gates.
+
 Options:
-  --stage   Judge prd, techspec or tasks (default: prd and techspec)
+  --stage   Judge idea, prd, techspec or tasks (default: prd and techspec)
   --format  Output format: text or json (default: text)
+  --item    With --stage idea, the reference of the item to judge
+  --messages With --item, the JSON file of ai-memory messages that holds the item
+  --request With --stage idea, a file that holds a request of the session
 
 Keys, first set wins: ROUNDFIX_OPENROUTER_JUDGE_API_KEY, then the shared
 ROUNDFIX_OPENROUTER_API_KEY (both OpenRouter), then ROUNDFIX_TYPESAFE_API_KEY
@@ -35,12 +46,13 @@ recorded in the Judge Log: <home>/.roundfix/judge/<YYYY-MM>.jsonl (UTC month).
 
 Exit codes:
   0  ran, including advisory, skipped, or stopped results
-  2  usage error, unknown active Spec, or missing required artifact
+  2  usage error, unknown active Spec, or missing required artifact or unknown item
 `
 
 type specJudgeRequest struct {
-	slug, format string
-	stage        judge.Stage
+	slug, format            string
+	item, messages, request string
+	stage                   judge.Stage
 }
 
 func parseSpecJudgeCommand(args []string) (specJudgeRequest, error) {
@@ -49,7 +61,7 @@ func parseSpecJudgeCommand(args []string) (specJudgeRequest, error) {
 		arg := args[i]
 		name, value, equal := strings.Cut(arg, "=")
 		switch name {
-		case "--stage", "--format":
+		case "--stage", "--format", "--item", "--messages", "--request":
 			if !equal {
 				i++
 				if i >= len(args) {
@@ -58,15 +70,24 @@ func parseSpecJudgeCommand(args []string) (specJudgeRequest, error) {
 				value = args[i]
 			}
 			if name == "--stage" {
-				if value != "prd" && value != "techspec" && value != "tasks" {
-					return req, fmt.Errorf("unsupported --stage %q; use prd, techspec or tasks", value)
+				if value != "idea" && value != "prd" && value != "techspec" && value != "tasks" {
+					return req, fmt.Errorf("unsupported --stage %q; use idea, prd, techspec or tasks", value)
 				}
 				req.stage = judge.Stage(value)
-			} else {
+			} else if name == "--format" {
 				if value != "text" && value != "json" {
 					return req, fmt.Errorf("unsupported --format %q; use text or json", value)
 				}
 				req.format = value
+			} else {
+				switch name {
+				case "--item":
+					req.item = value
+				case "--messages":
+					req.messages = value
+				case "--request":
+					req.request = value
+				}
 			}
 		default:
 			if strings.HasPrefix(arg, "-") {
@@ -77,6 +98,30 @@ func parseSpecJudgeCommand(args []string) (specJudgeRequest, error) {
 			}
 			req.slug = arg
 		}
+	}
+	if req.stage == "idea" {
+		if req.item != "" && req.request != "" {
+			return req, fmt.Errorf("--item and --request cannot be used together")
+		}
+		if req.slug != "" {
+			return req, fmt.Errorf("--stage idea takes no Spec slug; name the item with --item or the request with --request")
+		}
+		if req.messages != "" && req.item == "" {
+			return req, fmt.Errorf("--messages applies only to --stage idea with --item")
+		}
+		if req.item == "" && req.request == "" {
+			return req, fmt.Errorf("--stage idea requires --item, the reference of the item to judge, or --request, a file that holds the request")
+		}
+		return req, nil
+	}
+	if req.item != "" {
+		return req, fmt.Errorf("--item applies only to --stage idea")
+	}
+	if req.request != "" {
+		return req, fmt.Errorf("--request applies only to --stage idea")
+	}
+	if req.messages != "" {
+		return req, fmt.Errorf("--messages applies only to --stage idea with --item")
 	}
 	if req.slug == "" {
 		return req, fmt.Errorf("spec judge requires one Spec slug")
@@ -103,6 +148,12 @@ func runSpecJudgeCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	if loaded.GitRoot == "" {
 		return fail(fmt.Errorf("spec judge requires a git repository working tree"))
+	}
+	if req.stage == "idea" {
+		if err := runIdeaStageCommand(ctx, req, loaded, environment, stdout); err != nil {
+			return fail(err)
+		}
+		return exitOK
 	}
 	root, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
 	if err != nil {

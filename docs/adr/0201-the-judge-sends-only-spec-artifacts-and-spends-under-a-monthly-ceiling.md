@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-10-05T00:00:00Z
+updated_at: 2026-11-14T15:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -65,3 +65,5 @@ convenient exception, so the command keeps it by construction:
 **Ceiling value (2026-10-04).** Superseded in part by ADR-0231: the ceiling is the User Config value `jev.monthly_ceiling_usd`, and the US$5 above is its default when that value is unset. Every other part of this decision stands.
 
 **Stage keys (2026-10-05).** Superseded in part by ADR-0239: each OpenRouter stage reads its own Roundfix variable first and `ROUNDFIX_OPENROUTER_API_KEY` second, so the judge reads `ROUNDFIX_OPENROUTER_JUDGE_API_KEY` first and, without any key, names it as the key to set. The generic `OPENROUTER_API_KEY` stays unread, and every other part of this decision stands.
+
+**Amended by [ADR-0404](0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md) (2026-11-14).** The Idea-stage judgment sends one item that is not yet a Spec: an open Backlog Entry, a note or a handed-in message, as the follow-up judge already sends, or a request the user made in the session, handed in as a file. Of that file only the first line and the first 4,000 characters leave the machine, after the secret scan. The recipients, the keys, the Judge Log and the ceiling stay as this decision and its later notes set them.
