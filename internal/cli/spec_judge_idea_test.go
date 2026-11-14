@@ -214,8 +214,10 @@ func TestIdeaStageItemComesOnlyFromTheInventory(t *testing.T) {
 		t.Fatalf("item=%+v err=%v", item, err)
 	}
 	// The file exists, but is neither an open backlog item nor another inventory source.
+	// Its absolute path reaches it from any working directory, so a lookup that
+	// fell back to reading the reference from disk would find it.
 	followUpWrite(t, env.workDir, "arbitrary.md", "# Never send this file\n")
-	for _, ref := range []string{"arbitrary.md", "./" + ideaFeatureRef} {
+	for _, ref := range []string{"arbitrary.md", filepath.Join(env.workDir, "arbitrary.md"), "./" + ideaFeatureRef} {
 		want := fmt.Sprintf("no pending item %q; name a reference that 'roundfix follow-up' lists", ref)
 		if _, err := ideaStageItem(items, ref); err == nil || err.Error() != want {
 			t.Fatalf("lookup %q: %v", ref, err)
