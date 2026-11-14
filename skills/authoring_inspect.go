@@ -52,19 +52,39 @@ func InspectAuthoring(root string, declaration *AuthoringDeclaration) AuthoringS
 			state.Problems = append(state.Problems, AuthoringProblem{".claude/skills/" + phase.Skill + " does not lead to .agents/skills/" + phase.Skill + ", so Claude Code does not load the declared header; link it there", false})
 		}
 	}
+	repository, err := os.OpenRoot(root)
+	if err != nil {
+		if len(state.Declared) > 0 {
+			state.Problems = append(state.Problems, AuthoringProblem{"open repository root " + root + ": " + err.Error(), false})
+		}
+		return state
+	}
+	defer func() { _ = repository.Close() }()
+	// An unreachable .claude/agents is installation's refusal too, so it is
+	// named once and never as a handwritten-file conflict. Without a
+	// declaration nothing there is Roundfix's to report.
+	if err := checkAuthoringAgentsDirectory(repository); err != nil {
+		if len(state.Declared) > 0 {
+			state.Problems = append(state.Problems, AuthoringProblem{err.Error(), false})
+		}
+		return state
+	}
 	// Declared generated files precede leftover names, independently of the
-	// phase whose header or link was reported above.
+	// phase whose header or link was reported above. A read failure is named
+	// as itself, never as a conflict, and installation does not repair it.
 	for _, key := range state.Declared {
-		path, exists, owned, err := generatedAuthoringFile(root, key)
+		path, exists, owned, err := generatedAuthoringFile(repository, key)
 		switch {
-		case err == nil && !exists:
+		case err != nil:
+			state.Problems = append(state.Problems, AuthoringProblem{err.Error(), false})
+		case !exists:
 			state.Problems = append(state.Problems, AuthoringProblem{path + " is missing", true})
 		case !owned:
 			state.Problems = append(state.Problems, authoringConflict(path))
 		default:
 			_, expected, generateErr := GeneratedSubagent(state.Harness, key, entries[key])
-			actual, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
-			if err != nil || generateErr != nil || readErr != nil || !bytes.Equal(actual, expected) {
+			actual, readErr := repository.ReadFile(path)
+			if generateErr != nil || readErr != nil || !bytes.Equal(actual, expected) {
 				state.Problems = append(state.Problems, AuthoringProblem{path + " differs from the declaration", true})
 			}
 		}
@@ -73,10 +93,14 @@ func InspectAuthoring(root string, declaration *AuthoringDeclaration) AuthoringS
 		if _, ok := entries[key]; ok {
 			continue
 		}
-		path, exists, owned, err := generatedAuthoringFile(root, key)
-		if owned {
+		path, exists, owned, err := generatedAuthoringFile(repository, key)
+		switch {
+		case owned:
 			state.Problems = append(state.Problems, AuthoringProblem{path + " has no declared entry", true})
-		} else if len(state.Declared) > 0 && (exists || err != nil) {
+		case len(state.Declared) == 0:
+		case err != nil:
+			state.Problems = append(state.Problems, AuthoringProblem{err.Error(), false})
+		case exists:
 			state.Problems = append(state.Problems, authoringConflict(path))
 		}
 	}

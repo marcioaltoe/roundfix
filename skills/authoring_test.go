@@ -429,3 +429,56 @@ func assertInstalledAuthoringBundle(t *testing.T, root string, declaration *Auth
 		}
 	}
 }
+
+// Installation writes and removes a generated subagent only through the
+// repository root: a link that leaves the repository is never followed, and a
+// link at .claude/agents is refused whatever its target.
+func TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository(t *testing.T) {
+	t.Parallel()
+	_, owned, err := GeneratedSubagent("claude", "prd", AuthoringEntry{Model: "opus", Effort: "xhigh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, link, wantErr string
+		declared            bool
+	}{
+		{"agents_directory_link", ".claude/agents", ".claude/agents is a symbolic link; symbolic links are not supported, so replace it with a directory, then run roundfix skills install --target project again", true},
+		{"claude_directory_link", ".claude", "inspect generated subagent directory .claude/agents: ", true},
+		{"undeclared_removal_through_link", ".claude/agents", "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, outside := t.TempDir(), t.TempDir()
+			target := outside
+			if tc.link == ".claude" {
+				target = filepath.Join(outside, "claude")
+				writeAuthoringFixture(t, target, "agents/roundfix-prd-author.md", string(owned))
+			} else {
+				writeAuthoringFixture(t, target, "roundfix-prd-author.md", string(owned))
+			}
+			link := filepath.Join(root, filepath.FromSlash(tc.link))
+			if err := os.MkdirAll(filepath.Dir(link), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(target, link); err != nil {
+				t.Fatal(err)
+			}
+			before := inspectAuthoringTreeSnapshot(t, outside)
+			declaration := authoringFixtureDeclaration()
+			declaration.Entries["prd"] = AuthoringEntry{Model: "sonnet"}
+			if !tc.declared {
+				declaration = nil
+			}
+			_, err := Install(t.Context(), InstallRequest{ProjectDir: root, Authoring: declaration})
+			if after := inspectAuthoringTreeSnapshot(t, outside); !reflect.DeepEqual(before, after) {
+				t.Fatalf("installation changed the directory outside the repository:\nbefore=%+v\nafter=%+v", before, after)
+			}
+			switch {
+			case tc.wantErr == "" && err != nil:
+				t.Fatalf("undeclared install failed: %v", err)
+			case tc.wantErr != "" && (err == nil || !strings.HasPrefix(err.Error(), tc.wantErr)):
+				t.Fatalf("error=%v want prefix %q", err, tc.wantErr)
+			}
+		})
+	}
+}

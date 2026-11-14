@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -171,15 +172,39 @@ func GeneratedSubagent(harness, key string, entry AuthoringEntry) (string, []byt
 	return ".claude/agents/" + name + ".md", []byte(content.String()), nil
 }
 
-// generatedAuthoringFile inspects only the fixed name and never follows a link
-// at that name. A different key's marker does not confer ownership.
-func generatedAuthoringFile(root, key string) (string, bool, bool, error) {
+const authoringAgentsDirectory = ".claude/agents"
+
+// checkAuthoringAgentsDirectory refuses a symbolic link at .claude/agents, as
+// the package refuses one at .agents/skills, whatever the link's target. The
+// os.Root the caller passes refuses every other component that would leave
+// the repository, so an in-repository .claude alias still resolves.
+func checkAuthoringAgentsDirectory(repository *os.Root) error {
+	info, err := repository.Lstat(authoringAgentsDirectory)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect generated subagent directory %s: %w", authoringAgentsDirectory, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return fmt.Errorf("%s is a symbolic link; symbolic links are not supported, so replace it with a directory, then run roundfix skills install --target project again", authoringAgentsDirectory)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory; move or rename it, then run roundfix skills install --target project again", authoringAgentsDirectory)
+	}
+	return nil
+}
+
+// generatedAuthoringFile inspects only the fixed name inside the repository
+// and never follows a link at that name. A different key's marker does not
+// confer ownership. Callers check the directory first.
+func generatedAuthoringFile(repository *os.Root, key string) (string, bool, bool, error) {
 	path, _, err := GeneratedSubagent("claude", key, AuthoringEntry{})
 	if err != nil {
 		return "", false, false, err
 	}
-	info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(path)))
-	if errors.Is(err, os.ErrNotExist) {
+	info, err := repository.Lstat(path)
+	if errors.Is(err, fs.ErrNotExist) {
 		return path, false, false, nil
 	}
 	if err != nil {
@@ -188,7 +213,7 @@ func generatedAuthoringFile(root, key string) (string, bool, bool, error) {
 	if !info.Mode().IsRegular() {
 		return path, true, false, nil
 	}
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+	data, err := repository.ReadFile(path)
 	if err != nil {
 		return path, true, false, fmt.Errorf("read generated subagent %s: %w", path, err)
 	}
@@ -209,20 +234,49 @@ func generatedAuthoringFile(root, key string) (string, bool, bool, error) {
 	return path, true, false, nil
 }
 
+func openAuthoringRepository(root string) (*os.Root, error) {
+	repository, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, fmt.Errorf("open repository root %s: %w", root, err)
+	}
+	return repository, nil
+}
+
+func closeAuthoringRepository(repository *os.Root, returnErr *error) {
+	if err := repository.Close(); err != nil {
+		*returnErr = errors.Join(*returnErr, fmt.Errorf("close repository root: %w", err))
+	}
+}
+
 type authoringInstallPlan struct {
 	result    AuthoringInstall
 	generated map[string][]byte
 }
 
-func prepareAuthoringInstall(ctx context.Context, root string, declaration *AuthoringDeclaration, files []File) (authoringInstallPlan, error) {
-	plan := authoringInstallPlan{generated: map[string][]byte{}}
+func prepareAuthoringInstall(ctx context.Context, root string, declaration *AuthoringDeclaration, files []File) (plan authoringInstallPlan, returnErr error) {
+	plan = authoringInstallPlan{generated: map[string][]byte{}}
 	declared := declaration != nil && len(declaration.Entries) > 0
+	repository, err := openAuthoringRepository(root)
+	if err != nil {
+		return plan, err
+	}
+	defer closeAuthoringRepository(repository, &returnErr)
+	// Without a declaration Roundfix only removes a file it proves it
+	// generated, and it proves nothing through a link or outside the
+	// repository, so an unreachable directory is left alone.
+	keys := authoringKeys()
+	if err := checkAuthoringAgentsDirectory(repository); err != nil {
+		if declared {
+			return plan, err
+		}
+		keys = nil
+	}
 	// All five conflicts are checked before any bundle file can be written.
-	for _, key := range authoringKeys() {
+	for _, key := range keys {
 		if err := ctx.Err(); err != nil {
 			return plan, err
 		}
-		path, exists, owned, err := generatedAuthoringFile(root, key)
+		path, exists, owned, err := generatedAuthoringFile(repository, key)
 		if err != nil {
 			return plan, err
 		}
@@ -282,12 +336,25 @@ func prepareAuthoringInstall(ctx context.Context, root string, declaration *Auth
 	return plan, nil
 }
 
-func (plan authoringInstallPlan) apply(ctx context.Context, root string) error {
+// apply writes and removes generated subagents only through the repository
+// root, so neither a write nor a removal follows a link out of it.
+func (plan authoringInstallPlan) apply(ctx context.Context, root string) (returnErr error) {
+	if len(plan.result.Subagents) == 0 && len(plan.result.Removed) == 0 {
+		return nil
+	}
+	repository, err := openAuthoringRepository(root)
+	if err != nil {
+		return err
+	}
+	defer closeAuthoringRepository(repository, &returnErr)
+	if err := checkAuthoringAgentsDirectory(repository); err != nil {
+		return err
+	}
 	for _, path := range plan.result.Subagents {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err := writeInstalledFile(filepath.Join(root, filepath.FromSlash(path)), plan.generated[path]); err != nil {
+		if err := writeGeneratedSubagent(repository, path, plan.generated[path]); err != nil {
 			return err
 		}
 	}
@@ -295,9 +362,42 @@ func (plan authoringInstallPlan) apply(ctx context.Context, root string) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil {
+		info, err := repository.Lstat(path)
+		if err != nil {
 			return fmt.Errorf("remove generated subagent %s: %w", path, err)
 		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("remove generated subagent %s: not a regular file", path)
+		}
+		if err := repository.Remove(path); err != nil {
+			return fmt.Errorf("remove generated subagent %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+func writeGeneratedSubagent(repository *os.Root, path string, data []byte) error {
+	info, err := repository.Lstat(path)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+	case err != nil:
+		return fmt.Errorf("inspect generated subagent %s: %w", path, err)
+	case !info.Mode().IsRegular():
+		return fmt.Errorf("write generated subagent %s: not a regular file", path)
+	default:
+		previous, err := repository.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read generated subagent %s: %w", path, err)
+		}
+		if bytes.Equal(previous, data) {
+			return nil
+		}
+	}
+	if err := repository.MkdirAll(authoringAgentsDirectory, 0o755); err != nil {
+		return fmt.Errorf("create generated subagent directory %s: %w", authoringAgentsDirectory, err)
+	}
+	if err := repository.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("write generated subagent %s: %w", path, err)
 	}
 	return nil
 }
