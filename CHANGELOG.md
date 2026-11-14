@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.143.4] - 2026-11-14
+
+### A Spec is sized by one context and by Tasks that earn their verification cycle
+
+- **The grouping rule no longer caps a Spec at four implementation Tasks.** The Baseline's spec routing clause, the `write-idea`, `write-prd`, `write-techspec` and `write-tasks` skills and the Roundfix skill's `spec` reference now size a Spec by two criteria: one context (the sources and the work change the same component or contract, share a root cause, or complete one another), and Tasks that each earn their verification cycle, so a change too small to justify an Agent turn and its Verification joins a neighbouring Task of the same context, and a small source of the same context joins a Spec that is open or being planned instead of becoming a one-Task Spec. Four implementation Tasks plus the QA gate is a reference, not a cap: a Spec that needs more is a signal to check whether it holds more than one context. Every guarantee of the old clause is kept, and the rule now states its reasons. Adopters receive the new clause at their next `roundfix baseline update`. ADR-0400 amends ADR-0208.
+
 ## [0.143.3] - 2026-11-14
 
 ### A nested carrier Git does not list raises no conflict
