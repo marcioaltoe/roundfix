@@ -1,0 +1,55 @@
+$ git diff-tree --no-commit-id --name-only -r cbb53d8fd84ac1f05ef6675741f649961e372d6a
+docs/specs/0390-a-nested-carrier-git-does-not-list-raises-no-conflict/task_01.md
+internal/baseline/apply.go
+internal/baseline/plan.go
+internal/baseline/repository.go
+internal/baseline/repository_test.go
+internal/baseline/transaction.go
+
+exit: 0
+task_01 undeclared changed files: []
+$ git merge-base --is-ancestor f24326dfd616d701ca37da5ff147b5dcabd00340 'cbb53d8fd84ac1f05ef6675741f649961e372d6a^'
+
+exit: 0
+$ git diff-tree --no-commit-id --name-only -r 4a4ef0e7a8cce5c14f993747d5888814da4d5eb2
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/baseline.md
+docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md
+docs/references/behavior-surfaces.json
+docs/specs/0390-a-nested-carrier-git-does-not-list-raises-no-conflict/task_02.md
+docs/user-guide/commands/baseline.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/baseline.md
+skills/testdata/owned-skill-versions.json
+
+exit: 0
+task_02 undeclared changed files: []
+$ git merge-base --is-ancestor f24326dfd616d701ca37da5ff147b5dcabd00340 '4a4ef0e7a8cce5c14f993747d5888814da4d5eb2^'
+
+exit: 0
+$ git diff f24326dfd616d701ca37da5ff147b5dcabd00340 4a4ef0e7a8cce5c14f993747d5888814da4d5eb2 -- docs/specs/0390-a-nested-carrier-git-does-not-list-raises-no-conflict/_authorization.md
+
+exit: 0
+Prohibited changed paths: []
+.agents/skills/roundfix/SKILL.md: QA settlement unchanged True
+.agents/skills/roundfix/references/baseline.md: QA settlement unchanged True
+skills/roundfix/SKILL.md: QA settlement unchanged True
+skills/roundfix/references/baseline.md: QA settlement unchanged True
+$ go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-scope-afds8gmp/overlay.json -count=1 -timeout 20m -run '^TestQA0390GovernedScope$' -v ./internal/speccheck
+=== RUN   TestQA0390GovernedScope
+=== PAUSE TestQA0390GovernedScope
+=== CONT  TestQA0390GovernedScope
+governed: internal/baseline/repository_test.go
+governed: .agents/skills/roundfix/SKILL.md
+governed: .agents/skills/roundfix/references/baseline.md
+governed: skills/roundfix/SKILL.md
+--- PASS: TestQA0390GovernedScope (0.00s)
+PASS
+suiteguard: guard cost: measured 3139 paths; fingerprint took 647.991209ms before and 138.38375ms after
+ok  	roundfix/internal/speccheck	1.106s
+
+exit: 0
+$ git diff --name-only HEAD
+
+exit: 0
+Seeded authorization audit covers both Task commits at operative revision f24326dfd616d701ca37da5ff147b5dcabd00340. No new governed Task is omitted.

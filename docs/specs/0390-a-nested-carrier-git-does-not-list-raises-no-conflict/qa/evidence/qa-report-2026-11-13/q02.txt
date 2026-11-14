@@ -1,0 +1,42 @@
+$ go test -count=1 -timeout 40m -v ./internal/baseline -run '^(TestNestedCarrierInventoryKeepsOnlyCarriersGitLists|TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments|TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths|TestRepositoryInspectionUsesNarrowReadOnlyGitCommands|TestRepositorySnapshotDigestChangesWithBoundedBytesOnly)$'
+=== RUN   TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== PAUSE TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== PAUSE TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== RUN   TestRepositoryInspectionUsesNarrowReadOnlyGitCommands
+=== PAUSE TestRepositoryInspectionUsesNarrowReadOnlyGitCommands
+=== RUN   TestRepositorySnapshotDigestChangesWithBoundedBytesOnly
+=== PAUSE TestRepositorySnapshotDigestChangesWithBoundedBytesOnly
+=== CONT  TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== CONT  TestRepositoryInspectionUsesNarrowReadOnlyGitCommands
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+--- PASS: TestRepositoryInspectionUsesNarrowReadOnlyGitCommands (0.00s)
+=== CONT  TestRepositorySnapshotDigestChangesWithBoundedBytesOnly
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== CONT  TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+--- PASS: TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths (0.07s)
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+--- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection (0.00s)
+--- PASS: TestRepositorySnapshotDigestChangesWithBoundedBytesOnly (0.07s)
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers
+--- PASS: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists (0.29s)
+    --- PASS: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers (0.00s)
+    --- PASS: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers (0.00s)
+PASS
+suiteguard: guard cost: measured 3119 paths; fingerprint took 1.615741666s before and 140.592167ms after
+ok  	roundfix/internal/baseline	2.343s
+
+exit: 0

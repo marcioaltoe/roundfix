@@ -1,0 +1,42 @@
+{
+  "audited-with": {
+    "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+    "state": "current",
+    "paths": [
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+    ],
+    "exit": 0
+  },
+  "base-with": {
+    "planDigest": "sha256:97afcc52a13febe4e5d1b3116c499c338bb915ce1a5af7636ec86cc6fb26e2f7",
+    "state": "current",
+    "paths": [
+      ".storage/sim/wt/AGENTS.md",
+      ".storage/sim/wt/CLAUDE.md",
+      ".storage/sim/wt/internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      ".storage/sim/wt/internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md",
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+    ],
+    "exit": 0
+  },
+  "audited-without": {
+    "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+    "state": "current",
+    "paths": [
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+    ],
+    "exit": 0
+  },
+  "base-without": {
+    "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+    "state": "current",
+    "paths": [
+      "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+      "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+    ],
+    "exit": 0
+  }
+}

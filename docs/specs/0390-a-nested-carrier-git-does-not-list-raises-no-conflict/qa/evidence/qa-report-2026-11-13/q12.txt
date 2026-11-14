@@ -1,0 +1,56 @@
+Mutation on independent archived/committed audited-head fixture.
+$ git diff -- internal/baseline/repository.go
+diff --git a/internal/baseline/repository.go b/internal/baseline/repository.go
+index 2afcd20..d902e49 100644
+--- a/internal/baseline/repository.go
++++ b/internal/baseline/repository.go
+@@ -471,7 +471,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
+ 			}
+ 			builder.listed = listed
+ 		}
+-		if _, listed := builder.listed[normalized]; !listed {
++		if _, listed := builder.listed[normalized]; false && !listed {
+ 			if entry.IsDir() {
+ 				return fs.SkipDir
+ 			}
+
+exit: 0
+
+$ go test -count=1 -timeout 40m -v ./internal/baseline -run '^(TestNestedCarrierInventoryKeepsOnlyCarriersGitLists|TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments)$'
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== PAUSE TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== CONT  TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== NAME  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+    repository_test.go:404: carrier paths = ["packages/api/AGENTS.md" "packages/web/CLAUDE.md"], want ["packages/api/AGENTS.md"]
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+--- FAIL: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing (0.00s)
+    --- FAIL: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection (0.00s)
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers
+    repository_test.go:313: nested carriers = [" lead/AGENTS.md" ".storage/copy/CLAUDE.md" ".storage/simulation/wt-ignored/AGENTS.md" ".storage/simulation/wt-ignored/forced/AGENTS.md" ".storage/simulation/wt-ignored/packages/api/AGENTS.md" "forced/AGENTS.md" "modules/sub/AGENTS.md" "nested/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md" "trees/wt-visible/AGENTS.md" "trees/wt-visible/forced/AGENTS.md" "trees/wt-visible/packages/api/AGENTS.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+    repository_test.go:316: nested conflict paths = [" lead/AGENTS.md" ".storage/copy/CLAUDE.md" ".storage/simulation/wt-ignored/AGENTS.md" ".storage/simulation/wt-ignored/forced/AGENTS.md" ".storage/simulation/wt-ignored/packages/api/AGENTS.md" "forced/AGENTS.md" "modules/sub/AGENTS.md" "nested/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md" "trees/wt-visible/AGENTS.md" "trees/wt-visible/forced/AGENTS.md" "trees/wt-visible/packages/api/AGENTS.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+=== NAME  TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+    repository_test.go:324: foreign carriers changed warnings: before=[{Code:baseline.inventory.nested-carrier-conflict Path: lead/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:forced/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:packages/api/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:packages/web/CLAUDE.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review}] after=[{Code:baseline.inventory.nested-carrier-conflict Path: lead/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:.storage/copy/CLAUDE.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:.storage/simulation/wt-ignored/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:.storage/simulation/wt-ignored/forced/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:.storage/simulation/wt-ignored/packages/api/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:forced/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:modules/sub/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:nested/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:packages/api/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:packages/web/CLAUDE.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:trees/wt-visible/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:trees/wt-visible/forced/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review} {Code:baseline.inventory.nested-carrier-conflict Path:trees/wt-visible/packages/api/AGENTS.md Message:nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review}]
+    repository_test.go:327: foreign carriers changed snapshot digest: before=sha256:92c86772054461a3a7794e6ab2c6e5293a2986d46c7ab508ddbe109967ffe9e6 after=sha256:5a62f3591afdb5159c5f954ba93968638f913a424ff085d5e4284d9a70a6008b
+--- FAIL: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists (0.24s)
+    --- PASS: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers (0.00s)
+    --- FAIL: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers (0.00s)
+FAIL
+suiteguard: guard cost: measured 3111 paths; fingerprint took 171.685916ms before and 141.858709ms after
+FAIL	roundfix/internal/baseline	0.915s
+FAIL
+
+exit: 1

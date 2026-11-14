@@ -1,0 +1,43 @@
+Mutation on independent archived/committed audited-head fixture.
+$ git diff -- internal/baseline/repository.go
+diff --git a/internal/baseline/repository.go b/internal/baseline/repository.go
+index 2afcd20..13448f6 100644
+--- a/internal/baseline/repository.go
++++ b/internal/baseline/repository.go
+@@ -464,7 +464,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
+ 	}
+ 
+ 	if strings.Contains(normalized, "/") && !strings.HasPrefix(normalized, "docs/agents/") {
+-		if builder.listed == nil {
++		if true {
+ 			listed, err := builder.listCarriers()
+ 			if err != nil {
+ 				return err
+
+exit: 0
+
+$ go test -count=1 -timeout 40m -v ./internal/baseline -run '^TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments$'
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== RUN   TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== PAUSE TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing
+=== CONT  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection
+=== NAME  TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates
+    repository_test.go:383: Git calls = [[rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}] [rev-list --max-parents=0 HEAD] [ls-files -z --cached --others --exclude-standard -- :(glob)**/AGENTS.md :(glob)**/CLAUDE.md] [ls-files -z --cached --others --exclude-standard -- :(glob)**/AGENTS.md :(glob)**/CLAUDE.md]], want [[rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}] [rev-list --max-parents=0 HEAD] [ls-files -z --cached --others --exclude-standard -- :(glob)**/AGENTS.md :(glob)**/CLAUDE.md]]
+--- FAIL: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/listing_failure_stops_inspection (0.00s)
+    --- FAIL: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/one_listing_for_two_candidates (0.00s)
+    --- PASS: TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments/root_carriers_and_agent_guides_need_no_listing (0.00s)
+FAIL
+suiteguard: guard cost: measured 3111 paths; fingerprint took 164.745833ms before and 143.276416ms after
+FAIL	roundfix/internal/baseline	0.632s
+FAIL
+
+exit: 1

@@ -1,0 +1,195 @@
+import os, sys, subprocess, tempfile, pathlib, re, json, tarfile, io, shlex, hashlib
+R=pathlib.Path.cwd().resolve()
+S=R/'docs/specs/0390-a-nested-carrier-git-does-not-list-raises-no-conflict'
+E=S/'qa/evidence/qa-report-2026-11-13'
+REPORT=S/'qa/qa-report-2026-11-13.md'
+HEAD='4a4ef0e7a8cce5c14f993747d5888814da4d5eb2'
+BASE='f24326dfd616d701ca37da5ff147b5dcabd00340'
+ENV=os.environ.copy(); ENV['GOPROXY']='off'; ENV['GOSUMDB']='off'
+for k in list(ENV):
+ if k in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','OPENROUTER_API_KEY'] or (k.startswith('ROUNDFIX_') and ('KEY' in k or 'TOKEN' in k)): ENV.pop(k)
+CACHE={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+def run(args,cwd=R,env=None):
+ p=subprocess.run([str(a) for a in args],cwd=cwd,env=env or ENV,capture_output=True,text=True)
+ return p, '$ '+shlex.join([str(a) for a in args])+'\n'+p.stdout+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+def record(row,ok,log,note,filename=None):
+ name=filename or row.lower()+'.txt'; (E/name).write_text(log)
+ text=REPORT.read_text(); status='pass' if ok else 'fail'
+ text=re.sub(r'(?m)^\| '+row+r' \| pending \|', '| '+row+' | '+status+' |',text)
+ start=text.index('### '+row+'\n'); end=text.find('\n### ',start+1)
+ if end<0:end=len(text)
+ block=text[start:end].replace('Observation: pending.','Observation: '+note+' [Evidence](evidence/qa-report-2026-11-13/'+name+').')
+ REPORT.write_text(text[:start]+block+text[end:]); print(row,status,note,flush=True)
+def suite(row,args,names=()):
+ p,log=run(args); ok=p.returncode==0 and all(re.search(r'--- PASS: '+re.escape(n)+r'(?: |\n)',p.stdout) for n in names)
+ record(row,ok,log,'Exit '+str(p.returncode)+'. '+('Required named tests passed.' if names else 'Command completed successfully.' if ok else 'Inspect failing transcript.'))
+def extract(revision,dest):
+ data=subprocess.check_output(['git','archive',revision],cwd=R)
+ with tarfile.open(fileobj=io.BytesIO(data)) as a:a.extractall(dest,filter='data')
+def initrepo(dest):
+ for args in [['git','init','-q'],['git','add','.'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','scratch QA fixture']]:
+  p,log=run(args,cwd=dest)
+  if p.returncode: raise RuntimeError(log)
+def cli(args,env=None):
+ with tempfile.TemporaryDirectory(prefix='qa0390-home-') as home, tempfile.TemporaryDirectory(prefix='qa0390-tmp-') as tmp:
+  tools=pathlib.Path(tmp)/'tools';tools.mkdir();gh=tools/'gh';gh.write_text('#!/bin/sh\nprintf "[]\\n"\n');gh.chmod(0o755)
+  e=(env or ENV).copy();e.update(CACHE);e.update(HOME=home,TMPDIR=tmp,PATH=str(tools)+os.pathsep+e['PATH'])
+  return run(args,env=e)
+def suites():
+ names=['TestNestedCarrierInventoryKeepsOnlyCarriersGitLists','TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments','TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths','TestRepositoryInspectionUsesNarrowReadOnlyGitCommands','TestRepositorySnapshotDigestChangesWithBoundedBytesOnly']
+ suite('Q02',['go','test','-count=1','-timeout','40m','-v','./internal/baseline','-run','^('+'|'.join(names)+')$'],names)
+ suite('Q03',['go','test','-count=1','-timeout','40m','-v','./internal/baseline'],names[:4])
+ suite('Q04',['go','test','-count=1','-timeout','20m','./skills'])
+ suite('Q05',['go','test','-count=1','-timeout','40m','-run','Baseline','./internal/cli'])
+ suite('Q06',['go','test','-count=1','-timeout','30m','-tags','docscontract','./internal/docscontract'])
+ e=ENV.copy();e['GOOS']='windows';p,log=run(['go','build','-buildvcs=false','./internal/baseline'],env=e);record('Q07',p.returncode==0,log,'Windows package build exit '+str(p.returncode)+'.')
+def sabotage(n):
+ row='Q'+str(n+8).zfill(2); logs=[]
+ with tempfile.TemporaryDirectory(prefix='qa0390-sabotage-'+str(n)+'-') as tmp:
+  dest=pathlib.Path(tmp);extract(HEAD,dest);initrepo(dest)
+  path=dest/'internal/baseline/repository.go';s=path.read_text()
+  if n==1:s=s.replace('"--exclude-standard", ', '',1);pattern='^(TestNestedCarrierInventoryKeepsOnlyCarriersGitLists|TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments)$'
+  if n==2:s=s.replace('if raw, ok := runner.(rawGitRunner); ok {','if raw, ok := runner.(rawGitRunner); false && ok {',1);pattern='^TestNestedCarrierInventoryKeepsOnlyCarriersGitLists$'
+  if n==3:s=s.replace('"--cached", ', '',1);pattern='^(TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths|TestNestedCarrierInventoryKeepsOnlyCarriersGitLists)$'
+  if n==4:s=s.replace('if _, listed := builder.listed[normalized]; !listed {','if _, listed := builder.listed[normalized]; false && !listed {',1);pattern='^(TestNestedCarrierInventoryKeepsOnlyCarriersGitLists|TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments)$'
+  if n==5:s=s.replace('strings.Contains(normalized, "/") && !strings.HasPrefix(normalized, "docs/agents/")','strings.Contains(normalized, "/")',1);pattern='^TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths$'
+  if n==6:s=s.replace('if builder.listed == nil {','if true {',1);pattern='^TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments$'
+  assert s!=path.read_text();path.write_text(s)
+  p,log=run(['git','diff','--','internal/baseline/repository.go'],cwd=dest);logs.append('Mutation on independent archived/committed audited-head fixture.\n'+log)
+  p,log=run(['go','test','-count=1','-timeout','40m','-v','./internal/baseline','-run',pattern],cwd=dest);logs.append(log)
+  expected={1:['TestNestedCarrierInventoryKeepsOnlyCarriersGitLists','TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments'],2:['TestNestedCarrierInventoryKeepsOnlyCarriersGitLists'],3:['TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths','TestNestedCarrierInventoryKeepsOnlyCarriersGitLists'],4:['TestNestedCarrierInventoryKeepsOnlyCarriersGitLists','TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments'],5:['TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths'],6:['TestNestedCarrierInventoryAsksGitOnceWithNarrowArguments']}[n]
+  ok=p.returncode!=0 and all('--- FAIL: '+x+' ' in p.stdout for x in expected) and 'build failed' not in p.stdout+p.stderr
+  record(row,ok,'\n'.join(logs),'Sabotage '+str(n)+' rejected by '+', '.join(expected)+'.' if ok else 'Required rejection not proved; inspect transcript.')
+if __name__=='__main__':
+ if sys.argv[1]=='suites':suites()
+ if sys.argv[1]=='sabotage':sabotage(int(sys.argv[2]))
+
+def cloneflow():
+ logs=[]; results={}
+ with tempfile.TemporaryDirectory(prefix='qa0390-base-') as tmp:
+  extract(BASE,tmp)
+  p,log=run(['go','build','-buildvcs=false','-o',R/'bin/roundfix-base-0390','./cmd/roundfix'],cwd=pathlib.Path(tmp));logs.append(log)
+  if p.returncode:record('Q08',False,''.join(logs),'Delivery-base build failed.');return
+ with tempfile.TemporaryDirectory(prefix='qa0390-clone-') as tmp:
+  clone=pathlib.Path(tmp)/'repo'
+  for args in [['git','clone','--no-hardlinks','-q',str(R),str(clone)],['git','-C',str(clone),'rev-parse','HEAD']]:
+   p,log=run(args);logs.append(log);assert p.returncode==0,log
+  assert p.stdout.strip()==HEAD
+  exclude=clone/'.git/info/exclude';exclude.write_text(exclude.read_text()+'\n.storage/\n')
+  p,log=run(['git','-C',str(clone),'worktree','add','-q','--detach','.storage/sim/wt','HEAD']);logs.append(log);assert p.returncode==0,log
+  for state in ['with','without']:
+   if state=='without':
+    p,log=run(['git','-C',str(clone),'worktree','remove','.storage/sim/wt']);logs.append(log);assert p.returncode==0,log
+   for label,binary in [('audited','./bin/roundfix'),('base','./bin/roundfix-base-0390')]:
+    args=[binary,'baseline','update','--repo',str(clone),'--no-skills','--no-history','--format','json']
+    p,_=cli(args)
+    obj=json.loads(p.stdout)
+    def paths(x):
+     out=[]
+     if isinstance(x,dict):
+      if x.get('code')=='baseline.inventory.nested-carrier-conflict':out.append(x['path'])
+      for v in x.values():out+=paths(v)
+     elif isinstance(x,list):
+      for v in x:out+=paths(v)
+     return out
+    result={'planDigest':obj.get('planDigest'),'state':obj.get('state'),'paths':sorted(set(paths(obj))),'exit':p.returncode}
+    results[label+'-'+state]=result
+    logs.append('$ '+shlex.join(args)+'\nExtracted values:\n'+json.dumps(result,indent=2)+'\nstderr:\n'+p.stderr+'\n')
+  p,log=run(['git','-C',str(clone),'status','--porcelain']);logs.append(log)
+  assert p.returncode==0
+  logs.append('Scratch clone persisted status after worktree removal: '+repr(p.stdout)+'\n')
+ a=results['audited-with'];b=results['audited-without'];c=results['base-without'];d=results['base-with']
+ ok=bool(a['planDigest']) and a['planDigest']==b['planDigest'] and a['paths']==b['paths']==c['paths'] and any(x.startswith('.storage/sim/wt/') for x in d['paths']) and a['state']==b['state'] and all(x['exit'] in [0,3] for x in results.values())
+ logs.append('Invariants: audited digest identical; audited paths identical; audited/base paths equal without worktree; base with worktree contains .storage/sim/wt/ paths: '+str(ok)+'\n')
+ (E/'clone-values.txt').write_text(json.dumps(results,indent=2)+'\n')
+ record('Q08',ok,''.join(logs),'Four independent public-command invocations; digests and warning paths compared; linked worktree removed and clone status read.')
+def wording():
+ tech=(S/'_techspec.md').read_text();blocks=re.findall(r'```markdown\n(.*?)\n\s*```',tech,re.S);a=blocks[0].strip();b=blocks[1].strip(); logs=[];ok=True
+ for rel in ['docs/user-guide/commands/baseline.md','.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md']:
+  text=(R/rel).read_text();found=a in text;ok &= found;logs.append(rel+': exact Text A '+str(found))
+  phrase='A nested `AGENTS.md` or `CLAUDE.md`, an unmarked guide at a\nmanaged path and a guide with an unknown marker still warn.'
+  i=text.find(a);logs.append('Text A immediately follows anchor paragraph: '+str(text[:i].rstrip().endswith('and a guide with an unknown marker still warn.')))
+ refs=[(R/x).read_bytes() for x in ['.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md']];ok &= refs[0]==refs[1];logs.append('Canonical/mirror byte equality: '+str(refs[0]==refs[1]))
+ for rel in ['docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md','docs/adr/0399-the-baseline-inventories-a-nested-carrier-only-when-git-lists-it.md']:
+  text=(R/rel).read_text();accepted='status: accepted' in text.split('---',2)[1];ok &=accepted;logs.append(rel+': accepted '+str(accepted))
+  if '/0070-' in rel:ok &= text.rstrip().endswith(b);logs.append('Text B complete and last: '+str(text.rstrip().endswith(b)))
+ matches=[]
+ for path in (R/'internal/baseline').glob('*.go'):
+  if not path.name.endswith('_test.go'):
+   for n,line in enumerate(path.read_text().splitlines(),1):
+    if '"--exclude-standard"' in line:matches.append((str(path.relative_to(R)),n,line.strip()))
+ ok &= len(matches)==1 and matches[0][0]=='internal/baseline/repository.go';logs.append('Production listing argument occurrences: '+json.dumps(matches))
+ record('Q15',bool(ok),'\n'.join(logs)+'\n','Exact contract text, accepted ADRs, reference equality and one production listing argument set verified; Task 02 suite commands independently executed.')
+def outside():
+ values=json.loads((E/'clone-values.txt').read_text());source=(S/'references/2026-11-13-quaestor-a-nested-carrier-conflict-inside-a-git-ignored-worktree.md').read_text()
+ base=values['base-with']['paths'];before=[x for x in base if x.startswith('.storage/sim/wt/')];after=[x for x in values['base-without']['paths'] if x.startswith('.storage/sim/wt/')]
+ ok='01a1d4de-8d39-7f60-b575-5703959df8da' in source and all(any(x.endswith('/'+carrier) for x in before) for carrier in ['AGENTS.md','CLAUDE.md']) and not after
+ record('Q16',ok,'Outside source read 2026-11-13: quaestor message 01a1d4de-8d39-7f60-b575-5703959df8da, gesttione-solutions-quaestor, measured 2026-11-13, adopted verbatim in Spec references.\nReported AGENTS.md/CLAUDE.md warnings with linked worktree; zero such warnings after removal.\nFresh base worktree-specific paths: '+json.dumps(before)+'\nFresh base paths after removal: '+json.dumps(after)+'\nAudited paths with/without: '+json.dumps(values['audited-with']['paths'])+' / '+json.dumps(values['audited-without']['paths'])+'\n','External reported behavior reproduced at delivery base and removed at audited head; source was checked offline, no message or network access.')
+ prd=(S/'_prd.md').read_text();test=(R/'internal/baseline/repository_test.go').read_text();log=(E/'q02.txt').read_text()
+ ok=all(x in prd for x in ['https://git-scm.com/docs/git-ls-files','https://git-scm.com/docs/gitignore','Files already tracked by Git are not','--exclude-standard']) and all(x in test for x in ['forced/AGENTS.md','.storage/copy/CLAUDE.md']) and '--- PASS: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists ' in log
+ text='Outside sources read 2026-11-13, offline passages quoted in PRD Acceptance evidence:\nhttps://git-scm.com/docs/git-ls-files: --exclude-standard uses info/exclude, per-directory .gitignore and the global exclusion file.\nhttps://git-scm.com/docs/gitignore: ignore rules do not affect already-tracked files.\nFresh regression outcomes: forced/AGENTS.md remains inventoried and warned despite its directory being ignored; .storage/copy/CLAUDE.md is omitted. Leading-space and untracked nonignored paths remain. Named test and before/after cases passed, exit 0.\n'
+ record('Q17',ok,text,'Both external documentation passages checked against real-Git regression assertions and fresh passing test; no online lookup needed.')
+def gitoutside():
+ logs=[]
+ p,log=run(['git','--version']);logs.append(log)
+ with tempfile.TemporaryDirectory(prefix='qa0390-git-') as tmp:
+  root=pathlib.Path(tmp)/'root';root.mkdir();(root/'AGENTS.md').write_text('root instructions\n');initrepo(root)
+  sub=pathlib.Path(tmp)/'source';sub.mkdir();(sub/'AGENTS.md').write_text('submodule instructions\n');initrepo(sub)
+  for args in [['git','-C',str(root),'worktree','add','-q','--detach','trees/wt','HEAD'],['git','-C',str(root),'-c','protocol.file.allow=always','submodule','add','-q',str(sub),'modules/sub']]:
+   p,log=run(args);logs.append(log);assert p.returncode==0,log
+  p,log=run(['git','-C',str(root),'ls-files','-z','--cached','--others','--exclude-standard']);entries=p.stdout.split(chr(0));logs.append('$ git -C <scratch> ls-files -z --cached --others --exclude-standard\nNUL entries: '+json.dumps(entries)+'\nexit: '+str(p.returncode)+'\n');listed=p.returncode==0 and not any(x.startswith(('trees/wt/','modules/sub/')) and not x.endswith('/') for x in entries)
+  p,log=run(['git','-C',str(root),'check-ignore','modules/sub/AGENTS.md']);logs.append(log);ignored=p.returncode==128 and 'submodule' in p.stderr
+  p,log=run(['git','-C',str(root),'worktree','remove','trees/wt']);logs.append(log)
+ record('Q18',listed and ignored,''.join(logs)+'External installed Git measurement read 2026-11-13; all repositories created for this pass and removed afterwards.\n','Installed Git excludes linked-worktree and submodule contents; check-ignore inside submodule exits 128.')
+def glossary():
+ texts=[(S/name).read_text() for name in ['_prd.md','_techspec.md']];none=all(re.search(r'## Glossary\s+None\.',t) for t in texts)
+ p,log=run(['git','diff',BASE,HEAD,'--','CONTEXT.md']);unchanged=p.returncode==0 and not p.stdout
+ p,testlog=run(['go','test','-count=1','-timeout','30m','-tags','docscontract','./internal/docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$','-v'])
+ record('Q19',none and unchanged and p.returncode==0 and '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in p.stdout,'PRD/TechSpec Glossary declarations: None: '+str(none)+'\n'+log+testlog,'Both Glossary declarations are None; CONTEXT.md unchanged in Task range; named glossary contract passed.')
+def history():
+ logs=[];ok=True;changed=[]
+ auth=(S/'_authorization.md').read_text();grant=set(re.findall(r'^  - (.+)$',auth.split('paths:',1)[1].split('operations:',1)[0],re.M))
+ for task,commit in [('task_01','cbb53d8fd84ac1f05ef6675741f649961e372d6a'),('task_02',HEAD)]:
+  text=(S/(task+'.md')).read_text();declared=set(re.findall(r'^- (?:instruction|interface|creates): `([^`]+)`',text,re.M));declared.add(str((S/(task+'.md')).relative_to(R)))
+  p,log=run(['git','diff-tree','--no-commit-id','--name-only','-r',commit]);logs.append(log);paths=p.stdout.splitlines();changed+=paths;unexpected=set(paths)-declared;ok &=not unexpected;logs.append(task+' undeclared changed files: '+json.dumps(sorted(unexpected))+'\n')
+  p,log=run(['git','merge-base','--is-ancestor',BASE,commit+'^']);logs.append(log);ok &=p.returncode==0
+ p,log=run(['git','diff',BASE,HEAD,'--',str((S/'_authorization.md').relative_to(R))]);logs.append(log);ok &=not p.stdout
+ prohibited=[]
+ exact={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','CONTEXT.md','docs/references/coverage-record.json'}
+ for path in changed:
+  banned=path in exact or path.startswith(('.github/workflows/','docs/agents/','internal/baseline/assets/','internal/baseline/testdata/'))
+  if path.startswith(('.agents/skills/','skills/')):
+   allowed=path in {'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/baseline.md','skills/roundfix/SKILL.md','skills/roundfix/references/baseline.md','skills/testdata/owned-skill-versions.json'}
+   banned |=not allowed
+  if banned:prohibited.append(path)
+ ok &=not prohibited;logs.append('Prohibited changed paths: '+json.dumps(prohibited)+'\n')
+ for path in changed:
+  if path.endswith('.md') and path.startswith(('.agents/skills/','skills/')):
+   contents=[]
+   for rev in [BASE,HEAD]:
+    p,_=run(['git','show',rev+':'+path]);m=re.search(r'(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)',p.stdout);contents.append(m.group(0) if m else '')
+   equal=contents[0]==contents[1];ok &=equal;logs.append(path+': QA settlement unchanged '+str(equal)+'\n')
+ # Execute the actual classifier through an overlay; physical repository stays untouched.
+ with tempfile.TemporaryDirectory(prefix='qa0390-scope-') as tmp:
+  tmp=pathlib.Path(tmp);code='package speccheck\nimport ("testing"; "fmt")\nfunc TestQA0390GovernedScope(t *testing.T) { t.Parallel(); paths := []string{'+','.join(json.dumps(x) for x in changed)+'}; granted := map[string]bool{'+','.join(json.dumps(x)+':true' for x in sorted(grant))+'}; for _,p := range paths { if GovernedPath(p) { fmt.Println("governed:",p); if !granted[p] {t.Errorf("outside grant: %s",p)} } } }\n'
+  source=tmp/'scope.go';source.write_text(code);overlay=tmp/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(R/'internal/speccheck/qa0390_scope_test.go'):str(source)}}))
+  p,log=run(['go','test','-overlay',str(overlay),'-count=1','-timeout','20m','-run','^TestQA0390GovernedScope$','-v','./internal/speccheck']);logs.append(log);ok &=p.returncode==0 and '--- PASS: TestQA0390GovernedScope ' in p.stdout
+ p,log=run(['git','diff','--name-only','HEAD']);logs.append(log);ok &=not p.stdout
+ logs.append('Seeded authorization audit covers both Task commits at operative revision '+BASE+'. No new governed Task is omitted.\n')
+ record('Q20',bool(ok),''.join(logs),'Actual Task commit paths match declarations; live GovernedPath classifier confirms exact grant coverage; protected paths, settlement sections and tracked working tree unchanged.')
+def initial():
+ log=(E/'build.txt').read_text()+'\nDaemon-supplied repository Verification: make verify-changed; audited head '+HEAD+'; pass, exit 0; diagnostics removed on success; not rerun.\n'
+ record('Q01',True,log,'Run binary built; Daemon repository Verification passed at audited head, recorded without rerun.')
+def prrow():
+ status='blocked (environment: no open Pull Request)';t=REPORT.read_text().replace('| Q21 | pending |','| Q21 | '+status+' |')
+ text='Authoritative input: no open Pull Request on Spec target branch; Run branch is never pushed. Approval: operative approved delivery authorization at '+BASE+' grants listed operations, and is unchanged in Task range. Checks: Daemon make verify-changed pass at '+HEAD+'. Threads: none, since no Pull Request exists. Merge-Ready acceptance: absent; no supervised equivalent. Claimed candidate: '+HEAD+'. Unblock: operator creates the target-branch Pull Request later in delivery and obtains current-head Merge-Ready/review evidence. No GitHub or Review Source call made.\n'
+ (E/'q21.txt').write_text(text)
+ i=t.index('### Q21\n');t=t[:i]+t[i:].replace('Observation: pending.','Observation: '+text.strip()+' [Evidence](evidence/qa-report-2026-11-13/q21.txt).',1);REPORT.write_text(t);print('Q21 '+status,flush=True)
+def archiveplan():
+ p,log=cli(['./bin/roundfix','archive',S.name,'--plan','--offline']);(E/'archive-plan.txt').write_text(log);print('archive plan exit',p.returncode,flush=True)
+if __name__=='__main__':
+ stage=sys.argv[1]
+ if stage=='clone':cloneflow()
+ if stage=='checks':
+  initial();wording();outside();gitoutside();glossary();history();prrow()
+ if stage=='archive':archiveplan()

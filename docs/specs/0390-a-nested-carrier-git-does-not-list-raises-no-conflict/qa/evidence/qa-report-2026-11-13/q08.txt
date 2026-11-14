@@ -1,0 +1,77 @@
+$ go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0390-a-nested-carrier-git-does-not-list-raises-no-conflict-9855c056e730603c-60661720-55a952fb/run_20261114T014502Z_eabf375129b83d03/bin/roundfix-base-0390 ./cmd/roundfix
+
+exit: 0
+$ git clone --no-hardlinks -q /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0390-a-nested-carrier-git-does-not-list-raises-no-conflict-9855c056e730603c-60661720-55a952fb/run_20261114T014502Z_eabf375129b83d03 /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo
+
+exit: 0
+$ git -C /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo rev-parse HEAD
+4a4ef0e7a8cce5c14f993747d5888814da4d5eb2
+
+exit: 0
+$ git -C /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo worktree add -q --detach .storage/sim/wt HEAD
+
+exit: 0
+$ ./bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo --no-skills --no-history --format json
+Extracted values:
+{
+  "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+  "state": "current",
+  "paths": [
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+    "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+  ],
+  "exit": 0
+}
+stderr:
+
+$ ./bin/roundfix-base-0390 baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo --no-skills --no-history --format json
+Extracted values:
+{
+  "planDigest": "sha256:97afcc52a13febe4e5d1b3116c499c338bb915ce1a5af7636ec86cc6fb26e2f7",
+  "state": "current",
+  "paths": [
+    ".storage/sim/wt/AGENTS.md",
+    ".storage/sim/wt/CLAUDE.md",
+    ".storage/sim/wt/internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+    ".storage/sim/wt/internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md",
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+    "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+  ],
+  "exit": 0
+}
+stderr:
+
+$ git -C /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo worktree remove .storage/sim/wt
+
+exit: 0
+$ ./bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo --no-skills --no-history --format json
+Extracted values:
+{
+  "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+  "state": "current",
+  "paths": [
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+    "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+  ],
+  "exit": 0
+}
+stderr:
+
+$ ./bin/roundfix-base-0390 baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo --no-skills --no-history --format json
+Extracted values:
+{
+  "planDigest": "sha256:4d7703c99faa52391ec3cb49e3ec6ffc3321c7299b9e65c9b2a5615d936112f5",
+  "state": "current",
+  "paths": [
+    "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+    "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"
+  ],
+  "exit": 0
+}
+stderr:
+
+$ git -C /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0390-clone-c_ujfynf/repo status --porcelain
+
+exit: 0
+Scratch clone persisted status after worktree removal: ''
+Invariants: audited digest identical; audited paths identical; audited/base paths equal without worktree; base with worktree contains .storage/sim/wt/ paths: True

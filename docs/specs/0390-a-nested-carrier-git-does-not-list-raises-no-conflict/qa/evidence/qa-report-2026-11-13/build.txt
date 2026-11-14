@@ -1,0 +1,5 @@
+$ GOPROXY=off make build
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 1380 idle entries (1390491727 bytes)
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=4a4ef0e7-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-13 23:32:56 -0300'" -o bin/roundfix ./cmd/roundfix
+
+exit: 0

@@ -1,0 +1,30 @@
+Mutation on independent archived/committed audited-head fixture.
+$ git diff -- internal/baseline/repository.go
+diff --git a/internal/baseline/repository.go b/internal/baseline/repository.go
+index 2afcd20..e6404ed 100644
+--- a/internal/baseline/repository.go
++++ b/internal/baseline/repository.go
+@@ -463,7 +463,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
+ 		return nil
+ 	}
+ 
+-	if strings.Contains(normalized, "/") && !strings.HasPrefix(normalized, "docs/agents/") {
++	if strings.Contains(normalized, "/") {
+ 		if builder.listed == nil {
+ 			listed, err := builder.listCarriers()
+ 			if err != nil {
+
+exit: 0
+
+$ go test -count=1 -timeout 40m -v ./internal/baseline -run '^TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths$'
+=== RUN   TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== PAUSE TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== CONT  TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+    repository_test.go:235: carrier paths = [AGENTS.md packages/api/AGENTS.md], want [AGENTS.md docs/agents/backend.md docs/agents/contracts/data.json packages/api/AGENTS.md]
+--- FAIL: TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths (0.05s)
+FAIL
+suiteguard: guard cost: measured 3111 paths; fingerprint took 168.529125ms before and 143.709166ms after
+FAIL	roundfix/internal/baseline	0.677s
+FAIL
+
+exit: 1

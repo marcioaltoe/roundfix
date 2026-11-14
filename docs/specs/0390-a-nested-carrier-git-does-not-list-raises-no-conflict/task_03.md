@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0390-a-nested-carrier-git-does-not-list-raises-no-conflict
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

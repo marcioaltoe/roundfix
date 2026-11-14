@@ -1,0 +1,4 @@
+Outside sources read 2026-11-13, offline passages quoted in PRD Acceptance evidence:
+https://git-scm.com/docs/git-ls-files: --exclude-standard uses info/exclude, per-directory .gitignore and the global exclusion file.
+https://git-scm.com/docs/gitignore: ignore rules do not affect already-tracked files.
+Fresh regression outcomes: forced/AGENTS.md remains inventoried and warned despite its directory being ignored; .storage/copy/CLAUDE.md is omitted. Leading-space and untracked nonignored paths remain. Named test and before/after cases passed, exit 0.

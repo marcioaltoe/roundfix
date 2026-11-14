@@ -1,0 +1,5 @@
+Outside source read 2026-11-13: quaestor message 01a1d4de-8d39-7f60-b575-5703959df8da, gesttione-solutions-quaestor, measured 2026-11-13, adopted verbatim in Spec references.
+Reported AGENTS.md/CLAUDE.md warnings with linked worktree; zero such warnings after removal.
+Fresh base worktree-specific paths: [".storage/sim/wt/AGENTS.md", ".storage/sim/wt/CLAUDE.md", ".storage/sim/wt/internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md", ".storage/sim/wt/internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"]
+Fresh base paths after removal: []
+Audited paths with/without: ["internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md", "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"] / ["internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md", "internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md"]

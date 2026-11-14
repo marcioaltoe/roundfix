@@ -1,0 +1,42 @@
+Mutation on independent archived/committed audited-head fixture.
+$ git diff -- internal/baseline/repository.go
+diff --git a/internal/baseline/repository.go b/internal/baseline/repository.go
+index 2afcd20..b14ff59 100644
+--- a/internal/baseline/repository.go
++++ b/internal/baseline/repository.go
+@@ -104,7 +104,7 @@ func listRepositoryCarriers(ctx context.Context, root string, runner GitRunner)
+ 	if runner == nil {
+ 		runner = ExecGitRunner{}
+ 	}
+-	args := []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ":(glob)**/AGENTS.md", ":(glob)**/CLAUDE.md"}
++	args := []string{"ls-files", "-z", "--others", "--exclude-standard", "--", ":(glob)**/AGENTS.md", ":(glob)**/CLAUDE.md"}
+ 	var output []byte
+ 	var err error
+ 	if raw, ok := runner.(rawGitRunner); ok {
+
+exit: 0
+
+$ go test -count=1 -timeout 40m -v ./internal/baseline -run '^(TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths|TestNestedCarrierInventoryKeepsOnlyCarriersGitLists)$'
+=== RUN   TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== PAUSE TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== PAUSE TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== CONT  TestNestedCarrierInventoryKeepsOnlyCarriersGitLists
+=== CONT  TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths
+    repository_test.go:235: carrier paths = [AGENTS.md docs/agents/backend.md docs/agents/contracts/data.json], want [AGENTS.md docs/agents/backend.md docs/agents/contracts/data.json packages/api/AGENTS.md]
+--- FAIL: TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths (0.06s)
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers
+    repository_test.go:313: nested carriers = [" lead/AGENTS.md" "packages/web/CLAUDE.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+    repository_test.go:316: nested conflict paths = [" lead/AGENTS.md" "packages/web/CLAUDE.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+=== RUN   TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers
+    repository_test.go:313: nested carriers = [" lead/AGENTS.md" "packages/web/CLAUDE.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+    repository_test.go:316: nested conflict paths = [" lead/AGENTS.md" "packages/web/CLAUDE.md"], want [" lead/AGENTS.md" "forced/AGENTS.md" "packages/api/AGENTS.md" "packages/web/CLAUDE.md"]
+--- FAIL: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists (0.27s)
+    --- FAIL: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/before_foreign_carriers (0.00s)
+    --- FAIL: TestNestedCarrierInventoryKeepsOnlyCarriersGitLists/after_foreign_carriers (0.00s)
+FAIL
+suiteguard: guard cost: measured 3111 paths; fingerprint took 161.499042ms before and 147.408833ms after
+FAIL	roundfix/internal/baseline	0.888s
+FAIL
+
+exit: 1

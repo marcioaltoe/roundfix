@@ -1,0 +1,11 @@
+docs/user-guide/commands/baseline.md: exact Text A True
+Text A immediately follows anchor paragraph: True
+.agents/skills/roundfix/references/baseline.md: exact Text A True
+Text A immediately follows anchor paragraph: True
+skills/roundfix/references/baseline.md: exact Text A True
+Text A immediately follows anchor paragraph: True
+Canonical/mirror byte equality: True
+docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md: accepted True
+Text B complete and last: True
+docs/adr/0399-the-baseline-inventories-a-nested-carrier-only-when-git-lists-it.md: accepted True
+Production listing argument occurrences: [["internal/baseline/repository.go", 107, "args := []string{\"ls-files\", \"-z\", \"--cached\", \"--others\", \"--exclude-standard\", \"--\", \":(glob)**/AGENTS.md\", \":(glob)**/CLAUDE.md\"}"]]
