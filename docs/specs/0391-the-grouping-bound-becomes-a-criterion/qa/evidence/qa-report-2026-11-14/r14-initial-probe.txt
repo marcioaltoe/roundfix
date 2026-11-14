@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "docs/specs/0391-the-grouping-bound-becomes-a-criterion/qa/evidence/qa-report-2026-11-14/qa-runner.py.txt", line 65, in perform
-    result=fn()
-  File "<stdin>", line 4, in <lambda>
-  File "docs/specs/0391-the-grouping-bound-becomes-a-criterion/qa/evidence/qa-report-2026-11-14/qa-runner.py.txt", line 170, in sabotage
-    assert ('phrase ' in p.stdout and 'want exactly once' in p.stdout) or (n==1 and 'guide still bounds grouping by a count' in p.stdout), 'unrelated failure'
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: unrelated failure

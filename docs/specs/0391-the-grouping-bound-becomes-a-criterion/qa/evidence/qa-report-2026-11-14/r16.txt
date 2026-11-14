@@ -1,6 +1,0 @@
-Outside-evidence origin: Donald G. Reinertsen, The Principles of Product Development Flow (2009), Chapter 1 and principle B11. Read date recorded by the PRD: 2026-11-14.
-Sources: http://lpd2.com/wp-content/uploads/2013/06/ReinertsenFLOWChap1.pdf ; https://lpd2.com/sample-page/the-principles-of-flow/
-Quoted passages supplied before QA:
-batch sizes have their own economic tradeoffs, which lead to U-curve optimization problems.
-Economic batch size is a U-curve optimization.
-Comparison: the observed adopter guide states the two opposing costs (multiple contexts versus tiny Tasks paying full verification) and sizes by a criterion. This agrees with economic U-curve optimization; no fixed numeric optimum is inferred. The refreshed guide was independently produced by the built public CLI in this pass, not copied from a prior Run. No lookup performed.

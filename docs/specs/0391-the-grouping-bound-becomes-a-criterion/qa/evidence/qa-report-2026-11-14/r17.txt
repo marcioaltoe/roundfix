@@ -1,6 +1,0 @@
-Outside-evidence origin: Donald G. Reinertsen, The science of batch size, FlowCon France 2019. Read date: 2026-11-14.
-Source: https://flowcon.io/archives/2019/the-science-of-batch-size-donald-g-reinerstsen-at-flowcon-france-2019-e12/
-Quoted passages supplied before QA:
-the correct answer is never on one extreme or the other
-when you're near the bottom of the U-curve, you don't need a very exact answer.
-Comparison: the observed adopter guide keeps four Tasks as a reference and explicitly rejects refusal by count, consistent with avoiding extremes and not needing an exact bottom-of-curve answer. No numeric optimum or measured performance improvement is inferred.
