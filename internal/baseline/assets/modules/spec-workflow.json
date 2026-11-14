@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 25,
+  "version": 26,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 11,
+      "version": 12,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -79,12 +79,12 @@
         {
           "id": "clause.spec.routing-01-large-initiative",
           "enforcement": "mandatory",
-          "guidance": "Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`."
+          "guidance": "Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`. A feature takes the same route when its Idea stage is indicated. Before writing the PRD of a feature that has no `_idea.md` and that the user did not send to `write-idea`, judge three criteria about the request: whether the right shape of the solution is still open, whether the request rests on an assumption about its users, the business or the market that it gives no evidence for, and whether deciding to build it depends on a market or competitive question. When the request is recorded as an item that is not yet a Spec, which is an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`; when it exists only in the session, write it to a file outside the repository and run `roundfix spec judge --stage idea --request <path>`, which sends the judge only the project's name, the request's first line and its first 4,000 characters, after the secret scan. Take the judge's answers; when the command reports that the judge did not answer, answer the same three criteria yourself, each as yes, no or unsure, and say that the judge did not answer. The Idea stage is indicated when any criterion is yes, not indicated when every criterion is no, and undecided otherwise. Indicated: start `write-idea` without asking, show the verdict, each criterion's answer with its probability and who judged, and let the user dismiss the stage at its first question. Undecided, or in doubt: the user decides, seeing the same answers. Not indicated: continue to `write-prd`. Record who judged, each answer, the verdict, whether the stage ran or was dismissed and why, and what the Idea did to the shape of the request, in the Idea when one is written and always in the PRD. The judgment informs and never refuses: no command fails for it, and a dismissal needs only its recorded reason. When the stage is indicated or undecided and no user is present to answer, write no PRD for that feature: keep it as a Backlog Entry that records the judgment and waits, with `waiting_on` and `since` in its frontmatter, and never answer the stage's questions or the user's decision yourself. A fix or a refactor is never judged for the Idea stage."
         },
         {
           "id": "clause.spec.routing-02-standard-feature",
           "enforcement": "mandatory",
-          "guidance": "Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks`; skip the TechSpec only when the feature has no architectural surface."
+          "guidance": "Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks` once its Idea stage is judged not indicated or the user dismissed it; skip the TechSpec only when the feature has no architectural surface."
         },
         {
           "id": "clause.spec.routing-03-refactor-bugfix",
@@ -99,7 +99,7 @@
         {
           "id": "clause.spec.routing-05-task-graph",
           "enforcement": "mandatory",
-          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph. The Task that implements a Surface Transcript asserts the whole transcript in one named test: every line of its standard output and standard error, in order, and its exit code, copied from the transcript with only its declared controlled variations; the Task's Verification runs that test by name."
+          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, except that the Idea-stage judgment, never the smaller route, decides whether a feature starts at `write-idea`, and execute implementation from the Task Graph. The Task that implements a Surface Transcript asserts the whole transcript in one named test: every line of its standard output and standard error, in order, and its exit code, copied from the transcript with only its declared controlled variations; the Task's Verification runs that test by name."
         },
         {
           "id": "clause.spec.verification-two-tiers",
