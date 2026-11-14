@@ -1,5 +1,0 @@
-Control rejects the unlisted absolute path: True
-The same disk-read mutation survives the required named test: True
-Independent public-command witness detects the mutation: False
-Named test writes arbitrary.md under environment.workDir, but passes only relative references. The fallback reads from the test process working directory, so the existing file is never reached. A real caller can use the absolute file path.
-No audited source or test changed. The witness is an evidence-only Go overlay.

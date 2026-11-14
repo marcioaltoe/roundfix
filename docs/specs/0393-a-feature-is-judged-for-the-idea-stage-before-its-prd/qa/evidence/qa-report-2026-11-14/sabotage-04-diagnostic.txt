@@ -1,9 +1,0 @@
-Named failure observed: True
-TestIdeaStageVerdictUsesTheThresholds
-TestIdeaStageVerdictUsesTheThresholds/[0.7_0.3_0.3]
-TestIdeaStageVerdictUsesTheThresholds/[0_0_0.7]
-    idea_stage_test.go:111: report={State:answered Reason:<nil> Verdict:undecided Answers:[{ID:shape_open Probability:0.7 Answer:yes} {ID:unverified_assumption Probability:0.3 Answer:no} {ID:market_question Probability:0.3 Answer:no}] Model:0x3c94b5b3fe20 Transport:0x3c94b578f1c0 KeyVariable:0x3c94b5b3fba0 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
-    idea_stage_test.go:111: report={State:answered Reason:<nil> Verdict:undecided Answers:[{ID:shape_open Probability:0 Answer:no} {ID:unverified_assumption Probability:0 Answer:no} {ID:market_question Probability:0.7 Answer:yes}] Model:0x3c94b5b0d180 Transport:0x3c94b5a3cc00 KeyVariable:0x3c94b5b0cfd0 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
-FAIL
-FAIL	roundfix/internal/judge	0.319s
-FAIL

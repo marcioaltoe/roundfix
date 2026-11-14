@@ -1,6 +1,0 @@
-Named failure observed: True
-TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
-    spec_judge_idea_test.go:320: request sent extra content or path
-FAIL
-FAIL	roundfix/internal/cli	0.798s
-FAIL

@@ -1,7 +1,0 @@
-Named failure observed: True
-TestIdeaStageSendsNothingItMustNot
-TestIdeaStageSendsNothingItMustNot/Run
-    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x2669b6608550 Verdict: Answers:[] Model:<nil> Transport:0x2669b64b5800 KeyVariable:0x2669b66082e0 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x2669b6608550 want=inside Run fixture-run, named by ROUNDFIX_RUN_ID
-FAIL
-FAIL	roundfix/internal/judge	0.319s
-FAIL

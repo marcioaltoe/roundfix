@@ -1,4 +1,0 @@
-Kohavi, Deng, Frasca, Walker, Xu and Pohlmann; Online Controlled Experiments at Large Scale; KDD 2013; read 2026-11-14
-Source: https://dl.acm.org/doi/pdf/10.1145/2487575.2488217
-Evidence origin: the published passage already quoted in _prd.md Acceptance evidence. No network lookup performed.
-Comparison: Microsoft experiment outcomes show that many feature ideas do not improve their target metrics. The managed rule asks about feature shape and unsupported assumptions before a PRD. The publication motivates investigation; it does not establish that this earlier stage prevents failed experiments.

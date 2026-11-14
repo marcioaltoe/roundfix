@@ -1,7 +1,0 @@
-Named failure observed: True
-TestIdeaStageFailsOpen
-TestIdeaStageFailsOpen/outside_pin
-    idea_stage_test.go:250: report={State:answered Reason:<nil> Verdict:indicated Answers:[{ID:shape_open Probability:0.9 Answer:yes} {ID:unverified_assumption Probability:0.2 Answer:no} {ID:market_question Probability:0.1 Answer:no}] Model:0xa2a9863de20 Transport:0xa2a983b11c0 KeyVariable:0xa2a9863dba0 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
-FAIL
-FAIL	roundfix/internal/judge	0.305s
-FAIL

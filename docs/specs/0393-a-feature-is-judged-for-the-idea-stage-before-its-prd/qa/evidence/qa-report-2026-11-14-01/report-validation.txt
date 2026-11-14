@@ -1,5 +1,0 @@
-38 contiguous Results rows; 35 pass, 1 environment-blocked, 2 declared-blocked; no pending, failed, finding-blocked or skipped row.
-59 local evidence links exist and are not ignored.
-One frontmatter; all executed rows have predeclared typed inputs; no evidence_snapshots written.
-Auditor fields unchanged; audited HEAD unchanged; no tracked source delta.
-60 text evidence files checked.
