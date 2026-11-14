@@ -1,5 +1,0 @@
-OWASP, LLM06:2025 Excessive Agency
-https://genai.owasp.org/llmrisk/llm062025-excessive-agency/
-Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
-Quotation: Limit the extensions that LLM agents are allowed to call to only the minimum necessary.
-Comparison: Q12 rejects Bash and generates exactly Read, Grep, Glob, WebSearch, mcp__docs__search; Q03 tests the accepted-list generator boundary.

@@ -1,3 +1,0 @@
-command: go build -buildvcs=false -o bin/qa0392-delivery-base ./cmd/roundfix
-source: git archive 4f8a5b7db8385f7b3745f63d6cb5668dd576f662
-exit: 0

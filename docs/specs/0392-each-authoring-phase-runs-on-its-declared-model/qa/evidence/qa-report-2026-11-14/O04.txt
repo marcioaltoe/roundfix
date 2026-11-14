@@ -1,5 +1,0 @@
-Claude Code, Extend Claude with skills, frontmatter reference
-https://code.claude.com/docs/en/skills
-Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
-Quotation: Enterprise over personal, and personal over project.
-Comparison: Surface Transcript 3 names the current Claude user copy as hides the declared header; Q08 matches the whole transcript.

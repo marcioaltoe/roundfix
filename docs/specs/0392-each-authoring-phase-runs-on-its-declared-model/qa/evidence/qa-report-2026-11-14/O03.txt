@@ -1,5 +1,0 @@
-Claude Code, Create custom subagents, Choose a model
-https://code.claude.com/docs/en/sub-agents
-Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
-Quotation: The per-invocation `model` parameter, which Claude can pass when it starts the subagent.
-Comparison: Both copies of each authoring skill pass no model and no effort; Q15 exact Contract 11 comparisons pass.

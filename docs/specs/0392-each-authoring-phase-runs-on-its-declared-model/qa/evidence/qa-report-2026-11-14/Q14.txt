@@ -1,1 +1,0 @@
-Delivery Base 4f8a5b7db8385f7b3745f63d6cb5668dd576f662 built from git archive. Two base runs are byte-identical with no exemption. Head install/check match all stdout, stderr and exit codes at the same paths.

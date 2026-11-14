@@ -1,4 +1,0 @@
-command: /bin/bash -c tr -s '[:space:]' ' ' < docs/user-guide/commands/skills.md | grep -qF -- 'roundfix: warning: Authoring Model Declaration not read: <error>' || { echo 'skills guide lacks the not read line' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/doctor.md | grep -qF -- 'authoring-models: ok (claude: <declared keys> applied)' || { echo 'doctor guide lacks the authoring-models line' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/update.md | grep -qF -- 'Authoring models: the installed files do not match the declaration:' || { echo 'update guide lacks the Authoring models line' >&2; exit 1; }; go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract
-ok  	roundfix/internal/docscontract	8.309s
-
-exit: 0

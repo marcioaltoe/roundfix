@@ -1,5 +1,0 @@
-anthropics/claude-code issue 98898
-https://github.com/anthropics/claude-code/issues/98898
-Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
-Quotation: silently ignored when Claude invokes the same skill via the Skill tool
-Comparison: The third Declared model bullet hands an activated phase to its Author Subagent; Q15 compares all eight copies.

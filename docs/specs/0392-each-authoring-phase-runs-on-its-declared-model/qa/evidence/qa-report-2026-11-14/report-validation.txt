@@ -1,6 +1,0 @@
-command: ./bin/qa0392-report-check docs/specs/0392-each-authoring-phase-runs-on-its-declared-model/qa/qa-report-2026-11-14.md
-stdout:
-PASS: report parser and qualifying-partial policy; 40 contiguous rows; 5 matched declared criteria; exempt pre-PR row; evidence links; own-Run evidence; 108 files secret-scanned; 13 actual GovernedPath classifications bounded.
-stderr:
-exit: 0
-All retained QA files decode as text and are nonignored; every evidence-index target exists.

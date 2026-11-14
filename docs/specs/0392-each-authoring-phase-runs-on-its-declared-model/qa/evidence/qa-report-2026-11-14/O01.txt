@@ -1,5 +1,0 @@
-Claude Code, Create custom subagents, frontmatter reference
-https://code.claude.com/docs/en/sub-agents
-Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
-Quotation: Effort level when this subagent is active. Overrides the session effort level
-Comparison: Generated Author Subagents contain the declared model and effort lines; Q11 asserts the headers and generated files.

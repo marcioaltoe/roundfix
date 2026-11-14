@@ -1,8 +1,0 @@
-source: independent git archive f86809d68bf7b3d8ab171815a149eb5f15bedade
-command: go test -count=1 -timeout 20m -v -run ^TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow$/^effort_hihg$ ./internal/config
-# roundfix/internal/config [roundfix/internal/config.test]
-internal/config/authoring.go:71:8: undefined: slices
-FAIL	roundfix/internal/config [build failed]
-FAIL
-
-exit: 1

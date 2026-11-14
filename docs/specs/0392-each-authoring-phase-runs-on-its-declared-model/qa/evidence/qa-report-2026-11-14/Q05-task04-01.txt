@@ -1,4 +1,0 @@
-command: /bin/bash -c out="$(go test -count=1 -timeout 20m -v -run '^(TestTheAuthoringSkillsDelegateADeclaredPhase|TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestEveryOwnedSkillVersionIsRecorded|TestNoShippedSkillDeclaresAModelOrEffort)$' ./skills 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheAuthoringSkillsDelegateADeclaredPhase TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase TestTheUpdateModeAppliesOnlyThePlanItShowed TestEveryOwnedSkillVersionIsRecorded TestNoShippedSkillDeclaresAModelOrEffort; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; for skill in roundfix write-idea write-prd write-techspec write-tasks; do diff -r ".agents/skills/$skill" "skills/$skill" >/dev/null || { echo "mirror differs: $skill" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./skills
-ok  	roundfix/skills	1.682s
-
-exit: 0

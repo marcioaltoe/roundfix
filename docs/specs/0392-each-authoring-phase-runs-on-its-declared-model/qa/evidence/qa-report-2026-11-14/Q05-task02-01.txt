@@ -1,4 +1,0 @@
-command: /bin/bash -c out="$(go test -count=1 -timeout 20m -v -run '^TestInspectAuthoringNamesEachProblem$' ./skills 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestInspectAuthoringNamesEachProblem TestInspectAuthoringNamesEachProblem/order TestInspectAuthoringNamesEachProblem/link TestInspectAuthoringNamesEachProblem/conflict TestInspectAuthoringNamesEachProblem/nothing_declared; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./skills
-ok  	roundfix/skills	1.598s
-
-exit: 0
