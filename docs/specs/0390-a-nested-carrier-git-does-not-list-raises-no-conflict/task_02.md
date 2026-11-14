@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0390-a-nested-carrier-git-does-not-list-raises-no-conflict
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -80,3 +80,47 @@ Roundfix skills.
 - `_techspec.md` → API Contracts 5 and 6; Build Order 2
 - ADR-0399
 - ADR-0070
+
+## Result
+
+Skills loaded: implement-task, knowledge-workspace, tech-writer, evidence-gate.
+
+### Implementation and focused-check evidence
+
+- Text A was added word for word immediately after the named anchor in
+  `docs/user-guide/commands/baseline.md` and the canonical
+  `.agents/skills/roundfix/references/baseline.md`.
+- Text B was appended as the last ADR-0070 paragraph. Its lifecycle status
+  remains `accepted`, and `updated_at` is `2026-11-14T02:12:42Z`.
+- `make skills-sync` synchronized the canonical reference to
+  `skills/roundfix/references/baseline.md`. The owned-skill recorder raised
+  both Roundfix skill copies to `0.1.233` and appended the recorded digest.
+- The Behavior Surface Record was re-recorded after the final guide edit by
+  the required coverage recorder.
+
+Acceptance criterion 1: a focused exact-text check found Text A in the guide
+and both reference copies, and `cmp -s
+.agents/skills/roundfix/references/baseline.md
+skills/roundfix/references/baseline.md` exited 0.
+
+Acceptance criterion 2: a focused exact-text check found the complete Text B
+notice in ADR-0070, and a read confirmed `status: accepted`.
+
+Acceptance criterion 3: `go test ./skills -run
+'^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` exited 0;
+`go test -count=1 -tags docscontract ./internal/docscontract -run
+'^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0; and
+`git diff --check` exited 0. The two exact recorder commands were required
+implementation steps, not Daemon Verification.
+
+Verification:
+- `git diff --check`: passed.
+- focused exact-text, mirror, ADR-status and generated-version checks: passed.
+- owned-skill version recorder: passed (`1 passed in 1 packages`).
+- Behavior Surface coverage recorder: passed (`1 passed in 1 packages`).
+
+Not run:
+- Task `## Verification` commands, repository Verification and full suites —
+  reserved for the Daemon.
+- No Task status, Task Graph, other Task file, commit, push or Pull Request
+  was changed or created.
