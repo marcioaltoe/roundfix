@@ -44,9 +44,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "872"
 type: fix
 ---
 
 # The grouping bound becomes a criterion
 
-The Archive Record can carry a qualifying partial: every runnable criterion passed, and only the pre-PR Pull Request row is blocked because no PR is open.
+The Archive Record can carry a qualifying partial: every runnable criterion passed, and only the pre-PR Pull Request row is blocked because no PR is…
