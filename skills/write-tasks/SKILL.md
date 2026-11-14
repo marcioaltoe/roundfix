@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.32
+  version: 0.0.33
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.32
+version: 0.0.33
 ---
 
 # Write Tasks
@@ -204,6 +204,7 @@ Code for another operating system is verified by building its non-test code for 
   carry, stated where the temptation to break it is strongest: a live external
   surface is ambient state, and a command that depends on one is not hermetic.
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
+- **Earns its verification cycle.** Every Task pays an Agent turn, its declared Verification and the repository Verification at settlement. A change too small to justify that cost, such as one sentence, a version raise or a regenerated record, joins a neighbouring Task of the same context instead of becoming its own Task. It joins only a Task whose slice it belongs to, so the vertical-slice rule holds, and Tasks that declare the same file still run in series under the Wave collision rule. Four implementation Tasks plus the QA gate is a reference, not a cap: a graph that needs more is a signal to check whether the Spec holds more than one context, never a refusal by count.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
 - **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. A Verification command passes only by exiting zero. A Verification command never contains a backtick: the inline-code span ends at the first one and cuts the command, so match with a regular-expression class such as `.` instead. For an assertion whose success is an empty result or an absent string, use a form that turns that condition into exit zero: `matches="$(find path -name '*.tmp' -print)" || exit 1; test -z "$matches"`, `test -d path && ! grep -rq 'forbidden' path`, or `find path -name '*.tmp' -print > /tmp/matches.txt 2>&1 || { cat /tmp/matches.txt; exit 1; }; test ! -s /tmp/matches.txt || { cat /tmp/matches.txt; exit 1; }` when failure must print the matches. Refuse the work-independent shape composed only of repository-wide gates plus working-tree cleanliness checks; those checks pass most easily when no Task work occurred. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
