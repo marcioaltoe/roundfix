@@ -1,7 +1,7 @@
 ---
 spec: 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd
 created: 2026-11-14
-status: proposed
+status: promoted
 leverage: compounding
 ---
 
