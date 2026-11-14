@@ -213,7 +213,7 @@ func TestSpecJudgeRefusesAnUnknownStageOrFormat(t *testing.T) {
 		args    []string
 		message string
 	}{
-		{"stage", []string{"0300-example", "--stage", "qa"}, `unsupported --stage "qa"; use prd, techspec or tasks`},
+		{"stage", []string{"0300-example", "--stage", "qa"}, `unsupported --stage "qa"; use idea, prd, techspec or tasks`},
 		{"format", []string{"0300-example", "--format=yaml"}, `unsupported --format "yaml"; use text or json`},
 		{"flag", []string{"0300-example", "--bogus"}, `unknown flag "--bogus"`},
 		{"missing slug", nil, "spec judge requires one Spec slug"},

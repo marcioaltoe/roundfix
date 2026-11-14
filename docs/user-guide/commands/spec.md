@@ -2,6 +2,7 @@
 
 ```bash
 roundfix spec judge <slug> [--stage <prd|techspec|tasks>] [--format <text|json>]
+roundfix spec judge --stage idea (--item <reference> [--messages <path>] | --request <path>) [--format <text|json>]
 ```
 
 Raises advisory judgments about ADR attributions and goal-to-mechanism links
@@ -78,7 +79,65 @@ The command exits `0` whenever it ran, including advisory, suggested,
 skipped, and stopped results. It never gates authoring or changes another
 command's exit code. Exit `2` means invalid arguments, an unknown active Spec,
 a missing PRD, or a missing TechSpec with `--stage techspec`. An unknown stage
-fails with `unsupported --stage "<value>"; use prd, techspec or tasks`.
+fails with `unsupported --stage "<value>"; use idea, prd, techspec or tasks`.
+
+### spec judge --stage idea
+
+```bash
+roundfix spec judge --stage idea --item docs/backlog/<file>.md
+roundfix spec judge --stage idea --item message:<id> --messages <path> --format json
+roundfix spec judge --stage idea --request <path>
+```
+
+Before the PRD of a feature is written, `--stage idea` judges whether the
+feature needs the Idea stage. It takes no Spec slug and one of two inputs.
+`--item` names one item that is not yet a Spec, by the reference `roundfix
+follow-up` prints for it: an open Backlog Entry, a note in `docs/_inbox/` or,
+with the same `--messages` file, a message entry. `--request` names a file
+that holds a request the user made in the session: write the request to a
+file in a temporary directory outside the repository, run the command and
+remove the file. The judge receives the project's name and the one item's
+kind, type, origin, title and the first 4,000 characters of its text, after
+the secret scan, in whatever language it is written. Of a request file it
+receives only the first line, as the title, and the first 4,000 characters;
+nothing else is sent.
+
+The judge answers three criteria, each as the probability of yes:
+`shape_open` (the right shape of the solution is still open),
+`unverified_assumption` (it rests on an assumption about its users, the
+business or the market that it gives no evidence for) and `market_question`
+(deciding to build it depends on a market or competitive question). An answer
+is yes at 0.70 or more, no at 0.30 or less and unsure between. The verdict is
+`indicated` when any criterion is yes, `not indicated` when every criterion is
+no and `undecided` otherwise. The output always shows each answer with its
+probability, and ends with a `Record:` block to copy into the
+`## Idea-stage judgment` section of the Idea or the PRD.
+
+Follow the repository's Spec routing: indicated starts `write-idea` and shows
+the answers, and the user may dismiss the stage at its first question;
+undecided is the user's choice, seeing the same answers; not indicated goes to
+`write-prd`. The judgment never gates and changes no other command.
+
+The command exits `0` whenever it ran. When the judge did not answer (inside a
+Run, without a key, at the monthly ceiling, with an unreadable Judge Log, on a
+service failure, for an item that matches a secret pattern, or when another
+model answered), the first line reads `not judged: <reason>` and the output
+lists the three criteria with their yes and no meanings: answer them yourself,
+say that the judge did not answer, and never present your answers as the
+judge's. An item typed `fix`, `perf`, `refactor` or `finding` and a Waiting
+Item are not judged and nothing is sent; an active Spec, an unknown reference,
+an unreadable or empty request file and a usage error exit `2`. The keys, the Judge Log, the monthly ceiling and
+the Run Marker are those of the Advisory Judge above.
+
+`--format json` prints one document with the schema
+`roundfix/idea-stage-judgment/v1`: the `item` (its `ref`, `kind`, `type` and
+`title`), the `state` (`answered`, `judge_unavailable` or `not_applicable`),
+the `reason` when the item was not judged, the `verdict`, `judged_by`, the
+`criteria` (each with its `id`, `summary`, `yes` and `no` meanings,
+`probability` and `answer`), the `thresholds`, and the judge's `model`,
+`transport`, `key_variable`, `calls`, `input_tokens`, `cost_usd`,
+`month_cost_usd` and `month_ceiling_usd`.
+
 
 These four gaps hold every active Spec, whatever its age. Before an active
 Spec's next Run, add the sections and lines each finding names; the fix of every

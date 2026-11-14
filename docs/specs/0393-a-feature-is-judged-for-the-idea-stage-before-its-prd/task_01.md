@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -143,3 +143,104 @@ its tests run the command against a temporary repository with a fake judge.
 - `_prd.md` → User Story 1; User Story 3; User Story 5; User Story 7; Core Feature 1; Core Feature 2; Core Feature 3; Core Feature 4; Core Feature 10; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 8; Success Metric 9
 - `_techspec.md` → Current behavior 1 to 4 and 6; Interfaces; Data Models; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 6; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Invariants 1 to 5 and 7; Declared breaks; Testing Approach; Build Order 1
 - ADR-0403; ADR-0404; ADR-0200; ADR-0201; ADR-0319
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, typesafe-ai, tech-writer, evidence-gate, systematic-debugging.
+
+Added the measured `idea-stage` judgment and the `idea` command stage. The
+command resolves an exact inventory reference or reads one bounded request
+file, prints the prescribed text or ordered JSON, and reports unavailable
+judgments without inventing answers. No Follow-up implementation, other judge
+stage behavior, Task Graph, other Task, or governed CLI test was changed.
+
+Acceptance evidence:
+
+1. **Answers, boundaries, output and log.**
+   `TestIdeaStageVerdictUsesTheThresholds` covers 0.70/0.69 and 0.30/0.31,
+   one yes among no answers, all no and all yes, and thresholds changed in
+   the request's Questions value. `TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord`
+   compares the whole text and JSON for indicated, not indicated and
+   undecided reports and checks the one appended Judge Log row.
+   `TestIdeaStageLogsItsJudgment` verifies the state hash, model, question id,
+   probabilities, tokens, cost and absence of the item's text/title in the log.
+2. **One bounded input.** `TestIdeaStageAsksThreeCriteriaInOneRequest`
+   checks both transports, exactly the project/item state keys, all five item
+   fields, and all three measured questions in one request.
+   `TestIdeaStageCutsTextOnARuneBoundary` checks a multibyte boundary.
+   `TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest` checks the trimmed first
+   non-blank line, heading removal, 200-character title, 4,000-character text,
+   omitted tail marker/path, project origin, relative request path, and
+   unchanged input file. `TestSpecJudgeIdeaStageReadsAMessageEntry` checks the
+   message's inventory origin and payload.
+3. **No-send cases and exits.** `TestIdeaStageSendsNothingItMustNot`
+   asserts zero requests for every excluded type, the Run marker with a usable
+   fake key, no key, the ceiling, unreadable log and secret patterns in each
+   scanned field. `TestIdeaStageFailsOpen` covers other models, malformed or
+   missing Nouls, HTTP failures, key redaction and log write failure.
+   `TestIdeaStageRetriesUnderTheCeiling` covers 429/529 retries, attempt rows,
+   cancellation and a ceiling consumed before retry. The five prescribed
+   transcript tests compare both streams and the exit code in full. CLI tests
+   also cover Waiting Items, exact inventory spelling, arbitrary existing
+   paths, active Specs, invalid messages, usage errors and missing, blank or
+   oversized request files. `TestSpecJudgeIdeaUnavailableReportsExitZero`
+   checks command reports for Run, ceiling, log, secret, service and model-pin
+   failures. All new top-level tests call `t.Parallel()` first; fixtures use
+   temporary repositories/homes, an explicit command environment, runtime-built
+   fake keys, fake HTTP and fixed clocks. No test calls a live judge.
+4. **Existing behavior.** Focused existing Spec Judge, Follow-up and shared
+   client tests passed. The only existing test edit is the specified
+   unknown-stage message in `TestSpecJudgeRefusesAnUnknownStageOrFormat`.
+   The three help texts retain the existing synopsis and add the Idea-stage
+   synopsis; the governed `internal/cli/cli_test.go` is byte-identical.
+5. **Documentation and records.** Inserted the exact approved section into
+   the command guide and canonical Roundfix spec reference. `make skills-sync`
+   copied the reference to its mirror. The sanctioned owned-skill recorder
+   raised both Roundfix versions from `0.1.237` to `0.1.238`; a second sync
+   preserved mirror equality. The new `assertIdeaStageSkillPhrases` helper
+   checks each phrase once in both copies for reuse by task_03.
+   `TestTheSpecReferenceDocumentsTheIdeaStage`, the mirror/version checks and
+   focused command documentation contracts passed. The sanctioned Behavior
+   Surface recorder passed and changed only `command spec judge` and the spec
+   guide fingerprints. It is run again after this Result so the record is the
+   Task's final edit. `make baseline-digests` reported no final changes.
+
+Focused checks (exit 0):
+
+- `go test ./internal/cli ./internal/judge -run 'TestIdeaStage|TestSpecJudgeIdea|TestTheIdeaStageQuestions' -count=1 -timeout 8m`
+- `go test ./internal/judge -run '^TestIdeaStage(SendsNothingItMustNot|RetriesUnderTheCeiling)$' -count=1 -timeout 3m` after strengthening the guard fixtures.
+- `go test ./internal/cli ./internal/judge -run '^(TestSpecJudge|TestFollowUp|TestAsk|TestModelPin|TestRunNeverComparesAnotherModelsAnswer|TestRunRaisesAtTheMeasuredThresholds)' -count=1 -timeout 10m`
+- `go test ./skills -run '^Test(TheSpecReferenceDocumentsTheIdeaStage|AuthorialSkillSync|EveryOwnedSkillVersionIsRecorded)$' -count=1 -timeout 5m`
+- `go test -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheUserGuide|TestEveryCommandIsNamedInTheRoundfixSkill|TestCommandPathsReadSubcommandsAndAlternatives|TestCommandReferenceLinksResolve)$' -count=1 -timeout 5m`
+- Required regeneration: `make skills-sync`;
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`;
+  `make skills-sync`; `make baseline-digests`;
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+- `git diff --check` and a read-only audit of declared changed paths,
+  unchanged governed CLI test/skill body, parallel test entry points,
+  measured JSON and both skill mirrors.
+
+Negative probes: eight Go overlays, with no repository source mutations,
+individually bypassed the secret scan, type exclusions, Run marker, inclusive
+threshold, any-yes rule, model pin, request truncation and agent attribution.
+Every probe exited 1 with the intended named test failure; inspected
+transcripts are under `/private/tmp/rf-0393-probes-1im6nnf2`. The strengthened
+exclusion and Run probes each showed `calls=1` when their guard was bypassed.
+
+The initial focused run exposed a fixture missing active PRD frontmatter;
+adding `status: active` made the existing inventory discover it, and the
+focused test then passed. No production inventory behavior changed.
+
+The executor rejected the symlinked writable root, including with a physical
+working directory; task commands used the approved execution path instead.
+Public TypeSafe API documentation confirmed the shared request/response
+schema; no live judgment or project-data request was made.
+
+Daemon-owned Verification commands, full package gates and the declared
+Windows build were not run. Task status remains unchanged by this Agent;
+settlement belongs to the Daemon. No commit, push or Pull Request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261114T210733Z_b8e5ccd1f4543b30`
+- Source commit: `5d7cd42bf07bcd9effd19bf6e2c51b3021500310`

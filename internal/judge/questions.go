@@ -88,7 +88,23 @@ type FollowUpJudgment struct {
 	MaxItems     int                 `json:"max_items"`
 }
 
+type IdeaStageCriterion struct {
+	ID       string   `json:"id"`
+	Summary  string   `json:"summary"`
+	Question Question `json:"question"`
+}
+
+type IdeaStageJudgment struct {
+	QuestionID     string               `json:"question_id"`
+	Criteria       []IdeaStageCriterion `json:"criteria"`
+	YesAtLeast     float64              `json:"yes_at_least"`
+	NoAtMost       float64              `json:"no_at_most"`
+	ItemMaxChars   int                  `json:"item_max_chars"`
+	NotJudgedTypes []string             `json:"not_judged_types"`
+}
+
 type Questions struct {
+	IdeaStage                                   IdeaStageJudgment
 	FollowUp                                    FollowUpJudgment
 	ModelTier                                   ModelTierJudgment
 	Archive                                     ArchiveJudgment
@@ -118,12 +134,13 @@ func Load() (Questions, error) {
 			ModelTier ModelTierJudgment `json:"model-tier"`
 			Archive   ArchiveJudgment   `json:"archive-value"`
 			FollowUp  FollowUpJudgment  `json:"follow-up-priority"`
+			IdeaStage IdeaStageJudgment `json:"idea-stage"`
 		} `json:"judgments"`
 	}
 	if err := json.Unmarshal(questionFile, &file); err != nil {
 		return Questions{}, fmt.Errorf("load judge questions: %w", err)
 	}
-	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier, Archive: file.Judgments.Archive, FollowUp: file.Judgments.FollowUp}
+	q := Questions{PinnedModel: file.PinnedModel, Transports: file.Transports, USDPerMillionInputTokens: file.USDPerMillionInputTokens, MonthlyCeilingUSD: file.MonthlyCeilingUSD, Language: file.Language, Citation: file.Judgments.Citation, Goal: file.Judgments.Goal, Grouping: file.Judgments.Grouping, ModelTier: file.Judgments.ModelTier, Archive: file.Judgments.Archive, FollowUp: file.Judgments.FollowUp, IdeaStage: file.Judgments.IdeaStage}
 	for _, pattern := range []struct {
 		name, text string
 		dst        **regexp.Regexp

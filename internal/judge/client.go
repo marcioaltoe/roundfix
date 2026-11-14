@@ -72,6 +72,12 @@ func (c client) ask(ctx context.Context, pending PendingJudgment, attempt int) c
 	if pending.Kind == "follow-up-priority" {
 		questions = c.q.FollowUp.Questions
 	}
+	if pending.Kind == "idea-stage" {
+		questions = make(map[string]Question, len(c.q.IdeaStage.Criteria))
+		for _, criterion := range c.q.IdeaStage.Criteria {
+			questions[criterion.ID] = criterion.Question
+		}
+	}
 	var body bytes.Buffer
 	encoder := json.NewEncoder(&body)
 	encoder.SetEscapeHTML(false)
@@ -178,9 +184,16 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
 		a = answer{Type: a.Type, Noul: a.Noul}
 	}
 	validProbability := func(v *float64) bool { return v != nil && *v >= 0 && *v <= 1 }
-	if p.Kind == "follow-up-priority" {
-		values := make(map[string]float64, len(q.FollowUp.Questions))
-		for id := range q.FollowUp.Questions {
+	if p.Kind == "follow-up-priority" || p.Kind == "idea-stage" {
+		questions := q.FollowUp.Questions
+		if p.Kind == "idea-stage" {
+			questions = make(map[string]Question, len(q.IdeaStage.Criteria))
+			for _, criterion := range q.IdeaStage.Criteria {
+				questions[criterion.ID] = criterion.Question
+			}
+		}
+		values := make(map[string]float64, len(questions))
+		for id := range questions {
 			value := c.Answers[id]
 			if value.Type != "noul" || !validProbability(value.Noul) {
 				if !q.pinned(c.Model) {
