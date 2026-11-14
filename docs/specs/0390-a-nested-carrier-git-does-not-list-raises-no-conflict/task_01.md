@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0390-a-nested-carrier-git-does-not-list-raises-no-conflict
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -98,3 +98,85 @@ quaestor on 2026-11-13
 - `_techspec.md` → Current behavior; API Contracts 1-4; Invariants 1-3; Declared breaks; Testing Approach; Build Order 1
 - ADR-0399
 - [The adopted quaestor message](references/2026-11-13-quaestor-a-nested-carrier-conflict-inside-a-git-ignored-worktree.md)
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+### Starting-tree characterization
+
+Before repository edits, a temporary Go overlay appended
+`TestTask0390StartingTreeCharacterization` to the existing inspection tests.
+It created a committed temporary repository with `.storage/` ignored and a
+local detached linked worktree at `.storage/simulation/wt-ignored`.
+`InspectRepository` reported `baseline.inventory.nested-carrier-conflict`
+for `.storage/simulation/wt-ignored/AGENTS.md`. A recording runner delegated
+to `ExecGitRunner` and observed exactly the two identity calls:
+`rev-parse --show-toplevel --show-object-format --verify HEAD^{commit}` and
+`rev-list --max-parents=0 HEAD`; `ls-files` calls: **0**.
+
+Focused command: `go test -overlay /private/tmp/roundfix-0390-characterization/overlay.json -count=1 -run '^TestTask0390StartingTreeCharacterization$' -v ./internal/baseline`
+— exit 0, characterization assertions passed. The overlay and fixture were
+outside the checkout; no production code had changed.
+
+### Implementation and acceptance evidence
+
+- `ExecGitRunner.RunGitRaw` keeps the existing invocation, environment and
+  error handling and returns stdout bytes unchanged. `RunGit` now trims that
+  output, retaining its existing behavior. `listRepositoryCarriers` uses the
+  exact narrow NUL-delimited command of API Contract 2, prefers the optional
+  raw interface, and wraps listing errors with the required text.
+- The walk lists lazily on its first nested candidate, caches the result,
+  and omits unlisted candidates before carrier metadata or bytes are read.
+  Root carriers and `docs/agents/` bypass the listing. The original carrier
+  body moved into `inventoryCarrier`; only its early return changes to the
+  required void return. Context reaches inventory from inspection, planning,
+  validation and apply, including both transaction verification closures.
+- Acceptance criterion 1: the real-Git regression adds an ignored copy,
+  ignored and visible linked worktrees, a nested repository and a submodule
+  from a second disposable local repository. Before and after, nested
+  carriers and conflict paths are exactly ` lead/AGENTS.md`,
+  `forced/AGENTS.md`, `packages/api/AGENTS.md`, and
+  `packages/web/CLAUDE.md`, in order. The complete warning list and snapshot
+  digest are equal, and neither inspection has blocking findings.
+- Acceptance criterion 2: the same regression retains the committed nested
+  carrier, the force-added carrier under an ignored directory and both
+  untracked non-ignored carriers. Its local `core.excludesFile` names an
+  empty temporary file. The leading-space untracked path exercises the
+  untrimmed real-Git output. Submodule setup uses
+  `git -c protocol.file.allow=always submodule add` with a local source.
+- Acceptance criterion 3: the runner regression observes exactly three
+  calls for two nested candidates (two identity commands and one listing),
+  asserts every listing argument and the root directory, and inventories
+  only `packages/api/AGENTS.md`. A separate case has both root carriers and
+  an agent guide but only the two identity calls. The error case asserts
+  `inspect bounded repository state: walk bounded carriers: list repository instruction carriers: listing failed`
+  verbatim and verifies that `errors.Is` still matches the original error.
+
+### Focused checks
+
+1. `go test -count=1 -run '^TestNestedCarrierInventory' -v ./internal/baseline`
+   — before the production edit, exit 1: foreign carriers changed warnings
+   and digest, the listing call was absent, an omitted carrier was retained,
+   and a listing failure was not surfaced. After the production edit, exit 0:
+   both new tests and all their cases passed.
+2. `go test -count=1 -run '^(TestNestedCarrierInventory.*|TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths|TestRepositoryInspectionUsesNarrowReadOnlyGitCommands|TestRepositoryInspectionNoMutation|TestRepositoryInspectionHonorsCancellation|TestInventoryBudget|TestPlanDeterminismAndNoMutation|TestApplyExactDigest|TestApplyStalePreimage|TestApplyPostimageFailureRollsBack|TestTransactionStagesBeforeMutation|TestTransactionRollback)$' -v ./internal/baseline`
+   — exit 0; 13 selected top-level tests passed, including both inventory
+   budget cases and the apply/transaction consumers. The suite guard
+   reported no repository mutation or helper residue.
+3. `go test -count=1 -run '^(TestBaselineApplyCommand|TestBaselineUpdateAppliesManifestPlanAndReportsJSON)$' -v ./internal/cli`
+   — exit 0; both focused CLI consumer tests passed. The suite guard
+   reported no repository mutation or helper residue.
+4. A read-only comparison with `HEAD` confirmed exactly the two required
+   new tests, only the over-budget snapshot-call change in existing tests,
+   byte-identical `inventoryPathIgnored` and `isBoundedCarrierPath`, and the
+   extracted carrier body unchanged apart from its void return.
+   `git diff --check` exited 0. Changed-file scope is the five declared Go
+   interfaces/test files plus this Task file; the starting Daemon status
+   change is preserved.
+
+No declared Verification command, selected repository Verification, full
+suite or Windows build was run; those remain with the Daemon. No Task
+status, Task Graph or other Task file was edited, and no commit, push,
+Pull Request, ai-memory message or Spec event was created. No follow-up
+outside this slice was identified.

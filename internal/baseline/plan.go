@@ -498,7 +498,7 @@ func buildPlanWithCatalog(
 	if plannedDraft != nil {
 		mutablePaths = append(mutablePaths, plannedDraft.Path)
 	}
-	snapshot, err := inspectRepositorySnapshot(initial.Root, InventoryRequest{MutablePaths: mutablePaths})
+	snapshot, err := inspectRepositorySnapshot(ctx, initial.Root, InventoryRequest{MutablePaths: mutablePaths}, nil)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -3320,7 +3320,7 @@ func validatePlanRepositoryState(
 	for index, preimage := range document.Preimages {
 		paths[index] = preimage.Path
 	}
-	snapshot, err := inspectRepositorySnapshot(root, InventoryRequest{MutablePaths: paths})
+	snapshot, err := inspectRepositorySnapshot(ctx, root, InventoryRequest{MutablePaths: paths}, nil)
 	if err != nil {
 		return err
 	}

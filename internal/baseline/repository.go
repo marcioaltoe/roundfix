@@ -60,9 +60,15 @@ type GitRunner interface {
 // ExecGitRunner executes Git without optional locks, prompts, or fsmonitor.
 type ExecGitRunner struct{}
 
-func (ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+func (runner ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	output, err := runner.RunGitRaw(ctx, workDir, args...)
+	return strings.TrimSpace(string(output)), err
+}
+
+// RunGitRaw returns Git standard output without trimming path bytes.
+func (ExecGitRunner) RunGitRaw(ctx context.Context, workDir string, args ...string) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
-		return "", err
+		return nil, err
 	}
 	if workDir == "" {
 		workDir = "."
@@ -76,7 +82,7 @@ func (ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string)
 	command.Stderr = &stderr
 	if err := command.Run(); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return "", ctxErr
+			return nil, ctxErr
 		}
 		detail := strings.TrimSpace(stderr.String())
 		if detail == "" {
@@ -85,9 +91,39 @@ func (ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string)
 		if detail == "" {
 			detail = err.Error()
 		}
-		return "", fmt.Errorf("git %s: %s: %w", strings.Join(args, " "), detail, err)
+		return nil, fmt.Errorf("git %s: %s: %w", strings.Join(args, " "), detail, err)
 	}
-	return strings.TrimSpace(stdout.String()), nil
+	return stdout.Bytes(), nil
+}
+
+type rawGitRunner interface {
+	RunGitRaw(context.Context, string, ...string) ([]byte, error)
+}
+
+func listRepositoryCarriers(ctx context.Context, root string, runner GitRunner) (map[string]struct{}, error) {
+	if runner == nil {
+		runner = ExecGitRunner{}
+	}
+	args := []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", ":(glob)**/AGENTS.md", ":(glob)**/CLAUDE.md"}
+	var output []byte
+	var err error
+	if raw, ok := runner.(rawGitRunner); ok {
+		output, err = raw.RunGitRaw(ctx, root, args...)
+	} else {
+		var text string
+		text, err = runner.RunGit(ctx, root, args...)
+		output = []byte(text)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("list repository instruction carriers: %w", err)
+	}
+	listed := make(map[string]struct{})
+	for _, entry := range strings.Split(string(output), "\x00") {
+		if entry != "" {
+			listed[entry] = struct{}{}
+		}
+	}
+	return listed, nil
 }
 
 // RepositoryIdentity is a clone-stable identity derived only from Git
@@ -171,7 +207,7 @@ func InspectRepository(ctx context.Context, workDir string, runner GitRunner) (R
 	if err != nil {
 		return RepositoryInspection{}, err
 	}
-	snapshot, err := inspectRepositorySnapshot(root, InventoryRequest{})
+	snapshot, err := inspectRepositorySnapshot(ctx, root, InventoryRequest{}, runner)
 	if err != nil {
 		return RepositoryInspection{}, fmt.Errorf("inspect bounded repository state: %w", err)
 	}
@@ -297,16 +333,18 @@ func parseRepositoryResolution(output string) (repositoryResolution, error) {
 }
 
 type inventoryBuilder struct {
-	root       *os.Root
-	preimages  map[string]Preimage
-	sources    map[string]SourceEvidence
-	carriers   map[string]InstructionCarrier
-	warnings   []Finding
-	blocking   []Finding
-	totalBytes int64
+	root         *os.Root
+	preimages    map[string]Preimage
+	sources      map[string]SourceEvidence
+	carriers     map[string]InstructionCarrier
+	warnings     []Finding
+	blocking     []Finding
+	totalBytes   int64
+	listCarriers func() (map[string]struct{}, error)
+	listed       map[string]struct{}
 }
 
-func inspectRepositorySnapshot(root string, request InventoryRequest) (RepositorySnapshot, error) {
+func inspectRepositorySnapshot(ctx context.Context, root string, request InventoryRequest, runner GitRunner) (RepositorySnapshot, error) {
 	anchored, err := os.OpenRoot(root)
 	if err != nil {
 		return RepositorySnapshot{}, fmt.Errorf("open repository root: %w", err)
@@ -314,6 +352,9 @@ func inspectRepositorySnapshot(root string, request InventoryRequest) (Repositor
 	defer anchored.Close()
 
 	builder := &inventoryBuilder{
+		listCarriers: func() (map[string]struct{}, error) {
+			return listRepositoryCarriers(ctx, root, runner)
+		},
 		root:      anchored,
 		preimages: make(map[string]Preimage),
 		sources:   make(map[string]SourceEvidence),
@@ -422,6 +463,29 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 		return nil
 	}
 
+	if strings.Contains(normalized, "/") && !strings.HasPrefix(normalized, "docs/agents/") {
+		if builder.listed == nil {
+			listed, err := builder.listCarriers()
+			if err != nil {
+				return err
+			}
+			builder.listed = listed
+		}
+		if _, listed := builder.listed[normalized]; !listed {
+			if entry.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+	}
+	builder.inventoryCarrier(normalized, entry)
+	if entry.IsDir() {
+		return fs.SkipDir
+	}
+	return nil
+}
+
+func (builder *inventoryBuilder) inventoryCarrier(normalized string, entry fs.DirEntry) {
 	info, err := entry.Info()
 	if err != nil {
 		builder.blocking = append(builder.blocking, Finding{
@@ -429,7 +493,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 			Path:    normalized,
 			Message: "bounded carrier metadata cannot be read",
 		})
-		return nil
+		return
 	}
 	scope := "nested"
 	if !strings.Contains(normalized, "/") {
@@ -458,10 +522,6 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 			Message: nestedCarrierConflictMessage,
 		})
 	}
-	if entry.IsDir() {
-		return fs.SkipDir
-	}
-	return nil
 }
 
 func isRecognizedRepositoryRuleCarrier(relative string) bool {
