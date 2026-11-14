@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0391-the-grouping-bound-becomes-a-criterion
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -108,3 +108,25 @@ setup manifest are refreshed the same way.
 - `_prd.md` → Goals 1 to 5; Core Feature 1; Success Metric 1; Success Metric 4
 - `_techspec.md` → Current behavior 1 to 3; API Contract 1; Invariants 1 to 4; Declared breaks; Testing Approach; Build Order 1
 - ADR-0400
+
+## Result
+
+Skills loaded: coding-guidelines, golang-testing, setup-context-driven, roundfix, evidence-gate
+
+- Reworded `clause.spec.sources-02-bound-the-group` exactly to API Contract 1, kept its id, `mandatory` enforcement and lack of `replaces`, raised `rule.spec.routing` from version 10 to 11, and recorded the module at version 25.
+- Updated the pinned clause literal and added `groupingBoundPhrases` with eleven named phrases plus the absent old-bound phrase check in `TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee`; the test calls `t.Parallel()` first and uses the specified subtest names.
+- Regenerated the module record and derived Baseline files in the required order. The sanctioned module record command passed; `make baseline-digests` passed and regenerated the declared golden, profile, catalog and plan-characterization records.
+- The first managed refresh passed and applied only the repository guide and setup manifest (`File changes: 2`); the second identical refresh passed with `File changes: 0` and `Idempotence: verified`.
+
+Acceptance evidence:
+
+- Criterion 1: the module guidance and refreshed `docs/agents/spec-routing.md` contain the one-context and earned-verification-cycle criteria, both reasons, and four Tasks as a reference rather than a cap; the old count-bound phrase was removed from the generated guide.
+- Criterion 2: the clause retains its id, force and Source Baseline row; `TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee` pins all eleven guarantees/criteria phrases exactly once, and the generated adopter guide was refreshed by the managed command.
+- Criterion 3: the sanctioned record and digest commands passed; the managed refresh applied the guide and setup manifest, and its second run reported no changes with idempotence verified.
+
+Focused checks:
+
+- `git diff --check`: passed.
+- `go test ./internal/baseline -run '^$'`: passed package compilation with no tests executed.
+- Source Baseline corpus diff: unchanged.
+- Declared Task Verification and repository settlement checks: not run; the Daemon owns them.
