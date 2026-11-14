@@ -79,6 +79,7 @@ type openAIManifest struct {
 }
 
 type InstallRequest struct {
+	Authoring  *AuthoringDeclaration
 	Target     string
 	TargetDirs map[string]string
 	ProjectDir string
@@ -91,7 +92,8 @@ type InstalledTarget struct {
 }
 
 type InstallResult struct {
-	Targets []InstalledTarget
+	Authoring AuthoringInstall
+	Targets   []InstalledTarget
 }
 
 func Names() []string {
@@ -466,7 +468,16 @@ func Install(ctx context.Context, req InstallRequest) (InstallResult, error) {
 		return InstallResult{}, err
 	}
 
+	var authoring authoringInstallPlan
+	project := (strings.TrimSpace(req.Target) == "" || strings.TrimSpace(req.Target) == "project") && strings.TrimSpace(req.TargetDirs["project"]) == ""
+	if project {
+		authoring, err = prepareAuthoringInstall(ctx, req.ProjectDir, req.Authoring, files)
+		if err != nil {
+			return InstallResult{}, err
+		}
+	}
 	result := InstallResult{Targets: make([]InstalledTarget, 0, len(targets))}
+	result.Authoring = authoring.result
 	for _, target := range orderedTargets(targets) {
 		if err := ctx.Err(); err != nil {
 			return InstallResult{}, err
@@ -475,11 +486,8 @@ func Install(ctx context.Context, req InstallRequest) (InstallResult, error) {
 		count := 0
 		for _, file := range files {
 			dest := filepath.Join(root, file.Path)
-			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-				return InstallResult{}, fmt.Errorf("create skill directory %q: %w", filepath.Dir(dest), err)
-			}
-			if err := os.WriteFile(dest, file.Data, 0o644); err != nil {
-				return InstallResult{}, fmt.Errorf("write skill file %q: %w", dest, err)
+			if err := writeInstalledFile(dest, file.Data); err != nil {
+				return InstallResult{}, err
 			}
 			count++
 		}
@@ -488,6 +496,11 @@ func Install(ctx context.Context, req InstallRequest) (InstallResult, error) {
 			Dir:    root,
 			Files:  count,
 		})
+	}
+	if project {
+		if err := authoring.apply(ctx, req.ProjectDir); err != nil {
+			return InstallResult{}, err
+		}
 	}
 	return result, nil
 }

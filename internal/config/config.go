@@ -84,6 +84,7 @@ type Jev struct {
 }
 
 type Config struct {
+	Skills       Skills
 	OpenRouter   OpenRouter
 	Jev          Jev
 	Defaults     Defaults
@@ -365,6 +366,7 @@ type jevOverlay struct {
 }
 
 type configOverlay struct {
+	Skills       *Skills              `yaml:"skills"`
 	OpenRouter   *openRouterOverlay   `yaml:"openrouter"`
 	Jev          *jevOverlay          `yaml:"jev"`
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
@@ -1815,6 +1817,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		}
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
+	if err := prepareAuthoringConfig(&document, warnings, source); err != nil {
+		return fmt.Errorf("parse config %q: %w", label, err)
+	}
 	if err := prepareLightTierConfig(&document, warnings, source); err != nil {
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
@@ -1917,6 +1922,12 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if overlay.PrePRReview != nil && overlay.PrePRReview.DataPaths != nil {
 		if err := validateReviewDataPaths(*overlay.PrePRReview.DataPaths); err != nil {
 			return fmt.Errorf("parse config %q: %w", label, err)
+		}
+	}
+	if source == ProfileSourceProject && overlay.Skills != nil {
+		config.Skills = *overlay.Skills
+		if config.Skills.Authoring.Claude.empty() {
+			config.Skills.Authoring.Claude = nil
 		}
 	}
 	applyOverlay(config, overlay, source)

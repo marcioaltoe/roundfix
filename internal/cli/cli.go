@@ -1407,6 +1407,7 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 		targetDirs[targetValue] = strings.TrimSpace(*dir)
 	}
 	projectRoot := ""
+	var declaration *roundskills.AuthoringDeclaration
 	if targetValue == "project" && strings.TrimSpace(*dir) == "" {
 		var err error
 		workDir, workDirErr := environment.resolveWorkDir("resolve work directory")
@@ -1419,11 +1420,17 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight
 		}
+		declaration, err = loadAuthoringDeclaration(environment, projectRoot, stderr)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	result, err := roundskills.Install(ctx, roundskills.InstallRequest{
 		Target:     targetValue,
 		TargetDirs: targetDirs,
 		ProjectDir: projectRoot,
+		Authoring:  declaration,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
@@ -1432,6 +1439,7 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 	for _, installed := range result.Targets {
 		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
 	}
+	writeAuthoringInstall(result.Authoring, declaration, stdout, stderr)
 	if targetValue == "project" && projectRoot != "" {
 		updated, err := baseline.RecordInstalledOwnedSkills(ctx, projectRoot, roundskills.Names())
 		if err != nil {

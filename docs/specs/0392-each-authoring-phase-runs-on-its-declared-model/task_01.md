@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0392-each-authoring-phase-runs-on-its-declared-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -248,3 +248,76 @@ did before. The configuration, skills and baseline guides describe it.
 - `_prd.md` → User Stories 1, 2, 3, 4 and 7; Core Features 1, 2, 4 and 8; Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 6
 - `_techspec.md` → Interfaces; Data Models; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 15; Surface Transcript 2; Invariants 1 to 4, 7 and 8; Declared breaks; Testing Approach; Build Order 1
 - ADR-0401, ADR-0402
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented this Task's declaration and installation slice. The pre-existing
+change was the Daemon's `pending` to `in_progress` status transition; it is
+preserved. No Task Graph, other Task, shipped skill, Baseline asset, ADR,
+Project Config or dependency/tooling configuration was edited.
+
+Acceptance-criterion evidence:
+
+1. Project Config decodes `skills.authoring` into the specified tagged types.
+   Validation runs on the YAML nodes before strict decoding, with all twelve
+   contract refusals and additional non-mapping/non-string shape cases.
+   Empty authoring/harness mappings normalize to no declaration. User Config
+   discards the entire node and warns once; a Project Config entry survives.
+   The initial focused example test failed to compile because `Config.Skills`
+   and the declaration types did not exist. After implementation,
+   `go test ./internal/config -run 'Test(TheAuthoringModelDeclaration|UserConfigIgnoresTheAuthoring)' -count=1`
+   exited 0, including the full PRD example, exact refusals and warning.
+2. The shared installer preflights all five generated names before writing
+   skills, detects uncovered headers before replacing the installed files,
+   adds headers to the shipped bytes, generates the literal author/research
+   bodies, and removes only its own files at those names. Generated ownership
+   requires a regular file and its own marker as the first non-blank body
+   line. CRLF checkouts retain ownership and are restored to LF. Identical
+   files are not rewritten, preserving bytes, modes and modification times.
+   `go test ./skills -run 'Test(NoShippedSkillDeclares|TheDeclaredHeader|GeneratedSubagents|TheResearchSubagent|InstallAppliesTheDeclaration|InstallRefusesAFile|InstallRemovesOnlyItsOwn|UserLevelTargets)' -count=1`
+   exited 0. The tools test sends every one- and two-tool combination through
+   the real config loader, generates accepted lists and rejects any generated
+   shell/write/subagent-starting tool. The final CRLF refinement was checked
+   with `go test ./skills -run '^TestInstallAppliesTheDeclarationAndASecondRunChangesNothing$' -count=1`
+   (exit 0).
+   Both CLI paths load with the resolved repository root and captured command
+   home, forward loader warnings and uncovered notices to stderr, and record
+   lock entries after installation. The Baseline stage has an optional loader;
+   omitting it reads no configuration. Text/JSON reports omit empty authoring
+   results. `go test ./internal/cli -run '^(TestSkillsInstall|TestBaselineUpdateSkillsStage|TestBaselineUpdateAppliesTheAuthoringModelDeclaration|TestARepositoryWithoutTheDeclaration)' -count=1`
+   exited 0, covering Surface Transcript 2 in full, installed-tree lock hashes,
+   exact refusal/load errors, Baseline text/JSON, removals, notices and existing
+   skills-stage/lock behavior.
+3. The skills checks above sweep every embedded and canonical owned
+   `SKILL.md` for top-level model/effort keys, and verify `claude`, `all` and
+   project-directory overrides receive the unchanged bundle and no generated
+   file. The CLI compatibility cases cover both no Project Config and a
+   warning-free Project Config without the declaration, asserting the full
+   original stdout, empty stderr, shipped bytes and no `.claude` directory.
+   Tests use temporary homes/repositories and the existing injected seams.
+   `GOOS=windows go test -c` with explicit `/tmp/roundfix-0392-<package>.test.exe`
+   outputs succeeded for `./internal/config`, `./skills` and `./internal/cli`;
+   the latter two were refreshed after the final marker change. These were
+   compilation checks only, not Windows runtime tests.
+4. The configuration guide contains `## Authoring models`, the complete PRD
+   example, exact introduction and compatibility paragraph, validation and
+   User Config rules, and generated-file behavior. The skills and Baseline
+   guides show the contracted streams, failures and authoring report fields.
+   After the last guide edit, the sanctioned command
+   `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+   exited 0 and regenerated only the config-key and three guide fingerprints
+   in `docs/references/behavior-surfaces.json`. No record was hand-edited.
+
+Formatting and diff whitespace checks returned no findings. Commands ran
+through `rtk proxy`; shell execution required the approved escalation path
+because the executor rejected the symlinked writable root, including when
+its physical checkout path was supplied.
+
+The Task's declared Verification commands, repository Verification and full
+suites were not run; they remain Daemon-owned. Task status and checkboxes
+remain unchanged. No commit, push, Pull Request, ai-memory message or Spec
+Event Announcement was made. The inspector/reports, removal command and
+shipped skill changes remain with Tasks 02–04.
