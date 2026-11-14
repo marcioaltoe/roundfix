@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.144.0] - 2026-11-14
+
+### Each authoring phase runs on the model the repository declares
+
+- **A repository can declare the model and reasoning effort of each authoring phase for Claude Code.** The new Project Config node `skills.authoring.claude` takes `idea`, `prd`, `techspec`, `tasks` and `research`, each with `model` and `reasoning_effort` (`research` also takes `tools`). `roundfix skills install --target project` writes the declared header into the `write-idea`, `write-prd`, `write-techspec` and `write-tasks` skills and generates the matching subagents under `.claude/agents/`, and the authoring skills delegate their phase to that subagent, so the declared model applies even when an Agent invokes the skill (Claude Code ignores a skill header's model on an Agent invocation). Without a declaration, installation writes the shipped bundle unchanged. Roundfix ships no model name and checks none against a list. An older binary refuses a Project Config that has `skills:` with exit `2`.
+- **`roundfix doctor`, `roundfix baseline update` and the update check report an unapplied declaration**: a skill header that is not the declared one, a missing or edited generated subagent, a `.claude/skills/<name>` that does not lead to `.agents/skills/<name>`, and a handwritten file in a generated subagent's place, each with the command that fixes it. Installation reads, writes and removes generated subagents only inside the repository: a symbolic link at `.claude/agents` is refused, and a read failure is reported as itself.
+- **New `roundfix skills remove --target claude|codex|opencode|all [--dir <path>] [--apply]`.** It lists the user-level copies of the Roundfix-owned skills that are older than the binary or hide the declared header; `--apply` removes folders and unlinks symbolic links without touching their targets. Every reported user-level copy now carries the exact command that removes it. ADR-0401, ADR-0402 and ADR-0405.
+
 ## [0.143.4] - 2026-11-14
 
 ### A Spec is sized by one context and by Tasks that earn their verification cycle
