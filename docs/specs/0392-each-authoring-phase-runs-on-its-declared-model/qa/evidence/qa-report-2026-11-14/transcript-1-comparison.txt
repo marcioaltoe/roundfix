@@ -1,0 +1,1 @@
+Surface Transcript 1: whole stdout, whole stderr and exit match; only the five declared placeholder names are wildcarded.

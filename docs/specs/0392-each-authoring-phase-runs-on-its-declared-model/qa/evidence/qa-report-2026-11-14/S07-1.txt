@@ -1,0 +1,17 @@
+source: independent git archive f86809d68bf7b3d8ab171815a149eb5f15bedade
+command: go test -count=1 -timeout 20m -v -run ^TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit$/^declaration$ ./internal/cli
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== PAUSE TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== CONT  TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/declaration
+    authoring_reports_test.go:38: args=[skills check] exit=1 want=0
+        stdout="Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate\n" want="Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate\n"
+        stderr="roundfix: warning: the installed files do not match the Authoring Model Declaration (skills.authoring.claude):\n  write-prd header is not the declared one\n  .claude/skills/write-prd does not lead to .agents/skills/write-prd, so Claude Code does not load the declared header; link it there\n  .claude/agents/roundfix-prd-author.md differs from the declaration\n  .claude/agents/roundfix-researcher.md is missing\n  next: roundfix skills install --target project\n" want="roundfix: warning: the installed files do not match the Authoring Model Declaration (skills.authoring.claude):\n  write-prd header is not the declared one\n  .claude/skills/write-prd does not lead to .agents/skills/write-prd, so Claude Code does not load the declared header; link it there\n  .claude/agents/roundfix-prd-author.md differs from the declaration\n  .claude/agents/roundfix-researcher.md is missing\n  next: roundfix skills install --target project\n"
+--- FAIL: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit (0.01s)
+    --- FAIL: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/declaration (0.01s)
+FAIL
+suiteguard: guard cost: measured 3155 paths; fingerprint took 160.169875ms before and 145.718708ms after
+FAIL	roundfix/internal/cli	0.782s
+FAIL
+
+exit: 1

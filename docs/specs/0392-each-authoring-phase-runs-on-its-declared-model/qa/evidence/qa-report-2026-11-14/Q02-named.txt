@@ -1,0 +1,70 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestTheAuthoringModelDeclarationIsReadFromProjectConfig|TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow|TestUserConfigIgnoresTheAuthoringModelDeclaration|TestEveryOwnedSkillVersionIsRecorded)$ ./internal/config
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig
+=== PAUSE TestTheAuthoringModelDeclarationIsReadFromProjectConfig
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== PAUSE TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== RUN   TestUserConfigIgnoresTheAuthoringModelDeclaration
+=== PAUSE TestUserConfigIgnoresTheAuthoringModelDeclaration
+=== CONT  TestTheAuthoringModelDeclarationIsReadFromProjectConfig
+=== CONT  TestUserConfigIgnoresTheAuthoringModelDeclaration
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:___authoring:_____claude:_______idea:_________model:_opus_________reasoning_effort:_xhigh_______prd:_________model:_opus_________reasoning_effort:_xhigh_______techspec:_________model:_opus_________reasoning_effort:_xhigh_______tasks:_________model:_opus_________reasoning_effort:_high_______research:_________model:_sonnet_________reasoning_effort:_medium_________tools:_[WebSearch,_WebFetch]_
+=== RUN   TestUserConfigIgnoresTheAuthoringModelDeclaration/#00
+=== CONT  TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/skills_key
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/harness
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/phase_key
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/phase_field
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/research_field
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/empty_phase
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/empty_research
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/model_with_a_space
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/effort_hihg
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/tool_Bash
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/duplicate_tool
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_phase
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_skills
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_authoring
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_claude
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_model
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_effort
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_tools
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_tool
+--- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/skills_key (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/harness (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/phase_key (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/phase_field (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/research_field (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/empty_phase (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/empty_research (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/model_with_a_space (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/effort_hihg (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/tool_Bash (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/duplicate_tool (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_phase (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_skills (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_authoring (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_claude (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_model (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_effort (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_tools (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/non_string_tool (0.00s)
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig/#00
+=== RUN   TestUserConfigIgnoresTheAuthoringModelDeclaration/skills:_{authoring:_{claude:_{prd:_{model:_project}}}}
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{}
+--- PASS: TestUserConfigIgnoresTheAuthoringModelDeclaration (0.00s)
+    --- PASS: TestUserConfigIgnoresTheAuthoringModelDeclaration/#00 (0.00s)
+    --- PASS: TestUserConfigIgnoresTheAuthoringModelDeclaration/skills:_{authoring:_{claude:_{prd:_{model:_project}}}} (0.00s)
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{authoring:_{}}
+=== RUN   TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{authoring:_{claude:_{}}}
+--- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig (0.01s)
+    --- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:___authoring:_____claude:_______idea:_________model:_opus_________reasoning_effort:_xhigh_______prd:_________model:_opus_________reasoning_effort:_xhigh_______techspec:_________model:_opus_________reasoning_effort:_xhigh_______tasks:_________model:_opus_________reasoning_effort:_high_______research:_________model:_sonnet_________reasoning_effort:_medium_________tools:_[WebSearch,_WebFetch]_ (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig/#00 (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{} (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{authoring:_{}} (0.00s)
+    --- PASS: TestTheAuthoringModelDeclarationIsReadFromProjectConfig/skills:_{authoring:_{claude:_{}}} (0.00s)
+PASS
+suiteguard: guard cost: measured 3164 paths; fingerprint took 234.901333ms before and 192.660417ms after
+ok  	roundfix/internal/config	0.841s
+
+exit: 0

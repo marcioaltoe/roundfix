@@ -1,0 +1,22 @@
+--- internal/cli/cli.go
++++ internal/cli/cli.go
+@@ -1434,7 +1434,7 @@
+ 		Target:     targetValue,
+ 		TargetDirs: targetDirs,
+ 		ProjectDir: projectRoot,
+-		Authoring:  declaration,
++		Authoring:  nil,
+ 	})
+ 	if err != nil {
+ 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+--- internal/cli/cli.go
++++ internal/cli/cli.go
+@@ -1450,6 +1450,8 @@
+ 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+ 			return exitPreflight
+ 		}
++		_, err = roundskills.Install(ctx, roundskills.InstallRequest{Target: "project", ProjectDir: projectRoot, Authoring: declaration})
++		if err != nil { return exitPreflight }
+ 		for _, name := range updated.Hashed {
+ 			fmt.Fprintf(stdout, "Updated skills-lock.json computedHash: %s\n", name)
+ 		}

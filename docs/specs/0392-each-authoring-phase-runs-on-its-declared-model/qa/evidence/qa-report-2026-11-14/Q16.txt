@@ -1,0 +1,65 @@
+commands: git rev-list --reverse 4f8a5b7db8385f7b3745f63d6cb5668dd576f662..f86809d68bf7b3d8ab171815a149eb5f15bedade; git diff-tree --no-commit-id --name-only -r <each Task commit>; git show <commit>[:path]; git diff --name-only HEAD
+task_01.md bf2d06a4acbe7bf9002d9cc8298b31ea30577e03: 15 paths all declared; no Recorded paths section needed.
+task_02.md f84900a90dc541cb72cc56a989c969a5675f65fa: 14 paths all declared; no Recorded paths section needed.
+task_03.md 62a72df0d0e60115db19e09bc919c15c99297553: 23 paths all declared; no Recorded paths section needed.
+task_04.md f86809d68bf7b3d8ab171815a149eb5f15bedade: 22 paths all declared; no Recorded paths section needed.
+Exact changed paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/roundfix/references/modes.md
+.agents/skills/roundfix/references/setup.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+CONTEXT.md
+docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0392-each-authoring-phase-runs-on-its-declared-model/task_01.md
+docs/specs/0392-each-authoring-phase-runs-on-its-declared-model/task_02.md
+docs/specs/0392-each-authoring-phase-runs-on-its-declared-model/task_03.md
+docs/specs/0392-each-authoring-phase-runs-on-its-declared-model/task_04.md
+docs/user-guide/commands/baseline.md
+docs/user-guide/commands/doctor.md
+docs/user-guide/commands/skills.md
+docs/user-guide/commands/update.md
+docs/user-guide/configuration.md
+internal/cli/authoring_models.go
+internal/cli/authoring_models_test.go
+internal/cli/authoring_reports.go
+internal/cli/authoring_reports_test.go
+internal/cli/baseline_update.go
+internal/cli/cli.go
+internal/cli/doctor.go
+internal/cli/health.go
+internal/cli/skills_remove.go
+internal/cli/skills_remove_test.go
+internal/cli/update_check.go
+internal/cli/user_skills.go
+internal/cli/user_skills_test.go
+internal/config/authoring.go
+internal/config/authoring_test.go
+internal/config/config.go
+skills/authoring.go
+skills/authoring_delegation_test.go
+skills/authoring_inspect.go
+skills/authoring_inspect_test.go
+skills/authoring_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/baseline.md
+skills/roundfix/references/modes.md
+skills/roundfix/references/setup.md
+skills/roundfix_modes_test.go
+skills/skills.go
+skills/testdata/owned-skill-versions.json
+skills/user_copies.go
+skills/user_copies_test.go
+skills/user_copy_removal_guidance_test.go
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+All governed paths are bounded by approved authorization; pattern/exact set extracted from current internal/speccheck/governed.go. Seeded audit grants task_03/task_04 at 4f8a5b7db8385f7b3745f63d6cb5668dd576f662; their authorization is not inside either Task commit. No prerequisite/consequent fix declared.
+No prohibited file changed. Every existing top-level test name retained in each edited test file. Every QA settlement section byte-identical.
+Current tracked delta: 

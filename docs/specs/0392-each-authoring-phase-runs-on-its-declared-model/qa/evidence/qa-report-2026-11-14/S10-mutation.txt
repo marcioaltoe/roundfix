@@ -1,0 +1,9 @@
+--- internal/cli/skills_remove.go
++++ internal/cli/skills_remove.go
+@@ -135,5 +135,6 @@
+ 		}
+ 		return "Removed " + path, nil
+ 	}
++	if err := os.RemoveAll(path); err != nil { return "", err }
+ 	return "Would remove " + path, nil
+ }

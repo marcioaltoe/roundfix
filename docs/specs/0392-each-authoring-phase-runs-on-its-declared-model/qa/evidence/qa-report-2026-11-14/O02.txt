@@ -1,0 +1,5 @@
+Claude Code, Create custom subagents, Available tools
+https://code.claude.com/docs/en/sub-agents
+Read date: 2026-11-14, as recorded in PRD Acceptance evidence; offline quoted passage, not a fresh live lookup.
+Quotation: The first filter removes these tools, even when listed in the `tools` field
+Comparison: Generated Author Subagent item 2 says You cannot ask the user; Q11 generates the body and Q03 exact generator tests pass.

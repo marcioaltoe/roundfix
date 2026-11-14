@@ -1,0 +1,130 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestSkillsInstallAppliesTheAuthoringModelDeclaration|TestBaselineUpdateAppliesTheAuthoringModelDeclaration|TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted|TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit|TestDoctorReportsTheAuthoringModels|TestUpdateCheckReportsTheAuthoringModels|TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit|TestSkillsRemoveListsThenRemovesOnlyOwnedCopies|TestSkillsUsageNamesTheRemoval)$ ./internal/cli
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration
+=== PAUSE TestSkillsInstallAppliesTheAuthoringModelDeclaration
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== PAUSE TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted
+=== PAUSE TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== PAUSE TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== RUN   TestDoctorReportsTheAuthoringModels
+=== PAUSE TestDoctorReportsTheAuthoringModels
+=== RUN   TestUpdateCheckReportsTheAuthoringModels
+=== PAUSE TestUpdateCheckReportsTheAuthoringModels
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies
+=== PAUSE TestSkillsRemoveListsThenRemovesOnlyOwnedCopies
+=== RUN   TestSkillsUsageNamesTheRemoval
+=== PAUSE TestSkillsUsageNamesTheRemoval
+=== RUN   TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit
+=== PAUSE TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit
+=== CONT  TestSkillsInstallAppliesTheAuthoringModelDeclaration
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/surface_transcript_2
+=== CONT  TestUpdateCheckReportsTheAuthoringModels
+=== CONT  TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/applied
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/declaration
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/lock_records_the_installed_tree
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/refuses_a_file_it_did_not_generate
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/surface_transcript_3
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/names_an_uncovered_header
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/an_invalid_declaration_stops_before_installing
+=== RUN   TestSkillsInstallAppliesTheAuthoringModelDeclaration/configuration_warnings_reach_stderr
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/unapplied
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/not_read
+--- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration (0.08s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/surface_transcript_2 (0.02s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/lock_records_the_installed_tree (0.03s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/refuses_a_file_it_did_not_generate (0.00s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/names_an_uncovered_header (0.02s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/an_invalid_declaration_stops_before_installing (0.00s)
+    --- PASS: TestSkillsInstallAppliesTheAuthoringModelDeclaration/configuration_warnings_reach_stderr (0.01s)
+=== CONT  TestDoctorReportsTheAuthoringModels
+=== RUN   TestDoctorReportsTheAuthoringModels/ok
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/unapplied_without_next
+=== RUN   TestDoctorReportsTheAuthoringModels/warn
+=== CONT  TestSkillsUsageNamesTheRemoval
+--- PASS: TestUpdateCheckReportsTheAuthoringModels (0.10s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/applied (0.06s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/unapplied (0.02s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/unapplied_without_next (0.02s)
+=== RUN   TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/unversioned
+--- PASS: TestSkillsUsageNamesTheRemoval (0.00s)
+=== CONT  TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit
+=== RUN   TestDoctorReportsTheAuthoringModels/warn_without_next
+--- PASS: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit (0.12s)
+    --- PASS: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/declaration (0.05s)
+    --- PASS: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/surface_transcript_3 (0.03s)
+    --- PASS: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/not_read (0.02s)
+    --- PASS: TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit/unversioned (0.02s)
+=== CONT  TestSkillsRemoveListsThenRemovesOnlyOwnedCopies
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/surface_transcript_4
+=== RUN   TestDoctorReportsTheAuthoringModels/after_user_skills
+=== RUN   TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit/unversioned_still_warns
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/surface_transcript_5
+=== RUN   TestDoctorReportsTheAuthoringModels/project_config_not_read
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/apply
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/target_all
+=== RUN   TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit/failed_check_has_no_advisory
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/dir
+=== RUN   TestDoctorReportsTheAuthoringModels/outside_repository
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/refusals
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/refusals/removal_fails
+--- PASS: TestDoctorReportsTheAuthoringModels (0.10s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/ok (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/warn (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/warn_without_next (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/after_user_skills (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/project_config_not_read (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/outside_repository (0.00s)
+=== CONT  TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_check
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/no_known_directory
+=== RUN   TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/dangling_link
+--- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies (0.06s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/surface_transcript_4 (0.02s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/surface_transcript_5 (0.01s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/apply (0.01s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/target_all (0.01s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/dir (0.00s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/refusals (0.00s)
+        --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/refusals/removal_fails (0.00s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/no_known_directory (0.00s)
+    --- PASS: TestSkillsRemoveListsThenRemovesOnlyOwnedCopies/dangling_link (0.00s)
+=== CONT  TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_reports_lock_and_removal
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/doctor
+--- PASS: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit (0.10s)
+    --- PASS: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit/unversioned_still_warns (0.03s)
+    --- PASS: TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit/failed_check_has_no_advisory (0.01s)
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/update_check
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/uncovered_notice_and_warnings
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install/false
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/load_failure
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_failure
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/no_loader_reads_no_configuration
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install/true
+--- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration (0.06s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_reports_lock_and_removal (0.03s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/uncovered_notice_and_warnings (0.01s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/load_failure (0.00s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_failure (0.00s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/no_loader_reads_no_configuration (0.01s)
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update/false
+=== RUN   TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update/true
+--- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted (0.09s)
+    --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_check (0.02s)
+    --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/doctor (0.01s)
+    --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/update_check (0.01s)
+    --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install (0.02s)
+        --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install/false (0.01s)
+        --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/skills_install/true (0.01s)
+    --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update (0.02s)
+        --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update/false (0.01s)
+        --- PASS: TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted/baseline_update/true (0.01s)
+PASS
+suiteguard: guard cost: measured 3168 paths; fingerprint took 189.043542ms before and 185.305458ms after
+ok  	roundfix/internal/cli	1.081s
+
+exit: 0

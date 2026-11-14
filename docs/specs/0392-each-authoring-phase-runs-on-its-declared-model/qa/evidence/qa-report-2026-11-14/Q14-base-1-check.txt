@@ -1,0 +1,5 @@
+command: bin/qa0392-delivery-base skills check
+stdout:
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate
+stderr:
+exit: 0

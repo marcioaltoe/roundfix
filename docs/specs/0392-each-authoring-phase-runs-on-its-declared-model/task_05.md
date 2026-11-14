@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0392-each-authoring-phase-runs-on-its-declared-model
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

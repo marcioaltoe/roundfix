@@ -1,0 +1,14 @@
+S01: named assertion fails on lock hash=.
+S02: named assertion fails on authoring={Headers:[write-prd].
+S03: named assertion fails on error=<nil>.
+S04: named assertion fails on my-reviewer.md changed:.
+S05: named assertion fails on error=<nil>.
+S06: named assertion fails on error=<nil>.
+S07: named assertion fails on exit=1.
+S08: named assertion fails on /.codex/skills/write-prd.
+S09: named assertion fails on /vault/nested/file changed:.
+S10: named assertion fails on listing changed copy:.
+S11: named assertion fails on model.
+S12: named assertion fails on Installable:true.
+S05 also fails the independent tool-boundary generator assertion: accepted prohibited tool Bash.
+S01 initial attempt altered stdout first; discarded and refined to preserve stdout and expose the lock hash. S06 initial attempt removed a still-needed slices import; discarded compilation failure and rerun with only the effort-validation predicate removed. Neither initial attempt was credited.

@@ -1,0 +1,39 @@
+package main
+import (
+ "context"
+ "fmt"
+ "os"
+ "path/filepath"
+ "strings"
+ "roundfix/internal/spec"
+ "roundfix/internal/speccheck"
+ "roundfix/internal/secretscan"
+)
+func must(err error) { if err != nil { fmt.Fprintln(os.Stderr, err); os.Exit(1) } }
+func main() {
+ ctx := context.Background()
+ path := os.Args[1]
+ report, err := spec.ReadQAReportFile(path); must(err)
+ must(spec.QAReportEligibility(filepath.Dir(filepath.Dir(path)), report))
+ must(spec.RequireResolvedEvidenceLinks(ctx, path))
+ must(spec.RequireOwnRunEvidence(ctx, path, spec.BorrowedEvidenceOptions{RunBranchPrefix:"roundfix/run-", RunBranch:"roundfix/run-run_20261114T143519Z_1cdb3a69f0e9f744", AuditedHead:"f86809d68bf7b3d8ab171815a149eb5f15bedade"}))
+ data, err := os.ReadFile(path); must(err)
+ results := spec.ReadQAResults(path, data)
+ count := 0
+ for _, table := range results.StatusTables() { count += len(table.Rows) }
+ if count != 40 { must(fmt.Errorf("Results rows: got %d, expected 40",count)) }
+ if report.RowsBlockedEnvironment != 1 || report.RowsBlockedDeclared != 5 || report.RowsBlockedFinding != 0 || report.RowsSkipped != 0 { must(fmt.Errorf("unexpected blocked counts")) }
+ evidence := filepath.Join(filepath.Dir(path), "evidence", "qa-report-2026-11-14")
+ files := 0
+ must(filepath.WalkDir(filepath.Dir(path), func(p string, entry os.DirEntry, err error) error {
+  if err != nil {return err}; if entry.IsDir() {return nil}; b, err := os.ReadFile(p); if err != nil { return err }
+  for _, match := range secretscan.ScanContent(p,b) { return fmt.Errorf("%s", match.String()) }
+  files++; return nil
+ }))
+ scope, err := os.ReadFile(filepath.Join(evidence,"Q16.txt")); must(err)
+ auth, err := os.ReadFile(filepath.Join(filepath.Dir(filepath.Dir(path)),"_authorization.md")); must(err)
+ changed := strings.Split(strings.Split(string(scope),"Exact changed paths:\n")[1],"\nAll governed paths")[0]
+ governed := 0
+ for _, p := range strings.Split(changed,"\n") { if speccheck.GovernedPath(p) { governed++; if !strings.Contains(string(auth),"  - "+p+"\n") { must(fmt.Errorf("unbounded governed path: %s",p)) } } }
+ fmt.Printf("PASS: report parser and qualifying-partial policy; 40 contiguous rows; 5 matched declared criteria; exempt pre-PR row; evidence links; own-Run evidence; %d files secret-scanned; %d actual GovernedPath classifications bounded.\n",files,governed)
+}

@@ -1,0 +1,4 @@
+command: /bin/bash -c out="$(go test -count=1 -timeout 20m -v -run '^(TestTheAuthoringModelDeclarationIsReadFromProjectConfig|TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow|TestUserConfigIgnoresTheAuthoringModelDeclaration)$' ./internal/config 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheAuthoringModelDeclarationIsReadFromProjectConfig TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/effort_hihg TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/tool_Bash TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/scalar_phase TestUserConfigIgnoresTheAuthoringModelDeclaration; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 20m ./internal/config
+ok  	roundfix/internal/config	1.215s
+
+exit: 0

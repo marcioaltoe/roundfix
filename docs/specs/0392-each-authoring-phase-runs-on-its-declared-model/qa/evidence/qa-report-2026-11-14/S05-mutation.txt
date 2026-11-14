@@ -1,0 +1,11 @@
+--- internal/config/authoring.go
++++ internal/config/authoring.go
+@@ -123,7 +123,7 @@
+ 			seen := map[string]bool{}
+ 			for _, tool := range value.Content {
+ 				name := authoringNodeValue(tool)
+-				if tool.Kind != yaml.ScalarNode || tool.Tag != "!!str" || (name != "WebSearch" && name != "WebFetch" && !authoringMCPTool.MatchString(name)) {
++				if tool.Kind != yaml.ScalarNode || tool.Tag != "!!str" || (name != "Bash" && name != "WebSearch" && name != "WebFetch" && !authoringMCPTool.MatchString(name)) {
+ 					return invalidAuthoringTool(name)
+ 				}
+ 				if seen[name] {

@@ -1,0 +1,10 @@
+--- skills/write-prd/SKILL.md
++++ skills/write-prd/SKILL.md
+@@ -9,6 +9,7 @@
+   author: Marcio Altoé
+   source: https://github.com/marcioaltoe/skills
+ version: 0.0.20
++model: x
+ ---
+ 
+ # Write PRD

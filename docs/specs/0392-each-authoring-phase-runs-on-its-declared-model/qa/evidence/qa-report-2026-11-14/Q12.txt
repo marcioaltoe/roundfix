@@ -1,0 +1,6 @@
+command: ./bin/roundfix skills install --target project
+fixture: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/tool-validation
+stdout:
+stderr:
+roundfix: skills install failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/tool-validation/.roundfixrc.yml": skills.authoring.claude.research.tools names "Bash"; expected WebSearch, WebFetch or a name that begins with mcp__
+exit: 2

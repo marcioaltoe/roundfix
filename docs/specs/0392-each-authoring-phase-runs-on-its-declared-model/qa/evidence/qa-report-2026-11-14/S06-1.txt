@@ -1,0 +1,15 @@
+source: independent git archive f86809d68bf7b3d8ab171815a149eb5f15bedade
+command: go test -count=1 -timeout 20m -v -run ^TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow$/^effort_hihg$ ./internal/config
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== PAUSE TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== CONT  TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow
+=== RUN   TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/effort_hihg
+    authoring_test.go:94: error=<nil> want=parse config "Project Config proposal": skills.authoring.claude.prd.reasoning_effort "hihg" is not supported for claude; expected low, medium, high, xhigh or max
+--- FAIL: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow (0.00s)
+    --- FAIL: TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/effort_hihg (0.00s)
+FAIL
+suiteguard: guard cost: measured 3155 paths; fingerprint took 171.298333ms before and 148.008125ms after
+FAIL	roundfix/internal/config	0.597s
+FAIL
+
+exit: 1

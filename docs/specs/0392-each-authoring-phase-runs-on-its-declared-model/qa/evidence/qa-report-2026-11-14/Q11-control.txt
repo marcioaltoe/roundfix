@@ -1,0 +1,6 @@
+command: ./bin/roundfix skills install --target project
+fixture: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/control
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/control/.agents/skills (41 file(s))
+stderr:
+exit: 0

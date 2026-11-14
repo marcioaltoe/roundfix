@@ -1,0 +1,35 @@
+--- internal/cli/cli.go
++++ internal/cli/cli.go
+@@ -1434,7 +1434,7 @@
+ 		Target:     targetValue,
+ 		TargetDirs: targetDirs,
+ 		ProjectDir: projectRoot,
+-		Authoring:  declaration,
++		Authoring:  nil,
+ 	})
+ 	if err != nil {
+ 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+--- internal/cli/cli.go
++++ internal/cli/cli.go
+@@ -1440,6 +1440,10 @@
+ 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+ 		return exitPreflight
+ 	}
++	staleLock, staleLockErr := baseline.RecordInstalledOwnedSkills(ctx, projectRoot, roundskills.Names())
++	applied, installErr := roundskills.Install(ctx, roundskills.InstallRequest{Target: "project", ProjectDir: projectRoot, Authoring: declaration})
++	if installErr != nil { return exitPreflight }
++	result.Authoring = applied.Authoring
+ 	for _, installed := range result.Targets {
+ 		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
+ 	}
+--- internal/cli/cli.go
++++ internal/cli/cli.go
+@@ -1449,7 +1449,7 @@
+ 	}
+ 	writeAuthoringInstall(result.Authoring, declaration, stdout, stderr)
+ 	if targetValue == "project" && projectRoot != "" {
+-		updated, err := baseline.RecordInstalledOwnedSkills(ctx, projectRoot, roundskills.Names())
++		updated, err := staleLock, staleLockErr
+ 		if err != nil {
+ 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+ 			return exitPreflight

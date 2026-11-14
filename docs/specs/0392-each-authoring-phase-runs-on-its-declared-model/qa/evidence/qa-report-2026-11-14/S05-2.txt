@@ -1,0 +1,12 @@
+source: independent git archive f86809d68bf7b3d8ab171815a149eb5f15bedade
+command: go test -count=1 -timeout 20m -v -run ^TestTheResearchSubagentNeverHoldsAShellOrAWriteTool$ ./skills
+=== RUN   TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+=== PAUSE TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+=== CONT  TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+    authoring_test.go:193: accepted prohibited tool Bash from [WebSearch Bash]
+--- FAIL: TestTheResearchSubagentNeverHoldsAShellOrAWriteTool (0.00s)
+FAIL
+FAIL	roundfix/skills	0.323s
+FAIL
+
+exit: 1

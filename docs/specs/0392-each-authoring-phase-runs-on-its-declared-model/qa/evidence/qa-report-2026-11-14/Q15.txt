@@ -1,0 +1,20 @@
+No top-level model/effort in every shipped and canonical owned SKILL.md: implement-task, qa-gate, write-idea, evidence-gate, setup-context-driven, roundfix, brainstorming, business-analyst, write-tasks, archive-spec, write-techspec, write-prd
+Whole mirror byte equality: roundfix (22 files)
+Whole mirror byte equality: write-idea (3 files)
+Whole mirror byte equality: write-prd (4 files)
+Whole mirror byte equality: write-techspec (3 files)
+Whole mirror byte equality: write-tasks (2 files)
+Contract 11 matches once before Process in all eight authoring copies, with Idea-only approval sentence.
+All seven Contract 12 blocks found once in both Roundfix reference copies.
+PRD and TechSpec Glossary additions/changes match all six exact Contract 13 definitions in CONTEXT.
+Accepted ADRs, single exact ADR-0386 amendment, and Contract 15 configuration paragraph/example verified.
+Recorded command skills remove: docs/references/skill-coverage.json
+Recorded command skills remove: docs/references/behavior-surfaces.json
+command: go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract -run ^TestGlossaryPhrasesAreDefinedTerms$ -v
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.06s)
+PASS
+ok  	roundfix/internal/docscontract	0.472s
+exit: 0

@@ -1,0 +1,4 @@
+command: go test -count=1 -timeout 30m -run Skill|Doctor|UpdateCheck|BaselineUpdate|Usage ./internal/cli
+ok  	roundfix/internal/cli	67.371s
+
+exit: 0

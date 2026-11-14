@@ -1,0 +1,6 @@
+command: ./bin/roundfix skills remove --target claude --apply
+fixture: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/fixture-A
+stdout:
+Removed /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/home/.claude/skills/write-prd
+stderr:
+exit: 0

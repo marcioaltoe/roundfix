@@ -1,0 +1,19 @@
+--- skills/authoring.go
++++ skills/authoring.go
+@@ -283,6 +283,16 @@
+ }
+ 
+ func (plan authoringInstallPlan) apply(ctx context.Context, root string) error {
++ entries, _ := os.ReadDir(filepath.Join(root, ".claude", "agents"))
++ for _, entry := range entries {
++  path := ".claude/agents/" + entry.Name()
++  if entry.IsDir() { continue }
++  if _, declared := plan.generated[path]; declared { continue }
++  planned := false
++  for _, removed := range plan.result.Removed { if removed == path { planned = true } }
++  if !planned { if err := os.Remove(filepath.Join(root, filepath.FromSlash(path))); err != nil { return err } }
++ }
++
+ 	for _, path := range plan.result.Subagents {
+ 		if err := ctx.Err(); err != nil {
+ 			return err

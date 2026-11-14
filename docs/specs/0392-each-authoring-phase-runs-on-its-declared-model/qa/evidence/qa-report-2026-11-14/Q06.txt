@@ -1,0 +1,24 @@
+command: ./bin/roundfix skills --help
+fixture: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0392-flow-33cws3q0/fixture-A
+stdout:
+Usage:
+  roundfix skills list
+  roundfix skills check
+  roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
+  roundfix skills remove --target <codex|claude|opencode|all> [--dir <path>] [--apply]
+
+Commands:
+  list       List the bundled Roundfix skills and recommended external skills
+  check      Validate shipped Roundfix skill artifacts and, inside an adopted
+             repository, the skills its Baseline requires
+  install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
+  remove     List, and with --apply remove, the Roundfix skills in a user-level Agent skill directory
+
+Options:
+  --target   Install target. Supported: project, codex, claude, opencode, all
+             project writes <repo>/.agents/skills and can link .claude/skills
+             remove accepts codex, claude, opencode and all, never project
+  --dir      Override the target skills directory for a single target
+  --apply    With remove, delete what the listing names
+stderr:
+exit: 0

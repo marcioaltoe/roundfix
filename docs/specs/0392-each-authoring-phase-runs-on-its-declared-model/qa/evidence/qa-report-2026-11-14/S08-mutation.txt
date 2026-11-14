@@ -1,0 +1,11 @@
+--- skills/user_copies.go
++++ skills/user_copies.go
+@@ -113,7 +113,7 @@
+ 			minimum := ownedSkillMinimumVersions[name]
+ 			state, err := Readiness(SkillVersion{Declared: found, Source: source}, minimum)
+ 			stale := err == nil && state == ReadinessBelow
+-			hidesHeader := directory.HidesHeader && declared[name]
++			hidesHeader := declared[name]
+ 			if !stale && !hidesHeader {
+ 				continue
+ 			}
