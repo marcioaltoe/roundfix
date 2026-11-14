@@ -1,4 +1,0 @@
-$ go test -count=1 -timeout 40m -run Baseline ./internal/cli
-ok  	roundfix/internal/cli	73.413s
-
-exit: 0

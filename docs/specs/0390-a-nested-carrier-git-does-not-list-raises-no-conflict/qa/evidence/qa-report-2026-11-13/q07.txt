@@ -1,3 +1,0 @@
-$ go build -buildvcs=false ./internal/baseline
-
-exit: 0
