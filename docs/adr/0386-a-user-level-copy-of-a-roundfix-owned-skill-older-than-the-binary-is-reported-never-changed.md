@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-10T00:00:00Z
-updated_at: 2026-11-10T00:00:00Z
+updated_at: 2026-11-14T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -63,6 +63,8 @@ first directory that reached the copy: `roundfix skills install --target
 <claude|codex|opencode>` for the three install directories, with `--dir <path>`
 for the other two. The `--update` Skill Mode asks before running one. Nothing
 prints when no copy is stale.
+
+**Amended by [ADR-0405](0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md) (2026-11-14).** Each report names the `roundfix skills remove` command that removes a copy before the command that refreshes it, and a copy in Claude Code's user-level directory of an authoring skill whose phase the repository declares is named whatever its version, because it hides the Declared Skill Header. Older is still the one comparison everywhere else, and no report writes to those directories.
 
 ## Considered Options
 

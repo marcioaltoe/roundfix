@@ -951,8 +951,28 @@ A skill the Baseline no longer requires although the upstream catalog may still 
 _Avoid_: Deprecated skill, obsolete skill
 
 **Stale User Skill Copy**:
-A copy of a Roundfix-owned skill in a user-level skill directory of an Agent harness whose `SKILL.md` declares a version below the one the installed Roundfix carries. The harness can load it in place of the repository's copy, so `roundfix skills check`, the Doctor Command and the Update Check name it with the `roundfix skills install` command that refreshes it, and none of them changes it ([ADR-0386](docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md)).
+A copy of a Roundfix-owned skill in a user-level skill directory of an Agent harness whose `SKILL.md` declares a version below the one the installed Roundfix carries. The harness can load it in place of the repository's copy, so `roundfix skills check`, the Doctor Command and the Update Check name it with the `roundfix skills remove` command that removes it and the `roundfix skills install` command that refreshes it, and none of them changes it. They name the same way, whatever its version, a copy that hides a Declared Skill Header ([ADR-0386](docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md)).
 _Avoid_: Global skill, personal override, outdated install
+
+**Authoring Phase**:
+One of the four stages that write a Spec's planning artifacts, each run by one authoring skill: `idea` by `write-idea`, `prd` by `write-prd`, `techspec` by `write-techspec` and `tasks` by `write-tasks`. The Authoring Model Declaration names a phase by its key ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md)).
+_Avoid_: Planning step, authoring stage, skill phase
+
+**Authoring Model Declaration**:
+The `skills.authoring` section of Project Config that declares, per Agent harness, the model and reasoning effort of each Authoring Phase and of research sweeps. Roundfix ships no model name, the section is ignored in User Config, and a repository that declares nothing keeps the shipped skills unchanged. `roundfix skills install --target project` and `roundfix baseline update` apply it, and `roundfix skills check`, the Doctor Command and the Update Check warn when the installed files do not match it ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md)).
+_Avoid_: Model preset, skill model setting, phase profile
+
+**Declared Skill Header**:
+The `model` and `effort` lines that installation writes into the frontmatter of an installed authoring skill from the Authoring Model Declaration, so that a phase the user starts by typing the skill runs on them. The shipped skills never hold one, a user-level installation receives none, and a user-level copy of the skill hides it in Claude Code ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md)).
+_Avoid_: Skill override, model frontmatter, hand-written header
+
+**Author Subagent**:
+The subagent that installation generates for one declared Authoring Phase, `roundfix-<phase>-author`, on the declared model and reasoning effort. An authoring skill the session activated hands its phase to it, passing no model and no effort; it cannot ask the user, so the session gathers the decisions first and it returns its open questions instead of guessing one. It is a subagent of the Agent harness session and never the Agent of a Run ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md)).
+_Avoid_: Authoring agent, writer agent, phase agent
+
+**Research Subagent**:
+The subagent that installation generates from the `research` entry of the Authoring Model Declaration, `roundfix-researcher`. It reads the codebase, the knowledge base and the web for an Authoring Phase and returns conclusions with their sources. Its tool list holds no shell and no file-writing tool: three tools that read the checkout, and only the web and MCP tools the repository lists ([ADR-0402](docs/adr/0402-the-research-subagent-reads-and-never-runs-a-command-or-writes-a-file.md)).
+_Avoid_: Researcher agent, read-only agent, sweep agent
 
 **Missing Required Skill**:
 An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0392-each-authoring-phase-runs-on-its-declared-model
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -197,3 +197,17 @@ task 03 already wrote the `setup` paragraph that names the removal.
 - `_prd.md` → User Stories 2 and 4; Core Features 3, 4 and 7; Success Metric 6; Success Metric 7; Glossary
 - `_techspec.md` → API Contract 11; API Contract 12; API Contract 13; API Contract 14; Invariant 2; Declared breaks; Testing Approach; Build Order 4
 - ADR-0401, ADR-0402, ADR-0405, ADR-0386
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, coding-guidelines, testing-boss, tech-writer, evidence-gate
+
+Implemented the four canonical authoring-skill `Declared model` sections with their phase keys, Author Subagents, research delegation, decision-gathering and fallback rules; `write-idea` carries the approval-only sentence. Updated the canonical Roundfix `modes`, `setup` and `baseline` references, preserving the existing `--update` guarantees and all `### QA settlement` sections. Added the two layout-based contract tests, extended the existing update-mode assertions, synchronized the embedded skills, recorded the five owned-skill versions, added the five glossary entries and amended ADR-0386 for 2026-11-14.
+
+Acceptance evidence:
+
+- Both copies of each authoring skill are checked by `TestTheAuthoringSkillsDelegateADeclaredPhase`; the focused run passed with 113 subtests. The test asserts one section before `## Process`, each key/subagent/research name, the approval sentence only for `write-idea`, and each required phrase exactly once. `TestNoShippedSkillDeclaresAModelOrEffort` also passed.
+- Both copies of the Roundfix references are checked by `TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase`; the focused run passed with 35 subtests. `TestTheUpdateModeAppliesOnlyThePlanItShowed` passed with the added command/removal and `authoringModels.state` phrases. The version recorder and subsequent read-only version test passed, and canonical/mirror `cmp` checks passed.
+- `CONTEXT.md` now defines the changed **Stale User Skill Copy** and the five requested terms in order, and ADR-0386 has the single dated ADR-0405 notice with the later `updated_at`. The focused diff review and `git diff --check` passed.
+
+Focused commands run: `make skills-sync`; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; focused runs of the two new contract tests, `TestTheUpdateModeAppliesOnlyThePlanItShowed`, `TestNoShippedSkillDeclaresAModelOrEffort` and `TestEveryOwnedSkillVersionIsRecorded`; `gofmt`; canonical/mirror `cmp`; and `git diff --check`. The task's declared Verification and repository-wide gates remain for the Daemon.
