@@ -126,7 +126,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		results = append(results, dependencies.readiness(ctx, loaded)...)
 	}
 	results = append(results, repositorySkillsCheck(ctx, dependencies, repositoryRoot))
-	if copies := staleUserSkillCopies(ctx, loaded.HomeDir); len(copies) != 0 {
+	if copies := reportedUserSkillCopies(ctx, loaded.HomeDir, loadedDeclaredAuthoringSkills(loaded)); len(copies) != 0 {
 		results = append(results, doctorUserSkillsResult(copies))
 	}
 	if state, report := loadedAuthoringState(loaded); report {

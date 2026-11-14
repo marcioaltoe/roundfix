@@ -103,6 +103,7 @@ Usage:
   roundfix events <run-id> [--follow] [--filter <categories>]
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
+  roundfix skills remove --target <codex|claude|opencode|all> [--dir <path>] [--apply]
 
 Commands:
   init       Create User Config or Project Config
@@ -758,8 +759,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		}
-		printSkillsAuthoringWarning(ctx, environment, stderr)
-		printUserSkillWarning(stderr, staleUserSkillCopies(ctx, environment.homeDir))
+		declaration := printSkillsAuthoringWarning(ctx, environment, stderr)
+		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredAuthoringSkills(declaration)))
 		return exitOK
 	case "list":
 		if commandWantsHelp(args[1:]) {
@@ -774,6 +775,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return runSkillsList(stdout)
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr, environment)
+	case "remove":
+		return runSkillsRemove(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown skills command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
@@ -6140,17 +6143,21 @@ preserved. Cleanup failures are secondary warnings after the primary failure.
   roundfix skills list
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
+  roundfix skills remove --target <codex|claude|opencode|all> [--dir <path>] [--apply]
 
 Commands:
   list       List the bundled Roundfix skills and recommended external skills
   check      Validate shipped Roundfix skill artifacts and, inside an adopted
              repository, the skills its Baseline requires
   install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
+  remove     List, and with --apply remove, the Roundfix skills in a user-level Agent skill directory
 
 Options:
   --target   Install target. Supported: project, codex, claude, opencode, all
              project writes <repo>/.agents/skills and can link .claude/skills
+             remove accepts codex, claude, opencode and all, never project
   --dir      Override the target skills directory for a single target
+  --apply    With remove, delete what the listing names
 `
 	default:
 		return strings.TrimRight(usage, "\n") + "\n"

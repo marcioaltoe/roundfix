@@ -29,7 +29,7 @@ func TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory(t *testing.T
 	for i, rel := range relative {
 		path := filepath.Join(home, filepath.FromSlash(rel), "roundfix")
 		writeUserSkillCopy(t, path, "roundfix", "0.0.1")
-		want = append(want, StaleUserSkillCopy{Skill: "roundfix", Path: path, Found: "0.0.1", Embedded: ownedSkillMinimumVersions["roundfix"], Refresh: refreshes[i]})
+		want = append(want, StaleUserSkillCopy{Skill: "roundfix", Path: path, Found: "0.0.1", Embedded: ownedSkillMinimumVersions["roundfix"], Refresh: refreshes[i], Remove: directories[i].Remove, Stale: true})
 	}
 	claude := directories[0].Path
 	writeUserSkillCopy(t, filepath.Join(claude, "qa-gate"), "qa-gate", ownedSkillMinimumVersions["qa-gate"])
@@ -94,13 +94,13 @@ func TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []StaleUserSkillCopy{
-		{Skill: "roundfix", Path: filepath.Join(directories[0].Path, "roundfix"), Resolved: resolved, Found: "0.0.1", Embedded: ownedSkillMinimumVersions["roundfix"], Refresh: directories[0].Refresh},
+		{Skill: "roundfix", Path: filepath.Join(directories[0].Path, "roundfix"), Resolved: resolved, Found: "0.0.1", Embedded: ownedSkillMinimumVersions["roundfix"], Refresh: directories[0].Refresh, Remove: directories[0].Remove, Stale: true},
 	}
 	got := StaleUserSkillCopies(context.Background(), directories)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("copies = %#v, want %#v", got, want)
 	}
-	description := fmt.Sprintf("roundfix 0.0.1 (binary %s) at %s -> %s", ownedSkillMinimumVersions["roundfix"], want[0].Path, resolved)
+	description := fmt.Sprintf("roundfix 0.0.1 (binary %s) at %s -> %s", ownedSkillMinimumVersions["roundfix"], want[0].Path, resolved) + "; older than this binary"
 	if got[0].Describe() != description {
 		t.Fatalf("description = %q, want %q", got[0].Describe(), description)
 	}
@@ -141,11 +141,18 @@ func TestUserSkillDirectoriesFollowTheInstallTargetVariables(t *testing.T) {
 	home := filepath.Join(t.TempDir(), "user's home")
 	variables := map[string]string{"CLAUDE_HOME": filepath.Join(home, "claude"), "CODEX_HOME": filepath.Join(home, "codex"), "OPENCODE_HOME": filepath.Join(home, "opencode")}
 	want := []UserSkillDirectory{
-		{filepath.Join(home, "claude", "skills"), "roundfix skills install --target claude"},
-		{filepath.Join(home, "codex", "skills"), "roundfix skills install --target codex"},
-		{filepath.Join(home, "opencode", "skills"), "roundfix skills install --target opencode"},
-		{filepath.Join(home, ".agents", "skills"), "roundfix skills install --target codex --dir '" + strings.ReplaceAll(filepath.Join(home, ".agents", "skills"), "'", "'\\''") + "'"},
-		{filepath.Join(home, ".config", "opencode", "skills"), "roundfix skills install --target opencode --dir '" + strings.ReplaceAll(filepath.Join(home, ".config", "opencode", "skills"), "'", "'\\''") + "'"},
+		{Path: filepath.Join(home, "claude", "skills"), Refresh: "roundfix skills install --target claude", Target: "claude", Remove: "roundfix skills remove --target claude --apply", HidesHeader: true},
+		{Path: filepath.Join(home, "codex", "skills"), Refresh: "roundfix skills install --target codex", Target: "codex", Remove: "roundfix skills remove --target codex --apply"},
+		{Path: filepath.Join(home, "opencode", "skills"), Refresh: "roundfix skills install --target opencode", Target: "opencode", Remove: "roundfix skills remove --target opencode --apply"},
+	}
+	for _, extra := range []struct{ target, path string }{
+		{"codex", filepath.Join(home, ".agents", "skills")},
+		{"opencode", filepath.Join(home, ".config", "opencode", "skills")},
+	} {
+		quoted := "'" + strings.ReplaceAll(extra.path, "'", "'\\''") + "'"
+		want = append(want, UserSkillDirectory{Path: extra.path, Target: extra.target,
+			Refresh: "roundfix skills install --target " + extra.target + " --dir " + quoted,
+			Remove:  "roundfix skills remove --target " + extra.target + " --dir " + quoted + " --apply"})
 	}
 	getenv := func(name string) string {
 		value, ok := variables[name]
@@ -212,4 +219,60 @@ func snapshotUserSkillHome(t *testing.T, home string) []userSkillFileSnapshot {
 		t.Fatal(err)
 	}
 	return snapshot
+}
+
+func TestReportedUserSkillCopiesNameACurrentCopyThatHidesAHeader(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	directories := UserSkillDirectories(home, nil)
+	claude, codex := directories[0].Path, directories[1].Path
+	current := ownedSkillMinimumVersions["write-prd"]
+	writeUserSkillCopy(t, filepath.Join(claude, "write-prd"), "write-prd", current)
+	writeUserSkillCopy(t, filepath.Join(codex, "write-prd"), "write-prd", current)
+	writeUserSkillCopy(t, filepath.Join(claude, "write-idea"), "write-idea", "0.0.1")
+	writeUserSkillCopy(t, filepath.Join(claude, "write-techspec"), "write-techspec", "custom")
+	writeUserSkillCopy(t, filepath.Join(claude, "qa-gate"), "qa-gate", ownedSkillMinimumVersions["qa-gate"])
+	// Parseable frontmatter is still required even for a declared skill.
+	writeUserSkillCopy(t, filepath.Join(claude, "write-tasks"), "write-tasks", "0.0.1")
+	if err := os.WriteFile(filepath.Join(claude, "write-tasks", "SKILL.md"), []byte("---\nversion: [\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shared := filepath.Join(home, "vault", "brainstorming")
+	writeUserSkillCopy(t, shared, "brainstorming", ownedSkillMinimumVersions["brainstorming"])
+	for _, dir := range []string{claude, codex} {
+		if err := os.Symlink(shared, filepath.Join(dir, "brainstorming")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	resolved, err := filepath.EvalSymlinks(shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []StaleUserSkillCopy{
+		{Skill: "brainstorming", Found: ownedSkillMinimumVersions["brainstorming"], Embedded: ownedSkillMinimumVersions["brainstorming"], Path: filepath.Join(claude, "brainstorming"), Resolved: resolved, Refresh: directories[0].Refresh, Remove: directories[0].Remove, HidesDeclaredHeader: true},
+		{Skill: "write-idea", Found: "0.0.1", Embedded: ownedSkillMinimumVersions["write-idea"], Path: filepath.Join(claude, "write-idea"), Refresh: directories[0].Refresh, Remove: directories[0].Remove, Stale: true, HidesDeclaredHeader: true},
+		{Skill: "write-prd", Found: current, Embedded: current, Path: filepath.Join(claude, "write-prd"), Refresh: directories[0].Refresh, Remove: directories[0].Remove, HidesDeclaredHeader: true},
+		{Skill: "write-techspec", Found: "custom", Embedded: ownedSkillMinimumVersions["write-techspec"], Path: filepath.Join(claude, "write-techspec"), Refresh: directories[0].Refresh, Remove: directories[0].Remove, HidesDeclaredHeader: true},
+	}
+	before := snapshotUserSkillHome(t, home)
+	copies := ReportedUserSkillCopies(t.Context(), directories, []string{"brainstorming", "write-idea", "write-prd", "write-techspec", "write-tasks"})
+	if !reflect.DeepEqual(copies, want) {
+		t.Fatalf("copies=%+v want=%+v", copies, want)
+	}
+	if !strings.HasSuffix(copies[1].Describe(), "; older than this binary and hides the declared header") || !strings.HasSuffix(copies[2].Describe(), "; hides the declared header") {
+		t.Fatalf("reasons=%v", copies)
+	}
+	if got := UserSkillRemovals(copies); !reflect.DeepEqual(got, []string{directories[0].Remove}) {
+		t.Fatalf("removals=%v", got)
+	}
+	if got := StaleUserSkillRefreshes(copies); !reflect.DeepEqual(got, []string{directories[0].Refresh}) {
+		t.Fatalf("refreshes=%v", got)
+	}
+	want[1].HidesDeclaredHeader = false
+	if got := ReportedUserSkillCopies(t.Context(), directories, nil); !reflect.DeepEqual(got, want[1:2]) {
+		t.Fatalf("undeclared=%+v want=%+v", got, want[1:2])
+	}
+	if !reflect.DeepEqual(before, snapshotUserSkillHome(t, home)) {
+		t.Fatal("reader changed the home")
+	}
 }

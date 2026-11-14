@@ -229,11 +229,22 @@ the warning. If the scan cannot run, Doctor appends
 `; skills-lock.json comparison unavailable: <error>` and keeps the status and
 next action. The release plan's `skills` check reads this same line.
 
-When a **Stale User Skill Copy** exists, Doctor prints this line right after `skills:`; it never changes Doctor's exit code, prints no such line otherwise, and the release plan does not read it.
+When a **Stale User Skill Copy** exists, or a declared phase's skill has a
+copy in Claude Code's user-level directory that hides its Declared Skill
+Header, Doctor prints this line right after `skills:`. It never changes
+Doctor's exit code, prints no such line otherwise, and the release plan does
+not read it.
 
 ```text
-user-skills: warn (user-level Roundfix skill copies older than this binary: <skill> <found> (binary <version>) at <path>[ -> <link target>], ...; next: <refresh> && <refresh>)
+user-skills: warn (user-level Roundfix skill copies that an Agent harness may load in place of the project copy: <skill> <found> (binary <version>) at <path>[ -> <link target>]; <reason>, ...; or refresh with <refresh> && <refresh>; next: <remove> && <remove>)
 ```
+
+The reasons and five directories follow [skills check](skills.md). Removals
+are joined by ` && ` as the next action. The `; or refresh with ...` clause
+appears only for older copies. A current or unversioned copy of a declared
+phase's skill is named only in Claude Code's user-level directory, and adds
+no refresh advice. If Project Config was not loaded, only older copies are
+named. Doctor runs neither command.
 
 In the catalog's sync window right after a release, `skills update` over an
 unpinned entry can still install the previous copy. Doctor's version check

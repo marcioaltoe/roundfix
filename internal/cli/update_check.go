@@ -112,7 +112,7 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	report := buildUpdateCheckReport(ctx, loaded.HomeDir, loaded.Config.Update.Mode, *refresh)
 	report.Baseline = previewUpdateCheckBaseline(ctx, loaded.GitRoot, environment)
-	report.UserSkills = staleUserSkillCopies(ctx, loaded.HomeDir)
+	report.UserSkills = reportedUserSkillCopies(ctx, loaded.HomeDir, loadedDeclaredAuthoringSkills(loaded))
 	report.AuthoringModels = updateCheckAuthoringModels(loaded)
 	if report.State == "update_available" || report.Baseline.State == "plan_ready" {
 		report.Next = "apply"

@@ -64,13 +64,20 @@ The counts come from `fileChanges`, `history.units`, and the sum of
 the preview's message with whitespace collapsed, or just the state without
 a message. The final outside-repository line skips the preview.
 
-When a **Stale User Skill Copy** exists, this line follows the Baseline line inside or outside a Git repository, including for a development build:
+When a **Stale User Skill Copy** exists, or a declared phase's skill has a
+copy in Claude Code's user-level directory that hides its Declared Skill
+Header, this line follows the Baseline line, including for a development
+build. Older copies are named inside or outside a Git repository:
 
 ```text
-User skills: copies older than this binary: <skill> <found> (binary <version>) at <path>[ -> <link target>], ...; refresh with <refresh> && <refresh>.
+User skills: copies that an Agent harness may load in place of the project copy: <skill> <found> (binary <version>) at <path>[ -> <link target>]; <reason>, ...; remove with <remove> && <remove>, or refresh with <refresh> && <refresh>.
 ```
 
-It does not change `next`; the `--update` Skill Mode asks before running a refresh.
+Reasons and directory order follow [skills check](skills.md). Removals come
+before refreshes; the `, or refresh with ...` clause appears only for older
+copies. The line does not change `next`. Neither command runs here; the
+`--update` Skill Mode asks which to run. When Project Config was not loaded,
+only older copies are named.
 
 When the installed authoring files do not match the Authoring Model
 Declaration, this line follows `User skills:` when present, otherwise the
@@ -115,7 +122,10 @@ document:
 | `baseline.state` | Preview state, or `not_checked` outside a Git repository |
 | `baseline.fileChanges`, `baseline.historyUnits`, `baseline.skillChanges` | Plan counts |
 | `baseline.message` | Preview message with whitespace collapsed |
-| `userSkills` | Each Stale User Skill Copy with `skill`, `path`, `resolved` (the link target, omitted for a plain folder), `found`, `embedded` and `refresh`; omitted when there is none |
+| `userSkills` | Each reported user-level copy with `skill`, `path`, `resolved` (the link target, omitted for a plain folder), `found`, `embedded`, `refresh`, `remove`, `stale` and optional `hidesDeclaredHeader`; omitted when there is none |
+| `userSkills[].remove` | Command that removes the copy, before the refresh advice in text reports |
+| `userSkills[].stale` | Whether the copy's comparable version is older than the binary; always present, including `false` |
+| `userSkills[].hidesDeclaredHeader` | `true` when Claude Code's user-level copy hides a declared phase's header, whatever its version; omitted otherwise |
 | `authoringModels` | Present after `userSkills` when a key is declared or a problem exists; omitted when Project Config was not read |
 | `authoringModels.state` | `applied` or `unapplied` |
 | `authoringModels.harness` | `claude` |

@@ -42,6 +42,16 @@ func TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit(t *testing.T) {
 		linkAuthoringReportFixture(t, root)
 		assertAuthoringCommand(t, []string{"skills", "check"}, wantOut, "", 0)
 	})
+	t.Run("surface_transcript_3", func(t *testing.T) {
+		home, root := authoringReportFixture(t, false)
+		driftAuthoringReportFixture(t, root)
+		version := bundledUserSkillVersion(t, "write-prd")
+		path := filepath.Join(home, ".claude", "skills", "write-prd")
+		writeStaleUserSkillFixture(t, path, "write-prd", version)
+		wantOut := "Roundfix skill check passed: " + strings.Join(roundskills.Names(), ", ") + "\n"
+		wantErr := "roundfix: warning: the installed files do not match the Authoring Model Declaration (skills.authoring.claude):\n  write-prd header is not the declared one\n  .claude/skills/write-prd does not lead to .agents/skills/write-prd, so Claude Code does not load the declared header; link it there\n  .claude/agents/roundfix-prd-author.md differs from the declaration\n  .claude/agents/roundfix-researcher.md is missing\n  next: roundfix skills install --target project\nroundfix: warning: user-level Roundfix skill copies that an Agent harness may load in place of the project copy:\n  write-prd " + version + " (binary " + version + ") at " + path + "; hides the declared header\n  remove: roundfix skills remove --target claude --apply\n"
+		assertAuthoringCommand(t, []string{"skills", "check"}, wantOut, wantErr, 0)
+	})
 	t.Run("not_read", func(t *testing.T) {
 		home, root := authoringReportFixture(t, false)
 		// The declaration reader suppresses even the loader's User Config warning.
@@ -301,4 +311,57 @@ func mustAuthoringJSON(t *testing.T, value []string) string {
 		t.Fatal(err)
 	}
 	return string(data)
+}
+
+func TestUserSkillReportsNameAHiddenHeaderWithoutRefresh(t *testing.T) {
+	t.Parallel()
+	home, _ := authoringReportFixture(t, true)
+	version := bundledUserSkillVersion(t, "write-prd")
+	path := filepath.Join(home, ".claude", "skills", "write-prd")
+	writeStaleUserSkillFixture(t, path, "write-prd", version)
+	writeStaleUserSkillFixture(t, filepath.Join(home, ".codex", "skills", "write-prd"), "write-prd", version)
+	description := "write-prd " + version + " (binary " + version + ") at " + path + "; hides the declared header"
+	configureAuthoringDoctorFixture(t)
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
+	if code != 0 || stderr.Len() != 0 {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, &stdout, &stderr)
+	}
+	want := "user-skills: warn (user-level Roundfix skill copies that an Agent harness may load in place of the project copy: " + description + "; next: roundfix skills remove --target claude --apply)"
+	assertAuthoringLineAfter(t, stdout.String(), "skills:", want, false)
+	configureAuthoringUpdateFixture(t)
+	stdout.Reset()
+	stderr.Reset()
+	code = runCLI(t, []string{"update", "check"}, &stdout, &stderr)
+	want = "User skills: copies that an Agent harness may load in place of the project copy: " + description + "; remove with roundfix skills remove --target claude --apply."
+	if code != 0 || stderr.Len() != 0 || !strings.Contains(stdout.String(), want+"\n") || strings.Contains(stdout.String(), "refresh with") {
+		t.Fatalf("exit=%d stdout=%q stderr=%q want=%q", code, &stdout, &stderr, want)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = runCLI(t, []string{"update", "check", "--format", "json"}, &stdout, &stderr)
+	var report updateCheckReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if code != 0 || stderr.Len() != 0 || report.Next != "none" || len(report.UserSkills) != 1 {
+		t.Fatalf("exit=%d stderr=%q report=%+v", code, &stderr, report)
+	}
+	copy := report.UserSkills[0]
+	if copy.Skill != "write-prd" || copy.Stale || !copy.HidesDeclaredHeader || copy.Remove != "roundfix skills remove --target claude --apply" {
+		t.Fatalf("copy=%+v", copy)
+	}
+	var fields struct {
+		UserSkills []map[string]json.RawMessage `json:"userSkills"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &fields); err != nil {
+		t.Fatal(err)
+	}
+	if string(fields.UserSkills[0]["stale"]) != "false" || string(fields.UserSkills[0]["hidesDeclaredHeader"]) != "true" {
+		t.Fatalf("new fields=%s", &stdout)
+	}
+	data, err := os.ReadFile(filepath.Join(path, "SKILL.md"))
+	if err != nil || !strings.Contains(string(data), "version: "+version) {
+		t.Fatalf("reports changed copy: %q %v", data, err)
+	}
 }

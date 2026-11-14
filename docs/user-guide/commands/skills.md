@@ -4,6 +4,7 @@
 roundfix skills list
 roundfix skills check
 roundfix skills install [--target project|codex|claude|opencode|all] [--dir <path>]
+roundfix skills remove --target claude|codex|opencode|all [--dir <path>] [--apply]
 ```
 
 The binary ships 12 Roundfix-owned skills: the operational `roundfix` skill
@@ -68,15 +69,90 @@ skill check prints no declaration warning. All declaration checks only read
 files and never change the exit code. Without a declaration or a leftover
 generated file they add no output.
 
-It also names each **Stale User Skill Copy**, a user-level Roundfix skill copy older than the binary, which an Agent harness can load in place of the project copy. It reads the copies from these directories, in order: `$CLAUDE_HOME/skills` or `~/.claude/skills`, `$CODEX_HOME/skills` or `~/.codex/skills`, `$OPENCODE_HOME/skills` or `~/.opencode/skills`, `~/.agents/skills` and `~/.config/opencode/skills`. Symbolic links are followed; when several links reach one folder, that folder is named once under the first directory. A copy at or above the binary's version, one without a comparable version and an unreadable one are not named. Nothing is written, and the exit code does not change.
+It also names each **Stale User Skill Copy**, a user-level Roundfix skill
+copy older than the binary, which an Agent harness can load in place of the
+project copy. In a repository that declares authoring models, a copy of a
+declared phase's skill in Claude Code's user-level directory is named whatever
+its version, because it hides the Declared Skill Header. The declared phases
+come from the same configuration read above; if it cannot be loaded, only
+older copies are named.
+
+The reader checks five directories in the order below, follows symbolic links
+and names a reached folder once under the first directory. A malformed or
+unreadable `SKILL.md` is skipped. Outside Claude Code's declared skills, a
+copy at or above the binary's version or without a comparable version is not
+named. Nothing is written, and the exit code does not change.
 
 ```text
-roundfix: warning: user-level Roundfix skill copies older than this binary; an Agent harness may load them in place of the project copy:
-  <skill> <found> (binary <version>) at <path>[ -> <link target>]
+roundfix: warning: user-level Roundfix skill copies that an Agent harness may load in place of the project copy:
+  <skill> <found> (binary <version>) at <path>[ -> <link target>]; <reason>
+  remove: <command>
   refresh: <command>
 ```
 
-Refresh the first three directories with `roundfix skills install --target <claude|codex|opencode>`, `~/.agents/skills` with `roundfix skills install --target codex --dir <path>`, and `~/.config/opencode/skills` with `roundfix skills install --target opencode --dir <path>`. A refresh writes through a link to the folder the ` -> <link target>` names.
+`<reason>` is `older than this binary`, `hides the declared header` or
+`older than this binary and hides the declared header`. All removal lines
+come before all refresh lines, each command once per directory. Only a
+stale copy adds a refresh command.
+
+| Directory, in read order | Removal command | Refresh command |
+| --- | --- | --- |
+| `$CLAUDE_HOME/skills`, else `~/.claude/skills` | `roundfix skills remove --target claude --apply` | `roundfix skills install --target claude` |
+| `$CODEX_HOME/skills`, else `~/.codex/skills` | `roundfix skills remove --target codex --apply` | `roundfix skills install --target codex` |
+| `$OPENCODE_HOME/skills`, else `~/.opencode/skills` | `roundfix skills remove --target opencode --apply` | `roundfix skills install --target opencode` |
+| `~/.agents/skills` | `roundfix skills remove --target codex --dir <path> --apply` | `roundfix skills install --target codex --dir <path>` |
+| `~/.config/opencode/skills` | `roundfix skills remove --target opencode --dir <path> --apply` | `roundfix skills install --target opencode --dir <path>` |
+
+For the last two directories, `<path>` is the directory's full path, quoted
+when needed. Run a removal or refresh only when the user asks: both write
+outside the repository. Refresh writes through the link the report names;
+removal unlinks a skill link and preserves its target.
+
+#### skills remove
+
+Without `--apply`, removal only lists what it would remove. With `--apply`,
+it removes folders with their contents and unlinks symbolic links without
+opening or removing their targets, including dangling links. It acts only on
+the twelve Roundfix-owned names, sorted within each directory. Files at owned
+names and every other name are left alone. The project's copies are the
+Repository Skill Set; `--target project` is refused.
+
+For each target, it uses the first directory from the table. `--target all`
+uses those first three directories in `claude`, `codex`, `opencode` order.
+`--dir` overrides the directory for a single target; use it to select either
+of the last two directories. Every target's directory must be known before
+any entry is touched.
+
+The stdout lines are:
+
+```text
+Would unlink <path> -> <link target>
+Would remove <path>
+Unlinked <path> -> <link target>
+Removed <path>
+No Roundfix-owned skill copy under <directory>
+Nothing was removed; run the command again with --apply.
+```
+
+`<link target>` is the link's own text, including a relative path as written.
+The `Would` forms appear only without `--apply`. The last line prints once,
+at the end, only when the listing named at least one entry. An empty listing
+prints the `No Roundfix-owned skill copy` line per directory and no closing
+line. A successful listing or removal exits `0`.
+
+The first three stderr refusals exit `2`; an inspection or removal failure
+uses the fourth line and exits `1`:
+
+```text
+roundfix: skills remove requires --target <claude|codex|opencode|all>
+roundfix: skills remove refuses --target project: the project's copies are the Repository Skill Set
+roundfix: --dir requires a single --target value
+roundfix: skills remove failed: <error>
+```
+
+The first refusal covers a missing or unknown target. When a target has no
+known directory, `<error>` is
+`no user-level skill directory is known for <target>`.
 
 For `--target project` without `--dir`, installation loads Project Config
 from the repository root and applies its

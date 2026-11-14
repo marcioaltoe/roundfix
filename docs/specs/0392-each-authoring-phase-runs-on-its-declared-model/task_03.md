@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0392-each-authoring-phase-runs-on-its-declared-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -231,3 +231,26 @@ the Roundfix skill's `setup` reference name the command.
 - `_prd.md` → User Story 5; Core Features 6 and 7; Success Metric 5
 - `_techspec.md` → Interfaces; API Contract 8; API Contract 9; API Contract 10; API Contract 12; API Contract 15; Surface Transcript 1; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Invariants 5, 6 and 8; Declared breaks; Testing Approach; Build Order 3
 - ADR-0405, ADR-0386
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+- Acceptance criterion 1: the five-directory reader now carries targets and removal commands, returns older copies and readable declared-phase copies that hide a Claude header, deduplicates reached folders, and labels the three reasons. All three reports use the new notice and removal advice; refresh advice is restricted to older copies. `skills check` returns its already-loaded declaration to the user-copy reporter, avoiding another configuration load. Temporary-home tests assert the whole Surface Transcript 3, the older-copy report text and command order, current Claude versus Codex copies, JSON fields, unchanged exit codes and a read-only home snapshot.
+- Acceptance criterion 2: `skills remove` resolves every selected target before touching entries, lists by default, and applies only to owned folders or links in the selected user directories. Tests cover complete Surface Transcripts 4 and 5, sorted output, nested contents, relative and dangling links, preserved link targets, regular files and non-owned folders, preserved repository copies, all-target ordering, directory overrides, empty listings, every authored refusal, a Unix permission failure, and refusal before an earlier target is deleted when a later directory is unknown. The Unix permissions case skips on Windows; both test packages compile for Windows.
+- Acceptance criterion 3: both help forms assert Surface Transcript 1 in full, and top-level help places removal immediately after installation. The three guides document the reports, five directory commands and removal output/refusals. The Skill Coverage Map names `command skills remove` with the guide and command implementation as sources. Only the required paragraph changed in the canonical setup reference, copied verbatim from API Contract 12; all 22 mirrored Roundfix files match. The sanctioned recorder raised both Roundfix version fields to `0.1.236` and recorded the digest. The Behavior Surface Record was regenerated after the guide and usage changes.
+
+Focused checks (exit 0):
+
+- `rtk proxy go test ./skills -count=1 -run 'Test(StaleUserSkillCopies|UserSkillDirectories|ReportedUserSkillCopies|TheRoundfixSkillOffersTheRemoval)'`.
+- `rtk proxy go test ./internal/cli -count=1 -run 'Test(SkillsRemove|SkillsUsageNames|SkillsCheckWarns|DoctorReportsStale|UpdateCheckNamesStale|DoctorReportsTheAuthoring|UpdateCheckReportsTheAuthoring|UserSkillReportsName)'`.
+- After adding the final empty-list assertion: `rtk proxy go test ./internal/cli -count=1 -run '^TestSkillsRemoveListsThenRemovesOnlyOwnedCopies$'`.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -count=1 -run 'TestEveryCommandIsNamedInTheRoundfixSkill|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources'`.
+- `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-task03-skills.test.exe ./skills` and `GOOS=windows rtk proxy go test -c -o /private/tmp/roundfix-task03-cli.test.exe ./internal/cli`; the latter repeated after the final test edit. These are compilation checks, not Windows runtime evidence.
+- `rtk proxy git diff --check`; an exact-byte mirror/paragraph inspection and changed-path postflight confirmed that every changed path is declared by this Task. No other Task, manifest, ADR, other skill, QA settlement text or prohibited tooling configuration changed.
+
+Regeneration (exit 0): `make skills-sync`, then `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`, then, after the last guide and usage edit, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`.
+
+The first guidance check exposed the missing phrases before the paragraph replacement; the initial whole-help assertion also caught an extra blank line in the new usage, which was removed before the successful focused checks above.
+
+Declared Task Verification, repository Verification and full package suites were not run; the Daemon owns those checks and Task settlement. Task status is unchanged by this Agent. No commit, push, pull request, host user-skill mutation or external service call was made.

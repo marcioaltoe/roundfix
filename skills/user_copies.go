@@ -9,17 +9,23 @@ import (
 	"strings"
 )
 
-// UserSkillDirectory names a harness's user skill directory and its refresh command.
-type UserSkillDirectory struct{ Path, Refresh string }
+// UserSkillDirectory names a harness's user skill directory and its commands.
+type UserSkillDirectory struct {
+	Path, Refresh, Target, Remove string
+	HidesHeader                   bool
+}
 
-// StaleUserSkillCopy is a user-level owned copy below the binary's declared version.
+// StaleUserSkillCopy is a reported user-level owned copy.
 type StaleUserSkillCopy struct {
-	Skill    string `json:"skill"`
-	Path     string `json:"path"`
-	Resolved string `json:"resolved,omitempty"`
-	Found    string `json:"found"`
-	Embedded string `json:"embedded"`
-	Refresh  string `json:"refresh"`
+	Skill               string `json:"skill"`
+	Path                string `json:"path"`
+	Resolved            string `json:"resolved,omitempty"`
+	Found               string `json:"found"`
+	Embedded            string `json:"embedded"`
+	Refresh             string `json:"refresh"`
+	Remove              string `json:"remove"`
+	Stale               bool   `json:"stale"`
+	HidesDeclaredHeader bool   `json:"hidesDeclaredHeader,omitempty"`
 }
 
 // UserSkillDirectories mirrors the install targets, then adds the harnesses'
@@ -35,13 +41,13 @@ func UserSkillDirectories(home string, getenv func(string) string) []UserSkillDi
 			root = getenv(strings.ToUpper(target) + "_HOME")
 		}
 		root = firstNonEmpty(root, filepath.Join(home, "."+target))
-		directories = append(directories, UserSkillDirectory{Path: filepath.Join(root, "skills"), Refresh: "roundfix skills install --target " + target})
+		directories = append(directories, UserSkillDirectory{Path: filepath.Join(root, "skills"), Refresh: "roundfix skills install --target " + target, Target: target, Remove: "roundfix skills remove --target " + target + " --apply", HidesHeader: target == "claude"})
 	}
 	for _, extra := range []struct{ target, path string }{
 		{"codex", filepath.Join(home, ".agents", "skills")},
 		{"opencode", filepath.Join(home, ".config", "opencode", "skills")},
 	} {
-		directories = append(directories, UserSkillDirectory{Path: extra.path, Refresh: "roundfix skills install --target " + extra.target + " --dir " + quoteUserSkillPath(extra.path)})
+		directories = append(directories, UserSkillDirectory{Path: extra.path, Refresh: "roundfix skills install --target " + extra.target + " --dir " + quoteUserSkillPath(extra.path), Target: extra.target, Remove: "roundfix skills remove --target " + extra.target + " --dir " + quoteUserSkillPath(extra.path) + " --apply"})
 	}
 	return directories
 }
@@ -59,6 +65,16 @@ func quoteUserSkillPath(path string) string {
 // StaleUserSkillCopies follows links and reads each reached owned folder once.
 // Missing, unreadable, and non-comparable copies are omitted. It never writes.
 func StaleUserSkillCopies(ctx context.Context, directories []UserSkillDirectory) []StaleUserSkillCopy {
+	return ReportedUserSkillCopies(ctx, directories, nil)
+}
+
+// ReportedUserSkillCopies also names declared skills whose user copy hides a header.
+// It follows links, names each reached folder once, and never writes.
+func ReportedUserSkillCopies(ctx context.Context, directories []UserSkillDirectory, declaredSkills []string) []StaleUserSkillCopy {
+	declared := make(map[string]bool, len(declaredSkills))
+	for _, name := range declaredSkills {
+		declared[name] = true
+	}
 	names := Names()
 	sort.Strings(names)
 	reached := make(map[string]bool)
@@ -96,10 +112,12 @@ func StaleUserSkillCopies(ctx context.Context, directories []UserSkillDirectory)
 			found := strings.TrimSpace(metadata.Version)
 			minimum := ownedSkillMinimumVersions[name]
 			state, err := Readiness(SkillVersion{Declared: found, Source: source}, minimum)
-			if err != nil || state != ReadinessBelow {
+			stale := err == nil && state == ReadinessBelow
+			hidesHeader := directory.HidesHeader && declared[name]
+			if !stale && !hidesHeader {
 				continue
 			}
-			copy := StaleUserSkillCopy{Skill: name, Path: path, Found: found, Embedded: minimum, Refresh: directory.Refresh}
+			copy := StaleUserSkillCopy{Skill: name, Path: path, Found: found, Embedded: minimum, Refresh: directory.Refresh, Remove: directory.Remove, Stale: stale, HidesDeclaredHeader: hidesHeader}
 			if entry, err := os.Lstat(path); err == nil && entry.Mode()&os.ModeSymlink != 0 {
 				copy.Resolved = resolved
 			}
@@ -115,6 +133,14 @@ func (copy StaleUserSkillCopy) Describe() string {
 	if copy.Resolved != "" {
 		description += " -> " + copy.Resolved
 	}
+	switch {
+	case copy.Stale && copy.HidesDeclaredHeader:
+		description += "; older than this binary and hides the declared header"
+	case copy.Stale:
+		description += "; older than this binary"
+	case copy.HidesDeclaredHeader:
+		description += "; hides the declared header"
+	}
 	return description
 }
 
@@ -123,9 +149,22 @@ func StaleUserSkillRefreshes(copies []StaleUserSkillCopy) []string {
 	seen := make(map[string]bool)
 	var commands []string
 	for _, copy := range copies {
-		if !seen[copy.Refresh] {
+		if copy.Stale && !seen[copy.Refresh] {
 			seen[copy.Refresh] = true
 			commands = append(commands, copy.Refresh)
+		}
+	}
+	return commands
+}
+
+// UserSkillRemovals returns removal commands once, in first-seen order.
+func UserSkillRemovals(copies []StaleUserSkillCopy) []string {
+	seen := make(map[string]bool)
+	var commands []string
+	for _, copy := range copies {
+		if !seen[copy.Remove] {
+			seen[copy.Remove] = true
+			commands = append(commands, copy.Remove)
 		}
 	}
 	return commands
