@@ -114,26 +114,46 @@ The design needs none of them, and none is in `paths`.
 
 ## What the judge may be sent
 
-The maintainer's boundary for this Spec is the Idea's default: before a PRD
-exists, the judge receives only the kind of text the follow-up judge already
-sends, an item that is not yet a Spec, after the same secret scan. This Spec
-sends less than that boundary allows: an open Backlog Entry, a note in
-`docs/_inbox/` or a message handed in as a file, and never a Finding, an
-active Spec, a Waiting Item or a request that exists only in a session. No
-Task may widen it; a design that needs any other text stops and asks.
+The maintainer's first boundary for this Spec was the Idea's default: before a
+PRD exists, the judge receives only the kind of text the follow-up judge
+already sends, an item that is not yet a Spec, after the same secret scan. The
+maintainer then widened it (AskUserQuestion, 2026-11-14, about 10:05 BRT,
+relayed by the operator).
+
+Question: "Spec 0393, fronteira de dados do juiz. Hoje o Jev só recebe itens
+que já estão no repositório (Backlog Entry, nota do inbox ou mensagem de outro
+projeto), depois da varredura de segredos. Um pedido que você digita na
+sessão, como o seu pedido desta manhã que virou a 0393, não tem arquivo, e
+nesse caso o agente responde aos três critérios sozinho. Na medição com 38
+features do histórico, o juiz acertou 8 de 12 "indicada" e deixou 18 de 38
+como "indecisa". O juiz pode receber o pedido que você digita na sessão?"
+Answer: "Pode, com varredura (Recommended)" — option text: "O agente grava o
+pedido num arquivo entregue como uma mensagem; vai ao juiz só o nome do
+projeto, a primeira linha como título e os primeiros 4.000 caracteres, depois
+da mesma varredura de segredos. Os pedidos que nascem na sessão passam a ser
+julgados como os outros."
+
+So the judgment may send two things and nothing else: an item the follow-up
+inventory holds (an open Backlog Entry, a note in `docs/_inbox/` or a message
+handed in as a file), and a request of the session handed in as a file, of
+which only the project's name, the first line as the title and the first
+4,000 characters are sent, after the same secret scan. It never sends a
+Finding, an active Spec, a Waiting Item, source code or any other file. No
+Task may widen this; a design that needs any other text stops and asks.
 
 ## The governed set
 
 The governed set was measured on 2026-11-14 on the branch `docs/plan-0393`,
-based on `251ed81e`, with `speccheck.GovernedPath`.
+based on `b7eda503`, with `speccheck.GovernedPath`, and measured again after
+the Task Graph was written and the branch was rebased.
 
 - The probe was a `go test -overlay` probe in `internal/speccheck` that wrote
   nothing to the repository: `git status --porcelain` showed only this Spec's
   planning files afterwards, and the probe file never existed in the tree.
-- It covered every file the TechSpec's file list names, every file a
-  prototype of the Baseline and skill changes rewrote on a scratch worktree
-  (the derived Baseline files included), every planning file of this Spec, its
-  adopted references, the measurement reference and the two ADRs.
+- It covered every file a Task declares, every file a prototype of the whole
+  Spec changed or created on a scratch worktree (the derived Baseline files
+  included), every planning file of this Spec, its adopted references, the
+  measurement reference and the three ADRs: sixty-seven paths.
 - The eighteen paths above are governed: the spec-workflow module, the
   Standard TypeScript profile and its formatter golden of the Spec routing
   guide, this repository's Spec routing guide and its setup manifest, and the
@@ -150,7 +170,7 @@ based on `251ed81e`, with `speccheck.GovernedPath`.
   goldens under `internal/baseline/testdata/`.
 - `docs/user-guide/commands/spec.md`, `docs/references/behavior-surfaces.json`
   and `docs/references/skill-coverage.json`.
-- `CONTEXT.md`, ADR-0403, ADR-0404 and
+- `CONTEXT.md`, ADR-0201, ADR-0403, ADR-0404 and
   `docs/references/idea-stage-judgment-measurement.md`.
 - Every planning file of this Spec and its adopted references.
 

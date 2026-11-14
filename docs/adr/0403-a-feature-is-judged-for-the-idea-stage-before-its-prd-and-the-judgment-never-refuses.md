@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-14T15:00:00Z
-updated_at: 2026-11-14T15:00:00Z
+updated_at: 2026-11-14T16:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -50,11 +50,11 @@ and they live in the Spec routing rule, so they hold in a repository without a
 judge key. A fix or a refactor is never judged.
 
 **The judge answers when it can, the agent when it cannot.** For a request
-recorded as an item that is not yet a Spec, `roundfix spec judge --stage idea`
-asks the judge ([ADR-0404](0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md)).
-When the judge does not answer, or the request has no such record, the agent
-answers the same three criteria as yes, no or unsure, and says that the judge
-did not answer. The agent's answers are recorded as the agent's and never
+recorded as an item that is not yet a Spec, and for a request of the session
+handed in as a file, `roundfix spec judge --stage idea` asks the judge
+([ADR-0404](0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md)).
+When the judge does not answer, the agent answers the same three criteria as
+yes, no or unsure, and says that the judge did not answer. The agent's answers are recorded as the agent's and never
 shown as the judge's.
 
 **Three verdicts.** Indicated when any criterion is yes, not indicated when

@@ -14,9 +14,9 @@ only a large or fuzzy initiative through `write-idea`, the agent decides
 alone, and nothing records why the stage was skipped. On 2026-11-14 that
 stage, started by hand, changed the shape of Spec 0392 before its PRD existed.
 After this Spec, three criteria about a feature request are judged before its
-PRD is written, by the Jev judge through `roundfix spec judge --stage idea`
-when the request is a recorded item, and by the agent itself when the judge
-does not answer. An indicated stage starts without being asked and the user
+PRD is written, by the Jev judge through `roundfix spec judge --stage idea`,
+for a recorded item or for a request of the session handed in as a file, and
+by the agent itself when the judge does not answer. An indicated stage starts without being asked and the user
 may dismiss it with a recorded reason, an undecided one is the user's choice,
 and nothing is ever refused. Every feature PRD records the judgment and what
 followed, so a later Spec can measure the thresholds on each repository's own
@@ -34,6 +34,9 @@ approved:
    maintainer. No ai-memory message is adopted and nobody asked for a notice.
 2. [`references/2026-11-14-idea-stage-judgment-pilot.md`](references/2026-11-14-idea-stage-judgment-pilot.md),
    the operator's four-case pilot, with its questions, answers and limits.
+   The maintainer's later answer of 2026-11-14 on the data boundary, relayed
+   by the operator, is quoted in `## Decisions` and in the authorization
+   record.
 3. [`_idea.md`](_idea.md), the approved Idea, read as this PRD's exploration:
    its features F1 to F5 are this Spec, and F6 and F7 are Spec 0395.
 4. [`docs/references/idea-stage-judgment-measurement.md`](../../references/idea-stage-judgment-measurement.md),
@@ -49,7 +52,7 @@ concern this Spec and is left to the Supervisor's triage.
 ## Prerequisites
 
 None in `requires`. Authored against `251ed81e` (v0.143.3) and rebased on
-`f17949de`, which adds the plan of Spec 0391. Specs 0391 and 0392 are authored
+`b7eda503`, which adds the plans of Specs 0391 and 0392. Both were authored
 beside this one and deliver before it, in that order. Files this Spec shares
 with them, each edited in its own sentences:
 
@@ -71,6 +74,8 @@ with them, each edited in its own sentences:
 - The `spec` command guide (Spec 0391 edits its grouping sentence) and the
   Behavior Surface Record, re-recorded as the last edit of the Task that
   changes a guide or a help text.
+- `internal/cli/cli.go`: Spec 0392 changes the skills stage of the Baseline
+  update there; this Spec adds one synopsis line to the top-level usage.
 
 Spec 0392 generates author and research subagents. The Idea-stage judgment and
 the Idea stage happen in the Supervisor session, before any delegation: an
@@ -94,12 +99,13 @@ defines is what that report reads.
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0403 (new) records the rule: "The
   verdict starts the stage; it refuses nothing." ADR-0404 (new) records what
-  the judge reads: "Nothing but an inventoried item can become a request".
-  ADR-0200 applies unchanged: "A raised judgment is a finding the authoring
-  model answers", the command exits zero whenever it ran, and answers count
-  only from the pinned model. ADR-0201 applies unchanged: "Each request
-  appends one line to a Judge Log", and the recipients, the keys and the
-  ceiling are its own. ADR-0319 applies unchanged: its request state is reused
+  the judge reads: "Nothing else can become a request". ADR-0200 applies
+  unchanged: "A raised judgment is a finding the authoring model answers", the
+  command exits zero whenever it ran, and answers count only from the pinned
+  model. ADR-0201 is amended: by the maintainer's answer of 2026-11-14 a
+  request of the session, handed in as a file, may reach a request, and a Task
+  writes the notice; "Each request appends one line to a Judge Log" stays, and
+  the recipients, the keys and the ceiling are its own. ADR-0319 applies unchanged: its request state is reused
   as it is, "one item's kind, type, origin, title and an excerpt of its text",
   and its sentence "Items are sent whatever their language" holds for this
   judgment too. ADR-0400 applies: the Spec holds one context in three
@@ -142,9 +148,9 @@ defines is what that report reads.
   whoever must act on it saw the answers and not a bare recommendation.
 - An indicated Idea stage starts without being asked, and dismissing it costs
   the user one answer, recorded with its reason.
-- A repository without a judge key, a session inside a Run and a request with
-  no record follow the same rule, through the agent's own answers to the same
-  criteria.
+- A request that exists only in the session is judged like a recorded one,
+  and a repository without a judge key or a session inside a Run follows the
+  same rule through the agent's own answers to the same criteria.
 - Every feature Spec carries a record of the judgment and of what followed
   that a later report can read from Git.
 - A request written in Portuguese is judged as it is.
@@ -170,6 +176,9 @@ defines is what that report reads.
 6. As a maintainer who is away while a cycle runs, I want a feature whose
    judgment needs me to wait for me, so that no agent answers the Idea stage's
    questions in my place.
+7. As a maintainer who asks for a feature in the session, I want that request
+   judged like a recorded one, so that the features I type are not left to the
+   agent's judgment alone.
 
 ## Core Features
 
@@ -177,7 +186,8 @@ defines is what that report reads.
    <reference>` judges one item that is not yet a Spec, named by the reference
    the Follow-up Command prints for it: an open Backlog Entry, a note in the
    repository inbox, or an entry of a messages file handed in with
-   `--messages`. It asks the judge three yes or no criteria in one request:
+   `--messages`. With `--request <path>` it judges instead a request of the
+   session that the agent wrote to a file. It asks the judge three yes or no criteria in one request:
    the right shape of the solution is still open; the request rests on an
    assumption about its users, the business or the market that it gives no
    evidence for; deciding to build it depends on a market or competitive
@@ -195,9 +205,11 @@ defines is what that report reads.
    origin, title and the first 4,000 characters of its text, the state the
    follow-up judge already sends, in whatever language the item is written.
    The item passes the secret scan first, and an item that matches a secret
-   pattern is not sent. Nothing else can be sent: the command accepts only a
-   reference the follow-up inventory holds, so a request typed in a session, a
-   Spec artifact and any other file never reach the judge. A Finding, an item
+   pattern is not sent. A request of the session is sent only from the file
+   `--request` names, and of that file only the first line, as the title, and
+   the first 4,000 characters, with the project's name, after the same secret
+   scan; the command never keeps the file. Nothing else can be sent: a Spec
+   artifact, source code and any other file never reach the judge. A Finding, an item
    typed `fix`, `perf` or `refactor`, and a Waiting Item are not sent either
    and are reported as not judged. The recipients, the keys, the Judge Log,
    the monthly ceiling and the Run Marker are the judge's existing ones.
@@ -206,13 +218,14 @@ defines is what that report reads.
    that matches a secret pattern, and when another model answered, the command
    says why in its first line, prints the three criteria with their yes and no
    meanings for the agent to answer, and exits zero. An unknown reference, an
-   active Spec and a usage error exit 2. No other command reads the result or
+   active Spec, an unreadable or empty request file and a usage error exit 2. No other command reads the result or
    changes its exit code because of it.
 5. The routing rule. The three route clauses of the Baseline's Spec routing
    rule keep their ids and force and say: before the PRD of a feature that has
    no Idea and that the user did not send to `write-idea`, the three criteria
-   are judged, by the command for a recorded item and by the agent, saying so,
-   when the judge did not answer or the request has no record; indicated
+   are judged, by the command, for a recorded item or for a request of the
+   session written to a file, and by the agent, saying so, when the judge did
+   not answer; indicated
    starts `write-idea` without asking and shows the verdict, each answer with
    its probability and who judged, and the user may dismiss the stage at its
    first question; undecided, or any doubt, is the user's decision, seeing the
@@ -220,8 +233,8 @@ defines is what that report reads.
    and never refuses; a fix or a refactor is never judged; and the smaller
    sufficient route no longer decides whether a feature starts at
    `write-idea`.
-6. The agent's own answers. When the judge did not answer or the request has
-   no record, the agent answers the same three criteria as yes, no or unsure,
+6. The agent's own answers. When the judge did not answer, the agent answers
+   the same three criteria as yes, no or unsure,
    says that the judge did not answer, and follows the same rule. Its answers
    are recorded as the agent's and are never presented as the judge's.
 7. The record. Every feature PRD carries an `## Idea-stage judgment` section in
@@ -234,7 +247,9 @@ defines is what that report reads.
    with `shelved` when the stage ended the request. `write-idea` writes it,
    `write-prd` copies it or writes it when no Idea ran, and the command prints
    the lines it knows.
-8. The skills. `brainstorming` routes a feature through the judgment.
+8. The skills. `brainstorming` routes a feature through the judgment, and
+   writes a request of the session to a file in a temporary directory outside
+   the repository, which it removes after the command ran.
    `write-prd` judges before any other step when no judgment exists, starts
    `write-idea` for an indicated stage, asks the user for an undecided one and
    records the outcome. `write-idea`, when the rule starts it, opens its first
@@ -267,6 +282,10 @@ The agent runs the command on that entry and reads:
 - not indicated: the agent writes the PRD, whose record shows the three
   answers and `stage: not run`.
 
+A maintainer types a feature request in the session. The agent writes it to
+a temporary file, runs the command with `--request` and removes the file; the
+output and the record name the item `the request in the session`.
+
 In a repository without a judge key the command's first line says the judge
 was not asked and why, and lists the three criteria with what yes and no mean.
 The agent answers them, tells the maintainer that these are its own answers
@@ -283,9 +302,8 @@ says so.
 
 - A command that refuses a PRD without an Idea, and any check that fails a
   Spec for a missing judgment or record: an advisory judgment never gates.
-- Sending the judge a request that exists only in the session, a Spec
-  artifact, a Finding or source code. The first is the maintainer's to
-  decide; see Open Questions.
+- Sending the judge a Spec artifact, a Finding or source code, or more of a
+  request of the session than its first line and its first 4,000 characters.
 - Judging fixes and refactors, whose route stays `write-techspec`.
 - An agent answering the Idea stage's questions, or deciding an undecided
   judgment, for the user.
@@ -339,6 +357,11 @@ says so.
    stage; the documentation, skill and glossary contracts pass.
 8. Success Metric: a judgment costs less than US$0.01. The committed
    measurement recorded US$0.000054 per request with six questions.
+9. Success Metric: for a request file whose first line is longer than 200
+   characters and whose text is longer than 4,000, the one request the command
+   sends holds the project's name, the kind and type `request`, a title of 200
+   characters and a text of 4,000, and neither what follows them nor the
+   file's path; the output and the record name `the request in the session`.
 
 ## Acceptance evidence
 
@@ -457,9 +480,12 @@ The decisions were checked on 2026-11-14 against these sources.
   was needed. The record of what the Idea changed is the evidence.
 - The Idea stage needs the user. A cycle with the user away authors only the
   features judged not indicated; the others wait.
-- A request with no record never reaches the judge, and an agent judging
-  alone tends to proceed. The record names who judged, so the later report can
-  compare the two.
+- A request of the session was not measured: the thresholds come from Backlog
+  Entries, and the user's own words are often short and in Portuguese. The
+  record names the judged input, so the later report can compare them.
+- The judge now receives text that has no record in the repository. Only its
+  start is sent, after the secret scan, and the Judge Log keeps a hash of the
+  state, never the text.
 - Dissent kept from the Idea: the operator would have shipped the record
   without a later report, because a report over a handful of cases measures
   noise; and the rule alone, with the agent's answers and no judge, reaches
@@ -498,6 +524,7 @@ The maintainer's answers (AskUserQuestion via `/roundfix --follow-up`,
 - 2026-11-14: Qual medida faria você dizer que o julgamento valeu? — "Menos correções depois".
 - 2026-11-14: Qual forma a ideia toma? — "Mais ambiciosa", option text: "A original com registro, mais um relatório que remede os limiares com o histórico do próprio repositório e o conselho por item já no relatório do `roundfix follow-up`. Duas Specs."
 - 2026-11-14: Rascunho da Ideia 0393: aprova? — "Aprovado (Recommended)".
+- 2026-11-14: Spec 0393, fronteira de dados do juiz. Hoje o Jev só recebe itens que já estão no repositório (Backlog Entry, nota do inbox ou mensagem de outro projeto), depois da varredura de segredos. Um pedido que você digita na sessão, como o seu pedido desta manhã que virou a 0393, não tem arquivo, e nesse caso o agente responde aos três critérios sozinho. Na medição com 38 features do histórico, o juiz acertou 8 de 12 "indicada" e deixou 18 de 38 como "indecisa". O juiz pode receber o pedido que você digita na sessão? — "Pode, com varredura (Recommended)", option text: "O agente grava o pedido num arquivo entregue como uma mensagem; vai ao juiz só o nome do projeto, a primeira linha como título e os primeiros 4.000 caracteres, depois da mesma varredura de segredos. Os pedidos que nascem na sessão passam a ser julgados como os outros." (AskUserQuestion, about 10:05 BRT, relayed by the operator.)
 
 Settled from the Idea's open questions, with no further interview:
 
@@ -505,8 +532,10 @@ Settled from the Idea's open questions, with no further interview:
   measured. The thresholds stay at the documentation's starting points, 0.7
   and 0.3, because the measured set cannot fix them; the wide undecided band
   goes to the user. The model is the judge's pinned one.
-- Before a PRD exists the judge is sent only an item the follow-up inventory
-  holds. A request with no record is judged by the agent's own answers.
+- Before a PRD exists the judge is sent an item the follow-up inventory holds
+  or, by the maintainer's last answer above, a request of the session handed
+  in as a file, of which only the first line and the first 4,000 characters
+  are sent. The file is plain text: a request has no sender, id or date.
 - A request in Portuguese is judged; the measurement found no reason for a
   language gate.
 - The record lives in the PRD of every feature Spec, and in the Idea when one
@@ -522,9 +551,4 @@ Settled from the Idea's open questions, with no further interview:
 
 ## Open Questions
 
-- May the judge be sent a feature request that exists only in the session?
-  Default until the maintainer answers: no; the agent's own answers apply. The
-  smallest way would be a file the session writes and hands in like a message:
-  the judge would receive the project's name, the kind `request`, no type, the
-  first line as the title and the first 4,000 characters of what the user
-  typed, after the same secret scan.
+None.

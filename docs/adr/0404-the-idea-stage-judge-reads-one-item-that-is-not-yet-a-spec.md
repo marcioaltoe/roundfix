@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-14T15:00:00Z
-updated_at: 2026-11-14T15:00:00Z
+updated_at: 2026-11-14T16:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -11,10 +11,10 @@ superseded_by: null
 The Idea-stage judgment of
 [ADR-0403](0403-a-feature-is-judged-for-the-idea-stage-before-its-prd-and-the-judgment-never-refuses.md)
 runs before any PRD exists, so it cannot read a Spec. It reads one item the
-Follow-up Command already lists and sends the state the follow-up judge
-already sends, asks three measured questions on the pinned model, and keeps
-the wide undecided band, because the measurement was too small to fix a
-threshold.
+Follow-up Command already lists, or one request of the session handed in as a
+file, sends the state the follow-up judge already sends, asks three measured
+questions on the pinned model, and keeps the wide undecided band, because the
+measurement was too small to fix a threshold.
 
 ## Context
 
@@ -25,10 +25,18 @@ keeps the data boundary by construction;
 and Backlog Entries reach a request; and
 [ADR-0319](0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md)
 let the judge read a Follow-up Item, "one item's kind, type, origin, title and
-an excerpt of its text", whatever its language, after a secret scan. The
-maintainer's boundary for this judgment, set on 2026-11-14, is the Idea's
-default: only what the follow-up judge already sends, and any other text needs
-the maintainer's authorization.
+an excerpt of its text", whatever its language, after a secret scan.
+
+The maintainer's first boundary for this judgment, set with the Idea on
+2026-11-14, was only what the follow-up judge already sends. A request the
+user types in the session has no file, so under that boundary the agent would
+answer the criteria alone for it, and that is how the request behind this
+decision arrived. Asked the same day whether the judge may receive such a
+request, the maintainer answered "Pode, com varredura (Recommended)": "O
+agente grava o pedido num arquivo entregue como uma mensagem; vai ao juiz só o
+nome do projeto, a primeira linha como título e os primeiros 4.000 caracteres,
+depois da mesma varredura de segredos. Os pedidos que nascem na sessão passam
+a ser julgados como os outros."
 
 On 2026-11-14 the questions were measured on this repository's own history,
 with `jev-1.13.0` through TypeSafe: 38 Backlog Entries typed `feat`, labeled by
@@ -44,26 +52,39 @@ as indicated were in the reshaped, split or declined class, one of the eight
 read as not indicated was, and 18 of 38 were undecided. Portuguese moved the
 answers by 0.06 or less on average and one verdict in 16 by one step. Two
 passes of the same model moved six of 90 verdicts by one step. `jev-1.14.0`
-gave a different verdict in nine of 90 cases.
+gave a different verdict in nine of 90 cases. No request of a session was
+measured.
 
 ## Decision
 
-**One item, named by its follow-up reference.** `roundfix spec judge --stage
-idea --item <reference>` resolves the item through the Follow-up Command's own
-inventory: an open Backlog Entry, a note in `docs/_inbox/` or an entry of a
-messages file the caller hands in. An unknown reference and an active Spec are
-usage errors. Nothing but an inventoried item can become a request, so a
-request typed in a session, a path outside the inventory and a Spec artifact
-cannot be sent.
+**Two inputs.** `roundfix spec judge --stage idea` takes exactly one of them.
+With `--item <reference>` it resolves the item through the Follow-up Command's
+own inventory: an open Backlog Entry, a note in `docs/_inbox/` or an entry of
+a messages file the caller hands in; an unknown reference and an active Spec
+are usage errors. With `--request <path>` it reads one file that holds a
+request the user made in the session, which the session wrote outside the
+repository and removes afterwards. Nothing else can become a request: no
+other flag, file or standard input adds text, and a Spec artifact and source
+code cannot be sent.
+
+**The boundary widens by one kind of text.** By the maintainer's answer above,
+a request of the session may leave the machine. Of the request file the judge
+receives only the first line, as the title, cut to 200 characters, and the
+first 4,000 characters, with the project's name, after the same secret scan.
+This amends ADR-0201, whose requests held only repository artifacts and whose
+later decisions added Findings, Backlog Entries and Follow-up Items.
 
 **The state is the follow-up judge's.** The project's name and the item's
 kind, type, origin, title and the first 4,000 characters of its text, after
-the same secret scan; an item that matches a secret pattern is not sent. Items
-are sent whatever their language. The recipients, the keys, the Judge Log, the
-monthly ceiling and the Run Marker stay as ADR-0201,
-[ADR-0231](0231-the-jev-ceiling-is-a-user-config-value.md),
-[ADR-0239](0239-each-openrouter-stage-reads-its-own-roundfix-key-first.md) and
-[ADR-0283](0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md) decide.
+the secret scan; an item that matches a secret pattern is not sent. A request
+of the session has the kind and the type `request` and the project's name as
+its origin. Items are sent whatever their language. The recipients, the keys,
+the Judge Log and the monthly ceiling stay as ADR-0201,
+[ADR-0231](0231-the-jev-ceiling-is-a-user-config-value.md) and
+[ADR-0239](0239-each-openrouter-stage-reads-its-own-roundfix-key-first.md)
+decide, and the Run Marker as
+[ADR-0283](0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md) decides.
+The Judge Log keeps a hash of the state, never its text.
 
 **Less than the boundary allows.** A Finding, an item typed `fix`, `perf` or
 `refactor`, and a Waiting Item are not sent and are reported as not judged: in
@@ -91,10 +112,13 @@ answer, and exits `0`. It changes no other command's output or exit code.
 
 ## Considered Options
 
-- **Send the request the user typed in the session.** Not taken: it is outside
-  the maintainer's boundary. A request with no record is judged by the agent's
-  own answers; the smallest way to send it, a file handed in like a message,
-  is left for the maintainer to decide.
+- **Keep the judge to inventoried items.** The first boundary. Rejected by the
+  maintainer's answer: requests born in the session would be the only ones
+  judged by the agent alone.
+- **Send the whole request file, or hand it in through the messages schema.**
+  Rejected: the answer bounds what leaves the machine to the first line and
+  the first 4,000 characters, and a request has no sender, id or date to
+  invent.
 - **A language gate, as ADR-0201 has for Spec artifacts.** Rejected: the
   measurement found no shift in Portuguese larger than the shift between two
   passes of the same model, and this fleet's requests arrive in Portuguese.
@@ -112,7 +136,12 @@ answer, and exits `0`. It changes no other command's output or exit code.
 
 ## Consequences
 
-- A feature request that exists only in the session never reaches the judge.
+- A request of the session reaches the judge with no record in the
+  repository; the record of the judgment, in the Idea or the PRD, names it
+  `the request in the session`.
+- The thresholds were measured on Backlog Entries. A request in the user's
+  own words, often short and in Portuguese, is judged with the same starting
+  points until the records show otherwise.
 - The undecided band is wide: on the measured history about half of the
   feature items go to the user.
 - A verdict near a cut point can change between two runs; the output always

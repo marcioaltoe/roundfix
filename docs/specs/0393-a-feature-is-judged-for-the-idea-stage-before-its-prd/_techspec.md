@@ -10,21 +10,23 @@ created: 2026-11-14
 
 The judge gains one judgment, `idea-stage`: three Noul questions asked in one
 request about one item that is not yet a Spec. `roundfix spec judge` gains the
-stage `idea`, which takes `--item` in place of a Spec slug, resolves the item
-through the Follow-up Command's own inventory, builds the state the follow-up
-judge already sends, and prints a verdict with each probability and the lines
-of the record. The three route clauses of the Baseline's Spec routing rule keep
+stage `idea`, which takes, in place of a Spec slug, `--item`, a reference it
+resolves through the Follow-up Command's own inventory, or `--request`, a file
+that holds a request of the session. It builds the state the follow-up judge
+already sends and prints a verdict with each probability and the lines of the
+record. The three route clauses of the Baseline's Spec routing rule keep
 their ids and carry the rule to every adopter; `brainstorming`, `write-idea`,
 `write-prd` and the Roundfix skill's follow-up mode run and record the
 judgment; the glossary adds **Idea Stage Judgment**. ADR-0403 and ADR-0404
 record the decisions.
 
-The trade-off accepted: the command can send only an item the follow-up
-inventory holds, so a request that exists only in a session is judged by the
-agent alone, and the thresholds stay at the documentation's starting points
-with a wide undecided band. Both follow from the maintainer's data boundary
-and from a measurement too small to fix a number; the record every feature PRD
-keeps is what a later Spec needs to narrow the band.
+The trade-off accepted: the thresholds stay at the documentation's starting
+points with a wide undecided band, because the measurement was too small to
+fix a number, and a request of the session reaches the judge with no record in
+the repository. The maintainer allowed that on 2026-11-14: only the project's
+name, the request's first line and its first 4,000 characters leave the
+machine, after the secret scan. The record every feature PRD keeps is what a
+later Spec needs to narrow the band.
 
 ## Project Constraints
 
@@ -37,10 +39,11 @@ keeps is what a later Spec needs to narrow the band.
   `docs/agents/go.md`, `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0403 (new) records the rule: "The
   verdict starts the stage; it refuses nothing." ADR-0404 (new) records what
-  the judge reads: "Nothing but an inventoried item can become a request".
-  ADR-0200 applies unchanged: "A raised judgment is a finding the authoring
-  model answers". ADR-0201 applies unchanged: "Each request appends one line
-  to a Judge Log". ADR-0319 applies unchanged: its request state, "one item's
+  the judge reads: "Nothing else can become a request". ADR-0200 applies
+  unchanged: "A raised judgment is a finding the authoring model answers".
+  ADR-0201 is amended by task_03: a request of the session, handed in as a
+  file, may reach a request, and "Each request appends one line to a Judge
+  Log" stays. ADR-0319 applies unchanged: its request state, "one item's
   kind, type, origin, title and an excerpt of its text", is reused as it is.
   ADR-0400 applies: one context in three implementation Tasks that each earn
   their verification cycle. ADR-0209 does not apply: this judgment reads no
@@ -144,11 +147,13 @@ Read on 2026-11-14 at `251ed81e`; `_prd.md` → Validation records the runs.
   one request (task_01).
 - `internal/cli`: the stage `idea` of `roundfix spec judge` in a new
   `spec_judge_idea.go`, called from `runSpecJudgeCommand`; it resolves the
-  item with `followUpInventory` and renders text and JSON (task_01).
+  item with `followUpInventory`, or reads the one file `--request` names, and
+  renders text and JSON (task_01).
 - `internal/baseline/assets/modules/spec-workflow.json`: the three reworded
   route clauses, their derived files and this repository's managed refresh
   (task_02).
-- The owned skills, their templates and tests, and `CONTEXT.md` (task_03); the
+- The owned skills, their templates and tests, `CONTEXT.md` and the amendment
+  notice in ADR-0201 (task_03); the
   `spec` command guide and the Roundfix skill's `spec` reference travel with
   the command (task_01).
 
@@ -212,9 +217,11 @@ func JudgeIdeaStage(ctx context.Context, q Questions, req IdeaStageRequest) (Ide
 func IdeaStageVerdict(answers []string) string
 ```
 
-In `internal/cli`: `specJudgeRequest` gains `item` and `messages`; a new
-unexported `ideaStageItem(items []followUpItem, reference string)
-(followUpItem, error)` is the only place a reference becomes an item; and
+In `internal/cli`: `specJudgeRequest` gains `item`, `messages` and `request`;
+a new unexported `ideaStageItem(items []followUpItem, reference string)
+(followUpItem, error)` is the only place a reference becomes an item; a new
+unexported `ideaStageRequestItem(path, project string) (followUpItem, error)`
+is the only place a request file becomes an item; and
 `renderIdeaStageText(doc ideaStageDocument) string` renders the report.
 
 ### Data Models
@@ -284,7 +291,9 @@ in this order. `reason`, `verdict`, `judged_by`, `model`, `transport` and
 {"schema":"roundfix/idea-stage-judgment/v1","item":{"ref":"docs/backlog/2026-11-02-teams-can-see-each-others-run-results.md","kind":"backlog","type":"feat","title":"Teams can see each other's Run results"},"state":"answered","reason":null,"verdict":"indicated","judged_by":"judge","criteria":[{"id":"shape_open","summary":"the right shape of the solution is still open","yes":"At least two materially different designs could satisfy the item, and the item does not settle which one to build.","no":"The item names one concrete design, or only one reasonable design exists.","probability":0.98,"answer":"yes"}],"thresholds":{"yes_at_least":0.7,"no_at_most":0.3},"model":"jev-1.13.0","transport":"typesafe","key_variable":"ROUNDFIX_TYPESAFE_API_KEY","calls":1,"input_tokens":512,"cost_usd":0.000021504,"month_cost_usd":0.012,"month_ceiling_usd":5}
 ```
 
-(The example shows one of the three criteria.) The Judge Log gains no field:
+(The example shows one of the three criteria.) For a request of the session
+the `item` is `{"ref":"the request in the session","kind":"request","type":"request","title":"<its first line>"}`.
+The Judge Log gains no field:
 each attempt appends one `roundfix/judge-log/v1` row with `judgment`
 `idea-stage`, `artifact` the item's reference, `target` its kind,
 `question_id` `idea_stage`, the three probabilities under `probabilities`, and
@@ -343,22 +352,35 @@ of their text.
    more, `no` at `no_at_most` or less and `unsure` otherwise, and `Verdict`
    from `IdeaStageVerdict`: `indicated` when any answer is `yes`, `not
    indicated` when every answer is `no`, `undecided` otherwise.
-2. **The command.** `roundfix spec judge --stage idea --item <reference>
-   [--messages <path>] [--format <text|json>]`. With `--stage idea` the
-   command takes no Spec slug, calls `followUpInventory` with the messages
-   path resolved as the Follow-up Command resolves it, and finds the item
-   whose reference equals `--item` byte for byte through `ideaStageItem`. A
-   Waiting Item is reported `not_applicable` with the reason `the item waits
-   on <waiting_on> since <since>` before the judge is called. The project is
+2. **The command.** `roundfix spec judge --stage idea (--item <reference>
+   [--messages <path>] | --request <path>) [--format <text|json>]`. With
+   `--stage idea` the command takes no Spec slug and exactly one of `--item`
+   and `--request`. With `--item` it calls `followUpInventory` with the
+   messages path resolved as the Follow-up Command resolves it, and finds the
+   item whose reference equals `--item` byte for byte through
+   `ideaStageItem`. A Waiting Item is reported `not_applicable` with the
+   reason `the item waits on <waiting_on> since <since>` before the judge is
+   called. With `--request` it reads the file through `ideaStageRequestItem`:
+   a path relative to the working directory or absolute, read as the messages
+   file is read, at most 1 MiB. The item it builds has the reference `the
+   request in the session`, the kind and the type `request`, the project's
+   name as its origin, the file's first non-blank line as its title, trimmed,
+   without a leading run of `#` characters and spaces and cut to 200
+   characters, and the file's text, trimmed, as its text, which
+   `JudgeIdeaStage` cuts to 4,000 characters like any other item. The command
+   never writes, moves or deletes the file. The project is
    `followUpNamespace`; the keys, the ceiling, the transport and the clock
    are passed as `runSpecJudgeCommand` passes them today. Exit `0` whenever a
    report is printed. Exit `2`, with `roundfix: spec judge failed: <error>`
    and `Run 'roundfix spec judge --help' for usage.` on standard error and
    nothing on standard output, for these errors, word for word:
-   - `--stage idea requires --item, the reference of the item to judge`
-   - `--stage idea takes no Spec slug; name the item with --item`
+   - `--stage idea requires --item, the reference of the item to judge, or --request, a file that holds the request`
+   - `--item and --request cannot be used together`
+   - `--stage idea takes no Spec slug; name the item with --item or the request with --request`
    - `--item applies only to --stage idea`
-   - `--messages applies only to --stage idea`
+   - `--request applies only to --stage idea`
+   - `--messages applies only to --stage idea with --item`
+   - `request file "<path>": <error>` when the file cannot be read, `request file "<path>": exceeds 1 MiB` and `request file "<path>": holds no text`
    - `no pending item "<reference>"; name a reference that 'roundfix follow-up' lists`
    - `"<reference>" is an active Spec; the Idea stage is judged before a PRD exists`
    - `unsupported --stage "<value>"; use idea, prd, techspec or tasks`
@@ -384,21 +406,26 @@ of their text.
    ```
 
    The `Judge:` line formats its numbers as the summary of the other stages
-   does. When the judge did not answer (`judge_unavailable`), the output is
-   Surface Transcript 4, followed by the same `Judge:` line only when at least
-   one request was sent. When the item is `not_applicable`, the output is the
+   does. For a request of the session, `<reference>` is `the request in the
+   session` in the first line and in the record. When the judge did not answer (`judge_unavailable`), the output is
+   Surface Transcript 4, or 5 for a request of the session, followed by the
+   same `Judge:` line only when at least one request was sent. When the item is `not_applicable`, the output is the
    one line of Surface Transcript 3. Each criterion's summary and its `yes`
    and `no` lines are read from `questions.json`, never from a second copy.
 4. **Help.** `specJudgeUsage` keeps every existing line and gains: the
-   synopsis line `  roundfix spec judge --stage idea --item <reference>
-   [--messages <path>] [--format <text|json>]` right after the existing one;
-   a paragraph after the first one that reads "With --stage idea it judges,
-   before a PRD exists, whether one item that is not yet a Spec needs the
-   Idea stage: an open Backlog Entry, a note in docs/_inbox/ or, with
-   --messages, a message entry, named by the reference that 'roundfix
-   follow-up' prints. It never gates."; the option lines `--item` ("With
-   --stage idea, the reference of the item to judge") and `--messages` ("With
-   --stage idea, the JSON file of ai-memory messages that holds the item");
+   synopsis line `  roundfix spec judge --stage idea (--item <reference>
+   [--messages <path>] | --request <path>) [--format <text|json>]` right
+   after the existing one; a paragraph after the first one that reads "With
+   --stage idea it judges, before a PRD exists, whether a feature request
+   needs the Idea stage: an open Backlog Entry, a note in docs/_inbox/ or,
+   with --messages, a message entry, named with --item by the reference that
+   'roundfix follow-up' prints, or a request of the session, written to a file
+   and named with --request. Of a request file only the first line and the
+   first 4,000 characters are sent. It never gates."; the option lines
+   `--item` ("With --stage idea, the reference of the item to judge"),
+   `--messages` ("With --item, the JSON file of ai-memory messages that holds
+   the item") and `--request` ("With --stage idea, a file that holds a request
+   of the session");
    `idea` in the `--stage` option line; and "or unknown item" at the end of
    the exit code 2 line. `specUsage` and the top-level `usage` gain the same
    synopsis line after their existing `spec judge` line.
@@ -409,7 +436,7 @@ of their text.
    - `clause.spec.routing-01-large-initiative`:
 
    ````text
-   Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`. A feature takes the same route when its Idea stage is indicated. Before writing the PRD of a feature that has no `_idea.md` and that the user did not send to `write-idea`, judge three criteria about the request: whether the right shape of the solution is still open, whether the request rests on an assumption about its users, the business or the market that it gives no evidence for, and whether deciding to build it depends on a market or competitive question. When the request is recorded as an item that is not yet a Spec, which is an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>` and take the judge's answers; when the command reports that the judge did not answer, or the request has no such record, answer the same three criteria yourself, each as yes, no or unsure, and say that the judge did not answer. The Idea stage is indicated when any criterion is yes, not indicated when every criterion is no, and undecided otherwise. Indicated: start `write-idea` without asking, show the verdict, each criterion's answer with its probability and who judged, and let the user dismiss the stage at its first question. Undecided, or in doubt: the user decides, seeing the same answers. Not indicated: continue to `write-prd`. Record who judged, each answer, the verdict, whether the stage ran or was dismissed and why, and what the Idea did to the shape of the request, in the Idea when one is written and always in the PRD. The judgment informs and never refuses: no command fails for it, and a dismissal needs only its recorded reason. When the stage is indicated or undecided and no user is present to answer, write no PRD for that feature: keep it as a Backlog Entry that records the judgment and waits, with `waiting_on` and `since` in its frontmatter, and never answer the stage's questions or the user's decision yourself. A fix or a refactor is never judged for the Idea stage.
+   Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`. A feature takes the same route when its Idea stage is indicated. Before writing the PRD of a feature that has no `_idea.md` and that the user did not send to `write-idea`, judge three criteria about the request: whether the right shape of the solution is still open, whether the request rests on an assumption about its users, the business or the market that it gives no evidence for, and whether deciding to build it depends on a market or competitive question. When the request is recorded as an item that is not yet a Spec, which is an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`; when it exists only in the session, write it to a file outside the repository and run `roundfix spec judge --stage idea --request <path>`, which sends the judge only the project's name, the request's first line and its first 4,000 characters, after the secret scan. Take the judge's answers; when the command reports that the judge did not answer, answer the same three criteria yourself, each as yes, no or unsure, and say that the judge did not answer. The Idea stage is indicated when any criterion is yes, not indicated when every criterion is no, and undecided otherwise. Indicated: start `write-idea` without asking, show the verdict, each criterion's answer with its probability and who judged, and let the user dismiss the stage at its first question. Undecided, or in doubt: the user decides, seeing the same answers. Not indicated: continue to `write-prd`. Record who judged, each answer, the verdict, whether the stage ran or was dismissed and why, and what the Idea did to the shape of the request, in the Idea when one is written and always in the PRD. The judgment informs and never refuses: no command fails for it, and a dismissal needs only its recorded reason. When the stage is indicated or undecided and no user is present to answer, write no PRD for that feature: keep it as a Backlog Entry that records the judgment and waits, with `waiting_on` and `since` in its frontmatter, and never answer the stage's questions or the user's decision yourself. A fix or a refactor is never judged for the Idea stage.
    ````
 
    - `clause.spec.routing-02-standard-feature`:
@@ -439,7 +466,7 @@ of their text.
 
    Before a feature goes to `write-prd`, judge whether it needs the Idea stage, unless the user asked for `write-idea` or the feature already has an `_idea.md`. The criteria are three: the right shape of the solution is still open; the request rests on an assumption about its users, the business or the market that it gives no evidence for; deciding to build it depends on a market or competitive question.
 
-   When the repository runs Roundfix and the request is recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>` and take the judge's answers. Otherwise, or when the command says the judge did not answer, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
+   When the repository runs Roundfix, ask the judge. For a request recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`. For a request that exists only in the session, write it to a file in a temporary directory outside the repository, run `roundfix spec judge --stage idea --request <path>` and remove the file; only the project's name, the request's first line and its first 4,000 characters reach the judge, after the secret scan. When the command says the judge did not answer, or the repository does not run Roundfix, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
 
    - Any criterion yes: the Idea stage is indicated. Start `write-idea` and show the answers; the user may dismiss the stage at its first question.
    - Every criterion no: go to `write-prd`.
@@ -469,7 +496,7 @@ of their text.
    ````markdown
    ## Idea-stage judgment
 
-   A feature PRD is written only after its Idea stage was judged. When `_idea.md` exists, the judgment is its `## Idea-stage judgment` section. When the conversation, or the brief that delegated this skill, already holds the judgment of this request, with the user's dismissal or choice, record that one. Otherwise judge now, before any other step, as the repository's Spec routing says. The criteria are three: the right shape of the solution is still open; the request rests on an assumption about its users, the business or the market that it gives no evidence for; deciding to build it depends on a market or competitive question. When the request is recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`; when the command says the judge did not answer, or the request has no such record, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
+   A feature PRD is written only after its Idea stage was judged. When `_idea.md` exists, the judgment is its `## Idea-stage judgment` section. When the conversation, or the brief that delegated this skill, already holds the judgment of this request, with the user's dismissal or choice, record that one. Otherwise judge now, before any other step, as the repository's Spec routing says. The criteria are three: the right shape of the solution is still open; the request rests on an assumption about its users, the business or the market that it gives no evidence for; deciding to build it depends on a market or competitive question. When the request is recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`; when it exists only in the session, write it to a file in a temporary directory outside the repository, run `roundfix spec judge --stage idea --request <path>` and remove the file, and only the project's name, the request's first line and its first 4,000 characters reach the judge, after the secret scan. When the command says the judge did not answer, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
 
    - Indicated, any criterion yes: stop this skill and start `write-idea`, showing the verdict and the answers. The user may dismiss the stage at its first question; then this skill resumes.
    - Undecided, no criterion yes and not every one no, or any doubt: ask the user whether the Idea stage runs, showing the same answers.
@@ -486,9 +513,10 @@ of their text.
      - step 2: "For each planned feature that has no Idea, run the Idea-stage
        judgment as `docs/agents/spec-routing.md` says, with `roundfix spec
        judge --stage idea --item <reference>` and, for a message entry, the
-       same messages file, and show its verdict and answers in the plan: an
-       indicated feature starts at `write-idea`, an undecided one waits for
-       the user's choice, and a not indicated one goes to its PRD."
+       same messages file, or with `--request <path>` for a feature the user
+       asked for in the session, and show its verdict and answers in the
+       plan: an indicated feature starts at `write-idea`, an undecided one
+       waits for the user's choice, and a not indicated one goes to its PRD."
      - step 3: "The questions of an indicated Idea stage, and the choice for
        an undecided one, are asked here, while the user is present and before
        any Spec is authored; the user may dismiss an indicated stage at its
@@ -507,8 +535,8 @@ of their text.
        report names it."
    - `.agents/skills/roundfix/references/spec.md`, under `### Advisory
      judge`: the bash block gains the line `roundfix spec judge --stage idea
-     --item <reference> [--messages <path>] [--format <text|json>]` after its
-     last line; the unknown-stage sentence names `idea, prd, techspec or
+     (--item <reference> [--messages <path>] | --request <path>) [--format
+     <text|json>]` after its last line; the unknown-stage sentence names `idea, prd, techspec or
      tasks`; and this section is inserted right before `## Spec close audit`:
 
    ````markdown
@@ -517,16 +545,21 @@ of their text.
    ```bash
    roundfix spec judge --stage idea --item docs/backlog/<file>.md
    roundfix spec judge --stage idea --item message:<id> --messages <path> --format json
+   roundfix spec judge --stage idea --request <path>
    ```
 
    Before the PRD of a feature is written, `--stage idea` judges whether the
-   feature needs the Idea stage. It takes no Spec slug: `--item` names one item
-   that is not yet a Spec, by the reference `roundfix follow-up` prints for it,
-   an open Backlog Entry, a note in `docs/_inbox/` or, with the same
-   `--messages` file, a message entry. The judge receives the project's name and
-   that one item's kind, type, origin, title and the first 4,000 characters of
-   its text, after the secret scan, in whatever language it is written; nothing
-   else is sent.
+   feature needs the Idea stage. It takes no Spec slug and one of two inputs.
+   `--item` names one item that is not yet a Spec, by the reference `roundfix
+   follow-up` prints for it: an open Backlog Entry, a note in `docs/_inbox/` or,
+   with the same `--messages` file, a message entry. `--request` names a file
+   that holds a request the user made in the session: write the request to a
+   file in a temporary directory outside the repository, run the command and
+   remove the file. The judge receives the project's name and the one item's
+   kind, type, origin, title and the first 4,000 characters of its text, after
+   the secret scan, in whatever language it is written. Of a request file it
+   receives only the first line, as the title, and the first 4,000 characters;
+   nothing else is sent.
 
    The judge answers three criteria, each as the probability of yes:
    `shape_open` (the right shape of the solution is still open),
@@ -551,8 +584,8 @@ of their text.
    lists the three criteria with their yes and no meanings: answer them yourself,
    say that the judge did not answer, and never present your answers as the
    judge's. An item typed `fix`, `perf`, `refactor` or `finding` and a Waiting
-   Item are not judged and nothing is sent; an active Spec, an unknown reference
-   and a usage error exit `2`. The keys, the Judge Log, the monthly ceiling and
+   Item are not judged and nothing is sent; an active Spec, an unknown reference,
+   an unreadable or empty request file and a usage error exit `2`. The keys, the Judge Log, the monthly ceiling and
    the Run Marker are those of the Advisory Judge above.
 
    `--format json` prints one document with the schema
@@ -632,12 +665,22 @@ of their text.
 
    ````text
    **Idea Stage Judgment**:
-   The Advisory Judgment, made before a feature's PRD is written, of whether the feature needs the Idea stage, the study `write-idea` runs. It answers three yes or no criteria about the request: the right shape of the solution is still open, the request rests on an assumption it gives no evidence for, and deciding to build it depends on a market question. The judge answers them for an open Backlog Entry, a repository inbox note or a handed-in message through `roundfix spec judge --stage idea`, and the agent answers them, saying so, when the judge does not. The verdict is indicated when any criterion is yes, not indicated when every criterion is no and undecided otherwise: an indicated stage starts without being asked and the user may dismiss it with a recorded reason, an undecided one is the user's choice, and no command refuses anything. The PRD of every feature Spec records who judged, the answers, whether the stage ran and what it did to the shape of the request ([ADR-0403](docs/adr/0403-a-feature-is-judged-for-the-idea-stage-before-its-prd-and-the-judgment-never-refuses.md), [ADR-0404](docs/adr/0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md)).
+   The Advisory Judgment, made before a feature's PRD is written, of whether the feature needs the Idea stage, the study `write-idea` runs. It answers three yes or no criteria about the request: the right shape of the solution is still open, the request rests on an assumption it gives no evidence for, and deciding to build it depends on a market question. The judge answers them through `roundfix spec judge --stage idea` for an open Backlog Entry, a repository inbox note, a handed-in message or a request of the session handed in as a file, and the agent answers them, saying so, when the judge does not. The verdict is indicated when any criterion is yes, not indicated when every criterion is no and undecided otherwise: an indicated stage starts without being asked and the user may dismiss it with a recorded reason, an undecided one is the user's choice, and no command refuses anything. The PRD of every feature Spec records who judged, the answers, whether the stage ran and what it did to the shape of the request ([ADR-0403](docs/adr/0403-a-feature-is-judged-for-the-idea-stage-before-its-prd-and-the-judgment-never-refuses.md), [ADR-0404](docs/adr/0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md)).
    _Avoid_: Idea gate, discovery check, routing verdict
    ````
 
    The texts, with those links, passed `TestGlossaryPhrasesAreDefinedTerms`
    and the other glossary contracts on the prototype.
+9. **Amendment notice.** In
+   `docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md`,
+   with its `updated_at` set to `2026-11-14T15:00:00Z` and nothing else
+   changed, this paragraph is added at the end of the file, after one blank
+   line, `ADR-0404` after "Amended by" written as a Markdown link to
+   `0404-the-idea-stage-judge-reads-one-item-that-is-not-yet-a-spec.md`:
+
+   ````text
+   **Amended by ADR-0404 (2026-11-14).** The Idea-stage judgment sends one item that is not yet a Spec: an open Backlog Entry, a note or a handed-in message, as the follow-up judge already sends, or a request the user made in the session, handed in as a file. Of that file only the first line and the first 4,000 characters leave the machine, after the secret scan. The recipients, the keys, the Judge Log and the ceiling stay as this decision and its later notes set them.
+   ````
 
 ### Surface Transcripts
 
@@ -645,8 +688,10 @@ The fixture is a committed Git repository with an `origin` remote, holding
 `README.md` and two open Backlog Entries: `docs/backlog/2026-11-02-teams-can-see-each-others-run-results.md`,
 typed `feat`, titled "Teams can see each other's Run results", and
 `docs/backlog/2026-11-03-status-prints-the-header-twice.md`, typed `fix`.
-`<reason>` is the reason the judge did not answer in the environment that runs
-the command: without a judge key it names the key variables, and inside a Run
+A file outside the repository, `<path>`, holds the request of Surface
+Transcript 5: the line "Teams should see each other's Run results" and a
+second line "Maybe a web page, maybe a chat bot.". `<reason>` is the reason
+the judge did not answer in the environment that runs the command: without a judge key it names the key variables, and inside a Run
 it names the Run Marker. These transcripts prescribe a surface that does not
 exist yet; the Task's named tests assert them, and the reasons and the error
 suffix are copied from the current binary.
@@ -657,7 +702,7 @@ suffix are copied from the current binary.
    $ roundfix spec judge --stage idea
    stdout:
    stderr:
-   roundfix: spec judge failed: --stage idea requires --item, the reference of the item to judge
+   roundfix: spec judge failed: --stage idea requires --item, the reference of the item to judge, or --request, a file that holds the request
    Run 'roundfix spec judge --help' for usage.
    exit: 2
    ```
@@ -708,11 +753,38 @@ suffix are copied from the current binary.
    exit: 0
    ```
 
+5. Surface Transcript: a request of the session is judged from a file, and the
+   record names it.
+
+   ```transcript
+   $ roundfix spec judge --stage idea --request <path>
+   stdout:
+   Idea stage for the request in the session: not judged: <reason>
+   Answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer:
+     shape_open: the right shape of the solution is still open
+       yes: At least two materially different designs could satisfy the item, and the item does not settle which one to build.
+       no: The item names one concrete design, or only one reasonable design exists.
+     unverified_assumption: it rests on an assumption about its users, the business or the market that it gives no evidence for
+       yes: A claim about what users need, will adopt or will pay for is taken for granted, and the work would be useless if that claim were wrong.
+       no: The need is shown by evidence in the item itself, such as a measured defect, a reported failure or a decision the product owner already made.
+     market_question: deciding to build it depends on a market or competitive question
+       yes: The decision needs to know what other tools already offer, how the product would be positioned, or whether people outside the team would adopt it.
+       no: The decision depends only on the product's own behavior and its current users.
+   Rule: indicated when any criterion is yes, not indicated when every criterion is no, undecided otherwise.
+   Record:
+     - item: the request in the session
+     - judged-by: agent (<reason>)
+   stderr:
+   exit: 0
+   ```
+
 ### Invariants
 
-1. A request's state is built only from one `followUpItem` that
-   `ideaStageItem` found in the inventory by its reference; no flag, file or
-   standard input can add text to it.
+1. A request's state is built only from one `followUpItem`: the one
+   `ideaStageItem` found in the inventory by its reference, or the one
+   `ideaStageRequestItem` built from the file `--request` names. Of that file
+   only the first line, cut to 200 characters, and the first 4,000 characters
+   can be sent; no other flag, file or standard input adds text.
 2. Nothing is sent for an item whose type is in `not_judged_types`, for a
    Waiting Item, for an item that matches a secret pattern, inside a Run,
    without a key, at the ceiling or with an unreadable Judge Log.
@@ -733,8 +805,8 @@ suffix are copied from the current binary.
 Measured with a prototype of the Baseline, skill and glossary changes on a
 scratch worktree at `251ed81e`. The Go change was not prototyped.
 
-- Behavior, task_01: `roundfix spec judge` accepts `--stage idea`, `--item`
-  and `--messages`; the unknown-stage message names `idea`; the help of `spec
+- Behavior, task_01: `roundfix spec judge` accepts `--stage idea`, `--item`,
+  `--messages` and `--request`; the unknown-stage message names `idea`; the help of `spec
   judge`, `spec` and the top-level help gain lines. The Behavior Surfaces
   `command spec judge` and the `spec` command guide change, so the Behavior
   Surface Record is re-recorded. The Roundfix skill version rises.
@@ -747,7 +819,7 @@ scratch worktree at `251ed81e`. The Go change was not prototyped.
   `catalog.diagnostics.golden.json`, and the four goldens under
   `internal/baseline/testdata/plan-characterization/`.
 - Behavior, task_03: the four skills carry the rule and the record, and their
-  versions rise; the skill edits did not move the Behavior Surface Record on
+  versions rise; ADR-0201 gains its amendment notice; the skill edits did not move the Behavior Surface Record on
   the prototype.
 - Tests changed: in `internal/cli/spec_judge_test.go`,
   `TestSpecJudgeRefusesAnUnknownStageOrFormat` pins the unknown-stage message
@@ -764,9 +836,10 @@ scratch worktree at `251ed81e`. The Go change was not prototyped.
 - Goal 1, User Story 1, Core Feature 1, Core Feature 2, Success Metric 1 →
   API Contracts 1 to 3, the `idea-stage` entry, `JudgeIdeaStage`,
   `IdeaStageVerdict`, `renderIdeaStageText` (task_01).
-- Goal 6, Core Feature 3, Core Feature 4, Success Metric 2, Success Metric 3,
-  Success Metric 4 → API Contracts 1 and 2, Invariants 1 to 5,
-  `ideaStageItem`, Surface Transcripts 1 to 4 (task_01).
+- Goal 6, User Story 7, Core Feature 3, Core Feature 4, Success Metric 2,
+  Success Metric 3, Success Metric 4, Success Metric 9 → API Contracts 1 and
+  2, Invariants 1 to 5, `ideaStageItem`, `ideaStageRequestItem`, Surface
+  Transcripts 1 to 5 (task_01).
 - Goal 2, Goal 3, User Story 2, User Story 3, Core Feature 5, Core Feature 6,
   Success Metric 5 → API Contract 5, Invariant 6, the managed refresh
   (task_02).
@@ -808,16 +881,18 @@ Deviations from the PRD: None.
   a PRD without an Idea, asking the user every time, the rule alone without a
   judge, a structural check of the record and a record in the Archive Record
   or the front matter, and the design takes none of them.
-- ADR-0404: the decision this Spec records; it rejects sending a request
-  typed in the session, a language gate, thresholds tuned on the measured
-  set, the question about worth, a second pinned model and judging Findings
-  and fixes, and the design takes none of them.
+- ADR-0404: the decision this Spec records; it rejects keeping the judge to
+  inventoried items, sending a whole request file, a language gate,
+  thresholds tuned on the measured set, the question about worth, a second
+  pinned model and judging Findings and fixes, and the design takes none of
+  them.
 - ADR-0200: applies unchanged; it adopted an advisory command over a gate and
   one pinned model, and the design keeps both: the stage exits zero whenever
   it ran and counts answers only from the pin.
-- ADR-0201: applies unchanged; it kept the boundary by construction instead
-  of by convention, and the design does the same through the inventory
-  lookup.
+- ADR-0201: amended; it kept the boundary by construction instead of by
+  convention, and the design does the same: an item comes from the inventory
+  lookup or from the one request file, and task_03 writes the notice that a
+  request of the session may now be sent.
 - ADR-0209: not applicable; it decides which Findings and Backlog Entries the
   grouping question reads through its own reader, and this judgment reads its
   item through the follow-up inventory and sends no Finding.
@@ -894,9 +969,10 @@ root. Fake key values are built at run time. Each new top-level test calls
   one named test that asserts every line of both streams and the exit code:
   `TestSpecJudgeIdeaStageRequiresAnItem` (1),
   `TestSpecJudgeIdeaStageRefusesAnUnknownReference` (2),
-  `TestSpecJudgeIdeaStageDoesNotJudgeAFix` (3) and
+  `TestSpecJudgeIdeaStageDoesNotJudgeAFix` (3),
   `TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer` (4,
-  without a key, with the reason of the fixture). Also:
+  without a key, with the reason of the fixture) and
+  `TestSpecJudgeIdeaStageListsTheCriteriaForARequest` (5). Also:
   - `TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord`: with a fake judge
     answering 0.98, 0.84 and 0.17, the whole text of API Contract 3 and the
     whole JSON document; with 0.12, 0.17 and 0.07 `not indicated`; with 0.42,
@@ -906,9 +982,16 @@ root. Fake key values are built at run time. Each new top-level test calls
     in the inventory, a reference that differs by a `./` prefix, and an
     active Spec, each with the error of API Contract 2.
   - `TestSpecJudgeIdeaStageReadsAMessageEntry` (a `message:<id>` reference
-    with `--messages`, and the usage errors of `--item` and `--messages`
-    without `--stage idea` and of a slug with it) and
+    with `--messages`, and every usage error of API Contract 2) and
     `TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem`.
+  - `TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest`: a request file whose
+    first line is longer than 200 characters and whose text is longer than
+    4,000, with a marker placed after the 4,000th character: the one request
+    holds the project's name, the kind and type `request`, the project's name
+    as origin, a title of 200 characters and a text of 4,000, and neither the
+    marker nor the file's path; the output's first line and record name `the
+    request in the session`. A missing file, a file over 1 MiB and a blank
+    file exit 2 with the errors of API Contract 2.
   - The existing tests of `spec_judge_test.go` pass with one edit, the
     unknown-stage message.
 - `internal/baseline/idea_stage_route_clauses_test.go` (new), built like
@@ -918,18 +1001,21 @@ root. Fake key values are built at run time. Each new top-level test calls
   repository guide, whitespace-normalized, every sentence of API Contract 5
   as its own phrase, the kept phrases of Invariant 6 included, and that the
   three clauses are `mandatory` and carry no `replaces`.
-- `skills/idea_stage_judgment_test.go` (new):
-  `TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage` (both copies of
-  `brainstorming`, `write-idea`, `write-prd` and the two templates: the three
-  criteria, the three verdict rules, "Never present your own answers as the
-  judge's", the dismissal option, the waiting rule and every key of the
-  record), `TestTheFollowUpModeRunsTheIdeaStageJudgment` (the four sentences
-  of the `modes` reference, both copies) and
+- `skills/idea_stage_judgment_test.go` (new, task_01):
   `TestTheSpecReferenceDocumentsTheIdeaStage` (both copies of the `spec`
   reference: the synopsis, what is sent, the three ids, both thresholds, the
-  not judged cases and the schema name).
+  not judged cases and the schema name), with the helper that reads both
+  copies of a skill file and requires each phrase once.
+- `skills/idea_stage_authoring_test.go` (new, task_03), reusing that helper:
+  `TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage` (both copies of
+  `brainstorming`, `write-idea`, `write-prd` and the two templates: the three
+  criteria, the three verdict rules, the request file with what reaches the
+  judge, "Never present your own answers as the judge's", the dismissal
+  option, the waiting rule and every key of the record) and
+  `TestTheFollowUpModeRunsTheIdeaStageJudgment` (the four sentences of the
+  `modes` reference, both copies).
 
-Sabotages for the Task author to confirm on a `git archive` copy, each
+Sabotages for the Task author to confirm on a prototype tree, each
 observed by the named test through the function it mutates:
 
 1. Skip the secret scan → `TestIdeaStageSendsNothingItMustNot` (the
@@ -950,6 +1036,8 @@ observed by the named test through the function it mutates:
    `TestTheRouteClausesJudgeAFeatureForTheIdeaStage`.
 10. Remove "Never present your own answers as the judge's" from `write-prd` →
     `TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage`.
+11. Send the whole request file in place of its first 4,000 characters →
+    `TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest` (the marker is sent).
 
 ## Build Order
 
@@ -969,9 +1057,10 @@ observed by the named test through the function it mutates:
    names the command, and to keep one writer of shared records at a time).
 3. task_03: the `brainstorming`, `write-idea` and `write-prd` skills with
    their two templates and mirrors, both copies of the Roundfix skill's
-   `modes` reference, the two remaining tests of
-   `skills/idea_stage_judgment_test.go`, the four skills' version fields and
-   the version record, and `CONTEXT.md` (depends on: 1, 2; the skills restate
+   `modes` reference, the two tests of the new
+   `skills/idea_stage_authoring_test.go`, the four skills' version fields and
+   the version record, `CONTEXT.md` and the amendment notice in ADR-0201
+   (depends on: 1, 2; the skills restate
    the rule task_02 fixes and both task_01 and task_03 raise the Roundfix
    skill version).
 4. task_04: the QA gate (depends on: 3).
@@ -979,8 +1068,7 @@ observed by the named test through the function it mutates:
 Three implementation Tasks and the QA gate, one context, each Task with its
 own verification cycle: the command with its guide, the Baseline with its
 derived files, and the skills with the glossary. They run in series: task_01
-and task_03 share the Roundfix skill's version fields, the version record and
-`skills/idea_stage_judgment_test.go`.
+and task_03 share the Roundfix skill's version fields and the version record.
 
 No other Spec is required. Specs 0391 and 0392 deliver first; the shared files
 are named in `_prd.md` → Prerequisites, and each Task regenerates derived
@@ -1004,6 +1092,13 @@ mirror.
 - A message entry is judged from the same file the follow-up mode already
   writes; outside that mode a session must write the file to have a message
   judged, or answer the criteria itself.
+- A request of the session is the user's own words, often short and in
+  Portuguese, and none was measured: the measured set holds Backlog Entries.
+  The thresholds are the same starting points, and the record says which
+  input was judged.
+- A request file is written and removed by the session, outside the
+  repository; a session that forgets to remove it leaves the user's text in a
+  temporary directory, nowhere else.
 - A verdict near a cut point can change between two runs; the record keeps
   the probabilities, and a re-run is not asked for.
 - The clause text is long. It renders once, in the Spec routing guide of every
@@ -1025,8 +1120,12 @@ Autonomous route: no person present; decisions taken from `_prd.md` → Decision
 - The judgment is a stage of `roundfix spec judge` with the item named by
   `--item`: authors already run that command for advisory judgments, and a
   flag keeps the positional argument a Spec slug.
-- The item is resolved through `followUpInventory` and nothing else, so the
-  data boundary holds by construction. See ADR-0404.
+- An item is resolved through `followUpInventory`, and a request of the
+  session comes from the one file `--request` names, so the data boundary
+  holds by construction. See ADR-0404.
+- The request file is plain text, not the messages schema: a request has no
+  sender, id or date to invent, and the judge receives only its first line
+  and its first 4,000 characters.
 - The type guard and the Waiting Item guard run before any check of the
   judge, so a fix reads the same inside and outside a Run.
 - The criteria, their summaries and their yes and no meanings are printed
