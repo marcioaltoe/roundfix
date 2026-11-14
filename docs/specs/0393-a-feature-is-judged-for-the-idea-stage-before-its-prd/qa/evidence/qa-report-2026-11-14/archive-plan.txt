@@ -1,0 +1,16 @@
+command: ./bin/roundfix archive 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd --plan --offline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+archive plan for 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd: removes 107 file(s) (1454740 bytes) and writes docs/history/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-14.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 94 file(s) (1213790 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 16497 bytes: no advice (offline)
+candidate references/2026-11-14-idea-stage-judgment-pilot.md 3778 bytes: no advice (offline)
+candidate references/2026-11-14-maintainer-request-and-answers.md 6639 bytes: no advice (offline)
+promote with: roundfix archive 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd --promote <path>
+
+stderr:
+
+

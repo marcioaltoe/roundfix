@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

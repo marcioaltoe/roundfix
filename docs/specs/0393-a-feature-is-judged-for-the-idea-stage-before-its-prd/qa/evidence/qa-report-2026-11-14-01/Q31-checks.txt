@@ -1,0 +1,282 @@
+[
+  {
+    "check": "exact three criterion IDs",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "thresholds",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "excluded types",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "no copied criterion text in production Go",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "check": "JudgeIdeaStage callers restricted",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "check": "no command consumes persisted verdict or judgment record",
+    "pass": true,
+    "detail": "[]"
+  },
+  {
+    "check": "mirror .agents/skills/brainstorming/SKILL.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/roundfix/SKILL.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/roundfix/references/modes.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/roundfix/references/spec.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/write-idea/SKILL.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/write-idea/references/idea-template.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/write-prd/SKILL.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "mirror .agents/skills/write-prd/references/prd-template.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "clause IDs unchanged",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "clause.spec.routing-01-large-initiative force and no replaces",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "clause.spec.routing-02-standard-feature force and no replaces",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "clause.spec.routing-05-task-graph force and no replaces",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-02-tooling-authorization",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.routing-03-refactor-bugfix",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.routing-04-trivial-change",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.name-the-finding-a-task-answers",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.specs-are-downstream-artifacts",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.sources-02-bound-the-group",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-04-qa-audit",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.prohibit-tests-that-read-specs",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.verification-fails-before-the-change",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-05-legacy-and-ownership",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.sources-01-group-by-shared-context",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.tracker-artifacts",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.keep-artifacts-in-spec-folder",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.local-task-tracker-only",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.verification-two-tiers",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-01-active-artifacts",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-06-outside-evidence",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unmodified clause clause.spec.project-constraints-03-bounded-execution",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "Source Baselines byte-identical to Delivery Base",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "guide contains full changed clause guidance",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "golden contains full changed clause guidance",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "_prd.md glossary declarations",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "_techspec.md glossary declarations",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "API Contract 8 Idea Stage Judgment word for word",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "Advisory Judgment changed clause",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "ADR-0201 amendment notice",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "ADR-0403 accepted",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "ADR-0404 accepted",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: roundfix spec judge --stage idea",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: --item <reference>",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: --request <path>",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: shape_open",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: unverified_assumption",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: market_question",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: 0.70",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: 0.30",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: 4,000",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "spec command guide: exit",
+    "pass": true,
+    "detail": ""
+  }
+]

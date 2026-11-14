@@ -1,0 +1,13 @@
+Named failure observed: True
+TestIdeaStageSendsNothingItMustNot
+TestIdeaStageSendsNothingItMustNot/fix
+TestIdeaStageSendsNothingItMustNot/perf
+TestIdeaStageSendsNothingItMustNot/refactor
+TestIdeaStageSendsNothingItMustNot/finding
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x371dc8557df0 Verdict: Answers:[] Model:<nil> Transport:0x371dc820f180 KeyVariable:0x371dc8557ba0 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x371dc8557df0 want=the item is typed fix; only a feature is judged for the Idea stage
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x371dc8030a80 Verdict: Answers:[] Model:<nil> Transport:0x371dc820f980 KeyVariable:0x371dc8030910 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x371dc8030a80 want=the item is typed perf; only a feature is judged for the Idea stage
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x371dc80314c0 Verdict: Answers:[] Model:<nil> Transport:0x371dc84c1500 KeyVariable:0x371dc8031350 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x371dc80314c0 want=the item is typed refactor; only a feature is judged for the Idea stage
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x371dc7fcc160 Verdict: Answers:[] Model:<nil> Transport:0x371dc84c1c40 KeyVariable:0x371dc8031ea0 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x371dc7fcc160 want=the item is typed finding; only a feature is judged for the Idea stage
+FAIL
+FAIL	roundfix/internal/judge	0.315s
+FAIL

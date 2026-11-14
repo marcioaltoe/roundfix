@@ -1,0 +1,53 @@
+Exactly three measured criterion ids: PASS 
+Thresholds and excluded types: PASS 
+No second Go copy of measured text: PASS []
+Only allowed CLI calls JudgeIdeaStage: PASS ['internal/cli/spec_judge_idea.go']
+Semantic-record/Idea mention search (generic artifact archival is not a verdict consumer):
+internal/judge/idea_stage.go:42: func IdeaStageVerdict(answers []string) string {
+internal/judge/idea_stage.go:182: report.State, report.Reason, report.Verdict = "answered", nil, IdeaStageVerdict(answers)
+No Go Idea/record read introduced: PASS 
+Mirror brainstorming/SKILL.md: PASS 
+Mirror write-idea/SKILL.md: PASS 
+Mirror write-prd/SKILL.md: PASS 
+Mirror roundfix/SKILL.md: PASS 
+Mirror write-idea/references/idea-template.md: PASS 
+Mirror write-prd/references/prd-template.md: PASS 
+Mirror roundfix/references/modes.md: PASS 
+Mirror roundfix/references/spec.md: PASS 
+API Contract 6 full authored section brainstorming/SKILL.md: PASS 
+API Contract 6 full authored section write-idea/SKILL.md: PASS 
+API Contract 6 full authored section write-prd/SKILL.md: PASS 
+API Contract 6 full authored section roundfix/references/spec.md: PASS 
+API Contract 7 full template write-idea/references/idea-template.md: PASS 
+API Contract 7 full template write-prd/references/prd-template.md: PASS 
+All other module rules unchanged: PASS 
+All other route clauses unchanged: PASS 
+Same route clause ids: PASS 
+API Contract 5 clause.spec.routing-01-large-initiative: PASS 
+Rendered full clause clause.spec.routing-01-large-initiative in docs/agents/spec-routing.md: PASS 
+Rendered full clause clause.spec.routing-01-large-initiative in internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md: PASS 
+API Contract 5 clause.spec.routing-02-standard-feature: PASS 
+Rendered full clause clause.spec.routing-02-standard-feature in docs/agents/spec-routing.md: PASS 
+Rendered full clause clause.spec.routing-02-standard-feature in internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md: PASS 
+API Contract 5 clause.spec.routing-05-task-graph: PASS 
+Rendered full clause clause.spec.routing-05-task-graph in docs/agents/spec-routing.md: PASS 
+Rendered full clause clause.spec.routing-05-task-graph in internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md: PASS 
+All Source Baseline bytes unchanged: PASS 
+API Contract 8 complete new term: PASS 
+API Contract 8 changed Advisory Judgment: PASS 
+_prd.md glossary declaration: PASS 
+_techspec.md glossary declaration: PASS 
+API Contract 9 notice: PASS 
+ADR-0403 accepted: PASS 
+ADR-0404 accepted: PASS 
+Guide documents --stage idea: PASS 
+Guide documents --item: PASS 
+Guide documents --request: PASS 
+Guide documents 4,000: PASS 
+Guide documents shape_open: PASS 
+Guide documents unverified_assumption: PASS 
+Guide documents market_question: PASS 
+Guide documents 0.70: PASS 
+Guide documents 0.30: PASS 
+Guide documents exit `2`: PASS 
+Guide documents exits `0`: PASS 

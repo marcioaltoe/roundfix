@@ -1,0 +1,27 @@
+$ go test -count=1 -timeout 20m -v -run ^TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage$ ./skills
+exit: 1
+stdout:
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== PAUSE TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== CONT  TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_criteria
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_verdict_rules
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/request_file_with_what_reaches_the_judge
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/never_present_your_own_answers_as_the_judge's
+    idea_stage_authoring_test.go:57: ../.agents/skills/write-prd/SKILL.md: phrase "Never present your own answers as the judge's" occurs 0 times; want once
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/dismissal_option
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/waiting_rule
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/every_key_of_the_record_in_both_templates
+--- FAIL: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage (0.01s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_criteria (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_verdict_rules (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/request_file_with_what_reaches_the_judge (0.00s)
+    --- FAIL: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/never_present_your_own_answers_as_the_judge's (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/dismissal_option (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/waiting_rule (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/every_key_of_the_record_in_both_templates (0.00s)
+FAIL
+FAIL	roundfix/skills	0.291s
+FAIL
+
+stderr:

@@ -1,0 +1,11 @@
+--- internal/judge/client.go
++++ internal/judge/client.go
+@@ -21,7 +21,7 @@
+ 	}
+ 	return Transport{}, "", "", false
+ }
+-func (q Questions) pinned(model string) bool { return q.AcceptedModel.MatchString(model) }
++func (q Questions) pinned(model string) bool { return true }
+ 
+ type answer struct {
+ 	Type          string             `json:"type"`

@@ -1,0 +1,11 @@
+--- internal/cli/spec_judge_idea.go
++++ internal/cli/spec_judge_idea.go
+@@ -194,7 +194,7 @@
+ 		for _, criterion := range doc.Criteria {
+ 			fmt.Fprintf(&out, "  %s: %s\n    yes: %s\n    no: %s\n", criterion.ID, criterion.Summary, criterion.Yes, criterion.No)
+ 		}
+-		fmt.Fprintf(&out, "%s.\nRecord:\n  - item: %s\n  - judged-by: agent (%s)\n", rule, doc.Item.Ref, *doc.Reason)
++		fmt.Fprintf(&out, "%s.\nRecord:\n  - item: %s\n  - judged-by: judge (%s)\n", rule, doc.Item.Ref, *doc.Reason)
+ 	}
+ 	if doc.Calls > 0 {
+ 		model := ""

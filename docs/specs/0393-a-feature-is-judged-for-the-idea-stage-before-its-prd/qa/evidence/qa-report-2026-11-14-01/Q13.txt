@@ -1,0 +1,7 @@
+$ ./bin/roundfix spec judge --stage idea
+exit: 2
+stdout:
+
+stderr:
+roundfix: spec judge failed: --stage idea requires --item, the reference of the item to judge, or --request, a file that holds the request
+Run 'roundfix spec judge --help' for usage.

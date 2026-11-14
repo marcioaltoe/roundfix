@@ -1,0 +1,1918 @@
+$ go test -count=1 -timeout 30m -v ./skills
+exit: 0
+stdout:
+=== RUN   TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== PAUSE TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== RUN   TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+=== PAUSE TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase
+=== RUN   TestInspectAuthoringNamesEachProblem
+=== PAUSE TestInspectAuthoringNamesEachProblem
+=== RUN   TestInspectAuthoringNamesAReadFailureAsItself
+=== PAUSE TestInspectAuthoringNamesAReadFailureAsItself
+=== RUN   TestNoShippedSkillDeclaresAModelOrEffort
+=== PAUSE TestNoShippedSkillDeclaresAModelOrEffort
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines
+=== PAUSE TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines
+=== RUN   TestGeneratedSubagentsMatchTheirContract
+=== PAUSE TestGeneratedSubagentsMatchTheirContract
+=== RUN   TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+=== PAUSE TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+=== RUN   TestInstallAppliesTheDeclarationAndASecondRunChangesNothing
+=== PAUSE TestInstallAppliesTheDeclarationAndASecondRunChangesNothing
+=== RUN   TestInstallRefusesAFileItDidNotGenerate
+=== PAUSE TestInstallRefusesAFileItDidNotGenerate
+=== RUN   TestInstallRemovesOnlyItsOwnLeftOverSubagents
+=== PAUSE TestInstallRemovesOnlyItsOwnLeftOverSubagents
+=== RUN   TestUserLevelTargetsReceiveNoHeader
+=== PAUSE TestUserLevelTargetsReceiveNoHeader
+=== RUN   TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository
+=== PAUSE TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository
+=== RUN   TestBaselineDocumentationContractThinSkill
+=== PAUSE TestBaselineDocumentationContractThinSkill
+=== RUN   TestBaselineSkillContract
+=== PAUSE TestBaselineSkillContract
+=== RUN   TestNoPythonBaselineRuntime
+=== PAUSE TestNoPythonBaselineRuntime
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== PAUSE TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== RUN   TestThinSetupSkill
+=== PAUSE TestThinSetupSkill
+=== RUN   TestAuthorialSkillSync
+=== PAUSE TestAuthorialSkillSync
+=== RUN   TestAuthorialSkillSyncUpdateModeRoundTrip
+=== PAUSE TestAuthorialSkillSyncUpdateModeRoundTrip
+=== RUN   TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+=== PAUSE TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+=== RUN   TestWritePRDProjectConstraints
+=== PAUSE TestWritePRDProjectConstraints
+=== RUN   TestWriteTechSpecProjectConstraints
+=== PAUSE TestWriteTechSpecProjectConstraints
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== PAUSE TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== RUN   TestTaskTemplateStatesTheStatusPreservingVerificationForm
+=== PAUSE TestTaskTemplateStatesTheStatusPreservingVerificationForm
+=== RUN   TestTaskTemplateStatesTheWrapTolerantPhraseForm
+=== PAUSE TestTaskTemplateStatesTheWrapTolerantPhraseForm
+=== RUN   TestWriteTasksSkillStatesTheDeclaredPathRules
+=== PAUSE TestWriteTasksSkillStatesTheDeclaredPathRules
+=== RUN   TestAuthoringSkillsStateTheProofRules
+=== PAUSE TestAuthoringSkillsStateTheProofRules
+=== RUN   TestSpecReferenceLifecycleSkillContracts
+=== PAUSE TestSpecReferenceLifecycleSkillContracts
+=== RUN   TestProjectConstraintTaskGate
+=== PAUSE TestProjectConstraintTaskGate
+=== RUN   TestProjectConstraintImplementationGate
+=== PAUSE TestProjectConstraintImplementationGate
+=== RUN   TestReviewRequestContract
+=== PAUSE TestReviewRequestContract
+=== RUN   TestProjectConstraintPRDGate
+=== PAUSE TestProjectConstraintPRDGate
+=== RUN   TestProjectConstraintTechSpecGate
+=== PAUSE TestProjectConstraintTechSpecGate
+=== RUN   TestArchiveSpecContract
+=== PAUSE TestArchiveSpecContract
+=== RUN   TestProjectConstraintQAGate
+=== PAUSE TestProjectConstraintQAGate
+=== RUN   TestProjectConstraintJourney
+=== PAUSE TestProjectConstraintJourney
+=== RUN   TestToolingAuthorizationJourney
+=== PAUSE TestToolingAuthorizationJourney
+=== RUN   TestLegacySpecConstraintExemption
+=== PAUSE TestLegacySpecConstraintExemption
+=== RUN   TestAuthoringConstraintOwnership
+=== PAUSE TestAuthoringConstraintOwnership
+=== RUN   TestUpstreamADRFormatUnchanged
+=== PAUSE TestUpstreamADRFormatUnchanged
+=== RUN   TestUpstreamManagedSkillLockNamesAnEditedTree
+=== PAUSE TestUpstreamManagedSkillLockNamesAnEditedTree
+=== RUN   TestRepositoryCopyIncludesNewSourceFiles
+=== PAUSE TestRepositoryCopyIncludesNewSourceFiles
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== PAUSE TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== RUN   TestTheFollowUpModeRunsTheIdeaStageJudgment
+=== PAUSE TestTheFollowUpModeRunsTheIdeaStageJudgment
+=== RUN   TestTheSpecReferenceDocumentsTheIdeaStage
+=== PAUSE TestTheSpecReferenceDocumentsTheIdeaStage
+=== RUN   TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+=== PAUSE TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+=== RUN   TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+=== PAUSE TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+=== RUN   TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+=== PAUSE TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+=== RUN   TestRecordingRaisesAVersionRecordedWithOtherContent
+=== PAUSE TestRecordingRaisesAVersionRecordedWithOtherContent
+=== RUN   TestRecordingRaisesAVersionBelowTheHighestRecorded
+=== PAUSE TestRecordingRaisesAVersionBelowTheHighestRecorded
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== PAUSE TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+=== PAUSE TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+=== RUN   TestAnUnrecordedOwnedSkillVersionIsRefused
+=== PAUSE TestAnUnrecordedOwnedSkillVersionIsRefused
+=== RUN   TestRecordingNeverReplacesARecordedVersion
+=== PAUSE TestRecordingNeverReplacesARecordedVersion
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== RUN   TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== PAUSE TestCheckRepositoryReadsASkillsLockOfVersionTwo
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== PAUSE TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== RUN   TestCheckRepositoryMatchesRealRepository
+=== PAUSE TestCheckRepositoryMatchesRealRepository
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext
+=== PAUSE TestCheckRepositoryHonorsPreCanceledContext
+=== RUN   TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== PAUSE TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== RUN   TestCheckRepositoryWithExternalUsesExplicitRequirement
+=== PAUSE TestCheckRepositoryWithExternalUsesExplicitRequirement
+=== RUN   TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== PAUSE TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== RUN   TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+=== PAUSE TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+=== RUN   TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== PAUSE TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== PAUSE TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== PAUSE TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== RUN   TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+=== PAUSE TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+=== RUN   TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== PAUSE TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== PAUSE TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryWrapsFilesystemCauses
+=== PAUSE TestCheckRepositoryWrapsFilesystemCauses
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== PAUSE TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== RUN   TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+=== PAUSE TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+=== RUN   TestCouncilIsNotARoundfixOwnedSkill
+--- PASS: TestCouncilIsNotARoundfixOwnedSkill (0.00s)
+=== RUN   TestImplementSpecIsNotARoundfixOwnedSkill
+=== PAUSE TestImplementSpecIsNotARoundfixOwnedSkill
+=== RUN   TestRoundfixSkillIndexNamesEveryReference
+=== PAUSE TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexLinksResolve
+=== PAUSE TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== PAUSE TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestInstallWritesEveryRoundfixReference
+=== PAUSE TestInstallWritesEveryRoundfixReference
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== RUN   TestRoundfixWordingIsSatisfiedByAReferenceFile
+--- PASS: TestRoundfixWordingIsSatisfiedByAReferenceFile (0.00s)
+=== RUN   TestRoundfixWordingReportsAPhraseMissingFromEveryFile
+--- PASS: TestRoundfixWordingReportsAPhraseMissingFromEveryFile (0.00s)
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference/reference_project
+=== RUN   TestRoundfixWordingReportsBannedBrandingInAReference/Reference_Project
+--- PASS: TestRoundfixWordingReportsBannedBrandingInAReference (0.00s)
+    --- PASS: TestRoundfixWordingReportsBannedBrandingInAReference/reference_project (0.00s)
+    --- PASS: TestRoundfixWordingReportsBannedBrandingInAReference/Reference_Project (0.00s)
+=== RUN   TestSettlementGuidanceIsOneTable
+--- PASS: TestSettlementGuidanceIsOneTable (0.00s)
+=== RUN   TestTaskAuthoringGuidanceNamesDeclarations
+--- PASS: TestTaskAuthoringGuidanceNamesDeclarations (0.00s)
+=== RUN   TestAnAgentMayStartTheSetupSkill
+=== PAUSE TestAnAgentMayStartTheSetupSkill
+=== RUN   TestSkillFolderHashMatchesExternalCompatibilityFixture
+=== PAUSE TestSkillFolderHashMatchesExternalCompatibilityFixture
+=== RUN   TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== PAUSE TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== PAUSE TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== RUN   TestSkillFolderHashWrapsMissingRootError
+=== PAUSE TestSkillFolderHashWrapsMissingRootError
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext
+=== PAUSE TestSkillFolderHashHonorsPreCanceledContext
+=== RUN   TestSkillFolderHashStopsAfterCancellationDuringRead
+=== PAUSE TestSkillFolderHashStopsAfterCancellationDuringRead
+=== RUN   TestCheckValidatesRoundfixSkillArtifacts
+=== PAUSE TestCheckValidatesRoundfixSkillArtifacts
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== PAUSE TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== PAUSE TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== RUN   TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+=== PAUSE TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+=== RUN   TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+=== PAUSE TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+=== RUN   TestFilesIncludeEveryOwnedSkill
+=== PAUSE TestFilesIncludeEveryOwnedSkill
+=== RUN   TestFrontmatterName
+=== PAUSE TestFrontmatterName
+=== RUN   TestRecommendedListsExternallyManagedSkills
+=== PAUSE TestRecommendedListsExternallyManagedSkills
+=== RUN   TestRecommendedSkillsMatchLock
+=== PAUSE TestRecommendedSkillsMatchLock
+=== RUN   TestCheckRejectsExecutableSetupEngineArtifacts
+=== PAUSE TestCheckRejectsExecutableSetupEngineArtifacts
+=== RUN   TestInstallCopiesSkillsToSupportedTargetDirectories
+=== PAUSE TestInstallCopiesSkillsToSupportedTargetDirectories
+=== RUN   TestInstallCopiesSkillsToProjectDirectoryByDefault
+=== PAUSE TestInstallCopiesSkillsToProjectDirectoryByDefault
+=== RUN   TestInstallRejectsUnsupportedTarget
+=== PAUSE TestInstallRejectsUnsupportedTarget
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== PAUSE TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+=== PAUSE TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+=== RUN   TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce
+=== PAUSE TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce
+=== RUN   TestStaleUserSkillCopiesWritesNothing
+=== PAUSE TestStaleUserSkillCopiesWritesNothing
+=== RUN   TestUserSkillDirectoriesFollowTheInstallTargetVariables
+=== PAUSE TestUserSkillDirectoriesFollowTheInstallTargetVariables
+=== RUN   TestReportedUserSkillCopiesNameACurrentCopyThatHidesAHeader
+=== PAUSE TestReportedUserSkillCopiesNameACurrentCopyThatHidesAHeader
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy
+=== PAUSE TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy
+=== RUN   TestTheConcreteContractGuideShipsAtTheHorizonPath
+--- PASS: TestTheConcreteContractGuideShipsAtTheHorizonPath (0.00s)
+=== RUN   TestTheGuideExamplesAreReadByTheCheck
+--- PASS: TestTheGuideExamplesAreReadByTheCheck (0.00s)
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms
+=== PAUSE TestTheGlossaryGuidesStateTheDefinitionForms
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant
+=== CONT  TestTheSettlementSkillsNameTheNetworkProhibitedRow
+=== CONT  TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName
+=== CONT  TestSkillFolderHashMatchesExternalCompatibilityFixture
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3
+--- PASS: TestTheSettlementSkillsNameTheNetworkProhibitedRow (0.00s)
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== RUN   TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== PAUSE TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines
+--- PASS: TestSkillFolderHashMatchesExternalCompatibilityFixture (0.00s)
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+=== RUN   TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+=== PAUSE TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== CONT  TestTheGlossaryGuidesStateTheDefinitionForms
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== RUN   TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== PAUSE TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== CONT  TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/reads_five_directories
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/names_hidden_headers
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/keeps_exit_codes
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/names_removal_first
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/changes_nothing_unasked
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/writes_outside_the_repository
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/removal_lists_first
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/reads_five_directories
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/names_hidden_headers
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/keeps_exit_codes
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/names_removal_first
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/changes_nothing_unasked
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/writes_outside_the_repository
+=== RUN   TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/removal_lists_first
+--- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy (0.00s)
+    --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/reads_five_directories (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/names_hidden_headers (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/keeps_exit_codes (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/names_removal_first (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/changes_nothing_unasked (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/writes_outside_the_repository (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/canonical/removal_lists_first (0.00s)
+    --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/reads_five_directories (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/names_hidden_headers (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/keeps_exit_codes (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/names_removal_first (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/changes_nothing_unasked (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/writes_outside_the_repository (0.00s)
+        --- PASS: TestTheRoundfixSkillOffersTheRemovalOfAUserLevelCopy/embedded/removal_lists_first (0.00s)
+=== CONT  TestReportedUserSkillCopiesNameACurrentCopyThatHidesAHeader
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md
+=== RUN   TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md
+--- PASS: TestTheGlossaryGuidesStateTheDefinitionForms (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/write-prd/references/glossary.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/write-prd/references/glossary.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/.agents/skills/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheGlossaryGuidesStateTheDefinitionForms/skills/roundfix/references/spec.md (0.00s)
+=== CONT  TestUserSkillDirectoriesFollowTheInstallTargetVariables
+--- PASS: TestUserSkillDirectoriesFollowTheInstallTargetVariables (0.00s)
+=== CONT  TestStaleUserSkillCopiesWritesNothing
+--- PASS: TestStaleUserSkillCopiesWritesNothing (0.00s)
+=== CONT  TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce
+--- PASS: TestReportedUserSkillCopiesNameACurrentCopyThatHidesAHeader (0.01s)
+=== CONT  TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory
+--- PASS: TestStaleUserSkillCopiesFollowsLinksAndReportsAFolderOnce (0.00s)
+=== CONT  TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks
+=== RUN   TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01
+--- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks (0.00s)
+    --- PASS: TestTheWriteTasksGuidesListARemovedFileOnlyUnderDeletes/skills/write-tasks#01 (0.00s)
+=== CONT  TestInstallRejectsUnsupportedTarget
+--- PASS: TestInstallRejectsUnsupportedTarget (0.00s)
+=== CONT  TestInstallCopiesSkillsToProjectDirectoryByDefault
+--- PASS: TestStaleUserSkillCopiesReportsAnOlderCopyInEveryUserDirectory (0.01s)
+=== CONT  TestInstallCopiesSkillsToSupportedTargetDirectories
+--- PASS: TestInstallCopiesSkillsToProjectDirectoryByDefault (0.01s)
+=== CONT  TestFrontmatterName
+=== RUN   TestFrontmatterName/valid
+=== RUN   TestFrontmatterName/no_frontmatter
+=== RUN   TestFrontmatterName/unterminated
+=== RUN   TestFrontmatterName/missing_name
+--- PASS: TestFrontmatterName (0.00s)
+    --- PASS: TestFrontmatterName/valid (0.00s)
+    --- PASS: TestFrontmatterName/no_frontmatter (0.00s)
+    --- PASS: TestFrontmatterName/unterminated (0.00s)
+    --- PASS: TestFrontmatterName/missing_name (0.00s)
+=== CONT  TestCheckRejectsExecutableSetupEngineArtifacts
+--- PASS: TestCheckRejectsExecutableSetupEngineArtifacts (0.00s)
+=== CONT  TestRecommendedSkillsMatchLock
+--- PASS: TestRecommendedSkillsMatchLock (0.00s)
+=== CONT  TestRecommendedListsExternallyManagedSkills
+--- PASS: TestRecommendedListsExternallyManagedSkills (0.00s)
+=== CONT  TestFilesIncludeEveryOwnedSkill
+--- PASS: TestFilesIncludeEveryOwnedSkill (0.00s)
+=== CONT  TestCheckOpenAIManifestAcceptsNestedRuntimeHints
+--- PASS: TestCheckOpenAIManifestAcceptsNestedRuntimeHints (0.00s)
+=== CONT  TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand
+--- PASS: TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand (0.00s)
+=== CONT  TestOwnedSkillBundleReadinessKeepsStatesDistinct
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/satisfies
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/below
+=== RUN   TestOwnedSkillBundleReadinessKeepsStatesDistinct/unversioned
+--- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/satisfies (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/below (0.00s)
+    --- PASS: TestOwnedSkillBundleReadinessKeepsStatesDistinct/unversioned (0.00s)
+=== CONT  TestOwnedSkillContractRejectsSetAndVersionDisagreement
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/missing_owned_skill
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/unexpected_owned_skill
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/duplicate_owned_skill
+=== RUN   TestOwnedSkillContractRejectsSetAndVersionDisagreement/owned_version_below_minimum
+--- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/missing_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/unexpected_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/duplicate_owned_skill (0.00s)
+    --- PASS: TestOwnedSkillContractRejectsSetAndVersionDisagreement/owned_version_below_minimum (0.00s)
+=== CONT  TestCheckValidatesRoundfixSkillArtifacts
+--- PASS: TestCheckValidatesRoundfixSkillArtifacts (0.00s)
+=== CONT  TestSkillFolderHashStopsAfterCancellationDuringRead
+--- PASS: TestSkillFolderHashStopsAfterCancellationDuringRead (0.00s)
+=== CONT  TestSkillFolderHashHonorsPreCanceledContext
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext/canceled
+=== RUN   TestSkillFolderHashHonorsPreCanceledContext/deadline_exceeded
+--- PASS: TestSkillFolderHashHonorsPreCanceledContext (0.00s)
+    --- PASS: TestSkillFolderHashHonorsPreCanceledContext/canceled (0.00s)
+    --- PASS: TestSkillFolderHashHonorsPreCanceledContext/deadline_exceeded (0.00s)
+=== CONT  TestSkillFolderHashWrapsMissingRootError
+--- PASS: TestSkillFolderHashWrapsMissingRootError (0.00s)
+=== CONT  TestSkillFolderHashRejectsUnsafeFilesystemShapes
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/root_is_regular_file
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/file_symlink
+=== RUN   TestSkillFolderHashRejectsUnsafeFilesystemShapes/directory_symlink
+--- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes (0.00s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/root_is_regular_file (0.00s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/file_symlink (0.00s)
+    --- PASS: TestSkillFolderHashRejectsUnsafeFilesystemShapes/directory_symlink (0.00s)
+=== CONT  TestSkillFolderHashExcludesMetadataAndDependencyDirectories
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version
+--- PASS: TestSkillFolderHashExcludesMetadataAndDependencyDirectories (0.00s)
+=== CONT  TestAnAgentMayStartTheSetupSkill
+=== RUN   TestAnAgentMayStartTheSetupSkill/canonical
+=== PAUSE TestAnAgentMayStartTheSetupSkill/canonical
+=== RUN   TestAnAgentMayStartTheSetupSkill/shipped
+=== PAUSE TestAnAgentMayStartTheSetupSkill/shipped
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+=== RUN   TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== PAUSE TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== RUN   TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== PAUSE TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== RUN   TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== PAUSE TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+=== RUN   TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== PAUSE TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== RUN   TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== PAUSE TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== RUN   TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== PAUSE TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== RUN   TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== PAUSE TestTheFollowUpModeRunsItsStepsInOrder/embedded
+=== CONT  TestInstallWritesEveryRoundfixReference
+--- PASS: TestInstallWritesEveryRoundfixReference (0.01s)
+=== CONT  TestRoundfixSkillEntryFileStaysWithinItsBudget
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical
+=== RUN   TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded
+--- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/canonical (0.00s)
+    --- PASS: TestRoundfixSkillEntryFileStaysWithinItsBudget/embedded (0.00s)
+=== CONT  TestRoundfixSkillIndexLinksResolve
+=== RUN   TestRoundfixSkillIndexLinksResolve/embedded
+=== RUN   TestRoundfixSkillIndexLinksResolve/canonical
+--- PASS: TestRoundfixSkillIndexLinksResolve (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/embedded (0.00s)
+    --- PASS: TestRoundfixSkillIndexLinksResolve/canonical (0.00s)
+=== CONT  TestRoundfixSkillIndexNamesEveryReference
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/canonical
+=== RUN   TestRoundfixSkillIndexNamesEveryReference/embedded
+--- PASS: TestRoundfixSkillIndexNamesEveryReference (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/canonical (0.00s)
+    --- PASS: TestRoundfixSkillIndexNamesEveryReference/embedded (0.00s)
+=== CONT  TestImplementSpecIsNotARoundfixOwnedSkill
+--- PASS: TestImplementSpecIsNotARoundfixOwnedSkill (0.00s)
+=== CONT  TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering
+--- PASS: TestInstallCopiesSkillsToSupportedTargetDirectories (0.03s)
+=== CONT  TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents/skills
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version
+--- PASS: TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering (0.06s)
+=== CONT  TestCheckRepositoryWrapsFilesystemCauses
+--- PASS: TestCheckRepositoryWrapsFilesystemCauses (0.00s)
+=== CONT  TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version
+=== RUN   TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_skills-lock.json
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock
+=== RUN   TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version
+--- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets (0.11s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents (0.04s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_.agents/skills (0.04s)
+    --- PASS: TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets/symlinked_skills-lock.json (0.04s)
+=== CONT  TestRepositoryReadinessNeverComparesThirdPartySkillVersions
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry
+--- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName (0.17s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/version_3 (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/fractional_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/text_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/null_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/boolean_version (0.03s)
+    --- PASS: TestCheckRepositoryRefusesAnUnsupportedSkillsLockVersionByName/missing_version (0.03s)
+=== CONT  TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries
+--- PASS: TestRepositoryReadinessNeverComparesThirdPartySkillVersions (0.02s)
+=== CONT  TestCheckRepositoryClassifiesMissingSharedSkillDirectories
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry
+--- PASS: TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries (0.02s)
+=== CONT  TestCheckRepositoryClassifiesMissingAndOutdatedSkills
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_owned
+=== RUN   TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents/skills
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_external
+--- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories (0.04s)
+    --- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingSharedSkillDirectories/missing_.agents/skills (0.02s)
+=== CONT  TestCheckRepositoryWithExternalKeepsOwnedValidation
+=== RUN   TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/unversioned_owned_SKILL
+--- PASS: TestCheckRepositoryWithExternalKeepsOwnedValidation (0.02s)
+=== CONT  TestCheckRepositoryMatchesExternalCompatibilityEntryPoint
+--- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames (0.13s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_lock (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/malformed_lock (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/wrong_version (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/missing_required_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/null_required_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/scalar_unrelated_entry (0.02s)
+    --- PASS: TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames/unreadable_lock_artifact_shape (0.02s)
+=== CONT  TestCheckRepositoryWithExternalAcceptsEmptyRequirement
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/owned_version_below_minimum
+--- PASS: TestCheckRepositoryWithExternalAcceptsEmptyRequirement (0.02s)
+=== CONT  TestCheckRepositoryWithExternalUsesExplicitRequirement
+--- PASS: TestCheckRepositoryMatchesExternalCompatibilityEntryPoint (0.03s)
+=== CONT  TestCheckRepositoryReportsReadyRequiredSetWithoutMutation
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_owned_content_does_not_gate_compatibility
+--- PASS: TestCheckRepositoryWithExternalUsesExplicitRequirement (0.02s)
+=== CONT  TestCheckRepositoryHonorsPreCanceledContext
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext/canceled
+=== RUN   TestCheckRepositoryHonorsPreCanceledContext/deadline_exceeded
+--- PASS: TestCheckRepositoryHonorsPreCanceledContext (0.00s)
+    --- PASS: TestCheckRepositoryHonorsPreCanceledContext/canceled (0.00s)
+    --- PASS: TestCheckRepositoryHonorsPreCanceledContext/deadline_exceeded (0.00s)
+=== CONT  TestCheckRepositoryMatchesRealRepository
+--- PASS: TestCheckRepositoryMatchesRealRepository (0.00s)
+=== CONT  TestSpecReferenceLifecycleSkillContracts
+=== RUN   TestSpecReferenceLifecycleSkillContracts/archive_validation
+=== RUN   TestSpecReferenceLifecycleSkillContracts/PRD_adoption
+=== RUN   TestSpecReferenceLifecycleSkillContracts/idea_links
+=== RUN   TestSpecReferenceLifecycleSkillContracts/TechSpec_links
+=== RUN   TestSpecReferenceLifecycleSkillContracts/Task_links
+--- PASS: TestSpecReferenceLifecycleSkillContracts (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/archive_validation (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/PRD_adoption (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/idea_links (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/TechSpec_links (0.00s)
+    --- PASS: TestSpecReferenceLifecycleSkillContracts/Task_links (0.00s)
+=== CONT  TestCheckRepositoryReadsASkillsLockOfVersionTwo
+--- PASS: TestCheckRepositoryReportsReadyRequiredSetWithoutMutation (0.03s)
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+=== RUN   TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== PAUSE TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/doubled-instruction
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/doubled-instruction
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/one-repeated-word
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/one-repeated-word
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/command-listing
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/command-listing
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/table-rows
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/table-rows
+=== RUN   TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/single-instruction
+=== PAUSE TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/single-instruction
+=== CONT  TestRecordingNeverReplacesARecordedVersion
+=== RUN   TestRecordingNeverReplacesARecordedVersion/changed_digest
+=== RUN   TestRecordingNeverReplacesARecordedVersion/lower_unrecorded_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/descending_versions
+=== RUN   TestRecordingNeverReplacesARecordedVersion/duplicate_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/unchanged_digest
+=== RUN   TestRecordingNeverReplacesARecordedVersion/higher_version
+=== RUN   TestRecordingNeverReplacesARecordedVersion/no_longer_shipped
+--- PASS: TestRecordingNeverReplacesARecordedVersion (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/changed_digest (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/lower_unrecorded_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/descending_versions (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/duplicate_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/unchanged_digest (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/higher_version (0.00s)
+    --- PASS: TestRecordingNeverReplacesARecordedVersion/no_longer_shipped (0.00s)
+=== CONT  TestAnUnrecordedOwnedSkillVersionIsRefused
+--- PASS: TestAnUnrecordedOwnedSkillVersionIsRefused (0.00s)
+=== CONT  TestAChangedOwnedSkillUnderARecordedVersionIsRefused
+--- PASS: TestAChangedOwnedSkillUnderARecordedVersionIsRefused (0.00s)
+=== CONT  TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/colliding_version
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/removed_non-identity_owned_content_does_not_gate_compatibility
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/stale_version
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/different_version_lines
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_body
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_reference
+=== RUN   TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/extra_mirror_file
+--- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror (0.02s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/colliding_version (0.00s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/stale_version (0.00s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/different_version_lines (0.00s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_body (0.00s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/drifted_reference (0.00s)
+    --- PASS: TestRecordingRewritesBothVersionFieldsOfASkillAndItsMirror/extra_mirror_file (0.00s)
+=== CONT  TestRecordingRaisesAVersionBelowTheHighestRecorded
+--- PASS: TestRecordingRaisesAVersionBelowTheHighestRecorded (0.00s)
+=== CONT  TestRecordingRaisesAVersionRecordedWithOtherContent
+--- PASS: TestRecordingRaisesAVersionRecordedWithOtherContent (0.00s)
+=== CONT  TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/changed_external_file
+--- PASS: TestAnInstalledOwnedSkillOlderThanTheBundleIsBelow (0.01s)
+=== CONT  TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported
+--- PASS: TestCheckRepositoryReadsASkillsLockOfVersionTwo (0.04s)
+=== CONT  TestTheOwnedSkillMinimumIsTheEmbeddedVersion
+--- PASS: TestAMinimumThatDiffersFromTheEmbeddedVersionIsReported (0.01s)
+=== CONT  TestTheSpecReferenceDocumentsTheIdeaStage
+--- PASS: TestTheSpecReferenceDocumentsTheIdeaStage (0.00s)
+=== CONT  TestTheFollowUpModeRunsTheIdeaStageJudgment
+--- PASS: TestTheFollowUpModeRunsTheIdeaStageJudgment (0.00s)
+=== CONT  TestAuthoringSkillsStateTheProofRules
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_skill
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-techspec_template
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_skill
+=== RUN   TestAuthoringSkillsStateTheProofRules/write-tasks_template
+--- PASS: TestAuthoringSkillsStateTheProofRules (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_skill (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-techspec_template (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_skill (0.00s)
+    --- PASS: TestAuthoringSkillsStateTheProofRules/write-tasks_template (0.00s)
+=== CONT  TestWriteTasksSkillStatesTheDeclaredPathRules
+--- PASS: TestWriteTasksSkillStatesTheDeclaredPathRules (0.00s)
+=== CONT  TestTaskTemplateStatesTheWrapTolerantPhraseForm
+--- PASS: TestTaskTemplateStatesTheWrapTolerantPhraseForm (0.00s)
+=== CONT  TestTaskTemplateStatesTheStatusPreservingVerificationForm
+--- PASS: TestTaskTemplateStatesTheStatusPreservingVerificationForm (0.00s)
+=== CONT  TestAuthoringTemplatesUseTheBoundedFilesLabel
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel/PRD
+=== RUN   TestAuthoringTemplatesUseTheBoundedFilesLabel/TechSpec
+--- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel (0.00s)
+    --- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel/PRD (0.00s)
+    --- PASS: TestAuthoringTemplatesUseTheBoundedFilesLabel/TechSpec (0.00s)
+=== CONT  TestWriteTechSpecProjectConstraints
+--- PASS: TestTheOwnedSkillMinimumIsTheEmbeddedVersion (0.01s)
+=== CONT  TestWritePRDProjectConstraints
+--- PASS: TestWriteTechSpecProjectConstraints (0.00s)
+=== CONT  TestCharacterizationCorporaDoNotRecordOwnedSkillDigests
+--- PASS: TestWritePRDProjectConstraints (0.00s)
+=== CONT  TestAuthorialSkillSyncUpdateModeRoundTrip
+    baseline_skill_contract_test.go:526: regenerated /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestAuthorialSkillSyncUpdateModeRoundTrip1297509755/001/setup.json
+--- PASS: TestAuthorialSkillSyncUpdateModeRoundTrip (0.00s)
+=== CONT  TestAuthorialSkillSync
+=== RUN   TestAuthorialSkillSync/roundfix
+--- PASS: TestCharacterizationCorporaDoNotRecordOwnedSkillDigests (0.00s)
+=== CONT  TestThinSetupSkill
+=== RUN   TestAuthorialSkillSync/write-idea
+=== RUN   TestAuthorialSkillSync/write-prd
+=== RUN   TestAuthorialSkillSync/write-techspec
+--- PASS: TestThinSetupSkill (0.00s)
+=== CONT  TestBaselineDigestTargetReportsMachineReadableOutcomes
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regenerated_artifacts
+=== RUN   TestAuthorialSkillSync/write-tasks
+=== RUN   TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_external_file
+=== RUN   TestAuthorialSkillSync/setup-context-driven
+=== RUN   TestAuthorialSkillSync/implement-task
+=== RUN   TestAuthorialSkillSync/brainstorming
+=== RUN   TestAuthorialSkillSync/business-analyst
+=== RUN   TestAuthorialSkillSync/archive-spec
+=== RUN   TestAuthorialSkillSync/qa-gate
+=== RUN   TestAuthorialSkillSync/evidence-gate
+=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json
+=== RUN   TestAuthorialSkillSync/go.json
+=== RUN   TestAuthorialSkillSync/python.json
+=== RUN   TestAuthorialSkillSync/rust.json
+=== RUN   TestAuthorialSkillSync/typescript.json
+--- PASS: TestAuthorialSkillSync (0.02s)
+    --- PASS: TestAuthorialSkillSync/roundfix (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-idea (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-prd (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- PASS: TestAuthorialSkillSync/implement-task (0.00s)
+    --- PASS: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- PASS: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- PASS: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- PASS: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/go.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/python.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/rust.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/typescript.json (0.00s)
+=== CONT  TestNoPythonBaselineRuntime
+--- PASS: TestNoPythonBaselineRuntime (0.00s)
+=== CONT  TestBaselineSkillContract
+=== RUN   TestBaselineSkillContract/setup-context-driven
+=== RUN   TestBaselineSkillContract/roundfix
+--- PASS: TestBaselineSkillContract (0.00s)
+    --- PASS: TestBaselineSkillContract/setup-context-driven (0.00s)
+    --- PASS: TestBaselineSkillContract/roundfix (0.00s)
+=== CONT  TestBaselineDocumentationContractThinSkill
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== PAUSE TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== RUN   TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== PAUSE TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== RUN   TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+=== PAUSE TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+=== RUN   TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== PAUSE TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== CONT  TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository
+=== RUN   TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/agents_directory_link
+=== RUN   TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/claude_directory_link
+=== RUN   TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/undeclared_removal_through_link
+--- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills (0.17s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_owned (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/missing_external (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/unversioned_owned_SKILL (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/owned_version_below_minimum (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_owned_content_does_not_gate_compatibility (0.03s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/removed_non-identity_owned_content_does_not_gate_compatibility (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/changed_external_file (0.02s)
+    --- PASS: TestCheckRepositoryClassifiesMissingAndOutdatedSkills/added_external_file (0.02s)
+=== CONT  TestUserLevelTargetsReceiveNoHeader
+=== RUN   TestUserLevelTargetsReceiveNoHeader/claude
+--- PASS: TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository (0.01s)
+    --- PASS: TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/agents_directory_link (0.00s)
+    --- PASS: TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/claude_directory_link (0.00s)
+    --- PASS: TestInstallNeverWritesOrRemovesThroughALinkOutOfTheRepository/undeclared_removal_through_link (0.01s)
+=== CONT  TestInstallRemovesOnlyItsOwnLeftOverSubagents
+=== RUN   TestUserLevelTargetsReceiveNoHeader/all
+--- PASS: TestInstallRemovesOnlyItsOwnLeftOverSubagents (0.01s)
+=== CONT  TestInstallRefusesAFileItDidNotGenerate
+=== RUN   TestInstallRefusesAFileItDidNotGenerate/hand_written_file
+=== RUN   TestInstallRefusesAFileItDidNotGenerate/another_keys_marker
+=== RUN   TestInstallRefusesAFileItDidNotGenerate/marker_below_the_first_line
+=== RUN   TestInstallRefusesAFileItDidNotGenerate/undeclared_name
+--- PASS: TestInstallRefusesAFileItDidNotGenerate (0.00s)
+    --- PASS: TestInstallRefusesAFileItDidNotGenerate/hand_written_file (0.00s)
+    --- PASS: TestInstallRefusesAFileItDidNotGenerate/another_keys_marker (0.00s)
+    --- PASS: TestInstallRefusesAFileItDidNotGenerate/marker_below_the_first_line (0.00s)
+    --- PASS: TestInstallRefusesAFileItDidNotGenerate/undeclared_name (0.00s)
+=== CONT  TestInstallAppliesTheDeclarationAndASecondRunChangesNothing
+=== RUN   TestUserLevelTargetsReceiveNoHeader/project_with_dir
+--- PASS: TestInstallAppliesTheDeclarationAndASecondRunChangesNothing (0.02s)
+=== CONT  TestTheResearchSubagentNeverHoldsAShellOrAWriteTool
+--- PASS: TestUserLevelTargetsReceiveNoHeader (0.04s)
+    --- PASS: TestUserLevelTargetsReceiveNoHeader/claude (0.01s)
+    --- PASS: TestUserLevelTargetsReceiveNoHeader/all (0.02s)
+    --- PASS: TestUserLevelTargetsReceiveNoHeader/project_with_dir (0.01s)
+=== CONT  TestGeneratedSubagentsMatchTheirContract
+=== RUN   TestGeneratedSubagentsMatchTheirContract/idea/both
+=== RUN   TestGeneratedSubagentsMatchTheirContract/idea/model
+=== RUN   TestGeneratedSubagentsMatchTheirContract/idea/effort
+=== RUN   TestGeneratedSubagentsMatchTheirContract/idea/neither
+=== RUN   TestGeneratedSubagentsMatchTheirContract/prd/both
+=== RUN   TestGeneratedSubagentsMatchTheirContract/prd/model
+=== RUN   TestGeneratedSubagentsMatchTheirContract/prd/effort
+=== RUN   TestGeneratedSubagentsMatchTheirContract/prd/neither
+=== RUN   TestGeneratedSubagentsMatchTheirContract/techspec/both
+=== RUN   TestGeneratedSubagentsMatchTheirContract/techspec/model
+=== RUN   TestGeneratedSubagentsMatchTheirContract/techspec/effort
+=== RUN   TestGeneratedSubagentsMatchTheirContract/techspec/neither
+=== RUN   TestGeneratedSubagentsMatchTheirContract/tasks/both
+=== RUN   TestGeneratedSubagentsMatchTheirContract/tasks/model
+=== RUN   TestGeneratedSubagentsMatchTheirContract/tasks/effort
+=== RUN   TestGeneratedSubagentsMatchTheirContract/tasks/neither
+=== RUN   TestGeneratedSubagentsMatchTheirContract/research/both
+=== RUN   TestGeneratedSubagentsMatchTheirContract/research/model
+=== RUN   TestGeneratedSubagentsMatchTheirContract/research/effort
+=== RUN   TestGeneratedSubagentsMatchTheirContract/research/neither
+--- PASS: TestGeneratedSubagentsMatchTheirContract (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/idea/both (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/idea/model (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/idea/effort (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/idea/neither (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/prd/both (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/prd/model (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/prd/effort (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/prd/neither (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/techspec/both (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/techspec/model (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/techspec/effort (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/techspec/neither (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/tasks/both (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/tasks/model (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/tasks/effort (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/tasks/neither (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/research/both (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/research/model (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/research/effort (0.00s)
+    --- PASS: TestGeneratedSubagentsMatchTheirContract/research/neither (0.00s)
+=== CONT  TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/plain
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/quoted
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/model_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/effort_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/plain
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/quoted
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/model_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/effort_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/plain
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/quoted
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/model_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/effort_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/plain
+--- PASS: TestTheResearchSubagentNeverHoldsAShellOrAWriteTool (0.00s)
+=== CONT  TestNoShippedSkillDeclaresAModelOrEffort
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/quoted
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/model_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/effort_only
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/model
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/effort
+=== RUN   TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/missing_closing
+--- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/plain (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/quoted (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/model_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/idea/effort_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/plain (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/quoted (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/model_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/prd/effort_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/plain (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/quoted (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/model_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/techspec/effort_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/plain (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/quoted (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/model_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/tasks/effort_only (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/model (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/effort (0.00s)
+    --- PASS: TestTheDeclaredHeaderIsTheShippedSkillPlusTwoLines/missing_closing (0.00s)
+=== CONT  TestInspectAuthoringNamesAReadFailureAsItself
+=== RUN   TestInspectAuthoringNamesAReadFailureAsItself/unreadable_declared
+--- PASS: TestNoShippedSkillDeclaresAModelOrEffort (0.00s)
+=== CONT  TestInspectAuthoringNamesEachProblem
+=== RUN   TestInspectAuthoringNamesEachProblem/clean
+=== RUN   TestInspectAuthoringNamesAReadFailureAsItself/unreadable_leftover
+=== RUN   TestInspectAuthoringNamesEachProblem/header
+=== RUN   TestInspectAuthoringNamesAReadFailureAsItself/agents_directory_link
+=== RUN   TestInspectAuthoringNamesEachProblem/link
+--- PASS: TestInspectAuthoringNamesAReadFailureAsItself (0.03s)
+    --- PASS: TestInspectAuthoringNamesAReadFailureAsItself/unreadable_declared (0.01s)
+    --- PASS: TestInspectAuthoringNamesAReadFailureAsItself/unreadable_leftover (0.01s)
+    --- PASS: TestInspectAuthoringNamesAReadFailureAsItself/agents_directory_link (0.01s)
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== CONT  TestWriteTasksComparesByteInvariantsWithTheDeliveryBase
+--- PASS: TestWriteTasksComparesByteInvariantsWithTheDeliveryBase (0.00s)
+=== CONT  TestProjectConstraintJourney
+=== RUN   TestProjectConstraintJourney/_prd.md
+=== RUN   TestProjectConstraintJourney/_techspec.md
+--- PASS: TestProjectConstraintJourney (0.00s)
+    --- PASS: TestProjectConstraintJourney/_prd.md (0.00s)
+    --- PASS: TestProjectConstraintJourney/_techspec.md (0.00s)
+=== CONT  TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_criteria
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_verdict_rules
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/request_file_with_what_reaches_the_judge
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/never_present_your_own_answers_as_the_judge's
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/dismissal_option
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/waiting_rule
+=== RUN   TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/every_key_of_the_record_in_both_templates
+--- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_criteria (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/three_verdict_rules (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/request_file_with_what_reaches_the_judge (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/never_present_your_own_answers_as_the_judge's (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/dismissal_option (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/waiting_rule (0.00s)
+    --- PASS: TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage/every_key_of_the_record_in_both_templates (0.00s)
+=== CONT  TestCheckRepositoryChecksAnExternalSkillOnlyForPresence
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file
+=== RUN   TestInspectAuthoringNamesEachProblem/missing
+=== RUN   TestInspectAuthoringNamesEachProblem/differs
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file
+=== RUN   TestInspectAuthoringNamesEachProblem/conflict
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link
+=== RUN   TestInspectAuthoringNamesEachProblem/no_declared_entry
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash
+=== RUN   TestInspectAuthoringNamesEachProblem/order
+=== RUN   TestInspectAuthoringNamesEachProblem/nothing_declared
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory
+=== RUN   TestInspectAuthoringNamesEachProblem/missing_skill
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry
+=== RUN   TestInspectAuthoringNamesEachProblem/quoted_header
+=== RUN   TestInspectAuthoringNamesEachProblem/effort_header
+=== RUN   TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link
+=== RUN   TestInspectAuthoringNamesEachProblem/extra_header
+--- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence (0.13s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/changed_file (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/added_file (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/nested_symbolic_link (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/lock_entry_without_computedHash (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/missing_directory (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/no_lock_entry (0.02s)
+    --- PASS: TestCheckRepositoryChecksAnExternalSkillOnlyForPresence/skill_root_is_a_symbolic_link (0.02s)
+=== CONT  TestRepositoryCopyIncludesNewSourceFiles
+=== RUN   TestInspectAuthoringNamesEachProblem/leftovers_without_declaration
+=== RUN   TestInspectAuthoringNamesEachProblem/link/copy
+=== RUN   TestInspectAuthoringNamesEachProblem/link/dangling
+--- PASS: TestRepositoryCopyIncludesNewSourceFiles (0.04s)
+=== CONT  TestUpstreamManagedSkillLockNamesAnEditedTree
+--- PASS: TestUpstreamManagedSkillLockNamesAnEditedTree (0.00s)
+=== CONT  TestProjectConstraintPRDGate
+=== RUN   TestInspectAuthoringNamesEachProblem/link/whole_directory
+--- PASS: TestProjectConstraintPRDGate (0.00s)
+=== CONT  TestProjectConstraintQAGate
+--- PASS: TestProjectConstraintQAGate (0.00s)
+=== CONT  TestArchiveSpecContract
+--- PASS: TestArchiveSpecContract (0.00s)
+=== CONT  TestProjectConstraintTechSpecGate
+--- PASS: TestProjectConstraintTechSpecGate (0.00s)
+=== CONT  TestProjectConstraintImplementationGate
+--- PASS: TestProjectConstraintImplementationGate (0.00s)
+=== CONT  TestReviewRequestContract
+--- PASS: TestInspectAuthoringNamesEachProblem (0.21s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/clean (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/header (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/link (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/missing (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/differs (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/conflict (0.02s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/no_declared_entry (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/order (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/nothing_declared (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/missing_skill (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/quoted_header (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/effort_header (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/extra_header (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/leftovers_without_declaration (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/link/copy (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/link/dangling (0.01s)
+    --- PASS: TestInspectAuthoringNamesEachProblem/link/whole_directory (0.01s)
+=== CONT  TestUpstreamADRFormatUnchanged
+--- PASS: TestUpstreamADRFormatUnchanged (0.01s)
+=== CONT  TestAuthoringConstraintOwnership
+=== RUN   TestAuthoringConstraintOwnership/write-prd
+=== RUN   TestAuthoringConstraintOwnership/write-techspec
+--- PASS: TestAuthoringConstraintOwnership (0.00s)
+    --- PASS: TestAuthoringConstraintOwnership/write-prd (0.00s)
+    --- PASS: TestAuthoringConstraintOwnership/write-techspec (0.00s)
+=== CONT  TestLegacySpecConstraintExemption
+=== RUN   TestLegacySpecConstraintExemption/write-tasks
+=== RUN   TestLegacySpecConstraintExemption/implement-task
+=== RUN   TestLegacySpecConstraintExemption/qa-gate
+--- PASS: TestLegacySpecConstraintExemption (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/write-tasks (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/implement-task (0.00s)
+    --- PASS: TestLegacySpecConstraintExemption/qa-gate (0.00s)
+=== CONT  TestToolingAuthorizationJourney
+=== RUN   TestToolingAuthorizationJourney/exact_bounded_files_are_authorized
+=== RUN   TestToolingAuthorizationJourney/missing_express_authorization_refuses_decomposition
+=== RUN   TestToolingAuthorizationJourney/changed_path_outside_bounds_refuses_settlement
+=== RUN   TestToolingAuthorizationJourney/decomposition_contract
+=== RUN   TestToolingAuthorizationJourney/execution_contract
+=== RUN   TestToolingAuthorizationJourney/QA_contract
+--- PASS: TestToolingAuthorizationJourney (0.01s)
+    --- PASS: TestToolingAuthorizationJourney/exact_bounded_files_are_authorized (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/missing_express_authorization_refuses_decomposition (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/changed_path_outside_bounds_refuses_settlement (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/decomposition_contract (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/execution_contract (0.00s)
+    --- PASS: TestToolingAuthorizationJourney/QA_contract (0.00s)
+=== CONT  TestProjectConstraintTaskGate
+--- PASS: TestReviewRequestContract (0.03s)
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix
+--- PASS: TestProjectConstraintTaskGate (0.01s)
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task
+=== CONT  TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline
+=== CONT  TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup
+--- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry (0.00s)
+    --- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry/baseline (0.00s)
+    --- PASS: TestTheGuidesStateTheUnpinnedOwnedLockEntry/setup (0.00s)
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md
+--- PASS: TestNoOwnedSkillNamesAPersonalAssistant (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/business-analyst (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/evidence-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/brainstorming (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/archive-spec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-techspec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-tasks (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-prd (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/roundfix (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/write-idea (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/implement-task (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/business-analyst (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/qa-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/skills/setup-context-driven (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/setup-context-driven (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-techspec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/evidence-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/brainstorming (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/archive-spec (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-idea (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-tasks (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/write-prd (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/implement-task (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/qa-gate (0.00s)
+    --- PASS: TestNoOwnedSkillNamesAPersonalAssistant/.agents/skills/roundfix (0.00s)
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md
+=== CONT  TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md
+--- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-prd/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/roundfix/references/implement.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/archive-spec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/skills/write-prd/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/roundfix/references/implement.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/archive-spec/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheSpecSkillsAnnounceOnlyWhatTheUserDefines/.agents/skills/write-techspec/SKILL.md (0.00s)
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== CONT  TestAnAgentMayStartTheSetupSkill/canonical
+=== CONT  TestAnAgentMayStartTheSetupSkill/shipped
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical
+--- PASS: TestAnAgentMayStartTheSetupSkill (0.00s)
+    --- PASS: TestAnAgentMayStartTheSetupSkill/canonical (0.00s)
+    --- PASS: TestAnAgentMayStartTheSetupSkill/shipped (0.00s)
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+--- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed (0.00s)
+    --- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical (0.00s)
+    --- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded (0.00s)
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/canonical
+=== CONT  TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded
+--- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/canonical (0.00s)
+    --- PASS: TestTheRoundfixSkillReadsItsModeFromTheRequest/embedded (0.00s)
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical
+=== CONT  TestTheRoundfixSkillNamesNoPersonalAssistant/embedded
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical
+=== CONT  TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded
+--- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/embedded (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesNoPersonalAssistant/canonical (0.00s)
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical
+--- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/canonical (0.00s)
+    --- PASS: TestTheUnattendedModeAsksWithinTheBaselineLimit/embedded (0.00s)
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical
+=== CONT  TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded
+--- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest (0.00s)
+    --- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/canonical (0.00s)
+    --- PASS: TestTheRoundfixSkillSendsOneCompletionNoticePerNoticeRequest/embedded (0.00s)
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded
+=== CONT  TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded
+--- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeAnswersQuestionsAndHoldsOneDeclaredMessagePerSender/embedded (0.00s)
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/canonical
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== CONT  TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical
+=== CONT  TestTheFollowUpModeRunsItsStepsInOrder/embedded
+--- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/embedded (0.00s)
+    --- PASS: TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage/canonical (0.00s)
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical
+--- PASS: TestTheFollowUpModeRunsItsStepsInOrder (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/canonical (0.00s)
+    --- PASS: TestTheFollowUpModeRunsItsStepsInOrder/embedded (0.00s)
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/doubled-instruction
+=== CONT  TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/single-instruction
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/table-rows
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/command-listing
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/one-repeated-word
+=== CONT  TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case
+--- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/doubled-instruction (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/single-instruction (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/table-rows (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/command-listing (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/one-repeated-word (0.00s)
+    --- PASS: TestRepeatedLinePhrasesFindsAPhraseRepeatedAcrossALineBreak/two-words-in-another-case (0.00s)
+=== CONT  TestBaselineDocumentationContractThinSkill/public_CLI_recipes
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes/setup-context-driven
+=== RUN   TestBaselineDocumentationContractThinSkill/public_CLI_recipes/roundfix
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_unchanged_artifacts
+=== CONT  TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees
+--- PASS: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak (0.00s)
+    --- PASS: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/canonical (0.01s)
+    --- PASS: TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak/shipped (0.01s)
+=== CONT  TestBaselineDocumentationContractThinSkill/executable_engine_rejection
+=== CONT  TestBaselineDocumentationContractThinSkill/no_Python_fallback
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/follow_up_gathers_in_step_3
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/follow_up_gathers_in_step_3
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_gathers_delegated_phases
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_gathers_delegated_phases
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_returns_questions
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_returns_questions
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_shows_both_commands
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_shows_both_commands
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_hidden_headers
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_hidden_headers
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_asks_once
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_asks_once
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_writes_outside
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_writes_outside
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_runs_only_approved
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_runs_only_approved
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_unapplied
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_unapplied
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_declares_models
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_declares_models
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_installation_writes
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_installation_writes
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_user_level_receives_nothing
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_user_level_receives_nothing
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_checks_warn
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_checks_warn
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_older_binary
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_older_binary
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_refresh_applies
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_refresh_applies
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_links_the_setup_reference
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_links_the_setup_reference
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/follow_up_gathers_in_step_3
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/follow_up_gathers_in_step_3
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_gathers_delegated_phases
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_gathers_delegated_phases
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_returns_questions
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_returns_questions
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_shows_both_commands
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_shows_both_commands
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_hidden_headers
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_hidden_headers
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_asks_once
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_asks_once
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_writes_outside
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_writes_outside
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_runs_only_approved
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_runs_only_approved
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_unapplied
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_unapplied
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_declares_models
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_declares_models
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_installation_writes
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_installation_writes
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_user_level_receives_nothing
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_user_level_receives_nothing
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_checks_warn
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_checks_warn
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_older_binary
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_older_binary
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_refresh_applies
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_refresh_applies
+=== RUN   TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_links_the_setup_reference
+=== PAUSE TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_links_the_setup_reference
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_research
+--- PASS: TestBaselineDocumentationContractThinSkill (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes (0.00s)
+        --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes/setup-context-driven (0.00s)
+        --- PASS: TestBaselineDocumentationContractThinSkill/public_CLI_recipes/roundfix (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/executable_engine_rejection (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/no_Python_fallback (0.00s)
+    --- PASS: TestBaselineDocumentationContractThinSkill/guidance-only_skill_trees (0.01s)
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_research_start_falls_back
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_keeps_the_synthesis
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_subagent_runs_the_phase
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_subagent_runs_the_phase
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_missing_decision_returns_questions
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_missing_decision_returns_questions
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_typed_skill_runs_on_the_header
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_typed_skill_runs_on_the_header
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/an_activated_skill_does_not_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/an_activated_skill_does_not_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_decisions_are_gathered_first
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_decisions_are_gathered_first
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_the_author
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_the_author
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_start_is_reported
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_start_is_reported
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_research_start_falls_back
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/without_the_subagent_nothing_changes
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/without_the_subagent_nothing_changes
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_research
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_research
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_keeps_the_synthesis
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/research_is_data
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/research_is_data
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_command_sweep_stays
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_command_sweep_stays
+=== RUN   TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_research_start_falls_back
+=== PAUSE TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+=== RUN   TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== PAUSE TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/follow_up_gathers_in_step_3
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_links_the_setup_reference
+--- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md (0.00s)
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_refresh_applies
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_older_binary
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_checks_warn
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_user_level_receives_nothing
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_installation_writes
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_declares_models
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_unapplied
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_runs_only_approved
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_writes_outside
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_asks_once
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_hidden_headers
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_shows_both_commands
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_returns_questions
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_gathers_delegated_phases
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/follow_up_gathers_in_step_3
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_links_the_setup_reference
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_unapplied
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_refresh_applies
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_older_binary
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_checks_warn
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_user_level_receives_nothing
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_installation_writes
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_declares_models
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_hidden_headers
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_runs_only_approved
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_writes_outside
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_asks_once
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_returns_questions
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_shows_both_commands
+=== CONT  TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_gathers_delegated_phases
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_command_sweep_stays
+--- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase (0.00s)
+    --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/follow_up_gathers_in_step_3 (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_links_the_setup_reference (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/baseline_refresh_applies (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_older_binary (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_checks_warn (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_user_level_receives_nothing (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_installation_writes (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_unapplied (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_runs_only_approved (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_writes_outside (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_asks_once (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_names_hidden_headers (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/update_shows_both_commands (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/setup_declares_models (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_returns_questions (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/embedded/unattended_gathers_delegated_phases (0.00s)
+    --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/follow_up_gathers_in_step_3 (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_unapplied (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_links_the_setup_reference (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/baseline_refresh_applies (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_older_binary (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_checks_warn (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_installation_writes (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_user_level_receives_nothing (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/setup_declares_models (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_names_hidden_headers (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_writes_outside (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_runs_only_approved (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_asks_once (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_returns_questions (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/update_shows_both_commands (0.00s)
+        --- PASS: TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase/canonical/unattended_gathers_delegated_phases (0.00s)
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/an_activated_skill_does_not_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/without_the_subagent_nothing_changes
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_subagent_runs_the_phase
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_research_start_falls_back
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_command_sweep_stays
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_keeps_the_synthesis
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/research_is_data
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_decisions_are_gathered_first
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_research
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_start_is_reported
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_the_author
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_typed_skill_runs_on_the_header
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_missing_decision_returns_questions
+=== CONT  TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/an_activated_skill_does_not_author
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false
+--- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-idea/no_model_is_passed_to_research (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-idea/a_missing_decision_returns_questions (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-tasks/no_model_is_passed_to_the_author (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-techspec/an_activated_skill_does_not_author (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-techspec/a_failed_research_start_falls_back (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-tasks/a_failed_research_start_falls_back (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/an_activated_skill_does_not_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/canonical/write-prd/a_typed_skill_runs_on_the_header (0.00s)
+    --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/without_the_subagent_nothing_changes (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_subagent_runs_the_phase (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_research_start_falls_back (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_command_sweep_stays (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_author_keeps_the_synthesis (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/research_is_data (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/the_decisions_are_gathered_first (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_research (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_failed_start_is_reported (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/no_model_is_passed_to_the_author (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_typed_skill_runs_on_the_header (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/a_missing_decision_returns_questions (0.00s)
+        --- PASS: TestTheAuthoringSkillsDelegateADeclaredPhase/embedded/write-prd/an_activated_skill_does_not_author (0.00s)
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false
+=== RUN   TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regeneration_errors
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true
+--- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes (0.55s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regenerated_artifacts (0.32s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_unchanged_artifacts (0.12s)
+    --- PASS: TestBaselineDigestTargetReportsMachineReadableOutcomes/reports_regeneration_errors (0.10s)
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies
+=== CONT  TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true
+--- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted (0.00s)
+    --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical (0.00s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=false (0.16s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=copies (0.15s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/squash/diff.renames=true (0.15s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=false (0.20s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=copies (0.20s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/canonical/merge/diff.renames=true (0.20s)
+    --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded (0.00s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=false (0.15s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=copies (0.15s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/squash/diff.renames=true (0.15s)
+        --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge (0.00s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=false (0.20s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=copies (0.19s)
+            --- PASS: TestACompletionNoticeSkipsARecordTheMergeAdopted/embedded/merge/diff.renames=true (0.19s)
+PASS
+ok  	roundfix/skills	1.671s
+
+stderr:

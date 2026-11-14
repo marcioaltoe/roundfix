@@ -1,0 +1,104 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestIdeaStageAsksThreeCriteriaInOneRequest|TestIdeaStageVerdictUsesTheThresholds|TestIdeaStageSendsNothingItMustNot|TestIdeaStageFailsOpen|TestIdeaStageCutsTextOnARuneBoundary|TestIdeaStageLogsItsJudgment|TestTheIdeaStageQuestionsAreTheMeasuredOnes)$' ./internal/judge
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+=== RUN   TestIdeaStageAsksThreeCriteriaInOneRequest
+=== PAUSE TestIdeaStageAsksThreeCriteriaInOneRequest
+=== RUN   TestIdeaStageVerdictUsesTheThresholds
+=== PAUSE TestIdeaStageVerdictUsesTheThresholds
+=== RUN   TestIdeaStageSendsNothingItMustNot
+=== PAUSE TestIdeaStageSendsNothingItMustNot
+=== RUN   TestIdeaStageFailsOpen
+=== PAUSE TestIdeaStageFailsOpen
+=== RUN   TestIdeaStageCutsTextOnARuneBoundary
+=== PAUSE TestIdeaStageCutsTextOnARuneBoundary
+=== RUN   TestIdeaStageLogsItsJudgment
+=== PAUSE TestIdeaStageLogsItsJudgment
+=== RUN   TestTheIdeaStageQuestionsAreTheMeasuredOnes
+=== PAUSE TestTheIdeaStageQuestionsAreTheMeasuredOnes
+=== CONT  TestIdeaStageAsksThreeCriteriaInOneRequest
+=== RUN   TestIdeaStageAsksThreeCriteriaInOneRequest/0
+=== CONT  TestIdeaStageCutsTextOnARuneBoundary
+=== CONT  TestIdeaStageSendsNothingItMustNot
+=== RUN   TestIdeaStageSendsNothingItMustNot/fix
+=== RUN   TestIdeaStageSendsNothingItMustNot/perf
+=== RUN   TestIdeaStageAsksThreeCriteriaInOneRequest/1
+=== RUN   TestIdeaStageSendsNothingItMustNot/refactor
+=== RUN   TestIdeaStageSendsNothingItMustNot/finding
+--- PASS: TestIdeaStageCutsTextOnARuneBoundary (0.00s)
+=== CONT  TestIdeaStageFailsOpen
+=== RUN   TestIdeaStageFailsOpen/outside_pin
+--- PASS: TestIdeaStageAsksThreeCriteriaInOneRequest (0.01s)
+    --- PASS: TestIdeaStageAsksThreeCriteriaInOneRequest/0 (0.00s)
+    --- PASS: TestIdeaStageAsksThreeCriteriaInOneRequest/1 (0.00s)
+=== CONT  TestTheIdeaStageQuestionsAreTheMeasuredOnes
+--- PASS: TestTheIdeaStageQuestionsAreTheMeasuredOnes (0.00s)
+=== CONT  TestIdeaStageLogsItsJudgment
+=== RUN   TestIdeaStageSendsNothingItMustNot/Run
+=== RUN   TestIdeaStageSendsNothingItMustNot/no_key
+=== RUN   TestIdeaStageFailsOpen/broken_json
+--- PASS: TestIdeaStageLogsItsJudgment (0.00s)
+=== CONT  TestIdeaStageVerdictUsesTheThresholds
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.7_0.3_0.3]
+=== RUN   TestIdeaStageSendsNothingItMustNot/ceiling
+=== RUN   TestIdeaStageFailsOpen/missing
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.69_0.3_0.3]
+=== RUN   TestIdeaStageSendsNothingItMustNot/unreadable_log
+=== RUN   TestIdeaStageFailsOpen/null
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.3_0.3_0.3]
+=== RUN   TestIdeaStageSendsNothingItMustNot/secret_text
+=== RUN   TestIdeaStageFailsOpen/negative
+=== RUN   TestIdeaStageSendsNothingItMustNot/secret_title
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.31_0.3_0.3]
+=== RUN   TestIdeaStageSendsNothingItMustNot/secret_origin
+=== RUN   TestIdeaStageFailsOpen/above_one
+=== RUN   TestIdeaStageSendsNothingItMustNot/secret_type
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[1_1_1]
+=== RUN   TestIdeaStageSendsNothingItMustNot/secret_kind
+=== RUN   TestIdeaStageFailsOpen/wrong_type
+--- PASS: TestIdeaStageSendsNothingItMustNot (0.01s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/fix (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/perf (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/refactor (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/finding (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/Run (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/no_key (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/ceiling (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/unreadable_log (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/secret_text (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/secret_title (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/secret_origin (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/secret_type (0.00s)
+    --- PASS: TestIdeaStageSendsNothingItMustNot/secret_kind (0.00s)
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0_0_0.7]
+=== RUN   TestIdeaStageFailsOpen/500
+=== RUN   TestIdeaStageFailsOpen/401
+--- PASS: TestIdeaStageVerdictUsesTheThresholds (0.01s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.7_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.69_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.3_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.31_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[1_1_1] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0_0_0.7] (0.00s)
+=== RUN   TestIdeaStageFailsOpen/refused
+=== RUN   TestIdeaStageFailsOpen/redaction
+=== RUN   TestIdeaStageFailsOpen/log_not_writable
+--- PASS: TestIdeaStageFailsOpen (0.02s)
+    --- PASS: TestIdeaStageFailsOpen/outside_pin (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/broken_json (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/missing (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/null (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/negative (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/above_one (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/wrong_type (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/500 (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/401 (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/refused (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/redaction (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/log_not_writable (0.00s)
+PASS
+ok  	roundfix/internal/judge	0.617s
+
+stderr:
+
+

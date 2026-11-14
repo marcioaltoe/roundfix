@@ -1,0 +1,37 @@
+$ go test -count=1 -timeout 20m -v -run ^TestIdeaStageFailsOpen$ ./internal/judge
+exit: 1
+stdout:
+=== RUN   TestIdeaStageFailsOpen
+=== PAUSE TestIdeaStageFailsOpen
+=== CONT  TestIdeaStageFailsOpen
+=== RUN   TestIdeaStageFailsOpen/outside_pin
+    idea_stage_test.go:250: report={State:answered Reason:<nil> Verdict:indicated Answers:[{ID:shape_open Probability:0.9 Answer:yes} {ID:unverified_assumption Probability:0.2 Answer:no} {ID:market_question Probability:0.1 Answer:no}] Model:0x3f08aab134e0 Transport:0x3f08aa812580 KeyVariable:0x3f08aab13260 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
+=== RUN   TestIdeaStageFailsOpen/broken_json
+=== RUN   TestIdeaStageFailsOpen/missing
+=== RUN   TestIdeaStageFailsOpen/null
+=== RUN   TestIdeaStageFailsOpen/negative
+=== RUN   TestIdeaStageFailsOpen/above_one
+=== RUN   TestIdeaStageFailsOpen/wrong_type
+=== RUN   TestIdeaStageFailsOpen/500
+=== RUN   TestIdeaStageFailsOpen/401
+=== RUN   TestIdeaStageFailsOpen/refused
+=== RUN   TestIdeaStageFailsOpen/redaction
+=== RUN   TestIdeaStageFailsOpen/log_not_writable
+--- FAIL: TestIdeaStageFailsOpen (0.01s)
+    --- FAIL: TestIdeaStageFailsOpen/outside_pin (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/broken_json (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/missing (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/null (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/negative (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/above_one (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/wrong_type (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/500 (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/401 (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/refused (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/redaction (0.00s)
+    --- PASS: TestIdeaStageFailsOpen/log_not_writable (0.00s)
+FAIL
+FAIL	roundfix/internal/judge	0.309s
+FAIL
+
+stderr:

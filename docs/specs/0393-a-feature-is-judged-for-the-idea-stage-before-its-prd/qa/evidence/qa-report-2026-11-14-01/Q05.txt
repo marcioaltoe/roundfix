@@ -1,0 +1,1536 @@
+$ go test -count=1 -timeout 30m -v -run SpecJudge|FollowUp|Help|Usage ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestArchivePlanUsageErrors
+=== PAUSE TestArchivePlanUsageErrors
+=== RUN   TestArchiveHelpNamesThePullRequestOption
+=== PAUSE TestArchiveHelpNamesThePullRequestOption
+=== RUN   TestRunArchiveHelp
+=== PAUSE TestRunArchiveHelp
+=== RUN   TestBaselineGroupUsageTranscripts
+=== PAUSE TestBaselineGroupUsageTranscripts
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands
+=== PAUSE TestEveryGroupUsageErrorPointsAtItsCommands
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== PAUSE TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== RUN   TestBaselinePlanPreflightHelp
+=== PAUSE TestBaselinePlanPreflightHelp
+=== RUN   TestBaselineProfileHelpContract
+=== PAUSE TestBaselineProfileHelpContract
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== RUN   TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== PAUSE TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== RUN   TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+=== PAUSE TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+=== RUN   TestBaselineStartersHelp
+=== PAUSE TestBaselineStartersHelp
+=== RUN   TestBaselineUpdateHelpNamesNonInteractiveContract
+=== PAUSE TestBaselineUpdateHelpNamesNonInteractiveContract
+=== RUN   TestCancelTranscriptPrintsHelp
+=== PAUSE TestCancelTranscriptPrintsHelp
+=== RUN   TestRootHelpNamesTheCancelCommand
+=== PAUSE TestRootHelpNamesTheCancelCommand
+=== RUN   TestRoundfixBinaryHelperNamesTheSignalThatKilledItsChild
+=== PAUSE TestRoundfixBinaryHelperNamesTheSignalThatKilledItsChild
+=== RUN   TestRunHelp
+=== PAUSE TestRunHelp
+=== RUN   TestReviewCommandAppearsOnPublicHelp
+=== PAUSE TestReviewCommandAppearsOnPublicHelp
+=== RUN   TestRunCommandHelp
+=== PAUSE TestRunCommandHelp
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions
+=== RUN   TestHelpTokenAsAFlagValueIsNotHelp
+=== PAUSE TestHelpTokenAsAFlagValueIsNotHelp
+=== RUN   TestHelpTokenAsASpecValueIsNotHelp
+=== PAUSE TestHelpTokenAsASpecValueIsNotHelp
+=== RUN   TestTrailingHelpPositionalIsNotHelp
+=== PAUSE TestTrailingHelpPositionalIsNotHelp
+=== RUN   TestHelpAfterTheTerminatorIsNotHelp
+=== PAUSE TestHelpAfterTheTerminatorIsNotHelp
+=== RUN   TestLeadingHelpTokenPrintsUsage
+=== PAUSE TestLeadingHelpTokenPrintsUsage
+=== RUN   TestSubcommandLeadingHelpTokenPrintsUsage
+=== PAUSE TestSubcommandLeadingHelpTokenPrintsUsage
+=== RUN   TestDashHelpAfterAnArgumentPrintsUsage
+=== PAUSE TestDashHelpAfterAnArgumentPrintsUsage
+=== RUN   TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides
+=== PAUSE TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides
+=== RUN   TestMigrateHelpDocumentsTheContract
+=== PAUSE TestMigrateHelpDocumentsTheContract
+=== RUN   TestRunRunsListUsageErrors
+=== PAUSE TestRunRunsListUsageErrors
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== PAUSE TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== RUN   TestRunStopHelpExplainsProofBeforeCompletion
+=== PAUSE TestRunStopHelpExplainsProofBeforeCompletion
+=== RUN   TestReadinessCommandHelpDocumentsContract
+=== PAUSE TestReadinessCommandHelpDocumentsContract
+=== RUN   TestHelpSurfaceTranscripts
+=== PAUSE TestHelpSurfaceTranscripts
+=== RUN   TestEveryCommandPathPrintsItsHelp
+=== PAUSE TestEveryCommandPathPrintsItsHelp
+=== RUN   TestHelpCommandPathsKeepsPrefixesAndAlternatives
+=== PAUSE TestHelpCommandPathsKeepsPrefixesAndAlternatives
+=== RUN   TestCommandHelpArgumentBoundaries
+=== PAUSE TestCommandHelpArgumentBoundaries
+=== RUN   TestDeliverHelpNamesTheLimitFlags
+=== PAUSE TestDeliverHelpNamesTheLimitFlags
+=== RUN   TestDeliverHelpNamesThePlanCommand
+=== PAUSE TestDeliverHelpNamesThePlanCommand
+=== RUN   TestTopLevelUsageNamesDeliverRetry
+=== PAUSE TestTopLevelUsageNamesDeliverRetry
+=== RUN   TestDeliverRetryPrintsARefusalWithoutUsage
+=== PAUSE TestDeliverRetryPrintsARefusalWithoutUsage
+=== RUN   TestDeliverRetryKeepsUsageForAnArgumentError
+=== PAUSE TestDeliverRetryKeepsUsageForAnArgumentError
+=== RUN   TestDeliverHelpNamesTheTokenCeiling
+=== PAUSE TestDeliverHelpNamesTheTokenCeiling
+=== RUN   TestDeliverStatusPrintsTheUsageLine
+=== PAUSE TestDeliverStatusPrintsTheUsageLine
+=== RUN   TestEventsHelpNamesTheUsageCategory
+=== PAUSE TestEventsHelpNamesTheUsageCategory
+=== RUN   TestEventsUsageTranscript
+=== PAUSE TestEventsUsageTranscript
+=== RUN   TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== PAUSE TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== PAUSE TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+=== RUN   TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== PAUSE TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== RUN   TestFollowUpLaterDeclaredMessageTranscript
+=== PAUSE TestFollowUpLaterDeclaredMessageTranscript
+=== RUN   TestFollowUpHelpTranscript
+=== PAUSE TestFollowUpHelpTranscript
+=== RUN   TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== PAUSE TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== RUN   TestFollowUpStatusReportsTheNextRelease
+=== PAUSE TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusNamesTheManualClassification
+=== PAUSE TestFollowUpStatusNamesTheManualClassification
+=== RUN   TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== PAUSE TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+=== RUN   TestFollowUpStatusNeverAsksTheJudge
+=== PAUSE TestFollowUpStatusNeverAsksTheJudge
+=== RUN   TestFollowUpStatusWritesNothing
+=== PAUSE TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusRefusesMessages
+=== PAUSE TestFollowUpStatusRefusesMessages
+=== RUN   TestFollowUpListsEveryPendingItemOnce
+=== PAUSE TestFollowUpListsEveryPendingItemOnce
+=== RUN   TestFollowUpOrdersItemsByTheFourAnswers
+=== PAUSE TestFollowUpOrdersItemsByTheFourAnswers
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge
+=== RUN   TestFollowUpSaysNothingToDo
+=== PAUSE TestFollowUpSaysNothingToDo
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== RUN   TestFollowUpReadsNoUnavailableSourceAsAFailure
+=== PAUSE TestFollowUpReadsNoUnavailableSourceAsAFailure
+=== RUN   TestFollowUpWritesNothing
+=== PAUSE TestFollowUpWritesNothing
+=== RUN   TestFollowUpRefusesAnUnknownFormat
+=== PAUSE TestFollowUpRefusesAnUnknownFormat
+=== RUN   TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== PAUSE TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile
+=== RUN   TestFollowUpListHelpMatchesTranscript
+=== PAUSE TestFollowUpListHelpMatchesTranscript
+=== RUN   TestFollowUpListsInProgressAndParkActions
+=== PAUSE TestFollowUpListsInProgressAndParkActions
+=== RUN   TestFollowUpReadsCommittedWALWithoutWriting
+=== PAUSE TestFollowUpReadsCommittedWALWithoutWriting
+=== RUN   TestFollowUpRefusesAnUnreadableRunDatabase
+=== PAUSE TestFollowUpRefusesAnUnreadableRunDatabase
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== RUN   TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+=== PAUSE TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+=== RUN   TestFollowUpIgnoresHiddenInboxEntries
+=== PAUSE TestFollowUpIgnoresHiddenInboxEntries
+=== RUN   TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+=== PAUSE TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+=== RUN   TestFollowUpSnapshotHonorsCancellation
+=== PAUSE TestFollowUpSnapshotHonorsCancellation
+=== RUN   TestFollowUpReadsNoSecondbrainInbox
+=== PAUSE TestFollowUpReadsNoSecondbrainInbox
+=== RUN   TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== PAUSE TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItems
+=== PAUSE TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpAllListsWaitingItemsLast
+=== PAUSE TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpHoldsBackWaitingItemsTranscript
+=== PAUSE TestFollowUpHoldsBackWaitingItemsTranscript
+=== RUN   TestFollowUpAllListsWaitingItemsTranscript
+=== PAUSE TestFollowUpAllListsWaitingItemsTranscript
+=== RUN   TestFollowUpStatusRefusesAllTranscript
+=== PAUSE TestFollowUpStatusRefusesAllTranscript
+=== RUN   TestRunGCHelp
+=== PAUSE TestRunGCHelp
+=== RUN   TestCLITestHelpersEndWithTheirTestBinary
+=== PAUSE TestCLITestHelpersEndWithTheirTestBinary
+=== RUN   TestHistorySanitizeUsageErrors
+=== PAUSE TestHistorySanitizeUsageErrors
+=== RUN   TestRunImplementHelpListsExactlyImplementedFlags
+=== PAUSE TestRunImplementHelpListsExactlyImplementedFlags
+=== RUN   TestRunHelpListsImplementCommand
+=== PAUSE TestRunHelpListsImplementCommand
+=== RUN   TestImplementSummaryPrintsRecordedUsage
+=== PAUSE TestImplementSummaryPrintsRecordedUsage
+=== RUN   TestUnreportedUsageIsNeverPrintedAsZero
+=== PAUSE TestUnreportedUsageIsNeverPrintedAsZero
+=== RUN   TestSpecJudgeSkipsInsideARun
+=== PAUSE TestSpecJudgeSkipsInsideARun
+=== RUN   TestMigrateCheckHelpDescribesReadOnlyMode
+=== PAUSE TestMigrateCheckHelpDescribesReadOnlyMode
+=== RUN   TestCLIForceStopOwnerProcessHelper
+--- PASS: TestCLIForceStopOwnerProcessHelper (0.00s)
+=== RUN   TestProfilesCheckHelp
+=== PAUSE TestProfilesCheckHelp
+=== RUN   TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== PAUSE TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== RUN   TestReviewDisposeHelpPrintsUsage
+=== PAUSE TestReviewDisposeHelpPrintsUsage
+=== RUN   TestRunsCausesHelp
+=== PAUSE TestRunsCausesHelp
+=== RUN   TestRunsHelpNamesTheFormatAndWideFlags
+=== PAUSE TestRunsHelpNamesTheFormatAndWideFlags
+=== RUN   TestRunSettleHelpDocumentsContract
+=== PAUSE TestRunSettleHelpDocumentsContract
+=== RUN   TestSkillsUsageNamesTheRemoval
+=== PAUSE TestSkillsUsageNamesTheRemoval
+=== RUN   TestRunSpecCheckUnknownSlugIsUsageError
+=== PAUSE TestRunSpecCheckUnknownSlugIsUsageError
+=== RUN   TestRunSpecCheckUnreadableRootIsUsageError
+=== PAUSE TestRunSpecCheckUnreadableRootIsUsageError
+=== RUN   TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== PAUSE TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+=== RUN   TestRunSpecAuditUnknownSlugIsUsageError
+=== PAUSE TestRunSpecAuditUnknownSlugIsUsageError
+=== RUN   TestRunSpecAuditHelpAppearsInUsageAndCommandList
+=== PAUSE TestRunSpecAuditHelpAppearsInUsageAndCommandList
+=== RUN   TestSpecJudgeIdeaStageRequiresAnItem
+=== PAUSE TestSpecJudgeIdeaStageRequiresAnItem
+=== RUN   TestSpecJudgeIdeaStageRefusesAnUnknownReference
+=== PAUSE TestSpecJudgeIdeaStageRefusesAnUnknownReference
+=== RUN   TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== PAUSE TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== RUN   TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+=== PAUSE TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+=== RUN   TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+=== PAUSE TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== PAUSE TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== RUN   TestSpecJudgeIdeaStageReadsAMessageEntry
+=== PAUSE TestSpecJudgeIdeaStageReadsAMessageEntry
+=== RUN   TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== PAUSE TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== RUN   TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== PAUSE TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== RUN   TestSpecJudgeIdeaHelpPreservesExistingLines
+=== PAUSE TestSpecJudgeIdeaHelpPreservesExistingLines
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero
+=== PAUSE TestSpecJudgeIdeaUnavailableReportsExitZero
+=== RUN   TestSpecJudgeReportsAdvisoryJudgments
+=== PAUSE TestSpecJudgeReportsAdvisoryJudgments
+=== RUN   TestSpecJudgeSkipsWithoutAKey
+=== PAUSE TestSpecJudgeSkipsWithoutAKey
+=== RUN   TestSpecJudgeReadsTheKeyFromItsOwnEnvironment
+--- PASS: TestSpecJudgeReadsTheKeyFromItsOwnEnvironment (0.01s)
+=== RUN   TestSpecJudgeSkipsAtTheMonthlyCeiling
+=== PAUSE TestSpecJudgeSkipsAtTheMonthlyCeiling
+=== RUN   TestSpecJudgeSkipsANonEnglishSpec
+=== PAUSE TestSpecJudgeSkipsANonEnglishSpec
+=== RUN   TestSpecJudgeStopsWhenTheServiceFails
+=== PAUSE TestSpecJudgeStopsWhenTheServiceFails
+=== RUN   TestSpecJudgeRefusesAnUnknownSpec
+=== PAUSE TestSpecJudgeRefusesAnUnknownSpec
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat
+=== PAUSE TestSpecJudgeRefusesAnUnknownStageOrFormat
+=== RUN   TestSpecJudgePrintsJSON
+=== PAUSE TestSpecJudgePrintsJSON
+=== RUN   TestSpecJudgeHelp
+=== PAUSE TestSpecJudgeHelp
+=== RUN   TestSpecJudgeUsesConfiguredSpecRoot
+=== PAUSE TestSpecJudgeUsesConfiguredSpecRoot
+=== RUN   TestSpecJudgeRequiresStageArtifacts
+=== PAUSE TestSpecJudgeRequiresStageArtifacts
+=== RUN   TestSpecJudgePrintsIndividualSkip
+=== PAUSE TestSpecJudgePrintsIndividualSkip
+=== RUN   TestSpecJudgeJSONSkipHasNullTransport
+=== PAUSE TestSpecJudgeJSONSkipHasNullTransport
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion
+=== PAUSE TestSpecJudgePrintsAGroupingSuggestion
+=== RUN   TestSpecJudgeSkipsANonEnglishSource
+=== PAUSE TestSpecJudgeSkipsANonEnglishSource
+=== RUN   TestSpecJudgeCountsGroupingJudgmentsNotAsked
+=== PAUSE TestSpecJudgeCountsGroupingJudgmentsNotAsked
+=== RUN   TestSpecJudgePrintsGroupingJSON
+=== PAUSE TestSpecJudgePrintsGroupingJSON
+=== RUN   TestSpecJudgeHelpNamesTheGroupingQuestion
+=== PAUSE TestSpecJudgeHelpNamesTheGroupingQuestion
+=== RUN   TestSpecJudgePrintsSkippedGroupingPair
+=== PAUSE TestSpecJudgePrintsSkippedGroupingPair
+=== RUN   TestSpecJudgeSkipsAtTheUserConfigCeiling
+=== PAUSE TestSpecJudgeSkipsAtTheUserConfigCeiling
+=== RUN   TestSpecJudgeIgnoresAProjectConfigCeiling
+=== PAUSE TestSpecJudgeIgnoresAProjectConfigCeiling
+=== RUN   TestSpecJudgeRefusesAnInvalidUserConfigCeiling
+=== PAUSE TestSpecJudgeRefusesAnInvalidUserConfigCeiling
+=== RUN   TestSpecJudgeNamesTheKeyVariableItUsed
+=== PAUSE TestSpecJudgeNamesTheKeyVariableItUsed
+=== RUN   TestSpecJudgeSkipNamesTheJudgeKeyFirst
+=== PAUSE TestSpecJudgeSkipNamesTheJudgeKeyFirst
+=== RUN   TestSpecJudgeSuggestsModelTier
+=== PAUSE TestSpecJudgeSuggestsModelTier
+=== RUN   TestSpecJudgeTasksSkipsWithoutKey
+=== PAUSE TestSpecJudgeTasksSkipsWithoutKey
+=== RUN   TestSpecJudgeTasksRequiresGraph
+=== PAUSE TestSpecJudgeTasksRequiresGraph
+=== RUN   TestSpecJudgeDefaultIgnoresTasks
+=== PAUSE TestSpecJudgeDefaultIgnoresTasks
+=== RUN   TestSpecJudgeTasksHonorsCeiling
+=== PAUSE TestSpecJudgeTasksHonorsCeiling
+=== RUN   TestUpdateCheckUsage
+=== PAUSE TestUpdateCheckUsage
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== PAUSE TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== RUN   TestHelperProcessRecordsTheOfflineLookup
+=== PAUSE TestHelperProcessRecordsTheOfflineLookup
+=== RUN   TestWindowHelpExplainsStartAndRunBounds
+=== PAUSE TestWindowHelpExplainsStartAndRunBounds
+=== CONT  TestArchivePlanUsageErrors
+=== CONT  TestFollowUpListsRepositoryNotesAndMessageTitleFallback
+=== CONT  TestSpecJudgeIdeaStageReadsAMessageEntry
+--- PASS: TestArchivePlanUsageErrors (0.00s)
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+=== RUN   TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+=== PAUSE TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret
+--- PASS: TestSpecJudgeIdeaStageReadsAMessageEntry (0.05s)
+=== CONT  TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/indicated
+--- PASS: TestFollowUpListsRepositoryNotesAndMessageTitleFallback (0.06s)
+=== CONT  TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+=== CONT  TestFollowUpRefusesAnUnreadableRunDatabase
+--- PASS: TestFollowUpRefusesAnUnreadableRunDatabase (0.04s)
+=== CONT  TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+--- PASS: TestSpecJudgeIdeaStageListsTheCriteriaForARequest (0.04s)
+=== CONT  TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/not_indicated
+--- PASS: TestSpecJudgeIdeaStageDoesNotJudgeAFix (0.04s)
+=== CONT  TestSpecJudgeIdeaStageRefusesAnUnknownReference
+--- PASS: TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer (0.05s)
+=== CONT  TestSpecJudgeIdeaStageRequiresAnItem
+--- PASS: TestSpecJudgeIdeaStageRefusesAnUnknownReference (0.04s)
+=== CONT  TestRunSpecAuditHelpAppearsInUsageAndCommandList
+--- PASS: TestRunSpecAuditHelpAppearsInUsageAndCommandList (0.00s)
+=== CONT  TestRunSpecAuditUnknownSlugIsUsageError
+--- PASS: TestSpecJudgeIdeaStageRequiresAnItem (0.03s)
+=== CONT  TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList
+--- PASS: TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList (0.00s)
+=== CONT  TestFollowUpReadsCommittedWALWithoutWriting
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/undecided
+--- PASS: TestRunSpecAuditUnknownSlugIsUsageError (0.03s)
+=== CONT  TestRunSpecCheckUnreadableRootIsUsageError
+--- PASS: TestRunSpecCheckUnreadableRootIsUsageError (0.05s)
+=== CONT  TestFollowUpListsInProgressAndParkActions
+--- PASS: TestFollowUpReadsCommittedWALWithoutWriting (0.10s)
+=== CONT  TestRunSpecCheckUnknownSlugIsUsageError
+--- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord (0.24s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/indicated (0.08s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/not_indicated (0.08s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/undecided (0.08s)
+=== CONT  TestSkillsUsageNamesTheRemoval
+--- PASS: TestSkillsUsageNamesTheRemoval (0.00s)
+=== CONT  TestFollowUpListHelpMatchesTranscript
+--- PASS: TestFollowUpListHelpMatchesTranscript (0.03s)
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/missing
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/missing
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/id
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/id
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/date
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/date
+=== RUN   TestFollowUpRefusesAnInvalidMessagesFile/type
+=== PAUSE TestFollowUpRefusesAnInvalidMessagesFile/type
+=== CONT  TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes
+--- PASS: TestRunSpecCheckUnknownSlugIsUsageError (0.05s)
+=== CONT  TestFollowUpRefusesAnUnknownFormat
+--- PASS: TestFollowUpRefusesAnUnknownMessageTypeNamingTheAcceptedOnes (0.04s)
+=== CONT  TestFollowUpWritesNothing
+--- PASS: TestFollowUpListsInProgressAndParkActions (0.09s)
+=== CONT  TestRunSettleHelpDocumentsContract
+--- PASS: TestRunSettleHelpDocumentsContract (0.00s)
+=== CONT  TestRunsHelpNamesTheFormatAndWideFlags
+--- PASS: TestRunsHelpNamesTheFormatAndWideFlags (0.00s)
+=== CONT  TestFollowUpReadsNoUnavailableSourceAsAFailure
+--- PASS: TestFollowUpRefusesAnUnknownFormat (0.03s)
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+=== RUN   TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+=== PAUSE TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+=== CONT  TestRunsCausesHelp
+--- PASS: TestRunsCausesHelp (0.01s)
+=== CONT  TestFollowUpSaysNothingToDo
+--- PASS: TestFollowUpReadsNoUnavailableSourceAsAFailure (0.06s)
+=== CONT  TestReviewDisposeHelpPrintsUsage
+--- PASS: TestReviewDisposeHelpPrintsUsage (0.00s)
+=== CONT  TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+--- PASS: TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary (0.00s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/Run
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/Run
+=== RUN   TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== PAUSE TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/other
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+=== RUN   TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== PAUSE TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpOrdersItemsByTheFourAnswers
+--- PASS: TestFollowUpWritesNothing (0.11s)
+=== CONT  TestFollowUpListsEveryPendingItemOnce
+--- PASS: TestFollowUpOrdersItemsByTheFourAnswers (0.06s)
+=== CONT  TestProfilesCheckHelp
+--- PASS: TestProfilesCheckHelp (0.00s)
+=== CONT  TestMigrateCheckHelpDescribesReadOnlyMode
+--- PASS: TestMigrateCheckHelpDescribesReadOnlyMode (0.00s)
+=== CONT  TestFollowUpStatusRefusesMessages
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== RUN   TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== PAUSE TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== RUN   TestFollowUpStatusRefusesMessages/--status_--messages=
+=== PAUSE TestFollowUpStatusRefusesMessages/--status_--messages=
+=== CONT  TestFollowUpStatusWritesNothing
+=== RUN   TestFollowUpStatusWritesNothing/no_database
+=== PAUSE TestFollowUpStatusWritesNothing/no_database
+=== RUN   TestFollowUpStatusWritesNothing/at_tag
+=== PAUSE TestFollowUpStatusWritesNothing/at_tag
+=== RUN   TestFollowUpStatusWritesNothing/release
+=== PAUSE TestFollowUpStatusWritesNothing/release
+=== RUN   TestFollowUpStatusWritesNothing/dirty
+=== PAUSE TestFollowUpStatusWritesNothing/dirty
+=== RUN   TestFollowUpStatusWritesNothing/live_WAL
+=== PAUSE TestFollowUpStatusWritesNothing/live_WAL
+=== CONT  TestFollowUpStatusNeverAsksTheJudge
+--- PASS: TestFollowUpSaysNothingToDo (0.15s)
+=== CONT  TestFollowUpStatusListsBlockersAndTheMaintainersQuestion
+--- PASS: TestFollowUpListsEveryPendingItemOnce (0.09s)
+=== CONT  TestSpecJudgeSkipsInsideARun
+--- PASS: TestSpecJudgeSkipsInsideARun (0.01s)
+=== CONT  TestUnreportedUsageIsNeverPrintedAsZero
+--- PASS: TestFollowUpStatusNeverAsksTheJudge (0.11s)
+=== CONT  TestImplementSummaryPrintsRecordedUsage
+--- PASS: TestFollowUpStatusListsBlockersAndTheMaintainersQuestion (0.14s)
+=== CONT  TestFollowUpStatusNamesTheManualClassification
+--- PASS: TestUnreportedUsageIsNeverPrintedAsZero (0.33s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease
+=== RUN   TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== RUN   TestFollowUpStatusReportsTheNextRelease/feature
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/feature
+=== RUN   TestFollowUpStatusReportsTheNextRelease/dirty
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/dirty
+=== RUN   TestFollowUpStatusReportsTheNextRelease/patch
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/patch
+=== RUN   TestFollowUpStatusReportsTheNextRelease/maintenance
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/maintenance
+=== RUN   TestFollowUpStatusReportsTheNextRelease/manual
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/manual
+=== RUN   TestFollowUpStatusReportsTheNextRelease/no_tag
+=== PAUSE TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+--- PASS: TestImplementSummaryPrintsRecordedUsage (0.32s)
+=== CONT  TestFollowUpHelpTranscript
+--- PASS: TestFollowUpHelpTranscript (0.03s)
+=== CONT  TestRunHelpListsImplementCommand
+--- PASS: TestRunHelpListsImplementCommand (0.00s)
+=== CONT  TestRunImplementHelpListsExactlyImplementedFlags
+--- PASS: TestRunImplementHelpListsExactlyImplementedFlags (0.00s)
+=== CONT  TestHistorySanitizeUsageErrors
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--apply
+--- PASS: TestFollowUpStatusNamesTheManualClassification (0.29s)
+=== CONT  TestCLITestHelpersEndWithTheirTestBinary
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--advise
+--- PASS: TestFollowUpStatusListsPendingSpecsInDeliveryOrder (0.12s)
+=== CONT  TestRunGCHelp
+--- PASS: TestRunGCHelp (0.00s)
+=== CONT  TestFollowUpStatusRefusesAllTranscript
+--- PASS: TestFollowUpStatusRefusesAllTranscript (0.03s)
+=== CONT  TestFollowUpAllListsWaitingItemsTranscript
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--promote_x
+--- PASS: TestFollowUpAllListsWaitingItemsTranscript (0.08s)
+=== CONT  TestFollowUpHoldsBackWaitingItemsTranscript
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_0
+--- PASS: TestFollowUpHoldsBackWaitingItemsTranscript (0.08s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+=== RUN   TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== PAUSE TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== CONT  TestFollowUpAllListsWaitingItemsLast
+=== RUN   TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== RUN   TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== RUN   TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== PAUSE TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+=== CONT  TestFollowUpHoldsBackWaitingItems
+=== RUN   TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== PAUSE TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== RUN   TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== PAUSE TestFollowUpHoldsBackWaitingItems/only_waiting_items
+=== RUN   TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== PAUSE TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpLaterDeclaredMessageTranscript
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_-1
+--- PASS: TestFollowUpLaterDeclaredMessageTranscript (0.06s)
+=== CONT  TestFollowUpSendsALaterDeclaredMessageToTheJudge
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch_x
+--- PASS: TestFollowUpSendsALaterDeclaredMessageToTheJudge (0.06s)
+=== CONT  TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender
+--- PASS: TestFollowUpDeclaredPrecedenceHoldsOneEntryPerSender (0.00s)
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== RUN   TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== PAUSE TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== RUN   TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== PAUSE TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork/line_break
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork/line_break
+=== RUN   TestFollowUpRefusesAMalformedBlockedWork/without_from
+=== PAUSE TestFollowUpRefusesAMalformedBlockedWork/without_from
+=== CONT  TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--batch
+--- PASS: TestFollowUpRanksADeclaredBlockingMessageFirstWithoutTheJudge (0.06s)
+=== CONT  TestEventsUsageTranscript
+--- PASS: TestEventsUsageTranscript (0.01s)
+=== CONT  TestEventsHelpNamesTheUsageCategory
+--- PASS: TestEventsHelpNamesTheUsageCategory (0.00s)
+=== CONT  TestDeliverStatusPrintsTheUsageLine
+--- PASS: TestDeliverStatusPrintsTheUsageLine (0.01s)
+=== CONT  TestDeliverHelpNamesTheTokenCeiling
+--- PASS: TestDeliverHelpNamesTheTokenCeiling (0.00s)
+=== CONT  TestDeliverRetryKeepsUsageForAnArgumentError
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_--unknown
+--- PASS: TestDeliverRetryKeepsUsageForAnArgumentError (0.04s)
+=== CONT  TestDeliverRetryPrintsARefusalWithoutUsage
+--- PASS: TestDeliverRetryPrintsARefusalWithoutUsage (0.04s)
+=== CONT  TestTopLevelUsageNamesDeliverRetry
+--- PASS: TestTopLevelUsageNamesDeliverRetry (0.00s)
+=== CONT  TestDeliverHelpNamesThePlanCommand
+--- PASS: TestDeliverHelpNamesThePlanCommand (0.00s)
+=== CONT  TestDeliverHelpNamesTheLimitFlags
+--- PASS: TestDeliverHelpNamesTheLimitFlags (0.00s)
+=== CONT  TestCommandHelpArgumentBoundaries
+=== RUN   TestCommandHelpArgumentBoundaries/report_trailing_short_help
+=== RUN   TestCommandHelpArgumentBoundaries/report_help_before_operands
+=== RUN   TestCommandHelpArgumentBoundaries/report_help_before_terminator
+=== RUN   TestCommandHelpArgumentBoundaries/report_terminator_before_help
+=== RUN   TestCommandHelpArgumentBoundaries/report_terminator_after_path
+=== RUN   TestCommandHelpArgumentBoundaries/report_no_path
+=== RUN   TestCommandHelpArgumentBoundaries/report_blank_path
+=== RUN   TestCommandHelpArgumentBoundaries/report_two_paths
+=== RUN   TestCommandHelpArgumentBoundaries/capabilities_--help
+=== RUN   TestCommandHelpArgumentBoundaries/capabilities_-h
+=== RUN   TestCommandHelpArgumentBoundaries/capabilities_help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_capabilities
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_capabilities_unknown
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_capabilities_unknown_--help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_capabilities_--_--help
+=== RUN   TestCommandHelpArgumentBoundaries/skills_--help
+=== RUN   TestCommandHelpArgumentBoundaries/skills_-h
+=== RUN   TestCommandHelpArgumentBoundaries/skills_help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_skills
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_skills_unknown
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_skills_unknown_--help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_skills_--_--help
+=== RUN   TestCommandHelpArgumentBoundaries/assets_--help
+=== RUN   TestCommandHelpArgumentBoundaries/assets_-h
+=== RUN   TestCommandHelpArgumentBoundaries/assets_help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_assets
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_assets_unknown
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_assets_unknown_--help
+=== RUN   TestCommandHelpArgumentBoundaries/baseline_assets_--_--help
+--- PASS: TestCommandHelpArgumentBoundaries (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_trailing_short_help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_help_before_operands (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_help_before_terminator (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_terminator_before_help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_terminator_after_path (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_no_path (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_blank_path (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/report_two_paths (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/capabilities_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/capabilities_-h (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/capabilities_help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_capabilities (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_capabilities_unknown (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_capabilities_unknown_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_capabilities_--_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/skills_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/skills_-h (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/skills_help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_skills (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_skills_unknown (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_skills_unknown_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_skills_--_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/assets_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/assets_-h (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/assets_help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_assets (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_assets_unknown (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_assets_unknown_--help (0.00s)
+    --- PASS: TestCommandHelpArgumentBoundaries/baseline_assets_--_--help (0.00s)
+=== CONT  TestHelpCommandPathsKeepsPrefixesAndAlternatives
+--- PASS: TestHelpCommandPathsKeepsPrefixesAndAlternatives (0.00s)
+=== CONT  TestEveryCommandPathPrintsItsHelp
+    command_help_test.go:59: checking 77 command paths with both help flags (154 calls)
+=== RUN   TestEveryCommandPathPrintsItsHelp/fetch_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/fetch_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/resolve_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/resolve_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/watch_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/watch_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/review_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/review_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/review_dispose_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/review_dispose_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/implement_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/implement_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_plan_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_plan_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_start_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_start_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_status_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_status_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_resume_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_resume_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_retry_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_retry_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_stop_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_stop_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_lane_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/deliver_lane_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/follow-up_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/follow-up_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_set_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_set_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_show_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_show_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_clear_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/window_clear_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/settle_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/settle_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/reopen_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/reopen_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/supersede_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/supersede_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/reconcile_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/reconcile_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/release_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/release_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/release_plan_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/release_plan_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/qa-report_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/qa-report_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/qa-report_accept_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/qa-report_accept_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_check_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_check_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_audit_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_audit_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_judge_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/spec_judge_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_update_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_update_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_plan_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_plan_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_apply_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_apply_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_capabilities_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_capabilities_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_capabilities_check_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_capabilities_check_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_init_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_init_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_show_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_show_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_validate_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_profile_validate_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_restore_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_restore_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_reconcile_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_skills_reconcile_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_starters_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_starters_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_assets_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_assets_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_assets_sync_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/baseline_assets_sync_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_check_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_check_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_show_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_show_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_configure_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_configure_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_validate_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/profiles_validate_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/archive_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/archive_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/cancel_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/cancel_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/history_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/history_-h
+=== RUN   TestHistorySanitizeUsageErrors/sanitize_extra
+=== RUN   TestEveryCommandPathPrintsItsHelp/history_sanitize_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/history_sanitize_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/init_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/init_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/setup_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/setup_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/migrate_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/migrate_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/doctor_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/doctor_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/gc_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/gc_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/storage_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/storage_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/storage_report_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/storage_report_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/upgrade_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/upgrade_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/update_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/update_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/update_check_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/update_check_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_list_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_list_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_show_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_show_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_causes_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/runs_causes_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/stop_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/stop_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/attach_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/attach_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/events_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/events_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_check_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_check_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_install_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_install_-h
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_remove_--help
+=== RUN   TestEveryCommandPathPrintsItsHelp/skills_remove_-h
+--- PASS: TestEveryCommandPathPrintsItsHelp (0.01s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/fetch_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/fetch_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/resolve_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/resolve_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/watch_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/watch_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/review_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/review_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/review_dispose_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/review_dispose_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/implement_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/implement_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_plan_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_plan_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_start_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_start_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_status_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_status_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_resume_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_resume_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_retry_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_retry_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_stop_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_stop_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_lane_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/deliver_lane_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/follow-up_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/follow-up_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_set_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_set_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_show_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_show_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_clear_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/window_clear_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/settle_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/settle_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/reopen_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/reopen_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/supersede_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/supersede_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/reconcile_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/reconcile_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/release_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/release_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/release_plan_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/release_plan_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/qa-report_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/qa-report_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/qa-report_accept_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/qa-report_accept_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_check_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_check_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_audit_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_audit_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_judge_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/spec_judge_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_update_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_update_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_plan_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_plan_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_apply_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_apply_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_capabilities_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_capabilities_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_capabilities_check_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_capabilities_check_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_init_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_init_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_show_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_show_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_validate_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_profile_validate_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_restore_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_restore_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_reconcile_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_skills_reconcile_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_starters_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_starters_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_assets_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_assets_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_assets_sync_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/baseline_assets_sync_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_check_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_check_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_show_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_show_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_configure_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_configure_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_validate_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/profiles_validate_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/archive_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/archive_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/cancel_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/cancel_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/history_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/history_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/history_sanitize_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/history_sanitize_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/init_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/init_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/setup_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/setup_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/migrate_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/migrate_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/doctor_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/doctor_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/gc_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/gc_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/storage_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/storage_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/storage_report_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/storage_report_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/upgrade_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/upgrade_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/update_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/update_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/update_check_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/update_check_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_list_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_list_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_show_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_show_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_causes_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/runs_causes_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/stop_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/stop_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/attach_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/attach_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/events_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/events_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_check_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_check_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_install_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_install_-h (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_remove_--help (0.00s)
+    --- PASS: TestEveryCommandPathPrintsItsHelp/skills_remove_-h (0.00s)
+=== CONT  TestHelpSurfaceTranscripts
+=== RUN   TestHelpSurfaceTranscripts/transcript_1
+=== RUN   TestHelpSurfaceTranscripts/transcript_2
+=== RUN   TestHelpSurfaceTranscripts/transcript_3
+=== RUN   TestHelpSurfaceTranscripts/transcript_4
+=== RUN   TestHelpSurfaceTranscripts/transcript_5
+=== RUN   TestHelpSurfaceTranscripts/transcript_6
+--- PASS: TestHelpSurfaceTranscripts (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_1 (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_2 (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_3 (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_4 (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_5 (0.00s)
+    --- PASS: TestHelpSurfaceTranscripts/transcript_6 (0.00s)
+=== CONT  TestReadinessCommandHelpDocumentsContract
+--- PASS: TestReadinessCommandHelpDocumentsContract (0.00s)
+=== CONT  TestRunStopHelpExplainsProofBeforeCompletion
+--- PASS: TestRunStopHelpExplainsProofBeforeCompletion (0.00s)
+=== CONT  TestReviewCommandHelpDocumentsSkipBranchIntegrity
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/fetch
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/resolve
+=== RUN   TestReviewCommandHelpDocumentsSkipBranchIntegrity/watch
+--- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/fetch (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/resolve (0.00s)
+    --- PASS: TestReviewCommandHelpDocumentsSkipBranchIntegrity/watch (0.00s)
+=== CONT  TestRunRunsListUsageErrors
+=== RUN   TestRunRunsListUsageErrors/unknown_subcommand
+=== RUN   TestRunRunsListUsageErrors/unexpected_list_argument
+=== RUN   TestRunRunsListUsageErrors/unknown_state_value
+=== RUN   TestRunRunsListUsageErrors/negative_limit
+=== RUN   TestRunRunsListUsageErrors/removed_active_flag
+--- PASS: TestRunRunsListUsageErrors (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unknown_subcommand (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unexpected_list_argument (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/unknown_state_value (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/negative_limit (0.00s)
+    --- PASS: TestRunRunsListUsageErrors/removed_active_flag (0.00s)
+=== CONT  TestMigrateHelpDocumentsTheContract
+--- PASS: TestMigrateHelpDocumentsTheContract (0.00s)
+=== CONT  TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides
+=== RUN   TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/resolve
+=== RUN   TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/watch
+=== RUN   TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/implement
+--- PASS: TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides (0.00s)
+    --- PASS: TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/resolve (0.00s)
+    --- PASS: TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/watch (0.00s)
+    --- PASS: TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides/implement (0.00s)
+=== CONT  TestDashHelpAfterAnArgumentPrintsUsage
+--- PASS: TestDashHelpAfterAnArgumentPrintsUsage (0.00s)
+=== CONT  TestSubcommandLeadingHelpTokenPrintsUsage
+--- PASS: TestSubcommandLeadingHelpTokenPrintsUsage (0.00s)
+=== CONT  TestLeadingHelpTokenPrintsUsage
+--- PASS: TestLeadingHelpTokenPrintsUsage (0.00s)
+=== CONT  TestHelpAfterTheTerminatorIsNotHelp
+--- PASS: TestHelpAfterTheTerminatorIsNotHelp (0.00s)
+=== CONT  TestTrailingHelpPositionalIsNotHelp
+--- PASS: TestTrailingHelpPositionalIsNotHelp (0.00s)
+=== CONT  TestHelpTokenAsASpecValueIsNotHelp
+=== RUN   TestHistorySanitizeUsageErrors/unknown
+--- PASS: TestHelpTokenAsASpecValueIsNotHelp (0.09s)
+=== CONT  TestHelpTokenAsAFlagValueIsNotHelp
+--- PASS: TestHelpTokenAsAFlagValueIsNotHelp (0.00s)
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/flag_value
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/flag_value
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/spec_value
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/spec_value
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/trailing_positional
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/trailing_positional
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/help_after_terminator
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/help_after_terminator
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/leading_help
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/leading_help
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/subcommand_handoff
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/subcommand_handoff
+=== RUN   TestCommandWantsHelpReadsOnlyArgumentPositions/dash_help_after_argument
+=== PAUSE TestCommandWantsHelpReadsOnlyArgumentPositions/dash_help_after_argument
+=== CONT  TestRunCommandHelp
+=== RUN   TestRunCommandHelp/fetch
+=== RUN   TestRunCommandHelp/resolve
+=== RUN   TestRunCommandHelp/watch
+=== RUN   TestRunCommandHelp/deliver
+=== RUN   TestRunCommandHelp/setup
+=== RUN   TestRunCommandHelp/doctor
+=== RUN   TestRunCommandHelp/upgrade
+=== RUN   TestRunCommandHelp/update_check
+=== RUN   TestRunCommandHelp/runs
+=== RUN   TestRunCommandHelp/reconcile
+=== RUN   TestRunCommandHelp/profiles
+=== RUN   TestRunCommandHelp/profiles_show
+=== RUN   TestRunCommandHelp/qa-report_accept
+=== RUN   TestRunCommandHelp/baseline_capabilities
+=== RUN   TestRunCommandHelp/baseline_skills
+=== RUN   TestRunCommandHelp/baseline_assets
+--- PASS: TestRunCommandHelp (0.00s)
+    --- PASS: TestRunCommandHelp/fetch (0.00s)
+    --- PASS: TestRunCommandHelp/resolve (0.00s)
+    --- PASS: TestRunCommandHelp/watch (0.00s)
+    --- PASS: TestRunCommandHelp/deliver (0.00s)
+    --- PASS: TestRunCommandHelp/setup (0.00s)
+    --- PASS: TestRunCommandHelp/doctor (0.00s)
+    --- PASS: TestRunCommandHelp/upgrade (0.00s)
+    --- PASS: TestRunCommandHelp/update_check (0.00s)
+    --- PASS: TestRunCommandHelp/runs (0.00s)
+    --- PASS: TestRunCommandHelp/reconcile (0.00s)
+    --- PASS: TestRunCommandHelp/profiles (0.00s)
+    --- PASS: TestRunCommandHelp/profiles_show (0.00s)
+    --- PASS: TestRunCommandHelp/qa-report_accept (0.00s)
+    --- PASS: TestRunCommandHelp/baseline_capabilities (0.00s)
+    --- PASS: TestRunCommandHelp/baseline_skills (0.00s)
+    --- PASS: TestRunCommandHelp/baseline_assets (0.00s)
+=== CONT  TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+--- PASS: TestHistorySanitizeUsageErrors (0.71s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--apply (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--advise (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--advise_--apply_--batch_1 (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--promote_x (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_0 (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_-1 (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch_x (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--batch (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_--unknown (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/sanitize_extra (0.06s)
+    --- PASS: TestHistorySanitizeUsageErrors/unknown (0.06s)
+=== CONT  TestReviewCommandAppearsOnPublicHelp
+--- PASS: TestReviewCommandAppearsOnPublicHelp (0.00s)
+=== CONT  TestFollowUpReadsNoSecondbrainInbox
+--- PASS: TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration (0.11s)
+=== CONT  TestFollowUpSnapshotHonorsCancellation
+--- PASS: TestFollowUpReadsNoSecondbrainInbox (0.06s)
+=== CONT  TestFollowUpSnapshotKeepsCommittedWALAndCleansUp
+--- PASS: TestFollowUpSnapshotHonorsCancellation (0.03s)
+=== CONT  TestFollowUpIgnoresHiddenInboxEntries
+--- PASS: TestFollowUpSnapshotKeepsCommittedWALAndCleansUp (0.07s)
+=== CONT  TestSpecJudgeSkipsANonEnglishSource
+--- PASS: TestFollowUpIgnoresHiddenInboxEntries (0.06s)
+=== CONT  TestWindowHelpExplainsStartAndRunBounds
+--- PASS: TestSpecJudgeSkipsANonEnglishSource (0.02s)
+=== CONT  TestHelperProcessRecordsTheOfflineLookup
+--- PASS: TestHelperProcessRecordsTheOfflineLookup (0.01s)
+=== CONT  TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/help
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/usage
+=== RUN   TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/failure
+--- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure (0.00s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/help (0.00s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/usage (0.00s)
+    --- PASS: TestUpgradeWritesNoNoticeOnHelpUsageErrorOrFailure/failure (0.00s)
+=== CONT  TestUpdateCheckUsage
+=== RUN   TestUpdateCheckUsage/bare_group
+=== PAUSE TestUpdateCheckUsage/bare_group
+=== RUN   TestUpdateCheckUsage/unknown_subcommand
+=== PAUSE TestUpdateCheckUsage/unknown_subcommand
+=== RUN   TestUpdateCheckUsage/unexpected_argument
+=== PAUSE TestUpdateCheckUsage/unexpected_argument
+=== RUN   TestUpdateCheckUsage/invalid_format
+=== PAUSE TestUpdateCheckUsage/invalid_format
+=== RUN   TestUpdateCheckUsage/invalid_configuration
+=== PAUSE TestUpdateCheckUsage/invalid_configuration
+=== RUN   TestUpdateCheckUsage/help
+=== PAUSE TestUpdateCheckUsage/help
+=== RUN   TestUpdateCheckUsage/group_help
+=== PAUSE TestUpdateCheckUsage/group_help
+=== RUN   TestUpdateCheckUsage/short_help
+=== PAUSE TestUpdateCheckUsage/short_help
+=== RUN   TestUpdateCheckUsage/short_group_help
+=== PAUSE TestUpdateCheckUsage/short_group_help
+=== CONT  TestSpecJudgeTasksHonorsCeiling
+--- PASS: TestSpecJudgeTasksHonorsCeiling (0.01s)
+=== CONT  TestSpecJudgeDefaultIgnoresTasks
+--- PASS: TestWindowHelpExplainsStartAndRunBounds (0.04s)
+=== CONT  TestSpecJudgeTasksRequiresGraph
+--- PASS: TestSpecJudgeTasksRequiresGraph (0.02s)
+=== CONT  TestSpecJudgeTasksSkipsWithoutKey
+--- PASS: TestSpecJudgeDefaultIgnoresTasks (0.03s)
+=== CONT  TestSpecJudgeSuggestsModelTier
+=== RUN   TestSpecJudgeSuggestsModelTier/text
+--- PASS: TestSpecJudgeTasksSkipsWithoutKey (0.01s)
+=== CONT  TestSpecJudgeSkipNamesTheJudgeKeyFirst
+=== RUN   TestSpecJudgeSuggestsModelTier/json
+--- PASS: TestSpecJudgeSkipNamesTheJudgeKeyFirst (0.01s)
+=== CONT  TestSpecJudgeNamesTheKeyVariableItUsed
+=== RUN   TestSpecJudgeNamesTheKeyVariableItUsed/ROUNDFIX_OPENROUTER_JUDGE_API_KEY
+--- PASS: TestSpecJudgeSuggestsModelTier (0.03s)
+    --- PASS: TestSpecJudgeSuggestsModelTier/text (0.01s)
+    --- PASS: TestSpecJudgeSuggestsModelTier/json (0.01s)
+=== CONT  TestSpecJudgeRefusesAnInvalidUserConfigCeiling
+=== RUN   TestSpecJudgeNamesTheKeyVariableItUsed/ROUNDFIX_OPENROUTER_API_KEY
+--- PASS: TestSpecJudgeRefusesAnInvalidUserConfigCeiling (0.01s)
+=== CONT  TestSpecJudgeIgnoresAProjectConfigCeiling
+--- PASS: TestSpecJudgeNamesTheKeyVariableItUsed (0.03s)
+    --- PASS: TestSpecJudgeNamesTheKeyVariableItUsed/ROUNDFIX_OPENROUTER_JUDGE_API_KEY (0.02s)
+    --- PASS: TestSpecJudgeNamesTheKeyVariableItUsed/ROUNDFIX_OPENROUTER_API_KEY (0.02s)
+=== CONT  TestSpecJudgeSkipsAtTheUserConfigCeiling
+--- PASS: TestSpecJudgeIgnoresAProjectConfigCeiling (0.01s)
+=== CONT  TestSpecJudgePrintsSkippedGroupingPair
+--- PASS: TestSpecJudgeSkipsAtTheUserConfigCeiling (0.01s)
+=== CONT  TestSpecJudgeHelpNamesTheGroupingQuestion
+--- PASS: TestSpecJudgePrintsSkippedGroupingPair (0.02s)
+=== CONT  TestRunHelp
+--- PASS: TestRunHelp (0.00s)
+=== CONT  TestSpecJudgePrintsGroupingJSON
+--- PASS: TestSpecJudgeHelpNamesTheGroupingQuestion (0.01s)
+=== CONT  TestSpecJudgeCountsGroupingJudgmentsNotAsked
+--- PASS: TestSpecJudgePrintsGroupingJSON (0.01s)
+=== CONT  TestRoundfixBinaryHelperNamesTheSignalThatKilledItsChild
+--- PASS: TestSpecJudgeCountsGroupingJudgmentsNotAsked (0.02s)
+=== CONT  TestBaselineProfileHelpContract
+=== RUN   TestBaselineProfileHelpContract/baseline_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_capabilities_check_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_init_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_show_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_validate_--help
+--- PASS: TestBaselineProfileHelpContract (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_capabilities_check_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_init_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_show_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_validate_--help (0.00s)
+=== CONT  TestBaselinePlanPreflightHelp
+--- PASS: TestBaselinePlanPreflightHelp (0.00s)
+=== CONT  TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/unknown_flag
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/repository_without_commit
+--- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository (0.04s)
+    --- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/unknown_flag (0.00s)
+    --- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/repository_without_commit (0.04s)
+=== CONT  TestEveryGroupUsageErrorPointsAtItsCommands
+    baseline_group_usage_test.go:91: checking usage errors for 17 groups
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/baseline
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/baseline_assets
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/baseline_capabilities
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/baseline_profile
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/baseline_skills
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/deliver
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/history
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/profiles
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/qa-report
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/release
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/review
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/runs
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/skills
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/spec
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/storage
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/update
+=== RUN   TestEveryGroupUsageErrorPointsAtItsCommands/window
+--- PASS: TestEveryGroupUsageErrorPointsAtItsCommands (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/baseline (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/baseline_assets (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/baseline_capabilities (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/baseline_profile (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/baseline_skills (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/deliver (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/history (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/profiles (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/qa-report (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/release (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/review (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/runs (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/skills (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/spec (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/storage (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/update (0.00s)
+    --- PASS: TestEveryGroupUsageErrorPointsAtItsCommands/window (0.00s)
+=== CONT  TestBaselineGroupUsageTranscripts
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_1
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_2
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_3
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_4
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_5
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_6
+--- PASS: TestBaselineGroupUsageTranscripts (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_1 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_2 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_3 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_4 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_5 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_6 (0.00s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheConfirmationContract (0.00s)
+=== CONT  TestRunArchiveHelp
+--- PASS: TestRunArchiveHelp (0.00s)
+=== CONT  TestArchiveHelpNamesThePullRequestOption
+--- PASS: TestArchiveHelpNamesThePullRequestOption (0.00s)
+=== CONT  TestFollowUpReportsSkippedItemsAndAStoppedJudge/service
+--- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge (0.00s)
+    --- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge/secret (0.07s)
+    --- PASS: TestFollowUpReportsSkippedItemsAndAStoppedJudge/service (0.06s)
+=== CONT  TestBaselineStartersHelp
+--- PASS: TestBaselineStartersHelp (0.00s)
+=== CONT  TestRootHelpNamesTheCancelCommand
+--- PASS: TestCLITestHelpersEndWithTheirTestBinary (1.12s)
+=== CONT  TestCancelTranscriptPrintsHelp
+--- PASS: TestRootHelpNamesTheCancelCommand (0.04s)
+=== CONT  TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+--- PASS: TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal (0.00s)
+=== CONT  TestBaselineUpdateHelpNamesNonInteractiveContract
+--- PASS: TestBaselineUpdateHelpNamesNonInteractiveContract (0.00s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal (0.00s)
+=== CONT  TestSpecJudgeRefusesAnUnknownSpec
+--- PASS: TestSpecJudgeRefusesAnUnknownSpec (0.01s)
+=== CONT  TestSpecJudgePrintsAGroupingSuggestion
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/prd
+--- PASS: TestCancelTranscriptPrintsHelp (0.04s)
+=== CONT  TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+--- PASS: TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit (0.00s)
+=== CONT  TestSpecJudgeJSONSkipHasNullTransport
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/techspec
+--- PASS: TestSpecJudgeJSONSkipHasNullTransport (0.01s)
+=== CONT  TestSpecJudgeHelp
+=== RUN   TestSpecJudgePrintsAGroupingSuggestion/both
+--- PASS: TestSpecJudgeHelp (0.01s)
+=== CONT  TestSpecJudgeUsesConfiguredSpecRoot
+--- PASS: TestSpecJudgeUsesConfiguredSpecRoot (0.01s)
+=== CONT  TestSpecJudgePrintsJSON
+--- PASS: TestSpecJudgePrintsAGroupingSuggestion (0.05s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/prd (0.02s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/techspec (0.02s)
+    --- PASS: TestSpecJudgePrintsAGroupingSuggestion/both (0.02s)
+=== CONT  TestSpecJudgePrintsIndividualSkip
+--- PASS: TestSpecJudgePrintsIndividualSkip (0.01s)
+=== CONT  TestSpecJudgeRefusesAnUnknownStageOrFormat
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/stage
+--- PASS: TestSpecJudgePrintsJSON (0.02s)
+=== CONT  TestSpecJudgeRequiresStageArtifacts
+=== RUN   TestSpecJudgeRequiresStageArtifacts/_prd.md
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/format
+=== RUN   TestSpecJudgeRequiresStageArtifacts/_techspec.md
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/flag
+--- PASS: TestSpecJudgeRequiresStageArtifacts (0.02s)
+    --- PASS: TestSpecJudgeRequiresStageArtifacts/_prd.md (0.01s)
+    --- PASS: TestSpecJudgeRequiresStageArtifacts/_techspec.md (0.01s)
+=== CONT  TestSpecJudgeReportsAdvisoryJudgments
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_slug
+--- PASS: TestSpecJudgeReportsAdvisoryJudgments (0.01s)
+=== CONT  TestSpecJudgeStopsWhenTheServiceFails
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_value
+--- PASS: TestSpecJudgeStopsWhenTheServiceFails (0.01s)
+=== CONT  TestSpecJudgeSkipsANonEnglishSpec
+=== RUN   TestSpecJudgeRefusesAnUnknownStageOrFormat/extra_slug
+--- PASS: TestSpecJudgeSkipsANonEnglishSpec (0.01s)
+=== CONT  TestSpecJudgeIdeaHelpPreservesExistingLines
+--- PASS: TestSpecJudgeIdeaHelpPreservesExistingLines (0.00s)
+=== CONT  TestSpecJudgeSkipsAtTheMonthlyCeiling
+--- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat (0.07s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/stage (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/format (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/flag (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_slug (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/missing_value (0.01s)
+    --- PASS: TestSpecJudgeRefusesAnUnknownStageOrFormat/extra_slug (0.01s)
+=== CONT  TestSpecJudgeSkipsWithoutAKey
+--- PASS: TestRoundfixBinaryHelperNamesTheSignalThatKilledItsChild (0.30s)
+=== CONT  TestSpecJudgeIdeaUnavailableReportsExitZero
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/Run
+--- PASS: TestSpecJudgeSkipsAtTheMonthlyCeiling (0.01s)
+=== CONT  TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+--- PASS: TestSpecJudgeSkipsWithoutAKey (0.01s)
+=== CONT  TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/ceiling
+--- PASS: TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem (0.04s)
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/missing
+--- PASS: TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest (0.06s)
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/type
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/unreadable_log
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/date
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/duplicate
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/secret
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/id
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/schema
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/service
+=== CONT  TestFollowUpRefusesAnInvalidMessagesFile/oversize
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName/origin
+=== RUN   TestSpecJudgeIdeaUnavailableReportsExitZero/outside_pin
+=== CONT  TestFollowUpNamespaceDefaultsToTheRepositoryName/directory
+--- PASS: TestFollowUpRefusesAnInvalidMessagesFile (0.00s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/missing (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/type (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/date (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/duplicate (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/id (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/schema (0.04s)
+    --- PASS: TestFollowUpRefusesAnInvalidMessagesFile/oversize (0.04s)
+--- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero (0.24s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/Run (0.04s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/ceiling (0.04s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/unreadable_log (0.04s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/secret (0.04s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/service (0.04s)
+    --- PASS: TestSpecJudgeIdeaUnavailableReportsExitZero/outside_pin (0.04s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/no_key
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/other
+--- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName (0.00s)
+    --- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName/origin (0.08s)
+    --- PASS: TestFollowUpNamespaceDefaultsToTheRepositoryName/directory (0.07s)
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/ceiling
+=== CONT  TestFollowUpOrdersByTypeWithoutTheJudge/Run
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/information
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/message
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/refactor
+--- PASS: TestFollowUpOrdersByTypeWithoutTheJudge (0.00s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/no_key (0.09s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/ceiling (0.09s)
+    --- PASS: TestFollowUpOrdersByTypeWithoutTheJudge/Run (0.09s)
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/perf
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/finding
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/fix
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feature
+=== CONT  TestFollowUpAcceptsEveryDocumentedMessageType/feat
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages_messages.json
+=== CONT  TestFollowUpStatusWritesNothing/no_database
+--- PASS: TestFollowUpAcceptsEveryDocumentedMessageType (0.00s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/other (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/information (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/message (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/refactor (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/perf (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/finding (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/fix (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feature (0.06s)
+    --- PASS: TestFollowUpAcceptsEveryDocumentedMessageType/feat (0.06s)
+=== CONT  TestFollowUpStatusRefusesMessages/--status_--messages=
+=== CONT  TestFollowUpStatusRefusesMessages/--messages=messages.json_--status
+=== CONT  TestFollowUpStatusWritesNothing/dirty
+--- PASS: TestFollowUpStatusRefusesMessages (0.00s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages_messages.json (0.03s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--status_--messages= (0.03s)
+    --- PASS: TestFollowUpStatusRefusesMessages/--messages=messages.json_--status (0.03s)
+=== CONT  TestFollowUpStatusWritesNothing/live_WAL
+=== CONT  TestFollowUpStatusWritesNothing/release
+=== CONT  TestFollowUpStatusWritesNothing/at_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/HEAD_at_release
+=== CONT  TestFollowUpStatusReportsTheNextRelease/maintenance
+=== CONT  TestFollowUpStatusReportsTheNextRelease/no_tag
+=== CONT  TestFollowUpStatusReportsTheNextRelease/manual
+--- PASS: TestFollowUpStatusWritesNothing (0.00s)
+    --- PASS: TestFollowUpStatusWritesNothing/no_database (0.18s)
+    --- PASS: TestFollowUpStatusWritesNothing/dirty (0.14s)
+    --- PASS: TestFollowUpStatusWritesNothing/live_WAL (0.18s)
+    --- PASS: TestFollowUpStatusWritesNothing/at_tag (0.17s)
+    --- PASS: TestFollowUpStatusWritesNothing/release (0.26s)
+=== CONT  TestFollowUpStatusReportsTheNextRelease/dirty
+=== CONT  TestFollowUpStatusReportsTheNextRelease/patch
+=== CONT  TestFollowUpStatusReportsTheNextRelease/feature
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order
+--- PASS: TestFollowUpStatusReportsTheNextRelease (0.00s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/HEAD_at_release (0.15s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/no_tag (0.14s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/maintenance (0.22s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/dirty (0.11s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/manual (0.22s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/patch (0.22s)
+    --- PASS: TestFollowUpStatusReportsTheNextRelease/feature (0.24s)
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/datetime
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/null_since
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/map
+=== CONT  TestFollowUpReportsAnInvalidWaitingDeclaration/list
+=== CONT  TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference
+=== CONT  TestFollowUpHoldsBackWaitingItems/mixed_inventory
+=== CONT  TestFollowUpAllListsWaitingItemsLast/only_waiting_items
+--- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration (0.00s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank (0.10s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map_date (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_pair (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/validation_order (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_waiting_on (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone_invalid (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/since_alone (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/datetime (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/blank_date (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list_date (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/missing_since (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/impossible_date (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/null_since (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/two_lines (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/trailing_newline (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/map (0.11s)
+    --- PASS: TestFollowUpReportsAnInvalidWaitingDeclaration/list (0.11s)
+=== CONT  TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting
+=== CONT  TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked
+=== CONT  TestFollowUpHoldsBackWaitingItems/only_waiting_items
+--- PASS: TestFollowUpAllListsWaitingItemsLast (0.00s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/ranked_then_since_then_reference (0.11s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/only_waiting_items (0.11s)
+    --- PASS: TestFollowUpAllListsWaitingItemsLast/partial_judge_totals_exclude_waiting (0.11s)
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/declared_first
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false
+=== CONT  TestFollowUpDeclaredBlockedWorkTranscripts/without_from
+--- PASS: TestFollowUpHoldsBackWaitingItems (0.00s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/mixed_inventory (0.08s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/notes_and_specs_remain_ranked (0.08s)
+    --- PASS: TestFollowUpHoldsBackWaitingItems/only_waiting_items (0.11s)
+=== CONT  TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork/line_break
+--- PASS: TestFollowUpDeclaredBlockedWorkTranscripts (0.00s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/declared_first (0.07s)
+    --- PASS: TestFollowUpDeclaredBlockedWorkTranscripts/without_from (0.04s)
+=== CONT  TestFollowUpRefusesAMalformedBlockedWork/without_from
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/flag_value
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/leading_help
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/help_after_terminator
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/trailing_positional
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/spec_value
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/dash_help_after_argument
+=== CONT  TestCommandWantsHelpReadsOnlyArgumentPositions/subcommand_handoff
+--- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/flag_value (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/leading_help (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/help_after_terminator (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/trailing_positional (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/spec_value (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/dash_help_after_argument (0.00s)
+    --- PASS: TestCommandWantsHelpReadsOnlyArgumentPositions/subcommand_handoff (0.00s)
+=== CONT  TestUpdateCheckUsage/bare_group
+=== CONT  TestUpdateCheckUsage/help
+=== CONT  TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/short_help
+=== CONT  TestUpdateCheckUsage/group_help
+=== CONT  TestUpdateCheckUsage/invalid_format
+=== CONT  TestUpdateCheckUsage/invalid_configuration
+=== CONT  TestUpdateCheckUsage/unexpected_argument
+=== CONT  TestUpdateCheckUsage/unknown_subcommand
+--- PASS: TestUpdateCheckUsage (0.00s)
+    --- PASS: TestUpdateCheckUsage/bare_group (0.00s)
+    --- PASS: TestUpdateCheckUsage/help (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_format (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_configuration (0.00s)
+    --- PASS: TestUpdateCheckUsage/unexpected_argument (0.00s)
+    --- PASS: TestUpdateCheckUsage/unknown_subcommand (0.00s)
+--- PASS: TestFollowUpRefusesAMalformedBlockedWork (0.00s)
+    --- PASS: TestFollowUpRefusesAMalformedBlockedWork/line_break (0.04s)
+    --- PASS: TestFollowUpRefusesAMalformedBlockedWork/without_from (0.04s)
+--- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge (0.00s)
+    --- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge/all=false (0.07s)
+    --- PASS: TestFollowUpOnlyDeclaredItemsAskNoJudge/all=true (0.09s)
+PASS
+suiteguard: guard cost: measured 3271 paths; fingerprint took 157.897209ms before and 147.360458ms after
+ok  	roundfix/internal/cli	5.138s
+
+stderr:

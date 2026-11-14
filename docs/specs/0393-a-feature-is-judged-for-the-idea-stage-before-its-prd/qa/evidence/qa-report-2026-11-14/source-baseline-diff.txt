@@ -1,0 +1,8 @@
+command: git diff --exit-code b3b85b7c35acaa3a1b2c2c9301639d6c50254196 799a903fcdcd351fc992184cc7baba9c890f4072 -- internal/baseline/assets/source-baselines/
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+
+stderr:
+
+

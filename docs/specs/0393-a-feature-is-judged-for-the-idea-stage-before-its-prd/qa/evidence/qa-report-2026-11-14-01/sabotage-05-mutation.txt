@@ -1,0 +1,11 @@
+--- internal/judge/idea_stage.go
++++ internal/judge/idea_stage.go
+@@ -65,7 +65,7 @@
+ 		report.Reason = reasonPointer(fmt.Sprintf("the item is typed %s; only a feature is judged for the Idea stage", item.Type))
+ 		return report, nil
+ 	}
+-	if req.RunID != "" {
++	if req.RunID != "" && false {
+ 		report.Reason = reasonPointer("inside Run " + req.RunID + ", named by " + RunMarkerVariable)
+ 		return report, nil
+ 	}

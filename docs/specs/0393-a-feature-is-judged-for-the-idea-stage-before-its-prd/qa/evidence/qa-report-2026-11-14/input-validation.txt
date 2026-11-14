@@ -1,0 +1,16 @@
+command: go test -overlay /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0393-input-validation-3qphnzdm/overlay.json -count=1 -timeout 20m -v -run '^TestQA0393TypedInputs$' ./internal/speccheck
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+=== RUN   TestQA0393TypedInputs
+=== PAUSE TestQA0393TypedInputs
+=== CONT  TestQA0393TypedInputs
+All 38 rows have typed repository_path inputs; Q19/Q31/Q32 also have commit_range inputs.
+--- PASS: TestQA0393TypedInputs (0.00s)
+PASS
+suiteguard: guard cost: measured 3261 paths; fingerprint took 164.01475ms before and 143.902ms after
+ok  	roundfix/internal/speccheck	0.684s
+
+stderr:
+
+

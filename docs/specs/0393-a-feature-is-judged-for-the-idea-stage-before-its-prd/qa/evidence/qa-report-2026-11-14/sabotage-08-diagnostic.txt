@@ -1,0 +1,6 @@
+Named failure observed: True
+TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+    spec_judge_idea_test.go:122: exit=0 want=0
+FAIL
+FAIL	roundfix/internal/cli	0.808s
+FAIL

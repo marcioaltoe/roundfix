@@ -1,0 +1,25 @@
+--- internal/judge/idea_stage.go
++++ internal/judge/idea_stage.go
+@@ -40,19 +40,9 @@
+ 
+ // IdeaStageVerdict combines the independent answers without hiding uncertainty.
+ func IdeaStageVerdict(answers []string) string {
+-	allNo := len(answers) > 0
+-	for _, answer := range answers {
+-		if answer == "yes" {
+-			return "indicated"
+-		}
+-		if answer != "no" {
+-			allNo = false
+-		}
+-	}
+-	if allNo {
+-		return "not indicated"
+-	}
+-	return "undecided"
++ allYes, allNo := len(answers)>0, len(answers)>0
++ for _, answer := range answers { allYes = allYes && answer == "yes"; allNo = allNo && answer == "no" }
++ if allYes { return "indicated" }; if allNo { return "not indicated" }; return "undecided"
+ }
+ 
+ // JudgeIdeaStage sends only one bounded, secret-scanned item. Service and log

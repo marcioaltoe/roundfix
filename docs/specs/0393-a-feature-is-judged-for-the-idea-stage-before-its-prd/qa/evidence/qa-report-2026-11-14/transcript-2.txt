@@ -1,0 +1,10 @@
+command: ./bin/roundfix spec judge --stage idea --item docs/backlog/2026-11-09-missing.md
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0393-transcripts-2j1xbiqa/repo
+exit: 2
+stdout:
+
+stderr:
+roundfix: spec judge failed: no pending item "docs/backlog/2026-11-09-missing.md"; name a reference that 'roundfix follow-up' lists
+Run 'roundfix spec judge --help' for usage.
+
+

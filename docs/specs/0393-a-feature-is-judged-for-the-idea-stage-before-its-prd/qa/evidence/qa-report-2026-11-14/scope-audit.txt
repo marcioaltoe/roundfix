@@ -1,0 +1,29 @@
+task_01 5d7cd42bf07bcd9effd19bf6e2c51b3021500310 changed 20 paths; outside declarations: []
+task_02 a720bf5862da7709305bbf87b8f002325b8c6e89 changed 15 paths; outside declarations: []
+task_03 799a903fcdcd351fc992184cc7baba9c890f4072 changed 19 paths; outside declarations: []
+Changed Governed Paths: 18
+.agents/skills/brainstorming/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/modes.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-idea/references/idea-template.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-prd/references/prd-template.md
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+skills/brainstorming/SKILL.md
+skills/roundfix/SKILL.md
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-prd/references/prd-template.md
+Missing grants: []
+Forbidden path changes: []
+Changed QA settlement sections: []
+Authorization revision precedes 5d7cd42bf07bcd9effd19bf6e2c51b3021500310: True
+Authorization revision precedes a720bf5862da7709305bbf87b8f002325b8c6e89: True
+Authorization revision precedes 799a903fcdcd351fc992184cc7baba9c890f4072: True
+Tracked working-tree product delta: []

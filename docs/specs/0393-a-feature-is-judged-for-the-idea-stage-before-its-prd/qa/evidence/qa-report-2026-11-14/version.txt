@@ -1,0 +1,9 @@
+command: ./bin/roundfix --version
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+roundfix 0.144.0 (799a903f-dirty, built 2026-11-14 19:24:18 -0300)
+
+stderr:
+
+

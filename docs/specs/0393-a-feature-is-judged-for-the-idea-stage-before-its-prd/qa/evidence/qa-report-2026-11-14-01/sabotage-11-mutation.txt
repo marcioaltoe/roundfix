@@ -1,0 +1,11 @@
+--- internal/judge/idea_stage.go
++++ internal/judge/idea_stage.go
+@@ -112,7 +112,7 @@
+ 	}
+ 	text := []rune(item.Text)
+ 	if len(text) > q.IdeaStage.ItemMaxChars {
+-		text = text[:q.IdeaStage.ItemMaxChars]
++		text = text[:]
+ 	}
+ 	excerpt := string(text)
+ 	scan := strings.Join([]string{item.Title, item.Origin, excerpt, item.Type, item.Kind}, "\n")

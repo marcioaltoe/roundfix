@@ -1,0 +1,4 @@
+Herbei and Wegkamp; Classification with reject option; 2005; read 2026-11-14
+Source: https://webmath.univ-rennes1.fr/stat/GPE/COURBES/articles/hw05.pdf
+Evidence origin: the published passage already quoted in _prd.md Acceptance evidence. No network lookup performed.
+Comparison: The published middle outcome expresses doubt rather than forcing a binary classification. The observed fallback transcripts preserve an unmade verdict, and the independently tested 0.3/0.7 thresholds preserve an unsure band and undecided aggregate where no yes settles it. This is a structural comparison, not a claim of calibrated live accuracy.

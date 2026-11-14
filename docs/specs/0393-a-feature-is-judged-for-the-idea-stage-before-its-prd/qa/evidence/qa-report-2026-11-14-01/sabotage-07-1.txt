@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m -v -run ^TestIdeaStageItemComesOnlyFromTheInventory$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestIdeaStageItemComesOnlyFromTheInventory
+=== PAUSE TestIdeaStageItemComesOnlyFromTheInventory
+=== CONT  TestIdeaStageItemComesOnlyFromTheInventory
+    spec_judge_idea_test.go:223: lookup "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestIdeaStageItemComesOnlyFromTheInventory2135660010/001/arbitrary.md": <nil>
+--- FAIL: TestIdeaStageItemComesOnlyFromTheInventory (0.04s)
+FAIL
+suiteguard: guard cost: measured 3156 paths; fingerprint took 430.173459ms before and 145.7945ms after
+FAIL	roundfix/internal/cli	1.083s
+FAIL
+
+stderr:

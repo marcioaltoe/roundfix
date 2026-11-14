@@ -1,0 +1,66 @@
+command: go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0393-governed-_awm0xwr/overlay.json -count=1 -timeout 20m -v -run '^TestQA0393GovernedPaths$' ./internal/speccheck
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+=== RUN   TestQA0393GovernedPaths
+=== PAUSE TestQA0393GovernedPaths
+=== CONT  TestQA0393GovernedPaths
+GOVERNED .agents/skills/brainstorming/SKILL.md true
+GOVERNED .agents/skills/roundfix/SKILL.md true
+GOVERNED .agents/skills/roundfix/references/modes.md true
+GOVERNED .agents/skills/roundfix/references/spec.md true
+GOVERNED .agents/skills/write-idea/SKILL.md true
+GOVERNED .agents/skills/write-idea/references/idea-template.md true
+GOVERNED .agents/skills/write-prd/SKILL.md true
+GOVERNED .agents/skills/write-prd/references/prd-template.md true
+GOVERNED CONTEXT.md false
+GOVERNED docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md false
+GOVERNED docs/agents/setup-context.json true
+GOVERNED docs/agents/spec-routing.md true
+GOVERNED docs/references/behavior-surfaces.json false
+GOVERNED docs/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd/task_01.md false
+GOVERNED docs/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd/task_02.md false
+GOVERNED docs/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd/task_03.md false
+GOVERNED docs/user-guide/commands/spec.md false
+GOVERNED internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md true
+GOVERNED internal/baseline/assets/modules/spec-workflow.json true
+GOVERNED internal/baseline/assets/profiles/standard-typescript-monorepo.json true
+GOVERNED internal/baseline/idea_stage_route_clauses_test.go false
+GOVERNED internal/baseline/module-versions.json false
+GOVERNED internal/baseline/testdata/catalog.diagnostics.golden.json false
+GOVERNED internal/baseline/testdata/catalog.digest false
+GOVERNED internal/baseline/testdata/catalog.normalized.json false
+GOVERNED internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json false
+GOVERNED internal/baseline/testdata/plan-characterization/clean-adoption.golden.json false
+GOVERNED internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json false
+GOVERNED internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json false
+GOVERNED internal/cli/cli.go false
+GOVERNED internal/cli/spec_check.go false
+GOVERNED internal/cli/spec_judge.go false
+GOVERNED internal/cli/spec_judge_idea.go false
+GOVERNED internal/cli/spec_judge_idea_test.go false
+GOVERNED internal/cli/spec_judge_test.go false
+GOVERNED internal/judge/client.go false
+GOVERNED internal/judge/idea_stage.go false
+GOVERNED internal/judge/idea_stage_test.go false
+GOVERNED internal/judge/questions.go false
+GOVERNED internal/judge/questions.json false
+GOVERNED skills/brainstorming/SKILL.md true
+GOVERNED skills/idea_stage_authoring_test.go false
+GOVERNED skills/idea_stage_judgment_test.go false
+GOVERNED skills/roundfix/SKILL.md true
+GOVERNED skills/roundfix/references/modes.md false
+GOVERNED skills/roundfix/references/spec.md false
+GOVERNED skills/testdata/owned-skill-versions.json false
+GOVERNED skills/write-idea/SKILL.md true
+GOVERNED skills/write-idea/references/idea-template.md false
+GOVERNED skills/write-prd/SKILL.md true
+GOVERNED skills/write-prd/references/prd-template.md true
+--- PASS: TestQA0393GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3240 paths; fingerprint took 716.367125ms before and 224.358666ms after
+ok  	roundfix/internal/speccheck	1.239s
+
+stderr:
+
+

@@ -1,0 +1,13 @@
+diff --git a/internal/judge/idea_stage.go b/internal/judge/idea_stage.go
+index 9f00047..adbd001 100644
+--- a/internal/judge/idea_stage.go
++++ b/internal/judge/idea_stage.go
+@@ -171,7 +171,7 @@ func JudgeIdeaStage(ctx context.Context, q Questions, req IdeaStageRequest) (Ide
+ 		for _, criterion := range q.IdeaStage.Criteria {
+ 			probability := a.Probabilities[criterion.ID]
+ 			answer := "unsure"
+-			if probability >= q.IdeaStage.YesAtLeast {
++			if probability > q.IdeaStage.YesAtLeast {
+ 				answer = "yes"
+ 			} else if probability <= q.IdeaStage.NoAtMost {
+ 				answer = "no"

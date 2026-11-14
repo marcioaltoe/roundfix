@@ -1,0 +1,7 @@
+Named failure observed: True
+TestTheRouteClausesJudgeAFeatureForTheIdeaStage
+TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses
+    idea_stage_route_clauses_test.go:162: clause clause.spec.routing-01-large-initiative contains phrase 0 times, want exactly once
+FAIL
+FAIL	roundfix/internal/baseline	0.678s
+FAIL

@@ -1,0 +1,5 @@
+TypeSafe documentation; Noul; read 2026-11-14
+Source: https://docs.typesafe.ai/primitives/noul.md
+Evidence origin: the published passage already quoted in _prd.md Acceptance evidence. No network lookup performed.
+Comparison: The quoted documentation proposes 0.7 and 0.3 as starting thresholds. questions.json has exactly those values, and the boundary tests confirm inclusive yes/no and the middle band. The committed measurement states US$0.000054 per request, below US$0.01, with six questions; this is historical measurement evidence, not a new live cost observation.
+Measurement: docs/references/idea-stage-judgment-measurement.md; SHA-256 dd322f6bf3a2c78d9af03e95e4d344363fefac75f387921fade7475bbbbda93c

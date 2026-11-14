@@ -1,0 +1,9 @@
+command: ./bin/roundfix spec judge --stage idea --item docs/backlog/2026-11-03-status-prints-the-header-twice.md
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0393-transcripts-2j1xbiqa/repo
+exit: 0
+stdout:
+Idea stage for docs/backlog/2026-11-03-status-prints-the-header-twice.md: not judged: the item is typed fix; only a feature is judged for the Idea stage
+
+stderr:
+
+

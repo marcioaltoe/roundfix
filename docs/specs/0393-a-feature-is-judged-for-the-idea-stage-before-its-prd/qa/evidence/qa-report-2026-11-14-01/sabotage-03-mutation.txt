@@ -1,0 +1,11 @@
+--- internal/judge/idea_stage.go
++++ internal/judge/idea_stage.go
+@@ -171,7 +171,7 @@
+ 		for _, criterion := range q.IdeaStage.Criteria {
+ 			probability := a.Probabilities[criterion.ID]
+ 			answer := "unsure"
+-			if probability >= q.IdeaStage.YesAtLeast {
++			if probability > q.IdeaStage.YesAtLeast {
+ 				answer = "yes"
+ 			} else if probability <= q.IdeaStage.NoAtMost {
+ 				answer = "no"

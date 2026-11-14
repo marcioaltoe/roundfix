@@ -1,0 +1,11 @@
+package cli
+import("testing";"path/filepath";"fmt")
+func TestQA0393UnlistedAbsolutePath(t *testing.T) {
+    t.Parallel()
+    environment, fake := ideaCommandFixture(t, true)
+    followUpWrite(t, environment.workDir, "arbitrary.md", "# Never send this file\n")
+    reference := filepath.Join(environment.workDir, "arbitrary.md")
+    want := fmt.Sprintf("no pending item %q; name a reference that 'roundfix follow-up' lists", reference)
+    specJudgeRun(t, environment, []string{"--stage=idea", "--item", reference}, "", ideaCommandError(want), 2)
+    if fake.calls != 0 { t.Fatal("unlisted file was sent to the fake transport") }
+}

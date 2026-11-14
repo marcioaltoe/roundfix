@@ -1,0 +1,15 @@
+Named failure observed: True
+TestIdeaStageSendsNothingItMustNot
+TestIdeaStageSendsNothingItMustNot/secret_text
+TestIdeaStageSendsNothingItMustNot/secret_title
+TestIdeaStageSendsNothingItMustNot/secret_origin
+TestIdeaStageSendsNothingItMustNot/secret_type
+TestIdeaStageSendsNothingItMustNot/secret_kind
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x39ac6597510 Verdict: Answers:[] Model:<nil> Transport:0x39ac663ca40 KeyVariable:0x39ac6597340 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x39ac6597510 want=not sent: secret pattern github-token
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x39ac65cc040 Verdict: Answers:[] Model:<nil> Transport:0x39ac663d300 KeyVariable:0x39ac6597dd0 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x39ac65cc040 want=not sent: secret pattern github-token
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x39ac65ccc90 Verdict: Answers:[] Model:<nil> Transport:0x39ac663da80 KeyVariable:0x39ac65cc980 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x39ac65ccc90 want=not sent: secret pattern github-token
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x39ac65cd770 Verdict: Answers:[] Model:<nil> Transport:0x39ac6284fc0 KeyVariable:0x39ac65cd600 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x39ac65cd770 want=not sent: secret pattern github-token
+    idea_stage_test.go:190: calls=1 report={State:judge_unavailable Reason:0x39ac606e420 Verdict: Answers:[] Model:<nil> Transport:0x39ac6285740 KeyVariable:0x39ac606e2a0 Calls:1 InputTokens:0 CostUSD:0 MonthCostUSD:0 MonthCeilingUSD:5} reason=0x39ac606e420 want=not sent: secret pattern github-token
+FAIL
+FAIL	roundfix/internal/judge	0.491s
+FAIL

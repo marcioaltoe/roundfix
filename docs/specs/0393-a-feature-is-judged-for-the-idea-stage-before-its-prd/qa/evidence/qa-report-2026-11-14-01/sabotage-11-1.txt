@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m -v -run ^TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest$ ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== PAUSE TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== CONT  TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+    spec_judge_idea_test.go:322: request sent extra content or path
+--- FAIL: TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest (0.04s)
+FAIL
+suiteguard: guard cost: measured 3156 paths; fingerprint took 161.051625ms before and 145.059459ms after
+FAIL	roundfix/internal/cli	0.812s
+FAIL
+
+stderr:

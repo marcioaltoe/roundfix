@@ -1,0 +1,15 @@
+command: go test -count=1 -timeout 20m -v -run '^TestIdeaStageItemComesOnlyFromTheInventory$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0393-sabotage-7-lo8brl71
+exit: 0
+stdout:
+=== RUN   TestIdeaStageItemComesOnlyFromTheInventory
+=== PAUSE TestIdeaStageItemComesOnlyFromTheInventory
+=== CONT  TestIdeaStageItemComesOnlyFromTheInventory
+--- PASS: TestIdeaStageItemComesOnlyFromTheInventory (0.05s)
+PASS
+suiteguard: guard cost: measured 3156 paths; fingerprint took 159.606334ms before and 145.93675ms after
+ok  	roundfix/internal/cli	1.077s
+
+stderr:
+
+

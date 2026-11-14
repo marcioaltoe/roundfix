@@ -1,0 +1,57 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestSpecJudgeIdeaStageRequiresAnItem|TestSpecJudgeIdeaStageRefusesAnUnknownReference|TestSpecJudgeIdeaStageDoesNotJudgeAFix|TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer|TestSpecJudgeIdeaStageListsTheCriteriaForARequest|TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord|TestIdeaStageItemComesOnlyFromTheInventory|TestSpecJudgeIdeaStageReadsAMessageEntry|TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem|TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest)$' ./internal/cli
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30
+exit: 0
+stdout:
+=== RUN   TestSpecJudgeIdeaStageRequiresAnItem
+=== PAUSE TestSpecJudgeIdeaStageRequiresAnItem
+=== RUN   TestSpecJudgeIdeaStageRefusesAnUnknownReference
+=== PAUSE TestSpecJudgeIdeaStageRefusesAnUnknownReference
+=== RUN   TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== PAUSE TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== RUN   TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+=== PAUSE TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+=== RUN   TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+=== PAUSE TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== PAUSE TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== RUN   TestIdeaStageItemComesOnlyFromTheInventory
+=== PAUSE TestIdeaStageItemComesOnlyFromTheInventory
+=== RUN   TestSpecJudgeIdeaStageReadsAMessageEntry
+=== PAUSE TestSpecJudgeIdeaStageReadsAMessageEntry
+=== RUN   TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== PAUSE TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== RUN   TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== PAUSE TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+=== CONT  TestSpecJudgeIdeaStageRequiresAnItem
+=== CONT  TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord
+=== CONT  TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/indicated
+--- PASS: TestSpecJudgeIdeaStageRequiresAnItem (0.04s)
+=== CONT  TestSpecJudgeIdeaStageReadsAMessageEntry
+--- PASS: TestSpecJudgeIdeaStageDoesNotJudgeAWaitingItem (0.05s)
+=== CONT  TestIdeaStageItemComesOnlyFromTheInventory
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/not_indicated
+--- PASS: TestSpecJudgeIdeaStageReadsAMessageEntry (0.05s)
+=== CONT  TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer
+--- PASS: TestIdeaStageItemComesOnlyFromTheInventory (0.05s)
+=== CONT  TestSpecJudgeIdeaStageListsTheCriteriaForARequest
+--- PASS: TestSpecJudgeIdeaStageListsTheCriteriaForARequest (0.04s)
+=== CONT  TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest
+--- PASS: TestSpecJudgeIdeaStageListsTheCriteriaWhenTheJudgeDoesNotAnswer (0.05s)
+=== CONT  TestSpecJudgeIdeaStageDoesNotJudgeAFix
+=== RUN   TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/undecided
+--- PASS: TestSpecJudgeIdeaStageDoesNotJudgeAFix (0.04s)
+=== CONT  TestSpecJudgeIdeaStageRefusesAnUnknownReference
+--- PASS: TestSpecJudgeIdeaStageSendsOnlyTheStartOfARequest (0.06s)
+--- PASS: TestSpecJudgeIdeaStageRefusesAnUnknownReference (0.04s)
+--- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord (0.25s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/indicated (0.09s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/not_indicated (0.08s)
+    --- PASS: TestSpecJudgeIdeaStagePrintsTheVerdictAndTheRecord/undecided (0.08s)
+PASS
+suiteguard: guard cost: measured 3168 paths; fingerprint took 241.400375ms before and 151.996791ms after
+ok  	roundfix/internal/cli	1.112s
+
+stderr:
+
+

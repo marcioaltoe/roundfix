@@ -1,0 +1,12 @@
+package spec
+import("testing";"os";"fmt";"path/filepath";"roundfix/internal/secretscan")
+func TestQA0393FinalReport(t *testing.T){t.Parallel()
+reportPath := "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30/docs/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd/qa/qa-report-2026-11-14.md"
+r,err:=ReadQAReportFile(reportPath);if err!=nil{t.Fatal(err)}
+if r.Verdict!="fail" || r.RowsBlockedEnvironment!=1 || r.RowsBlockedFinding!=0 || r.RowsBlockedDeclared!=2 {t.Fatalf("unexpected report counts: %+v",r)}
+if err:=RequireResolvedEvidenceLinks(t.Context(),reportPath);err!=nil{t.Fatal(err)}
+paths:=[]string{reportPath}
+err=filepath.WalkDir("/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0393-a-feature-is-judged-for-the-idea-stage-before-its-prd-0b05154008928243-9a534cb7-b4a2a7cd/run_20261114T210733Z_b8e5ccd1f4543b30/docs/specs/0393-a-feature-is-judged-for-the-idea-stage-before-its-prd/qa/evidence/qa-report-2026-11-14",func(path string,d os.DirEntry,e error)error{if e!=nil{return e};if !d.IsDir(){paths=append(paths,path)};return nil});if err!=nil{t.Fatal(err)}
+for _,path:=range paths {data,err:=os.ReadFile(path);if err!=nil{t.Fatal(err)};for _,m:=range secretscan.ScanContent(path,data){t.Error(m.String())}}
+fmt.Printf("Parsed fail report; blocked environment=1 finding=0 declared=2; all evidence links resolved; secret-scanned %d files.\n",len(paths))
+}

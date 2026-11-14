@@ -1,0 +1,26 @@
+$ go test -count=1 -timeout 20m -v -run ^TestIdeaStageVerdictUsesTheThresholds$ ./internal/judge
+exit: 1
+stdout:
+=== RUN   TestIdeaStageVerdictUsesTheThresholds
+=== PAUSE TestIdeaStageVerdictUsesTheThresholds
+=== CONT  TestIdeaStageVerdictUsesTheThresholds
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.7_0.3_0.3]
+    idea_stage_test.go:111: report={State:answered Reason:<nil> Verdict:undecided Answers:[{ID:shape_open Probability:0.7 Answer:unsure} {ID:unverified_assumption Probability:0.3 Answer:no} {ID:market_question Probability:0.3 Answer:no}] Model:0x2294a1d51e20 Transport:0x2294a19991c0 KeyVariable:0x2294a1d51ba0 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.69_0.3_0.3]
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.3_0.3_0.3]
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0.31_0.3_0.3]
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[1_1_1]
+=== RUN   TestIdeaStageVerdictUsesTheThresholds/[0_0_0.7]
+    idea_stage_test.go:111: report={State:answered Reason:<nil> Verdict:undecided Answers:[{ID:shape_open Probability:0 Answer:no} {ID:unverified_assumption Probability:0 Answer:no} {ID:market_question Probability:0.7 Answer:unsure}] Model:0x2294a1ba7170 Transport:0x2294a1ad8c00 KeyVariable:0x2294a1ba6fd0 Calls:1 InputTokens:512 CostUSD:2.1504e-05 MonthCostUSD:2.1504e-05 MonthCeilingUSD:5}
+--- FAIL: TestIdeaStageVerdictUsesTheThresholds (0.01s)
+    --- FAIL: TestIdeaStageVerdictUsesTheThresholds/[0.7_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.69_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.3_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[0.31_0.3_0.3] (0.00s)
+    --- PASS: TestIdeaStageVerdictUsesTheThresholds/[1_1_1] (0.00s)
+    --- FAIL: TestIdeaStageVerdictUsesTheThresholds/[0_0_0.7] (0.00s)
+FAIL
+FAIL	roundfix/internal/judge	0.386s
+FAIL
+
+stderr:

@@ -1,0 +1,21 @@
+diff --git a/internal/judge/client.go b/internal/judge/client.go
+index b06137a..8243326 100644
+--- a/internal/judge/client.go
++++ b/internal/judge/client.go
+@@ -196,14 +196,14 @@ func evaluate(q Questions, p PendingJudgment, c call) (answer, string, string, b
+ 		for id := range questions {
+ 			value := c.Answers[id]
+ 			if value.Type != "noul" || !validProbability(value.Noul) {
+-				if !q.pinned(c.Model) {
++				if p.Kind != "idea-stage" && !q.pinned(c.Model) {
+ 					return answer{}, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
+ 				}
+ 				return answer{}, "skipped", "unreadable answer", false
+ 			}
+ 			values[id] = *value.Noul
+ 		}
+-		if !q.pinned(c.Model) {
++		if p.Kind != "idea-stage" && !q.pinned(c.Model) {
+ 			return answer{Probabilities: values}, "skipped", fmt.Sprintf("answered by %s, thresholds belong to %s", c.Model, q.PinnedModel), false
+ 		}
+ 		return answer{Probabilities: values}, "answered", "", false
