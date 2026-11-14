@@ -72,6 +72,22 @@ User skills: copies older than this binary: <skill> <found> (binary <version>) a
 
 It does not change `next`; the `--update` Skill Mode asks before running a refresh.
 
+When the installed authoring files do not match the Authoring Model
+Declaration, this line follows `User skills:` when present, otherwise the
+Baseline line. Problems follow the [skills check problem order](skills.md)
+and are joined by `; `:
+
+```text
+Authoring models: the installed files do not match the declaration: <problem>; apply with roundfix skills install --target project.
+```
+
+The `; apply with ...` clause appears only when installation can repair at
+least one problem. Links and files Roundfix did not generate need the user's
+correction. An applied declaration adds no text line. The comparison writes
+nothing, changes neither the report's `next` nor its exit code, and runs only
+when Project Config was read. Without declared keys or problems it adds no
+text line or JSON member.
+
 When a newer Roundfix wrote this repository's Baseline, the check prints `roundfix: warning: <refusal>; Project Config not read` on stderr, reads no Project Config, and its Baseline line is `Baseline: failed:` followed by the refusal.
 
 Only when a release is newer or the Baseline has a plan, the last line names
@@ -100,6 +116,12 @@ document:
 | `baseline.fileChanges`, `baseline.historyUnits`, `baseline.skillChanges` | Plan counts |
 | `baseline.message` | Preview message with whitespace collapsed |
 | `userSkills` | Each Stale User Skill Copy with `skill`, `path`, `resolved` (the link target, omitted for a plain folder), `found`, `embedded` and `refresh`; omitted when there is none |
+| `authoringModels` | Present after `userSkills` when a key is declared or a problem exists; omitted when Project Config was not read |
+| `authoringModels.state` | `applied` or `unapplied` |
+| `authoringModels.harness` | `claude` |
+| `authoringModels.declared` | Declared keys in phase order, with `research` last; an empty array for leftover generated files without a declaration |
+| `authoringModels.problems` | Problem texts in report order; always an array, empty when applied |
+| `authoringModels.next` | `roundfix skills install --target project` when a problem is fixable by installation; omitted otherwise |
 | `next` | `apply` for a newer release or a `plan_ready` Baseline, otherwise `none` |
 
 A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.

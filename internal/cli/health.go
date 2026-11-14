@@ -37,6 +37,7 @@ const (
 	HealthCheckEnvironment          = "environment"
 	HealthCheckSkills               = "skills"
 	HealthCheckUserSkills           = "user-skills"
+	HealthCheckAuthoringModels      = "authoring-models"
 	HealthCheckResidue              = "residue"
 	HealthCheckStorage              = "storage"
 	HealthCheckDiskSpace            = "disk-space"

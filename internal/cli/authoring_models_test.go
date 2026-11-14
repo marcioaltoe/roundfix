@@ -202,6 +202,33 @@ func TestBaselineUpdateAppliesTheAuthoringModelDeclaration(t *testing.T) {
 
 func TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted(t *testing.T) {
 	t.Parallel()
+	for _, command := range []string{"skills_check", "doctor", "update_check"} {
+		t.Run(command, func(t *testing.T) {
+			_, root := withCLIWorkspace(t)
+			installAuthoringReportFixture(t)
+			var stdout, stderr bytes.Buffer
+			switch command {
+			case "skills_check":
+				assertAuthoringCommand(t, []string{"skills", "check"}, "Roundfix skill check passed: "+strings.Join(roundskills.Names(), ", ")+"\n", "", 0)
+			case "doctor":
+				configureAuthoringDoctorFixture(t)
+				if code := runCLI(t, []string{"doctor"}, &stdout, &stderr); code != 0 || stderr.Len() != 0 || strings.Contains(stdout.String(), "authoring-models:") {
+					t.Fatalf("exit=%d stdout=%s stderr=%s", code, &stdout, &stderr)
+				}
+			case "update_check":
+				configureAuthoringUpdateFixture(t)
+				for _, format := range []string{"text", "json"} {
+					output := runUpdateCheckTest(t, "update", "check", "--format", format)
+					if strings.Contains(output, "Authoring models:") || strings.Contains(output, `"authoringModels"`) {
+						t.Fatalf("new authoring output without section: %s", output)
+					}
+				}
+			}
+			if _, err := os.Stat(filepath.Join(root, ".claude")); !os.IsNotExist(err) {
+				t.Fatalf("report created .claude: %v", err)
+			}
+		})
+	}
 	for _, command := range []string{"skills_install", "baseline_update"} {
 		t.Run(command, func(t *testing.T) {
 			for _, configured := range []bool{false, true} {

@@ -150,6 +150,29 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   the official curl installer into `~/.local/bin` and set `CODEX_PATH`.
   Skipped on non-Darwin platforms.
 
+After `skills:`, and after `user-skills:` when that line is present,
+Doctor compares the installed authoring skills and generated subagents with
+the Authoring Model Declaration. Matching files print:
+
+```text
+authoring-models: ok (claude: <declared keys> applied)
+```
+
+Declared keys are joined by `, ` in phase order, with `research` last.
+Problems use the [skills check problem order](skills.md) and are joined by
+`; `:
+
+```text
+authoring-models: warn (the installed files do not match the Authoring Model Declaration: <problem>; next: roundfix skills install --target project)
+```
+
+The next action appears only when installation can repair at least one
+problem. A missing Claude Skill Link or a file Roundfix did not generate
+requires the user's correction and has no installation next action on its
+own. This line only reads files and never changes Doctor's exit code.
+It is absent when nothing is declared and no Roundfix-generated file remains,
+outside a Git repository, or when Project Config was not read.
+
 Doctor has no separate `agent:` or `model:` authority. The aggregate
 `profiles:` result is the Agent Selection Profile Readiness contract.
 Repository Skill Set readiness runs after it as an independent check, even
