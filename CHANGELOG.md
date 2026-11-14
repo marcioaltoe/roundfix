@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.143.3] - 2026-11-14
+
+### A nested carrier Git does not list raises no conflict
+
+- **`roundfix baseline update` no longer warns about a nested `AGENTS.md` or `CLAUDE.md` that is not a file of the repository.** Before, the Baseline inventory walked the working tree and warned `baseline.inventory.nested-carrier-conflict` for a copy in a path Git ignores, such as a linked worktree a local script keeps under an ignored directory; the copy also entered the Plan Digest, so adding or removing that worktree changed the digest of an unchanged plan. A nested carrier now enters the inventory only when `git ls-files --cached --others --exclude-standard` lists it: a tracked one, or an untracked one Git does not ignore. A carrier inside a linked worktree, a nested repository or a submodule stays out. Root carriers and guides under `docs/agents/` keep their behavior. ADR-0399 amends ADR-0070.
+
 ## [0.143.2] - 2026-11-13
 
 ### A parked item always has a way back through a delivery retry
