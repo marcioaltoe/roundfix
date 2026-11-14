@@ -83,6 +83,10 @@
       {
         "version": "0.0.3",
         "digest": "364716d2f901608df5b98d04ed55cb7500ff374adf1e9247212ed2817eef5fb9"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "2140cdd430d1392df03edf4d75f4994b44bcc600149880235776ea747adbb603"
       }
     ],
     "business-analyst": [
@@ -1193,6 +1197,10 @@
       {
         "version": "0.1.238",
         "digest": "ce5471834e41d48c474d2dcbd3d629dd8efa49b28745e9133aff6eb8fca1a3e9"
+      },
+      {
+        "version": "0.1.239",
+        "digest": "a6bb747c5d95a5306bfebc8fbcafc5c5260074f25f2cb606cbe6c676d5c16e21"
       }
     ],
     "setup-context-driven": [
@@ -1257,6 +1265,10 @@
       {
         "version": "0.0.9",
         "digest": "7fbfc99e2050d6d388ae5c129562f09992e4ad01ef7eb3aac9edc046a3fac030"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "e21b82e3e96be4dc6095d2cdb15912ecb1d3b68fa871f5082d8337fb1de7efb1"
       }
     ],
     "write-prd": [
@@ -1335,6 +1347,10 @@
       {
         "version": "0.0.20",
         "digest": "a5b0fede139ae395528ff45572cbe69071247d0b5726fc205fe2c1575007c598"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "d8a1f0fd24441fc84eac05ec73c29a28e1c32d05e8d700a7da590728d91e158f"
       }
     ],
     "write-tasks": [

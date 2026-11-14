@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.20
+  version: 0.0.21
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.20
+version: 0.0.21
 ---
 
 # Write PRD
@@ -21,9 +21,23 @@ Produce `docs/specs/<feature-slug>/_prd.md` — the product definition the rest 
 
 If `docs/specs/<slug>/_idea.md` exists (produced by `write-idea`), it **is** the exploration: read it first, and treat its research, scoring, trade-off insights, chosen direction, and Out of Scope list as answered ground truth. Clarify only what the idea left open.
 
+Copy its `## Idea-stage judgment` section into the PRD unchanged.
+
 ## Size triage first
 
 Not every change earns a PRD — it pays for itself when there are product decisions to record and multiple tasks to derive. If the work changes no product behavior (a refactor, a bug fix), say so and route to `write-techspec`, which enters the pipeline directly and mints the spec folder with a minimal `_prd.md`. If the change is trivial (one-line fix, typo, config tweak), recommend direct implementation with no spec folder.
+
+## Idea-stage judgment
+
+A feature PRD is written only after its Idea stage was judged. When `_idea.md` exists, the judgment is its `## Idea-stage judgment` section. When the conversation, or the brief that delegated this skill, already holds the judgment of this request, with the user's dismissal or choice, record that one. Otherwise judge now, before any other step, as the repository's Spec routing says. The criteria are three: the right shape of the solution is still open; the request rests on an assumption about its users, the business or the market that it gives no evidence for; deciding to build it depends on a market or competitive question. When the request is recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`; when it exists only in the session, write it to a file in a temporary directory outside the repository, run `roundfix spec judge --stage idea --request <path>` and remove the file, and only the project's name, the request's first line and its first 4,000 characters reach the judge, after the secret scan. When the command says the judge did not answer, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
+
+- Indicated, any criterion yes: stop this skill and start `write-idea`, showing the verdict and the answers. The user may dismiss the stage at its first question; then this skill resumes.
+- Undecided, no criterion yes and not every one no, or any doubt: ask the user whether the Idea stage runs, showing the same answers.
+- Not indicated, every criterion no: continue.
+
+The judgment informs and never refuses, and a fix or a refactor is never judged. Never present your own answers as the judge's. When the stage is indicated or undecided and no user is present, as in a delegated subagent, write no PRD: keep the feature as a Backlog Entry that records the judgment and waits, with `waiting_on` and `since` in its frontmatter.
+
+Record the judgment in the PRD's `## Idea-stage judgment` section, in the fielded form the template shows: the item, who judged, each criterion's answer, the verdict, `stage` (`ran`, `dismissed` with the user's reason, or `not run`) and `shape`, what the Idea did to the request (`changed`, `split` or `unchanged`, or `not applicable` when the stage did not run). Every feature PRD carries this section.
 
 ## Ground rules
 

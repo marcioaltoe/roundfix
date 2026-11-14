@@ -72,6 +72,23 @@ leverage: quick-win # quick-win | strategic-bet | compounding
 
 - **<excluded>** — <why it's out of V1>
 
+## Idea-stage judgment
+
+<!-- The judgment that started this stage, in this fielded form; write-prd copies the section into the PRD.
+     judged-by: `judge (<model>)`, `agent (<why the judge did not answer>)` or `nobody (the user asked for the Idea stage)`.
+     Each criterion: yes, no or unsure, with the probability in parentheses when the judge answered; omit the three lines when nobody judged.
+     verdict: indicated | not indicated | undecided | not judged.
+     stage: ran. shape: changed | split | shelved | unchanged, then a dash and one line that says what. -->
+
+- item: <reference of the judged item, or `the request in the session`>
+- judged-by: judge (<model>)
+- shape_open: yes (0.85)
+- unverified_assumption: unsure (0.41)
+- market_question: no (0.09)
+- verdict: indicated
+- stage: ran
+- shape: changed — <what the Idea changed>
+
 ## Decisions
 
 <!-- Decisions made during this session, one line each; ADR-gated ones link: `See ADR-0014.` -->

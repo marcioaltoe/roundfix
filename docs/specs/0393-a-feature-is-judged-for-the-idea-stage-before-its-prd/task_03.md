@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -113,3 +113,19 @@ changed file.
 - `_prd.md` → User Story 2; User Story 3; User Story 4; User Story 6; User Story 7; Core Feature 6; Core Feature 7; Core Feature 8; Core Feature 9; Core Feature 10; Success Metric 6; Success Metric 7; Glossary
 - `_techspec.md` → Current behavior 6 and 7; Data Models (the record); API Contract 6; API Contract 7; API Contract 8; API Contract 9; Declared breaks; Testing Approach; Build Order 3
 - ADR-0403; ADR-0404; ADR-0201
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, testing-boss, golang-testing, tech-writer, domain-modeling, evidence-gate
+
+- Added the Idea-stage judgment contract to the canonical `brainstorming`, `write-idea` and `write-prd` skills, including the request-file boundary, fail-open agent answers, verdict routing, dismissal, waiting, and fielded-record rules.
+- Added the fielded `## Idea-stage judgment` record to both templates and the four follow-up/unattended mode sentences. `make skills-sync` completed, and every edited canonical/mirror pair compares equal.
+- Added `TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage` and `TestTheFollowUpModeRunsTheIdeaStageJudgment`; both call `t.Parallel()` first and use the task_01 helper through named rule subtests.
+- Updated `CONTEXT.md` with the changed Advisory Judgment and the new Idea Stage Judgment, and appended ADR-0404's amendment notice to ADR-0201 with the contracted timestamp.
+- Verification feedback repair: traced the failure to two doubled-backtick test phrases and one assertion wording mismatch, then corrected only `skills/idea_stage_authoring_test.go`.
+- Focused post-repair check: `gofmt -w skills/idea_stage_authoring_test.go && go test -count=1 ./skills -run '^(TestTheAuthoringSkillsJudgeAFeatureForTheIdeaStage|TestTheFollowUpModeRunsTheIdeaStageJudgment)$'` passed (`Go test: 9 passed in 1 packages`). Declared Verification remains for the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261114T210733Z_b8e5ccd1f4543b30`
+- Source commit: `799a903fcdcd351fc992184cc7baba9c890f4072`

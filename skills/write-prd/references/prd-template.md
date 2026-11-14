@@ -84,6 +84,25 @@ type: feat # Delivery Type: feat | fix | perf | refactor; a feature Spec writes 
        satisfied-by: <evidence or follow-up that satisfies it>
      Omit this section when every criterion is reachable. -->
 
+## Idea-stage judgment
+
+<!-- Every feature PRD carries this record, in this fielded form; the minimal PRD of a fix or a refactor omits the section.
+     Copy it from `_idea.md` when an Idea was written.
+     judged-by: `judge (<model>)`, `agent (<why the judge did not answer>)` or `nobody (the user asked for the Idea stage)`.
+     Each criterion: yes, no or unsure, with the probability in parentheses when the judge answered; omit the three lines when nobody judged.
+     verdict: indicated | not indicated | undecided | not judged.
+     stage: ran | dismissed — <the user's reason> | not run.
+     shape: changed | split | unchanged, then a dash and one line that says what the Idea changed; not applicable when the stage did not run. -->
+
+- item: <reference of the judged item, or `the request in the session`>
+- judged-by: judge (<model>)
+- shape_open: no (0.12)
+- unverified_assumption: no (0.17)
+- market_question: no (0.07)
+- verdict: not indicated
+- stage: not run
+- shape: not applicable
+
 ## Glossary
 
 <!-- Use `adds: **<term>**`, `changes: **<term>**`, or `not a term: **<phrase>** — <reason>`. Write `None.` when there are no entries. -->

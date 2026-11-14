@@ -4,10 +4,10 @@ description: "You MUST use this before any creative work - creating features, bu
 metadata:
   category: discovery
   tags: [product, requirements, research, workflow]
-  version: 0.0.3
+  version: 0.0.4
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.3
+version: 0.0.4
 ---
 
 # Brainstorming
@@ -54,13 +54,25 @@ When understanding feels complete:
 The conversation itself is the artifact — route it, don't duplicate it:
 
 - **Product-level idea** (market questions, open solution shape) → `write-idea` (produces `docs/specs/<slug>/_idea.md`).
-- **Feature ready to specify** → `write-prd` (synthesizes this conversation; it will not re-interview).
+- **Feature ready to specify** → `write-prd` (synthesizes this conversation; it will not re-interview), once the Idea-stage judgment below does not send it to `write-idea`.
 - **Refactor or bug fix** (no product behavior change) → `write-techspec` directly — it mints the spec folder with a minimal `_prd.md`, no product interview.
 - **Trivial, well-understood change** (one-line fix, typo, config tweak) → direct implementation, no spec folder; say so explicitly.
 
 When a repo carries `docs/agents/spec-routing.md`, follow its routing table — it is the canonical version of this list for that project.
 
 Do not write a separate design document — the spec pipeline's artifacts (`_idea.md`, `_prd.md`) are where the outcome lives.
+
+## Idea-stage judgment
+
+Before a feature goes to `write-prd`, judge whether it needs the Idea stage, unless the user asked for `write-idea` or the feature already has an `_idea.md`. The criteria are three: the right shape of the solution is still open; the request rests on an assumption about its users, the business or the market that it gives no evidence for; deciding to build it depends on a market or competitive question.
+
+When the repository runs Roundfix, ask the judge. For a request recorded as an open Backlog Entry, a note in `docs/_inbox/` or a message handed in as a file, run `roundfix spec judge --stage idea --item <reference>`. For a request that exists only in the session, write it to a file in a temporary directory outside the repository, run `roundfix spec judge --stage idea --request <path>` and remove the file; only the project's name, the request's first line and its first 4,000 characters reach the judge, after the secret scan. When the command says the judge did not answer, or the repository does not run Roundfix, answer the three criteria yourself, each as yes, no or unsure, and say that the judge did not answer.
+
+- Any criterion yes: the Idea stage is indicated. Start `write-idea` and show the answers; the user may dismiss the stage at its first question.
+- Every criterion no: go to `write-prd`.
+- Anything else, or any doubt: ask the user whether the Idea stage runs, showing the answers.
+
+Never present your own answers as the judge's, and never answer the Idea stage's questions for the user. Hand the answers to the skill that runs next, which records them. A fix or a refactor is never judged.
 
 ## Key principles
 
