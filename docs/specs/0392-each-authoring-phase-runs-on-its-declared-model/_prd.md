@@ -227,11 +227,15 @@ its own part:
 5. **The checks read the declaration.** In a repository that declares the
    section, `roundfix skills check`, Doctor and the Update Check compare the
    installed authoring skills and the generated files with the declaration
-   and warn, with `roundfix skills install --target project` as the next
-   action, when a header or a generated file is missing or different, when a
-   marked file has no entry, or when Claude Code's project skill directory
-   does not lead to the installed skill. No exit code changes for it, and
-   nothing is printed in a repository that declares nothing.
+   and warn when a header or a generated file is missing or different, when a
+   marked file has no entry, when Claude Code's project skill directory does
+   not lead to the installed skill, or when a file Roundfix did not generate
+   sits at a generated name. The warning names `roundfix skills install
+   --target project` as the next action when the installation fixes at
+   least one of the problems; a file Roundfix did not generate is named as a
+   conflict the user resolves by hand, because installation will not
+   overwrite it. No exit code changes for it, and nothing is printed in a
+   repository that declares nothing.
 6. **The user-level copy notice offers removal.** `roundfix skills remove`
    lists, and with `--apply` removes, the Roundfix-owned skills in a
    user-level skill directory; it unlinks a symbolic link and keeps the

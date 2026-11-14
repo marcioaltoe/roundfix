@@ -113,20 +113,25 @@ added only the plan of Spec 0391 and moved none of these paths.
   file never existed in the tree.
 - It covered every file the TechSpec's Build Order names, the Go files it
   expects the Tasks to create, every planning file of this Spec and the three
-  ADRs. The Task Graph does not exist yet: whoever writes it measures again
-  over the files its Tasks declare and amends this list before the plan
-  merges.
+  ADRs.
+- It was run again on 2026-11-14 at `f17949de`, when the Task Graph was
+  written, over every path the five Task files declare under `interface:`,
+  `creates:` and `instruction:`, the Task files, `_tasks.md` and the planning
+  files: sixty-nine paths with the two controls below. The governed set did
+  not move.
 - The thirteen paths above are governed: the `SKILL.md` pairs of the Roundfix
   skill and of the four authoring skills, and the Roundfix skill's canonical
-  `baseline`, `modes` and `setup` references. The probe also named
-  `.agents/skills/domain-modeling/SKILL.md`, which a Task only reads, and
-  `internal/cli/cli_test.go` and `docs/references/coverage-record.json`,
-  which the design does not change; none of the three is granted.
+  `baseline`, `modes` and `setup` references. Task 03 changes the `setup`
+  reference and the Roundfix `SKILL.md` pair; task 04 changes all thirteen.
+  The probe also named `.agents/skills/domain-modeling/SKILL.md`, which a
+  Task only reads, and the two controls `internal/cli/cli_test.go` and
+  `docs/references/coverage-record.json`, which no Task declares or changes;
+  none of the three is granted.
 
 ## What is not governed
 
 - Every Go source and test file under `internal/config`, `skills` and
-  `internal/cli` that the Build Order names.
+  `internal/cli` that the Tasks declare.
 - The mirrors under `skills/roundfix/references/` and
   `skills/testdata/owned-skill-versions.json`.
 - `docs/user-guide/**`, `CONTEXT.md`, `docs/references/behavior-surfaces.json`,
