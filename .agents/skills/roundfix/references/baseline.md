@@ -35,6 +35,7 @@ The same preview lists, under `skills.outdated`, each installed
 Roundfix-owned skill older than the version the binary carries. With
 unchanged guidance it then reports `plan_ready` instead of `current`, and
 `--yes` refreshes the Repository Skill Set.
+That refresh also applies the repository's Authoring Model Declaration, as the [setup reference](setup.md) says: the Declared Skill Header in the installed authoring skills and the generated subagents under `.claude/agents/`.
 Roundfix checks a required external skill only for presence: an entry in
 `skills-lock.json` and a folder under `.agents/skills`. It reads neither the
 folder's files nor the entry's `computedHash`, never compares the skill with

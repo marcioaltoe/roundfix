@@ -183,6 +183,31 @@ Baseline defect to report, not a skill to keep restoring by hand.
 `--no-skills` skips the list, and an absent or unreadable `skills-lock.json`
 adds nothing to it; `roundfix doctor` reports that state.
 
+The skills stage loads the repository's
+[Authoring Model Declaration](../configuration.md#authoring-models) from
+Project Config at the repository root, with configuration warnings on stderr.
+It uses the same installer as `roundfix skills install --target project`:
+declared headers and subagents are written before recording the installed
+folder hashes, and only its own leftover generated subagents are removed.
+A configuration load or installation error fails the stage with
+`apply the Authoring Model Declaration: <error>`. An installed authoring skill
+that held a model or effort without a declared entry gets the same notice on
+stderr as `skills install`.
+
+After `Skills installed: <n>` and its `- installed <name>` lines, the text
+report includes this line when a header, generated file or removal exists:
+
+```text
+Authoring models: <h> header(s), <s> generated subagent(s), <r> removed
+```
+
+The JSON report carries `skills.authoring` with `headers` (skill names),
+`subagents` and `removed` (repository-relative paths). Each list is omitted
+when empty, and the whole `authoring` member is omitted when all three are
+empty. Without a declaration and without leftover generated files, the stage
+prints no authoring line and carries no authoring member. `--no-skills` skips
+this application along with the skills stage.
+
 After the bundle install, an existing `skills-lock.json` entry naming an owned
 skill receives the installed folder's `computedHash` and loses its `ref`;
 every other field is kept. No entry or lock is created when none exists. The

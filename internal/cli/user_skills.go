@@ -9,21 +9,24 @@ import (
 	roundskills "roundfix/skills"
 )
 
-func staleUserSkillCopies(ctx context.Context, homeDir string) []roundskills.StaleUserSkillCopy {
+func reportedUserSkillCopies(ctx context.Context, homeDir string, declaredSkills []string) []roundskills.StaleUserSkillCopy {
 	directories := commandDependenciesForContext(ctx).userSkillDirectories
 	if directories == nil || strings.TrimSpace(homeDir) == "" {
 		return nil
 	}
-	return roundskills.StaleUserSkillCopies(ctx, directories(homeDir))
+	return roundskills.ReportedUserSkillCopies(ctx, directories(homeDir), declaredSkills)
 }
 
 func printUserSkillWarning(stderr io.Writer, copies []roundskills.StaleUserSkillCopy) {
 	if len(copies) == 0 {
 		return
 	}
-	fmt.Fprintln(stderr, "roundfix: warning: user-level Roundfix skill copies older than this binary; an Agent harness may load them in place of the project copy:")
+	fmt.Fprintln(stderr, "roundfix: warning: user-level Roundfix skill copies that an Agent harness may load in place of the project copy:")
 	for _, copy := range copies {
 		fmt.Fprintln(stderr, "  "+copy.Describe())
+	}
+	for _, removal := range roundskills.UserSkillRemovals(copies) {
+		fmt.Fprintln(stderr, "  remove: "+removal)
 	}
 	for _, refresh := range roundskills.StaleUserSkillRefreshes(copies) {
 		fmt.Fprintln(stderr, "  refresh: "+refresh)
@@ -31,16 +34,23 @@ func printUserSkillWarning(stderr io.Writer, copies []roundskills.StaleUserSkill
 }
 
 func doctorUserSkillsResult(copies []roundskills.StaleUserSkillCopy) CheckResult {
+	detail := "user-level Roundfix skill copies that an Agent harness may load in place of the project copy: " + describeUserSkillCopies(copies)
+	if refreshes := roundskills.StaleUserSkillRefreshes(copies); len(refreshes) > 0 {
+		detail += "; or refresh with " + strings.Join(refreshes, " && ")
+	}
 	return CheckResult{Name: HealthCheckUserSkills, Status: CheckStatusWarn,
-		Detail:     "user-level Roundfix skill copies older than this binary: " + describeUserSkillCopies(copies),
-		NextAction: strings.Join(roundskills.StaleUserSkillRefreshes(copies), " && ")}
+		Detail: detail, NextAction: strings.Join(roundskills.UserSkillRemovals(copies), " && ")}
 }
 
 func printUpdateCheckUserSkills(stdout io.Writer, copies []roundskills.StaleUserSkillCopy) {
 	if len(copies) == 0 {
 		return
 	}
-	fmt.Fprintf(stdout, "User skills: copies older than this binary: %s; refresh with %s.\n", describeUserSkillCopies(copies), strings.Join(roundskills.StaleUserSkillRefreshes(copies), " && "))
+	fmt.Fprintf(stdout, "User skills: copies that an Agent harness may load in place of the project copy: %s; remove with %s", describeUserSkillCopies(copies), strings.Join(roundskills.UserSkillRemovals(copies), " && "))
+	if refreshes := roundskills.StaleUserSkillRefreshes(copies); len(refreshes) > 0 {
+		fmt.Fprintf(stdout, ", or refresh with %s", strings.Join(refreshes, " && "))
+	}
+	fmt.Fprintln(stdout, ".")
 }
 
 func describeUserSkillCopies(copies []roundskills.StaleUserSkillCopy) string {

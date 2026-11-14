@@ -673,6 +673,16 @@
       ]
     },
     {
+      "id": "command skills remove",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/skills.md",
+        "internal/cli/skills_remove.go"
+      ]
+    },
+    {
       "id": "command spec audit",
       "skills": [
         ".agents/skills/roundfix/references/spec.md"

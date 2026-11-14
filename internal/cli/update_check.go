@@ -73,6 +73,7 @@ type updateCheckReport struct {
 	ReleasesTruncated bool                             `json:"releasesTruncated"`
 	Baseline          updateCheckBaseline              `json:"baseline"`
 	UserSkills        []roundskills.StaleUserSkillCopy `json:"userSkills,omitempty"`
+	AuthoringModels   *updateCheckAuthoring            `json:"authoringModels,omitempty"`
 	Next              string                           `json:"next"`
 }
 
@@ -111,7 +112,8 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	report := buildUpdateCheckReport(ctx, loaded.HomeDir, loaded.Config.Update.Mode, *refresh)
 	report.Baseline = previewUpdateCheckBaseline(ctx, loaded.GitRoot, environment)
-	report.UserSkills = staleUserSkillCopies(ctx, loaded.HomeDir)
+	report.UserSkills = reportedUserSkillCopies(ctx, loaded.HomeDir, loadedDeclaredAuthoringSkills(loaded))
+	report.AuthoringModels = updateCheckAuthoringModels(loaded)
 	if report.State == "update_available" || report.Baseline.State == "plan_ready" {
 		report.Next = "apply"
 	}
@@ -342,6 +344,7 @@ func printUpdateCheckReport(stdout io.Writer, report updateCheckReport) {
 		}
 	}
 	printUpdateCheckUserSkills(stdout, report.UserSkills)
+	printUpdateCheckAuthoringModels(stdout, report.AuthoringModels)
 	if report.Next == "apply" {
 		if report.Mode == "auto" {
 			fmt.Fprintln(stdout, "Next: update.mode auto: apply it now with the Roundfix skill's --update mode.")

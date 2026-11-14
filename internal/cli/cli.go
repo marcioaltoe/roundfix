@@ -103,6 +103,7 @@ Usage:
   roundfix events <run-id> [--follow] [--filter <categories>]
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
+  roundfix skills remove --target <codex|claude|opencode|all> [--dir <path>] [--apply]
 
 Commands:
   init       Create User Config or Project Config
@@ -758,7 +759,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		}
-		printUserSkillWarning(stderr, staleUserSkillCopies(ctx, environment.homeDir))
+		declaration := printSkillsAuthoringWarning(ctx, environment, stderr)
+		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredAuthoringSkills(declaration)))
 		return exitOK
 	case "list":
 		if commandWantsHelp(args[1:]) {
@@ -773,6 +775,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return runSkillsList(stdout)
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr, environment)
+	case "remove":
+		return runSkillsRemove(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown skills command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
@@ -1407,6 +1411,7 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 		targetDirs[targetValue] = strings.TrimSpace(*dir)
 	}
 	projectRoot := ""
+	var declaration *roundskills.AuthoringDeclaration
 	if targetValue == "project" && strings.TrimSpace(*dir) == "" {
 		var err error
 		workDir, workDirErr := environment.resolveWorkDir("resolve work directory")
@@ -1419,11 +1424,17 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight
 		}
+		declaration, err = loadAuthoringDeclaration(environment, projectRoot, stderr)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	result, err := roundskills.Install(ctx, roundskills.InstallRequest{
 		Target:     targetValue,
 		TargetDirs: targetDirs,
 		ProjectDir: projectRoot,
+		Authoring:  declaration,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
@@ -1432,6 +1443,7 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 	for _, installed := range result.Targets {
 		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
 	}
+	writeAuthoringInstall(result.Authoring, declaration, stdout, stderr)
 	if targetValue == "project" && projectRoot != "" {
 		updated, err := baseline.RecordInstalledOwnedSkills(ctx, projectRoot, roundskills.Names())
 		if err != nil {
@@ -6131,17 +6143,21 @@ preserved. Cleanup failures are secondary warnings after the primary failure.
   roundfix skills list
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
+  roundfix skills remove --target <codex|claude|opencode|all> [--dir <path>] [--apply]
 
 Commands:
   list       List the bundled Roundfix skills and recommended external skills
   check      Validate shipped Roundfix skill artifacts and, inside an adopted
              repository, the skills its Baseline requires
   install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
+  remove     List, and with --apply remove, the Roundfix skills in a user-level Agent skill directory
 
 Options:
   --target   Install target. Supported: project, codex, claude, opencode, all
              project writes <repo>/.agents/skills and can link .claude/skills
+             remove accepts codex, claude, opencode and all, never project
   --dir      Override the target skills directory for a single target
+  --apply    With remove, delete what the listing names
 `
 	default:
 		return strings.TrimRight(usage, "\n") + "\n"

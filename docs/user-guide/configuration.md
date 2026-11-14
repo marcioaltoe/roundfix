@@ -101,6 +101,79 @@ them. Examples include `gofmt -w`, `prettier --write --ignore-unknown`, and
 option, such as Prettier's `--ignore-unknown`. This documents `_techspec.md` →
 API Contract 1 and API Contract 2.
 
+## Authoring models
+
+Project Config can declare the model and reasoning effort of each authoring
+phase for Claude Code under `skills.authoring.claude`. Every key is optional;
+without a declaration, installation writes the shipped bundle unchanged.
+
+The names below are an example: Roundfix ships no model name and accepts what the harness accepts.
+
+```yaml
+skills:
+  authoring:
+    claude:
+      idea:
+        model: opus
+        reasoning_effort: xhigh
+      prd:
+        model: opus
+        reasoning_effort: xhigh
+      techspec:
+        model: opus
+        reasoning_effort: xhigh
+      tasks:
+        model: opus
+        reasoning_effort: high
+      research:
+        model: sonnet
+        reasoning_effort: medium
+        tools: [WebSearch, WebFetch]
+```
+
+`skills` accepts only `authoring`, which accepts only the harness `claude`.
+That harness accepts `idea`, `prd`, `techspec`, `tasks` and `research`.
+Each phase accepts `model` and `reasoning_effort`; `research` also accepts
+`tools`. The `skills`, `authoring`, `claude` and entry nodes must be mappings.
+An empty `authoring` or `claude` mapping declares nothing; a phase entry must
+set a model, an effort or both, and a research entry must set a model, an
+effort or at least one tool.
+
+A model must be a string matching
+`^[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0,199}$`: one to 200 characters,
+starting with a letter or digit, with no spaces. It is never checked against
+a list of model names. `reasoning_effort` must be a string: `low`, `medium`,
+`high`, `xhigh` or `max`. Unknown keys and invalid values stop configuration
+loading with a message naming the key or value.
+
+`research.tools` must be a list of strings with no duplicate. Each name must
+be `WebSearch`, `WebFetch` or match `^mcp__[A-Za-z0-9_.*-]+$`. The Research
+Subagent always receives `Read, Grep, Glob` first, followed by those names in
+declared order; it cannot receive `Bash`, `Write`, `Edit`, `NotebookEdit`,
+`PowerShell` or `Agent`. List only MCP tools that read: Roundfix cannot tell
+whether an MCP tool writes, and web and MCP tools can send out what they read.
+
+The whole `skills` section in User Config is ignored before validation, with
+one warning:
+
+```text
+config: skills in User Config is ignored; set skills in Project Config
+```
+
+[`roundfix skills install --target project`](commands/skills.md) and the
+skills stage of [`roundfix baseline update`](commands/baseline.md) write each
+declared phase's `model` and `effort` into its installed `SKILL.md` under
+`.agents/skills/`, and generate `.claude/agents/roundfix-<phase>-author.md`.
+The `research` entry generates `.claude/agents/roundfix-researcher.md`.
+Generated files carry the marker
+`<!-- roundfix:generated skills.authoring.claude.<key> -->` as their first
+non-blank body line; installation refuses a file it did not generate at any
+of the five names before writing anything, and removes only its own files
+whose entries are gone. Commit the headers and generated files with the
+installed skills; a user-level target or `--dir` receives neither.
+
+The section needs the Roundfix release that introduced it. An older binary refuses every command that loads configuration with `field skills not found in type config.configOverlay`, and its `roundfix skills install` writes the skills without the header; run `roundfix upgrade` there. Once a Baseline change applied by a newer release has recorded its version in the Setup Manifest, an older binary names both versions and `roundfix upgrade` instead. Claude Code applies the header only to a skill the user types, never in auto mode with a model that mode does not support, and a managed setting that forces one subagent model or an allowlist that excludes the declared one overrides the generated subagents. The external skills CLI's `skills update` can replace an installed skill and its header; the checks then name `roundfix skills install --target project`.
+
 ## Task and Verification capacities
 
 Task Capacity and Verification Capacity are independent, config-only limits

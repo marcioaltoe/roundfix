@@ -24,7 +24,7 @@ func TestSkillsCheckWarnsOfStaleUserSkillCopiesAndKeepsItsExit(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"skills", "check"}, &stdout, &stderr)
 	wantOut := "Roundfix skill check passed: " + strings.Join(roundskills.Names(), ", ") + "\n"
-	wantErr := "roundfix: warning: user-level Roundfix skill copies older than this binary; an Agent harness may load them in place of the project copy:\n  " + strings.Join(descriptions, "\n  ") + "\n  refresh: roundfix skills install --target claude\n  refresh: roundfix skills install --target opencode\n"
+	wantErr := "roundfix: warning: user-level Roundfix skill copies that an Agent harness may load in place of the project copy:\n  " + strings.Join(descriptions, "\n  ") + "\n  remove: roundfix skills remove --target claude --apply\n  remove: roundfix skills remove --target opencode --apply\n  refresh: roundfix skills install --target claude\n  refresh: roundfix skills install --target opencode\n"
 	if code != 0 || stdout.String() != wantOut || stderr.String() != wantErr {
 		t.Fatalf("exit=%d\nstdout=%q\nstderr=%q\nwant stdout=%q\nwant stderr=%q", code, stdout.String(), stderr.String(), wantOut, wantErr)
 	}
@@ -88,7 +88,7 @@ func TestDoctorReportsStaleUserSkillCopiesWithoutFailing(t *testing.T) {
 	if code != 0 || stderr.Len() != 0 {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
-	want := "user-skills: warn (user-level Roundfix skill copies older than this binary: " + strings.Join(descriptions, ", ") + "; next: roundfix skills install --target claude && roundfix skills install --target opencode)"
+	want := "user-skills: warn (user-level Roundfix skill copies that an Agent harness may load in place of the project copy: " + strings.Join(descriptions, ", ") + "; or refresh with roundfix skills install --target claude && roundfix skills install --target opencode; next: roundfix skills remove --target claude --apply && roundfix skills remove --target opencode --apply)"
 	lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
 	found := false
 	for i, line := range lines {
@@ -115,7 +115,7 @@ func TestUpdateCheckNamesStaleUserSkillCopies(t *testing.T) {
 	})
 	var stdout, stderr bytes.Buffer
 	code := runCLI(t, []string{"update", "check"}, &stdout, &stderr)
-	want := "Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify).\nBaseline: not checked (outside a Git repository).\nUser skills: copies older than this binary: " + strings.Join(descriptions, ", ") + "; refresh with roundfix skills install --target claude && roundfix skills install --target opencode.\n"
+	want := "Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify).\nBaseline: not checked (outside a Git repository).\nUser skills: copies that an Agent harness may load in place of the project copy: " + strings.Join(descriptions, ", ") + "; remove with roundfix skills remove --target claude --apply && roundfix skills remove --target opencode --apply, or refresh with roundfix skills install --target claude && roundfix skills install --target opencode.\n"
 	if code != 0 || stderr.Len() != 0 || stdout.String() != want {
 		t.Fatalf("exit=%d stdout=%q stderr=%q\nwant=%q", code, stdout.String(), stderr.String(), want)
 	}
@@ -172,12 +172,12 @@ func staleUserSkillsFixture(t *testing.T) (string, []roundskills.StaleUserSkillC
 		}
 	}
 	copies := []roundskills.StaleUserSkillCopy{
-		{Skill: "roundfix", Path: claude, Resolved: resolved, Found: "0.0.1", Embedded: versions["roundfix"], Refresh: "roundfix skills install --target claude"},
-		{Skill: "qa-gate", Path: qa, Found: "0.0.1", Embedded: versions["qa-gate"], Refresh: "roundfix skills install --target opencode"},
+		{Skill: "roundfix", Path: claude, Resolved: resolved, Found: "0.0.1", Embedded: versions["roundfix"], Refresh: "roundfix skills install --target claude", Remove: "roundfix skills remove --target claude --apply", Stale: true},
+		{Skill: "qa-gate", Path: qa, Found: "0.0.1", Embedded: versions["qa-gate"], Refresh: "roundfix skills install --target opencode", Remove: "roundfix skills remove --target opencode --apply", Stale: true},
 	}
 	descriptions := []string{
-		fmt.Sprintf("roundfix 0.0.1 (binary %s) at %s -> %s", versions["roundfix"], claude, resolved),
-		fmt.Sprintf("qa-gate 0.0.1 (binary %s) at %s", versions["qa-gate"], qa),
+		fmt.Sprintf("roundfix 0.0.1 (binary %s) at %s -> %s", versions["roundfix"], claude, resolved) + "; older than this binary",
+		fmt.Sprintf("qa-gate 0.0.1 (binary %s) at %s", versions["qa-gate"], qa) + "; older than this binary",
 	}
 	return home, copies, descriptions
 }

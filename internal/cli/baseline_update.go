@@ -45,9 +45,11 @@ type baselineUpdateRequest struct {
 }
 
 type baselineUpdateSkillsRequest struct {
-	Repository string
-	ProfileID  string
-	SourceDir  string
+	environment commandEnvironment
+	stderr      io.Writer
+	Repository  string
+	ProfileID   string
+	SourceDir   string
 }
 
 type baselineUpdateSkillDrift struct {
@@ -62,6 +64,7 @@ type baselineUpdateSkillOutdated struct {
 }
 
 type baselineUpdateSkillsResult struct {
+	Authoring      *roundskills.AuthoringInstall    `json:"authoring,omitempty"`
 	LockUpdated    []string                         `json:"lockUpdated,omitempty"`
 	LockUnpinned   []string                         `json:"lockUnpinned,omitempty"`
 	Retired        []baseline.InstalledRetiredSkill `json:"retired,omitempty"`
@@ -81,6 +84,8 @@ type baselineUpdateSkillsStage func(
 ) (baselineUpdateSkillsResult, error)
 
 type baselineUpdateSkillsDependencies struct {
+	loadAuthoring      func(context.Context, string) (*roundskills.AuthoringDeclaration, error)
+	stderr             io.Writer
 	recordLock         func(context.Context, string, []string) (baseline.OwnedSkillsLockUpdate, error)
 	resolveProjectRoot func(context.Context, string) (string, error)
 	install            func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error)
@@ -419,9 +424,11 @@ func runBaselineUpdateCommandWithSkillsStage(
 		result.Skills.Status = baselineUpdateSkillsSkipped
 	} else {
 		skillsResult, skillsErr := skillsStage(ctx, baselineUpdateSkillsRequest{
-			Repository: request.repo,
-			ProfileID:  input.ProfileID,
-			SourceDir:  request.skillsSourceDir,
+			environment: environment,
+			stderr:      stderr,
+			Repository:  request.repo,
+			ProfileID:   input.ProfileID,
+			SourceDir:   request.skillsSourceDir,
 		})
 		result.Skills = skillsResult
 		if skillsErr != nil {
@@ -536,7 +543,13 @@ func runBaselineUpdateSkillsStage(
 	ctx context.Context,
 	request baselineUpdateSkillsRequest,
 ) (baselineUpdateSkillsResult, error) {
+	stderr := request.stderr
+	if stderr == nil {
+		stderr = io.Discard
+	}
 	return runBaselineUpdateSkillsStageWith(ctx, request, baselineUpdateSkillsDependencies{
+		loadAuthoring:      baselineAuthoringLoader(request.environment, stderr),
+		stderr:             stderr,
 		resolveProjectRoot: defaultResolveSkillsProjectRoot,
 		install:            roundskills.Install,
 		recordLock:         baseline.RecordInstalledOwnedSkills,
@@ -563,13 +576,26 @@ func runBaselineUpdateSkillsStageWith(
 		result.Status = baselineUpdateSkillsFailed
 		return result, fmt.Errorf("resolve repository root for skills refresh: %w", err)
 	}
-	_, installErr := dependencies.install(ctx, roundskills.InstallRequest{
+	var declaration *roundskills.AuthoringDeclaration
+	if dependencies.loadAuthoring != nil {
+		declaration, err = dependencies.loadAuthoring(ctx, root)
+		if err != nil {
+			result.Status = baselineUpdateSkillsFailed
+			return result, fmt.Errorf("apply the Authoring Model Declaration: %w", err)
+		}
+	}
+	installed, installErr := dependencies.install(ctx, roundskills.InstallRequest{
 		Target:     "project",
 		ProjectDir: root,
+		Authoring:  declaration,
 	})
 	if installErr != nil {
 		result.Status = baselineUpdateSkillsFailed
-		return result, fmt.Errorf("install binary-carried Roundfix skills: %w", installErr)
+		return result, fmt.Errorf("apply the Authoring Model Declaration: %w", installErr)
+	}
+	result.Authoring = authoringInstallReport(installed.Authoring)
+	if dependencies.stderr != nil {
+		writeUncoveredAuthoringNotices(installed.Authoring, dependencies.stderr)
 	}
 	result.Installed = append(result.Installed, dependencies.ownedNames()...)
 	sort.Strings(result.Installed)
@@ -900,6 +926,9 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	fmt.Fprintf(stdout, "Skills installed: %d\n", result.Skills.InstalledCount)
 	for _, skill := range result.Skills.Installed {
 		fmt.Fprintf(stdout, "- installed %s\n", skill)
+	}
+	if authoring := result.Skills.Authoring; authoring != nil {
+		fmt.Fprintf(stdout, "Authoring models: %d header(s), %d generated subagent(s), %d removed\n", len(authoring.Headers), len(authoring.Subagents), len(authoring.Removed))
 	}
 	if len(result.Skills.LockUpdated) != 0 {
 		fmt.Fprintf(stdout, "Skills lock updated: %d\n", len(result.Skills.LockUpdated))
