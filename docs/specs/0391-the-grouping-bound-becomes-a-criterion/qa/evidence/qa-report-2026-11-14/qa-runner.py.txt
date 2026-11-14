@@ -1,0 +1,342 @@
+import os, pathlib, re, json, subprocess, tempfile, tarfile, io, shutil, sys, traceback, contextlib
+ROOT=pathlib.Path.cwd().resolve()
+SLUG='0391-the-grouping-bound-becomes-a-criterion'
+SPEC=ROOT/'docs/specs'/SLUG
+REPORT=SPEC/'qa/qa-report-2026-11-14.md'
+EV=SPEC/'qa/evidence/qa-report-2026-11-14'
+HEAD='891bcc2194bf62e8ba9aa2c5686d4280d0bf2152'
+BASE='f17949de1705c79a458134140b5c5e86eba5be2c'
+BINARY=ROOT/'bin/roundfix'
+TEST='TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee'
+SKILLTEST='TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle'
+MODULE='internal/baseline/assets/modules/spec-workflow.json'
+KEYS=['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','ROUNDFIX_TYPESAFE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY']
+CACHE={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOCACHE','GOMODCACHE']}
+ENV=os.environ.copy(); ENV.update(GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_TERMINAL_PROMPT='0')
+for key in KEYS: ENV.pop(key,None)
+FAKE=ROOT/'bin/qa-gh/gh'
+GO=shutil.which('go')
+WRAPPER=ROOT/'bin/qa-go'
+WRAPPER.write_text('#!/bin/sh\nif [ "$1" = test ]; then\n shift\n exec '+GO+' test -timeout 20m "$@"\nfi\nexec '+GO+' "$@"\n'); WRAPPER.chmod(0o755)
+
+def norm(s): return ' '.join(s.split())
+def git(*args,where=ROOT): return subprocess.check_output(['git',*args],cwd=where,env=ENV,text=True).strip()
+def show(rev,path): return subprocess.check_output(['git','show',f'{rev}:{path}'],cwd=ROOT,env=ENV)
+COMMAND_LOGS=[]
+def commands(args,where=ROOT,env=None,expect=0):
+    print('RUN', ' '.join(map(str,args)),flush=True)
+    p=subprocess.run(list(map(str,args)),cwd=where,env=env or ENV,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    log='command: '+' '.join(map(str,args))+'\nworking directory: '+str(where)+'\nSTDOUT:\n'+p.stdout+'\nSTDERR:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+    COMMAND_LOGS.append(log)
+    if expect is not None and p.returncode!=expect: raise RuntimeError(log)
+    return p,log
+
+@contextlib.contextmanager
+def isolated():
+    with tempfile.TemporaryDirectory(prefix='0391-home-') as h,tempfile.TemporaryDirectory(prefix='0391-tmp-') as t:
+        e=ENV.copy(); e.update(CACHE,HOME=h,TMPDIR=t,PATH=str(FAKE.parent)+os.pathsep+ENV['PATH'])
+        yield e
+
+@contextlib.contextmanager
+def archived(rev):
+    with tempfile.TemporaryDirectory(prefix='qa-0391-',dir=ROOT/'bin') as d:
+        d=pathlib.Path(d)
+        archive=subprocess.check_output(['git','archive',rev],cwd=ROOT,env=ENV)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tf: tf.extractall(d,filter='data')
+        # Fixture metadata is local and never touches the Run branch or a remote.
+        commands(['git','init','-q','-b','main'],d)
+        commands(['git','config','user.name','QA Fixture'],d)
+        commands(['git','config','user.email','qa@example.invalid'],d)
+        commands(['git','config','core.hooksPath','/dev/null'],d)
+        commands(['git','config','commit.gpgsign','false'],d)
+        commands(['git','add','.'],d)
+        commands(['git','commit','-q','-m','chore: initialize offline QA fixture'],d)
+        yield d
+
+def record(row,status,observation,log):
+    path=EV/(row.lower()+'.txt'); path.write_text(log)
+    s=REPORT.read_text(); s=re.sub(r'(?m)^\| '+row+r' \| [^|]* \|', '| '+row+' | '+status+' |',s)
+    start=s.index('### '+row+'\n'); end=s.find('\n### ',start+1)
+    if end<0: end=len(s)
+    block=s[start:end].replace('Observation: pending.',observation+'\n\nEvidence: ['+row+' transcript](evidence/qa-report-2026-11-14/'+path.name+').')
+    s=s[:start]+block+s[end:]; REPORT.write_text(s)
+    print(row,status,observation,flush=True)
+
+def perform(row,fn):
+    COMMAND_LOGS.clear()
+    try:
+        result=fn()
+        obs,log=result
+        record(row,'pass',obs,log)
+    except Exception as ex:
+        record(row,'fail','Expected observable was not met; see transcript.','\n'.join(COMMAND_LOGS)+'\n'+traceback.format_exc())
+
+def r01():
+    version=(EV/'version.txt').read_text()
+    assert HEAD==git('rev-parse','HEAD')
+    assert not git('diff','--name-only','HEAD','--',':(exclude)docs/specs/'+SLUG+'/qa')
+    return 'Build and version identity confirmed. Daemon repository Verification: make verify-changed passed (exit 0); diagnostics removed on success. Not rerun.',version+'\nmake build: exit 0; only shared Go-cache size warning, build continued.\nDaemon-supplied make verify-changed: pass, exit 0, diagnostics removed on success.\nTracked product delta against audited HEAD: empty.\n'
+
+BASETESTS=[TEST,'TestTheGroupingClausesCarryTheirForceAndText','TestTheGroupingClausesRenderInTheGuides','TestTheGroupingClausesHaveSourceBaselineRows','TestAnAdopterRetainsTheGroupingClauses','TestEveryBaselineModuleVersionIsRecorded']
+def suite(row,args,required=[]):
+    def run():
+        p,log=commands(['go','test','-count=1',*args])
+        for name in required: assert re.search(r'--- PASS: '+name+r' \(',p.stdout), 'missing PASS '+name
+        passed=re.findall(r'^\s*--- PASS: (.+?) \(',p.stdout,re.M)
+        log+='\nNamed passing tests and subtests:\n'+'\n'.join(passed)+'\n'
+        return f'Command exited 0; {len(passed)} named test/subtest PASS records retained.' if passed else 'Command exited 0; package success retained.',log
+    perform(row,run)
+
+# Testing Approach supplies eleven phrase pairs independently of the module text.
+def phrase_pairs():
+    tech=(SPEC/'_techspec.md').read_text().split('## Testing Approach',1)[1]
+    part=tech.split('- `skills/acceptance_rules_test.go`',1)[0]
+    pairs=[]
+    for m in re.finditer(r'  - `([^`]+)`: "([\s\S]*?)"',part): pairs.append((m[1],norm(m[2])))
+    # The last phrase is named by its endpoints in the TechSpec, backticks included.
+    pairs.append(('requires',"name that Spec in the Task Graph manifest's `requires` and state the dependency in the TechSpec Build Order."))
+    assert len(pairs)==11, pairs
+    return pairs
+
+def check_guide(text):
+    guide=norm(text); checks=[]
+    for name,phrase in phrase_pairs():
+        n=guide.count(phrase); assert n==1,(name,n)
+        checks.append(name+': exactly once')
+    assert 'only while the Spec fits four implementation Tasks plus its QA gate' not in guide
+    return '\n'.join(checks)+'\nold count bound: absent\n'
+
+def r08():
+    logs=[]
+    assert BASE==git('merge-base',HEAD,'origin/main')
+    with archived(BASE) as d:
+        before=(d/'docs/agents/spec-routing.md').read_text()
+        assert 'only while the Spec fits four implementation Tasks plus its QA gate' in norm(before)
+        with isolated() as e:
+            p,log=commands([BINARY,'baseline','update','--repo','.','--no-skills','--no-history','--yes'],d,e); logs.append(log)
+        first=(d/'docs/agents/spec-routing.md').read_text(); logs.append(check_guide(first))
+        (EV/'refreshed-guide.txt').write_text(first)
+        with isolated() as e:
+            p,log=commands([BINARY,'baseline','update','--repo','.','--no-skills','--no-history','--format','json'],d,e); logs.append(log)
+        out=json.loads(p.stdout); assert out['state']=='current',out
+        assert first==(d/'docs/agents/spec-routing.md').read_text()
+        assert out['fileChanges']==[] and out['ok'] is True
+        logs.append('Preview confirms current with zero file changes; clause retention is independently asserted by the named R02 adopter subtests.\n')
+        logs.append('Second invocation state: current; managed guide byte-identical after restart.\n')
+    with isolated() as e:
+        p,log=commands([BINARY,'baseline','update','--repo','.','--no-skills','--no-history','--format','json'],ROOT,e); logs.append(log)
+    assert json.loads(p.stdout)['state']=='current'
+    return 'Delivery Base adopter refresh applied all eleven phrases exactly once and removed the count bound; a fresh second invocation returned current with identical guide bytes. Current Run preview also returned current.', '\n'.join(logs)
+
+def find_clause(obj,cid):
+    for r in obj['rules']:
+        for c in r.get('clauses',[]):
+            if c['id']==cid: return c
+    raise AssertionError(cid)
+
+def sabotage(n):
+    logs=[]
+    with archived(HEAD) as d:
+        if n<=4:
+            p=d/MODULE; obj=json.loads(p.read_text()); clause=find_clause(obj,'clause.spec.sources-02-bound-the-group')
+            old=clause['guidance']
+            if n==1:
+                prior=json.loads(show('251ed81e',MODULE)); clause['guidance']=find_clause(prior,clause['id'])['guidance']
+            elif n==2:
+                phrase='give each source exactly one owning Spec; '; assert old.count(phrase)==1; clause['guidance']=old.replace(phrase,'')
+            elif n==3:
+                phrase=dict(phrase_pairs())['reference-not-cap']; assert old.count(phrase)==1; clause['guidance']=old.replace(phrase+' ','')
+            elif n==4:
+                phrase='never add a source that shares no context with the Spec only to save a Spec'; assert old.count(phrase)==1; clause['guidance']=old.replace(phrase,'add any source')
+            p.write_text(json.dumps(obj,indent=2,ensure_ascii=False)+'\n')
+            logs.append('Mutation: sabotage '+str(n)+' changed only module guidance before sanctioned regeneration.\n')
+            _,log=commands(['go','test','-timeout','20m','./internal/baseline','-run','^TestEveryBaselineModuleVersionIsRecorded$','-record-module-versions','-count=1'],d); logs.append(log)
+            e=ENV.copy(); e['GO']=str(WRAPPER)
+            _,log=commands(['make','baseline-digests'],d,e); logs.append(log)
+            logs.append('make GO uses Run-local qa-go: every nested go test has explicit -timeout 20m.\n')
+            testname=TEST; package='./internal/baseline'; sub={1:None,2:'one-owner',3:'reference-not-cap',4:'no-unrelated-source'}[n]
+        else:
+            package='./skills'; testname=SKILLTEST
+            if n==5:
+                path=d/'.agents/skills/write-tasks/SKILL.md'; old=path.read_text(); lines=old.splitlines(keepends=True)
+                removed=[l for l in lines if l.startswith('- **Earns its verification cycle.**')]; assert len(removed)==1
+                path.write_text(''.join(l for l in lines if l not in removed)); sub='canonical/write-tasks/SKILL.md'
+            else:
+                path=d/'skills/write-prd/SKILL.md'; old=path.read_text(); prior=show('251ed81e','skills/write-prd/SKILL.md').decode()
+                pat=r'(unresolved Findings for sources that share the context\. )[\s\S]*?(?=\n\n)'
+                now=re.search(pat,old); before=re.search(pat,prior); assert now and before
+                path.write_text(old[:now.start()]+before[0]+old[now.end():]); sub='embedded/write-prd/SKILL.md'
+            logs.append('Mutation: sabotage '+str(n)+' applied to '+str(path.relative_to(d))+'\n')
+        p,log=commands(['go','test','-count=1','-timeout','20m','-v','-run','^'+testname+'$',package],d,expect=None); logs.append(log)
+        assert p.returncode!=0,'sabotage survived'
+        assert '--- FAIL: '+testname+' ' in p.stdout,'test did not run/fail'
+        if sub: assert '--- FAIL: '+testname+'/'+sub+' ' in p.stdout,'wrong failing subtest'
+        assert (n<=4 and (('phrase ' in p.stdout and 'want exactly once' in p.stdout) or (n==1 and 'guide still bounds grouping by a count' in p.stdout))) or (n>=5 and 'phrase ' in p.stdout and 'count = 0, want 1' in p.stdout), 'unrelated failure'
+        failures=re.findall(r'^\s*--- FAIL: (.+?) \(',p.stdout,re.M)
+        logs.append('Expected failing test/subtest confirmed:\n'+'\n'.join(failures)+'\n')
+    return 'Sabotage '+str(n)+' was rejected by '+testname+('/'+sub if sub else '')+' for the authored missing phrase/count-bound diagnostic.', '\n'.join(logs)
+
+def contract_blocks():
+    section=(SPEC/'_techspec.md').read_text().split('### API Contracts',1)[1].split('### Surface Transcripts',1)[0]
+    blocks=re.findall(r'```text\n(.*?)\n\s*```',section,re.S)
+    assert len(blocks)==7,len(blocks)
+    return [norm(s) for s in blocks]
+
+def r15():
+    logs=[]; b=contract_blocks()
+    module=json.loads((ROOT/MODULE).read_text()); previous=json.loads(show(BASE,MODULE))
+    clause=find_clause(module,'clause.spec.sources-02-bound-the-group'); before=find_clause(previous,clause['id'])
+    assert clause['guidance']==b[0]
+    assert clause['id']==before['id'] and clause['enforcement']==before['enforcement']=='mandatory'
+    assert 'replaces' not in clause and 'replaces' not in before
+    assert find_clause(module,'clause.spec.sources-01-group-by-shared-context')==find_clause(previous,'clause.spec.sources-01-group-by-shared-context')
+    expected=json.loads(json.dumps(previous)); expected['version']=module['version']
+    assert module['version']==previous['version']+1
+    for rule in expected['rules']:
+        if rule['id']=='rule.spec.routing':
+            actual=next(r for r in module['rules'] if r['id']==rule['id']); assert actual['version']==rule['version']+1
+            rule['version']=actual['version']
+            next(c for c in rule['clauses'] if c['id']==clause['id'])['guidance']=clause['guidance']
+    assert module==expected,'another module/rule/clause changed'
+    logs.append('Module: exact API Contract 1; id, mandatory force, no replaces, clause set unchanged; only intended guidance and recorded versions changed.\nSources-01 grouping clause byte content unchanged.\n')
+    for path in ['docs/agents/spec-routing.md','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md']:
+        text=(ROOT/path).read_text(); assert norm(text).count(b[0])==1
+        logs.append(path+': exact API Contract 1 once\n'+check_guide(text))
+    for skill in ['write-idea','write-prd','write-techspec']:
+        for prefix in ['.agents/skills','skills']:
+            path=f'{prefix}/{skill}/SKILL.md'; assert norm((ROOT/path).read_text()).count(b[1])==1; logs.append(path+': exact API Contract 2 once\n')
+    for prefix in ['.agents/skills','skills']:
+        path=f'{prefix}/write-tasks/SKILL.md'; text=(ROOT/path).read_text(); assert norm(text).count(b[2])==1
+        lines=text.splitlines(); i=next(i for i,l in enumerate(lines) if l.startswith('- **Sized for one fresh session.**')); assert lines[i+1].startswith('- **Earns its verification cycle.**')
+        logs.append(path+': exact API Contract 3 once, immediately after Sized for one fresh session\n')
+        path=f'{prefix}/roundfix/references/spec.md'; assert norm((ROOT/path).read_text()).count(b[3])==1; logs.append(path+': exact API Contract 4 once\n')
+    assert norm((ROOT/'docs/user-guide/commands/spec.md').read_text()).count(b[4])==1; logs.append('docs/user-guide/commands/spec.md: exact API Contract 4 once\n')
+    assert norm((ROOT/'CONTEXT.md').read_text()).count(b[5])==1; logs.append('CONTEXT.md: exact API Contract 5 once\n')
+    adr='docs/adr/0208-work-items-that-share-a-context-share-a-spec.md'; text=(ROOT/adr).read_text(); old=show(BASE,adr).decode()
+    assert norm(text).count(b[6])==1 and 'updated_at: 2026-11-14T10:00:00Z' in text
+    notice=re.search(r'\n\n\*\*Amended by .*?(?=\n\n)',text,re.S); assert notice
+    restored=text[:notice.start()]+text[notice.end():]
+    restored=re.sub(r'^updated_at: .*$',re.search(r'^updated_at: .*$',old,re.M)[0],restored,flags=re.M)
+    assert restored==old,'ADR-0208 has another edit'
+    assert (ROOT/'docs/adr/0400-a-spec-is-sized-by-one-context-and-by-tasks-that-earn-their-verification-cycle.md').read_text().startswith('---\nstatus: accepted\n')
+    logs.append('ADR-0208: exact API Contract 6 once and expected timestamp; all other bytes preserved. ADR-0400: accepted.\n')
+    source='internal/baseline/assets/source-baselines'
+    paths=git('ls-tree','-r','--name-only',BASE,'--',source).splitlines()
+    for path in paths: assert (ROOT/path).read_bytes()==show(BASE,path),path
+    assert not git('diff','--name-only',BASE,HEAD,'--',source)
+    logs.append(f'Source Baselines: {len(paths)} files byte-identical to Delivery Base; no additions/deletions.\n')
+    assert (ROOT/'internal/baseline/assets/modules/context-workflow.json').read_bytes()==show(BASE,'internal/baseline/assets/modules/context-workflow.json')
+    logs.append('Context-workflow module, including inbox-03: byte-identical to Delivery Base.\n')
+    changed=['roundfix/SKILL.md','roundfix/references/spec.md','write-idea/SKILL.md','write-prd/SKILL.md','write-techspec/SKILL.md','write-tasks/SKILL.md']
+    for name in changed:
+        assert (ROOT/'.agents/skills'/name).read_bytes()==(ROOT/'skills'/name).read_bytes()
+        logs.append('Skill mirror identical: '+name+'\n')
+    scan=['.agents/skills','skills','docs/agents','docs/user-guide','internal/baseline/assets/modules','internal/baseline/assets/formatter-fixtures']
+    files=git('ls-files','--',*scan).splitlines(); count=0
+    for path in files:
+        if path=='skills/acceptance_rules_test.go': continue
+        p=ROOT/path
+        if not p.is_file(): continue
+        text=norm(p.read_text()); count+=1
+        for phrase in ['fits four implementation Tasks plus its QA gate','The grouping bound is four implementation Tasks']: assert phrase not in text,(path,phrase)
+    logs.append(f'Old phrases: absent from {count} normalized tracked files in the six declared roots. Excluded skills/acceptance_rules_test.go as authored.\n')
+    searches=[['rg','-n','-i','four implementation|grouping bound|len\\([^\\n]*Tasks[^\\n]*[<>=].*[45]','internal','--glob','*.go','--glob','!**/*_test.go'],['rg','-n','-i','four implementation|grouping bound|task count|number of tasks|maximum.{0,20}tasks','internal/judge/questions.json','internal/speccheck','--glob','*.go','--glob','*.json','--glob','!**/*_test.go','--glob','!**/testdata/**']]
+    for args in searches:
+        p,log=commands(args,expect=None); logs.append(log); assert p.returncode==1,'count-enforcement candidate requires inspection'
+    delta=git('diff','--name-only',BASE,HEAD).splitlines()
+    assert not [p for p in delta if p.endswith('.go') and not p.endswith('_test.go')]
+    assert not git('diff','--name-only',BASE,HEAD,'--','internal/speccheck','internal/judge')
+    logs.append('Invariant 3: production Go unchanged, strict-check package unchanged, judge questions unchanged, and scoped searches returned no count-enforcement candidates.\n')
+    return 'All six API Contracts match their declared carriers exactly; identity, force, unchanged clauses/corpus, skill mirrors and scoped old-wording/count-enforcement searches satisfy the authored checks.', '\n'.join(logs)
+
+def r16():
+    prd=(SPEC/'_prd.md').read_text(); guide=norm((EV/'refreshed-guide.txt').read_text())
+    quotes=['batch sizes have their own economic tradeoffs, which lead to U-curve optimization problems.','Economic batch size is a U-curve optimization.']
+    for quote in quotes: assert quote in norm(prd)
+    for phrase in ['a Spec that holds several contexts grows giant','a Spec of small Tasks spends Runs on long verification','Size a Spec by two criteria, never by a count of its Tasks.']: assert phrase in guide
+    log='Outside-evidence origin: Donald G. Reinertsen, The Principles of Product Development Flow (2009), Chapter 1 and principle B11. Read date recorded by the PRD: 2026-11-14.\nSources: http://lpd2.com/wp-content/uploads/2013/06/ReinertsenFLOWChap1.pdf ; https://lpd2.com/sample-page/the-principles-of-flow/\nQuoted passages supplied before QA:\n'+'\n'.join(quotes)+'\nComparison: the observed adopter guide states the two opposing costs (multiple contexts versus tiny Tasks paying full verification) and sizes by a criterion. This agrees with economic U-curve optimization; no fixed numeric optimum is inferred. The refreshed guide was independently produced by the built public CLI in this pass, not copied from a prior Run. No lookup performed.\n'
+    return 'Published 2009 Chapter 1/B11 passages support the two opposing costs stated in the freshly generated adopter guide; read date and publication origins recorded without lookup.',log
+
+def r17():
+    prd=norm((SPEC/'_prd.md').read_text()); guide=norm((EV/'refreshed-guide.txt').read_text())
+    quotes=['the correct answer is never on one extreme or the other',"when you're near the bottom of the U-curve, you don't need a very exact answer."]
+    for quote in quotes: assert quote in prd
+    assert 'Four implementation Tasks plus the QA gate is a reference, not a cap' in guide
+    return 'The published FlowCon France 2019 passages support a reference without a fixed cap in the freshly generated guide; the PRD records reading on 2026-11-14. No lookup performed.', 'Outside-evidence origin: Donald G. Reinertsen, The science of batch size, FlowCon France 2019. Read date: 2026-11-14.\nSource: https://flowcon.io/archives/2019/the-science-of-batch-size-donald-g-reinerstsen-at-flowcon-france-2019-e12/\nQuoted passages supplied before QA:\n'+'\n'.join(quotes)+'\nComparison: the observed adopter guide keeps four Tasks as a reference and explicitly rejects refusal by count, consistent with avoiding extremes and not needing an exact bottom-of-curve answer. No numeric optimum or measured performance improvement is inferred.\n'
+
+def r18():
+    text=(SPEC/'_prd.md').read_text(); section=text.split('## Unreachable Acceptance\n',1)[1].split('\n## ',1)[0].strip()
+    assert section.startswith('None.') and not re.search(r'(?m)^\s*[-*]\s',section)
+    return 'The complete PRD section declares None; no Unreachable Acceptance criterion is omitted or declared-blocked.', 'PRD Unreachable Acceptance, complete section:\n'+section+'\nValidation: starts None; no criterion entries.\n'
+
+def r19():
+    for name in ['_prd.md','_techspec.md']:
+        section=(SPEC/name).read_text().split('## Glossary\n',1)[1].split('\n## ',1)[0]
+        assert '- changes: **Grouping Bound**' in section
+    assert norm((ROOT/'CONTEXT.md').read_text()).count(contract_blocks()[5])==1
+    p,log=commands(['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','./internal/docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$'])
+    assert '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in p.stdout
+    return 'Both Spec artifacts declare changes: Grouping Bound; CONTEXT.md matches API Contract 5 exactly; TestGlossaryPhrasesAreDefinedTerms passed.', 'Glossary declarations and exact definition assertions: pass.\n'+log
+
+def r20():
+    logs=[]; commits=git('rev-list','--reverse',BASE+'..'+HEAD).splitlines()
+    assert commits==['7cf4ca53dba2470e43066a40d7e317de3abf6b6f',HEAD]
+    authorization='docs/specs/'+SLUG+'/_authorization.md'
+    grant=show(BASE,authorization).decode(); assert 'status: approved' in grant and '\noperations:\n' in grant
+    bounded=re.findall(r'^  - (.+)$',grant.split('paths:\n',1)[1].split('\noperations:',1)[0],re.M)
+    actual=[]
+    for i,commit in enumerate(commits,1):
+        task='task_0'+str(i); path='docs/specs/'+SLUG+'/'+task+'.md'; text=show(commit,path).decode()
+        declared=re.findall(r'^- (?:interface|instruction): `([^`]+)`',text,re.M)
+        recorded=text.split('## Recorded paths',1)[1] if '## Recorded paths' in text else ''
+        allowed=set(declared+re.findall(r'`([^`]+)`',recorded)+[path])
+        files=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines(); actual+=files
+        outside=set(files)-allowed; assert not outside,(task,sorted(outside))
+        assert git('merge-base','--is-ancestor',BASE,commit)==''
+        assert authorization not in files
+        logs.append('git diff-tree --no-commit-id --name-only -r '+commit+'\n'+'\n'.join(files)+'\n'+task+': all '+str(len(files))+' paths declared or own Task file; no Recorded paths additions. Authorization present at ancestor '+BASE+' and not folded into Task commit.\n')
+    protected=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json']
+    allowedskills={'write-idea','write-prd','write-techspec','write-tasks','roundfix'}
+    for path in set(actual):
+        assert path not in protected,path
+        assert not path.startswith(('.github/workflows/','internal/cli/','internal/judge/','internal/speccheck/','internal/spec/','internal/baseline/assets/source-baselines/','.claude/','.codex/','.opencode/')),path
+        if path.startswith('internal/baseline/assets/modules/'): assert path==MODULE,path
+        if path.startswith('docs/user-guide/'): assert path=='docs/user-guide/commands/spec.md',path
+        for prefix in ['.agents/skills/','skills/']:
+            if path.startswith(prefix):
+                parts=path[len(prefix):].split('/')
+                if len(parts)>1 and parts[0]!='testdata':
+                    assert parts[0] in allowedskills,path
+                    if parts[0]=='roundfix': assert '/'.join(parts[1:]) in ['SKILL.md','references/spec.md'],path
+    # Invoke the production classifier through an overlay test: no repository source is created or edited.
+    with tempfile.TemporaryDirectory(dir=ROOT/'bin',prefix='qa-governed-') as d:
+        d=pathlib.Path(d); probe=d/'probe.go.txt'; overlay=d/'overlay.json'
+        go='package speccheck\nimport ("encoding/json"; "fmt"; "testing")\nfunc TestQA0391GovernedPaths(t *testing.T) { t.Parallel(); paths := []string{'+','.join(json.dumps(p) for p in sorted(set(actual)))+'}; got:=map[string]bool{}; for _,p:=range paths { got[p]=GovernedPath(p) }; b,e:=json.Marshal(got); if e!=nil {t.Fatal(e)}; fmt.Printf("QA_GOVERNED %s\\n",b) }\n'
+        probe.write_text(go); overlay.write_text(json.dumps({'Replace':{str(ROOT/'internal/speccheck/qa0391_overlay_test.go'):str(probe)}}))
+        p,log=commands(['go','test','-count=1','-timeout','20m','-v','-overlay',overlay,'./internal/speccheck','-run','^TestQA0391GovernedPaths$']); logs.append(log)
+        values=json.loads(re.search(r'^QA_GOVERNED (.+)$',p.stdout,re.M)[1])
+    governed=[p for p,v in values.items() if v]
+    assert set(governed)<=set(bounded),(set(governed)-set(bounded))
+    logs.append('GovernedPath production classifier: '+str(len(governed))+' changed governed paths, all explicitly bounded:\n'+'\n'.join(governed)+'\n')
+    def settlements(text):
+        return re.findall(r'^### QA settlement\n[\s\S]*?(?=^#{1,3} |\Z)',text,re.M)
+    for path in sorted(set(actual)):
+        if path.startswith(('.agents/skills/','skills/')) and path.endswith('.md'):
+            assert settlements(show(BASE,path).decode())==settlements(show(HEAD,path).decode()),path
+    assert not git('diff','--name-only','HEAD','--',':(exclude)docs/specs/'+SLUG+'/qa')
+    logs.append('Forbidden paths: none changed. Every changed skill QA settlement section: byte-identical. Current tracked delta: none. Seeded authorization audit independently identifies both commits as granted at the prior base; no prerequisite or consequent fix is claimed.\n')
+    return 'Both Task commits stay within declarations, all changed Governed Paths are bounded by earlier approved authority, and prohibited paths plus QA settlement sections are unchanged.', '\n'.join(logs)
+
+def r21():
+    grant=(SPEC/'_authorization.md').read_text(); assert 'status: approved' in grant and '  - pull_request' in grant and '  - merge' in grant
+    assert HEAD==git('rev-parse','HEAD')
+    log='Pull Request row. Assignment states: none open on target branch roundfix/deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7. No service lookup, real gh or network used.\nPre-PR equivalents:\napproval: approved delivery authority in Spec _authorization.md, present at ancestor '+BASE+'; implement/commit/push/pull_request/merge operations recorded.\nchecks: Daemon-supplied make verify-changed, exit 0, at '+HEAD+'.\nunresolved threads: no Pull Request exists, so none exist to resolve.\nMerge-Ready acceptance: not yet available; no live required-check or Merge-Ready claim.\nclaimed candidate: '+HEAD+'.\nUnblocking action: supervisor opens the target-branch Pull Request after the normal pre-PR review/archive flow, then observes live controls.\n'
+    record('R21','blocked (environment: no open Pull Request)','No Pull Request exists. Approved delivery authority and Daemon checks provide pre-PR equivalents; there are no threads, Merge-Ready acceptance remains unavailable, and the audited candidate is named.',log)
+
+def r22():
+    before=git('status','--porcelain','--untracked-files=no')
+    with isolated() as e:
+        p,log=commands([BINARY,'archive',SLUG,'--plan','--offline'],ROOT,e)
+    assert before==git('status','--porcelain','--untracked-files=no')
+    assert 'judge' in (p.stdout+p.stderr).lower() or 'offline' in (p.stdout+p.stderr).lower() or 'candidate' in (p.stdout+p.stderr).lower()
+    return 'Offline archive plan exited 0 and listed the cut and candidates without changing tracked files or contacting a judge.', log

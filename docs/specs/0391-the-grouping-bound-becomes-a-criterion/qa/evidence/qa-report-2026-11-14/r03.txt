@@ -1,0 +1,69 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle|TestEveryOwnedSkillVersionIsRecorded)$ ./skills
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947
+STDOUT:
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== RUN   TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== PAUSE TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+=== CONT  TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md
+--- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md (0.00s)
+    --- PASS: TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md (0.00s)
+PASS
+ok  	roundfix/skills	0.262s
+
+STDERR:
+
+exit: 0
+
+Named passing tests and subtests:
+TestEveryOwnedSkillVersionIsRecorded
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-idea/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-idea/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/roundfix/references/spec.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-techspec/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-tasks/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/roundfix/references/spec.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-techspec/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-tasks/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/canonical/write-prd/SKILL.md
+TestTheAuthoringSkillsSizeASpecByContextAndVerificationCycle/embedded/write-prd/SKILL.md

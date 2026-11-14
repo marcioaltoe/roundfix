@@ -1,0 +1,13 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/roundfix archive 0391-the-grouping-bound-becomes-a-criterion --plan --offline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947
+STDOUT:
+archive plan for 0391-the-grouping-bound-becomes-a-criterion: removes 38 file(s) (233713 bytes) and writes docs/history/specs/0391-the-grouping-bound-becomes-a-criterion.md
+core 9 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-14.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 28 file(s) (107882 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-14-maintainer-the-grouping-bound-becomes-a-criterion.md 2590 bytes: no advice (offline)
+promote with: roundfix archive 0391-the-grouping-bound-becomes-a-criterion --promote <path>
+
+STDERR:
+
+exit: 0

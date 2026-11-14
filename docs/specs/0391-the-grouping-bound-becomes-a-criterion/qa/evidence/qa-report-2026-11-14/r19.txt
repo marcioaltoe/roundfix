@@ -1,0 +1,14 @@
+Glossary declarations and exact definition assertions: pass.
+command: go test -count=1 -timeout 20m -v -tags docscontract ./internal/docscontract -run ^TestGlossaryPhrasesAreDefinedTerms$
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947
+STDOUT:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.06s)
+PASS
+ok  	roundfix/internal/docscontract	0.305s
+
+STDERR:
+
+exit: 0

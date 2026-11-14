@@ -1,0 +1,12 @@
+command: ./bin/roundfix spec check 0391-the-grouping-bound-becomes-a-criterion --strict
+Spec 0391-the-grouping-bound-becomes-a-criterion
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0391-the-grouping-bound-becomes-a-criterion/_techspec.md Vocabulary Contract
+
+STDERR:
+
+exit: 0

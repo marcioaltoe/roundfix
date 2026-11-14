@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0391-the-grouping-bound-becomes-a-criterion
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

@@ -1,0 +1,5 @@
+PRD Unreachable Acceptance, complete section:
+None. Every criterion is proved with this repository's files, temporary
+copies of the audited head and temporary adopted repositories; no criterion
+needs the network, an open Pull Request or another repository.
+Validation: starts None; no criterion entries.

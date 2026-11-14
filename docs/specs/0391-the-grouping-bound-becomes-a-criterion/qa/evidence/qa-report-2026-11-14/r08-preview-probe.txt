@@ -1,0 +1,103 @@
+command: git init -q -b main
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git config user.name QA Fixture
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git config user.email qa@example.invalid
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git config core.hooksPath /dev/null
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git config commit.gpgsign false
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git add .
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: git commit -q -m chore: initialize offline QA fixture
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+
+STDERR:
+
+exit: 0
+
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/roundfix baseline update --repo . --no-skills --no-history --yes
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:7473b8b2610e3fb10825dc9f7a2f8de171dfbd68d59e4ae19161777554d573d4
+Current catalog: sha256:60159d2fddbeea8efcabee11826800a15429d485f05e2046844a9d12fcbd7933
+File changes: 2
+- update docs/agents/setup-context.json (1 managed entries)
+- update docs/agents/spec-routing.md (1 managed entries)
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:ea5f291f7cd95a9e0f208b8ff310b84ccf453bdb41520c1d1c51fd693cf29ab7
+Approved Plan Digest: sha256:ea5f291f7cd95a9e0f208b8ff310b84ccf453bdb41520c1d1c51fd693cf29ab7
+
+STDERR:
+
+exit: 0
+
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/roundfix baseline update --repo . --no-skills --no-history --format json
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-0391-0syojlge
+STDOUT:
+{"history":{"status":"skipped","units":[],"refused":[],"citations":[],"staleCitations":[]},"schemaVersion":"roundfix/baseline-update-result/v1","operation":"update","ok":true,"state":"current","message":"the repository already matches the current Baseline catalog","priorCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:60159d2fddbeea8efcabee11826800a15429d485f05e2046844a9d12fcbd7933"},"currentCatalog":{"schemaVersion":"roundfix/baseline-catalog/v1","digest":"sha256:60159d2fddbeea8efcabee11826800a15429d485f05e2046844a9d12fcbd7933"},"fileChanges":[],"retention":[],"warnings":[{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"},{"code":"baseline.inventory.nested-carrier-conflict","path":"internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md","message":"nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"}],"declaredDecisions":[],"newDecisions":[],"adoptedSuggestions":[],"planDigest":"sha256:0a50e1214aed0e47018dd6b84fe5cf161bc3a60c094ed55640178532d0032c4b","skills":{"status":"not_run","installedCount":0,"installed":[],"restored":[],"drifted":[]}}
+
+STDERR:
+
+exit: 0
+
+Traceback (most recent call last):
+  File "docs/specs/0391-the-grouping-bound-becomes-a-criterion/qa/evidence/qa-report-2026-11-14/qa-runner.py.txt", line 68, in perform
+    result=fn()
+  File "docs/specs/0391-the-grouping-bound-becomes-a-criterion/qa/evidence/qa-report-2026-11-14/qa-runner.py.txt", line 123, in r08
+    assert 'clause.spec.sources-02-bound-the-group' in json.dumps(out) or 'Idempotence: verified' in logs[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

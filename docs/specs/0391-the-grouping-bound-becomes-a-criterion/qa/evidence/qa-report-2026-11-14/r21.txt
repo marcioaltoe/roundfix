@@ -1,0 +1,8 @@
+Pull Request row. Assignment states: none open on target branch roundfix/deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7. No service lookup, real gh or network used.
+Pre-PR equivalents:
+approval: approved delivery authority in Spec _authorization.md, present at ancestor f17949de1705c79a458134140b5c5e86eba5be2c; implement/commit/push/pull_request/merge operations recorded.
+checks: Daemon-supplied make verify-changed, exit 0, at 891bcc2194bf62e8ba9aa2c5686d4280d0bf2152.
+unresolved threads: no Pull Request exists, so none exist to resolve.
+Merge-Ready acceptance: not yet available; no live required-check or Merge-Ready claim.
+claimed candidate: 891bcc2194bf62e8ba9aa2c5686d4280d0bf2152.
+Unblocking action: supervisor opens the target-branch Pull Request after the normal pre-PR review/archive flow, then observes live controls.

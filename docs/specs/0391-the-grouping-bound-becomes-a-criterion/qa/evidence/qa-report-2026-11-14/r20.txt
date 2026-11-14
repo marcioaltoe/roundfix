@@ -1,0 +1,75 @@
+git diff-tree --no-commit-id --name-only -r 7cf4ca53dba2470e43066a40d7e317de3abf6b6f
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+docs/specs/0391-the-grouping-bound-becomes-a-criterion/task_01.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/grouped_sources_clauses_test.go
+internal/baseline/module-versions.json
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+task_01: all 15 paths declared or own Task file; no Recorded paths additions. Authorization present at ancestor f17949de1705c79a458134140b5c5e86eba5be2c and not folded into Task commit.
+
+git diff-tree --no-commit-id --name-only -r 891bcc2194bf62e8ba9aa2c5686d4280d0bf2152
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+CONTEXT.md
+docs/adr/0208-work-items-that-share-a-context-share-a-spec.md
+docs/references/behavior-surfaces.json
+docs/specs/0391-the-grouping-bound-becomes-a-criterion/task_02.md
+docs/user-guide/commands/spec.md
+skills/acceptance_rules_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/spec.md
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+task_02: all 19 paths declared or own Task file; no Recorded paths additions. Authorization present at ancestor f17949de1705c79a458134140b5c5e86eba5be2c and not folded into Task commit.
+
+command: go test -count=1 -timeout 20m -v -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947/bin/qa-governed-21rfbw7a/overlay.json ./internal/speccheck -run ^TestQA0391GovernedPaths$
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947
+STDOUT:
+=== RUN   TestQA0391GovernedPaths
+=== PAUSE TestQA0391GovernedPaths
+=== CONT  TestQA0391GovernedPaths
+QA_GOVERNED {".agents/skills/roundfix/SKILL.md":true,".agents/skills/roundfix/references/spec.md":true,".agents/skills/write-idea/SKILL.md":true,".agents/skills/write-prd/SKILL.md":true,".agents/skills/write-tasks/SKILL.md":true,".agents/skills/write-techspec/SKILL.md":true,"CONTEXT.md":false,"docs/adr/0208-work-items-that-share-a-context-share-a-spec.md":false,"docs/agents/setup-context.json":true,"docs/agents/spec-routing.md":true,"docs/references/behavior-surfaces.json":false,"docs/specs/0391-the-grouping-bound-becomes-a-criterion/task_01.md":false,"docs/specs/0391-the-grouping-bound-becomes-a-criterion/task_02.md":false,"docs/user-guide/commands/spec.md":false,"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md":true,"internal/baseline/assets/modules/spec-workflow.json":true,"internal/baseline/assets/profiles/standard-typescript-monorepo.json":true,"internal/baseline/grouped_sources_clauses_test.go":false,"internal/baseline/module-versions.json":false,"internal/baseline/testdata/catalog.diagnostics.golden.json":false,"internal/baseline/testdata/catalog.digest":false,"internal/baseline/testdata/catalog.normalized.json":false,"internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json":false,"internal/baseline/testdata/plan-characterization/clean-adoption.golden.json":false,"internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json":false,"internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json":false,"skills/acceptance_rules_test.go":false,"skills/roundfix/SKILL.md":true,"skills/roundfix/references/spec.md":false,"skills/testdata/owned-skill-versions.json":false,"skills/write-idea/SKILL.md":true,"skills/write-prd/SKILL.md":true,"skills/write-tasks/SKILL.md":true,"skills/write-techspec/SKILL.md":true}
+--- PASS: TestQA0391GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3143 paths; fingerprint took 619.039042ms before and 200.336833ms after
+ok  	roundfix/internal/speccheck	1.100s
+
+STDERR:
+
+exit: 0
+
+GovernedPath production classifier: 16 changed governed paths, all explicitly bounded:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/spec.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+skills/roundfix/SKILL.md
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+
+Forbidden paths: none changed. Every changed skill QA settlement section: byte-identical. Current tracked delta: none. Seeded authorization audit independently identifies both commits as granted at the prior base; no prerequisite or consequent fix is claimed.

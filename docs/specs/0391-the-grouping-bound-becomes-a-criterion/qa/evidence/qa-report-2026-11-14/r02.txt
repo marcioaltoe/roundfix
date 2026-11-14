@@ -1,0 +1,109 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee|TestTheGroupingClausesCarryTheirForceAndText|TestTheGroupingClausesRenderInTheGuides|TestTheGroupingClausesHaveSourceBaselineRows|TestAnAdopterRetainsTheGroupingClauses|TestEveryBaselineModuleVersionIsRecorded)$ ./internal/baseline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0391-the-grouping-bound-becomes-a-criterion-d532309d417100a7-20dddef2-3076d69b/run_20261114T122512Z_e8c1e8dd512bd947
+STDOUT:
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee
+=== PAUSE TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee
+=== RUN   TestTheGroupingClausesCarryTheirForceAndText
+=== PAUSE TestTheGroupingClausesCarryTheirForceAndText
+=== RUN   TestTheGroupingClausesRenderInTheGuides
+=== PAUSE TestTheGroupingClausesRenderInTheGuides
+=== RUN   TestTheGroupingClausesHaveSourceBaselineRows
+=== PAUSE TestTheGroupingClausesHaveSourceBaselineRows
+=== RUN   TestAnAdopterRetainsTheGroupingClauses
+=== PAUSE TestAnAdopterRetainsTheGroupingClauses
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+=== CONT  TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee
+=== CONT  TestTheGroupingClausesHaveSourceBaselineRows
+=== CONT  TestAnAdopterRetainsTheGroupingClauses
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-count
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-context
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/earned-cycle
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-change-joins-a-task
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-source-joins-a-spec
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/two-reasons
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/reference-not-cap
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/split-by-context
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-owner
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-unrelated-source
+=== RUN   TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/requires
+--- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee (0.02s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-count (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-context (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/earned-cycle (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-change-joins-a-task (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-source-joins-a-spec (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/two-reasons (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/reference-not-cap (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/split-by-context (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-owner (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-unrelated-source (0.00s)
+    --- PASS: TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/requires (0.00s)
+=== CONT  TestTheGroupingClausesRenderInTheGuides
+=== RUN   TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-01-group-by-shared-context
+=== RUN   TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-02-bound-the-group
+=== RUN   TestTheGroupingClausesRenderInTheGuides/clause.context.inbox-03-extend-before-minting
+--- PASS: TestTheGroupingClausesRenderInTheGuides (0.00s)
+    --- PASS: TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-01-group-by-shared-context (0.00s)
+    --- PASS: TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-02-bound-the-group (0.00s)
+    --- PASS: TestTheGroupingClausesRenderInTheGuides/clause.context.inbox-03-extend-before-minting (0.00s)
+=== CONT  TestTheGroupingClausesCarryTheirForceAndText
+=== RUN   TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-01-group-by-shared-context
+=== RUN   TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-02-bound-the-group
+=== RUN   TestTheGroupingClausesCarryTheirForceAndText/clause.context.inbox-03-extend-before-minting
+--- PASS: TestTheGroupingClausesCarryTheirForceAndText (0.00s)
+    --- PASS: TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-01-group-by-shared-context (0.00s)
+    --- PASS: TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-02-bound-the-group (0.00s)
+    --- PASS: TestTheGroupingClausesCarryTheirForceAndText/clause.context.inbox-03-extend-before-minting (0.00s)
+=== RUN   TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-01-group-by-shared-context
+=== RUN   TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-02-bound-the-group
+=== RUN   TestTheGroupingClausesHaveSourceBaselineRows/clause.context.inbox-03-extend-before-minting
+--- PASS: TestTheGroupingClausesHaveSourceBaselineRows (0.02s)
+    --- PASS: TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-01-group-by-shared-context (0.00s)
+    --- PASS: TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-02-bound-the-group (0.00s)
+    --- PASS: TestTheGroupingClausesHaveSourceBaselineRows/clause.context.inbox-03-extend-before-minting (0.00s)
+=== RUN   TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-01-group-by-shared-context
+=== RUN   TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-02-bound-the-group
+=== RUN   TestAnAdopterRetainsTheGroupingClauses/clause.context.inbox-03-extend-before-minting
+--- PASS: TestAnAdopterRetainsTheGroupingClauses (0.59s)
+    --- PASS: TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-01-group-by-shared-context (0.00s)
+    --- PASS: TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-02-bound-the-group (0.00s)
+    --- PASS: TestAnAdopterRetainsTheGroupingClauses/clause.context.inbox-03-extend-before-minting (0.00s)
+PASS
+suiteguard: guard cost: measured 3121 paths; fingerprint took 517.113625ms before and 142.533125ms after
+ok  	roundfix/internal/baseline	1.542s
+
+STDERR:
+
+exit: 0
+
+Named passing tests and subtests:
+TestEveryBaselineModuleVersionIsRecorded
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-count
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-context
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/earned-cycle
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-change-joins-a-task
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/small-source-joins-a-spec
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/two-reasons
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/reference-not-cap
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/split-by-context
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/one-owner
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/no-unrelated-source
+TestTheGroupingBoundIsACriterionThatKeepsEveryGuarantee/requires
+TestTheGroupingClausesRenderInTheGuides
+TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-01-group-by-shared-context
+TestTheGroupingClausesRenderInTheGuides/clause.spec.sources-02-bound-the-group
+TestTheGroupingClausesRenderInTheGuides/clause.context.inbox-03-extend-before-minting
+TestTheGroupingClausesCarryTheirForceAndText
+TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-01-group-by-shared-context
+TestTheGroupingClausesCarryTheirForceAndText/clause.spec.sources-02-bound-the-group
+TestTheGroupingClausesCarryTheirForceAndText/clause.context.inbox-03-extend-before-minting
+TestTheGroupingClausesHaveSourceBaselineRows
+TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-01-group-by-shared-context
+TestTheGroupingClausesHaveSourceBaselineRows/clause.spec.sources-02-bound-the-group
+TestTheGroupingClausesHaveSourceBaselineRows/clause.context.inbox-03-extend-before-minting
+TestAnAdopterRetainsTheGroupingClauses
+TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-01-group-by-shared-context
+TestAnAdopterRetainsTheGroupingClauses/clause.spec.sources-02-bound-the-group
+TestAnAdopterRetainsTheGroupingClauses/clause.context.inbox-03-extend-before-minting
