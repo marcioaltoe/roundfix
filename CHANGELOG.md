@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.145.1] - 2026-11-15
+
+### The Verification probe prepares its tree as the Daemon does
+
+- **`roundfix spec check --run-verification` prepares its disposable checkout as the Daemon prepares a Task Worktree.** Before the first command it probes, the check copies the files `worktree.copy` configures and runs the Worktree Bootstrap once, so a Verification command that needs installed dependencies gets the verdict the Daemon would give it, instead of `honest` at authoring and vacuous at delivery. A failing bootstrap stops the check and names it in text and JSON. A repository without `worktree.copy` or a Worktree Bootstrap prints exactly what it printed before. ADR-0406 amends ADR-0148 and extends ADR-0034.
+
 ## [0.145.0] - 2026-11-14
 
 ### A feature is judged for the Idea stage before its PRD
