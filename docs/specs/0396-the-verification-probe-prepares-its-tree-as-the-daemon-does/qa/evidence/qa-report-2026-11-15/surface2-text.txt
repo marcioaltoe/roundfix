@@ -1,0 +1,10 @@
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/r396-vv6vg_mx/failed
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0396-the-verification-probe-prepares-its-tree-as-the-daemon-does-4a46fc960ea3d19c-1bbf682f-e2a47449/run_20261115T114930Z_da4a60ab1e76f5b0/bin/roundfix spec check clean --run-verification --format text
+exit: 1
+stdout:
+
+stderr:
+roundfix: spec check failed: prepare Verification tree at HEAD: worktree bootstrap failed: echo bootstrap-broke >&2; exit 7: exit status 7; bootstrap work may have been applied
+No Verification command was probed: a Run stops at the same Worktree Bootstrap before any Agent work.
+Worktree Bootstrap output tail:
+bootstrap-broke

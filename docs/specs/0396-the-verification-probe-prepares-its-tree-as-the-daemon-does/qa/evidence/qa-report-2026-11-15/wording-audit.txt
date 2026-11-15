@@ -1,0 +1,10 @@
+docs/user-guide/commands/spec.md: exact Text A once, immediately after specified parser paragraph
+.agents/skills/roundfix/references/spec.md: exact Text A once, immediately after specified parser paragraph
+skills/roundfix/references/spec.md: exact Text A once, immediately after specified parser paragraph
+CONTEXT.md: exact Text B on the Worktree Bootstrap definition line
+0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md: accepted; exact amendment is last paragraph
+0034-run-worktrees-can-bootstrap-their-environment.md: accepted; exact amendment is last paragraph
+ADR-0406: accepted
+spec_check.go: exactly one runworktree.Provision call
+ProvisionItem: returns Provision(ctx, ref.UserRoot, ref.Path, opts)
+Reference copies: byte identical

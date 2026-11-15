@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0396-the-verification-probe-prepares-its-tree-as-the-daemon-does
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

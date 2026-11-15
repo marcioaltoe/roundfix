@@ -1,0 +1,20 @@
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/r396-sabotage-yqiw5u7x
+command: go test -count=1 -timeout 30m -v -run '^TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted$' ./internal/cli
+exit: 1
+stdout:
+=== RUN   TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted
+=== PAUSE TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted
+=== CONT  TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted
+=== RUN   TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted/text
+=== RUN   TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted/json
+    spec_check_bootstrap_test.go:190: JSON changed; stdout={"schema":"roundfix-speccheck/v1","slug":"clean","findings":[],"repairInputs":[],"skipped":[{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"docs/agents/autonomous-work.md"},{"code":"SC-LOOP-ORDER-DIVERGENT","missing":"internal/baseline/assets/modules/autonomous-work.json"},{"code":"SC-HISTORY-RETAINED","missing":"recorded guide.docs-layout region does not carry A retirement deletes the file"},{"code":"SC-FINDING-LIFECYCLE","missing":"docs/findings"},{"code":"SC-ROLLUP-MEMBER","missing":"docs/findings"},{"code":"SC-ARCHIVE-LICENSE","missing":"docs/history/findings"},{"code":"SC-BACKLOG-UNMOVED","missing":"docs/backlog"},{"code":"SC-DECISIONS-UNRECORDED","missing":"a PRD committed at or after .agents/skills/write-prd/references/clarification-record.md"},{"code":"SC-VOCABULARY-UNDOCUMENTED","missing":"docs/specs/clean/_techspec.md Vocabulary Contract"},{"code":"SC-SKILLS-MALFORMED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SKILLS-UNTASKED","missing":"docs/references/skill-coverage.json"},{"code":"SC-SURFACE-RECORD-UNTASKED","missing":"docs/references/behavior-surfaces.json"},{"code":"SC-SKILL-VERSION-UNTASKED","missing":"skills/testdata/owned-skill-versions.json"},{"code":"SC-GLOSSARY-UNDECLARED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-UNPLANNED","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-GLOSSARY-MISSING","missing":"CONTEXT.md or GLOSSARY.md"},{"code":"SC-TRANSCRIPT-UNDECLARED","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-RECEIPT-MISSING","missing":".agents/skills/write-techspec/references/concrete-contracts.md"},{"code":"SC-REF-UNRESOLVED","missing":"docs/specs/clean/references/_index.md"}],"verification":{"executed":true,"tree":"HEAD","bootstrap":"","commands":[{"task":"task_01","command":"test -f output-the-task-writes","verdict":"honest"},{"task":"task_01","command":"true","verdict":"vacuous"}],"uncommitted":[]}}
+        ; want suffix="verification":{"executed":true,"tree":"HEAD","commands":[{"task":"task_01","command":"test -f output-the-task-writes","verdict":"honest"},{"task":"task_01","command":"true","verdict":"vacuous"}],"uncommitted":[]}}
+--- FAIL: TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted (0.28s)
+    --- PASS: TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted/text (0.15s)
+    --- FAIL: TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted/json (0.14s)
+FAIL
+suiteguard: guard cost: measured 3144 paths; fingerprint took 163.79925ms before and 154.460708ms after
+FAIL	roundfix/internal/cli	1.067s
+FAIL
+
+stderr:

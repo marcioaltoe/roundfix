@@ -1,0 +1,17 @@
+git archive 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4; initialized and committed fresh repository before mutation.
+diff --git a/internal/cli/spec_check.go b/internal/cli/spec_check.go
+index 82b933e..fe50357 100644
+--- a/internal/cli/spec_check.go
++++ b/internal/cli/spec_check.go
+@@ -319,7 +319,7 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
+ 		if err != nil {
+ 			var bootstrapErr *runworktree.BootstrapError
+ 			if errors.As(err, &bootstrapErr) {
+-				printSpecCheckBootstrapFailure(err, bootstrapErr, stderr)
++				printSpecCheckFailure(err, stderr)
+ 			} else {
+ 				printSpecCheckFailure(err, stderr)
+ 			}
+
+Expected failing selectors: TestSpecCheckStopsWhenTheWorktreeBootstrapFails/surface_transcript_2_text, TestSpecCheckStopsWhenTheWorktreeBootstrapFails/surface_transcript_2_json
+Observed named assertion failure: True

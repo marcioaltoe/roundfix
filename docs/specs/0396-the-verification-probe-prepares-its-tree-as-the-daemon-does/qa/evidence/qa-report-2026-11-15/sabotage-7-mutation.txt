@@ -1,0 +1,17 @@
+git archive 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4; initialized and committed fresh repository before mutation.
+diff --git a/internal/cli/spec_check.go b/internal/cli/spec_check.go
+index 82b933e..eca8660 100644
+--- a/internal/cli/spec_check.go
++++ b/internal/cli/spec_check.go
+@@ -89,7 +89,7 @@ type verificationTreePreparation struct {
+ type specCheckVerificationReport struct {
+ 	Executed    bool                                 `json:"executed"`
+ 	Tree        string                               `json:"tree,omitempty"`
+-	Bootstrap   string                               `json:"bootstrap,omitempty"`
++	Bootstrap   string                               `json:"bootstrap"`
+ 	Commands    []specCheckVerificationCommandReport `json:"commands"`
+ 	Uncommitted []specCheckVerificationSource        `json:"uncommitted"`
+ 	NotProbed   []specCheckVerificationNotProbed     `json:"notProbed,omitempty"`
+
+Expected failing selectors: TestSpecCheckWithoutWorktreePreparationPrintsWhatItPrinted/json
+Observed named assertion failure: True

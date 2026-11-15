@@ -1,0 +1,17 @@
+git archive 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4; initialized and committed fresh repository before mutation.
+diff --git a/internal/cli/spec_check.go b/internal/cli/spec_check.go
+index 82b933e..13a9dd2 100644
+--- a/internal/cli/spec_check.go
++++ b/internal/cli/spec_check.go
+@@ -512,7 +512,7 @@ func probeSpecVerifications(
+ 				continue
+ 			}
+ 			if len(task.Verification) > 0 {
+-				if err := prepare(); err != nil {
++				if err := (func() error { _ = prepare; return nil })(); err != nil {
+ 					return nil, err
+ 				}
+ 				report.Bootstrap = strings.TrimSpace(preparation.Bootstrap.Command)
+
+Expected failing selectors: TestSpecCheckPreparesTheVerificationTreeAsTheDaemonDoes/surface_transcript_1
+Observed named assertion failure: True

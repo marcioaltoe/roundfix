@@ -1,0 +1,12 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0396-the-verification-probe-prepares-its-tree-as-the-daemon-does-4a46fc960ea3d19c-1bbf682f-e2a47449/run_20261115T114930Z_da4a60ab1e76f5b0
+command: ./bin/roundfix archive 0396-the-verification-probe-prepares-its-tree-as-the-daemon-does --plan --offline
+exit: 0
+stdout:
+archive plan for 0396-the-verification-probe-prepares-its-tree-as-the-daemon-does: removes 57 file(s) (251962 bytes) and writes docs/history/specs/0396-the-verification-probe-prepares-its-tree-as-the-daemon-does.md
+core 8 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-15.md, references/_index.md, task_01.md, task_02.md
+evidence 48 file(s) (135269 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-14-indexus-the-verification-probe-called-honest-a-command-the-daemon-refused-as-vacuous.md 2433 bytes: no advice (offline)
+promote with: roundfix archive 0396-the-verification-probe-prepares-its-tree-as-the-daemon-does --promote <path>
+
+stderr:

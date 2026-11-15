@@ -1,0 +1,6 @@
+Surface Transcript 1: exact prefix and tail, only Skipped block wildcard; empty stderr; exit 1.
+JSON: HEAD, bootstrap command, vacuous/vacuous/honest.
+Delivery base: all three honest, exit 0.
+Surface Transcript 2 text and JSON: exact stderr, empty stdout, exit 1, marker absent.
+Unconfigured text and JSON: stdout, stderr and exits byte identical across freshly built base and current binaries.
+Fixture git status: clean; bootstrap .deps-installed absent in source.
