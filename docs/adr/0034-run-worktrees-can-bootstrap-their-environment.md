@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-07-06T21:05:00Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-11-15T11:56:04Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -23,3 +23,5 @@ strategy live in the command, and shared-state projects (one database across
 Tasks) run at `worktree.concurrency: 1` so bootstrap runs once on the reused Run
 Worktree. This unblocks Roundfix for stateful monorepos (TypeScript + database +
 package manager) without abandoning Worktree isolation.
+
+**Amended by [ADR-0406](0406-the-authoring-verification-probe-prepares-its-checkout-as-the-daemon-prepares-a-task-worktree.md) (2026-11-14).** The Worktree Bootstrap also runs once in the disposable checkout of `roundfix spec check --run-verification`, after `worktree.copy` and before the first command the check probes, and a failure there ends the check before any command is probed. Run and Task Worktrees, their bootstrap-failed outcome and the command's ownership of what it does still hold.

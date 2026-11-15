@@ -179,6 +179,8 @@ a command that passes remains `vacuous`. The Daemon refuses malformed commands
 before opening an Agent Session. If the parser cannot start, the existing
 command probe still runs.
 
+Before the first command it probes, the check prepares the disposable checkout as the Daemon prepares a Task Worktree: it copies the `worktree.copy` files from the repository and runs the Worktree Bootstrap once, with the configured command and `worktree.bootstrap_timeout`, so a command that needs installed dependencies or a copied file gets the verdict the Daemon gives it. A check that probes no command runs no bootstrap, and one bootstrap serves every Spec of the invocation. A Spec report whose commands ran after the bootstrap prints `Verification tree bootstrap: "<command>"` after `Verification tree: HEAD`, and JSON adds `verification.bootstrap`, a key present only then. When the bootstrap fails, no command is probed: standard output stays empty, standard error names the failure, says that no Verification command was probed and shows the bootstrap's last output, and the check exits `1`. A repository without `worktree.copy` and `worktree.bootstrap` is checked as before.
+
 The probe runs only the commands of Tasks a Run would still execute, except
 its QA gate. A completed Task's commands are not run, because
 they pass once its work exists and may need preparation the disposable

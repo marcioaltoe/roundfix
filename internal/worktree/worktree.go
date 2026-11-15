@@ -1871,13 +1871,15 @@ func ProvisionItem(ctx context.Context, ref ItemRef, opts ItemProvisionOptions) 
 	if err := validateItemRef(ref); err != nil {
 		return err
 	}
-	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
+	return Provision(ctx, ref.UserRoot, ref.Path, opts)
+}
+
+// Provision copies configured files and then runs bootstrap in an existing checkout.
+func Provision(ctx context.Context, userRoot, worktreePath string, opts ItemProvisionOptions) error {
+	if err := copyProvisionedFiles(userRoot, worktreePath, opts.CopyList); err != nil {
 		return err
 	}
-	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
-		return err
-	}
-	return nil
+	return runBootstrap(ctx, worktreePath, opts.Bootstrap, opts.BootstrapOutput)
 }
 
 // UseItem keeps a correctly registered item worktree or recreates a missing

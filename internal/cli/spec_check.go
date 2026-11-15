@@ -16,6 +16,7 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/specaudit"
 	"roundfix/internal/speccheck"
+	runworktree "roundfix/internal/worktree"
 )
 
 const specUsage = `Usage:
@@ -80,9 +81,15 @@ type specCheckRequest struct {
 	runVerification bool
 }
 
+type verificationTreePreparation struct {
+	CopyList  []string
+	Bootstrap runworktree.BootstrapSpec
+}
+
 type specCheckVerificationReport struct {
 	Executed    bool                                 `json:"executed"`
 	Tree        string                               `json:"tree,omitempty"`
+	Bootstrap   string                               `json:"bootstrap,omitempty"`
 	Commands    []specCheckVerificationCommandReport `json:"commands"`
 	Uncommitted []specCheckVerificationSource        `json:"uncommitted"`
 	NotProbed   []specCheckVerificationNotProbed     `json:"notProbed,omitempty"`
@@ -305,9 +312,17 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		verificationReports[index].Commands = []specCheckVerificationCommandReport{}
 	}
 	if req.runVerification {
-		verificationReports, err = probeSpecVerifications(ctx, loaded.GitRoot, resolvedSpecsRoot.Path, slugs)
+		verificationReports, err = probeSpecVerifications(ctx, loaded.GitRoot, resolvedSpecsRoot.Path, slugs, verificationTreePreparation{
+			CopyList:  loaded.Config.Worktree.Copy,
+			Bootstrap: worktreeBootstrapSpec(loaded.Config),
+		})
 		if err != nil {
-			printSpecCheckFailure(err, stderr)
+			var bootstrapErr *runworktree.BootstrapError
+			if errors.As(err, &bootstrapErr) {
+				printSpecCheckBootstrapFailure(err, bootstrapErr, stderr)
+			} else {
+				printSpecCheckFailure(err, stderr)
+			}
 			return exitRunFailed
 		}
 	}
@@ -415,6 +430,7 @@ func probeSpecVerifications(
 	repoRoot string,
 	specsRoot string,
 	slugs []string,
+	preparation verificationTreePreparation,
 ) (reports []specCheckVerificationReport, returnErr error) {
 	checkoutDir, cleanup, err := speccheck.DisposableCheckout(ctx, repoRoot)
 	if err != nil {
@@ -431,6 +447,22 @@ func probeSpecVerifications(
 	defer func() {
 		returnErr = errors.Join(returnErr, os.RemoveAll(diagnosticDir))
 	}()
+
+	prepared := false
+	prepare := func() error {
+		if prepared {
+			return nil
+		}
+		if err := runworktree.Provision(ctx, repoRoot, checkoutDir, runworktree.ItemProvisionOptions{
+			CopyList:        preparation.CopyList,
+			Bootstrap:       preparation.Bootstrap,
+			BootstrapOutput: io.Discard,
+		}); err != nil {
+			return fmt.Errorf("prepare Verification tree at HEAD: %w", err)
+		}
+		prepared = true
+		return nil
+	}
 
 	reports = make([]specCheckVerificationReport, len(slugs))
 	verifier := daemon.ExecVerifier{}
@@ -478,6 +510,12 @@ func probeSpecVerifications(
 					report.textLines = append(report.textLines, fmt.Sprintf("- %s: not probed — %q (QA gate)\n", task.ID, command))
 				}
 				continue
+			}
+			if len(task.Verification) > 0 {
+				if err := prepare(); err != nil {
+					return nil, err
+				}
+				report.Bootstrap = strings.TrimSpace(preparation.Bootstrap.Command)
 			}
 			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
 				return filepath.Join(
@@ -564,6 +602,9 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 		return report.String()
 	}
 	fmt.Fprintf(&report, "Verification tree: %s\n", verification.Tree)
+	if verification.Bootstrap != "" {
+		fmt.Fprintf(&report, "Verification tree bootstrap: %q\n", verification.Bootstrap)
+	}
 	for _, source := range verification.Uncommitted {
 		fmt.Fprintf(&report, "Uncommitted Verification source: %s (%s)\n", source.Path, source.State)
 	}
@@ -788,6 +829,15 @@ func specAuditNeedsAttention(result specaudit.Result) bool {
 		}
 	}
 	return false
+}
+
+func printSpecCheckBootstrapFailure(err error, bootstrapErr *runworktree.BootstrapError, stderr io.Writer) {
+	fmt.Fprintf(stderr, "%s: spec check failed: %v\n", app.Name, err)
+	fmt.Fprintln(stderr, "No Verification command was probed: a Run stops at the same Worktree Bootstrap before any Agent work.")
+	if tail := strings.TrimRight(bootstrapErr.Tail, "\r\n"); tail != "" {
+		fmt.Fprintln(stderr, "Worktree Bootstrap output tail:")
+		fmt.Fprintln(stderr, tail)
+	}
 }
 
 func printSpecCheckFailure(err error, stderr io.Writer) {
