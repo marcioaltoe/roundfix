@@ -1,7 +1,0 @@
-Pull Request fact: no open Pull Request, supplied in this gate assignment. No real gh or network lookup attempted.
-Approval: operative approved delivery authority in _authorization.md, already in cdb20a3f8163257a5d2119475b2a3605d8b9c3dc; it grants implement, commit, push, pull_request, merge and release with patch ceiling. The current QA assignment forbids delivery mutations.
-Checks/status: Daemon make verify-changed at 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4 passed, exit 0; current positive packages, Windows build, transcripts and sabotages passed their expected oracles.
-Unresolved review threads: none, because no Pull Request exists.
-Merge-Ready acceptance: no selected Review Source acceptance exists yet; this control has no equivalent evidence.
-Review-artifact ancestry: no review artifact exists yet; the claimed candidate is 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4. No review or merge readiness is asserted.
-Unblock: Supervisor performs configured current-candidate review and observes required checks and acceptance on a Pull Request for the Spec target branch.

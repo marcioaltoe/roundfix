@@ -1,7 +1,0 @@
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0396-the-verification-probe-prepares-its-tree-as-the-daemon-does-4a46fc960ea3d19c-1bbf682f-e2a47449/run_20261115T114930Z_da4a60ab1e76f5b0
-command: ./bin/roundfix --version
-exit: 0
-stdout:
-roundfix 0.145.0 (70a8d9b0-dirty, built 2026-11-15 09:19:35 -0300)
-
-stderr:

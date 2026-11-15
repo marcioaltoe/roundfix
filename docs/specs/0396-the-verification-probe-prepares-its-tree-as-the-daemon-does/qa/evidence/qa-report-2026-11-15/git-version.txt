@@ -1,7 +1,0 @@
-cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/r396-vv6vg_mx/git-outside
-command: git --version
-exit: 0
-stdout:
-git version 2.56.1
-
-stderr:

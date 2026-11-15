@@ -1,5 +1,0 @@
-Source: git-worktree documentation https://git-scm.com/docs/git-worktree, read 2026-11-14; quoted passage in PRD Acceptance evidence.
-Quoted: "The new worktree is linked to the current repository, sharing everything except per-worktree files such as HEAD, index, etc."
-The installed git was not built by this Spec. Fresh isolated measurement: main ignored node_modules/marker exists; detached worktree at the same HEAD has no node_modules.
-Independent confirmation: rev-parse HEAD agrees in both worktrees; status --porcelain in the source fixture remains empty.
-The quoted documentation was consumed offline; no network lookup occurred.

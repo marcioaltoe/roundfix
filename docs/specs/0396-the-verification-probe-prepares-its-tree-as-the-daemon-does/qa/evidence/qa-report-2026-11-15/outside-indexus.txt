@@ -1,4 +1,0 @@
-Source: adopted Indexus message 01a1d9be-ad8c-7f33-a039-0d8d4e60fef7, reported and read 2026-11-14. Origin: default/gesttione-solutions-indexus, measured Run run_20261114T105246Z_fb9622d95ca316e8.
-External observation: authoring called the command honest, then the Daemon refused it as vacuous after its setup. This gate did not contact that repository or ai-memory.
-Independent local replay in this pass: freshly built delivery base classified copied local.env and bootstrap-created .deps-installed as honest (exit 0); current Run-built binary classified both as vacuous (exit 1). Text and JSON agree.
-The source supplies the observed mismatch, and the gate replay exercises the same preparation dependency class without claiming a new Indexus production measurement.

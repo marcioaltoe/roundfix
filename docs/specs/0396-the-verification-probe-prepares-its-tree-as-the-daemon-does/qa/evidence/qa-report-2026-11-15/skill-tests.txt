@@ -1,7 +1,0 @@
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0396-the-verification-probe-prepares-its-tree-as-the-daemon-does-4a46fc960ea3d19c-1bbf682f-e2a47449/run_20261115T114930Z_da4a60ab1e76f5b0
-command: go test -count=1 -timeout 20m ./skills
-exit: 0
-stdout:
-ok  	roundfix/skills	1.809s
-
-stderr:

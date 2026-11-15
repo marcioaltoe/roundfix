@@ -1,4 +1,0 @@
-PRD and TechSpec: changes Worktree Bootstrap.
-Task commit 70a8d9b0c8506e51f9cc4bb3796b446af1be85b4 compared with cdb20a3f8163257a5d2119475b2a3605d8b9c3dc: exactly one CONTEXT.md line changes; it appends exact Text B to the existing Worktree Bootstrap definition. The term set is unchanged.
-TestGlossaryPhrasesAreDefinedTerms: PASS in full docscontract package.
-Unreachable Acceptance: None; all functional criteria were exercised; rows_blocked_declared=0.
