@@ -1340,7 +1340,7 @@ The step that applies Run Retention and then returns freed pages to the filesyst
 _Avoid_: cleanup job, cron, vacuum
 
 **Worktree Bootstrap**:
-The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome ([ADR-0034](docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md)).
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome ([ADR-0034](docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md)). `roundfix spec check --run-verification` runs it once in its disposable checkout, after the same copy and before the first command it probes, so its verdicts match the Daemon's; a failure there ends the check before any command is probed ([ADR-0406](docs/adr/0406-the-authoring-verification-probe-prepares-its-checkout-as-the-daemon-prepares-a-task-worktree.md)).
 _Avoid_: Setup command, provisioning, install step
 
 **Context-Driven Baseline**:

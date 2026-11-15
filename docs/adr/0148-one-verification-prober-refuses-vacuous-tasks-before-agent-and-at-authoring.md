@@ -1,7 +1,7 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-26T00:00:00Z
-updated_at: 2026-11-01T00:00:00Z
+updated_at: 2026-11-15T11:56:04Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
 superseded_by: null # null or ADR-NNNN
 ---
@@ -25,3 +25,5 @@ routes to its QA step and never probes. Roundfix derives its Verification,
 which would pass on a kept QA Report even when its verdict is fail, so the
 check reports an unfinished gate `not probed` with reason `qa_gate`;
 a completed gate keeps reason `completed`.
+
+**Amended by [ADR-0406](0406-the-authoring-verification-probe-prepares-its-checkout-as-the-daemon-prepares-a-task-worktree.md) (2026-11-14).** The authoring caller no longer supplies a bare working directory: before its first probed command it prepares its disposable checkout with the `worktree.copy` files and the Worktree Bootstrap a Task Worktree receives, through the worktree package's provisioning function, so both callers probe a prepared tree. A failed bootstrap ends the check before any command is probed. The shared prober, its classification and the Daemon's Run bookkeeping still hold.
