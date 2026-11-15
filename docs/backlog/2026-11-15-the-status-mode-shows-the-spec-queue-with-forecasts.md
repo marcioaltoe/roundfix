@@ -4,7 +4,7 @@ status: open
 created: 2026-11-15
 spec: null
 reason: null
-waiting_on: the maintainer's order: author after Spec 0397, once the Claude limit resets (2026-11-15 20:00 BRT)
+waiting_on: the maintainer's order to author it after Spec 0397, once the Claude limit resets (2026-11-15 20:00 BRT)
 since: 2026-11-15
 ---
 
