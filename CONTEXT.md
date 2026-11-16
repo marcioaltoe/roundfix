@@ -182,7 +182,7 @@ A Cross-project Message that asks to be told when the work it asks for is done. 
 _Avoid_: Read receipt, release note, subscription
 
 **Session Handoff**:
-A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)).
+A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)). At a Phase Boundary the Supervisor writes one with the Spec, the phase that ended, the next phase, each decision still open and what stays armed ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
 _Avoid_: Handoff file, session note, resume brief
 
 **Rollup**:
@@ -971,7 +971,7 @@ The `model` and `effort` lines that installation writes into the frontmatter of 
 _Avoid_: Skill override, model frontmatter, hand-written header
 
 **Author Subagent**:
-The subagent that installation generates for one declared Authoring Phase, `roundfix-<phase>-author`, on the declared model and reasoning effort. An authoring skill the session activated hands its phase to it, passing no model and no effort; it cannot ask the user, so the session gathers the decisions first and it returns its open questions instead of guessing one. It is a subagent of the Agent harness session and never the Agent of a Run ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md)).
+The subagent that installation generates for one declared Authoring Phase, `roundfix-<phase>-author`, on the declared model and reasoning effort. An authoring skill the session activated hands its phase to it, passing no model and no effort; it cannot ask the user, so the session gathers the decisions first and it returns its open questions instead of guessing one. On the fix or refactor route, `write-techspec` and `write-tasks` run the phase in the session and start it only when the user's request or one of the user's answers asks for it. It is a subagent of the Agent harness session and never the Agent of a Run, and it ends no session at a Phase Boundary ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0408](docs/adr/0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md)).
 _Avoid_: Authoring agent, writer agent, phase agent
 
 **Research Subagent**:

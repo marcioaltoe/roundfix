@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -275,3 +275,33 @@ writes text only: tasks 01 to 03 built everything it describes.
 - `_prd.md` → User Stories 4, 5 and 9; Core Features 8, 9, 12 and 13; Success Metric 8; Glossary
 - `_techspec.md` → Current behavior; API Contract 9; API Contract 10; API Contract 11; Invariants 5, 7 and 8; Declared breaks; Testing Approach; Build Order 4
 - ADR-0407, ADR-0408, ADR-0338
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, testing-boss, golang-testing, tech-writer, domain-modeling, roundfix, setup-context-driven, evidence-gate
+
+Implementation:
+
+- Added the exact `## Phase boundary` contract to canonical `write-idea`, `write-prd`, `write-techspec` and `write-tasks`; added the fix/refactor session-route sentence to `write-techspec` and `write-tasks` only.
+- Extended the canonical Roundfix `modes.md` with follow-up, delivery, release, boundary, wake-up and unattended rules; `--status` and every `### QA settlement` section remain unchanged. `make skills-sync` synchronized all mirrors.
+- Added `skills/phase_boundary_test.go`, `internal/baseline/phase_boundary_clause_test.go`, and the three fix-route subtests to `TestTheAuthoringSkillsDelegateADeclaredPhase`.
+- Extended `clause.autonomous.loop-07-outlive-the-turn`, recorded the next module and five skill versions through their sanctioned recorders, regenerated Baseline digests, refreshed the managed guide/setup manifest, and updated the two requested `CONTEXT.md` definitions.
+
+Focused checks:
+
+- `go test -count=1 ./skills -run '^TestTheAuthoringSkillsStateThePhaseBoundary$'`: passed (65 tests).
+- `go test -count=1 ./skills -run '^TestTheRoundfixSkillRecordsEachPhaseAndStatesThePhaseBoundary$'`: passed (29 tests).
+- `go test -count=1 ./skills -run '^TestTheAuthoringSkillsDelegateADeclaredPhase$'`: passed (137 tests).
+- `go test -count=1 ./internal/baseline -run '^TestTheOutliveTheTurnClauseStatesThePhaseBoundary$'`: passed (25 tests).
+- Regression checks for `TestTheFollowUpModeRunsItsStepsInOrder`, `TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage`, `TestEveryOwnedSkillVersionIsRecorded` and `TestNoShippedSkillDeclaresAModelOrEffort`: passed.
+- `make skills-sync`: passed; the owned-skill version recorder: passed; the Baseline module version recorder: passed; `make baseline-digests`: passed.
+- The first managed refresh with `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` verified and applied two managed changes. The second identical refresh reported `approved Baseline Plan is already applied`, `File changes: 0`, and `Idempotence: verified`.
+
+Acceptance evidence:
+
+- Authoring-skill boundary and fix/refactor routing contracts are covered in both canonical and embedded copies by the focused skills tests; the no-model/no-effort regression passed.
+- Roundfix mode placement and phrase-count contracts pass in both copies, including the preserved item-8 guarantee and the absence of phase recording in `--status`.
+- The Baseline clause test passes for all kept and new phrases, mandatory enforcement, no `replaces`, the Standard TypeScript golden and this repository's guide; the managed refresh made the guide and setup manifest current and the second refresh was idempotent.
+- `CONTEXT.md` contains the requested Author Subagent and Session Handoff definitions, and the sanctioned recorders updated the five skill versions and the autonomous-work module version.
+
+Not run: the Task's declared `## Verification` commands and repository settlement checks; those remain Daemon-owned. No commit, push, PR, Task status change, `_tasks.md` edit, or other Task file edit was made.
