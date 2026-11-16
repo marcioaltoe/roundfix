@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -177,3 +177,20 @@ on the new text.
 - `_prd.md` → User Story 8; Core Features 16 and 17; Success Metric 12; Glossary
 - `_techspec.md` → Skill, guide and glossary text; API Contract 12; ADR Alternatives; Glossary; Build Order 4
 - ADR-0409, ADR-0410, ADR-0353, ADR-0407, ADR-0338
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, coding-guidelines, golang-testing, testing-boss, tech-writer, evidence-gate
+
+Implemented the `--status` Spec Queue Table relay paragraph in the canonical and synced references, plus the parallel skills contract test that checks each required sentence once in both layouts and rejects `roundfix phase start`. Added the three glossary entries after `Waiting Item`, revised `Follow-up Command` with the table and ADR-0410, and amended ADR-0353 and ADR-0407 with the required notices and UTC timestamp `2026-11-16T18:42:53Z`. The owned-skill recorder raised `roundfix` from `0.1.245` to `0.1.246` through the required commands.
+
+Focused evidence:
+
+- `gofmt -w skills/status_mode_queue_test.go` completed.
+- `make skills-sync` completed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` returned `ok`.
+- `go test ./skills -run '^TestRoundfixSkillIndexLinksResolve$'` returned `3 passed in 1 packages` and compiled the new test.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` returned `ok`.
+- `git diff --check` returned no diagnostics, and the `### QA settlement` sections remain unchanged.
+
+Acceptance-criterion evidence: the two mode references and the new test now contain the requested queue, forecast, source, data-safety and preserved-guarantee text; `CONTEXT.md` contains the three glossary definitions and the revised Follow-up Command; both ADR records contain one ADR-0410 notice with updated timestamps. The Daemon must still run the declared skills, glossary and documentation Verification commands; they were not run in this child turn.

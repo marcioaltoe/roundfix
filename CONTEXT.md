@@ -194,7 +194,7 @@ The destination-project act that converts one pending Cross-project Message into
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
-The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
+The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the Spec Queue Table, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md), [ADR-0410](docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md)).
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
@@ -213,6 +213,18 @@ _Avoid_: Waiting status, free-text wait
 **Waiting Item**:
 A Follow-up Item with a valid Waiting Declaration, held back from the default list and counted on its source, listed with `--all` in class `waiting`, and never sent to the judge ([ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md)).
 _Avoid_: Blocked item, deferred item
+
+**Spec Queue Table**:
+The table the status view of the Follow-up Command shows of a repository's Spec queue, one row each and in this order: each Delivery Queue item that is not merged, each planned Spec that is not queued, each Spec being authored and each open Backlog Entry. A row holds a row number, the Spec's number, a status, a start, an end and a one-line note; a start or an end is an actual time, a Queue Forecast, a named condition with two durations, or the reason no forecast is shown. A Spec is being authored when the checkout holds no PRD for it and either its folder or a phase entry of an Authoring Phase written in the last seven days of the Phase Record, recorded in the checkout or in a working tree with the same `origin` remote ([ADR-0409](docs/adr/0409-a-queue-forecast-is-a-likely-time-and-a-limit-from-the-repository-own-deliveries-or-a-named-condition.md), [ADR-0410](docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md)).
+_Avoid_: Roadmap, schedule, delivery plan
+
+**Queue Forecast**:
+The two times the Spec Queue Table shows for one start or one end: the likely time, which is the median, and the limit, which is the 85th percentile, both by nearest rank over the Forecast Basis. A Spec in progress shows one for its end, from the delivered Specs that took longer than it already has, and a planned Spec one, two or three rows behind it shows one for its start and one for its end, added as pairwise sums; every other wait is a named condition and never a time ([ADR-0409](docs/adr/0409-a-queue-forecast-is-a-likely-time-and-a-limit-from-the-repository-own-deliveries-or-a-named-condition.md)).
+_Avoid_: Estimate, deadline, commitment
+
+**Forecast Basis**:
+The delivered Specs of a repository that its Run Database still holds, from which every Queue Forecast is computed: each has a first Implement Run, whose start is the Spec's start, and an Archive Record on the default branch that is not a cancellation, whose commit time is the Spec's end. It gives two measures, the time from start to merge and the start gap between one Spec's start and the next when that next Spec's plan was already on the default branch; a forecast needs 11 values of a measure, and the table states the basis under its rows ([ADR-0409](docs/adr/0409-a-queue-forecast-is-a-likely-time-and-a-limit-from-the-repository-own-deliveries-or-a-named-condition.md)).
+_Avoid_: Velocity, throughput, benchmark
 
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-16T11:00:00Z
-updated_at: 2026-11-16T11:00:00Z
+updated_at: 2026-11-16T18:42:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -69,6 +69,8 @@ it would have: the notice never refuses and never changes an exit code.
 prices a token or computes a limit percentage. A write to the record that
 fails costs one warning and never changes a Run, a review or a command's
 result.
+
+**Amended by [ADR-0410](0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md) (2026-11-16).** The status view of the Follow-up Command reads the phase entries of the last seven days and names the latest Authoring Phase of a Spec being authored and when it was recorded. It reads no prompt entry and reports no usage: no command reads a harness transcript, prices a token or computes a limit percentage, and a failed write to the record still changes no command's result.
 
 ## Considered Options
 

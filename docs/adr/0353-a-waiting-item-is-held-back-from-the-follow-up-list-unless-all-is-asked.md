@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-03T18:00:00Z
-updated_at: 2026-11-03T18:00:00Z
+updated_at: 2026-11-16T18:42:53Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -43,6 +43,8 @@ Items after every ranked item, oldest `since` first, then reference in byte
 order. A Waiting Item is never sent to the judge, with or without --all.
 The status view refuses `--all`, reads no Backlog Entry or Finding, and
 prints no waiting count.
+
+**Amended by [ADR-0410](0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md) (2026-11-16).** The status view reads the open Backlog Entries and lists each as a row of the Spec Queue Table, a waiting one included, with its Waiting Declaration in its note. It still refuses `--all`, reads no Finding and no inbox note, and prints no waiting count, and the follow-up list still holds Waiting Items back unless `--all` is given.
 
 The command that reads a declaration validates it. A malformed declaration
 leaves its item in its ordinary class, with the validation reason on the
