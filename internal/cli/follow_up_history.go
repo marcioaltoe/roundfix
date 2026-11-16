@@ -26,6 +26,11 @@ type deliveryHistoryInput struct {
 func readDeliveryHistory(ctx context.Context, in deliveryHistoryInput) ([]queueforecast.SpecTimes, followUpSource) {
 	in = relativeDeliveryHistoryInput(in)
 	times, err := readDeliveryHistoryGit(ctx, in)
+	return deliveryHistoryFromTimes(in, times, err)
+}
+
+func deliveryHistoryFromTimes(in deliveryHistoryInput, times map[string]time.Time, err error) ([]queueforecast.SpecTimes, followUpSource) {
+	in = relativeDeliveryHistoryInput(in)
 	if err != nil {
 		return []queueforecast.SpecTimes{}, followUpSourceResult("delivery-history", 0, err)
 	}

@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"roundfix/internal/delivery"
 	"roundfix/internal/spec"
@@ -65,7 +66,7 @@ func followUpStatusJSON(t *testing.T) followUpStatusDocument {
 	for _, source := range doc.Sources {
 		names = append(names, source.Name)
 	}
-	if !reflect.DeepEqual(names, []string{"runs", "delivery-queue", "pull-requests", "git", "specs", "release-plan"}) {
+	if !reflect.DeepEqual(names, []string{"runs", "delivery-queue", "pull-requests", "git", "specs", "release-plan", "backlog", "phase-record", "delivery-history"}) {
 		t.Fatalf("sources=%v", names)
 	}
 	var fields map[string]json.RawMessage
@@ -328,10 +329,21 @@ func TestFollowUpStatusNeverAsksTheJudge(t *testing.T) {
 
 func TestFollowUpStatusWritesNothing(t *testing.T) {
 	t.Parallel()
-	for _, mode := range []string{"no database", "at tag", "release", "dirty", "live WAL"} {
+	for _, mode := range []string{"no database", "at tag", "release", "dirty", "live WAL", "spec queue"} {
 		t.Run(mode, func(t *testing.T) {
 			t.Parallel()
-			f := newFollowUpFixture(t)
+			var f followUpFixture
+			if mode == "spec queue" {
+				now := time.Date(2026, 11, 16, 13, 36, 0, 0, time.UTC)
+				var in followUpQueueInput
+				f, in = statusQueueDeliveryHistory(t, now, now.Add(-5*time.Minute), 12, true)
+				followUpStatusSeedQueue(t, f, []string{"0013-running"}, func(q *store.DeliveryQueue) { q.Items[0].Stage = store.DeliveryStageRunning })
+				followUpQueuePhase(t, in, now.Add(-time.Hour), "prd", "0014-authoring", f.repo)
+				followUpWrite(t, f.repo, "docs/backlog/open.md", "---\nstatus: open\n---\n# Open entry\n")
+				followUpWrite(t, f.repo, "docs/backlog/waiting.md", "---\nstatus: open\nwaiting_on: maintainer\nsince: "+now.AddDate(0, 0, -1).Format("2006-01-02")+"\n---\n# Waiting entry\n")
+			} else {
+				f = newFollowUpFixture(t)
+			}
 			gitImplement(t, f.repo, "tag", "v0.4.1")
 			if mode == "release" {
 				followUpWrite(t, f.repo, "internal/widget.go", "widget\n")
@@ -341,7 +353,7 @@ func TestFollowUpStatusWritesNothing(t *testing.T) {
 			if mode == "dirty" {
 				followUpWrite(t, f.repo, "README.md", "# Dirty\n")
 			}
-			if mode != "no database" {
+			if mode != "no database" && mode != "spec queue" {
 				followUpSeedDatabase(t, f, true, true)
 			}
 			if mode == "live WAL" {

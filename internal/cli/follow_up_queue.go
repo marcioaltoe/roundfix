@@ -44,6 +44,11 @@ type followUpQueueCell struct {
 	Reason             string  `json:"reason"`
 }
 
+type followUpQueueOrigin struct {
+	remote string
+	err    error
+}
+
 type followUpQueueInput struct {
 	Context               context.Context
 	Loaded                roundconfig.Loaded
@@ -54,6 +59,7 @@ type followUpQueueInput struct {
 	History               []queueforecast.SpecTimes
 	Now                   time.Time
 	Zone                  *time.Location
+	Origin                *followUpQueueOrigin
 	Git                   preflight.GitRunner
 }
 
@@ -61,8 +67,18 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 	rows := []followUpQueueRow{}
 	forecasts := []queueforecast.Row{}
 	starts := map[string]time.Time{}
+	for _, run := range in.Progress.historyRuns {
+		if run.Kind != store.KindImplement || run.SpecSlug == "" {
+			continue
+		}
+		if old := starts[run.SpecSlug]; old.IsZero() || run.CreatedAt.Before(old) {
+			starts[run.SpecSlug] = run.CreatedAt
+		}
+	}
 	for _, item := range in.History {
-		starts[item.Spec] = item.Start
+		if old := starts[item.Spec]; old.IsZero() || item.Start.Before(old) {
+			starts[item.Spec] = item.Start
+		}
 	}
 	seen := map[string]bool{}
 	addSpec := func(slug, kind, status, note string, parked bool, wait string) {
@@ -282,7 +298,13 @@ func followUpAuthoringPhases(in followUpQueueInput, phases []phaserecord.Recorde
 	if ctx == nil {
 		ctx = context.TODO()
 	}
-	raw, remoteErr := runner.RunGit(ctx, in.Loaded.GitRoot, "remote", "get-url", "origin")
+	var raw string
+	var remoteErr error
+	if in.Origin != nil {
+		raw, remoteErr = in.Origin.remote, in.Origin.err
+	} else {
+		raw, remoteErr = runner.RunGit(ctx, in.Loaded.GitRoot, "remote", "get-url", "origin")
+	}
 	host, repository, remoteOK := parseReadinessRemote(raw)
 	remoteOK = remoteOK && remoteErr == nil
 	ordered := append([]phaserecord.RecordedPhase(nil), phases...)

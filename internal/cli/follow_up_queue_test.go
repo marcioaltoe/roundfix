@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -433,7 +434,32 @@ func TestTheFollowUpProgressKeepsEveryRunForTheHistory(t *testing.T) {
 	followUpSeedTimedRun(t, in, "0002-clean", store.StateClean, now.Add(-2*time.Hour))
 	followUpSeedTimedRun(t, in, "0003-stopped", store.StateStopped, now.Add(-3*time.Hour))
 	before := followUpSnapshot(t, in.Loaded.GitRoot, in.Loaded.HomeDir)
-	if reports := snapshotReports(); !reflect.DeepEqual(beforeReports, reports) {
+	reports := snapshotReports()
+	// Terminal Runs now contribute start gaps to the added basis. Pin that
+	// change while keeping the byte comparison for every other report field.
+	var oldStatus, newStatus followUpStatusDocument
+	if err := json.Unmarshal([]byte(beforeReports[3]), &oldStatus); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(reports[3]), &newStatus); err != nil {
+		t.Fatal(err)
+	}
+	expectedBasis := oldStatus.ForecastBasis
+	expectedBasis.StartGap.Count = 2
+	if oldStatus.ForecastBasis.StartGap.Count != 0 || !reflect.DeepEqual(newStatus.ForecastBasis, expectedBasis) {
+		t.Fatalf("basis before=%+v after=%+v", oldStatus.ForecastBasis, newStatus.ForecastBasis)
+	}
+	newStatus.ForecastBasis = oldStatus.ForecastBasis
+	oldJSON, err := json.Marshal(oldStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newJSON, err := json.Marshal(newStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeReports[3], reports[3] = string(oldJSON), string(newJSON)
+	if !reflect.DeepEqual(beforeReports, reports) {
 		for i := range reports {
 			if reports[i] != beforeReports[i] {
 				t.Errorf("report %d changed:\nbefore=%s\nafter=%s", i, beforeReports[i], reports[i])

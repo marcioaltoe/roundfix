@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -390,3 +390,102 @@ skill's `follow-up` reference describe what it prints.
 - `_techspec.md` → Status view; Skill, guide and glossary text; Data Models; API Contract 8; API Contract 9; API Contract 10; API Contract 11; Surface Transcript 1; Surface Transcript 2; Testing Approach; Risks & Considerations; Build Order 3
 - `_tasks.md` → What the Tasks stage settled beyond the TechSpec; Time in tests
 - ADR-0409, ADR-0410, ADR-0353, ADR-0338
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-concurrency, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, agentic-cli-design, tech-writer, evidence-gate, tui-design, systematic-debugging, no-workarounds, roundfix, skill-creator.
+
+The status document now carries `queue` and `forecast_basis` in the specified
+field order. The view starts one cancellable Git-history goroutine before the
+forge read and joins it before constructing rows. The goroutine receives its
+history input by value and transfers its result through a channel; the Run
+Database remains on the calling goroutine. The unexported status function takes
+the history Git runner directly, without adding a command dependency.
+
+The table uses the supplied clock and Runs List location, preserves the existing
+pending-Spec lines and state calculation, renders minute-truncated likely times
+and ceiling-rounded limits, and prints the applicable basis line. The checkout's
+origin result is reused for namespace and phase matching. A failed history read
+removes forecasts while actual Implement Run starts remain available from the
+already-listed Runs. Backlog and Phase Record failures retain unaffected rows
+and sources and exit zero.
+
+Acceptance evidence from focused checks:
+
+- Table order and existing output: `TestTheStatusViewShowsTheSpecQueueTable`
+  asserts the five row kinds, statuses and notes in text and JSON, compares the
+  entire previous text report outside the added section and sources, and proves
+  authoring/backlog rows alone leave `nothing_to_do` unchanged.
+- Historical forecasts: `TestTheStatusViewForecastsFromTheDeliveryHistory`
+  uses twelve actual archive commits and SQL-timed Implement Run records. Its
+  named cases assert elapsed-time conditioning, the five-longer minimum, one
+  through three forecasts behind the running Spec, the fourth row's condition,
+  prerequisite exclusion, Run-slot and park waits, the started park and authoring.
+  It checks the JSON instants, cell-state exclusivity, basis bounds and both
+  measured duration pairs. The three-delivery test asserts the absence of
+  forecast times and durations and the exact insufficient-history reason.
+- JSON and unavailable sources: `TestTheStatusJSONCarriesTheQueueAndTheBasis`
+  pins the existing fields alongside the added rows, basis and sources.
+  `TestTheStatusViewContinuesWithoutAnUnreadableSource` first establishes a
+  working twelve-delivery forecast, then independently breaks each source,
+  asserting its first-line diagnostic, exit zero and remaining rows. Only a
+  failed history read removes historical forecasts; it retains actual starts.
+- Read-only and refusals: `TestFollowUpStatusWritesNothing/spec_queue` hashes
+  repository, home and Secondbrain fixture files across text and JSON reads
+  with delivery history, authoring and both open/waiting Backlog Entries.
+  Focused checks also exercise the existing no-judge test and unchanged
+  `--all`/`--messages` refusal transcripts.
+- Transcripts and formatting: both Surface Transcripts are copied into
+  `TestTheStatusViewSurfaceTranscripts` and compared in full, including empty
+  stderr and exit zero, with only the declared substitutions. The fixture has
+  one commit on `main`, no origin, Run Database or Phase Record, and UTC.
+  The renderer tests pin both PRD blocks, the recorded second-level values,
+  duration/time rounding, the short basis, empty/backlog-only tables and ten-row
+  alignment.
+- Documentation: the guide and both reference copies carry the required
+  wording and all four type-pinned field sentences. Both copies are checked
+  through `roundfixLayoutSources`, with each required phrase occurring exactly
+  once. The generated skill version is `0.1.245`; only its two entry-file
+  version fields changed. The coverage map gains only the three required
+  sources, and its Behavior Surface Record was regenerated after the final
+  guide edit.
+
+Focused commands with exit 0:
+
+- `go test ./internal/cli -count=1 -timeout 3m -run '^(TestTheSpecQueueTableRendersTimesAndDurations|TestTheStatusJSONCarriesTheQueueAndTheBasis|TestTheStatusViewShowsTheSpecQueueTable)$'`
+- `go test ./internal/cli -run '^(TestTheStatusViewForecastsFromTheDeliveryHistory|TestTheStatusViewContinuesWithoutAnUnreadableSource)$' -count=1 -timeout 4m`
+- `go test ./internal/cli -count=1 -timeout 4m -run '^(TestTheStatusViewForecastsFromTheDeliveryHistory|TestTheStatusViewSaysWhenTheHistoryIsTooSmall|TestTheStatusViewContinuesWithoutAnUnreadableSource)$'`
+- `go test -race ./internal/cli -run '^TestTheStatusViewReadsTheHistoryBesideTheForgeCall$' -count=1 -timeout 3m`
+- `go test -race ./internal/cli -count=1 -timeout 4m -run '^(TestTheStatusViewReadsTheHistoryBesideTheForgeCall|TestTheStatusViewSurfaceTranscripts|TestTheSpecQueueTableRendersTimesAndDurations|TestFollowUpStatusNeverAsksTheJudge|TestFollowUpStatusWritesNothing)$'`
+- `go test ./internal/cli -count=1 -timeout 3m -run '^(TestTheFollowUpProgressKeepsEveryRunForTheHistory|TestFollowUpStatusRefusesAllTranscript|TestFollowUpStatusRefusesMessages)$'`
+- `go test -tags docscontract ./internal/cli -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$' -count=1 -timeout 3m`
+- `go test ./skills -count=1 -timeout 2m -run '^Test(TheFollowUpReferenceDescribesTheSpecQueue|RoundfixSkillEntryFileStaysWithinItsBudget|EveryOwnedSkillVersionIsRecorded)$'`
+
+Required sanctioned generation, each exit 0:
+
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+
+The initial focused JSON check failed because the two fields were absent, then
+passed after integration. A focused existing-reader regression exposed its old
+whole-report equality assumption: retained terminal Runs now add two start gaps.
+Requirement 5's existing-output migration updates
+`TestTheFollowUpProgressKeepsEveryRunForTheHistory` in
+`internal/cli/follow_up_queue_test.go` to assert exactly that new basis count and
+continue comparing every other report field. No test was removed or renamed.
+
+The final changed-path review found only this slice's sources, tests, guide,
+skill files and generated records; `git diff --check` reported no whitespace
+errors. The incoming `status: in_progress` is preserved. The Task Graph, other
+Task files, help text, Skill Mode reference, glossary and ADR amendments were
+not edited; the latter documentation belongs to task 04. No commit, push or
+pull request was made. Declared Verification, repository Verification and full
+package suites remain for the Daemon; the checks above are focused evidence,
+not a terminal Task verdict.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/follow_up_queue_test.go`

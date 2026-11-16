@@ -25,6 +25,10 @@ func followUpNamespace(ctx context.Context, loaded roundconfig.Loaded) string {
 		root = loaded.GitRoot
 	}
 	raw, err := (preflight.ExecGitRunner{}).RunGit(ctx, root, "remote", "get-url", "origin")
+	return followUpNamespaceFromRemote(root, raw, err)
+}
+
+func followUpNamespaceFromRemote(root, raw string, err error) string {
 	if err == nil {
 		if _, repo, ok := parseReadinessRemote(raw); ok {
 			return filepath.Base(repo)
