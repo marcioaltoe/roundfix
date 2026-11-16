@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.147.0] - 2026-11-16
+
+### The status view shows the Spec queue with a forecast start and end
+
+- **`roundfix follow-up --status` prints the Spec queue.** After the pending Specs, a table lists the repository's Specs and Backlog Entries in the order they will be worked: Delivery Queue items by position, then planned Specs not yet queued, then Specs being authored (read from the Phase Record, this checkout's and those of other checkouts of the same `origin`), then open Backlog Entries. Each row shows its status, a one-line note of what Roundfix already records (a park and the command that answers it, a blocker, the authoring phase, a Backlog Entry's title and its Waiting Declaration) and, for a Spec that has not finished, a start and an end. `--format json` carries the same rows under `queue` and the basis under `forecast_basis`. The Roundfix skill's `--status` mode relays the table.
+- **A forecast is a range read from the repository's own deliveries.** The likely time is the median and the limit the 85th percentile of this machine's delivery history (the start of each Spec's first Implement Run to the commit that archived it on the default branch, and the gap from one start to the next), shown for the Spec in progress and for up to three planned Specs behind it. A wait Roundfix cannot date shows as a named condition, such as `after prerequisite 0397 is merged` or `after its park is answered`; fewer than 11 delivered Specs reads `not enough history`. The forecasts are computed again on each call and stored nowhere. A source that cannot be read is reported as `unavailable`, its times are not shown and the exit code stays `0`. Archive records are read from Git at the default-branch head with a fixed number of Git processes, and repository text in the table has its control characters replaced. ADR-0409 and ADR-0410.
+
 ## [0.146.0] - 2026-11-16
 
 ### Each phase of a Spec is recorded and starts in a fresh session
