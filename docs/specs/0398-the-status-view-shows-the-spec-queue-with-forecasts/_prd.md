@@ -187,6 +187,10 @@ The decisions were checked against these sources on 2026-11-16.
 
 The verdict was undecided, and the maintainer chose "Rodar a Ideia" on 2026-11-16. The judged text is the adopted Backlog Entry from its title on: [`references/2026-11-15-the-status-mode-shows-the-spec-queue-with-forecasts.md`](references/2026-11-15-the-status-mode-shows-the-spec-queue-with-forecasts.md).
 
+## Skills
+
+- unchanged: command phase start — the `phase start` command, its output and the format of the Phase Record do not change; the package gains a reader of phase entries that only the status view calls, and the Follow-up guide and reference document it.
+
 ## Glossary
 
 - adds: **Spec Queue Table**

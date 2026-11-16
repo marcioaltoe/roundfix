@@ -13,7 +13,7 @@ The status view of the Follow-up Command, and the `--status` Skill Mode that rel
 
 It is for the person who supervises Spec work and plans their own time around it: when to answer a question, when an authoring window opens, when a release can go out. In this repository that is the maintainer. An adopter gets the same table from its own history.
 
-It is valuable because the status view holds no time today, and the obvious estimate is wrong by a wide margin. A Clean Implement Run took a median of 47 minutes over the 30 days this repository's Run Database holds, and a plan took a median of 6.0 hours to go from the default branch to its delivery merge over the 58 Specs created since 2026-11-01 ([baseline adopted by Spec 0397](../0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-16-delivery-speed-and-plan-quality-baseline.md)). Whoever wants the timing asks the Supervisor, who pieces it together from `roundfix deliver status`, `roundfix runs list`, the Session Handoff and its own context.
+It is valuable because the status view holds no time today, and the obvious estimate is wrong by a wide margin. A Clean Implement Run took a median of 47 minutes over the 30 days this repository's Run Database holds, and a plan took a median of 6.0 hours to go from the default branch to its delivery merge over the 58 Specs created since 2026-11-01 (baseline adopted by Spec 0397, `docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-16-delivery-speed-and-plan-quality-baseline.md@f4580437cd6f3c354c2524f7f2eca9c924446d64`). Whoever wants the timing asks the Supervisor, who pieces it together from `roundfix deliver status`, `roundfix runs list`, the Session Handoff and its own context.
 
 V1 is one Spec and covers this repository's status view only. It ships only if the forecast holds on history: the PRD replays the method over about 100 Specs of the last 30 days, and the limit must hold for at least 80% of them. The view stays read-only and as fast as it is today.
 
@@ -175,7 +175,7 @@ Every answer is the maintainer's, quoted as recorded in [`references/2026-11-16-
 - The form of a forecast (2026-11-16, ~09:15 BRT): "Provável e limite (Recommended)" — "Dois horários por célula, ex.: '~10:30, até 12:10' (mediana e percentil 85), com a base no rodapé."
 - Waits (2026-11-16, ~09:15 BRT): "Condição e duração (Recommended)" — "Início 'depois de \<condição\>' e fim como duração após o início; as de trás encadeiam igual, sem horário inventado."
 - Validation (2026-11-16, ~09:15 BRT): "Backtest antes (Recommended)" — "No PRD, o método é repetido sobre ~100 Specs dos últimos 30 dias e só é aceito se o fim real cair dentro do limite em pelo menos 80%."
-- Standing addition to the success criterion, made for Spec 0397 on 2026-11-16 and carried to this Spec by the operator's brief: "com queda de performance nula ou quase nula". It is recorded in [the answers adopted by Spec 0397](../0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-15-maintainer-answers.md) and is read here as the time of the status view.
+- Standing addition to the success criterion, made for Spec 0397 on 2026-11-16 and carried to this Spec by the operator's brief: "com queda de performance nula ou quase nula". It is recorded in the answers adopted by Spec 0397 (`docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-15-maintainer-answers.md@f4580437cd6f3c354c2524f7f2eca9c924446d64`) and is read here as the time of the status view.
 
 The author's own, made in this stage:
 
@@ -204,7 +204,7 @@ Adopted by this Spec (see [`references/_index.md`](references/_index.md)):
 2. [`references/2026-11-16-maintainer-answers.md`](references/2026-11-16-maintainer-answers.md), the answers behind `## Decisions`.
 3. [`references/2026-11-16-status-view-time-baseline.md`](references/2026-11-16-status-view-time-baseline.md), recorded by the author: the time of the status view in `## KPIs`.
 
-Owned by Spec 0397 and linked at its path: [the delivery speed baseline](../0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-16-delivery-speed-and-plan-quality-baseline.md), the source of every Run and plan-to-merge number in this file. Spec 0397 can be archived before this plan reaches the default branch, and its Archive Relink rewrites only the links it finds there, so the PRD stage checks the two links into its folder after rebasing.
+Owned by Spec 0397 and linked at its path: the delivery speed baseline (`docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-16-delivery-speed-and-plan-quality-baseline.md@f4580437cd6f3c354c2524f7f2eca9c924446d64`), the source of every Run and plan-to-merge number in this file. Spec 0397 can be archived before this plan reaches the default branch, and its Archive Relink rewrites only the links it finds there, so the PRD stage checks the two links into its folder after rebasing.
 
 This project's ai-memory messages were listed on 2026-11-16 and none was pending. The two other open Backlog Entries, a false status reported without a reproduction and the cost of starting a session, belong to other contexts and stay where they are. The session listed no Research Subagent, so the author did the sweeps.
 
