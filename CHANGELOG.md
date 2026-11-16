@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.146.0] - 2026-11-16
+
+### Each phase of a Spec is recorded and starts in a fresh session
+
+- **New `roundfix phase start <phase> [--spec <slug>]` and the Phase Record.** A Supervisor session records the phase it starts (`follow-up`, `idea`, `prd`, `techspec`, `tasks`, `delivery`, `release`) with its harness session and Spec. The Phase Record holds these entries as day files of JSON lines (`roundfix/phase-record/v1`) in a fixed place under the Roundfix home that no repository configuration moves, and the user guide documents it so a usage script can attribute consumption per Spec and phase. Each prompt of a Run and of a pre-PR review leaves one prompt entry naming the Run, the Task, QA gate or review in progress, and when it began and ended. Roundfix reads no harness transcript and computes no price. When one session records a second phase, the command prints a Boundary Notice on standard error and changes no exit code. The Run Retention Sweep and `roundfix gc` remove old day files. A Phase Record failure never keeps an eligible Run, and a corrupted oversized line is skipped without being read whole.
+- **The Phase Boundary.** The authoring skills, the Roundfix skill's modes and the Baseline's autonomous-work clause tell the Supervisor to write the Session Handoff at each phase boundary, say what stays armed, and end the session. The next session starts with `/roundfix follow-up`. A scheduled wake-up returns to the same session with its whole context, so the clause no longer offers one as the way to continue. Adopters receive the clause at their next `roundfix baseline update`.
+- **A fix or a refactor is authored in the session.** On the fix or refactor route, an authoring skill writes in the session and hands its phase to the Author Subagent only when the request asks for it. A feature's phases are always handed over.
+- **A repository that publishes an authoring skill receives no Declared Skill Header for it.** When `skills/<name>/SKILL.md` exists in the tree, installation writes the generated subagents but leaves that skill without a header, and `doctor`, `baseline update` and the update check count it as applied. This repository now declares its authoring models: Fable for the Idea, PRD, TechSpec and Tasks phases, and a Sonnet Research Subagent. ADR-0407, and ADR-0408, which amends ADR-0401.
+
 ## [0.145.1] - 2026-11-15
 
 ### The Verification probe prepares its tree as the Daemon does
