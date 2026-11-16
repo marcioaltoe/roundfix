@@ -1,0 +1,4 @@
+Published source: Claude Code documentation, Manage costs effectively; https://code.claude.com/docs/en/costs
+Source read: 2026-11-15. Offline passage quoted by PRD Acceptance evidence, not authored by this Spec. No lookup attempted.
+Passage: Claude Code sends your full conversation with every request
+Comparison: The boundary clause ends the session after each phase and names handoff state, preventing the next phase from continuing that conversation.

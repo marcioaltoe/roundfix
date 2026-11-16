@@ -1,0 +1,153 @@
+$ git diff-tree --no-commit-id --name-only -r edf79b2cb6c0125537e8a7b1db0f6b4203b16e5c
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/phase.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/task_01.md
+docs/user-guide/commands.md
+docs/user-guide/commands/phase.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/phase.go
+internal/cli/phase_test.go
+internal/config/regeneration_declared_test.go
+internal/phaserecord/record.go
+internal/phaserecord/record_test.go
+skills/phase_reference_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/phase.md
+skills/roundfix_layout_test.go
+skills/testdata/owned-skill-versions.json
+task_01: 20 changed paths; 0 outside Context or Recorded paths plus assigned Task file.
+Operative authorization revision f4580437cd6f3c354c2524f7f2eca9c924446d64 precedes edf79b2cb6c0125537e8a7b1db0f6b4203b16e5c; seeded mechanical audit already lists this Task commit.
+$ git diff-tree --no-commit-id --name-only -r 1a5702c9dee56574fe819ecfd16acaf4c261d397
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/phase.md
+.agents/skills/roundfix/references/storage.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/task_02.md
+docs/user-guide/commands/gc.md
+docs/user-guide/run-database-lifecycle.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/gc.go
+internal/cli/gc_run_retention_test.go
+internal/cli/implement.go
+internal/cli/phase_record_test.go
+internal/cli/review.go
+internal/cli/run_retention.go
+internal/cli/worktree_build_cache_test.go
+internal/daemon/agent_session_owner.go
+internal/daemon/engine.go
+internal/daemon/phase_record_test.go
+internal/phaserecord/prompt.go
+internal/phaserecord/prompt_test.go
+internal/phaserecord/record.go
+skills/phase_record_writers_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/phase.md
+skills/roundfix/references/storage.md
+skills/testdata/owned-skill-versions.json
+task_02: 28 changed paths; 0 outside Context or Recorded paths plus assigned Task file.
+Operative authorization revision f4580437cd6f3c354c2524f7f2eca9c924446d64 precedes 1a5702c9dee56574fe819ecfd16acaf4c261d397; seeded mechanical audit already lists this Task commit.
+$ git diff-tree --no-commit-id --name-only -r 2f84041c1d69f887ca33f2412656bc7b331f28e7
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/setup.md
+.claude/agents/roundfix-idea-author.md
+.claude/agents/roundfix-prd-author.md
+.claude/agents/roundfix-researcher.md
+.claude/agents/roundfix-tasks-author.md
+.claude/agents/roundfix-techspec-author.md
+.roundfixrc.yml
+CONTEXT.md
+docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md
+docs/references/behavior-surfaces.json
+docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/task_03.md
+docs/user-guide/commands/doctor.md
+docs/user-guide/commands/skills.md
+docs/user-guide/commands/update.md
+docs/user-guide/configuration.md
+internal/cli/authoring_models.go
+internal/cli/authoring_reports.go
+internal/cli/cli.go
+internal/cli/published_skill_test.go
+skills/authoring.go
+skills/authoring_inspect.go
+skills/published_skill_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/setup.md
+skills/testdata/owned-skill-versions.json
+task_03: 26 changed paths; 0 outside Context or Recorded paths plus assigned Task file.
+Operative authorization revision f4580437cd6f3c354c2524f7f2eca9c924446d64 precedes 2f84041c1d69f887ca33f2412656bc7b331f28e7; seeded mechanical audit already lists this Task commit.
+$ git diff-tree --no-commit-id --name-only -r b0c9bb8eabf854efcc831b92dbec0fe4d531f423
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/modes.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+CONTEXT.md
+docs/agents/autonomous-work.md
+docs/agents/setup-context.json
+docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/task_04.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+internal/baseline/assets/modules/autonomous-work.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/phase_boundary_clause_test.go
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+skills/authoring_delegation_test.go
+skills/phase_boundary_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/modes.md
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+task_04: 31 changed paths; 0 outside Context or Recorded paths plus assigned Task file.
+Operative authorization revision f4580437cd6f3c354c2524f7f2eca9c924446d64 precedes b0c9bb8eabf854efcc831b92dbec0fe4d531f423; seeded mechanical audit already lists this Task commit.
+Forbidden file classes across all four Task commits: none
+.roundfixrc.yml preserves all earlier bytes and adds only one skills section.
+$ go test -overlay /tmp/rf397-overlay-wnlg62e7/overlay.json -count=1 -timeout 30m -v -run ^TestQA0397ChangedGovernedPaths$ ./internal/speccheck
+=== RUN   TestQA0397ChangedGovernedPaths
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/roundfix/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/roundfix/references/modes.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/roundfix/references/phase.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/roundfix/references/setup.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/roundfix/references/storage.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/write-idea/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/write-prd/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/write-tasks/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED .agents/skills/write-techspec/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED .roundfixrc.yml
+    qa0397_scope_test.go:4: GOVERNED docs/agents/autonomous-work.md
+    qa0397_scope_test.go:4: GOVERNED docs/agents/setup-context.json
+    qa0397_scope_test.go:4: GOVERNED internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md
+    qa0397_scope_test.go:4: GOVERNED internal/baseline/assets/modules/autonomous-work.json
+    qa0397_scope_test.go:4: GOVERNED internal/baseline/assets/profiles/standard-typescript-monorepo.json
+    qa0397_scope_test.go:4: GOVERNED skills/roundfix/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED skills/write-idea/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED skills/write-prd/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED skills/write-tasks/SKILL.md
+    qa0397_scope_test.go:4: GOVERNED skills/write-techspec/SKILL.md
+--- PASS: TestQA0397ChangedGovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3235 paths; fingerprint took 166.724083ms before and 144.789625ms after
+ok  	roundfix/internal/speccheck	0.623s
+
+exit: 0
+Actual GovernedPath classifier: 20 changed governed paths, 0 outside exact authorization paths.
+Every changed skill QA settlement section equals the Delivery Base.
+Current worktree delta:
+?? docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/
+
+Errors: []

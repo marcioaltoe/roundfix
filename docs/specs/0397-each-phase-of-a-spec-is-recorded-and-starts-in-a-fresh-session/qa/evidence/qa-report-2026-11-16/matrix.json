@@ -1,0 +1,202 @@
+[
+  [
+    "Q01",
+    "repository Verification",
+    "Build and Daemon static verification"
+  ],
+  [
+    "Q02",
+    "Requirement 2",
+    "Phase format, boundaries, refusals and Windows build"
+  ],
+  [
+    "Q03",
+    "Requirement 3",
+    "Prompt scopes, write failures and retention"
+  ],
+  [
+    "Q04",
+    "Requirement 4",
+    "Published installation and inspectors"
+  ],
+  [
+    "Q05",
+    "Requirement 5",
+    "Skill, Baseline and documentation contracts"
+  ],
+  [
+    "T01",
+    "Requirement 2 (Surface Transcript 1)",
+    "Reproduce Surface Transcript 1 with persistence confirmation"
+  ],
+  [
+    "T02",
+    "Requirement 2 (Surface Transcript 2)",
+    "Reproduce Surface Transcript 2 with persistence confirmation"
+  ],
+  [
+    "T03",
+    "Requirement 2 (Surface Transcript 3)",
+    "Reproduce Surface Transcript 3 with persistence confirmation"
+  ],
+  [
+    "T04",
+    "Requirement 2 (Surface Transcript 4)",
+    "Reproduce Surface Transcript 4 with persistence confirmation"
+  ],
+  [
+    "T05",
+    "Requirement 2 (Surface Transcript 5)",
+    "Reproduce Surface Transcript 5 with persistence confirmation"
+  ],
+  [
+    "T06",
+    "Requirement 4 (Surface Transcript 6)",
+    "Reproduce Surface Transcript 6 with persistence confirmation"
+  ],
+  [
+    "T07",
+    "Requirement 4 (Surface Transcript 7)",
+    "Reproduce Surface Transcript 7 with persistence confirmation"
+  ],
+  [
+    "T08",
+    "Requirement 3 (Surface Transcript 8)",
+    "Reproduce Surface Transcript 8 with persistence confirmation"
+  ],
+  [
+    "Q09",
+    "Requirement 9",
+    "Read-only commands create no Phase Record"
+  ],
+  [
+    "Q10",
+    "Requirement 10",
+    "Repository adoption and unchanged owned mirrors"
+  ],
+  [
+    "Q11",
+    "Requirement 5 (managed-refresh confirmation)",
+    "Managed refresh of the committed Delivery Base is idempotent"
+  ],
+  [
+    "S01",
+    "Requirement 12 (sabotage 1)",
+    "Sabotage 1 fails on its prescribed test/subtest"
+  ],
+  [
+    "S02",
+    "Requirement 12 (sabotage 2)",
+    "Sabotage 2 fails on its prescribed test/subtest"
+  ],
+  [
+    "S03",
+    "Requirement 12 (sabotage 3)",
+    "Sabotage 3 fails on its prescribed test/subtest"
+  ],
+  [
+    "S04",
+    "Requirement 12 (sabotage 4)",
+    "Sabotage 4 fails on its prescribed test/subtest"
+  ],
+  [
+    "S05",
+    "Requirement 12 (sabotage 5)",
+    "Sabotage 5 fails on its prescribed test/subtest"
+  ],
+  [
+    "S06",
+    "Requirement 12 (sabotage 6)",
+    "Sabotage 6 fails on its prescribed test/subtest"
+  ],
+  [
+    "S07",
+    "Requirement 12 (sabotage 7)",
+    "Sabotage 7 fails on its prescribed test/subtest"
+  ],
+  [
+    "S08",
+    "Requirement 12 (sabotage 8)",
+    "Sabotage 8 fails on its prescribed test/subtest"
+  ],
+  [
+    "S09",
+    "Requirement 12 (sabotage 9)",
+    "Sabotage 9 fails on its prescribed test/subtest"
+  ],
+  [
+    "S10",
+    "Requirement 12 (sabotage 10)",
+    "Sabotage 10 fails on its prescribed test/subtest"
+  ],
+  [
+    "Q13",
+    "Requirement 2; Requirement 3; Requirement 4; Requirement 5",
+    "All additional named Task tests and assertions"
+  ],
+  [
+    "Q14",
+    "Requirement 5 (text and vocabulary confirmation)",
+    "Pinned text, documentation, source corpus and dependency search"
+  ],
+  [
+    "O01",
+    "outside-evidence row",
+    "Compare costs full-context passage with boundary guide"
+  ],
+  [
+    "O02",
+    "outside-evidence row",
+    "Compare scheduled-task passage with wake-up rule"
+  ],
+  [
+    "O03",
+    "outside-evidence row",
+    "Compare session-identity passage with record and notice"
+  ],
+  [
+    "D01",
+    "Unreachable Acceptance: over the first full week after the release, at least 95% of the Claude cost of this repository's Supervisor work carries a Spec and a phase in the operator's usage report joined to the Phase Record.",
+    "over the first full week after the release, at least 95% of the Claude cost of this repository's Supervisor work carries a Spec and a phase in the operator's usage report joined to the Phase Record."
+  ],
+  [
+    "D02",
+    "Unreachable Acceptance: in that week the median context per call is under 150 thousand tokens in this repository's Supervisor sessions and under 200 thousand tokens in its authoring subagents, and at least 90% of the subagent cost of feature Specs runs on the generated subagents.",
+    "in that week the median context per call is under 150 thousand tokens in this repository's Supervisor sessions and under 200 thousand tokens in its authoring subagents, and at least 90% of the subagent cost of feature Specs runs on the generated subagents."
+  ],
+  [
+    "D03",
+    "Unreachable Acceptance: over the first 20 Specs delivered after the release, the median time from a plan reaching the default branch to its delivery merge is at most 7.5 hours and the median duration of a Clean Implement Run is at most 71 minutes.",
+    "over the first 20 Specs delivered after the release, the median time from a plan reaching the default branch to its delivery merge is at most 7.5 hours and the median duration of a Clean Implement Run is at most 71 minutes."
+  ],
+  [
+    "D04",
+    "Unreachable Acceptance: over the same 20 Specs, at least 80% have a first Implement Run that ends Clean and the Implement Runs per delivered Spec are at most 1.25; in a week, under 5% of Task verdicts fail at settlement.",
+    "over the same 20 Specs, at least 80% have a first Implement Run that ends Clean and the Implement Runs per delivered Spec are at most 1.25; in a week, under 5% of Task verdicts fail at settlement."
+  ],
+  [
+    "D05",
+    "Unreachable Acceptance: the weekly limit points attributed to this repository on both accounts, divided by the Specs delivered in the week, fall against the week of 2026-11-08 to 2026-11-15.",
+    "the weekly limit points attributed to this repository on both accounts, divided by the Specs delivered in the week, fall against the week of 2026-11-08 to 2026-11-15."
+  ],
+  [
+    "D06",
+    "Unreachable Acceptance: one full authoring cycle of a feature Spec in this repository, on the released binary, runs each phase the agent conducts on its declared model, which is also the pilot evidence Spec 0392 left unproven.",
+    "one full authoring cycle of a feature Spec in this repository, on the released binary, runs each phase the agent conducts on its declared model, which is also the pilot evidence Spec 0392 left unproven."
+  ],
+  [
+    "Q17",
+    "Requirement 5 (glossary confirmation)",
+    "Glossary declarations and exactly seven changed definitions"
+  ],
+  [
+    "Q18",
+    "Requirement 18",
+    "Task history, authorization, scope and forbidden-path audit"
+  ],
+  [
+    "Q19",
+    "Pull Request row",
+    "Pre-PR authority and control equivalents"
+  ]
+]

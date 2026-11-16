@@ -1,0 +1,29 @@
+Fresh committed git archive b0c9bb8eabf854efcc831b92dbec0fe4d531f423; no regeneration or sync.
+diff --git a/skills/authoring.go b/skills/authoring.go
+index bc6c901..c692029 100644
+--- a/skills/authoring.go
++++ b/skills/authoring.go
+@@ -315,7 +315,7 @@ func prepareAuthoringInstall(ctx context.Context, root string, declaration *Auth
+ 			}
+ 			continue
+ 		}
+-		if PublishesAuthoringSkill(root, phase.Skill) {
++		if false && PublishesAuthoringSkill(root, phase.Skill) {
+ 			plan.result.Withheld = append(plan.result.Withheld, phase.Skill)
+ 			continue
+ 		}
+
+$ go test -count=1 -timeout 30m -v -run ^TestInstallationWithholdsTheHeaderOfAPublishedSkill$/^one_published$ ./skills
+=== RUN   TestInstallationWithholdsTheHeaderOfAPublishedSkill
+=== PAUSE TestInstallationWithholdsTheHeaderOfAPublishedSkill
+=== CONT  TestInstallationWithholdsTheHeaderOfAPublishedSkill
+=== RUN   TestInstallationWithholdsTheHeaderOfAPublishedSkill/one_published
+    published_skill_test.go:78: installed write-prd differs: <nil>
+--- FAIL: TestInstallationWithholdsTheHeaderOfAPublishedSkill (0.01s)
+    --- FAIL: TestInstallationWithholdsTheHeaderOfAPublishedSkill/one_published (0.01s)
+FAIL
+FAIL	roundfix/skills	0.333s
+FAIL
+
+exit: 1
+Named failing test/subtest observed: True

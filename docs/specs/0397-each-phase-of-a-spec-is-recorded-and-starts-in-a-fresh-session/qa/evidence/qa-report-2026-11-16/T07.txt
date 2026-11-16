@@ -1,0 +1,10 @@
+$ ./bin/roundfix skills check
+stdout:
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, brainstorming, business-analyst, archive-spec, qa-gate, evidence-gate
+stderr:
+roundfix: warning: the installed files do not match the Authoring Model Declaration (skills.authoring.claude):
+  write-prd holds a header, and this repository publishes skills/write-prd/SKILL.md
+  next: roundfix skills install --target project
+exit: 0
+Line-by-line stdout/stderr and exit comparison: True
+Independent full-tree comparison: inspection wrote nothing.

@@ -1,0 +1,21 @@
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/tmp/rf397-5tqac4dr/repo/.agents/skills (42 file(s))
+Withheld declared header: write-prd (this repository publishes skills/write-prd/SKILL.md)
+Applied declared header: write-techspec (model opus, effort xhigh)
+Generated subagent: .claude/agents/roundfix-prd-author.md
+Generated subagent: .claude/agents/roundfix-techspec-author.md
+stderr:
+exit: 0
+Line-by-line stdout/stderr and exit comparison: True
+Published file equals shipped bytes; unpublished file has model: opus and effort: xhigh.
+$ ./bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/tmp/rf397-5tqac4dr/repo/.agents/skills (42 file(s))
+Withheld declared header: write-prd (this repository publishes skills/write-prd/SKILL.md)
+Applied declared header: write-techspec (model opus, effort xhigh)
+Generated subagent: .claude/agents/roundfix-prd-author.md
+Generated subagent: .claude/agents/roundfix-techspec-author.md
+stderr:
+exit: 0
+Independent full-tree SHA256 comparison: second installation changes no byte.

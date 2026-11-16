@@ -1,0 +1,29 @@
+Fresh committed git archive b0c9bb8eabf854efcc831b92dbec0fe4d531f423; no regeneration or sync.
+diff --git a/internal/phaserecord/record.go b/internal/phaserecord/record.go
+index e9ae692..29476d4 100644
+--- a/internal/phaserecord/record.go
++++ b/internal/phaserecord/record.go
+@@ -128,7 +128,7 @@ func (r *Recorder) boundary(ctx context.Context, now time.Time, entry phaseLine)
+ 		path := filepath.Join(r.directory, now.AddDate(0, 0, -age).Format("2006-01-02")+".jsonl")
+ 		err := readDay(ctx, path, func(line []byte) {
+ 			var row phaseLine
+-			if json.Unmarshal(line, &row) != nil || row.Kind != "phase" || row.Session != entry.Session {
++			if json.Unmarshal(line, &row) != nil || row.Kind != "phase" {
+ 				return
+ 			}
+ 			recorded, err := time.Parse(time.RFC3339, row.Time)
+
+$ go test -count=1 -timeout 30m -v -run ^TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession$/^another_session$ ./internal/phaserecord
+=== RUN   TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession
+=== PAUSE TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession
+=== CONT  TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession
+=== RUN   TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession/another_session
+    record_test.go:203: boundary = {Crossed:true PreviousPhase:prd PreviousSpec:0412-example}, <nil>; want {Crossed:false PreviousPhase: PreviousSpec:}
+--- FAIL: TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession (0.01s)
+    --- FAIL: TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession/another_session (0.01s)
+FAIL
+FAIL	roundfix/internal/phaserecord	0.243s
+FAIL
+
+exit: 1
+Named failing test/subtest observed: True

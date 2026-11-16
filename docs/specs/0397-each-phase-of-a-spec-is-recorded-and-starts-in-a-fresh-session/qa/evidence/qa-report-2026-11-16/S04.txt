@@ -1,0 +1,29 @@
+Fresh committed git archive b0c9bb8eabf854efcc831b92dbec0fe4d531f423; no regeneration or sync.
+diff --git a/internal/cli/phase.go b/internal/cli/phase.go
+index 3d5ccec..8b026b0 100644
+--- a/internal/cli/phase.go
++++ b/internal/cli/phase.go
+@@ -81,6 +81,7 @@ func runPhaseCommand(ctx context.Context, args []string, stdout, stderr io.Write
+ 		}
+ 		fmt.Fprintf(stderr, "roundfix: notice: this session already recorded %s; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n", previous)
+ 	}
++	if boundary.Crossed { return exitRunFailed }
+ 	return exitOK
+ }
+ 
+
+$ go test -count=1 -timeout 30m -v -run ^TestPhaseStartSurfaceTranscripts$/^transcript_3$ ./internal/cli
+=== RUN   TestPhaseStartSurfaceTranscripts
+=== PAUSE TestPhaseStartSurfaceTranscripts
+=== CONT  TestPhaseStartSurfaceTranscripts
+=== RUN   TestPhaseStartSurfaceTranscripts/transcript_3
+    phase_test.go:128: [phase start techspec --spec 0412-example]: exit = 1, want 0; stdout = "Recorded techspec of 0412-example for claude session 11111111-2222-4333-8444-555555555555\n", want "Recorded techspec of 0412-example for claude session 11111111-2222-4333-8444-555555555555\n"; stderr = "roundfix: notice: this session already recorded prd of 0412-example; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n", want "roundfix: notice: this session already recorded prd of 0412-example; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n"
+--- FAIL: TestPhaseStartSurfaceTranscripts (0.00s)
+    --- FAIL: TestPhaseStartSurfaceTranscripts/transcript_3 (0.00s)
+FAIL
+suiteguard: guard cost: measured 3181 paths; fingerprint took 151.116375ms before and 145.920292ms after
+FAIL	roundfix/internal/cli	0.776s
+FAIL
+
+exit: 1
+Named failing test/subtest observed: True

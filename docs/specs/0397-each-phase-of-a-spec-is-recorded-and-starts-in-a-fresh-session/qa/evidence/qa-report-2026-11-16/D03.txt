@@ -1,0 +1,4 @@
+Criterion: over the first 20 Specs delivered after the release, the median time from a plan reaching the default branch to its delivery merge is at most 7.5 hours and the median duration of a Clean Implement Run is at most 71 minutes.
+Pre-run declaration: _prd.md, Unreachable Acceptance.
+Proved constraint: this is an unreleased audited candidate; the gate permits no live sessions, provider/subscription access, usage script or post-release weeks/20-Spec cohort. Six criteria require those observations; offline integration and generated-file checks do not establish them.
+Satisfied-by remains unproven: the operator must collect the post-release usage reports, Run listings and recorded session evidence named by the declaration.

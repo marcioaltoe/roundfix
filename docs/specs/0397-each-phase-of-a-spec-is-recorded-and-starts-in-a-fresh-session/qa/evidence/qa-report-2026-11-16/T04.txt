@@ -1,0 +1,8 @@
+$ ./bin/roundfix phase start follow-up
+stdout:
+Recorded follow-up without a harness session: the environment names none
+stderr:
+exit: 0
+Line-by-line stdout/stderr and exit comparison: True
+Independent JSON read: {"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-16T13:42:49Z","phase":"follow-up","spec":"","repository":"/private/tmp/rf397-jzwzf0ue/repo","harness":"","session":"","boundary":false}
+Directory mode: 0700; day file mode: 0600. Keys ordered; append count: 3

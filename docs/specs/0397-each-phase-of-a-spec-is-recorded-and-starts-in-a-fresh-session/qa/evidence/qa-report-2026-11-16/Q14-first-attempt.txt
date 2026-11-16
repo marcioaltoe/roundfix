@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session-b9133b5c8c843a67-d32224fe-81b16323/run_20261116T113044Z_115c9d691f2c8277/docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/evidence/qa-report-2026-11-16/run-static.py.txt", line 9, in runrow
+    try:done(row,fn())
+                 ~~^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session-b9133b5c8c843a67-d32224fe-81b16323/run_20261116T113044Z_115c9d691f2c8277/docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/evidence/qa-report-2026-11-16/run-static.py.txt", line 37, in searches
+    if q.startswith(('Before the inventory','When the mode starts','At a Phase Boundary','This mode asks','With nobody present')):contains(pathlib.Path(prefix)/'roundfix/references/modes.md',q)
+                                                                                                                                  ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session-b9133b5c8c843a67-d32224fe-81b16323/run_20261116T113044Z_115c9d691f2c8277/docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/evidence/qa-report-2026-11-16/run-static.py.txt", line 27, in contains
+    txt=norm((R/path).read_text());want=norm(phrase);got=txt.count(want);assert got==count,(path,want,got)
+                                                                                ^^^^^^^^^^
+AssertionError: (PosixPath('.agents/skills/roundfix/references/modes.md'), 'At a Phase Boundary the Supervisor writes one with the Spec, the phase that ended, the next phase, each decision still open and what stays armed (ADR-0407).', 0)

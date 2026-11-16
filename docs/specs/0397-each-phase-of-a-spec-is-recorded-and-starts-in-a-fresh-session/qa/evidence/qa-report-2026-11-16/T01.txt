@@ -1,0 +1,17 @@
+$ ./bin/roundfix phase --help
+stdout:
+Usage:
+  roundfix phase start <phase> [--spec <slug>]
+
+Commands:
+  start  Record in the Phase Record that this session starts a phase
+
+Phases:
+  follow-up, idea, prd, techspec, tasks, delivery, release
+
+Options:
+  --spec  Spec folder slug the phase works on; required for every phase
+          but follow-up and release
+stderr:
+exit: 0
+Line-by-line stdout/stderr and exit comparison: True

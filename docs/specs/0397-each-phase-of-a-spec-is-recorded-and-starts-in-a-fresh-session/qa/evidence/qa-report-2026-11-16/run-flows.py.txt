@@ -1,0 +1,135 @@
+exec(compile((__import__('pathlib').Path.cwd()/'docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/evidence/qa-report-2026-11-16/qa-driver.py.txt').read_text(),'qa-driver.py.txt','exec'))
+TECH=(S/'_techspec.md').read_text()
+blocks=re.findall(r'```transcript\n(.*?)\n   ```',TECH,re.S)
+def expected(n):
+ lines=[l[3:] if l.startswith('   ') else l for l in blocks[n-1].splitlines()]
+ a=lines.index('stdout:'); b=lines.index('stderr:'); z=next(i for i,x in enumerate(lines) if x.startswith('exit:'))
+ return '\n'.join(lines[a+1:b])+'\n' if b>a+1 else '', '\n'.join(lines[b+1:z])+'\n' if z>b+1 else '',int(lines[z].split(':')[1])
+def matches(want,got):
+ pat=''
+ for l in want.splitlines(keepends=True):
+  if l.strip()=='...':pat+='(?:[^\n]*\n)*';continue
+  parts=re.split(r'(<[^>]+>)',l)
+  pat+=''.join('[^\n]+' if x.startswith('<') and x.endswith('>') else re.escape(x) for x in parts)
+ return re.fullmatch(pat,got) is not None
+def check(n,f,args,extra=lambda p:''):
+ p=cli(f,args); out,err,code=expected(n); body=rendered(args,p)
+ ok=matches(out,p.stdout) and matches(err,p.stderr) and code==p.returncode
+ body+='Line-by-line stdout/stderr and exit comparison: '+str(ok)+'\n'
+ try: body+=extra(p)
+ except Exception as e:ok=False;body+='Assertion failed: '+str(e)+'\n'
+ done('T%02d'%n,body,'pass' if ok else 'fail')
+ return p
+
+def snap(root):
+ result={}
+ for p in root.rglob('*'):
+  if '.git' in p.relative_to(root).parts:continue
+  if p.is_symlink(): result[str(p.relative_to(root))]='link:'+os.readlink(p)
+  elif p.is_file():result[str(p.relative_to(root))]=hashlib.sha256(p.read_bytes()).hexdigest()
+ return result
+
+def archive(rev,d):
+ p=subprocess.run(['git','archive',rev],cwd=R,capture_output=True,check=True)
+ with tarfile.open(fileobj=io.BytesIO(p.stdout)) as t:t.extractall(d,filter='data')
+ for args in [['git','init','-q'],['git','add','-A'],['git','-c','core.hooksPath=/dev/null','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','QA fixture']]:
+  subprocess.run(args,cwd=d,env=cleanenv(),check=True,capture_output=True)
+
+f=Fixture()
+try:
+ f.env['CLAUDE_CODE_SESSION_ID']='11111111-2222-4333-8444-555555555555'
+ check(1,f,['phase','--help'])
+ def phase(n):
+  def inspect(p):
+   day=next((f.home/'.roundfix/phase-record').glob('*.jsonl')); lines=day.read_text().splitlines(); row=json.loads(lines[-1])
+   keys=['schema','kind','time','phase','spec','repository','harness','session','boundary']+(['previous_phase','previous_spec'] if n==3 else [])
+   assert list(row)==keys,(list(row),keys)
+   assert row['boundary']==(n==3)
+   assert len(lines)==n-1
+   if n==3:assert row['previous_phase']=='prd' and row['previous_spec']=='0412-example'
+   assert (day.parent.stat().st_mode&0o777)==0o700
+   assert (day.stat().st_mode&0o777)==0o600
+   return 'Independent JSON read: '+lines[-1]+'\nDirectory mode: 0700; day file mode: 0600. Keys ordered; append count: '+str(len(lines))+'\n'
+  return inspect
+ check(2,f,['phase','start','prd','--spec','0412-example'],phase(2))
+ check(3,f,['phase','start','techspec','--spec','0412-example'],phase(3))
+ f.env.pop('CLAUDE_CODE_SESSION_ID',None)
+ check(4,f,['phase','start','follow-up'],phase(4))
+finally:f.close()
+f=Fixture()
+try:
+ f.env['CLAUDE_CODE_SESSION_ID']='11111111-2222-4333-8444-555555555555'
+ def absent(p):
+  assert not (f.home/'.roundfix/phase-record').exists();return 'Independent filesystem read: no phase-record file or directory.\n'
+ check(5,f,['phase','start','plan','--spec','0412-example'],absent)
+finally:f.close()
+f=Fixture()
+try:
+ (f.repo/'.roundfixrc.yml').write_text('skills:\n  authoring:\n    claude:\n      prd:\n        model: opus\n        reasoning_effort: xhigh\n      techspec:\n        model: opus\n        reasoning_effort: xhigh\n')
+ p=f.repo/'skills/write-prd/SKILL.md';p.parent.mkdir(parents=True);p.write_bytes((R/'skills/write-prd/SKILL.md').read_bytes())
+ def installation(q):
+  assert (f.repo/'.agents/skills/write-prd/SKILL.md').read_bytes()==(R/'skills/write-prd/SKILL.md').read_bytes()
+  tech=(f.repo/'.agents/skills/write-techspec/SKILL.md').read_text();assert '\nmodel: opus\n' in tech and '\neffort: xhigh\n' in tech
+  before=snap(f.repo); again=cli(f,['skills','install','--target','project']);assert again.returncode==0 and snap(f.repo)==before
+  return 'Published file equals shipped bytes; unpublished file has model: opus and effort: xhigh.\n'+rendered(['skills','install','--target','project'],again)+'Independent full-tree SHA256 comparison: second installation changes no byte.\n'
+ check(6,f,['skills','install','--target','project'],installation)
+ p=f.repo/'.agents/skills/write-prd/SKILL.md';p.write_text(p.read_text().replace('---\n','---\nmodel: opus\n',1))
+ (f.repo/'.claude/skills').symlink_to('../.agents/skills',target_is_directory=True)
+ before=snap(f.repo)
+ def unchanged(p):
+  assert snap(f.repo)==before;return 'Independent full-tree comparison: inspection wrote nothing.\n'
+ check(7,f,['skills','check'],unchanged)
+finally:f.close()
+f=Fixture()
+try:
+ d=f.home/'.roundfix/phase-record';d.mkdir(parents=True)
+ now=datetime.datetime.now(datetime.timezone.utc).date()
+ names=[(now-datetime.timedelta(days=x)).isoformat()+'.jsonl' for x in [60,45,0]]
+ for name in names:(d/name).write_text('{}\n')
+ def gc(p):
+  assert not (f.home/'.roundfix/roundfix.db').exists()
+  assert sorted(x.name for x in d.iterdir())==sorted(names)
+  assert '  Runs removable: 0\n  Phase Record day files removable: 2\n' in p.stdout
+  live=cli(f,['gc']);assert live.returncode==0 and not live.stderr
+  assert '  Runs removed: 0\n  Phase Record day files removed: 2\n' in live.stdout
+  assert [x.name for x in d.iterdir()]==[names[-1]]
+  return 'Dry-run independent read: all three files remain; no Run Database.\n'+rendered(['gc'],live)+'Live independent read: only '+names[-1]+' remains.\n'
+ check(8,f,['gc','--dry-run'],gc)
+finally:f.close()
+f=Fixture()
+try:
+ body=''
+ for args in [['follow-up'],['follow-up','--status'],['runs','list']]:
+  p=cli(f,args);body+=rendered(args,p);assert not (f.home/'.roundfix/phase-record').exists()
+ done('Q09',body+'Independent home read after each command: no phase-record directory.\n')
+finally:f.close()
+f=Fixture(R)
+try:
+ before=snap(R/'.agents/skills');p=cli(f,['skills','check']);body=rendered(['skills','check'],p)
+ assert p.returncode==0 and 'Authoring Model Declaration' not in p.stdout+p.stderr
+ for key,model,effort in [('idea','fable','xhigh'),('prd','fable','xhigh'),('techspec','fable','xhigh'),('tasks','fable','high'),('research','sonnet','medium')]:
+  path=R/'.claude/agents'/('roundfix-researcher.md' if key=='research' else 'roundfix-'+key+'-author.md');txt=path.read_text()
+  assert '<!-- roundfix:generated skills.authoring.claude.'+key+' -->' in txt
+  assert '\nmodel: '+model+'\n' in txt and '\neffort: '+effort+'\n' in txt
+  if key=='research':assert 'tools: Read, Grep, Glob, WebSearch, WebFetch, mcp__exa__web_search_exa, mcp__exa__web_fetch_exa' in txt
+  body+=str(path.relative_to(R))+': marker, model and effort match Project Config; research tool list matches when applicable.\n'
+ for skill in ['roundfix','write-idea','write-prd','write-techspec','write-tasks']:
+  assert snap(R/'.agents/skills'/skill)==snap(R/'skills'/skill)
+  for path in [R/'.agents/skills'/skill/'SKILL.md',R/'skills'/skill/'SKILL.md']:
+   front=path.read_text().split('---',2)[1];assert not re.search(r'^(model|effort):',front,re.M)
+  body+=skill+': mirror byte-identical; no top-level model/effort.\n'
+ assert snap(R/'.agents/skills')==before
+ done('Q10',body+'Independent full installed-tree read: unchanged by skills check.\n')
+finally:f.close()
+f=Fixture()
+try:
+ archive(BASE,f.repo)
+ a=['baseline','update','--repo','.','--no-skills','--no-history','--yes']
+ p=cli(f,a);body='Committed Delivery Base from git archive '+BASE+'\n'+rendered(a,p)
+ assert p.returncode==0
+ sentences=['At a phase boundary of a Spec, after each authoring phase and after a Spec is delivered and released, write the session handoff with the Spec, the phase that ended, the next phase, each open decision and what stays armed, tell the user what stays armed, and start no further phase in that session.','A scheduled wake-up returns to the same session with its whole context, so it keeps a phase going and is never the way across a boundary.','When no such mechanism is armed, say plainly that work is stopping and what remains.']
+ text=' '.join((f.repo/'docs/agents/autonomous-work.md').read_text().split())
+ for sentence in sentences:assert text.count(sentence)==1
+ before=snap(f.repo);again=cli(f,a);body+=rendered(a,again);assert again.returncode==0 and snap(f.repo)==before
+ done('Q11',body+'Independent whitespace-normalized count: each required sentence occurs exactly once. Independent full-tree SHA256 comparison after second refresh: no change.\n')
+finally:f.close()

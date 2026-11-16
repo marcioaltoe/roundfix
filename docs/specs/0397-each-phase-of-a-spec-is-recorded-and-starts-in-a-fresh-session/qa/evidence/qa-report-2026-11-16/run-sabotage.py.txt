@@ -1,0 +1,36 @@
+exec(compile((__import__('pathlib').Path.cwd()/'docs/specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/qa/evidence/qa-report-2026-11-16/qa-driver.py.txt').read_text(),'qa-driver.py.txt','exec'))
+def archive(d):
+ p=subprocess.run(['git','archive',HEAD],cwd=R,capture_output=True,check=True)
+ with tarfile.open(fileobj=io.BytesIO(p.stdout)) as t:t.extractall(d,filter='data')
+ for args in [['git','init','-q'],['git','add','-A'],['git','-c','core.hooksPath=/dev/null','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','QA sabotage fixture']]:
+  subprocess.run(args,cwd=d,env=cleanenv(),check=True,capture_output=True)
+def replace(d,path,old,new):
+ p=d/path;t=p.read_text();assert old in t,(path,old);p.write_text(t.replace(old,new,1))
+cases=[
+ ('internal/phaserecord/record.go',' || row.Session != entry.Session','','./internal/phaserecord','TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession/another_session'),
+ ('internal/phaserecord/record.go',' || latest.Phase == "follow-up"','','./internal/phaserecord','TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession/after_follow_up'),
+ ('internal/phaserecord/prompt.go','date.Format("2006-01-02") >= cutoffDate','date.Format("2006-01-02") > cutoffDate','./internal/phaserecord','TestRemoveBeforeRemovesOnlyDayFilesBeforeTheCutoff/cutoff_date_is_kept'),
+ ('internal/cli/phase.go','\n\treturn exitOK\n}\n\nfunc parsePhaseStart','\n\tif boundary.Crossed { return exitRunFailed }\n\treturn exitOK\n}\n\nfunc parsePhaseStart','./internal/cli','TestPhaseStartSurfaceTranscripts/transcript_3'),
+ ('internal/daemon/agent_session_owner.go','if engine.deps.PhaseRecord != nil {','if false && engine.deps.PhaseRecord != nil {','./internal/daemon','TestEachPromptLeavesOnePromptEntryWithItsScope/task'),
+ ('internal/cli/implement.go','\n\t\tPhaseRecord: phaserecord.New(homeDir, commandDependenciesForContext(ctx).phaseNow),','','./internal/cli','TestEveryEngineTheCLIBuildsRecordsItsPrompts'),
+ ('skills/authoring.go','if PublishesAuthoringSkill(root, phase.Skill) {','if false && PublishesAuthoringSkill(root, phase.Skill) {','./skills','TestInstallationWithholdsTheHeaderOfAPublishedSkill/one_published'),
+ ('skills/authoring_inspect.go','if PublishesAuthoringSkill(root, phase.Skill) {','if false && PublishesAuthoringSkill(root, phase.Skill) {','./skills','TestInspectAuthoringAcceptsAPublishedSkillWithoutAHeader/no_header_is_no_problem'),
+ ('.agents/skills/write-prd/SKILL.md','start no further phase in this session','continue the phase here','./skills','TestTheAuthoringSkillsStateThePhaseBoundary/canonical/write-prd/no_further_phase'),
+ ('internal/baseline/assets/modules/autonomous-work.json',None,None,'./internal/baseline','TestTheOutliveTheTurnClauseStatesThePhaseBoundary')]
+for n,(path,old,new,pkg,name) in enumerate(cases,1):
+ row='S%02d'%n;d=pathlib.Path(tempfile.mkdtemp(prefix='rf397-sabotage-',dir='/tmp'))
+ try:
+  archive(d)
+  if n==10:
+   p=d/path;t=p.read_text();a=t.index('At a phase boundary of a Spec, after each authoring phase');z=t.index('never the way across a boundary.',a)+len('never the way across a boundary.');p.write_text(t[:a].rstrip()+t[z:])
+  else:replace(d,path,old,new)
+  diff=subprocess.run(['git','diff','--',path],cwd=d,capture_output=True,text=True,check=True).stdout
+  args=['go','test','-count=1','-timeout','30m','-v','-run','^'+name.replace('/','$/^')+'$',pkg]
+  p=subprocess.run(args,cwd=d,env=cleanenv(),capture_output=True,text=True)
+  body='Fresh committed git archive '+HEAD+'; no regeneration or sync.\n'+diff+'\n$ '+' '.join(args)+'\n'+p.stdout+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+  ok=p.returncode!=0 and re.search(r'--- FAIL: '+re.escape(name)+r'(?: |$)',p.stdout)!=None
+  body+='Named failing test/subtest observed: '+str(ok)+'\n'
+  done(row,body,'pass' if ok else 'fail')
+ except Exception:
+  done(row,traceback.format_exc(),'fail')
+ finally:shutil.rmtree(d)

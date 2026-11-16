@@ -1,0 +1,21 @@
+_prd.md: exact four adds and three changes declared.
+_techspec.md: exact four adds and three changes declared.
+task_01 changed exactly: Boundary Notice, Phase Boundary, Phase Record, Supervisor Phase
+task_03 changed exactly: Declared Skill Header
+task_04 changed exactly: Author Subagent, Session Handoff
+Phase Record: defined after the work.
+Supervisor Phase: defined after the work.
+Phase Boundary: defined after the work.
+Boundary Notice: defined after the work.
+Declared Skill Header: defined after the work.
+Author Subagent: defined after the work.
+Session Handoff: defined after the work.
+$ go test -count=1 -timeout 30m -v -tags docscontract -run ^TestGlossaryPhrasesAreDefinedTerms$ ./internal/docscontract
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.318s
+
+exit: 0

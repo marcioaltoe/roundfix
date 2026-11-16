@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

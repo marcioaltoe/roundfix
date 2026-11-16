@@ -1,0 +1,4 @@
+Criterion: in that week the median context per call is under 150 thousand tokens in this repository's Supervisor sessions and under 200 thousand tokens in its authoring subagents, and at least 90% of the subagent cost of feature Specs runs on the generated subagents.
+Pre-run declaration: _prd.md, Unreachable Acceptance.
+Proved constraint: this is an unreleased audited candidate; the gate permits no live sessions, provider/subscription access, usage script or post-release weeks/20-Spec cohort. Six criteria require those observations; offline integration and generated-file checks do not establish them.
+Satisfied-by remains unproven: the operator must collect the post-release usage reports, Run listings and recorded session evidence named by the declaration.

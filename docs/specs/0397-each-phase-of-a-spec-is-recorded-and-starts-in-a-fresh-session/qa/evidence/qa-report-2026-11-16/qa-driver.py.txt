@@ -1,0 +1,48 @@
+import os, sys, subprocess, tempfile, pathlib, json, re, shutil, hashlib, tarfile, io, datetime, traceback
+R=pathlib.Path.cwd().resolve()
+SLUG="0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session"
+S=R/"docs/specs"/SLUG
+E=S/"qa/evidence/qa-report-2026-11-16"
+REPORT=S/"qa/qa-report-2026-11-16.md"
+B=R/"bin/roundfix"
+BASE="f4580437cd6f3c354c2524f7f2eca9c924446d64"
+HEAD="b0c9bb8eabf854efcc831b92dbec0fe4d531f423"
+CACHE={k:subprocess.check_output(["go","env",k],text=True).strip() for k in ("GOMODCACHE","GOCACHE")}
+GH=R/"bin/qa-0397/gh"
+GH.parent.mkdir(exist_ok=True)
+GH.write_text("#!/bin/sh\nprintf '[]\\n'\n")
+GH.chmod(0o755)
+def cleanenv():
+    e=os.environ.copy()
+    for k in list(e):
+        if k in ("CLAUDE_CODE_SESSION_ID","GH_TOKEN","GITHUB_TOKEN","TYPESAFE_API_KEY") or "API_KEY" in k or k.endswith("_TOKEN"): e.pop(k,None)
+    e.update(CACHE); e.update(GOPROXY="off",GOSUMDB="off",GOTOOLCHAIN="local")
+    return e
+class Fixture:
+    def __init__(self,repo=None):
+        self.d=pathlib.Path(tempfile.mkdtemp(prefix="rf397-",dir="/tmp"))
+        self.home=self.d/"home"; self.tmp=self.d/"tmp"; self.repo=pathlib.Path(repo) if repo else self.d/"repo"
+        for p in (self.home,self.tmp,self.repo): p.mkdir(exist_ok=True)
+        self.env=cleanenv(); self.env.update(HOME=str(self.home),TMPDIR=str(self.tmp),PATH=str(GH.parent)+os.pathsep+os.environ["PATH"])
+        if not repo: subprocess.run(["git","init","-q",str(self.repo)],check=True,env=self.env)
+    def close(self): shutil.rmtree(self.d)
+def cli(f,args):
+    return subprocess.run([str(B),*args],cwd=f.repo,env=f.env,stdin=subprocess.DEVNULL,capture_output=True,text=True)
+def rendered(args,p):
+    return "$ ./bin/roundfix "+" ".join(args)+"\nstdout:\n"+p.stdout+"stderr:\n"+p.stderr+"exit: "+str(p.returncode)+"\n"
+def status(row,state):
+    s=REPORT.read_text(); s=re.sub(r"(?m)^\| "+re.escape(row)+r" \| [^|]+ \|", "| "+row+" | "+state+" |",s); REPORT.write_text(s)
+def done(row,body,state="pass"):
+    (E/(row+".txt")).write_text(body)
+    status(row,state)
+    print(row+": "+state,flush=True)
+def test(row,args,expect=None,cwd=R):
+    cmd=["go","test","-count=1","-timeout","30m","-v",*args]
+    p=subprocess.run(cmd,cwd=cwd,env=cleanenv(),capture_output=True,text=True)
+    body="$ "+" ".join(cmd)+"\n"+p.stdout+p.stderr+"\nexit: "+str(p.returncode)+"\n"
+    ok=p.returncode==0
+    if expect:
+        for name in expect:
+            if not re.search(r"--- PASS: "+re.escape(name)+r"(?: |$)",p.stdout): ok=False; body+="Missing PASS: "+name+"\n"
+    done(row,body,"pass" if ok else "fail")
+    return ok

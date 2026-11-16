@@ -1,0 +1,39 @@
+$ ./bin/roundfix follow-up
+stdout:
+Follow-up for repo in /private/tmp/rf397-8q4gd9d7/repo
+Nothing to do: no pending item and nothing in progress.
+Sources:
+  ai-memory-messages: missing: no --messages file
+  backlog: checked 0
+  findings: checked 0
+  repository-inbox: checked 0
+  specs: checked 0
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: checked 0
+  git: unavailable: detect current HEAD: git --no-optional-locks rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+stderr:
+exit: 0
+$ ./bin/roundfix follow-up --status
+stdout:
+Status for repo in /private/tmp/rf397-8q4gd9d7/repo
+In progress: 0
+Pending Specs: 0
+Next release: unavailable: resolve release range: resolve release plan target "HEAD": unresolved revision; choose a revision that exists and resolves to a commit
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: checked 0
+  git: unavailable: detect current HEAD: git --no-optional-locks rev-parse HEAD: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+  specs: checked 0
+  release-plan: unavailable: resolve release range: resolve release plan target "HEAD": unresolved revision; choose a revision that exists and resolves to a commit
+stderr:
+exit: 0
+$ ./bin/roundfix runs list
+stdout:
+No Runs found.
+stderr:
+exit: 0
+Independent home read after each command: no phase-record directory.
