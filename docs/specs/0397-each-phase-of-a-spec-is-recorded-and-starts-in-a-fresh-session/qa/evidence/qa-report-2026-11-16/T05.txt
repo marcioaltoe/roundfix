@@ -1,8 +1,0 @@
-$ ./bin/roundfix phase start plan --spec 0412-example
-stdout:
-stderr:
-roundfix: phase start failed: unknown phase "plan"; use follow-up, idea, prd, techspec, tasks, delivery or release
-Run 'roundfix phase --help' for usage.
-exit: 2
-Line-by-line stdout/stderr and exit comparison: True
-Independent filesystem read: no phase-record file or directory.

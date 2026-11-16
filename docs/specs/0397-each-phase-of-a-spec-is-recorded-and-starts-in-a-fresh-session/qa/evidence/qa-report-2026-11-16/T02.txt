@@ -1,8 +1,0 @@
-$ ./bin/roundfix phase start prd --spec 0412-example
-stdout:
-Recorded prd of 0412-example for claude session 11111111-2222-4333-8444-555555555555
-stderr:
-exit: 0
-Line-by-line stdout/stderr and exit comparison: True
-Independent JSON read: {"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-16T13:42:49Z","phase":"prd","spec":"0412-example","repository":"/private/tmp/rf397-jzwzf0ue/repo","harness":"claude","session":"11111111-2222-4333-8444-555555555555","boundary":false}
-Directory mode: 0700; day file mode: 0600. Keys ordered; append count: 1

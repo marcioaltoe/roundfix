@@ -1,4 +1,0 @@
-Published source: Claude Code documentation, Manage costs effectively; https://code.claude.com/docs/en/costs
-Source read: 2026-11-15. Offline passage quoted by PRD Acceptance evidence, not authored by this Spec. No lookup attempted.
-Passage: a session-scoped scheduled task fires on its interval even while the session is idle, sending your full context each time
-Comparison: The wake-up clause explicitly returns to the same session and keeps a phase going, so it cannot cross a boundary.

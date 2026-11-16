@@ -18,7 +18,7 @@ The maintainer sent this out of the Idea of Spec 0397 on the night of 2026-11-15
 
 ## Measured
 
-The author of Spec 0397 measured it on the Mac mini on 2026-11-15, from the calls the operator's usage script collected for 2026-11-08 to 2026-11-15. The record is [the measurement adopted by Spec 0397](../specs/0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session/references/2026-11-15-usage-by-context-and-session-identity-measurement.md), section 5.
+The author of Spec 0397 measured it on the Mac mini on 2026-11-15, from the calls the operator's usage script collected for 2026-11-08 to 2026-11-15. The record is [the measurement adopted by Spec 0397](../references/2026-11-15-usage-by-context-and-session-identity-measurement.md), section 5.
 
 - The first call of the seven main sessions of this repository carried 82,386, 85,884, 87,692, 89,155, 90,244, 90,246 and 150,494 tokens: input plus cache read plus cache write.
 - The first call of the 38 main sessions opened in a repository checkout on the host carried a median of 75,822 tokens and a first quartile of 51,541.

@@ -1,1 +1,0 @@
-make build: exit 0. See build.txt and version.txt. Daemon supplied make verify-changed: pass (exit 0), diagnostics removed on success; not rerun.

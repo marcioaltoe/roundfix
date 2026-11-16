@@ -1,7 +1,0 @@
-Pull Request row: blocked because the supplied QA assignment says no open Pull Request on the Spec target branch. The per-Run branch is never used as a PR lookup target.
-Approval equivalent: approved _authorization.md at f4580437cd6f3c354c2524f7f2eca9c924446d64, consuming 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session, with implement/commit/push/pull_request/merge/release operations; authority remains recorded, no operation exercised by QA.
-Checks equivalent: Daemon make verify-changed passed exit 0 at b0c9bb8eabf854efcc831b92dbec0fe4d531f423; diagnostics removed on success.
-Threads equivalent: no unresolved PR threads because no PR exists.
-Acceptance equivalent: no Merge-Ready acceptance yet; this is explicitly not inferred from the QA or provider fixtures.
-Claimed candidate: b0c9bb8eabf854efcc831b92dbec0fe4d531f423 on the supplied Spec target branch.
-Unblocking: delivery opens the PR, verifies current-head required checks and obtains Merge-Ready acceptance. This row alone never prevents a qualifying declared partial.

@@ -1,4 +1,0 @@
-Published source: Claude Code documentation, Monitoring; https://code.claude.com/docs/en/monitoring-usage/
-Source read: 2026-11-15. Offline passage quoted by PRD Acceptance evidence, not authored by this Spec. No lookup attempted.
-Passage: Claude Code's own session ID, which `/clear` replaces
-Comparison: The session field records the fixture identity in T02/T03; T03 notices a boundary in that identity, while the another_session subtest in Q02 and its S01 sabotage prove isolation.
