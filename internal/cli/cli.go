@@ -253,6 +253,7 @@ type commandEnvironment struct {
 
 type commandDependencies struct {
 	phaseNow                        func() time.Time
+	followUpNow                     func() time.Time
 	followUpGHRunner                preflight.GHRunner
 	getenv                          func(string) string
 	environ                         func() []string
@@ -346,6 +347,7 @@ func defaultCommandDependencies() commandDependencies {
 			return forgeReadiness(ctx, readinessDependenciesForCommand(commandDependenciesForContext(ctx)), loaded)
 		},
 		followUpGHRunner:                preflight.ExecGHRunner{},
+		followUpNow:                     time.Now,
 		judgeTransport:                  http.DefaultTransport,
 		judgeNow:                        time.Now,
 		runCommandPreflight:             runCommandPreflight,

@@ -25,6 +25,10 @@ func followUpNamespace(ctx context.Context, loaded roundconfig.Loaded) string {
 		root = loaded.GitRoot
 	}
 	raw, err := (preflight.ExecGitRunner{}).RunGit(ctx, root, "remote", "get-url", "origin")
+	return followUpNamespaceFromRemote(root, raw, err)
+}
+
+func followUpNamespaceFromRemote(root, raw string, err error) string {
 	if err == nil {
 		if _, repo, ok := parseReadinessRemote(raw); ok {
 			return filepath.Base(repo)
@@ -374,6 +378,7 @@ func (git followUpGit) hasChanges() bool { return len(git.ChangedPaths) > 0 || g
 
 type followUpProgress struct {
 	queue         store.DeliveryQueue
+	historyRuns   []store.Run
 	Runs          []followUpRun         `json:"runs"`
 	DeliveryQueue []followUpQueueItem   `json:"delivery_queue"`
 	PullRequests  []followUpPullRequest `json:"pull_requests"`
@@ -401,11 +406,15 @@ func readFollowUpProgress(ctx context.Context, loaded roundconfig.Loaded, enviro
 				resultErr = errors.Join(resultErr, fmt.Errorf("close Run Database reader: %w", err))
 			}
 		}()
-		runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: loaded.GitRoot, States: store.StatesActive})
+		runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: loaded.GitRoot, States: store.StatesAll})
 		if err != nil {
 			return progress, nil, err
 		}
+		progress.historyRuns = runs
 		for _, run := range runs {
+			if store.IsTerminalState(run.State) {
+				continue
+			}
 			progress.Runs = append(progress.Runs, followUpRun{run.ID, run.State, run.SpecSlug})
 		}
 		queue, _, err := reader.DeliveryQueue(ctx, loaded.GitRoot)

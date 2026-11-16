@@ -453,6 +453,10 @@ func TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes(t *testing.T) {
 	}{
 		{"The list report carries these JSON fields:", reflect.TypeOf(followUpDocument{})},
 		{"The status report carries these JSON fields:", reflect.TypeOf(followUpStatusDocument{})},
+		{"Each queue row carries these JSON fields:", reflect.TypeOf(followUpQueueRow{})},
+		{"Each forecast cell carries these JSON fields:", reflect.TypeOf(followUpQueueCell{})},
+		{"The forecast basis carries these JSON fields:", reflect.TypeOf(followUpForecastBasis{})},
+		{"Each measure of the basis carries these JSON fields:", reflect.TypeOf(followUpForecastMeasure{})},
 		{"Each source carries these JSON fields:", reflect.TypeOf(followUpSource{})},
 		{"The judge carries these JSON fields:", reflect.TypeOf(followUpJudge{})},
 		{"Each item carries these JSON fields:", reflect.TypeOf(followUpItem{})},

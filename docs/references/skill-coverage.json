@@ -389,8 +389,11 @@
       "sources": [
         "docs/user-guide/commands/follow-up.md",
         "internal/cli/follow_up.go",
+        "internal/cli/follow_up_history.go",
         "internal/cli/follow_up_inventory.go",
-        "internal/cli/follow_up_status.go"
+        "internal/cli/follow_up_queue.go",
+        "internal/cli/follow_up_status.go",
+        "internal/queueforecast/"
       ]
     },
     {
@@ -447,6 +450,7 @@
     },
     {
       "id": "command phase start",
+      "review": "2026-11-16 — Spec 0398 task_02 adds a reader of phase entries to the package; the phase start command, its output and the format of the record do not change",
       "skills": [
         ".agents/skills/roundfix/references/phase.md"
       ],
