@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -227,3 +227,85 @@ None. The Task adds a package that no code calls yet; tasks 02 and 03 add its ca
 - `_techspec.md` → Queue forecast package; Interfaces; API Contract 5; API Contract 6; Data Models; Testing Approach; Build Order 1
 - [`references/2026-11-16-forecast-backtest.md`](references/2026-11-16-forecast-backtest.md), sections 2, 3 and 5
 - ADR-0409
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Added the pure `queueforecast` package with the declared interfaces, whole-second
+history measures, nearest-rank pairs, bounded pairwise sums, and the specified
+row-cell rules. Inputs are copied before sorting; cell comparisons assert every
+field, including unused zero fields. The only production imports are `fmt`,
+`slices`, and `time`. No caller is added.
+
+The replay fixture contains exactly the 109 four-key records copied from the
+backtest table. Its canonical-line SHA-256 is
+`aaeb9026ec51a61891a19f226a12350bd84ba1ed032a422322a4a043901e62b3`.
+Tests read only that package-local fixture, never the Spec folder.
+
+Focused implementation evidence:
+
+- `go test -race -count=1 -timeout=2m -v ./internal/queueforecast` exited 0.
+  All six prescribed top-level tests and their required subtests ran, including
+  the recorded moment, exact cell comparisons, defensive-copy checks, and the
+  replay. After strengthening the tied-start ordering case and adding an
+  exactly-five-longer-gaps boundary case,
+  `go test -race -count=1 -timeout=2m ./internal/queueforecast` exited 0 again.
+- The whole-history test measures 109 deliveries and 74 eligible start gaps,
+  with pairs 6,990/15,711 seconds and 7,365/13,963 seconds respectively.
+  The replay reports the following counts (limit/likely):
+
+  | Case | Cases | Start | End |
+  | --- | --- | --- | --- |
+  | At its start | 98 | actual | 80/46 |
+  | One behind | 63 | 55/35 | 53/27 |
+  | Two behind | 39 | 36/21 | 36/20 |
+  | Three behind | 19 | 19/8 | 17/10 |
+
+- Four isolated `go test -overlay=<temporary overlay> -count=1 -timeout=2m -v
+  -run <focused pattern> ./internal/queueforecast` probes each exited 1 with
+  assertion failures, as intended; repository source was never mutated.
+  Changing median rank from 50 to 51 changes the one-behind counts to
+  `63,55,37,53,28`. Changing `MinimumHistory` to 10 changes the at-start counts
+  to `99,81,47`. Adding 100 hours to each pairwise sum changes one-behind
+  counts to `63,55,35,63,63`. Changing `KeepValues` to 511 fails all three
+  named cutoff cases. The actual assertion transcripts were inspected, not
+  merely the exit codes. Logs and overlays are under
+  `/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/queueforecast-mutations-0czpokdv/`.
+- `not_enough_history` and `an_end_behind_needs_eleven_deliveries` assert empty
+  end times and durations with `not enough history (10 of 11)` for the
+  relevant started, waiting, unplanned, and counted rows. As requirement 3
+  specifies, actual starts and eligible gap-based start forecasts remain
+  available independently of end history. `past_the_usual_time`,
+  `exactly_five_longer`, and `only_four_longer` exercise strict greater-than
+  filtering and the five-value boundary.
+- `one_two_and_three_behind`, `fourth_behind`, `own_wait_is_not_counted`, the
+  no-anchor cases, the parked-anchor case, and the latest-start case assert
+  the complete cells and exact condition text. `too_few_gaps_longer` and
+  `fewer_than_eleven_gaps` check fallback for each of the first three rows;
+  `exactly_five_longer_gaps` verifies that five retained gaps suffice.
+- Focused cross-compilation used `go test -c -buildvcs=false -o <temporary
+  binary> ./internal/queueforecast` with `GOOS=windows` and then `GOOS=linux`,
+  each with `GOARCH=amd64 CGO_ENABLED=0`; both exited 0 after the final test
+  edits. This compiles the production package and its tests without running
+  either target binary.
+- `go list -deps -f '{{if not .Standard}}{{.ImportPath}}{{end}}'
+  ./internal/queueforecast` returned only `roundfix/internal/queueforecast`.
+  A focused source inspection confirmed no production file/clock access, no
+  test clock/timer access or Spec-folder read, no platform-specific files,
+  and `t.Parallel()` first in all six top-level tests. `gofmt -l` returned
+  no paths and `git diff --check` exited 0.
+
+The first focused run exposed an arithmetic typo in the new
+`not_enough_history` expectation: it expected a 120-second start for a
+20-second gap. The test expectation was corrected to the specified 20-second
+start; the production calculation was unchanged, and the focused rerun exited 0.
+
+Scope inspection shows only the four declared new package files and this
+Task's Result; the pre-existing Daemon change from `pending` to `in_progress`
+is preserved. No Task status, Task Graph, other Task, module dependency,
+Governed Path, or caller was changed by this implementation.
+
+Declared Verification and repository Verification were not run; the Daemon
+owns those checks and settlement. No commit, push, or pull request was made.
+No follow-up work was identified within this slice.
