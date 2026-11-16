@@ -4,6 +4,8 @@ status: open
 created: 2026-11-16
 spec: null
 reason: null
+waiting_on: a week of per-phase numbers from Spec 0397 after its release
+since: 2026-11-16
 ---
 
 # A new Supervisor session and each Authoring Phase start with a large context

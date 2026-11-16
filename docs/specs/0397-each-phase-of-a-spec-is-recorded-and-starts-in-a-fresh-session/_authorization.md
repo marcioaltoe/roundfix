@@ -54,6 +54,10 @@ The Spec adopts one ai-memory message, reported by jarvis on 2026-11-14, and the
   - "Direção da Ideia" → "Original + respostas (Recommended)" — "Registro de fase, fronteira de sessão e adoção dos modelos numa Spec; o custo de nascer de cada sessão vira Backlog Entry."
 - The success criterion (2026-11-16, in the session): "Adicione ao critério de sucesso: com queda de performance nula ou quase nula e com aumento de qualidade de artefatos para implementações."
 - The approval of the Idea (AskUserQuestion, 2026-11-16): "Aprovar e seguir (Recommended)".
+- The confirmation of the TechSpec's choices (AskUserQuestion, 2026-11-16 ~08:00 BRT), which changes nothing in the design:
+  - "Aviso de fronteira" → "Só no comando que registra (Recommended)" — "Sai no stderr de 'roundfix phase start', sem mudar o código de saída; o --status continua só leitura."
+  - "Fase do Supervisor" → "Comando explícito (Recommended)" — "Como o autor desenhou; as skills mandam executar em cada fase; buracos aparecem como sessão sem fase no relatório."
+  - "Delegação na rota de correção" → "No próprio pedido (Recommended)" — "Você escreve no pedido (ex.: 'use o autor'); nenhuma pergunta nova; sem pedido, fica na sessão."
 
 "Mesmas do BE" keeps the cycle BE rules of 2026-11-13 and, through them, the answers of the cycles before it. Those release to the Runs the owned skills and the changes of skills that reach the adopters: the 2026-09-30 grant of every skill ("considere autorizado a ajustar todas as skills se necessário"). They also release the Baseline source with its derived files, the guides under `docs/agents/` and this repository's Project Config ("Autorizar os dois"), and the cycle AJ grant of 2026-10-19 "Mexer em Governed Paths declarados" (option text: "'Concedo' para os caminhos que cada Spec declarar (módulos Baseline, registros, skills, testes governados; fora: Makefile, CI, go.mod, lint, que pedem autorização específica).").
 

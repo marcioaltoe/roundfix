@@ -15,3 +15,9 @@ Respostas às perguntas da Ideia (AskUserQuestion, 15–16/11/2026 ~00:00 BRT), 
 
 Acréscimo do Marcio ao critério de sucesso (16/11/2026, na sessão), verbatim: "Adicione ao critério de sucesso: com queda de performance nula ou quase nula e com aumento de qualidade de artefatos para implementações."
 - Aprovação da Ideia 0397 (AskUserQuestion, 16/11/2026): "Aprovar e seguir (Recommended)".
+
+Respostas do --unattended (AskUserQuestion, 16/11/2026 ~08:00 BRT), verbatim:
+- Aviso de fronteira → "Só no comando que registra (Recommended)" — "Sai no stderr de 'roundfix phase start', sem mudar o código de saída; o --status continua só leitura."
+- Fase do Supervisor → "Comando explícito (Recommended)" — "Como o autor desenhou; as skills mandam executar em cada fase; buracos aparecem como sessão sem fase no relatório."
+- Delegação na rota de correção → "No próprio pedido (Recommended)" — "Você escreve no pedido (ex.: 'use o autor'); nenhuma pergunta nova; sem pedido, fica na sessão."
+- Backlog perf do custo inicial da sessão → "Depois da semana medida (Recommended)" — "Fica em espera até haver uma semana de números por fase da 0397; então vira Spec com dado real."

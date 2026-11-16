@@ -181,6 +181,12 @@ The stage ran although the verdict was not indicated: the maintainer chose "Mant
 - changes: **Author Subagent**
 - changes: **Session Handoff**
 
+## Skills
+
+- unchanged: command review — the review's findings, record, output and exit code do not change; the prompt entry it appends is a side record that the new `phase` reference and the user guide document, and the review reference describes the review policy.
+- unchanged: command review dispose — the disposition command does not change; it shares the review's source file, which gains only the prompt entry.
+- unchanged: command implement — the Implement Command's flags, output and exit codes do not change; its source file only hands the Daemon the recorder of prompt entries, which the new `phase` reference and the user guide document.
+
 ## Decisions
 
 Autonomous route: no person present; decisions taken from the approved Idea, the maintainer's answers recorded in `references/2026-11-15-maintainer-answers.md`, the operator's cycle BF brief for Spec 0397 and the measurements above.
@@ -200,8 +206,11 @@ The maintainer's answers (AskUserQuestion), verbatim as the operator recorded th
 - 2026-11-16: "Direção da Ideia" — "Original + respostas (Recommended)": "Registro de fase, fronteira de sessão e adoção dos modelos numa Spec; o custo de nascer de cada sessão vira Backlog Entry."
 - 2026-11-16: "Acréscimo do Marcio ao critério de sucesso" — "Adicione ao critério de sucesso: com queda de performance nula ou quase nula e com aumento de qualidade de artefatos para implementações."
 - 2026-11-16: "Aprovação da Ideia 0397" — "Aprovar e seguir (Recommended)".
+- 2026-11-16, ~08:00 BRT: "Aviso de fronteira" — "Só no comando que registra (Recommended)": "Sai no stderr de 'roundfix phase start', sem mudar o código de saída; o --status continua só leitura."
+- 2026-11-16, ~08:00 BRT: "Fase do Supervisor" — "Comando explícito (Recommended)": "Como o autor desenhou; as skills mandam executar em cada fase; buracos aparecem como sessão sem fase no relatório."
+- 2026-11-16, ~08:00 BRT: "Delegação na rota de correção" — "No próprio pedido (Recommended)": "Você escreve no pedido (ex.: 'use o autor'); nenhuma pergunta nova; sem pedido, fica na sessão."
 
-The six answers dated 2026-11-16 were given in the night of 2026-11-15 to 2026-11-16, about 00:00 BRT. The scope the operator recorded from the maintainer's decisions of 2026-11-14 is: "o Run grava o id e a fase num lugar fixo para o ai_usage.py; o Supervisor fecha a sessão em cada fronteira de fase".
+The six answers dated 2026-11-16 were given in the night of 2026-11-15 to 2026-11-16, about 00:00 BRT. The three answers marked ~08:00 BRT were given after the TechSpec was written: they confirm its choices and change nothing in the design. The scope the operator recorded from the maintainer's decisions of 2026-11-14 is: "o Run grava o id e a fase num lugar fixo para o ai_usage.py; o Supervisor fecha a sessão em cada fronteira de fase".
 
 Taken from those answers, the Idea and the measurements, with no further interview:
 
