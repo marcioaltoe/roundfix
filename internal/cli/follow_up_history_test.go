@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -186,5 +187,43 @@ func TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog(t *testing.T) {
 				t.Fatal("history read changed its inputs")
 			}
 		})
+	}
+}
+
+func TestTheArchiveRecordsAreReadWithAFixedNumberOfGitProcesses(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 11, 16, 17, 0, 0, 0, time.UTC)
+	calls := map[int]int{}
+	for _, records := range []int{1, 6} {
+		in := newFollowUpReadInput(t, now)
+		runs := []store.Run{}
+		for i := range records {
+			slug := fmt.Sprintf("%04d-widget", i+1)
+			followUpArchiveFixture(t, in, slug, spec.ArchiveNoQA)
+			runs = append(runs, store.Run{Kind: store.KindImplement, SpecSlug: slug, CreatedAt: now.Add(-5 * time.Hour)})
+		}
+		followUpCommitAt(t, in.Loaded.GitRoot, now.Add(-time.Hour), "docs: archive widgets")
+		count := 0
+		input := deliveryHistoryInput{Runs: runs, Checkout: in.Loaded.GitRoot, Branch: "main", SpecRoot: "docs/specs", ArchiveRoot: "docs/history/specs", RetentionDays: 30, Now: now, Git: followUpReadGit(func(ctx context.Context, dir string, args ...string) (string, error) {
+			count++
+			return (preflight.ExecGitRunner{}).RunGit(ctx, dir, args...)
+		})}
+		history, source := readDeliveryHistory(t.Context(), input)
+		if len(history) != records || source != followUpSourceResult("delivery-history", records, nil) {
+			t.Fatalf("records=%d history=%+v source=%+v", records, history, source)
+		}
+		calls[records] = count
+	}
+	if calls[1] != calls[6] {
+		t.Fatalf("Git processes grow with the archive records: %v", calls)
+	}
+}
+
+func TestAnAddedFilesDiffIsReadByItsHunkCounts(t *testing.T) {
+	t.Parallel()
+	raw := "diff --git a/r/one.md b/r/one.md\nnew file mode 100644\nindex 0000000..1111111\n--- /dev/null\n+++ b/r/one.md\n@@ -0,0 +1,3 @@\n+diff --git a/r/x.md b/r/x.md\n++++ b/r/x.md\n+@@ -0,0 +1 @@\ndiff --git a/r/two.md b/r/two.md\nnew file mode 100644\n--- /dev/null\n+++ b/r/two.md\n@@ -0,0 +1 @@\n+no newline\n\\ No newline at end of file\ndiff --git a/r/short.md b/r/short.md\n--- /dev/null\n+++ b/r/short.md\n@@ -0,0 +1,2 @@\n+only one line"
+	want := map[string][]byte{"r/one.md": []byte("diff --git a/r/x.md b/r/x.md\n+++ b/r/x.md\n@@ -0,0 +1 @@\n"), "r/two.md": []byte("no newline")}
+	if got := parseAddedFilesDiff(raw); !reflect.DeepEqual(got, want) {
+		t.Fatalf("records=%q", got)
 	}
 }

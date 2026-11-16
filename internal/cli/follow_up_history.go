@@ -3,8 +3,10 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -96,19 +98,86 @@ func readDeliveryHistoryGit(ctx context.Context, in deliveryHistoryInput) (deliv
 	}
 	// The archive record is read from the default branch head, so a branch, an
 	// uncommitted edit or a symlink in the checkout cannot add or remove
-	// delivered history. A record absent at the head is not delivered.
+	// delivered history. A record absent at the head is not delivered. Every
+	// record comes from one diff against the empty tree, so the number of Git
+	// processes does not grow with the history.
 	archivePrefix := filepath.ToSlash(in.ArchiveRoot) + "/"
-	records := map[string][]byte{}
+	pathspecs := []string{}
 	for path := range times {
-		if !strings.HasPrefix(path, archivePrefix) {
-			continue
-		}
-		content, showErr := runner.RunGit(ctx, in.Checkout, "cat-file", "blob", head.Ref+":"+path)
-		if showErr == nil {
-			records[path] = []byte(content + "\n")
+		if strings.HasPrefix(path, archivePrefix) {
+			pathspecs = append(pathspecs, ":(literal)"+path)
 		}
 	}
-	return deliveryHistoryGitRead{Times: times, Records: records}, nil
+	records := map[string][]byte{}
+	if len(pathspecs) == 0 {
+		return deliveryHistoryGitRead{Times: times, Records: records}, nil
+	}
+	sort.Strings(pathspecs)
+	empty, err := runner.RunGit(ctx, in.Checkout, "hash-object", "-t", "tree", os.DevNull)
+	if err != nil {
+		return deliveryHistoryGitRead{}, fmt.Errorf("read delivery history records: %w", err)
+	}
+	args := append([]string{"diff", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--no-relative", "--text", "--src-prefix=a/", "--dst-prefix=b/", strings.TrimSpace(empty), head.Ref, "--"}, pathspecs...)
+	diff, err := runner.RunGit(ctx, in.Checkout, args...)
+	if err != nil {
+		return deliveryHistoryGitRead{}, fmt.Errorf("read delivery history records: %w", err)
+	}
+	return deliveryHistoryGitRead{Times: times, Records: parseAddedFilesDiff(diff)}, nil
+}
+
+// parseAddedFilesDiff reads the content of each file a diff against the empty
+// tree adds. Each hunk's header gives its line count, so a record line that
+// looks like a diff header is still read as content.
+func parseAddedFilesDiff(raw string) map[string][]byte {
+	records := map[string][]byte{}
+	lines := strings.Split(raw, "\n")
+	path := ""
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			path = ""
+		case strings.HasPrefix(line, "+++ b/") && path == "":
+			path = strings.TrimPrefix(line, "+++ b/")
+		case strings.HasPrefix(line, "@@ -0,0 +") && path != "":
+			fields := strings.Fields(line)
+			count := 1
+			if len(fields) < 3 {
+				path = ""
+				continue
+			}
+			if _, n, found := strings.Cut(fields[2], ","); found {
+				parsed, err := strconv.Atoi(n)
+				if err != nil {
+					path = ""
+					continue
+				}
+				count = parsed
+			}
+			var content strings.Builder
+			complete := true
+			for j := 0; j < count; j++ {
+				i++
+				if i >= len(lines) || !strings.HasPrefix(lines[i], "+") {
+					complete = false
+					break
+				}
+				content.WriteString(lines[i][1:] + "\n")
+			}
+			if !complete {
+				path = ""
+				continue
+			}
+			text := content.String()
+			if i+1 < len(lines) && strings.HasPrefix(lines[i+1], "\\ ") {
+				text = strings.TrimSuffix(text, "\n")
+				i++
+			}
+			records[path] = []byte(text)
+			path = ""
+		}
+	}
+	return records
 }
 
 func parseDeliveryHistoryLog(raw string) (map[string]time.Time, error) {
