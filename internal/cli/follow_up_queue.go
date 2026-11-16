@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/delivery"
@@ -211,6 +212,15 @@ func followUpQueueWait(item store.DeliveryQueueItem) string {
 
 func followUpQueueText(value string) string {
 	value = strings.NewReplacer("\r\n", " ", "\r", " ", "\n", " ").Replace(value)
+	// Repository text reaches a terminal: every control character (C0, DEL,
+	// C1, so ESC and CSI sequences lose their introducer) and every line or
+	// paragraph separator becomes a space before the text is cut.
+	value = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp) {
+			return ' '
+		}
+		return r
+	}, value)
 	runes := []rune(value)
 	if len(runes) > 120 {
 		return string(runes[:119]) + "…"

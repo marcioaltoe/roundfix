@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"roundfix/internal/delivery"
@@ -234,7 +235,7 @@ func TestASpecIsBeingAuthored(t *testing.T) {
 func TestTheNoteIsOneLineOfRepositoryText(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 11, 16, 17, 0, 0, 0, time.UTC)
-	for _, name := range []string{"a_long_waiting_declaration_is_cut", "line_breaks_become_spaces", "a_parked_item", "another_blocker", "an_entry_that_is_not_open", "a_malformed_waiting_declaration", "a_finding_is_never_a_row"} {
+	for _, name := range []string{"a_long_waiting_declaration_is_cut", "line_breaks_become_spaces", "a_parked_item", "another_blocker", "an_entry_that_is_not_open", "a_malformed_waiting_declaration", "a_finding_is_never_a_row", "control_characters_never_reach_the_terminal"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			in := newFollowUpReadInput(t, now)
@@ -269,6 +270,12 @@ func TestTheNoteIsOneLineOfRepositoryText(t *testing.T) {
 			case "an_entry_that_is_not_open":
 				body = strings.Replace(body, "status: open", "status: deferred", 1)
 				wantRows = 0
+			case "control_characters_never_reach_the_terminal":
+				if got := followUpQueueText("red\x1b[31m bell\a csi\u009b[2J line\u2028para\u2029end"); got != "red [31m bell  csi [2J line para end" {
+					t.Fatalf("text=%q", got)
+				}
+				body = "---\nstatus: open\ncreated: " + since + "\nwaiting_on: \"own\\e[31mer\\a\\u009b\"\nsince: " + since + "\n---\n# Widget\x1b[31m title\a\u009b\n"
+				wantNote = "Widget [31m title  ; waits on own [31mer   since " + since
 			case "a_malformed_waiting_declaration":
 				body = "---\nstatus: open\nwaiting_on: owner\nsince: yesterday\n---\n# Widget title\n"
 			case "a_finding_is_never_a_row":
@@ -290,6 +297,15 @@ func TestTheNoteIsOneLineOfRepositoryText(t *testing.T) {
 			for _, row := range rows {
 				if strings.ContainsAny(row.Note+row.Title, "\r\n") || utf8.RuneCountInString(row.Note) > 120 || utf8.RuneCountInString(row.Title) > 120 {
 					t.Fatalf("unbounded text=%+v", row)
+				}
+			}
+			if name == "control_characters_never_reach_the_terminal" && rows[0].Title != "Widget [31m title  " {
+				t.Fatalf("title=%q", rows[0].Title)
+			}
+			if name == "control_characters_never_reach_the_terminal" {
+				rendered := renderFollowUpSpecQueue(followUpStatusDocument{Queue: rows, now: now})
+				if strings.ContainsFunc(rendered, func(r rune) bool { return r != '\n' && unicode.IsControl(r) }) {
+					t.Fatalf("rendered=%q", rendered)
 				}
 			}
 			if name == "a_long_waiting_declaration_is_cut" && (utf8.RuneCountInString(rows[0].Note) != 120 || !strings.HasSuffix(rows[0].Note, "…")) {
