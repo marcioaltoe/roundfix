@@ -1,7 +1,0 @@
-Source: Mergify, Merge Queue API
-URL: https://docs.mergify.com/api/merge-queue/
-Read date recorded in PRD: 2026-11-16
-Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
-Recorded passage/measure: null when it cannot be estimated
-Current observation: Fresh Surface Transcript 1 planned and authoring start cells are conditions with likely=null and limit=null.
-Comparison: PASS

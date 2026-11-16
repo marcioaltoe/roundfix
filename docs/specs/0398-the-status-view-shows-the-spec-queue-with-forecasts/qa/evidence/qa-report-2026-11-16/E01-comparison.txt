@@ -1,7 +1,0 @@
-Source: The Kanban Guide, May 2025
-URL: https://kanbanguides.org/english/
-Read date recorded in PRD: 2026-11-16
-Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
-Recorded passage/measure: a forecast of how long it should take a work item to flow from started to finished; should be based on historical cycle time
-Current observation: Fresh in_progress integration assertion: actual start S, end S+60m/S+110m from the twelve delivered fixture Specs, conditioned by elapsed time.
-Comparison: PASS

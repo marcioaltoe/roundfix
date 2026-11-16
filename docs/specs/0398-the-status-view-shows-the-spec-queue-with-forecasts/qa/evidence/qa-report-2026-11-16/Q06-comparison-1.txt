@@ -1,2 +1,0 @@
-PASS
-Every stdout line matches the TechSpec; stderr empty; exit 0.

@@ -1,2 +1,0 @@
-PASS
-Expected exit 2, empty stdout and documented diagnostic: --all applies only to the follow-up list; drop it with --status

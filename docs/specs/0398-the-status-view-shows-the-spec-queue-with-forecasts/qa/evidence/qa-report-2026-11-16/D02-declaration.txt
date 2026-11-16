@@ -1,5 +1,0 @@
-Criterion: over the same 20 Specs, the limit is at most 2.5 times the actual time from start to merge at the median.
-Declaration: _prd.md, Unreachable Acceptance, recorded before QA.
-Proved constraint: this Run builds the audited unreleased candidate into disposable fixtures and is prohibited from accessing the maintainer’s checkout, real Run Database, live Delivery Queue or released future-delivery observations. No row may collect those production measurements. The version identity is recorded in Q01-version.txt.
-Unblocking action: Operator records the first 20 deliveries after release and repeats the hit-rate/width measurement.
-Synthetic replay and scratch CLI results do not establish this criterion.
