@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -290,3 +290,24 @@ the table.
 - `_techspec.md` → System Architecture; History and row sources; Interfaces; Data Models; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 7; Integration Points; Testing Approach; Risks & Considerations; Build Order 2
 - `_tasks.md` → What the Tasks stage settled beyond the TechSpec; Time in tests; Spec 0397 merged while this graph was written
 - ADR-0409, ADR-0410, ADR-0407, ADR-0353, ADR-0255
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, golang-context, systematic-debugging.
+
+Added the read-only Phase Record, delivery-history and queue-row readers. The command does not call the new readers yet. Progress now obtains every repository Run with one `StatesAll` query, retains them in `historyRuns`, and filters terminal Runs out of the existing reports. The sole added command dependency is `followUpNow`, defaulting to `time.Now`.
+
+Acceptance evidence from focused implementation checks:
+
+1. Authoring provenance and rows: `TestASpecIsBeingAuthored` exercises folders without PRDs, checkout entries, linked worktrees, a symbolic-linked checkout spelling, clones with the same normalized origin, other remotes, old and non-authoring entries, Archive Records, planned PRDs, missing directories, and the latest phase/time in the supplied zone. `TestTheQueueRowsComeInTableOrder` and `TestQueueReadersSortEverySource` assert row identities, statuses, Task counts, Spec-only forecast inputs, merged-item exclusion, source counts, ordering and preservation of caller-owned slices. Focused checks passed.
+2. Repository text and source isolation: `TestTheNoteIsOneLineOfRepositoryText` asserts that a 300-character Waiting Declaration containing an instruction-like source line produces a single 120-character note ending in an ellipsis, preserves Unicode, replaces line breaks, uses park classification and the first blocker line, omits non-open entries and malformed waits, and excludes Findings and inbox notes. `TestAnUnreadableSourceLeavesTheOtherRows` checks unavailable Backlog/Phase Record sources without losing other rows, and unreadable Finding/inbox paths without changing either source. Focused checks passed.
+3. History: `go test -count=1 ./internal/cli -run '^TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog/'` passed. Cases assert the earliest Implement start, committer-time plan/end, cancelled/unparseable records remaining undelivered, archived Specs without an Implement Run staying absent, plans outside the retention window having zero time, exact Git arguments and one log call, first printed addition winning, absolute roots, and unavailable/empty results for missing default branches, failed logs and malformed output.
+4. Bounded/read-only readers: the authoring cases assert exactly one checkout origin query, no other command in another directory, eight existing other directories at most, newest first, duplicate paths asked once, nonexistent directories costing no lookup, and no other-directory lookup without a checkout origin. Snapshots assert unchanged repository/home bytes. `go test -count=1 ./internal/phaserecord -run '^TestPhasesReadsBackThePhaseEntriesOfTheWindow/'` passed; subsequent focused prompt/malformed-line/UTC-boundary cases passed after separating prompt headers from phase decoding. The phase cases also cover the missing-directory no-create path, invalid schemas/times/phases, inclusive since, ignored non-day files/directories and round-tripping the existing writer. The initial focused compile failed with undefined `RecordedPhase` and `Phases`, establishing the missing-reader baseline.
+5. Output stability: `TestTheFollowUpProgressKeepsEveryRunForTheHistory` compares both views in text and JSON byte for byte before/after adding two terminal Runs beside an active Run, checks all three retained Runs and the unchanged active source count, and checks unchanged input bytes. Each persisted Run time is pinned by SQL in the disposable database; active completion uses the store's empty-string representation. `go test ./internal/cli -count=1 -run '^(TestQueueReadersSortEverySource|TestTheQueueRowsComeInTableOrder|TestTheFollowUpProgressKeepsEveryRunForTheHistory|TestFollowUpWritesNothing|TestFollowUpStatus.*)$'` passed. The final focused reader run, `go test ./internal/cli -count=1 -run '^Test(TheQueueRowsComeInTableOrder|AQueueItemNamesItsWait|ASpecIsBeingAuthored|TheNoteIsOneLineOfRepositoryText|AnUnreadableSourceLeavesTheOtherRows|TheFollowUpProgressKeepsEveryRunForTheHistory)$'`, passed.
+6. Documentation: inserted only the required `Spec queue` heading and three verbatim paragraphs before `Text and JSON reports`. The Skill Coverage Map changes only the required dated review for `command phase start`. `go test -tags docscontract ./internal/cli -count=1 -run '^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$'` and `go test -tags docscontract ./internal/docscontract -count=1 -run '^(TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$'` passed. The required sanctioned Behavior Surface Record regeneration is the final implementation step; its outcome is recorded below.
+
+`git diff --check` passed. All new top-level tests call `t.Parallel()` first. Fixtures use temporary repositories/homes and supplied instants, no timer waits or external services. No existing phase declaration/test, skill, Baseline, governed path, other Task or manifest was edited. The pre-existing Task status change is preserved; no Task status was written by this Agent. Declared Verification, repository Verification and settlement remain with the Daemon; no commit, push or PR was made.
+
+Task 03 integration: supply `progress.historyRuns` and `progress.Git.Branch` to `deliveryHistoryInput`, and the already-read active/skipped Spec lists, loaded roots/home, history, context, instant and display zone to `followUpQueueInput`. Git history reading is isolated in `readDeliveryHistoryGit`; neither reader obtains a clock or command dependency.
+
+Final regeneration: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 and re-recorded `docs/references/behavior-surfaces.json` after the last source/guide edit. No Behavior Surface fingerprint was hand-edited.
