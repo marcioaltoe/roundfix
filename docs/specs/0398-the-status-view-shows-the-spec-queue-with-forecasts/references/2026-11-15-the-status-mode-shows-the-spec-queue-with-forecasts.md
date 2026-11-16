@@ -1,11 +1,9 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-11-15
-spec: null
+spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
 reason: null
-waiting_on: the maintainer's order to author it after Spec 0397, once the Claude limit resets (2026-11-15 20:00 BRT)
-since: 2026-11-15
 ---
 
 # The status mode shows the Spec queue as a table with forecast start and end times
