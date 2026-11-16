@@ -129,9 +129,14 @@ func TestAnImplementRunLeavesOnePromptEntryPerPrompt(t *testing.T) {
 	runner := &phaseImplementRunner{implementFakeRunner: &implementFakeRunner{gitRoot: repo, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted, "task_02": spec.StatusCompleted}}}
 	withImplementCollaborators(t, runner)
 	withImplementOwnerIdentity(t, "phase-record-owner")
+	// The Daemon clock stamps started and ended and renews the Run Budget
+	// deadline, whose context runs on the wall clock, so it is fixed at the
+	// present: a fixed past date expired the Run once the wall clock passed it
+	// by the two-hour budget.
+	daemonNow := time.Now().UTC().Truncate(time.Second)
 	updateCommandDependenciesForTest(t, func(d *commandDependencies) {
 		d.phaseNow = func() time.Time { return phasePromptNow }
-		d.implementBudgetNow = d.phaseNow
+		d.implementBudgetNow = func() time.Time { return daemonNow }
 	})
 	var out, diagnostics bytes.Buffer
 	code := runCLIContext(t, t.Context(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &out, &diagnostics)
@@ -145,7 +150,7 @@ func TestAnImplementRunLeavesOnePromptEntryPerPrompt(t *testing.T) {
 	runID := implementRunIDFromStderr(t, diagnostics.String())
 	for i, row := range rows {
 		assertPromptRow(t, row, runner.requests[i], runID, implementTestSlug, "task", runner.taskIDs[i], repo, "implement-adapter-session")
-		if row["started"] != phasePromptNow.Format(time.RFC3339) || row["ended"] != phasePromptNow.Format(time.RFC3339) {
+		if row["started"] != daemonNow.Format(time.RFC3339) || row["ended"] != daemonNow.Format(time.RFC3339) {
 			t.Fatalf("unexpected times: %+v", row)
 		}
 	}
