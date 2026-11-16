@@ -1,7 +1,7 @@
 ---
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
 created: 2026-11-16
-status: proposed
+status: promoted
 leverage: compounding
 ---
 

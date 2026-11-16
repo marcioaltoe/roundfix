@@ -15,3 +15,4 @@ Respostas às perguntas da Ideia (AskUserQuestion, 16/11/2026 ~09:15 BRT), opç�
 6. Validação → "Backtest antes (Recommended)" — "No PRD, o método é repetido sobre ~100 Specs dos últimos 30 dias e só é aceito se o fim real cair dentro do limite em pelo menos 80%."
 - Spec em autoria mostra previsão? (AskUserQuestion, 16/11/2026 ~09:50 BRT) → "Mostra previsão (Recommended)" — "Uma Spec em autoria recebe o provável e o limite pelo histórico de plano-até-merge; só o backlog fica sem fim."
 - Aprovação da Ideia 0398 → "Aprovar e seguir (Recommended)".
+- Base da previsão de Spec em autoria (AskUserQuestion, 16/11/2026 ~11:40 BRT; backtest: plano-até-merge 77,1% < 80%) → "Aceitar a troca (Recommended)" — "Spec em autoria mostra 'depois do merge do plano' + duração provável e limite da entrega; sua regra de 80% é respeitada."
