@@ -1,0 +1,7 @@
+Source: ProKanban, The Benefits of Defining Your Service Level Expectation
+URL: https://prokanban.org/blog/the-benefits-of-defining-your-service-level-expectation
+Read date recorded in PRD: 2026-11-16
+Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
+Recorded passage/measure: The key is to maintain communicating it as a range and level of confidence so as not to create confusion toward a guarantee.
+Current observation: Both cell instants are verified by the forecast integration test; guide explicitly calls it a range with confidence, never a commitment.
+Comparison: PASS

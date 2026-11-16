@@ -1,0 +1,2 @@
+PASS
+Case read-only independently confirmed through text, JSON and persisted hashes when applicable.

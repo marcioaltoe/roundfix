@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0398-the-status-view-shows-the-spec-queue-with-forecasts
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

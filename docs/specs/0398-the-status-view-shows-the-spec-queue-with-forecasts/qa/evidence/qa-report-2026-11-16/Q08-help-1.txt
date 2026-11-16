@@ -1,0 +1,2 @@
+PASS
+Help stdout, stderr and exit status byte-identical.

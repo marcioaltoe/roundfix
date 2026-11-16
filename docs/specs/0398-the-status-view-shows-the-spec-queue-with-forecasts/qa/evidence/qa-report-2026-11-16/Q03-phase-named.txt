@@ -1,0 +1,57 @@
+$ go test -count=1 -timeout 15m -v -run '^TestPhasesReadsBackThePhaseEntriesOfTheWindow$' ./internal/phaserecord
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6
+stdout:
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/oldest_first
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/oldest_first
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/prompt_entries_are_skipped
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/prompt_entries_are_skipped
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_malformed_line_is_counted
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_malformed_line_is_counted
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/another_schema_is_counted
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/another_schema_is_counted
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/before_since_is_left_out
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/before_since_is_left_out
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_missing_directory_is_an_empty_record
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_missing_directory_is_an_empty_record
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_file_that_is_no_day_file_is_ignored
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_file_that_is_no_day_file_is_ignored
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/an_unreadable_record_is_an_error
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/an_unreadable_record_is_an_error
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/nothing_is_written
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/nothing_is_written
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/written_by_start_phase
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/written_by_start_phase
+=== RUN   TestPhasesReadsBackThePhaseEntriesOfTheWindow/utc_day_and_instant
+=== PAUSE TestPhasesReadsBackThePhaseEntriesOfTheWindow/utc_day_and_instant
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/oldest_first
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_file_that_is_no_day_file_is_ignored
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/another_schema_is_counted
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/utc_day_and_instant
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/written_by_start_phase
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/nothing_is_written
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/an_unreadable_record_is_an_error
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_missing_directory_is_an_empty_record
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/before_since_is_left_out
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_malformed_line_is_counted
+=== CONT  TestPhasesReadsBackThePhaseEntriesOfTheWindow/prompt_entries_are_skipped
+--- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/oldest_first (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/another_schema_is_counted (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_file_that_is_no_day_file_is_ignored (0.01s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/written_by_start_phase (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/utc_day_and_instant (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_missing_directory_is_an_empty_record (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/an_unreadable_record_is_an_error (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/nothing_is_written (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/prompt_entries_are_skipped (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/a_malformed_line_is_counted (0.00s)
+    --- PASS: TestPhasesReadsBackThePhaseEntriesOfTheWindow/before_since_is_left_out (0.00s)
+PASS
+ok  	roundfix/internal/phaserecord	0.258s
+
+stderr:
+
+exit: 0

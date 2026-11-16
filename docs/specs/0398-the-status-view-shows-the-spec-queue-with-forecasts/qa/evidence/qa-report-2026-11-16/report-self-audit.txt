@@ -1,0 +1,8 @@
+Results rows: 35
+Pass: 30
+Blocked declared: 4
+Blocked environment: 1
+Blocked finding: 0
+Fail/skipped/pending: 0
+All 35 typed inputs present; Results is one contiguous three-column table; seeded auditor identity and mechanical skips preserved; all linked evidence exists, is UTF-8 text and is not ignored. Every declared user-flow executable is inside this Run. No tracked source changed. Secret Matches: 0.
+Issues: []

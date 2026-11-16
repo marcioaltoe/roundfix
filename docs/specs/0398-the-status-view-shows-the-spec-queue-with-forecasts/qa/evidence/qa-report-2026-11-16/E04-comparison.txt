@@ -1,0 +1,7 @@
+Source: Nick Brown, ASOS Tech Blog, The Full Monte
+URL: https://medium.com/asos-techblog/the-full-monte-901d721b8532
+Read date recorded in PRD: 2026-11-16
+Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
+Recorded passage/measure: 85th percentile right in 361 of 400; 50th in 270 of 400
+Current observation: Published observations remain separate from this repository’s walk-forward result: 98 cases, end limit 80 and likely 46; not a future-production claim.
+Comparison: PASS

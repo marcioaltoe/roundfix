@@ -1,0 +1,2 @@
+PASS
+Three row kinds; nine sources in order; zero delivered of 11; all instant and seconds fields null.

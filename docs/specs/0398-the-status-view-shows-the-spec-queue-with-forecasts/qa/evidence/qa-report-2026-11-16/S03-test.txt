@@ -1,0 +1,46 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestASetOfSumsIsCutTo512Values|TestTheReplayReproducesTheBacktest)$' ./internal/queueforecast
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/sabotage-75nz_pfo
+stdout:
+=== RUN   TestASetOfSumsIsCutTo512Values
+=== PAUSE TestASetOfSumsIsCutTo512Values
+=== RUN   TestTheReplayReproducesTheBacktest
+=== PAUSE TestTheReplayReproducesTheBacktest
+=== CONT  TestASetOfSumsIsCutTo512Values
+=== RUN   TestASetOfSumsIsCutTo512Values/pairwise_sum
+=== CONT  TestTheReplayReproducesTheBacktest
+=== NAME  TestASetOfSumsIsCutTo512Values/pairwise_sum
+    forecast_test.go:110: got []time.Duration{1000000000, 2000000000}; want []time.Duration{11000000000, 12000000000, 21000000000, 22000000000}
+=== RUN   TestASetOfSumsIsCutTo512Values/512_values_are_kept
+=== RUN   TestASetOfSumsIsCutTo512Values/513_values
+=== RUN   TestASetOfSumsIsCutTo512Values/1024_values
+=== RUN   TestASetOfSumsIsCutTo512Values/empty_sum
+--- FAIL: TestASetOfSumsIsCutTo512Values (0.00s)
+    --- FAIL: TestASetOfSumsIsCutTo512Values/pairwise_sum (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/512_values_are_kept (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/513_values (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/1024_values (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/empty_sum (0.00s)
+=== RUN   TestTheReplayReproducesTheBacktest/fixture
+=== RUN   TestTheReplayReproducesTheBacktest/whole_history
+=== RUN   TestTheReplayReproducesTheBacktest/at_its_start
+    replay_test.go:105: cases=98 end limit=80 likely=46
+=== RUN   TestTheReplayReproducesTheBacktest/one_behind
+    replay_test.go:153: got []int{63, 55, 35, 32, 6}; want []int{63, 55, 35, 53, 27}
+=== RUN   TestTheReplayReproducesTheBacktest/two_behind
+    replay_test.go:153: got []int{39, 22, 9, 10, 1}; want []int{39, 36, 21, 36, 20}
+=== RUN   TestTheReplayReproducesTheBacktest/three_behind
+    replay_test.go:153: got []int{19, 6, 2, 3, 0}; want []int{19, 19, 8, 17, 10}
+--- FAIL: TestTheReplayReproducesTheBacktest (0.01s)
+    --- PASS: TestTheReplayReproducesTheBacktest/fixture (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/whole_history (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/at_its_start (0.00s)
+    --- FAIL: TestTheReplayReproducesTheBacktest/one_behind (0.00s)
+    --- FAIL: TestTheReplayReproducesTheBacktest/two_behind (0.00s)
+    --- FAIL: TestTheReplayReproducesTheBacktest/three_behind (0.00s)
+FAIL
+FAIL	roundfix/internal/queueforecast	0.233s
+FAIL
+
+stderr:
+
+exit: 1

@@ -1,0 +1,69 @@
+import os,sys,json,re,subprocess,pathlib,shlex,hashlib,tarfile,io,tempfile,shutil,difflib
+ROOT=pathlib.Path(__file__).resolve().parents[6]
+SPEC=ROOT/'docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts'
+REPORT=SPEC/'qa/qa-report-2026-11-16.md'
+EV=pathlib.Path(__file__).resolve().parent
+HEAD='f42a73852b850a1a4adbbf7307018c35159afa41'
+ENV=os.environ.copy(); ENV.update(GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local')
+for k in list(ENV):
+ if k in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID','OPENROUTER_API_KEY'] or ('ROUNDFIX' in k and ('KEY' in k or 'HOME' in k)):
+  ENV.pop(k,None)
+def update(row,status,detail):
+ s=REPORT.read_text(); s=re.sub(r'(?m)^\| '+re.escape(row)+r' \| [^|]* \|', '| '+row+' | '+status+' |',s)
+ a=s.index('### '+row+'\n'); b=s.find('\n### ',a+5); b=len(s) if b<0 else b
+ part=s[a:b]; part=re.sub(r'Execution: .*?(?=\n\n|$)','Execution: '+detail,part,flags=re.S)
+ s=s[:a]+part+s[b:]; REPORT.write_text(s)
+def command(args,cwd=ROOT,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env or ENV,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ return p
+
+def run(row,label,args,cwd=ROOT,env=None,expect=0,failnames=()):
+ print(row+' '+label+': running',flush=True)
+ p=command(args,cwd,env)
+ body='$ '+shlex.join(args)+'\ncwd: '+str(cwd)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+ ok=p.returncode==expect if expect is not None else p.returncode!=0
+ if failnames: ok=ok and all(re.search(r'--- FAIL: '+re.escape(n)+r'(?: |$)',p.stdout+'\n'+p.stderr,re.M) for n in failnames)
+ path=EV/(row+'-'+label+'.txt'); path.write_text(body)
+ print(row+' '+label+': '+('PASS' if ok else 'FAIL')+' (exit '+str(p.returncode)+')',flush=True)
+ return ok,path,p
+
+def group(row,steps):
+ good=True; paths=[]
+ for label,args in steps:
+  ok,path,p=run(row,label,args); good &=ok; paths.append(path.name)
+ detail='; '.join('[%s](evidence/qa-report-2026-11-16/%s)'%(x,x) for x in paths)
+ update(row,'pass' if good else 'fail',detail)
+ return good
+
+def suites(row):
+ t=lambda timeout,pattern,pkg,tags=[]:['go','test','-count=1','-timeout',timeout,'-v']+tags+(['-run',pattern] if pattern else [])+[pkg]
+ if row=='Q02':
+  pat='^(TestThePercentileIsTheNearestRank|TestNewBasisMeasuresTheDeliveredSpecs|TestASetOfSumsIsCutTo512Values|TestForecastGivesEachRowItsCells|TestTheForecastOfTheRecordedMoment|TestTheReplayReproducesTheBacktest)$'
+  group(row,[('named',t('15m',pat,'./internal/queueforecast')),('package',t('15m','','./internal/queueforecast'))])
+  good=True
+  for target in ['windows','linux']:
+   env=ENV.copy();env['GOOS']=target
+   ok,_,_=run(row,target,['go','build','-buildvcs=false','./internal/queueforecast'],env=env);good &=ok
+  if not good:update(row,'fail','Platform build failed; see platform evidence.')
+ elif row=='Q03':
+  pat='^(TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog|TestTheQueueRowsComeInTableOrder|TestAQueueItemNamesItsWait|TestASpecIsBeingAuthored|TestTheNoteIsOneLineOfRepositoryText|TestAnUnreadableSourceLeavesTheOtherRows|TestTheFollowUpProgressKeepsEveryRunForTheHistory)$'
+  group(row,[('phase-named',t('15m','^TestPhasesReadsBackThePhaseEntriesOfTheWindow$','./internal/phaserecord')),('phase-package',t('15m','','./internal/phaserecord')),('cli-named',t('30m',pat,'./internal/cli'))])
+  env=ENV.copy();env['GOOS']='windows';ok,_,_=run(row,'windows',['go','build','-buildvcs=false','./internal/phaserecord'],env=env)
+  if not ok:update(row,'fail','Windows build failed; see platform evidence.')
+ elif row=='Q04':
+  pat='^(TestTheStatusViewSurfaceTranscripts|TestTheStatusViewShowsTheSpecQueueTable|TestTheSpecQueueTableRendersTimesAndDurations|TestTheStatusViewForecastsFromTheDeliveryHistory|TestTheStatusViewSaysWhenTheHistoryIsTooSmall|TestTheStatusJSONCarriesTheQueueAndTheBasis|TestTheStatusViewContinuesWithoutAnUnreadableSource|TestFollowUpStatusWritesNothing)$'
+  group(row,[('cli-named',t('30m',pat,'./internal/cli')),('history-overlap',t('3m','^TestTheStatusViewReadsTheHistoryBesideTheForgeCall$','./internal/cli')),('follow-up',t('30m','^TestFollowUp','./internal/cli'))])
+ elif row=='Q05':
+  pat='^(TestTheFollowUpReferenceDescribesTheSpecQueue|TestTheStatusModeRelaysTheSpecQueueTable|TestTheFollowUpModeTakesTheHandoffAndSettlesEveryMessage|TestTheRoundfixSkillReadsItsModeFromTheRequest|TestRoundfixSkillEntryFileStaysWithinItsBudget|TestEveryOwnedSkillVersionIsRecorded)$'
+  group(row,[('skills-named',t('20m',pat,'./skills')),('json-fields',t('30m','^TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes$','./internal/cli',['-tags','docscontract'])),('skills-package',t('20m','','./skills')),('glossary',t('30m','^TestGlossary','./internal/docscontract',['-tags','docscontract'])),('docs-package',t('30m','','./internal/docscontract',['-tags','docscontract']))])
+if __name__=='__main__':
+ if sys.argv[1]=='suite':suites(sys.argv[2])
+ elif sys.argv[1]=='build':
+  ok,path,_=run('Q01','build',['make','build'])
+  if not ok:update('Q01','fail','Build failed; see Q01-build.txt');sys.exit(1)
+  # Obtain caches before replacing HOME, without persisting their values.
+  with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as tmp:
+   env=ENV.copy();env.update(HOME=h,TMPDIR=tmp,TZ='UTC',GOMODCACHE=command(['go','env','GOMODCACHE']).stdout.strip(),GOCACHE=command(['go','env','GOCACHE']).stdout.strip())
+   ok,path,p=run('Q01','version',['./bin/roundfix','--version'],env=env)
+   s=REPORT.read_text().replace('user_flow_binary: pending','user_flow_binary: '+json.dumps(p.stdout.strip())).replace('user_flow_executables: []','user_flow_executables: [bin/roundfix, docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts/qa/evidence/qa-report-2026-11-16/qa_runner.py.txt]');REPORT.write_text(s)
+  update('Q01','pass' if ok else 'fail','`make build` and fresh-HOME `./bin/roundfix --version` exited 0; [build](evidence/qa-report-2026-11-16/Q01-build.txt), [identity](evidence/qa-report-2026-11-16/Q01-version.txt). Daemon supplied `make verify-changed`: pass, exit 0; not rerun.')

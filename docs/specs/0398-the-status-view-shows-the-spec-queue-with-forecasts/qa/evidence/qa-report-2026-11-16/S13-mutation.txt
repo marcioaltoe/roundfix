@@ -1,0 +1,13 @@
+Audited head: f42a73852b850a1a4adbbf7307018c35159afa41
+One isolated archived Git copy; no generation or synchronization.
+--- internal/cli/follow_up_status.go
++++ internal/cli/follow_up_status.go
+@@ -200,7 +200,7 @@
+ 	doc.ForecastBasis = followUpBasis(basis)
+ 	doc.Sources = append(doc.Sources, queueSources...)
+ 	doc.Sources = append(doc.Sources, historySource)
+-	if progress.count() == 0 && len(doc.PendingSpecs) == 0 && len(doc.Blockers) == 0 && len(doc.Maintainer) == 0 && (doc.Release.State == "no_unreleased_changes" || doc.Release.State == string(releaseplan.StateNoRelease)) {
++	if len(doc.Queue) == 0 && progress.count() == 0 && len(doc.PendingSpecs) == 0 && len(doc.Blockers) == 0 && len(doc.Maintainer) == 0 && (doc.Release.State == "no_unreleased_changes" || doc.Release.State == string(releaseplan.StateNoRelease)) {
+ 		doc.State = "nothing_to_do"
+ 	}
+ 	if req.format == "json" {

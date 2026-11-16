@@ -1,0 +1,80 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestTheStatusModeRelaysTheSpecQueueTable)$' ./skills
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/sabotage-l8rorpt1
+stdout:
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_table
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_table
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_basis_line
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_basis_line
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_table
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_table
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_basis_line
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_basis_line
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_users_time_zone
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_users_time_zone
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/no_forecast_is_computed
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/no_forecast_is_computed
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/a_note_is_data
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/a_note_is_data
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_users_time_zone
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_three_sources
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_users_time_zone
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_three_sources
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/no_forecast_is_computed
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/canonical/what_the_section_kept
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/no_forecast_is_computed
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/a_note_is_data
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/a_note_is_data
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_three_sources
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_three_sources
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/canonical/what_the_section_kept
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_table
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/a_note_is_data
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_users_time_zone
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_basis_line
+=== RUN   TestTheStatusModeRelaysTheSpecQueueTable/embedded/what_the_section_kept
+=== PAUSE TestTheStatusModeRelaysTheSpecQueueTable/embedded/what_the_section_kept
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/what_the_section_kept
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_three_sources
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/canonical/no_forecast_is_computed
+=== NAME  TestTheStatusModeRelaysTheSpecQueueTable/canonical/a_note_is_data
+    status_mode_queue_test.go:38: phrase occurrence = 0, want 1
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_table
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/no_forecast_is_computed
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_users_time_zone
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/what_the_section_kept
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_three_sources
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_basis_line
+=== CONT  TestTheStatusModeRelaysTheSpecQueueTable/embedded/a_note_is_data
+--- FAIL: TestTheStatusModeRelaysTheSpecQueueTable (0.00s)
+    --- FAIL: TestTheStatusModeRelaysTheSpecQueueTable/canonical (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_table (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_users_time_zone (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_basis_line (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/what_the_section_kept (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/the_three_sources (0.00s)
+        --- FAIL: TestTheStatusModeRelaysTheSpecQueueTable/canonical/a_note_is_data (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/canonical/no_forecast_is_computed (0.00s)
+    --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_table (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/no_forecast_is_computed (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_users_time_zone (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/what_the_section_kept (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_three_sources (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/the_basis_line (0.00s)
+        --- PASS: TestTheStatusModeRelaysTheSpecQueueTable/embedded/a_note_is_data (0.00s)
+FAIL
+FAIL	roundfix/skills	0.316s
+FAIL
+
+stderr:
+
+exit: 1

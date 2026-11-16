@@ -1,0 +1,13 @@
+Audited head: f42a73852b850a1a4adbbf7307018c35159afa41
+One isolated archived Git copy; no generation or synchronization.
+--- internal/queueforecast/forecast.go
++++ internal/queueforecast/forecast.go
+@@ -108,7 +108,7 @@
+ 	}
+ 	kept := make([]time.Duration, KeepValues)
+ 	for k := 1; k <= KeepValues; k++ {
+-		kept[k-1] = ordered[(k*len(ordered)+KeepValues-1)/KeepValues-1]
++		kept[k-1] = ordered[k-1]
+ 	}
+ 	return kept
+ }

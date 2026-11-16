@@ -1,0 +1,7 @@
+Source: Jenkins issue JENKINS-21099
+URL: https://issues.jenkins.io/browse/JENKINS-21099
+Read date recorded in PRD: 2026-11-16
+Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
+Recorded passage/measure: just give no estimate at all
+Current observation: Fresh Surface Transcript 1 shows not enough history (0 of 11), and JSON instant/duration fields are null.
+Comparison: PASS

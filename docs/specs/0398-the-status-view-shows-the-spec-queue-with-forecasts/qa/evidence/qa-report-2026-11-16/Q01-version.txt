@@ -1,0 +1,8 @@
+$ ./bin/roundfix --version
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6
+stdout:
+roundfix 0.146.0 (f42a7385-dirty, built 2026-11-16 16:07:34 -0300)
+
+stderr:
+
+exit: 0

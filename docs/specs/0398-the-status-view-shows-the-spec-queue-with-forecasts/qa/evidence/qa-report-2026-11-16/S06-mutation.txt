@@ -1,0 +1,12 @@
+Audited head: f42a73852b850a1a4adbbf7307018c35159afa41
+One isolated archived Git copy; no generation or synchronization.
+--- internal/queueforecast/forecast.go
++++ internal/queueforecast/forecast.go
+@@ -192,6 +192,7 @@
+ 				}
+ 			}
+ 		case row.Wait != "":
++			counted++
+ 			f.Start = Cell{State: Condition, Condition: row.Wait}
+ 		case !row.Planned:
+ 			f.Start = Cell{State: Condition, Condition: "after its plan is merged"}

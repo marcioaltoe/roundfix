@@ -1,0 +1,8 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6/bin/roundfix phase start idea --spec 0004-a-queue-of-reports
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q07-z056_1_c/repo
+stdout:
+Recorded idea of 0004-a-queue-of-reports without a harness session: the environment names none
+
+stderr:
+
+exit: 0

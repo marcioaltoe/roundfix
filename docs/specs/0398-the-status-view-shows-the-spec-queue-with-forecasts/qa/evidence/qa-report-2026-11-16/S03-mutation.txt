@@ -1,0 +1,13 @@
+Audited head: f42a73852b850a1a4adbbf7307018c35159afa41
+One isolated archived Git copy; no generation or synchronization.
+--- internal/queueforecast/forecast.go
++++ internal/queueforecast/forecast.go
+@@ -97,7 +97,7 @@
+ 			values = append(values, x+y)
+ 		}
+ 	}
+-	return cut(values)
++	return slices.Clone(a)
+ }
+ 
+ func cut(values []time.Duration) []time.Duration {

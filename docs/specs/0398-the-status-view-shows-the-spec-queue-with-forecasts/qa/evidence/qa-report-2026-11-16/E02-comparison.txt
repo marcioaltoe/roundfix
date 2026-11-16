@@ -1,0 +1,7 @@
+Source: The Kanban Guide, May 2025
+URL: https://kanbanguides.org/english/
+Read date recorded in PRD: 2026-11-16
+Access path: _prd.md, Acceptance evidence. No network lookup, as Requirement 12 prescribes.
+Recorded passage/measure: The SLE itself has two parts: a period of elapsed time and a probability associated with that period
+Current observation: Fresh recorded-moment renderer assertion verifies the basis line: Likely is the median and the limit the 85th percentile. Small-history public transcript independently reports zero of 11.
+Comparison: PASS

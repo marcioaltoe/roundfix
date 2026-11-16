@@ -1,0 +1,73 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestASpecIsBeingAuthored)$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/sabotage-_6_5s9hg
+stdout:
+=== RUN   TestASpecIsBeingAuthored
+=== PAUSE TestASpecIsBeingAuthored
+=== CONT  TestASpecIsBeingAuthored
+=== RUN   TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== PAUSE TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== RUN   TestASpecIsBeingAuthored/another_remote
+=== PAUSE TestASpecIsBeingAuthored/another_remote
+=== RUN   TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== PAUSE TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== RUN   TestASpecIsBeingAuthored/older_than_seven_days
+=== PAUSE TestASpecIsBeingAuthored/older_than_seven_days
+=== RUN   TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== PAUSE TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== RUN   TestASpecIsBeingAuthored/an_archive_record
+=== PAUSE TestASpecIsBeingAuthored/an_archive_record
+=== RUN   TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== PAUSE TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== RUN   TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== PAUSE TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== RUN   TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+=== PAUSE TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+=== RUN   TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== PAUSE TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== RUN   TestASpecIsBeingAuthored/no_origin_asks_none
+=== PAUSE TestASpecIsBeingAuthored/no_origin_asks_none
+=== CONT  TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== CONT  TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+=== CONT  TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== CONT  TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== CONT  TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== CONT  TestASpecIsBeingAuthored/an_archive_record
+=== CONT  TestASpecIsBeingAuthored/no_origin_asks_none
+=== CONT  TestASpecIsBeingAuthored/another_remote
+=== CONT  TestASpecIsBeingAuthored/older_than_seven_days
+=== CONT  TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== NAME  TestASpecIsBeingAuthored/another_remote
+    follow_up_queue_test.go:206: rows=[{Row:1 Kind:authoring Spec:0001-widget Ref: Title: Status:authoring: prd TasksCompleted:0 TasksTotal:0 Note:prd since 11-16 13:00 Start:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:} End:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:}}] forecasts=[{Label:0001 Planned:false Queued:false Started:0001-01-01 00:00:00 +0000 UTC Parked:false Wait:}] want=0
+=== CONT  TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+--- FAIL: TestASpecIsBeingAuthored (0.00s)
+    --- PASS: TestASpecIsBeingAuthored/a_folder_without_a_prd (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/the_latest_phase_and_its_time (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/a_directory_that_no_longer_exists (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/with_a_prd_it_is_planned (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/an_archive_record (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/older_than_seven_days (0.04s)
+    --- FAIL: TestASpecIsBeingAuthored/another_remote (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/no_origin_asks_none (0.21s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout (0.04s)
+    --- PASS: TestASpecIsBeingAuthored/at_most_eight_other_directories (0.23s)
+FAIL
+suiteguard: guard cost: measured 3198 paths; fingerprint took 173.752208ms before and 156.282583ms after
+FAIL	roundfix/internal/cli	1.176s
+FAIL
+
+stderr:
+
+exit: 1

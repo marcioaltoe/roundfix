@@ -1,0 +1,62 @@
+from pathlib import Path
+import re,json,subprocess,collections
+root=Path(__file__).resolve().parents[6];ev=Path(__file__).resolve().parent;report=ev.parent.parent/'qa-report-2026-11-16.md'
+s=report.read_text();paths=json.loads(re.search(r'^user_flow_executables: (.+)$',s,re.M).group(1));paths += ['bin/qa-report-safety/probe',str(Path(__file__).resolve().relative_to(root))];paths=list(dict.fromkeys(paths));s=re.sub(r'^user_flow_executables: .*$', 'user_flow_executables: '+json.dumps(paths),s,flags=re.M)
+if '### Archive planning inputs' not in s:
+ s=s.replace('## Outcome\n','''### Archive planning inputs
+
+```yaml
+inputs:
+  - kind: repository_path
+    ref: "**"
+  - kind: repository_path
+    ref: ".agents/**"
+```
+
+The offline archive plan is Requirement 17’s Outcome observation, rather than an additional coverage source. It used fresh HOME and TMPDIR and retained the existing Go caches, with every Judge Key Variable and TYPESAFE_API_KEY unset. No archive was applied.
+
+## Outcome
+''')
+ s += '\nReport structure, evidence links, text-only artifacts and secret-pattern checks: [self-audit](evidence/qa-report-2026-11-16/report-self-audit.txt), [secret scan](evidence/qa-report-2026-11-16/report-secret-scan.txt).\n'
+report.write_text(s)
+issues=[];table=s.split('## Results\n',1)[1].split('## Mechanical skips',1)[0].strip().splitlines()
+if any(not x.startswith('|') for x in table):issues.append('Results table interrupted')
+rows=[]
+for line in table[2:]:
+ cells=[x.strip() for x in line.split('|')[1:-1]]
+ if len(cells)!=3:issues.append('Results row does not have three cells')
+ else:rows.append(cells)
+for row,status,provenance in rows:
+ match=re.search(r'^### '+re.escape(row)+r'\n(.*?)(?=^### |\Z)',s,re.M|re.S)
+ if not match or '```yaml\ninputs:\n  - kind: repository_path\n' not in match.group(1):issues.append('Missing typed inputs: '+row)
+ if status=='pending':issues.append('Pending row: '+row)
+ if 'evidence_snapshots' in (match.group(1) if match else ''):issues.append('Agent wrote Daemon-owned snapshot')
+# Precreate this utility’s two fresh outputs before checking every linked path.
+(ev/'report-self-audit.txt').write_text('Self-audit in progress\n');(ev/'report-secret-scan.txt').write_text('Secret scan in progress\n')
+for label,target in re.findall(r'\[([^]]+)\]\(([^)]+)\)',s):
+ if target.startswith(('http:','https:','#')):continue
+ p=(report.parent/target.split('#')[0]).resolve()
+ if not p.is_file():issues.append('Missing link: '+target)
+files=[report]+list(ev.iterdir());rel=[str(p.relative_to(root)) for p in files]
+p=subprocess.run(['git','check-ignore','--stdin'],input='\n'.join(rel)+'\n',cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+if p.returncode not in [0,1]:issues.append('git check-ignore failed')
+if p.stdout:issues.append('Ignored evidence paths: '+p.stdout)
+for p in files:
+ try:p.read_text()
+ except UnicodeDecodeError:issues.append('Non-text evidence: '+p.name)
+for path in paths:
+ if not (root/path).is_file():issues.append('Executable absent from Run: '+path)
+counts=collections.Counter(status.split(' (')[0] for _,status,_ in rows)
+if len(rows)!=35 or counts!={'pass':30,'blocked':5}:issues.append('Wrong terminal row counts')
+for key,n in [('rows_blocked_environment',1),('rows_blocked_finding',0),('rows_blocked_declared',4)]:
+ if f'{key}: {n}\n' not in s:issues.append('Wrong blocked count '+key)
+if s.count('\n---\n')!=1:issues.append('Duplicate or missing frontmatter')
+for exact in ['auditing_binary: "0.146.0 (71244939, built 2026-11-16 14:26:48 -0300)"','auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"']:
+ if exact not in s:issues.append('Daemon auditor identity changed')
+tracked=subprocess.run(['git','diff','--exit-code','HEAD','--','.'],cwd=root,capture_output=True,text=True)
+if tracked.returncode:issues.append('Tracked source changed during QA')
+p=subprocess.run(['./bin/qa-report-safety/probe',str(report.parent)],cwd=root,text=True,capture_output=True)
+(ev/'report-secret-scan.txt').write_text('$ ./bin/qa-report-safety/probe <spec>/qa\n'+p.stdout+p.stderr+'exit: '+str(p.returncode)+'\n')
+if p.returncode:issues.append('Secret scanner refused QA evidence')
+body='Results rows: 35\nPass: 30\nBlocked declared: 4\nBlocked environment: 1\nBlocked finding: 0\nFail/skipped/pending: 0\nAll 35 typed inputs present; Results is one contiguous three-column table; seeded auditor identity and mechanical skips preserved; all linked evidence exists, is UTF-8 text and is not ignored. Every declared user-flow executable is inside this Run. No tracked source changed. Secret Matches: 0.\nIssues: '+repr(issues)+'\n'
+(ev/'report-self-audit.txt').write_text(body);print(body);assert not issues

@@ -1,0 +1,125 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestThePercentileIsTheNearestRank|TestNewBasisMeasuresTheDeliveredSpecs|TestASetOfSumsIsCutTo512Values|TestForecastGivesEachRowItsCells|TestTheForecastOfTheRecordedMoment|TestTheReplayReproducesTheBacktest)$' ./internal/queueforecast
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6
+stdout:
+=== RUN   TestThePercentileIsTheNearestRank
+=== PAUSE TestThePercentileIsTheNearestRank
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs
+=== PAUSE TestNewBasisMeasuresTheDeliveredSpecs
+=== RUN   TestASetOfSumsIsCutTo512Values
+=== PAUSE TestASetOfSumsIsCutTo512Values
+=== RUN   TestForecastGivesEachRowItsCells
+=== PAUSE TestForecastGivesEachRowItsCells
+=== RUN   TestTheReplayReproducesTheBacktest
+=== PAUSE TestTheReplayReproducesTheBacktest
+=== RUN   TestTheForecastOfTheRecordedMoment
+=== PAUSE TestTheForecastOfTheRecordedMoment
+=== CONT  TestThePercentileIsTheNearestRank
+=== CONT  TestForecastGivesEachRowItsCells
+=== RUN   TestThePercentileIsTheNearestRank/eleven_values
+=== CONT  TestTheForecastOfTheRecordedMoment
+=== RUN   TestForecastGivesEachRowItsCells/started
+=== RUN   TestThePercentileIsTheNearestRank/twenty_values
+=== RUN   TestThePercentileIsTheNearestRank/ten_values_give_no_pair
+=== RUN   TestThePercentileIsTheNearestRank/the_argument_is_not_changed
+=== RUN   TestThePercentileIsTheNearestRank/empty
+--- PASS: TestThePercentileIsTheNearestRank (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/eleven_values (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/twenty_values (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/ten_values_give_no_pair (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/the_argument_is_not_changed (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/empty (0.00s)
+=== CONT  TestASetOfSumsIsCutTo512Values
+=== RUN   TestASetOfSumsIsCutTo512Values/pairwise_sum
+=== RUN   TestASetOfSumsIsCutTo512Values/512_values_are_kept
+=== RUN   TestForecastGivesEachRowItsCells/started_and_parked
+=== RUN   TestASetOfSumsIsCutTo512Values/513_values
+=== RUN   TestForecastGivesEachRowItsCells/past_the_usual_time
+=== RUN   TestForecastGivesEachRowItsCells/not_enough_history
+=== RUN   TestASetOfSumsIsCutTo512Values/1024_values
+=== RUN   TestForecastGivesEachRowItsCells/own_wait
+=== RUN   TestForecastGivesEachRowItsCells/not_planned
+=== RUN   TestForecastGivesEachRowItsCells/one_two_and_three_behind
+=== RUN   TestASetOfSumsIsCutTo512Values/empty_sum
+--- PASS: TestASetOfSumsIsCutTo512Values (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/pairwise_sum (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/512_values_are_kept (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/513_values (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/1024_values (0.00s)
+    --- PASS: TestASetOfSumsIsCutTo512Values/empty_sum (0.00s)
+=== CONT  TestNewBasisMeasuresTheDeliveredSpecs
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/start_to_merge
+=== RUN   TestForecastGivesEachRowItsCells/fourth_behind
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/a_gap_needs_the_plan_on_time
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/a_zero_plan_counts
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/sorted_by_start_then_slug
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/first_and_last_end
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/a_spec_without_a_start_is_left_out
+=== RUN   TestForecastGivesEachRowItsCells/too_few_gaps_longer
+=== RUN   TestNewBasisMeasuresTheDeliveredSpecs/whole_seconds
+--- PASS: TestNewBasisMeasuresTheDeliveredSpecs (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/start_to_merge (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/a_gap_needs_the_plan_on_time (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/a_zero_plan_counts (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/sorted_by_start_then_slug (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/first_and_last_end (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/a_spec_without_a_start_is_left_out (0.00s)
+    --- PASS: TestNewBasisMeasuresTheDeliveredSpecs/whole_seconds (0.00s)
+=== CONT  TestTheReplayReproducesTheBacktest
+=== RUN   TestForecastGivesEachRowItsCells/own_wait_is_not_counted
+=== RUN   TestForecastGivesEachRowItsCells/no_anchor_queued
+=== RUN   TestForecastGivesEachRowItsCells/no_anchor_not_queued
+=== RUN   TestForecastGivesEachRowItsCells/a_parked_row_is_no_anchor
+=== RUN   TestForecastGivesEachRowItsCells/the_latest_start_is_the_anchor
+=== RUN   TestForecastGivesEachRowItsCells/an_end_behind_needs_eleven_deliveries
+=== RUN   TestForecastGivesEachRowItsCells/fewer_than_eleven_gaps
+=== RUN   TestForecastGivesEachRowItsCells/exactly_five_longer_gaps
+=== RUN   TestForecastGivesEachRowItsCells/exactly_five_longer
+=== RUN   TestForecastGivesEachRowItsCells/only_four_longer
+=== RUN   TestForecastGivesEachRowItsCells/whole_seconds
+=== RUN   TestForecastGivesEachRowItsCells/empty
+--- PASS: TestForecastGivesEachRowItsCells (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/started (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/started_and_parked (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/past_the_usual_time (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/not_enough_history (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/own_wait (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/not_planned (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/one_two_and_three_behind (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/fourth_behind (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/too_few_gaps_longer (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/own_wait_is_not_counted (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/no_anchor_queued (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/no_anchor_not_queued (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/a_parked_row_is_no_anchor (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/the_latest_start_is_the_anchor (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/an_end_behind_needs_eleven_deliveries (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/fewer_than_eleven_gaps (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/exactly_five_longer_gaps (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/exactly_five_longer (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/only_four_longer (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/whole_seconds (0.00s)
+    --- PASS: TestForecastGivesEachRowItsCells/empty (0.00s)
+--- PASS: TestTheForecastOfTheRecordedMoment (0.00s)
+=== RUN   TestTheReplayReproducesTheBacktest/fixture
+=== RUN   TestTheReplayReproducesTheBacktest/whole_history
+=== RUN   TestTheReplayReproducesTheBacktest/at_its_start
+    replay_test.go:105: cases=98 end limit=80 likely=46
+=== RUN   TestTheReplayReproducesTheBacktest/one_behind
+    replay_test.go:154: cases=63 start limit=55 likely=35 end limit=53 likely=27
+=== RUN   TestTheReplayReproducesTheBacktest/two_behind
+    replay_test.go:154: cases=39 start limit=36 likely=21 end limit=36 likely=20
+=== RUN   TestTheReplayReproducesTheBacktest/three_behind
+    replay_test.go:154: cases=19 start limit=19 likely=8 end limit=17 likely=10
+--- PASS: TestTheReplayReproducesTheBacktest (0.14s)
+    --- PASS: TestTheReplayReproducesTheBacktest/fixture (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/whole_history (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/at_its_start (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/one_behind (0.01s)
+    --- PASS: TestTheReplayReproducesTheBacktest/two_behind (0.06s)
+    --- PASS: TestTheReplayReproducesTheBacktest/three_behind (0.06s)
+PASS
+ok  	roundfix/internal/queueforecast	0.400s
+
+stderr:
+
+exit: 0

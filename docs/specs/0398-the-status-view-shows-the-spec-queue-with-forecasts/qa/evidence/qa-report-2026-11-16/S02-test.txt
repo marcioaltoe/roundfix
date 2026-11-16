@@ -1,0 +1,45 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestThePercentileIsTheNearestRank|TestTheReplayReproducesTheBacktest)$' ./internal/queueforecast
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/sabotage-mtqresaj
+stdout:
+=== RUN   TestThePercentileIsTheNearestRank
+=== PAUSE TestThePercentileIsTheNearestRank
+=== RUN   TestTheReplayReproducesTheBacktest
+=== PAUSE TestTheReplayReproducesTheBacktest
+=== CONT  TestThePercentileIsTheNearestRank
+=== RUN   TestThePercentileIsTheNearestRank/eleven_values
+=== CONT  TestTheReplayReproducesTheBacktest
+=== RUN   TestThePercentileIsTheNearestRank/twenty_values
+=== RUN   TestThePercentileIsTheNearestRank/ten_values_give_no_pair
+    forecast_test.go:53: got 5000000000; want 0
+=== RUN   TestThePercentileIsTheNearestRank/the_argument_is_not_changed
+=== RUN   TestThePercentileIsTheNearestRank/empty
+--- FAIL: TestThePercentileIsTheNearestRank (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/eleven_values (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/twenty_values (0.00s)
+    --- FAIL: TestThePercentileIsTheNearestRank/ten_values_give_no_pair (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/the_argument_is_not_changed (0.00s)
+    --- PASS: TestThePercentileIsTheNearestRank/empty (0.00s)
+=== RUN   TestTheReplayReproducesTheBacktest/fixture
+=== RUN   TestTheReplayReproducesTheBacktest/whole_history
+=== RUN   TestTheReplayReproducesTheBacktest/at_its_start
+    replay_test.go:104: got []int{99, 81, 47}; want []int{98, 80, 46}
+=== RUN   TestTheReplayReproducesTheBacktest/one_behind
+    replay_test.go:153: got []int{64, 56, 36, 54, 28}; want []int{63, 55, 35, 53, 27}
+=== RUN   TestTheReplayReproducesTheBacktest/two_behind
+    replay_test.go:154: cases=39 start limit=36 likely=21 end limit=36 likely=20
+=== RUN   TestTheReplayReproducesTheBacktest/three_behind
+    replay_test.go:154: cases=19 start limit=19 likely=8 end limit=17 likely=10
+--- FAIL: TestTheReplayReproducesTheBacktest (0.13s)
+    --- PASS: TestTheReplayReproducesTheBacktest/fixture (0.00s)
+    --- PASS: TestTheReplayReproducesTheBacktest/whole_history (0.00s)
+    --- FAIL: TestTheReplayReproducesTheBacktest/at_its_start (0.00s)
+    --- FAIL: TestTheReplayReproducesTheBacktest/one_behind (0.01s)
+    --- PASS: TestTheReplayReproducesTheBacktest/two_behind (0.05s)
+    --- PASS: TestTheReplayReproducesTheBacktest/three_behind (0.06s)
+FAIL
+FAIL	roundfix/internal/queueforecast	0.344s
+FAIL
+
+stderr:
+
+exit: 1

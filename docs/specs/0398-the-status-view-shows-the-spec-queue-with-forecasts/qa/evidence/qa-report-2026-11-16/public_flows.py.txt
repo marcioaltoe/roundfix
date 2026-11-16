@@ -1,0 +1,115 @@
+import runpy, textwrap
+from pathlib import Path
+G=runpy.run_path(str(Path(__file__).with_name('qa_runner.py.txt')));globals().update(G)
+CACHE={k:command(['go','env',k]).stdout.strip() for k in ['GOMODCACHE','GOCACHE']}
+TOOLS=ROOT/'bin/qa-tools';TOOLS.mkdir(exist_ok=True)
+(TOOLS/'gh').write_text("#!/bin/sh\nprintf '[]\\n'\n");(TOOLS/'gh').chmod(0o755)
+def fixture(parent,filled=True):
+ repo=parent/'repo';repo.mkdir();home=parent/'home';home.mkdir();tmp=parent/'tmp';tmp.mkdir()
+ env=ENV.copy();env.update(CACHE);env.update(HOME=str(home),TMPDIR=str(tmp),TZ='UTC',PATH=str(TOOLS)+os.pathsep+ENV['PATH'],GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_AUTHOR_NAME='QA',GIT_AUTHOR_EMAIL='qa@example.invalid',GIT_COMMITTER_NAME='QA',GIT_COMMITTER_EMAIL='qa@example.invalid')
+ if filled:
+  files={'docs/specs/0002-export-the-ledger/_prd.md':'---\nstatus: active\n---\n# Export the ledger\n','docs/specs/0003-a-report-of-late-items/_idea.md':'# A report of late items\n','docs/backlog/2026-11-18-a-table-of-late-items.md':'---\ntype: feat\nstatus: open\ncreated: 2026-11-18\nwaiting_on: the maintainer\nsince: 2026-11-18\n---\n# A table of late items\n'}
+ else:files={'README.md':'# QA fixture\n'}
+ for path,data in files.items():p=repo/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(data)
+ for args in [['init','-b','main'],['add','.'],['commit','-m','docs: seed QA fixture']]:
+  p=command(['git']+args,repo,env);assert p.returncode==0,p.stderr
+ return repo,home,env
+
+def product(row,label,args,repo,env,binary=None):
+ return run(row,label,[str(binary or ROOT/'bin/roundfix')]+args,cwd=repo,env=env)
+def snap(paths):
+ result=[]
+ for label,path in paths:
+  for p in sorted(path.rglob('*')):
+   if p.is_file():data=p.read_bytes();result.append(f'{label}/{p.relative_to(path)} {len(data)} {hashlib.sha256(data).hexdigest()}')
+ return '\n'.join(result)+'\n'
+def check(row,name,ok,detail):
+ (EV/(row+'-'+name+'.txt')).write_text(('PASS' if ok else 'FAIL')+'\n'+detail+'\n')
+ return ok
+
+def transcripts():
+ good=True
+ blocks=re.findall(r'```transcript\n(.*?)```',(SPEC/'_techspec.md').read_text(),re.S)
+ for n in [1,2]:
+  with tempfile.TemporaryDirectory(prefix='q06-') as td:
+   repo,home,env=fixture(Path(td),n==1)
+   ok,_,p=product('Q06',f'transcript-{n}',['follow-up','--status'],repo,env)
+   okj,_,j=product('Q06',f'json-{n}',['follow-up','--status','--format','json'],repo,env)
+   doc=json.loads(j.stdout);expected=textwrap.dedent(blocks[n-1]);expected=expected.split('stdout:\n',1)[1].split('stderr:',1)[0]
+   expected=expected.replace('<namespace>',repo.name).replace('<root>',doc['repository']['root']).replace('<reason>',doc['release']['reason'])
+   for source in doc['sources']:
+    if source['name'] in ['pull-requests','specs']:
+     state=source['state']+(': '+source['detail'] if source['detail'] else ' '+str(source['count']) if source['state']=='checked' else '')
+     expected=expected.replace(source['name']+': <state>',source['name']+': '+state)
+   same=expected==p.stdout and not p.stderr and p.returncode==0
+   good &=ok and okj and check('Q06',f'comparison-{n}',same,''.join(difflib.unified_diff(expected.splitlines(True),p.stdout.splitlines(True),fromfile='TechSpec',tofile='binary')) or 'Every stdout line matches the TechSpec; stderr empty; exit 0.')
+   if n==1:
+    valid=[r['kind'] for r in doc['queue']]==['planned','authoring','backlog'] and doc['forecast_basis']['delivered_specs']==0 and doc['forecast_basis']['minimum']==11
+    valid &= [s['name'] for s in doc['sources']]==['runs','delivery-queue','pull-requests','git','specs','release-plan','backlog','phase-record','delivery-history']
+    valid &= all(c[k] is None for r in doc['queue'] for c in [r['start'],r['end']] for k in ['actual','likely','limit','likely_after_seconds','limit_after_seconds'])
+    good &=check('Q06','json-contract',valid,'Three row kinds; nine sources in order; zero delivered of 11; all instant and seconds fields null.')
+ update('Q06','pass' if good else 'fail','Fresh text/JSON processes and line comparisons: [transcript 1](evidence/qa-report-2026-11-16/Q06-transcript-1.txt), [transcript 2](evidence/qa-report-2026-11-16/Q06-transcript-2.txt), [comparison 1](evidence/qa-report-2026-11-16/Q06-comparison-1.txt), [comparison 2](evidence/qa-report-2026-11-16/Q06-comparison-2.txt), [JSON contract](evidence/qa-report-2026-11-16/Q06-json-contract.txt).')
+
+def cases():
+ good=True
+ for case in ['phase','read-only','all','messages','backlog','phase-record']:
+  with tempfile.TemporaryDirectory(prefix='q07-') as td:
+   repo,home,env=fixture(Path(td))
+   if case=='phase':
+    ok,_,p=product('Q07','phase-start',['phase','start','idea','--spec','0004-a-queue-of-reports'],repo,env);good &=ok
+   if case=='backlog':(repo/'docs/backlog/broken.md').write_text('---\nstatus: open\n')
+   if case=='phase-record':
+    (home/'.roundfix').mkdir();(home/'.roundfix/phase-record').write_text('not a directory\n')
+   if case=='read-only':before=snap([('repo',repo),('home',home)]);(EV/'Q07-before-manifest.txt').write_text(before)
+   if case in ['all','messages']:
+    args=['follow-up','--status']+(['--all'] if case=='all' else ['--messages','m.json'])
+    _,_,p=product('Q07',case,args,repo,env)
+    msg='--'+case+' applies only to the follow-up list; drop it with --status'
+    good &=check('Q07',case+'-assertion',p.returncode==2 and p.stdout=='' and msg in p.stderr,'Expected exit 2, empty stdout and documented diagnostic: '+msg)
+    continue
+   ok,_,p=product('Q07',case+'-text',['follow-up','--status'],repo,env)
+   okj,_,j=product('Q07',case+'-json',['follow-up','--status','--format','json'],repo,env);d=json.loads(j.stdout);good &=ok and okj
+   if case=='read-only':
+    after=snap([('repo',repo),('home',home)]);(EV/'Q07-after-manifest.txt').write_text(after);valid=before==after
+   elif case=='phase':
+    valid=[r['kind'] for r in d['queue']]==['planned','authoring','authoring','backlog'];r=d['queue'][2]
+    valid &= r['spec']=='0004-a-queue-of-reports' and r['status']=='authoring: idea' and r['start']['condition']=='after its plan is merged' and bool(re.fullmatch(r'idea since \d\d-\d\d \d\d:\d\d',r['note'])) and 'phase-record: checked 1' in p.stdout
+   else:
+    source=next(s for s in d['sources'] if s['name']==case)
+    valid=source['state']=='unavailable' and bool(source['detail']) and any(r['spec']=='0003-a-report-of-late-items' and r['kind']=='authoring' for r in d['queue'])
+    if case=='backlog':valid &= [r['kind'] for r in d['queue']]==['planned','authoring']
+   good &=check('Q07',case+'-assertion',valid,'Case '+case+' independently confirmed through text, JSON and persisted hashes when applicable.')
+ update('Q07','pass' if good else 'fail','Five isolated product cases plus read-only manifests, each confirmed independently. [phase](evidence/qa-report-2026-11-16/Q07-phase-assertion.txt), [read-only](evidence/qa-report-2026-11-16/Q07-read-only-assertion.txt), [all](evidence/qa-report-2026-11-16/Q07-all.txt), [messages](evidence/qa-report-2026-11-16/Q07-messages.txt), [backlog](evidence/qa-report-2026-11-16/Q07-backlog-text.txt), [phase-record](evidence/qa-report-2026-11-16/Q07-phase-record-text.txt).')
+
+def compatibility():
+ base=command(['git','merge-base',HEAD,'origin/main']).stdout.strip();assert base
+ directory=ROOT/'bin/qa-delivery-base';directory.mkdir(exist_ok=False)
+ archive=subprocess.run(['git','archive',base],cwd=ROOT,stdout=subprocess.PIPE,check=True).stdout
+ with tarfile.open(fileobj=io.BytesIO(archive)) as tf:tf.extractall(directory,filter='data')
+ for args in [['init','-b','main'],['-c','user.name=QA','-c','user.email=qa@example.invalid','add','.'],['-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','-m','docs: initialize Delivery Base fixture']]:
+  p=command(['git']+args,directory);assert p.returncode==0,p.stderr
+ ok,_,_=run('Q08','base-build',['make','build'],cwd=directory)
+ if not ok:update('Q08','fail','Delivery Base build failed.');return
+ binary=directory/'bin/roundfix';good=True
+ s=REPORT.read_text().replace('user_flow_executables: [','user_flow_executables: [bin/qa-delivery-base/bin/roundfix, bin/qa-tools/gh, ',1);REPORT.write_text(s)
+ for n in [1,2]:
+  with tempfile.TemporaryDirectory(prefix='q08-') as td:
+   repo,home,env=fixture(Path(td),n==1);docs=[];texts=[]
+   for name,exe in [('base',binary),('head',ROOT/'bin/roundfix')]:
+    # A different fresh HOME/TMPDIR for each binary.
+    nh=Path(td)/('home-'+name);nt=Path(td)/('tmp-'+name);nh.mkdir();nt.mkdir();env.update(HOME=str(nh),TMPDIR=str(nt))
+    ok,_,p=product('Q08',f'{n}-{name}-text',['follow-up','--status'],repo,env,exe);good &=ok;texts.append(p.stdout)
+    ok,_,p=product('Q08',f'{n}-{name}-json',['follow-up','--status','--format','json'],repo,env,exe);good &=ok;docs.append(json.loads(p.stdout))
+   old,new=docs;bad=[k for k,v in old.items() if (new.get(k)!=v if k!='sources' else new.get(k,[])[:6]!=v)]
+   lines=iter(texts[1].splitlines());preserved=all(any(x==line for x in lines) for line in texts[0].splitlines())
+   good &=check('Q08',f'compatibility-{n}',not bad and preserved,f'Delivery Base: {base}\nOld JSON keys with changes: {bad}\nEvery baseline text line preserved in order: {preserved}\nBaseline sources preserved first: {old["sources"]==new["sources"][:6]}')
+   helps=[]
+   for name,exe in [('base',binary),('head',ROOT/'bin/roundfix')]:
+    ok,_,p=product('Q08',f'{n}-{name}-help',['follow-up','--help'],repo,env,exe);good &=ok;helps.append((p.stdout,p.stderr,p.returncode))
+   good &=check('Q08',f'help-{n}',helps[0]==helps[1],'Help stdout, stderr and exit status byte-identical.')
+ update('Q08','pass' if good else 'fail','Delivery Base '+base+' built inside this Run; [fixture 1](evidence/qa-report-2026-11-16/Q08-compatibility-1.txt), [fixture 2](evidence/qa-report-2026-11-16/Q08-compatibility-2.txt), [help](evidence/qa-report-2026-11-16/Q08-help-1.txt). Existing JSON keys and first six sources match; old text lines remain in order.')
+if __name__=='__main__':pass
+mode=sys.argv[1]
+if mode=='transcripts':transcripts()
+elif mode=='cases':cases()
+elif mode=='compatibility':compatibility()

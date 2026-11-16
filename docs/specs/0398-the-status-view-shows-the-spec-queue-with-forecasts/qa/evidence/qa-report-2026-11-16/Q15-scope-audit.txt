@@ -1,0 +1,20 @@
+PASS: 41c75164 task_01 changed paths declared or Recorded paths
+PASS: 351e5eb0 task_02 changed paths declared or Recorded paths
+PASS: 1d4564d0 task_03 changed paths declared or Recorded paths
+PASS: f42a7385 task_04 changed paths declared or Recorded paths
+PASS: Every changed Governed Path authorized: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/follow-up.md, .agents/skills/roundfix/references/modes.md, skills/roundfix/SKILL.md
+PASS: No prohibited path changed: []
+PASS: .agents/skills/roundfix/SKILL.md QA settlement unchanged
+PASS: .agents/skills/roundfix/references/follow-up.md QA settlement unchanged
+PASS: .agents/skills/roundfix/references/modes.md QA settlement unchanged
+PASS: CONTEXT.md QA settlement unchanged
+PASS: docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md QA settlement unchanged
+PASS: docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md QA settlement unchanged
+PASS: docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts/task_01.md QA settlement unchanged
+PASS: docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts/task_02.md QA settlement unchanged
+PASS: docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts/task_03.md QA settlement unchanged
+PASS: docs/specs/0398-the-status-view-shows-the-spec-queue-with-forecasts/task_04.md QA settlement unchanged
+PASS: docs/user-guide/commands/follow-up.md QA settlement unchanged
+PASS: skills/roundfix/SKILL.md QA settlement unchanged
+PASS: skills/roundfix/references/follow-up.md QA settlement unchanged
+PASS: skills/roundfix/references/modes.md QA settlement unchanged

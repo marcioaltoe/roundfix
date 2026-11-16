@@ -1,0 +1,9 @@
+$ make build
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6/bin/qa-delivery-base
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=cf32152' -X 'roundfix/internal/app.BuildTime=2026-11-16 16:10:24 -0300'" -o bin/roundfix ./cmd/roundfix
+
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 13463230937 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+
+exit: 0

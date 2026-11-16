@@ -1,0 +1,2 @@
+PASS
+Case phase-record independently confirmed through text, JSON and persisted hashes when applicable.

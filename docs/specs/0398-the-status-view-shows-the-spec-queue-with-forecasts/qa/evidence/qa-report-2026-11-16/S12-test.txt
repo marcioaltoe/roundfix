@@ -1,0 +1,74 @@
+$ go test -count=1 -timeout 15m -v -run '^(TestTheSpecQueueTableRendersTimesAndDurations)$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/sabotage-0sqabvo8
+stdout:
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/not_enough_history
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/not_enough_history
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/only_the_start_gaps_are_too_few
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/only_the_start_gaps_are_too_few
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/only_backlog_rows_print_no_basis_line
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/only_backlog_rows_print_no_basis_line
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/no_row_prints_only_the_count
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/no_row_prints_only_the_count
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/ten_rows_align
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/ten_rows_align
+=== RUN   TestTheSpecQueueTableRendersTimesAndDurations/a_likely_value_is_cut_and_a_limit_is_rounded_up
+=== PAUSE TestTheSpecQueueTableRendersTimesAndDurations/a_likely_value_is_cut_and_a_limit_is_rounded_up
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/no_row_prints_only_the_count
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/a_likely_value_is_cut_and_a_limit_is_rounded_up
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/ten_rows_align
+    follow_up_status_queue_test.go:629: misaligned line "  1   0001  not queued 1/10 Tasks   after it is queued  +1h56m, by +4h21m after its start  -" header "  #   Spec  Status                  Start (-03)         End (-03)                          Note"
+=== NAME  TestTheSpecQueueTableRendersTimesAndDurations/a_likely_value_is_cut_and_a_limit_is_rounded_up
+    follow_up_status_queue_test.go:644: table=Spec queue: 1
+          #  Spec  Status                Start (-03)                   End (-03)                          Note
+          1  0001  not queued 0/0 Tasks  ~11-16 10:36, by 11-16 10:36  +1h56m, by +4h21m after its start  -
+        Forecast basis: 109 Specs delivered from 10-17 to 11-15 on this machine. Likely is the median and the limit the 85th percentile: 1h56m and 4h21m from start to merge, 2h02m and 3h52m from one start to the next.
+         want=+1h56m, by +4h22m after its start
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/only_backlog_rows_print_no_basis_line
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/only_the_start_gaps_are_too_few
+=== CONT  TestTheSpecQueueTableRendersTimesAndDurations/not_enough_history
+=== NAME  TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment
+    follow_up_status_queue_test.go:582: got:
+=== NAME  TestTheSpecQueueTableRendersTimesAndDurations/only_the_start_gaps_are_too_few
+    follow_up_status_queue_test.go:596: table=Spec queue: 1
+          #  Spec  Status                Start (-03)        End (-03)                          Note
+          1  0001  not queued 0/0 Tasks  next in the queue  +1h56m, by +4h21m after its start  -
+        Forecast basis: 109 Specs delivered from 10-17 to 11-15 on this machine. Likely is the median and the limit the 85th percentile: 1h56m and 4h21m from start to merge.
+=== NAME  TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment
+        Spec queue: 4
+          #  Spec  Status                Start (-03)                   End (-03)                          Note
+          1  0397  running 0/5 Tasks     11-16 08:30                   ~11-16 11:59, by 11-16 14:12       -
+          2  0398  not queued 0/4 Tasks  ~11-16 11:20, by 11-16 15:02  ~11-16 14:07, by 11-16 19:40       -
+          3  0399  authoring: prd        after its plan is merged      +1h56m, by +4h21m after its start  prd since 11-16 09:55
+          4  -     not yet a Spec        -                             -                                  A report of late items; waits on the maintainer since 2026-11-11
+        Forecast basis: 109 Specs delivered from 10-17 to 11-15 on this machine. Likely is the median and the limit the 85th percentile: 1h56m and 4h21m from start to merge, 2h02m and 3h52m from one start to the next.
+        
+        want:
+        Spec queue: 4
+          #  Spec  Status                Start (-03)                   End (-03)                          Note
+          1  0397  running 0/5 Tasks     11-16 08:30                   ~11-16 11:59, by 11-16 14:13       -
+          2  0398  not queued 0/4 Tasks  ~11-16 11:20, by 11-16 15:03  ~11-16 14:07, by 11-16 19:41       -
+          3  0399  authoring: prd        after its plan is merged      +1h56m, by +4h22m after its start  prd since 11-16 09:55
+          4  -     not yet a Spec        -                             -                                  A report of late items; waits on the maintainer since 2026-11-11
+        Forecast basis: 109 Specs delivered from 10-17 to 11-15 on this machine. Likely is the median and the limit the 85th percentile: 1h56m and 4h22m from start to merge, 2h02m and 3h53m from one start to the next.
+--- FAIL: TestTheSpecQueueTableRendersTimesAndDurations (0.00s)
+    --- PASS: TestTheSpecQueueTableRendersTimesAndDurations/no_row_prints_only_the_count (0.00s)
+    --- FAIL: TestTheSpecQueueTableRendersTimesAndDurations/ten_rows_align (0.00s)
+    --- FAIL: TestTheSpecQueueTableRendersTimesAndDurations/a_likely_value_is_cut_and_a_limit_is_rounded_up (0.00s)
+    --- PASS: TestTheSpecQueueTableRendersTimesAndDurations/only_backlog_rows_print_no_basis_line (0.00s)
+    --- PASS: TestTheSpecQueueTableRendersTimesAndDurations/not_enough_history (0.00s)
+    --- FAIL: TestTheSpecQueueTableRendersTimesAndDurations/only_the_start_gaps_are_too_few (0.00s)
+    --- FAIL: TestTheSpecQueueTableRendersTimesAndDurations/the_recorded_moment (0.00s)
+FAIL
+suiteguard: guard cost: measured 3198 paths; fingerprint took 168.242458ms before and 155.868708ms after
+FAIL	roundfix/internal/cli	0.799s
+FAIL
+
+stderr:
+
+exit: 1

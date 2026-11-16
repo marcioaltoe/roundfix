@@ -1,0 +1,8 @@
+diff --git a/internal/cli/cli.go b/internal/cli/cli.go
+index cc441303..23f5d41f 100644
+--- a/internal/cli/cli.go
++++ b/internal/cli/cli.go
+@@ -255,0 +256 @@ type commandDependencies struct {
++	followUpNow                     func() time.Time
+@@ -348,0 +350 @@ func defaultCommandDependencies() commandDependencies {
++		followUpNow:                     time.Now,

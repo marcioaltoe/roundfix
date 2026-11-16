@@ -1,0 +1,30 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0398-the-status-view-shows-the-spec-queue-with-forecasts-6ca5b1702436757a-ef5f4f6c-00c451ce/run_20261116T172851Z_74e658f9e0fd33d6/bin/roundfix follow-up --status
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q07-uuxa84q8/repo
+stdout:
+Status for repo in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q07-uuxa84q8/repo
+In progress: 0
+Pending Specs: 1
+  - 0002-export-the-ledger not queued 0/0 Tasks
+Spec queue: 3
+  #  Spec  Status                Start (UTC)               End (UTC)                     Note
+  1  0002  not queued 0/0 Tasks  after it is queued        not enough history (0 of 11)  -
+  2  0003  authoring             after its plan is merged  not enough history (0 of 11)  -
+  3  -     not yet a Spec        -                         -                             A table of late items; waits on the maintainer since 2026-11-18
+Forecast basis: not enough history, 0 of 11 delivered Specs.
+Next release: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: checked 0
+  git: checked 0
+  specs: unavailable: Task Graph manifest "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q07-uuxa84q8/repo/docs/specs/0002-export-the-ledger/_tasks.md": file does not exist; run the write-tasks workflow to create the Task Graph
+  release-plan: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+  backlog: checked 1
+  phase-record: unavailable: read phase record directory: open /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q07-uuxa84q8/home/.roundfix/phase-record: not a directory
+  delivery-history: checked 0
+
+stderr:
+
+exit: 0

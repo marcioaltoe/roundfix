@@ -1,0 +1,122 @@
+import runpy
+from pathlib import Path
+globals().update(runpy.run_path(str(Path(__file__).with_name('qa_runner.py.txt'))))
+BASE=command(['git','merge-base',HEAD,'origin/main']).stdout.strip()
+def norm(s):return ' '.join(re.sub(r'\[([^]]+)\]\([^)]+\)',r'\1',s).split())
+def gittext(rev,path):
+ p=command(['git','show',rev+':'+path]);assert p.returncode==0,p.stderr;return p.stdout
+def finish(row,items,filename):
+ (EV/filename).write_text('\n'.join(('PASS: ' if ok else 'FAIL: ')+name for name,ok in items)+'\n')
+ update(row,'pass' if all(ok for _,ok in items) else 'fail','Executed comparisons and bounded searches: [audit](evidence/qa-report-2026-11-16/'+filename+').')
+ for name,ok in items:print(('PASS: ' if ok else 'FAIL: ')+name,flush=True)
+def prescribed():
+ items=[]
+ guide=(ROOT/'docs/user-guide/commands/follow-up.md').read_text();mode=(ROOT/'.agents/skills/roundfix/references/modes.md').read_text();context=(ROOT/'CONTEXT.md').read_text()
+ section=guide.split('## Spec queue\n',1)[1].split('\n## ',1)[0]
+ for task,expected in [('task_02',3),('task_03',7)]:
+  quotes=re.findall(r'(?m)^\s*> (.+)$',(SPEC/(task+'.md')).read_text())
+  quotes=[q for q in quotes if not q.startswith('**') and not q.startswith('_Avoid_')]
+  items.append((task+' prescribed guide paragraphs: '+str(min(len(quotes),expected)),len(quotes)>=expected))
+  for i,q in enumerate(quotes,1):
+   target=section if i<=expected else (ROOT/'.agents/skills/roundfix/references/follow-up.md').read_text()
+   items.append((task+' prescribed paragraph '+str(i)+' exact normalized match in its designated document',norm(q) in norm(target)))
+ for sentence in ['Each queue row carries these JSON fields:','Each forecast cell carries these JSON fields:','The forecast basis carries these JSON fields:','Each measure of the basis carries these JSON fields:','The status report carries these JSON fields:']:
+  items.append((sentence,sentence in guide))
+ examples=re.findall(r'```json\n(.*?)```',guide,re.S);docs=[]
+ for ex in examples:
+  try:docs.append(json.loads(ex))
+  except json.JSONDecodeError:pass
+ items.append(('status JSON example contains queue and forecast_basis',any('queue' in d and 'forecast_basis' in d for d in docs)))
+ required=['Use `--status` to show work in progress, pending Specs, the Spec queue with its forecasts, the next release and what waits on the maintainer.','It never reads or writes the Secondbrain or calls ai-memory, and it reads no file of another checkout: for the Spec queue, the status view asks other directories only for their `origin` remote.','The status view reads the open Backlog Entries for the Spec queue, a waiting one included; it reads no Finding and no inbox note, and prints no waiting count.']
+ for text in required:items.append(('Replacement: '+text,norm(text) in norm(guide)))
+ for old in ['The status view reads no Backlog Entry or Finding and prints no waiting count.','The status view reads only']:
+  items.append(('No obsolete guide phrase: '+old,old not in guide))
+ for rel in ['follow-up.md','modes.md']:
+  a=(ROOT/'.agents/skills/roundfix/references'/rel).read_bytes();b=(ROOT/'skills/roundfix/references'/rel).read_bytes();items.append((rel+' canonical and embedded copies match',a==b))
+ oldmode=gittext(BASE,'.agents/skills/roundfix/references/modes.md');oldstatus=oldmode.split('## --status\n',1)[1].split('\n## ',1)[0];newstatus=mode.split('## --status\n',1)[1].split('\n## ',1)[0]
+ items.append(('Delivery Base status paragraph preserved byte for byte',oldstatus.strip() in newstatus))
+ for rel in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+  clean=lambda s:re.sub(r'(?m)^(\s*)version: .*$',r'\1version: VERSION',s)
+  items.append((rel+' differs only in two version fields',clean(gittext(BASE,rel))==clean((ROOT/rel).read_text())))
+ t4=(SPEC/'task_04.md').read_text();quotes=re.findall(r'(?m)^\s*> (.+)$',t4)
+ for q in quotes:
+  target=mode if q.startswith('When `queue`') else context if q.startswith(('**Spec Queue','**Queue Forecast','**Forecast Basis','The table','The two times','The delivered','_Avoid_')) else None
+  if target is not None:items.append(('task_04 prescribed text: '+q[:70],norm(q) in norm(target)))
+ for num in ['0353','0407']:
+  p=next((ROOT/'docs/adr').glob(num+'-*'));txt=p.read_text();items.append((num+' one amendment notice',txt.count('**Amended by [ADR-0410]')==1))
+  quote=next(q for q in quotes if q.startswith('**Amended by ADR-0410') and (('open Backlog' in q)==(num=='0353')))
+  items.append((num+' exact amendment paragraph',norm(quote) in norm(txt)))
+ for num in ['0409','0410']:
+  txt=next((ROOT/'docs/adr').glob(num+'-*')).read_text();items.append((num+' accepted',bool(re.search(r'^status: accepted$',txt,re.M))))
+ terms=['Spec Queue Table','Queue Forecast','Forecast Basis','Follow-up Command'];prd=(SPEC/'_prd.md').read_text()
+ for term in terms:items.append(('PRD declares '+term,('- changes: ' if term=='Follow-up Command' else '- adds: ')+'**'+term+'**' in prd))
+ old=gittext(BASE,'CONTEXT.md')
+ entries=lambda s:{m.group(1):m.group(0) for m in re.finditer(r'(?ms)^\*\*([^*]+)\*\*[: —].*?(?=^\*\*|\Z)',s)}
+ # Compare at Task boundary, avoiding any delimiter whitespace ambiguity by inspecting the actual diff.
+ diff=command(['git','diff','--unified=0',BASE,HEAD,'--','CONTEXT.md']).stdout
+ changes=[x for x in diff.splitlines() if x.startswith(('+','-')) and not x.startswith(('+++','---'))]
+ (EV/'Q11-glossary-diff.txt').write_text(diff)
+ added=re.findall(r'^\+\*\*([^*]+)\*\*',diff,re.M);removed=re.findall(r'^-\*\*([^*]+)\*\*',diff,re.M)
+ oldentries=entries(old);newentries=entries(context)
+ items.append(('Only three added glossary entries and revised Follow-up Command',set(newentries)-set(oldentries)==set(terms[:3]) and {k for k in oldentries if norm(oldentries[k])!=norm(newentries.get(k,''))}=={'Follow-up Command'}))
+ imports=[]
+ for p in (ROOT/'internal/queueforecast').glob('*.go'):
+  if p.name.endswith('_test.go'):continue
+  text=p.read_text();imports+=re.findall(r'^\s*"([^"]+)"',text,re.M)
+  items.append((str(p.relative_to(ROOT))+' no filesystem or real clock',not re.search(r'"(?:os|io/fs)"|time\.(Now|Since|Until)\s*\(',text)))
+ items.append(('Only standard imports: '+', '.join(imports),all('/' not in x and '.' not in x for x in imports)))
+ for rel in ['internal/cli/follow_up_status.go','internal/cli/follow_up_history.go','internal/cli/follow_up_queue.go']:
+  items.append((rel+' no time.Now',not re.search(r'time\.Now\s*\(',(ROOT/rel).read_text())))
+ for rel in ['internal/phaserecord/read.go','internal/cli/follow_up_history.go','internal/cli/follow_up_queue.go']:
+  text=(ROOT/rel).read_text();items.append((rel+' no filesystem mutation calls',not re.search(r'\b(?:os|ioutil)\.(?:Create|CreateTemp|WriteFile|Mkdir|MkdirAll|Remove|RemoveAll|Rename|OpenFile|Chmod|Chown)\s*\(',text)))
+ d=command(['git','diff','--unified=0',BASE,HEAD,'--','internal/cli/cli.go']).stdout;(EV/'Q11-command-dependencies.txt').write_text(d)
+ additions=[x[1:] for x in d.splitlines() if x.startswith('+') and not x.startswith('+++')]
+ items.append(('Command dependencies gained only followUpNow',len(additions)==2 and all('followUpNow' in x for x in additions)))
+ fixture=json.loads((ROOT/'internal/queueforecast/testdata/delivery-history.json').read_text());items.append(('109 replay objects with exactly four keys',len(fixture)==109 and all(set(x)=={'spec','plan','start','end'} for x in fixture)))
+ # Search prescribed reference phrases from Task 03 and Task 04, corroborated by freshly passing named skills tests.
+ for rel in ['.agents/skills/roundfix/references/follow-up.md','skills/roundfix/references/follow-up.md']:
+  txt=(ROOT/rel).read_text()
+  for phrase in ['## Spec queue','Relay the cells as the command gives them: compute no forecast, adjust none, and turn no condition into a time.','Each queue row carries these JSON fields:','Each forecast cell carries these JSON fields:','The forecast basis carries these JSON fields:','Each measure of the basis carries these JSON fields:']:
+   items.append((rel+': '+phrase,norm(phrase) in norm(txt)))
+ finish('Q11',items,'Q11-search-audit.txt')
+
+def scope():
+ commits=command(['git','rev-list','--reverse',BASE+'..'+HEAD]).stdout.split();items=[];logs=[];allpaths=[]
+ for commit in commits:
+  paths=command(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).stdout.splitlines()
+  tasks=[x for x in paths if x.startswith(str(SPEC.relative_to(ROOT))+'/task_')]
+  assert len(tasks)==1,(commit,tasks)
+  task=tasks[0];text=(ROOT/task).read_text();section=text.split('## Context\n',1)[1].split('\n## ',1)[0]
+  allowed=set(re.findall(r'^- (?:creates|interface): `([^`]+)`',section,re.M));allowed.add(task)
+  if '## Recorded paths\n' in text:allowed.update(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths\n',1)[1],re.M))
+  extra=set(paths)-allowed;items.append((commit[:8]+' '+Path(task).stem+' changed paths declared or Recorded paths',not extra))
+  logs.append(commit+' '+task+'\n'+'\n'.join(('DECLARED ' if p in allowed else 'UNDECLARED ')+p for p in paths));allpaths.extend(paths)
+ allpaths=sorted(set(allpaths));auth=(SPEC/'_authorization.md').read_text().split('paths:\n',1)[1].split('operations:',1)[0];granted=set(re.findall(r'^  - (.+)$',auth,re.M))
+ helper=ROOT/'bin/qa-scope';helper.mkdir(exist_ok=True)
+ code='''package main
+import("encoding/json";"os";"roundfix/internal/speccheck")
+func main(){out:=map[string]bool{};for _,p:=range os.Args[1:]{out[p]=speccheck.GovernedPath(p)};if err:=json.NewEncoder(os.Stdout).Encode(out);err!=nil{panic(err)}}
+'''
+ (EV/'scope_probe.go.txt').write_text(code);(helper/'main.go').write_text(code)
+ ok,_,_=run('Q15','probe-build',['go','build','-buildvcs=false','-o','bin/qa-scope/probe','./bin/qa-scope']);assert ok
+ ok,_,p=run('Q15','governed-paths',[str(helper/'probe')]+allpaths);assert ok
+ governed=json.loads(p.stdout);bound=[p for p,g in governed.items() if g];items.append(('Every changed Governed Path authorized: '+', '.join(bound),set(bound)<=granted))
+ forbidden=[]
+ exact=['Makefile','go.mod','go.sum','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json','internal/cli/cli_test.go','.roundfixrc.yml']
+ for p in allpaths:
+  bad=p in exact or p.startswith(('.github/workflows/','internal/baseline/','docs/agents/'))
+  bad |= p.startswith('docs/user-guide/') and p!='docs/user-guide/commands/follow-up.md'
+  bad |= p.startswith('docs/adr/') and not p.startswith(('docs/adr/0353-','docs/adr/0407-'))
+  bad |= p.startswith('internal/phaserecord/') and p not in ['internal/phaserecord/read.go','internal/phaserecord/read_test.go']
+  if p.startswith(('.agents/skills/','skills/roundfix/')):
+   bad |= p not in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md','.agents/skills/roundfix/references/follow-up.md','.agents/skills/roundfix/references/modes.md','skills/roundfix/references/follow-up.md','skills/roundfix/references/modes.md']
+  if bad:forbidden.append(p)
+ items.append(('No prohibited path changed: '+repr(forbidden),not forbidden))
+ getsettle=lambda s:re.findall(r'(?ms)^### QA settlement\n.*?(?=^###? |\Z)',s)
+ for p in allpaths:
+  if p.endswith('.md') and command(['git','cat-file','-e',BASE+':'+p]).returncode==0:
+   items.append((p+' QA settlement unchanged',getsettle(gittext(BASE,p))==getsettle((ROOT/p).read_text())))
+ (EV/'Q15-task-paths.txt').write_text('\n\n'.join(logs)+'\n')
+ finish('Q15',items,'Q15-scope-audit.txt')
+if sys.argv[1]=='text':prescribed()
+elif sys.argv[1]=='scope':scope()

@@ -1,0 +1,2 @@
+PASS
+Expected exit 2, empty stdout and documented diagnostic: --messages applies only to the follow-up list; drop it with --status

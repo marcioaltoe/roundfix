@@ -1,0 +1,10 @@
+FAIL
+--- TechSpec
++++ binary
+@@ -1,4 +1,4 @@
+-Status for repo in /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q06-r981xo8l/repo
++Status for repo in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q06-r981xo8l/repo
+ In progress: 0
+ Pending Specs: 1
+   - 0002-export-the-ledger not queued 0/0 Tasks
+
