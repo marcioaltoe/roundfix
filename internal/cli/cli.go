@@ -56,6 +56,7 @@ Usage:
   roundfix implement --spec <slug>
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
+  roundfix phase start <phase> [--spec <slug>]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -115,6 +116,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   deliver    Advance an ordered queue of Specs from Run to merge
   follow-up  List pending work in priority order, or show status
+  phase      Record the Supervisor Phase a session starts
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending
@@ -249,6 +251,7 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	phaseNow                        func() time.Time
 	followUpGHRunner                preflight.GHRunner
 	getenv                          func(string) string
 	environ                         func() []string
@@ -328,7 +331,8 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
-		getenv: os.Getenv,
+		phaseNow: time.Now,
+		getenv:   os.Getenv,
 		userSkillDirectories: func(home string) []roundskills.UserSkillDirectory {
 			return roundskills.UserSkillDirectories(home, os.Getenv)
 		},
@@ -634,6 +638,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "phase":
+		return runPhaseCommand(ctx, args[1:], stdout, stderr, environment)
 	case "follow-up":
 		return runFollowUpCommand(ctx, args[1:], stdout, stderr, environment)
 	case "deliver":
@@ -5593,6 +5599,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "phase":
+		return phaseUsage
 	case "follow-up":
 		return followUpUsage
 	case "deliver":

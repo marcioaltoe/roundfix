@@ -978,6 +978,22 @@ _Avoid_: Authoring agent, writer agent, phase agent
 The subagent that installation generates from the `research` entry of the Authoring Model Declaration, `roundfix-researcher`. It reads the codebase, the knowledge base and the web for an Authoring Phase and returns conclusions with their sources. Its tool list holds no shell and no file-writing tool: three tools that read the checkout, and only the web and MCP tools the repository lists ([ADR-0402](docs/adr/0402-the-research-subagent-reads-and-never-runs-a-command-or-writes-a-file.md)).
 _Avoid_: Researcher agent, read-only agent, sweep agent
 
+**Phase Record**:
+The append-only record under Roundfix Home, in the directory `phase-record`, of which Spec and Supervisor Phase each Supervisor session works on and which Work Item each prompt of a Run or of a pre-PR review served. It is a set of day files named by the UTC date, one JSON object per line under the schema `roundfix/phase-record/v1`. An entry holds identifiers and times, never prompt text, a token count, a price or an environment value; no line is rewritten, and the Run Retention Sweep removes a day file older than its cutoff ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Usage log, phase marker, session journal
+
+**Supervisor Phase**:
+One of the seven phases of a Supervisor's work that the Phase Record names: `follow-up`, the four Authoring Phases `idea`, `prd`, `techspec` and `tasks`, `delivery` and `release`. `roundfix phase start <phase>` records that the session that runs it starts one, with the Spec that `--spec` names; every phase but `follow-up` and `release` requires a Spec ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Stage, work mode, session type
+
+**Phase Boundary**:
+The point that follows each Authoring Phase and the delivery and release of a Spec. There the Supervisor writes the Session Handoff, tells the user what stays armed and starts no further phase in the session, and the next session starts with the follow-up Skill Mode; an Author Subagent ends no session and returns its report. Roundfix cannot end a session, so the boundary is an instruction that the Boundary Notice recalls ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Session limit, checkpoint, compaction point
+
+**Boundary Notice**:
+The one line `roundfix phase start` prints on standard error when the same session, in the last seven days of the Phase Record, last recorded a different Supervisor Phase or Spec. It names the earlier phase and Spec and marks the new entry. An earlier `follow-up`, `delivery` followed by `release` of the same Spec, and the same phase of the same Spec recorded again print none. It refuses nothing: standard output and the exit code are those of the command without it ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Boundary error, session warning, phase refusal
+
 **Missing Required Skill**:
 An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).
 _Avoid_: Uninstalled skill, absent skill, dispatched skill gap

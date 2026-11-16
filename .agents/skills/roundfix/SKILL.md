@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.240
+  version: 0.1.241
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.240
+version: 0.1.241
 ---
 
 # Roundfix
@@ -80,6 +80,7 @@ covers a topic that spans commands and owns none.
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
 | [implement](references/implement.md) | `implement` | Starting a Spec Run. |
 | [modes](references/modes.md) | — (the `--follow-up`, `--status`, `--unattended` and `--update` Skill Modes; each command they run lives in its own reference) | Running a Skill Mode. |
+| [phase](references/phase.md) | `phase` | Recording the phase a session starts. |
 | [profiles](references/profiles.md) | `profiles` | Selecting an Agent or managing Agent Selection Profiles. |
 | [reconcile](references/reconcile.md) | `reconcile` | Reconciling Run Worktrees. |
 | [release](references/release.md) | `release` | Planning a release. |

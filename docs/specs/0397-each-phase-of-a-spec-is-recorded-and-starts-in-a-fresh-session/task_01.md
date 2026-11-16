@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -288,3 +288,126 @@ four glossary terms describe it.
 - `_prd.md` → User Stories 1, 2 and 6; Core Features 1, 2, 3 and 13; Success Metrics 1, 2 and 3; Glossary
 - `_techspec.md` → Current behavior; Interfaces; Data Models; API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Surface Transcript 5; Invariants 1, 2, 4 and 5; Declared breaks; Testing Approach; Build Order 1
 - ADR-0407
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, domain-modeling, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented the phase-only store and `phase start` command, with an injected
+clock and command-environment session lookup. Prompt writing and retention
+remain outside this slice. The initial checkout had only this Task file's
+Daemon-owned status change; it is preserved.
+
+### Acceptance evidence
+
+1. The store appends one JSON line in one write to the UTC day file using
+   private creation modes. The declared keys stay ordered, empty strings stay
+   present, and boundary-only keys are conditional. Focused tests cover all
+   seven phases through CLI dispatch, exact whole lines, both creation modes
+   on platforms that preserve them, embedded newlines and quotes, and the
+   1,024-byte limit including a multibyte rune cut.
+2. The boundary tests exercise every named case: another phase or Spec,
+   earlier follow-up, delivery then release of the same Spec, no Spec or
+   another Spec, a repeated phase, another session, no session, six- and
+   eight-day history, and selection by the latest recorded time. The CLI
+   transcript check asserts the notice, unchanged result line and exit `0`;
+   an additional CLI check covers an earlier entry without a Spec. Another
+   store test skips malformed lines larger than 1 MiB, a prompt entry, an
+   invalid time, another session and a file without a date name.
+3. Surface Transcripts 1–5 match stdout, stderr and exit status exactly;
+   transcripts 2–4 also assert the entire appended line. All refusal fixtures
+   leave even `.roundfix` absent. The obstructing-file fixture exits `1`
+   without changing the obstruction. Malformed Project Config and User
+   Config at their actual paths do not stop recording; a nested working
+   directory records its repository root. Tests supply session identity and
+   clock through the existing command-dependency seams and use temporary
+   homes and repositories.
+4. Added the command guide and command-index row, the usage guide's Phase
+   Record section, both skill-reference copies and its index row, and both
+   sorted Skill Coverage Map entries. The required recorders generated skill
+   version `0.1.241` from `0.1.240` and the Behavior Surface Record after the
+   last guide edit. The skill trees are byte-identical; the entry file is
+   19,974 bytes against its 20,000-byte budget. Focused skill, command-guide,
+   link and glossary contracts passed.
+5. Added exactly the four prescribed glossary entries immediately after
+   Research Subagent, each with its Avoid line and accepted ADR-0407 link.
+   Focused glossary contracts passed.
+
+### Focused checks and regeneration
+
+- Red starting signal: `go test ./internal/phaserecord -run '^TestParsePhaseKnowsTheSevenPhases$/prd$'`
+  failed because the package had no non-test Go files before implementation.
+- `go test ./internal/phaserecord -run 'Test(APhaseEntry|StartPhase|ParsePhase)' -count=1`:
+  exit `0` after adding the store.
+- `go test ./internal/cli -run '^TestPhaseStart' -count=1`: exit `0`.
+- `go test ./internal/phaserecord ./internal/cli -run 'Test(APhaseEntry|StartPhase|ParsePhase|PhaseStart|PhaseBoundary|EveryCommandPathPrintsItsHelp)' -count=1`:
+  exit `0`, including discovery of `phase` and `phase start` with both help flags.
+- `go test ./internal/phaserecord ./internal/cli -run 'Test(APhaseEntry|StartPhase|ParsePhase|PhaseStart|PhaseBoundary)' -count=1`:
+  exit `0` after the additional malformed-history and absent-earlier-Spec cases.
+- `go test ./internal/cli -run '^TestPhaseStartLoadsNoConfiguration$' -count=1`:
+  exit `0` after placing malformed User Config at `.roundfix/config.yml`.
+- `make skills-sync`: exit `0`; run again after version recording.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`:
+  exit `0`; raised both version fields and appended the generated digest.
+- `go test ./skills -run 'Test(ThePhaseReference|RoundfixSkillIndexNamesEveryReference|RoundfixSkillEntryFileStaysWithinItsBudget)' -count=1`:
+  exit `0`.
+- `go test -tags docscontract ./internal/docscontract -run 'Test(EveryCommandIsNamedInTheUserGuide|UserGuideLinksResolve|CommandIndexNamesEveryCommandFile|CommandReferenceLinksResolve|EveryCommandIsNamedInTheRoundfixSkill|Glossary)' -count=1`:
+  exit `0`.
+- Windows test compilation: `GOOS=windows go test -c -o /tmp/roundfix-0397-phaserecord.test.exe ./internal/phaserecord`,
+  `GOOS=windows go test -c -o /tmp/roundfix-0397-cli.test.exe ./internal/cli`,
+  and `GOOS=windows go test -c -o /tmp/roundfix-0397-skills.test.exe ./skills`:
+  each exited `0`; the CLI compilation was refreshed after its final fixture edit.
+  These are compile checks, not Windows runtime evidence.
+- Final implementation regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  exit `0`, adding the phase command and guide and refreshing both edited
+  guide fingerprints.
+- `git diff --check` and `gofmt -l` on the changed Go files: no diagnostics.
+  Changed-file postflight found 19 paths, all declared by task_01; no Baseline,
+  configuration, Daemon, other skill, other Task or Task Graph file changed.
+
+The sandbox rejected the logical writable root because it contains a symlink;
+commands ran with approved elevated execution from the physical checkout.
+No declared Verification command, repository Verification, commit, push or PR
+operation was run. Status and settlement remain with the Daemon.
+
+### Verification Feedback — attempt 1
+
+The Daemon's `make verify-changed` diagnostic identified
+`TestRegenerationIsDeclared` as the failing contract. Its repository-copy
+fixture removed the active Specs but retained the live backlog entry that
+cited a reference under Spec 0397. The declared Baseline update reconciled
+that newly dangling citation, producing an undeclared backlog change inside
+the temporary fixture. An overlay probe reproduced the failure and confirmed
+the citation rewrite without editing repository files.
+
+Repaired the fixture in `internal/config/regeneration_declared_test.go` so
+that replacing the host's Specs with synthetic archived history also removes
+the copied live backlog. The actual backlog, production commands, configuration
+and declared regeneration commands are unchanged. The contract still checks
+all regenerated changes and its three declaration ablations; a new
+`an_undeclared_backlog_write_is_refused` subtest explicitly proves that an
+undeclared backlog write is still rejected. The existing unsanctioned
+coverage-write refusal remains in place.
+
+Focused evidence after the repair:
+
+- `go test -tags docscontract ./internal/config -run '^TestRegenerationIsDeclared$' -count=1 -v`:
+  exit `0`; the root test and all five named subtests passed.
+- `GOOS=windows go test -tags docscontract -c -o /tmp/roundfix-0397-config.test.exe ./internal/config`:
+  exit `0`; compilation evidence only.
+- `git diff --check` and `gofmt -l internal/config/regeneration_declared_test.go`:
+  no diagnostics.
+
+The additional ordinary test path above repairs the repository contract
+fixture exposed by this Task's Verification. It adds no governed mutation;
+the original implementation and generated records stay unchanged. The Agent
+did not rerun `make verify-changed` or the Task's declared Verification, did
+not change Task status, and performed no commit, push or PR operation. The
+Daemon owns the full Verification retry and settlement.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/config/regeneration_declared_test.go`

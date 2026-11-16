@@ -445,6 +445,17 @@
       ]
     },
     {
+      "id": "command phase start",
+      "skills": [
+        ".agents/skills/roundfix/references/phase.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/phase.md",
+        "internal/cli/phase.go",
+        "internal/phaserecord/"
+      ]
+    },
+    {
       "id": "command profiles check",
       "skills": [
         ".agents/skills/roundfix/references/profiles.md"
@@ -1007,6 +1018,15 @@
       ],
       "sources": [
         "docs/user-guide/commands/migrate.md"
+      ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/phase.md",
+      "skills": [
+        ".agents/skills/roundfix/references/phase.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/phase.md"
       ]
     },
     {
