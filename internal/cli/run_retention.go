@@ -116,13 +116,19 @@ func sweepRunDatabase(ctx context.Context, runStore *store.Store, loaded roundco
 			addRunRetentionRows(&report.rows, rows)
 		}
 	}
-	report.phaseRecordDayFiles, err = phaserecord.New(loaded.HomeDir, deps.now).RemoveBefore(ctx, report.cutoff, opts.dryRun)
-	if err != nil {
-		return report, err
-	}
+	// A Phase Record failure is reported after the rest of the sweep ran, so it
+	// never stops the compaction or the sweep record that follow Run removal.
+	var phaseErr error
+	report.phaseRecordDayFiles, phaseErr = phaserecord.New(loaded.HomeDir, deps.now).RemoveBefore(ctx, report.cutoff, opts.dryRun)
 	if opts.dryRun {
-		return report, nil
+		return report, phaseErr
 	}
+	report, err = finishRunRetention(ctx, runStore, report, opts, expired)
+	return report, errors.Join(err, phaseErr)
+}
+
+func finishRunRetention(ctx context.Context, runStore *store.Store, report runRetentionReport, opts runRetentionOptions, expired func() bool) (runRetentionReport, error) {
+	deps := commandDependenciesForContext(ctx).gc
 	_, freePages, mode, err := runStore.RunRetentionStorage(ctx)
 	if err != nil {
 		return report, err

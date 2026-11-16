@@ -149,6 +149,13 @@ func (r *Recorder) boundary(ctx context.Context, now time.Time, entry phaseLine)
 	return Boundary{Crossed: true, PreviousPhase: Phase(bounded(string(latest.Phase))), PreviousSpec: bounded(latest.Spec)}, nil
 }
 
+// maxLineBytes bounds one line read back from a day file. A written entry holds
+// at most eight strings of 1,024 bytes, which JSON escaping can grow sixfold, so a
+// longer line is not an entry: it is discarded in buffer-sized pieces and the
+// lines after it are still read.
+const maxLineBytes = 64 << 10
+
+// readDay passes each line to visit, which must not keep the slice.
 func readDay(ctx context.Context, path string, visit func([]byte)) (err error) {
 	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -158,13 +165,20 @@ func readDay(ctx context.Context, path string, visit func([]byte)) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, file.Close()) }()
-	reader := bufio.NewReader(file)
+	reader := bufio.NewReaderSize(file, maxLineBytes)
+	oversized := false
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		line, err := reader.ReadBytes('\n')
-		if len(line) > 0 {
+		line, err := reader.ReadSlice('\n')
+		switch {
+		case errors.Is(err, bufio.ErrBufferFull):
+			oversized = true
+			continue
+		case oversized:
+			oversized = false
+		case len(line) > 0:
 			visit(line)
 		}
 		if errors.Is(err, io.EOF) {

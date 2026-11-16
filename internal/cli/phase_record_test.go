@@ -423,6 +423,13 @@ func TestAPhaseRecordRetentionFailureDoesNotKeepEligibleRuns(t *testing.T) {
 			t.Fatalf("protected Run %s removed: %v", kept.ID, err)
 		}
 	}
+	// The rest of the Run sweep still runs: compaction, the sweep record and the final size.
+	if sweep, found, err := s.LastRunRetentionSweep(t.Context()); err != nil || !found || sweep.RetentionDays != report.retentionDays {
+		t.Fatalf("Run Retention sweep not recorded after a Phase Record failure: %+v found=%v err=%v", sweep, found, err)
+	}
+	if report.compaction == "not needed" || report.bytesAfter == 0 {
+		t.Fatalf("Run Retention stopped at the Phase Record failure: %+v", report)
+	}
 }
 
 func TestTheSealedConventionCheckLeavesNoPromptEntry(t *testing.T) {

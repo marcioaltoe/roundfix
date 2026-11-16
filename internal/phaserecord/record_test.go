@@ -263,3 +263,30 @@ func TestStartPhaseSkipsUnrelatedAndMalformedHistory(t *testing.T) {
 		t.Fatalf("written = %s", lines[len(lines)-1])
 	}
 }
+
+// Not parallel: it measures the bytes allocated while reading a day file.
+func TestStartPhaseReadsAnOversizedLineWithoutBufferingIt(t *testing.T) {
+	home := t.TempDir()
+	directory := filepath.Join(home, ".roundfix", "phase-record")
+	if err := os.MkdirAll(directory, 0700); err != nil {
+		t.Fatal(err)
+	}
+	valid := `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-21T01:00:00Z","phase":"prd","spec":"0412-example","repository":"/repo","harness":"claude","session":"session","boundary":false}`
+	oversized := strings.Repeat("x", 32<<20)
+	data := oversized + "\n" + valid + "\n" + oversized
+	if err := os.WriteFile(filepath.Join(directory, fixedTime.UTC().Format("2006-01-02")+".jsonl"), []byte(data), 0600); err != nil {
+		t.Fatal(err)
+	}
+	data, oversized = "", ""
+	runtime.GC()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	boundary, err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: "techspec", Spec: "0412-example", Session: "session"})
+	runtime.ReadMemStats(&after)
+	if err != nil || boundary != (phaserecord.Boundary{Crossed: true, PreviousPhase: "prd", PreviousSpec: "0412-example"}) {
+		t.Fatalf("the entry after an oversized line was not read: %+v, %v", boundary, err)
+	}
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 4<<20 {
+		t.Fatalf("reading the day file allocated %d bytes; an oversized line was buffered", allocated)
+	}
+}
