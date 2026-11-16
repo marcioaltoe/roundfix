@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-16
-spec: null
+spec: 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
 reason: null
 ---
 
