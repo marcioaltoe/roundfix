@@ -29,6 +29,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	roundnotify "roundfix/internal/notify"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/reviewsource/coderabbit"
@@ -3173,7 +3174,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+	engine, err := newResolveEngine(loaded.HomeDir, collaborators, runStore, ui, writeGuard)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -3213,18 +3214,19 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
-func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
+func newResolveEngine(homeDir string, collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
 	return daemon.NewEngine(daemon.Dependencies{
-		Runner:     collaborators.runner,
-		Verifier:   collaborators.verifier,
-		Committer:  collaborators.committer,
-		Pusher:     collaborators.pusher,
-		Source:     collaborators.source,
-		Runs:       runStore,
-		WriteGuard: writeGuard,
-		Worktree:   collaborators.worktree,
-		Sink:       ui.sink,
-		Progress:   ui.progress,
+		PhaseRecord: phaserecord.New(homeDir, time.Now),
+		Runner:      collaborators.runner,
+		Verifier:    collaborators.verifier,
+		Committer:   collaborators.committer,
+		Pusher:      collaborators.pusher,
+		Source:      collaborators.source,
+		Runs:        runStore,
+		WriteGuard:  writeGuard,
+		Worktree:    collaborators.worktree,
+		Sink:        ui.sink,
+		Progress:    ui.progress,
 	})
 }
 
@@ -3412,7 +3414,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+			engine, err := newResolveEngine(loaded.HomeDir, collaborators, runStore, ui, writeGuard)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
@@ -5399,6 +5401,7 @@ then removes their run artifact directories and orphaned runs/<id> directories
 under the resolved run artifact root. Journal Retention never deletes Run rows or Active Run locks.
 GC then removes terminal Runs past Run Retention, including their dependent
 rows, and compacts the Run Database.
+It also removes Phase Record day files older than the Run Retention cutoff.
 It never removes Review artifacts outside the run artifact root.
 
 The sanitize subcommand discovers every recorded Artifact Root from the

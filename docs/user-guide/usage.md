@@ -901,6 +901,8 @@ A phase entry holds these fields, in this order:
 | `previous_phase` | Earlier phase; present only when `boundary` is true |
 | `previous_spec` | Earlier Spec; present only when `boundary` is true |
 
+The Daemon writes a prompt entry when a prompt of an Agent Session ends, and `roundfix review` after each prompt of a pre-PR review. A prompt that never returns leaves no entry. A failed write of a prompt entry prints one warning and changes no Task, Run, review or exit code.
+
 A prompt entry has this format, in this order:
 
 | Field | Value |
@@ -944,6 +946,8 @@ roundfix: notice: this session already recorded <phase> of <spec>; at a phase bo
 
 ` of <spec>` is omitted when the earlier entry names no Spec. The notice
 refuses nothing: standard output and the exit code stay as they are.
+
+Run Retention removes each day file dated before its cutoff, and a file whose name is not a date is left alone.
 
 The record is the contract an outside reader uses: Roundfix reads no harness transcript, prices no token and reports no limit percentage.
 

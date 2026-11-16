@@ -214,7 +214,7 @@ func TestGCDryRunReportsRunRetention(t *testing.T) {
 	counts := gcRetentionRows(t, f.home, gcRetentionTables, f.removed.ID)
 	before := gcRetentionFileSnapshot(t, filepath.Join(f.home, ".roundfix"))
 	output := runGCRetentionCLI(t, true)
-	assertGCRetentionContains(t, output, "GC dry-run", "Run Retention: 30 days", "Run Retention cutoff: "+f.now.Add(-30*24*time.Hour).Format(time.RFC3339), "Runs removable: 1", "Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)", fmt.Sprintf("Rows removable: runs=1 run_events=%d run_agent_selections=%d run_token_usage=%d active_run_locks=1", len(counts["run_events"]), len(counts["run_agent_selections"]), len(counts["run_token_usage"])), "Removable Runs:\n    "+f.removed.ID)
+	assertGCRetentionContains(t, output, "GC dry-run", "Run Retention: 30 days", "Run Retention cutoff: "+f.now.Add(-30*24*time.Hour).Format(time.RFC3339), "Runs removable: 1\n  Phase Record day files removable: 0", "Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)", fmt.Sprintf("Rows removable: runs=1 run_events=%d run_agent_selections=%d run_token_usage=%d active_run_locks=1", len(counts["run_events"]), len(counts["run_agent_selections"]), len(counts["run_token_usage"])), "Removable Runs:\n    "+f.removed.ID)
 	if gcReportInt64(t, output, "Database bytes reclaimable (estimated)") <= 0 {
 		t.Fatal("no byte estimate")
 	}
@@ -244,7 +244,7 @@ func TestGCRemovesRunsPastRunRetention(t *testing.T) {
 	other := gcRetentionRows(t, f.home, gcRetentionOtherTables, "")
 	counts := gcRetentionRows(t, f.home, gcRetentionTables, f.removed.ID)
 	output := runGCRetentionCLI(t, false)
-	assertGCRetentionContains(t, output, "GC complete", "Run Retention: 30 days", "Runs removed: 1", "Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)", fmt.Sprintf("Rows removed: runs=1 run_events=%d run_agent_selections=%d run_token_usage=%d active_run_locks=1", len(counts["run_events"]), len(counts["run_agent_selections"]), len(counts["run_token_usage"])), "Run artifact bytes reclaimed: 7", "Removed Runs:\n    "+f.removed.ID)
+	assertGCRetentionContains(t, output, "GC complete", "Run Retention: 30 days", "Runs removed: 1\n  Phase Record day files removed: 0", "Runs kept past the cutoff: 2 (queue-referenced 1, worktree present 1, artifact root unproven 0)", fmt.Sprintf("Rows removed: runs=1 run_events=%d run_agent_selections=%d run_token_usage=%d active_run_locks=1", len(counts["run_events"]), len(counts["run_agent_selections"]), len(counts["run_token_usage"])), "Run artifact bytes reclaimed: 7", "Removed Runs:\n    "+f.removed.ID)
 	for table, rows := range gcRetentionRows(t, f.home, gcRetentionTables, f.removed.ID) {
 		if len(rows) != 0 {
 			t.Fatalf("%s still holds removed Run", table)

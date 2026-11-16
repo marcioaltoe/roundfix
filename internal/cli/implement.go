@@ -22,6 +22,7 @@ import (
 	"roundfix/internal/lighttier"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/openrouterkey"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
@@ -562,7 +563,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	// The Spec's target branch comes off the Run record, not from git in the
 	// Run Worktree: the Run Worktree is checked out on the Run Branch.
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
+	cycleResult, err := executeImplementCycle(ctx, loadedConfig.HomeDir, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
 		cores:        verificationCoreBudget(ctx, loadedConfig.Config).Cores,
@@ -658,7 +659,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	pushResult := implementPushResult{}
 	if outcome == store.StateClean {
-		pushResult, err = maybeRunImplementAutoPush(postCycleCtx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
+		pushResult, err = maybeRunImplementAutoPush(postCycleCtx, loadedConfig.HomeDir, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, authorization, stderr)
 		if err != nil {
 			if implementRunBudgetExpired(cycleResult.BudgetDeadline, budgetNow) {
 				summaryPrinted = true
@@ -1032,7 +1033,7 @@ type implementCapacities struct {
 	cores        int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, machineVerification daemon.MachineVerificationGate, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, formatCommand string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, homeDir string, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, machineVerification daemon.MachineVerificationGate, now func() time.Time, runStartedAt time.Time, budget roundconfig.Budget, repositoryVerification string, formatCommand string, repositoryVerificationAtSettlement bool, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, authorization spec.AuthorizationResolution, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, lightPlan lighttier.Plan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -1043,9 +1044,10 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(runtime.ReasoningEffort))
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
-		Runner:    collaborators.runner,
-		Verifier:  collaborators.verifier,
-		Committer: collaborators.committer,
+		PhaseRecord: phaserecord.New(homeDir, commandDependenciesForContext(ctx).phaseNow),
+		Runner:      collaborators.runner,
+		Verifier:    collaborators.verifier,
+		Committer:   collaborators.committer,
 		// Pusher and Source only satisfy engine construction: the Task
 		// cycle never invokes them. The CLI performs the optional
 		// Clean-only spec push after the cycle settles (ADR 0021).
@@ -1104,7 +1106,7 @@ type implementPushResult struct {
 	branch string
 }
 
-func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState, config roundconfig.Config, collaborators engineCollaborators, runStore *store.Store, ui *runUI, runID string, authorization spec.AuthorizationResolution, stderr io.Writer) (implementPushResult, error) {
+func maybeRunImplementAutoPush(ctx context.Context, homeDir string, gitState preflight.GitState, config roundconfig.Config, collaborators engineCollaborators, runStore *store.Store, ui *runUI, runID string, authorization spec.AuthorizationResolution, stderr io.Writer) (implementPushResult, error) {
 	if !config.Implement.AutoPush {
 		return implementPushResult{}, nil
 	}
@@ -1128,15 +1130,16 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 		}
 	}
 	engine, err := daemon.NewEngine(daemon.Dependencies{
-		Runner:    collaborators.runner,
-		Verifier:  collaborators.verifier,
-		Committer: collaborators.committer,
-		Pusher:    collaborators.pusher,
-		Source:    collaborators.source,
-		Runs:      runStore,
-		Worktree:  collaborators.worktree,
-		Sink:      ui.sink,
-		Progress:  ui.progress,
+		PhaseRecord: phaserecord.New(homeDir, commandDependenciesForContext(ctx).phaseNow),
+		Runner:      collaborators.runner,
+		Verifier:    collaborators.verifier,
+		Committer:   collaborators.committer,
+		Pusher:      collaborators.pusher,
+		Source:      collaborators.source,
+		Runs:        runStore,
+		Worktree:    collaborators.worktree,
+		Sink:        ui.sink,
+		Progress:    ui.progress,
 	})
 	if err != nil {
 		return implementPushResult{}, err

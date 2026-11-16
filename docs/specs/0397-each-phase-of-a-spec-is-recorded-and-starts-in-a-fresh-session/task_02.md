@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -258,3 +258,37 @@ Roundfix skill's `storage` and `phase` references describe it.
 - `_prd.md` → User Story 3; Core Features 4, 5, 6, 7 and 13; Success Metrics 4 and 5; Skills
 - `_techspec.md` → Current behavior; Interfaces; Data Models; API Contract 4; API Contract 5; API Contract 6; Surface Transcript 8; Invariants 1, 2 and 3; Declared breaks; Testing Approach; Build Order 2
 - ADR-0407, ADR-0255
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, systematic-debugging, evidence-gate.
+
+The initial worktree held only the Daemon's `pending` → `in_progress` change in this Task file. The prompt store, recorder collaborator and retention count were absent. Task status, the Task Graph and other Task files were left untouched by this implementation.
+
+### Implementation and acceptance evidence
+
+1. Added `PromptEntry`, `RecordPrompt` and `RemoveBefore` to `internal/phaserecord`. Prompt entries keep the declared key order, UTC seconds, present empty string fields, UTF-8-safe 1,024-byte cuts, private creation modes and one appending write. Daemon entries use the recorded Run repository, the request's working directory/runtime, the owning scope and the adapter-reported session. The scope tests assert each whole entry for `task`, `qa`, `review` and `session`, through both runner dispatch paths. The CLI fixture leaves two entries for its two returned prompts. Review fixtures cover no Spec, one Spec, several Specs, segmented review and the plain runner; pre-prompt failures and the sealed convention check leave no extra entry.
+2. Recording runs independently of usage support or a rejected usage write, including a failed or stopped prompt and a canceled caller. The warning tests assert the exact warning once per prompt, unchanged returned results/errors, usage rows/events and Run state; the Task-cycle fixture retains its normal settlement. The review fixture compares the normal and unwritable-record results and persisted/stdout records, normalizing only the newly generated session name, and asserts the exact stderr warning. A nil recorder preserves usage and emits no warning. Usage retains the prompt-end timestamp rather than taking another clock reading after the advisory write.
+3. Wired all three production `daemon.Dependencies` literals with a recorder constructed from the command environment's home. The AST test scans every non-test CLI source and rejects a missing or explicit nil `PhaseRecord`.
+4. Retention counts/removes only date-named day files before the cutoff's UTC date, after the Run candidate loop. The count follows the Runs count in the report. The exact no-database dry-run transcript passes, keeps all three fixture files and creates no database; the same fixture also checks live removal. A record-directory failure is returned after eligible Runs have been removed, while protected Runs remain. Updated the existing retention assertions and Worktree Build Cache transcript for the new report line; the Run-start sweep line is unchanged.
+5. Added the specified GC, Run Database and usage guide text and the exact canonical `phase`/`storage` paragraphs. Inspection confirmed that every earlier reference sentence remains, both skill trees are byte-identical and exactly three Coverage Reviews carry this Task's prefix. `make skills-sync` and the sanctioned skill-version recorder exited 0; both Roundfix version fields in both copies moved from `0.1.241` to `0.1.242`. The final Behavior Surface recorder exited 0 after the source and guide edits; its generated changes cover GC and the three changed guides.
+
+### Focused checks
+
+- `go test ./internal/daemon ./internal/cli ./internal/phaserecord ./skills -run 'Test(EachPrompt|AFailedPhaseRecord|AFailedUsageWrite|ANilPrompt|APromptIsRecordedWithout|APromptEntry|RemoveBefore|EveryEngineTheCLI|AnImplementRunLeaves|TheReviewRecords|TheSealedConventionCheckLeaves|TheRunRetentionSweepRemovesPhase|GCCountsPhase|APhaseRecordRetentionFailure|GCDryRunReportsRunRetention|GCRemovesRunsPastRunRetention|RunDatabaseSweepStopsAtBudgetBoundaries|GCDryRunListsWorktreeBuildCaches|GCRemovesWorktreeBuildCaches|TheRoundfixSkillNamesThePrompt)' -count=1` — exit 0 in all four packages.
+- `go test ./internal/cli -run 'Test(TheReviewRecordsEachPromptInThePhaseRecord|TheSealedConventionCheckLeavesNoPromptEntry|ReviewRetries|ReviewNeverRetriesAfterSessionPromptWasSent|ReviewActivatesTheFallback)' -count=1` — exit 0 after the final review-writer change. A preceding targeted regression reproduced an unwanted entry for a plain runner's pre-prompt preparation failure; the recorder now uses the adapter's broader explicit `PromptSent` signal while the retry policy remains unchanged.
+- The focused usage/GC/help/skill-reference check also exercised `TestRunGCHelp`, `TestThePhaseReferenceDocumentsTheCommandAndTheRecord` and the existing usage-warning checks — exit 0.
+- `GOOS=windows go test -c -o /private/tmp/0397-phaserecord-windows.test.exe ./internal/phaserecord`, and equivalent commands for `daemon`, `cli` and `skills` with their matching output basenames — exit 0. CLI compilation was repeated after the final review change. No Windows binary was executed.
+- `make skills-sync` — exit 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — exit 0; used as the final regeneration after all source/guide edits and the Result update.
+- `git diff --check` and exact-text/mirror/Coverage Review inspection — clean.
+
+The declared Verification commands and repository Verification remain for the Daemon. No Agent harness was started; no commit, push or pull request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/worktree_build_cache_test.go`

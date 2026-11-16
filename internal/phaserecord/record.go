@@ -1,5 +1,5 @@
 // Package phaserecord appends the identifiers and times of Supervisor Phases
-// to private day files under Roundfix Home.
+// and Agent Session prompts to private day files under Roundfix Home.
 package phaserecord
 
 import (

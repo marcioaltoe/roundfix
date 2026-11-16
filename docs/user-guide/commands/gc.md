@@ -66,6 +66,17 @@ reports `Directories removed: 0` when nothing else became eligible.
 
 ## Run Retention
 
+Run Retention also removes each Phase Record day file whose date is before the cutoff's UTC date, with or without a Run Database, and leaves a file whose name is not a date alone.
+
+The day file count follows the line that counts the Runs, with the same indentation:
+
+```text
+Phase Record day files removed: <n>
+Phase Record day files removable: <n>
+```
+
+The second line is the dry run's.
+
 After the Journal Retention report, GC applies `store.run_retention_days` from
 User Config: `30` by default, with only `7`, `15` or `30` accepted. A Project
 Config value is ignored with a warning. Terminal Runs whose completion time is

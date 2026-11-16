@@ -100,6 +100,8 @@ and the Run's artifact directory under a proven root. Review artifacts under
 the Spec tree stay outside this sweep. Journal Retention remains the inner
 window; `journal_retention: 0` does not disable Run Retention.
 
+Run Retention also removes each Phase Record day file dated before its cutoff, in the same sweep and with or without a Run Database. The GC report's Run Retention section names the count as `Phase Record day files removed: <n>`, or `Phase Record day files removable: <n>` in a dry run.
+
 Active Runs, Runs named by any Delivery Queue item or Run link, Runs whose
 recorded Run Worktree exists, and Runs with an artifact directory under an
 unproven root are kept. Removal rechecks terminal state and queue references

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/store"
 )
 
@@ -19,6 +20,7 @@ type runRetentionOptions struct {
 }
 
 type runRetentionReport struct {
+	phaseRecordDayFiles                                          int
 	retentionDays                                                int
 	cutoff                                                       time.Time
 	runIDs                                                       []string
@@ -113,6 +115,10 @@ func sweepRunDatabase(ctx context.Context, runStore *store.Store, loaded roundco
 			report.runIDs = append(report.runIDs, candidate.RunID)
 			addRunRetentionRows(&report.rows, rows)
 		}
+	}
+	report.phaseRecordDayFiles, err = phaserecord.New(loaded.HomeDir, deps.now).RemoveBefore(ctx, report.cutoff, opts.dryRun)
+	if err != nil {
+		return report, err
 	}
 	if opts.dryRun {
 		return report, nil
@@ -246,6 +252,7 @@ func printRunRetentionReport(stdout io.Writer, report runRetentionReport, dryRun
 		action, list = "removable", "Removable Runs"
 	}
 	fmt.Fprintf(stdout, "  Runs %s: %d\n", action, len(report.runIDs))
+	fmt.Fprintf(stdout, "  Phase Record day files %s: %d\n", action, report.phaseRecordDayFiles)
 	fmt.Fprintf(stdout, "  Runs kept past the cutoff: %d (queue-referenced %d, worktree present %d, artifact root unproven %d)\n", report.kept, report.queueReferenced, report.worktreePresent, report.artifactRootUnproven)
 	fmt.Fprintf(stdout, "  Rows %s: runs=%d run_events=%d run_agent_selections=%d run_token_usage=%d active_run_locks=%d\n", action, report.rows.Runs, report.rows.RunEvents, report.rows.AgentSelections, report.rows.TokenUsage, report.rows.ActiveRunLocks)
 	if dryRun {

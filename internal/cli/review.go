@@ -23,6 +23,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/preflight"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -886,6 +887,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	result, specContext, promptSent, runErr := runConfiguredReviewSession(
 		ctx,
+		loaded.HomeDir,
 		gitState.Root,
 		baseCommit,
 		gitState.HEAD,
@@ -1386,6 +1388,7 @@ func resolveReviewMergeBase(ctx context.Context, gitRoot, tip, head string, runn
 
 func runConfiguredReviewSession(
 	ctx context.Context,
+	homeDir string,
 	gitRoot string,
 	baseCommit string,
 	headCommit string,
@@ -1543,6 +1546,22 @@ func runConfiguredReviewSession(
 		Prompt:  prompt,
 		GitRoot: gitRoot,
 	}
+	now := commandDependenciesForContext(ctx).phaseNow
+	recorder := phaserecord.New(homeDir, now)
+	recordPrompt := func(started time.Time, result agent.ExecuteResult, runErr error) {
+		// A plain runner can fail during preparation as well as in its prompt process.
+		if failure, placed := agent.DescribeProtocolFailure(runErr); placed && !failure.PromptSent {
+			return
+		}
+		specSlug := ""
+		if len(specContext.contexts) == 1 {
+			specSlug = specContext.contexts[0].slug
+		}
+		entry := phaserecord.PromptEntry{Started: started, Ended: now(), Spec: specSlug, ScopeKind: "pre-pr-review", ScopeID: request.Session.Name, Repository: gitRoot, WorkDir: request.Session.WorkDir, Harness: request.Runtime.ID, Session: result.ACPSessionID}
+		if err := recorder.RecordPrompt(context.WithoutCancel(ctx), entry); err != nil {
+			fmt.Fprintf(stderr, "roundfix: warning: phase record not written for pre-pr-review %s: %v\n", entry.ScopeID, err)
+		}
+	}
 	preparer, canPrepare := runner.(agent.SessionPreparer)
 	preparedRunner, canRunPrepared := runner.(agent.PreparedPromptRunner)
 	if !canPrepare || !canRunPrepared {
@@ -1557,7 +1576,9 @@ func runConfiguredReviewSession(
 		specContext.runtime = runtime
 		request.Session = reviewSessionRef(headCommit, gitRoot, 0)
 		specContext.session = request.Session
+		started := now()
 		result, runErr := runner.Run(ctx, request, runevent.Discard)
+		recordPrompt(started, result, runErr)
 		return result, specContext, true, runErr
 	}
 
@@ -1581,10 +1602,14 @@ func runConfiguredReviewSession(
 		return err
 	}
 	runPrompt := func(index int) (agent.ExecuteResult, error) {
+		started := now()
 		result, runErr := preparedRunner.RunPrepared(ctx, request, runevent.Discard)
+		recordPrompt(started, result, runErr)
 		if ctx.Err() == nil && reviewPromptFailedBeforePrompt(runErr) && !retried[index] {
 			retry(index, runErr)
+			started = now()
 			result, runErr = preparedRunner.RunPrepared(ctx, request, runevent.Discard)
+			recordPrompt(started, result, runErr)
 		}
 		return result, runErr
 	}

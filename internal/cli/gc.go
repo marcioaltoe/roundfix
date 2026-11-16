@@ -14,6 +14,7 @@ import (
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/store"
 )
 
@@ -822,6 +823,8 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (repo
 	report.SharedCaches, sharedErr = sweepSharedCaches(ctx, loaded, opts.dryRun)
 	if runStore != nil {
 		report.RunRetention, err = sweepRunDatabase(ctx, runStore, loaded, runRetentionOptions{dryRun: opts.dryRun})
+	} else {
+		report.RunRetention.phaseRecordDayFiles, err = phaserecord.New(loaded.HomeDir, commandDependenciesForContext(ctx).gc.now).RemoveBefore(ctx, report.RunRetention.cutoff, opts.dryRun)
 	}
 	return report, errors.Join(cacheErr, itemErr, sharedErr, err)
 }

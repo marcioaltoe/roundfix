@@ -423,7 +423,8 @@
       "sources": [
         "docs/user-guide/commands/implement.md",
         "internal/cli/implement.go"
-      ]
+      ],
+      "review": "2026-11-16 — Spec 0397 task_02: The flags, output and exit codes stay the same; the command only supplies the Daemon recorder documented in the phase reference and user guide."
     },
     {
       "id": "command init",
@@ -578,7 +579,8 @@
         "internal/cli/review_dispose_lock_windows.go",
         "internal/cli/review_lineage.go",
         "internal/cli/review_validation.go"
-      ]
+      ],
+      "review": "2026-11-16 — Spec 0397 task_02: The review policy, findings, record, output and exit code stay the same; the advisory prompt entry is documented in the phase reference and user guide."
     },
     {
       "id": "command review dispose",
@@ -595,7 +597,8 @@
         "internal/cli/review_dispose_lock_windows.go",
         "internal/cli/review_lineage.go",
         "internal/cli/review_validation.go"
-      ]
+      ],
+      "review": "2026-11-16 — Spec 0397 task_02: The disposition command has no behavior change; its shared source only gains the advisory review prompt writer."
     },
     {
       "id": "command runs",
