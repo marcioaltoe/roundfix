@@ -61,6 +61,7 @@ promoted:
   - docs/references/2026-11-15-usage-by-context-and-session-identity-measurement.md
 relinked:
   - docs/backlog/2026-11-16-a-new-session-and-each-authoring-phase-start-with-a-large-context.md
+pull_request: "883"
 type: feat
 ---
 
