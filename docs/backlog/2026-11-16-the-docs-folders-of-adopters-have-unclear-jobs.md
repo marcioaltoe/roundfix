@@ -4,6 +4,8 @@ status: open
 created: 2026-11-16
 spec: null
 reason: null
+waiting_on: "the maintainer's decision to schedule it (he said not now on 2026-11-16)"
+since: 2026-11-16
 ---
 
 # The documentation folders of adopters have unclear jobs, and reference files sit at the repository root
