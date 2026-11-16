@@ -104,8 +104,8 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 	root, rootErr := roundconfig.ResolveSpecsRootOrAbsent(loaded, loaded.GitRoot)
 	input := deliveryHistoryInput{Checkout: loaded.GitRoot, SpecRoot: root.Path, ArchiveRoot: spec.ArchiveSpecRoot(root.Path, root.BuiltInRoot), RetentionDays: loaded.Config.Store.RunRetentionDays, Now: now, Git: runner}
 	type gitResult struct {
-		times map[string]time.Time
-		err   error
+		read deliveryHistoryGitRead
+		err  error
 	}
 	historyCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -121,8 +121,8 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 			return
 		}
 		gitInput.Branch = strings.TrimSpace(branch)
-		times, err := readDeliveryHistoryGit(historyCtx, gitInput)
-		result <- gitResult{times, err}
+		read, err := readDeliveryHistoryGit(historyCtx, gitInput)
+		result <- gitResult{read, err}
 	}(input)
 	progress, sources, err := readFollowUpProgress(ctx, loaded, environment)
 	if err != nil {
@@ -187,7 +187,7 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 	}
 	doc.Sources = append(doc.Sources, releaseSource)
 	input.Runs = progress.historyRuns
-	history, historySource := deliveryHistoryFromTimes(input, historyGit.times, historyGit.err)
+	history, historySource := deliveryHistoryFromTimes(input, historyGit.read, historyGit.err)
 	active, skipped, _ := spec.ListActiveDetailed(root.Path)
 	rows, forecastRows, queueSources := followUpQueueRows(followUpQueueInput{Context: ctx, Loaded: loaded, SpecRoot: root.Path, ArchiveRoot: input.ArchiveRoot, Progress: progress, Active: active, Skipped: skipped, History: history, Now: now, Zone: zone, Origin: &origin})
 	basis := queueforecast.NewBasis(history)

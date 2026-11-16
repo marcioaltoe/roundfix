@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -75,7 +76,7 @@ func followUpArchiveFixture(t *testing.T, in followUpQueueInput, slug string, di
 func TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 11, 16, 17, 0, 0, 0, time.UTC)
-	names := []string{"start_is_the_first_implement_run", "end_is_the_archive_records_commit_time", "plan_is_the_prds_commit_time", "a_cancelled_record_is_not_delivered", "a_spec_without_a_run_is_left_out", "before_the_window_is_not_read", "one_git_log", "no_default_branch_is_unavailable", "a_failed_log_is_unavailable", "an_unparseable_git_log", "a_malformed_commit_time", "an_unparseable_record_is_not_delivered", "the_first_commit_for_a_path_counts", "absolute_roots"}
+	names := []string{"start_is_the_first_implement_run", "end_is_the_archive_records_commit_time", "plan_is_the_prds_commit_time", "a_cancelled_record_is_not_delivered", "a_spec_without_a_run_is_left_out", "before_the_window_is_not_read", "one_git_log", "no_default_branch_is_unavailable", "a_failed_log_is_unavailable", "an_unparseable_git_log", "a_malformed_commit_time", "an_unparseable_record_is_not_delivered", "the_first_commit_for_a_path_counts", "absolute_roots", "an_edited_working_tree_record_is_not_read", "a_removed_working_tree_record_is_not_read", "a_committed_cancellation_wins_over_the_working_tree"}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -87,7 +88,7 @@ func TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog(t *testing.T) {
 			followUpWrite(t, in.SpecRoot, "0001-widget/_prd.md", "---\nstatus: active\n---\n# Widget\n")
 			followUpCommitAt(t, in.Loaded.GitRoot, plan, "docs: plan widget")
 			disposition := spec.ArchiveNoQA
-			if name == "a_cancelled_record_is_not_delivered" {
+			if name == "a_cancelled_record_is_not_delivered" || name == "a_committed_cancellation_wins_over_the_working_tree" {
 				disposition = spec.ArchiveCancelled
 			}
 			followUpArchiveFixture(t, in, "0001-widget", disposition)
@@ -97,6 +98,17 @@ func TestTheDeliveryHistoryIsReadFromRunsAndOneGitLog(t *testing.T) {
 				followUpWrite(t, in.ArchiveRoot, "0001-widget.md", "invalid record")
 			}
 			followUpCommitAt(t, in.Loaded.GitRoot, end, "docs: archive widget")
+			recordPath := filepath.Join(in.ArchiveRoot, "0001-widget.md")
+			switch name {
+			case "an_edited_working_tree_record_is_not_read":
+				followUpWrite(t, in.ArchiveRoot, "0001-widget.md", "invalid record")
+			case "a_removed_working_tree_record_is_not_read":
+				if err := os.Remove(recordPath); err != nil {
+					t.Fatal(err)
+				}
+			case "a_committed_cancellation_wins_over_the_working_tree":
+				followUpArchiveFixture(t, in, "0001-widget", spec.ArchiveNoQA)
+			}
 			runs := []store.Run{
 				{Kind: store.KindImplement, SpecSlug: "0001-widget", CreatedAt: start.Add(time.Hour)},
 				{Kind: store.KindImplement, SpecSlug: "0001-widget", CreatedAt: start},
