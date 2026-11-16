@@ -14,3 +14,4 @@ Respostas às perguntas da Ideia (AskUserQuestion, 15–16/11/2026 ~00:00 BRT), 
 6. Direção da Ideia → "Original + respostas (Recommended)" — "Registro de fase, fronteira de sessão e adoção dos modelos numa Spec; o custo de nascer de cada sessão vira Backlog Entry."
 
 Acréscimo do Marcio ao critério de sucesso (16/11/2026, na sessão), verbatim: "Adicione ao critério de sucesso: com queda de performance nula ou quase nula e com aumento de qualidade de artefatos para implementações."
+- Aprovação da Ideia 0397 (AskUserQuestion, 16/11/2026): "Aprovar e seguir (Recommended)".

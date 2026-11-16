@@ -1,7 +1,7 @@
 ---
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
 created: 2026-11-16
-status: proposed
+status: promoted
 leverage: compounding
 ---
 
