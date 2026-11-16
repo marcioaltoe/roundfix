@@ -25,6 +25,10 @@
       {
         "version": 17,
         "digest": "sha256:47a6fdb1aaa9897f72fba8056cb35c54be7303b975f91aab52ff3fa49c97c01d"
+      },
+      {
+        "version": 18,
+        "digest": "sha256:a2b3d8c6107f3ae3fdf5b0818d9dc9c9acb9596bed06855316d982e02e04561c"
       }
     ],
     "backend": [

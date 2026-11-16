@@ -41,6 +41,14 @@ func TestRegenerationIsDeclared(t *testing.T) {
 		})
 	}
 
+	t.Run("an_undeclared_backlog_write_is_refused", func(t *testing.T) {
+		const path = "docs/backlog/2026-11-16-an-undeclared-write.md"
+		changed := []changedFile{{path: path, lines: []string{"changed by regeneration"}}}
+		if uncovered := undeclaredChangedPaths(changed, declarations); len(uncovered) != 1 || uncovered[0] != path {
+			t.Fatalf("undeclared backlog write was accepted: %v", uncovered)
+		}
+	})
+
 	t.Run("an_unsanctioned_coverage_write_is_refused", func(t *testing.T) {
 		fixture := filepath.Join(t.TempDir(), "repository")
 		copyRepository(t, root, fixture)
@@ -278,7 +286,10 @@ func editBaselineModule(t *testing.T, repository string) {
 
 func writeArchivedItemRecord(t *testing.T, repository string, sanctionCoverage bool) {
 	t.Helper()
-	for _, path := range []string{"docs/specs", "docs/workflow/authorizations"} {
+	// This fixture replaces the host's Specs with one synthetic Archive Record.
+	// Remove their live backlog too: its citations would otherwise become
+	// dangling inputs for the declared command's history reconciliation.
+	for _, path := range []string{"docs/specs", "docs/backlog", "docs/workflow/authorizations"} {
 		if err := os.RemoveAll(filepath.Join(repository, path)); err != nil {
 			t.Fatal(err)
 		}

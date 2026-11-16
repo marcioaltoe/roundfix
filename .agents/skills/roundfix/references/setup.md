@@ -184,6 +184,8 @@ with `roundfix baseline skills restore --profile <id> --skill <name>`.
 
 A repository can declare the model and reasoning effort of each Authoring Phase and of research sweeps in Project Config, under `skills.authoring.claude` with the keys `idea`, `prd`, `techspec`, `tasks` and `research`; Roundfix ships no model name. `roundfix skills install --target project` and `roundfix baseline update` then write the Declared Skill Header into the four installed authoring skills and one generated subagent per entry under `.claude/agents/`, each marked `roundfix:generated`; a user-level target receives neither, and the headers and generated files are committed with the skills. `roundfix skills check`, `roundfix doctor` (`authoring-models:`) and `roundfix update check` (`Authoring models:` and `authoringModels`) warn when the installed files do not match the declaration and name `roundfix skills install --target project`; none of them fails for it. A Roundfix older than the release that introduced the section refuses the repository's configuration, so upgrade it before declaring.
 
+A repository that publishes an authoring skill under `skills/<name>/` receives no Declared Skill Header for it: installation writes the shipped skill, prints `Withheld declared header: <name>` with the reason, and still generates every declared subagent. The checks count the declaration as applied when that installed skill holds no `model` and no `effort`, and report a header found there. A Roundfix older than the release that introduced this rule writes the header into a published skill, so upgrade it before installing there.
+
 The binary ships twelve Roundfix-owned skills: the operational `roundfix`
 skill and eleven authorial workflow skills.
 

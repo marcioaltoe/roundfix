@@ -26,6 +26,7 @@ installing, substitute `go run ./cmd/roundfix`.
 | `implement` | [command guide](commands/implement.md) |
 | `init` | [command guide](commands/init.md) |
 | `migrate` | [command guide](commands/migrate.md) |
+| `phase` | [command guide](commands/phase.md) |
 | `profiles` | [command guide](commands/profiles.md) |
 | `qa-report` | [command guide](commands/qa-report.md) |
 | `reconcile` | [command guide](commands/reconcile.md) |

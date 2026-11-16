@@ -276,3 +276,23 @@ resolve:
   # 0012 review resolved 22 issues and the 0015 review 28, so a batch of 3 spent
   # most of the Run on Batch turnover rather than on the fixes.
   batch_size: 20
+
+skills:
+  authoring:
+    claude:
+      idea:
+        model: fable
+        reasoning_effort: xhigh
+      prd:
+        model: fable
+        reasoning_effort: xhigh
+      techspec:
+        model: fable
+        reasoning_effort: xhigh
+      tasks:
+        model: fable
+        reasoning_effort: high
+      research:
+        model: sonnet
+        reasoning_effort: medium
+        tools: [WebSearch, WebFetch, mcp__exa__web_search_exa, mcp__exa__web_fetch_exa]

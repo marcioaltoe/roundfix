@@ -88,6 +88,9 @@ and are joined by `; `:
 Authoring models: the installed files do not match the declaration: <problem>; apply with roundfix skills install --target project.
 ```
 
+For an authoring skill the repository publishes, the declaration counts as
+applied when the installed skill holds no model and no effort.
+
 The `; apply with ...` clause appears only when installation can repair at
 least one problem. Links and files Roundfix did not generate need the user's
 correction. An applied declaration adds no text line. The comparison writes
@@ -125,7 +128,7 @@ document:
 | `userSkills` | Each reported user-level copy with `skill`, `path`, `resolved` (the link target, omitted for a plain folder), `found`, `embedded`, `refresh`, `remove`, `stale` and optional `hidesDeclaredHeader`; omitted when there is none |
 | `userSkills[].remove` | Command that removes the copy, before the refresh advice in text reports |
 | `userSkills[].stale` | Whether the copy's comparable version is older than the binary; always present, including `false` |
-| `userSkills[].hidesDeclaredHeader` | `true` when Claude Code's user-level copy hides a declared phase's header, whatever its version; omitted otherwise |
+| `userSkills[].hidesDeclaredHeader` | `true` when Claude Code's user-level copy hides a declared phase's header, whatever its version; never true for a skill the repository publishes; omitted otherwise |
 | `authoringModels` | Present after `userSkills` when a key is declared or a problem exists; omitted when Project Config was not read |
 | `authoringModels.state` | `applied` or `unapplied` |
 | `authoringModels.harness` | `claude` |

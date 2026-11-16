@@ -29,6 +29,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	roundnotify "roundfix/internal/notify"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/reviewsource/coderabbit"
@@ -56,6 +57,7 @@ Usage:
   roundfix implement --spec <slug>
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
+  roundfix phase start <phase> [--spec <slug>]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -115,6 +117,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   deliver    Advance an ordered queue of Specs from Run to merge
   follow-up  List pending work in priority order, or show status
+  phase      Record the Supervisor Phase a session starts
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending
@@ -249,6 +252,7 @@ type commandEnvironment struct {
 }
 
 type commandDependencies struct {
+	phaseNow                        func() time.Time
 	followUpGHRunner                preflight.GHRunner
 	getenv                          func(string) string
 	environ                         func() []string
@@ -328,7 +332,8 @@ type commandDependenciesContextKey struct{}
 
 func defaultCommandDependencies() commandDependencies {
 	return commandDependencies{
-		getenv: os.Getenv,
+		phaseNow: time.Now,
+		getenv:   os.Getenv,
 		userSkillDirectories: func(home string) []roundskills.UserSkillDirectory {
 			return roundskills.UserSkillDirectories(home, os.Getenv)
 		},
@@ -634,6 +639,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "phase":
+		return runPhaseCommand(ctx, args[1:], stdout, stderr, environment)
 	case "follow-up":
 		return runFollowUpCommand(ctx, args[1:], stdout, stderr, environment)
 	case "deliver":
@@ -760,8 +767,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		}
-		declaration := printSkillsAuthoringWarning(ctx, environment, stderr)
-		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredAuthoringSkills(declaration)))
+		declaredSkills := printSkillsAuthoringWarning(ctx, environment, stderr)
+		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredSkills))
 		return exitOK
 	case "list":
 		if commandWantsHelp(args[1:]) {
@@ -3167,7 +3174,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+	engine, err := newResolveEngine(loaded.HomeDir, collaborators, runStore, ui, writeGuard)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -3207,18 +3214,19 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
-func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
+func newResolveEngine(homeDir string, collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
 	return daemon.NewEngine(daemon.Dependencies{
-		Runner:     collaborators.runner,
-		Verifier:   collaborators.verifier,
-		Committer:  collaborators.committer,
-		Pusher:     collaborators.pusher,
-		Source:     collaborators.source,
-		Runs:       runStore,
-		WriteGuard: writeGuard,
-		Worktree:   collaborators.worktree,
-		Sink:       ui.sink,
-		Progress:   ui.progress,
+		PhaseRecord: phaserecord.New(homeDir, time.Now),
+		Runner:      collaborators.runner,
+		Verifier:    collaborators.verifier,
+		Committer:   collaborators.committer,
+		Pusher:      collaborators.pusher,
+		Source:      collaborators.source,
+		Runs:        runStore,
+		WriteGuard:  writeGuard,
+		Worktree:    collaborators.worktree,
+		Sink:        ui.sink,
+		Progress:    ui.progress,
 	})
 }
 
@@ -3406,7 +3414,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
+			engine, err := newResolveEngine(loaded.HomeDir, collaborators, runStore, ui, writeGuard)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
@@ -5393,6 +5401,7 @@ then removes their run artifact directories and orphaned runs/<id> directories
 under the resolved run artifact root. Journal Retention never deletes Run rows or Active Run locks.
 GC then removes terminal Runs past Run Retention, including their dependent
 rows, and compacts the Run Database.
+It also removes Phase Record day files older than the Run Retention cutoff.
 It never removes Review artifacts outside the run artifact root.
 
 The sanitize subcommand discovers every recorded Artifact Root from the
@@ -5593,6 +5602,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "phase":
+		return phaseUsage
 	case "follow-up":
 		return followUpUsage
 	case "deliver":

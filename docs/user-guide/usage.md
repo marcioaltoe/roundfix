@@ -876,6 +876,81 @@ Forcing HTTP/1.1 takes an `allowH2: false` dispatcher in the gateway itself;
 see [Undici's connector options](https://undici.nodejs.org/api/Connector).
 Roundfix has no gateway transport setting.
 
+## Phase Record
+
+The Phase Record lives in `phase-record` under Roundfix Home
+(`~/.roundfix/phase-record`): one `YYYY-MM-DD.jsonl` file per UTC date,
+with one JSON object per line under the schema `roundfix/phase-record/v1`.
+The directory has mode `0700` and each file mode `0600`, readable by the
+user alone on platforms that enforce owner-only modes. Entries are appended;
+no line is rewritten. No command lists the record: read the files.
+
+A phase entry holds these fields, in this order:
+
+| Field | Value |
+| --- | --- |
+| `schema` | `roundfix/phase-record/v1` |
+| `kind` | `phase` |
+| `time` | Time the entry was written |
+| `phase` | Supervisor Phase |
+| `spec` | Spec folder slug |
+| `repository` | Git root of the working directory |
+| `harness` | `claude` when the command environment names a session |
+| `session` | `CLAUDE_CODE_SESSION_ID` from the command environment |
+| `boundary` | Whether this session crossed a Phase Boundary |
+| `previous_phase` | Earlier phase; present only when `boundary` is true |
+| `previous_spec` | Earlier Spec; present only when `boundary` is true |
+
+The Daemon writes a prompt entry when a prompt of an Agent Session ends, and `roundfix review` after each prompt of a pre-PR review. A prompt that never returns leaves no entry. A failed write of a prompt entry prints one warning and changes no Task, Run, review or exit code.
+
+A prompt entry has this format, in this order:
+
+| Field | Value |
+| --- | --- |
+| `schema` | `roundfix/phase-record/v1` |
+| `kind` | `prompt` |
+| `time` | Time the entry was written |
+| `started` | Time the prompt began |
+| `ended` | Time the prompt ended |
+| `run_id` | Run identifier; empty for a pre-PR review |
+| `spec` | Spec folder slug |
+| `scope_kind` | `task`, `qa`, `review`, `session` or `pre-pr-review` |
+| `scope_id` | Identifier of the Work Item scope |
+| `repository` | Repository root |
+| `work_dir` | Working directory of the prompt |
+| `harness` | Runtime identifier |
+| `session` | Session identifier reported by the adapter |
+
+Every time uses RFC 3339 in UTC with seconds, for example
+`2026-11-20T13:05:11Z`. An absent string value is the empty string, never a
+missing key; only the two boundary fields are conditional. Each string is cut
+at 1,024 bytes while preserving valid JSON.
+
+`roundfix phase start <phase> [--spec <slug>]` records one of seven phases:
+`follow-up`, `idea`, `prd`, `techspec`, `tasks`, `delivery` or `release`.
+`--spec` is required except for `follow-up` and `release`, and matches
+`^[0-9]{4}(-[a-z0-9]+)+$`. The command loads no configuration. It records an
+entry without a harness session when the environment names none.
+
+Before appending, the command takes the latest phase entry of the same
+non-empty session from the current UTC date and the six preceding dates.
+A different phase or Spec crosses a Phase Boundary, with three exceptions:
+an earlier `follow-up`; `delivery` followed by `release` of the same Spec or
+with no Spec; and the same phase of the same Spec again. An entry without a
+session never crosses or matches. A boundary marks the new entry and prints
+the Boundary Notice on standard error:
+
+```text
+roundfix: notice: this session already recorded <phase> of <spec>; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.
+```
+
+` of <spec>` is omitted when the earlier entry names no Spec. The notice
+refuses nothing: standard output and the exit code stay as they are.
+
+Run Retention removes each day file dated before its cutoff, and a file whose name is not a date is left alone.
+
+The record is the contract an outside reader uses: Roundfix reads no harness transcript, prices no token and reports no limit percentage.
+
 ## Command reference
 
 | Command | Purpose |
@@ -888,6 +963,7 @@ Roundfix has no gateway transport setting.
 | `cancel` | Cancel an active Spec with an Archive Record |
 | `release plan` | Classify committed release changes without mutating release state |
 | `follow-up` | List pending work in priority order, or show status (read-only) |
+| `phase start` | Record in the Phase Record the phase a session starts |
 | `profiles` | Show, configure, and validate Agent Selection Profiles |
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |

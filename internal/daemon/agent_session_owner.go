@@ -8,12 +8,14 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/lighttier"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -210,8 +212,9 @@ func (engine *Engine) agentSessionOwner(config agentSelectionOwnerConfig, scope 
 func (engine *Engine) runAgentSession(ctx context.Context, owner *agentSessionOwner, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
 	req.Cores = engine.deps.VerificationCores
 	if owner == nil {
+		started := engine.deps.Now()
 		result, err := engine.deps.Runner.Run(ctx, req, engine.deps.Sink)
-		engine.recordPromptUsage(ctx, req, result, "session", req.Session.Name, 0)
+		engine.recordPromptUsage(ctx, req, result, "session", req.Session.Name, "", 0, started)
 		return result, err
 	}
 	return owner.Run(ctx, req)
@@ -656,6 +659,7 @@ func (owner *agentSessionOwner) prepareSession(ctx context.Context, req agent.Ex
 
 func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
 	sink := &agentSessionEventSink{owner: owner, req: req, next: owner.engine.deps.Sink}
+	started := owner.engine.deps.Now()
 	var result agent.ExecuteResult
 	var err error
 	if runner, ok := owner.engine.deps.Runner.(agent.PreparedPromptRunner); ok {
@@ -663,7 +667,7 @@ func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.Execu
 	} else {
 		result, err = owner.engine.deps.Runner.Run(ctx, req, sink)
 	}
-	owner.engine.recordPromptUsage(ctx, req, result, owner.scope.Kind, owner.scope.ID, owner.attemptNumber)
+	owner.engine.recordPromptUsage(ctx, req, result, owner.scope.Kind, owner.scope.ID, owner.scope.Spec, owner.attemptNumber, started)
 	owner.recordLightSpend(req, result)
 	return result, err
 }
@@ -1121,7 +1125,25 @@ type tokenUsageAppender interface {
 	AppendTokenUsage(context.Context, store.TokenUsageRecord) error
 }
 
-func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRequest, result agent.ExecuteResult, scopeKind, scopeID string, attempt int) {
+func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRequest, result agent.ExecuteResult, scopeKind, scopeID, specSlug string, attempt int, started time.Time) {
+	ended := engine.deps.Now()
+	if engine.deps.PhaseRecord != nil {
+		repository := ""
+		if reader, ok := engine.deps.Runs.(interface {
+			Run(context.Context, string) (store.Run, bool, error)
+		}); ok {
+			if run, found, err := reader.Run(context.WithoutCancel(ctx), req.RunID); err == nil && found {
+				repository = run.GitRoot
+				if specSlug == "" {
+					specSlug = run.SpecSlug
+				}
+			}
+		}
+		entry := phaserecord.PromptEntry{Started: started, Ended: ended, RunID: req.RunID, Spec: specSlug, ScopeKind: scopeKind, ScopeID: scopeID, Repository: repository, WorkDir: req.Session.WorkDir, Harness: req.Runtime.ID, Session: result.ACPSessionID}
+		if err := engine.deps.PhaseRecord.RecordPrompt(context.WithoutCancel(ctx), entry); err != nil && engine.deps.Progress != nil {
+			fmt.Fprintf(engine.deps.Progress, "roundfix: warning: phase record not written for %s %s: %v\n", scopeKind, scopeID, err)
+		}
+	}
 	appender, ok := engine.deps.Runs.(tokenUsageAppender)
 	if !ok {
 		return
@@ -1132,7 +1154,7 @@ func (engine *Engine) recordPromptUsage(ctx context.Context, req agent.ExecuteRe
 		Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort,
 		Basis: string(usage.Basis), InputTokens: usage.InputTokens, OutputTokens: usage.OutputTokens,
 		CachedReadTokens: usage.CachedReadTokens, CachedWriteTokens: usage.CachedWriteTokens,
-		ThoughtTokens: usage.ThoughtTokens, Readings: usage.Readings, Time: engine.deps.Now(),
+		ThoughtTokens: usage.ThoughtTokens, Readings: usage.Readings, Time: ended,
 	}
 	if usage.Basis == "" {
 		record.Basis = "unreported"

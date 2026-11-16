@@ -182,7 +182,7 @@ A Cross-project Message that asks to be told when the work it asks for is done. 
 _Avoid_: Read receipt, release note, subscription
 
 **Session Handoff**:
-A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)).
+A single-use ai-memory record that one session of a project leaves for the next with `memory_handoff_begin`, holding a short summary, next steps and open questions, and that one later session claims with `memory_handoff_accept`. The Roundfix skill's `--follow-up` Skill Mode takes the project's handoff before its inventory: it uses the one the SessionStart hook already claimed, or reads a newer cut-off session first and accepts the most recent open one, and hands each next step and open question to the Follow-up Command as a Follow-up Item ([ADR-0338](docs/adr/0338-the-follow-up-mode-claims-the-handoff-and-leaves-no-handed-in-message-pending.md)). At a Phase Boundary the Supervisor writes one with the Spec, the phase that ended, the next phase, each decision still open and what stays armed ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
 _Avoid_: Handoff file, session note, resume brief
 
 **Rollup**:
@@ -967,16 +967,32 @@ The `skills.authoring` section of Project Config that declares, per Agent harnes
 _Avoid_: Model preset, skill model setting, phase profile
 
 **Declared Skill Header**:
-The `model` and `effort` lines that installation writes into the frontmatter of an installed authoring skill from the Authoring Model Declaration, so that a phase the user starts by typing the skill runs on them. The shipped skills never hold one, a user-level installation receives none, and a user-level copy of the skill hides it in Claude Code ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md)).
+The `model` and `effort` lines that installation writes into the frontmatter of an installed authoring skill from the Authoring Model Declaration, so that a phase the user starts by typing the skill runs on them. The shipped skills never hold one, a user-level installation receives none, and a user-level copy of the skill hides it in Claude Code. An authoring skill whose source the repository itself publishes under `skills/<name>/` receives none either: installation withholds it and says so, the checks report a header found there, and no user-level copy of that skill hides one ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md), [ADR-0408](docs/adr/0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md)).
 _Avoid_: Skill override, model frontmatter, hand-written header
 
 **Author Subagent**:
-The subagent that installation generates for one declared Authoring Phase, `roundfix-<phase>-author`, on the declared model and reasoning effort. An authoring skill the session activated hands its phase to it, passing no model and no effort; it cannot ask the user, so the session gathers the decisions first and it returns its open questions instead of guessing one. It is a subagent of the Agent harness session and never the Agent of a Run ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md)).
+The subagent that installation generates for one declared Authoring Phase, `roundfix-<phase>-author`, on the declared model and reasoning effort. An authoring skill the session activated hands its phase to it, passing no model and no effort; it cannot ask the user, so the session gathers the decisions first and it returns its open questions instead of guessing one. On the fix or refactor route, `write-techspec` and `write-tasks` run the phase in the session and start it only when the user's request or one of the user's answers asks for it. It is a subagent of the Agent harness session and never the Agent of a Run, and it ends no session at a Phase Boundary ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0408](docs/adr/0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md)).
 _Avoid_: Authoring agent, writer agent, phase agent
 
 **Research Subagent**:
 The subagent that installation generates from the `research` entry of the Authoring Model Declaration, `roundfix-researcher`. It reads the codebase, the knowledge base and the web for an Authoring Phase and returns conclusions with their sources. Its tool list holds no shell and no file-writing tool: three tools that read the checkout, and only the web and MCP tools the repository lists ([ADR-0402](docs/adr/0402-the-research-subagent-reads-and-never-runs-a-command-or-writes-a-file.md)).
 _Avoid_: Researcher agent, read-only agent, sweep agent
+
+**Phase Record**:
+The append-only record under Roundfix Home, in the directory `phase-record`, of which Spec and Supervisor Phase each Supervisor session works on and which Work Item each prompt of a Run or of a pre-PR review served. It is a set of day files named by the UTC date, one JSON object per line under the schema `roundfix/phase-record/v1`. An entry holds identifiers and times, never prompt text, a token count, a price or an environment value; no line is rewritten, and the Run Retention Sweep removes a day file older than its cutoff ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Usage log, phase marker, session journal
+
+**Supervisor Phase**:
+One of the seven phases of a Supervisor's work that the Phase Record names: `follow-up`, the four Authoring Phases `idea`, `prd`, `techspec` and `tasks`, `delivery` and `release`. `roundfix phase start <phase>` records that the session that runs it starts one, with the Spec that `--spec` names; every phase but `follow-up` and `release` requires a Spec ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Stage, work mode, session type
+
+**Phase Boundary**:
+The point that follows each Authoring Phase and the delivery and release of a Spec. There the Supervisor writes the Session Handoff, tells the user what stays armed and starts no further phase in the session, and the next session starts with the follow-up Skill Mode; an Author Subagent ends no session and returns its report. Roundfix cannot end a session, so the boundary is an instruction that the Boundary Notice recalls ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Session limit, checkpoint, compaction point
+
+**Boundary Notice**:
+The one line `roundfix phase start` prints on standard error when the same session, in the last seven days of the Phase Record, last recorded a different Supervisor Phase or Spec. It names the earlier phase and Spec and marks the new entry. An earlier `follow-up`, `delivery` followed by `release` of the same Spec, and the same phase of the same Spec recorded again print none. It refuses nothing: standard output and the exit code are those of the command without it ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+_Avoid_: Boundary error, session warning, phase refusal
 
 **Missing Required Skill**:
 An external skill the adopted modules require and dispatch that is absent from `.agents/skills` or `skills-lock.json`; a present copy is never one, whatever its content ([ADR-0364](docs/adr/0364-a-required-external-skill-is-checked-only-for-presence.md)).

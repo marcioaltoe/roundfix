@@ -37,6 +37,14 @@ func TestTheAuthoringSkillsDelegateADeclaredPhase(t *testing.T) {
 		{name: "a_command_sweep_stays", phrase: "the Research Subagent holds no shell"},
 		{name: "a_failed_research_start_falls_back", phrase: "do the sweep yourself and say so in the report"},
 	}
+	fixRoutePhrases := []struct {
+		name   string
+		phrase string
+	}{
+		{name: "a_fix_or_refactor_stays_in_the_session", phrase: "On the fix or refactor route, which a Spec whose `type` is `fix` or `refactor` takes, run the phase here instead, on the session's model"},
+		{name: "the_user_asks_for_the_author", phrase: "unless the user's request or one of the user's answers asks for the Author Subagent"},
+		{name: "the_report_says_where", phrase: "say in the report where the phase ran"},
+	}
 
 	for copy, source := range roundfixLayoutSources() {
 		copy, source := copy, source
@@ -80,6 +88,19 @@ func TestTheAuthoringSkillsDelegateADeclaredPhase(t *testing.T) {
 						want := roundfixWhitespace(phrase.phrase)
 						if got := strings.Count(section, want); got != 1 {
 							t.Errorf("phrase occurrence = %d, want 1", got)
+						}
+					})
+				}
+				for _, phrase := range fixRoutePhrases {
+					phrase := phrase
+					t.Run(phrase.name, func(t *testing.T) {
+						t.Parallel()
+						want := 0
+						if authoringSkill.skill == "write-techspec" || authoringSkill.skill == "write-tasks" {
+							want = 1
+						}
+						if got := strings.Count(section, roundfixWhitespace(phrase.phrase)); got != want {
+							t.Errorf("phrase occurrence = %d, want %d", got, want)
 						}
 					})
 				}

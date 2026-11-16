@@ -32,6 +32,8 @@ keeps Active Runs and active-run locks untouched. Journal Retention can prune
 eligible `run_events` and matching Artifact Directory content before Run
 Retention removes the whole terminal Run.
 
+Run Retention also removes each Phase Record day file dated before its cutoff; the record is files under Roundfix Home and no table of the Run Database.
+
 The 2026-10-08 measurement recorded by [ADR-0255](../adr/0255-run-retention-removes-terminal-runs-whole-and-compacts-incrementally.md)
 found a 1.1 GB Run Database, with 1.08 GB in `run_events` across 832k events
 written in the preceding two weeks, about 77 MB a day across 313 Runs. That

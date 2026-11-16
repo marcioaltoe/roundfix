@@ -17,6 +17,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
+	"roundfix/internal/phaserecord"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -65,9 +66,15 @@ type MachineVerificationGate interface {
 	Acquire(ctx context.Context, holder store.MachineVerificationHolder, onWait func(store.MachineVerificationWait)) (release func(), err error)
 }
 
+// PromptRecorder appends advisory prompt entries independently of usage storage.
+type PromptRecorder interface {
+	RecordPrompt(context.Context, phaserecord.PromptEntry) error
+}
+
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
+	PhaseRecord       PromptRecorder
 	Runner            agent.Runner
 	Verifier          Verifier
 	Committer         Committer

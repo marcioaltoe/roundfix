@@ -172,6 +172,13 @@ of the five names before writing anything, and removes only its own files
 whose entries are gone. Commit the headers and generated files with the
 installed skills; a user-level target or `--dir` receives neither.
 
+A repository that holds `skills/<skill>/SKILL.md` for a declared authoring
+skill receives no Declared Skill Header for it. Installation writes the
+shipped skill and still generates every declared subagent. The rule is read
+from the tree; no configuration key turns it on. A Roundfix older than the
+release that introduced the rule writes the header into such a skill, so
+upgrade it before installing there.
+
 The section needs the Roundfix release that introduced it. An older binary refuses every command that loads configuration with `field skills not found in type config.configOverlay`, and its `roundfix skills install` writes the skills without the header; run `roundfix upgrade` there. Once a Baseline change applied by a newer release has recorded its version in the Setup Manifest, an older binary names both versions and `roundfix upgrade` instead. Claude Code applies the header only to a skill the user types, never in auto mode with a model that mode does not support, and a managed setting that forces one subagent model or an allowlist that excludes the declared one overrides the generated subagents. The external skills CLI's `skills update` can replace an installed skill and its header; the checks then name `roundfix skills install --target project`.
 
 ## Task and Verification capacities

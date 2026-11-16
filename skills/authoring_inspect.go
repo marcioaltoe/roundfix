@@ -43,6 +43,12 @@ func InspectAuthoring(root string, declaration *AuthoringDeclaration) AuthoringS
 		}
 		skillPath := filepath.Join(root, ".agents", "skills", phase.Skill)
 		data, err := os.ReadFile(filepath.Join(skillPath, "SKILL.md"))
+		if PublishesAuthoringSkill(root, phase.Skill) {
+			if hasAuthoringHeader(data) {
+				state.Problems = append(state.Problems, AuthoringProblem{phase.Skill + " holds a header, and this repository publishes skills/" + phase.Skill + "/SKILL.md", true})
+			}
+			continue
+		}
 		if !errors.Is(err, os.ErrNotExist) && (err != nil || !declaredHeaderMatches(data, entry)) {
 			state.Problems = append(state.Problems, AuthoringProblem{phase.Skill + " header is not the declared one", true})
 		}

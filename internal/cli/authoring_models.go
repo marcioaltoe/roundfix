@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"roundfix/internal/config"
@@ -41,21 +42,24 @@ func authoringDeclaration(settings config.Skills) *roundskills.AuthoringDeclarat
 }
 
 func writeAuthoringInstall(result roundskills.AuthoringInstall, declaration *roundskills.AuthoringDeclaration, stdout, stderr io.Writer) {
-	for _, skill := range result.Headers {
-		for _, phase := range roundskills.AuthoringPhases() {
-			if skill != phase.Skill || declaration == nil {
-				continue
-			}
-			entry := declaration.Entries[phase.Key]
-			var values []string
-			if entry.Model != "" {
-				values = append(values, "model "+entry.Model)
-			}
-			if entry.Effort != "" {
-				values = append(values, "effort "+entry.Effort)
-			}
-			fmt.Fprintf(stdout, "Applied declared header: %s (%s)\n", skill, strings.Join(values, ", "))
+	for _, phase := range roundskills.AuthoringPhases() {
+		skill := phase.Skill
+		if slices.Contains(result.Withheld, skill) {
+			fmt.Fprintf(stdout, "Withheld declared header: %s (this repository publishes skills/%s/SKILL.md)\n", skill, skill)
+			continue
 		}
+		if declaration == nil || !slices.Contains(result.Headers, skill) {
+			continue
+		}
+		entry := declaration.Entries[phase.Key]
+		var values []string
+		if entry.Model != "" {
+			values = append(values, "model "+entry.Model)
+		}
+		if entry.Effort != "" {
+			values = append(values, "effort "+entry.Effort)
+		}
+		fmt.Fprintf(stdout, "Applied declared header: %s (%s)\n", skill, strings.Join(values, ", "))
 	}
 	for _, path := range result.Subagents {
 		fmt.Fprintf(stdout, "Generated subagent: %s\n", path)
@@ -77,7 +81,7 @@ func writeUncoveredAuthoringNotices(result roundskills.AuthoringInstall, stderr 
 }
 
 func authoringInstallReport(result roundskills.AuthoringInstall) *roundskills.AuthoringInstall {
-	if len(result.Headers)+len(result.Subagents)+len(result.Removed) == 0 {
+	if len(result.Headers)+len(result.Withheld)+len(result.Subagents)+len(result.Removed) == 0 {
 		return nil
 	}
 	return &result
