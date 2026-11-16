@@ -37,6 +37,7 @@ type AuthoringDeclaration struct {
 }
 type AuthoringInstall struct {
 	Headers   []string `json:"headers,omitempty"`
+	Withheld  []string `json:"withheld,omitempty"`
 	Subagents []string `json:"subagents,omitempty"`
 	Removed   []string `json:"removed,omitempty"`
 	Uncovered []string `json:"-"`
@@ -111,6 +112,13 @@ func ApplyDeclaredHeader(shipped []byte, entry AuthoringEntry) ([]byte, error) {
 	}
 	result.Write(shipped[end:])
 	return result.Bytes(), nil
+}
+
+// PublishesAuthoringSkill reports whether the repository tree publishes the
+// source of this skill. It reads no configuration and never changes the tree.
+func PublishesAuthoringSkill(root, skill string) bool {
+	info, err := os.Stat(filepath.Join(root, "skills", skill, "SKILL.md"))
+	return err == nil && info.Mode().IsRegular()
 }
 
 func authoringKeys() []string {
@@ -305,6 +313,10 @@ func prepareAuthoringInstall(ctx context.Context, root string, declaration *Auth
 			if hasAuthoringHeader(data) {
 				plan.result.Uncovered = append(plan.result.Uncovered, phase.Skill)
 			}
+			continue
+		}
+		if PublishesAuthoringSkill(root, phase.Skill) {
+			plan.result.Withheld = append(plan.result.Withheld, phase.Skill)
 			continue
 		}
 		for i := range files {

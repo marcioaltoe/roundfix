@@ -158,6 +158,9 @@ the Authoring Model Declaration. Matching files print:
 authoring-models: ok (claude: <declared keys> applied)
 ```
 
+For an authoring skill the repository publishes, the declaration counts as
+applied when the installed skill holds no model and no effort.
+
 Declared keys are joined by `, ` in phase order, with `research` last.
 Problems use the [skills check problem order](skills.md) and are joined by
 `; `:

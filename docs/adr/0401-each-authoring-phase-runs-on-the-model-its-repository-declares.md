@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-14T11:00:00Z
-updated_at: 2026-11-14T11:00:00Z
+updated_at: 2026-11-16T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -65,6 +65,8 @@ skill the agent activated hands its phase to that subagent, passing no model
 and no effort; a skill the user typed runs where it is, on its header. An
 Author Subagent cannot ask the user, so the session gathers the decisions
 first, and the subagent returns its open questions instead of guessing one.
+
+**Amended by [ADR-0408](0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md) (2026-11-16).** Installation writes no Declared Skill Header into an authoring skill whose source the repository itself publishes under `skills/<name>/`, and still generates every declared subagent; this repository declares the section on those terms. An authoring skill the agent activated on the fix or refactor route runs its phase in the session and starts the Author Subagent only when the user asks. A feature's phases are still handed over, a typed skill still runs on its header where one is written, and Roundfix still ships no model name.
 
 **Generated files carry a marker.** The first line of a generated subagent's
 body is `<!-- roundfix:generated skills.authoring.<harness>.<key> -->`.

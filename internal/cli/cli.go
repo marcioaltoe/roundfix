@@ -767,8 +767,8 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		} else {
 			fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		}
-		declaration := printSkillsAuthoringWarning(ctx, environment, stderr)
-		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredAuthoringSkills(declaration)))
+		declaredSkills := printSkillsAuthoringWarning(ctx, environment, stderr)
+		printUserSkillWarning(stderr, reportedUserSkillCopies(ctx, environment.homeDir, declaredSkills))
 		return exitOK
 	case "list":
 		if commandWantsHelp(args[1:]) {

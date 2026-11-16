@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -270,3 +270,106 @@ reference, the glossary and ADR-0401 describe the rule.
 - `_prd.md` → User Stories 7 and 8; Core Features 10, 11 and 13; Success Metrics 6 and 7; Glossary
 - `_techspec.md` → Current behavior; API Contract 7; API Contract 8; API Contract 12; Surface Transcript 6; Surface Transcript 7; Invariants 6 and 7; Declared breaks; Testing Approach; Risks & Considerations; Build Order 3
 - ADR-0408, ADR-0401, ADR-0402, ADR-0405
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, roundfix, evidence-gate.
+
+Implemented the published-skill rule through installation, inspection and the
+CLI reports. The shared tree predicate requires a regular
+`skills/<skill>/SKILL.md`. Installation records `withheld` immediately after
+`headers`, writes the shipped bytes for those skills, and still generates all
+declared subagents. Applied and withheld text lines share phase order.
+Inspection skips their Claude Skill Link check, reports a top-level header
+as the one installable skill problem, and remains read-only. User-copy
+reporting receives only declared skills that can hold a header, so a
+published skill's copy is reported by version alone.
+
+Acceptance evidence from focused checks:
+
+- Mixed published/unpublished installation, every authoring skill published,
+  none published, removal of a previous header, and an idempotent second run:
+  `TestInstallationWithholdsTheHeaderOfAPublishedSkill` passed. It checks
+  shipped bytes, complete result lists, generated subagent bytes, and the
+  second run's bytes, modes and modification times.
+- Inspection without a header or Claude Skill Link, the complete ordered
+  problem list with fixable marks, installation repair, an absent installed
+  file, effort alone, nested keys, and an unchanged tree:
+  `TestInspectAuthoringAcceptsAPublishedSkillWithoutAHeader` passed.
+  `TestThePublishedSkillSurfaceTranscripts` passed both `transcript_6` and
+  `transcript_7`, comparing all stdout, stderr and exit status. Fixture E
+  includes the required whole-directory Claude Skill Link.
+- Skills Check, Doctor and Update Check accept the clean published skills;
+  Doctor and Update Check also report a planted header without changing
+  their exit status. `TestTheChecksCountAPublishedSkillAsApplied`,
+  `TestBaselineUpdateReportsAWithheldHeader`, and
+  `TestAUserLevelCopyOfAPublishedSkillIsReportedByItsVersionOnly` passed.
+  The Baseline test compares the whole `skills.authoring` JSON member,
+  including key order, and retains the existing text summary.
+- Existing installation, inspector and report tests passed unchanged:
+  `TestInstallAppliesTheDeclarationAndASecondRunChangesNothing`,
+  `TestInspectAuthoringNamesEachProblem`,
+  `TestSkillsInstallAppliesTheAuthoringModelDeclaration`,
+  `TestBaselineUpdateAppliesTheAuthoringModelDeclaration`,
+  `TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted`,
+  `TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit`,
+  `TestDoctorReportsTheAuthoringModels`,
+  `TestUpdateCheckReportsTheAuthoringModels`, and
+  `TestUserSkillReportsNameAHiddenHeaderWithoutRefresh`. No existing test
+  was edited, removed or renamed.
+- The four guides carry the required rule and exact normalized sentences.
+  The setup paragraph was added verbatim and its mirror generated;
+  `TestTheSetupReferenceNamesThePublishedSkillRule` and
+  `TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase` passed.
+  Only the Declared Skill Header definition line changed in the glossary;
+  ADR-0401 gained only the required amendment paragraph and `updated_at`.
+  Focused glossary, accepted-ADR link and user-guide link checks passed.
+- After those checks, appended only `skills.authoring.claude` to Project
+  Config with the exact declared values. Ran `make skills-sync`, then
+  `go run -buildvcs=false ./cmd/roundfix skills install --target project`
+  with an isolated temporary home and existing Go caches, network disabled.
+  Installation printed four withheld lines and generated the five marked
+  files under `.claude/agents/`. Before/after SHA-256 snapshots of every file
+  under `.agents/skills/`, `skills/` and `skills-lock.json` were identical;
+  the only added status entries were the five generated subagents.
+  A separate isolated-home
+  `go run -buildvcs=false ./cmd/roundfix skills check` exited 0 with empty
+  stderr. The five skill trees match their mirrors.
+  `TestNoShippedSkillDeclaresAModelOrEffort` passed before adoption; the
+  installation byte audit proves it preserved those same shipped bytes.
+
+Focused commands and outcomes:
+
+- Initial red check:
+  `go test ./skills -run '^TestInstallationWithholdsTheHeaderOfAPublishedSkill$/one_published$' -count=1`
+  failed to compile because `AuthoringInstall.Withheld` did not yet exist.
+- `go test ./skills ./internal/cli -run '^(TestInstallationWithholdsTheHeaderOfAPublishedSkill|TestInspectAuthoringAcceptsAPublishedSkillWithoutAHeader|TestThePublishedSkillSurfaceTranscripts|TestTheChecksCountAPublishedSkillAsApplied|TestBaselineUpdateReportsAWithheldHeader|TestAUserLevelCopyOfAPublishedSkillIsReportedByItsVersionOnly)$' -count=1`
+  exited 0 in both changed packages after implementation.
+- `go test ./skills -run '^(TestInstallationWithholdsTheHeaderOfAPublishedSkill|TestInspectAuthoringAcceptsAPublishedSkillWithoutAHeader|TestTheSetupReferenceNamesThePublishedSkillRule|TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase|TestInstallAppliesTheDeclarationAndASecondRunChangesNothing|TestInspectAuthoringNamesEachProblem|TestNoShippedSkillDeclaresAModelOrEffort)$' -count=1`
+  exited 0 after synchronization and recording.
+- `go test ./internal/cli -run '^(TestThePublishedSkillSurfaceTranscripts|TestTheChecksCountAPublishedSkillAsApplied|TestBaselineUpdateReportsAWithheldHeader|TestAUserLevelCopyOfAPublishedSkillIsReportedByItsVersionOnly|TestSkillsInstallAppliesTheAuthoringModelDeclaration|TestBaselineUpdateAppliesTheAuthoringModelDeclaration|TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted|TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit|TestDoctorReportsTheAuthoringModels|TestUpdateCheckReportsTheAuthoringModels|TestUserSkillReportsNameAHiddenHeaderWithoutRefresh)$' -count=1`
+  exited 0.
+- Required generation: `make skills-sync` and
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0. The recorder raised both Roundfix skill version fields from
+  `0.1.242` to `0.1.243` and wrote the owned-version record; no version or
+  mirror was hand-edited.
+- After the last guide edit and before adoption,
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and regenerated the Behavior Surface Record.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce|TestUserGuideLinksResolve|TestTheSkillCoverageMapIsCurrent)$' -count=1`
+  exited 0.
+- `GOOS=windows go test -c -o <temporary-directory>/skills.test.exe ./skills`
+  and `GOOS=windows go test -c -o <temporary-directory>/cli.test.exe ./internal/cli`
+  both exited 0; the new test files compile for Windows.
+- `git diff --check` exited 0. The path audit found only Task-declared
+  changes. Four authoring `SKILL.md` pairs remain byte-identical to HEAD,
+  and the pre-existing Project Config bytes remain unchanged before the
+  appended section.
+
+The pre-existing task-file change was its Daemon-owned status; it was
+preserved. Commands ran through the physical checkout after the configured
+symlinked writable root prevented sandbox startup. No Task status, graph,
+other Task, Baseline, lock, or prohibited path was edited. No declared
+Verification command, repository Verification, commit, push, PR, or external
+message was run. Daemon Verification and settlement remain outstanding.

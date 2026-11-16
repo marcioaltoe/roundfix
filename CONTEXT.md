@@ -967,7 +967,7 @@ The `skills.authoring` section of Project Config that declares, per Agent harnes
 _Avoid_: Model preset, skill model setting, phase profile
 
 **Declared Skill Header**:
-The `model` and `effort` lines that installation writes into the frontmatter of an installed authoring skill from the Authoring Model Declaration, so that a phase the user starts by typing the skill runs on them. The shipped skills never hold one, a user-level installation receives none, and a user-level copy of the skill hides it in Claude Code ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md)).
+The `model` and `effort` lines that installation writes into the frontmatter of an installed authoring skill from the Authoring Model Declaration, so that a phase the user starts by typing the skill runs on them. The shipped skills never hold one, a user-level installation receives none, and a user-level copy of the skill hides it in Claude Code. An authoring skill whose source the repository itself publishes under `skills/<name>/` receives none either: installation withholds it and says so, the checks report a header found there, and no user-level copy of that skill hides one ([ADR-0401](docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md), [ADR-0405](docs/adr/0405-a-user-level-skill-copy-is-reported-with-the-command-that-removes-it.md), [ADR-0408](docs/adr/0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md)).
 _Avoid_: Skill override, model frontmatter, hand-written header
 
 **Author Subagent**:

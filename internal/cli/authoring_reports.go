@@ -45,7 +45,7 @@ func loadedAuthoringState(loaded roundconfig.Loaded) (roundskills.AuthoringState
 	return state, len(state.Declared) > 0 || len(state.Problems) > 0
 }
 
-func printSkillsAuthoringWarning(ctx context.Context, environment commandEnvironment, stderr io.Writer) *roundskills.AuthoringDeclaration {
+func printSkillsAuthoringWarning(ctx context.Context, environment commandEnvironment, stderr io.Writer) []string {
 	workDir, err := environment.resolveWorkDir("resolve skills check working directory")
 	if err != nil {
 		return nil
@@ -61,7 +61,7 @@ func printSkillsAuthoringWarning(ctx context.Context, environment commandEnviron
 	}
 	state := roundskills.InspectAuthoring(root, declaration)
 	if len(state.Problems) == 0 {
-		return declaration
+		return declaredAuthoringSkills(root, declaration)
 	}
 	fmt.Fprintf(stderr, "roundfix: warning: the installed files do not match the Authoring Model Declaration (skills.authoring.%s):\n", state.Harness)
 	for _, problem := range state.Problems {
@@ -70,7 +70,7 @@ func printSkillsAuthoringWarning(ctx context.Context, environment commandEnviron
 	if next := authoringNext(state); next != "" {
 		fmt.Fprintf(stderr, "  next: %s\n", next)
 	}
-	return declaration
+	return declaredAuthoringSkills(root, declaration)
 }
 
 func doctorAuthoringModelsResult(state roundskills.AuthoringState) CheckResult {
@@ -106,13 +106,13 @@ func printUpdateCheckAuthoringModels(stdout io.Writer, report *updateCheckAuthor
 	fmt.Fprintln(stdout, ".")
 }
 
-func declaredAuthoringSkills(declaration *roundskills.AuthoringDeclaration) []string {
+func declaredAuthoringSkills(root string, declaration *roundskills.AuthoringDeclaration) []string {
 	if declaration == nil {
 		return nil
 	}
 	var names []string
 	for _, phase := range roundskills.AuthoringPhases() {
-		if _, ok := declaration.Entries[phase.Key]; ok {
+		if _, ok := declaration.Entries[phase.Key]; ok && !roundskills.PublishesAuthoringSkill(root, phase.Skill) {
 			names = append(names, phase.Skill)
 		}
 	}
@@ -123,5 +123,5 @@ func loadedDeclaredAuthoringSkills(loaded roundconfig.Loaded) []string {
 	if loaded.GitRoot == "" || loaded.RepositoryVersionErr != nil {
 		return nil
 	}
-	return declaredAuthoringSkills(authoringDeclaration(loaded.Config.Skills))
+	return declaredAuthoringSkills(loaded.GitRoot, authoringDeclaration(loaded.Config.Skills))
 }
