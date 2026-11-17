@@ -5,10 +5,12 @@ action: record each Correction of a delivery with a declared Defect Class and re
 consuming: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
 paths:
   - .agents/skills/roundfix/SKILL.md
+  - .agents/skills/roundfix/references/corrections.md
   - .agents/skills/roundfix/references/deliver.md
   - .agents/skills/roundfix/references/phase.md
   - .agents/skills/roundfix/references/review.md
   - .agents/skills/roundfix/references/spec-delivery.md
+  - .agents/skills/roundfix/references/storage.md
   - .agents/skills/write-idea/SKILL.md
   - .agents/skills/write-prd/SKILL.md
   - .agents/skills/write-tasks/SKILL.md
@@ -58,20 +60,22 @@ The author of the PRD measured the governed set on 2026-11-17 in a clone on the 
 
 - The measurement used a `go test -overlay` probe in `internal/speccheck` that wrote nothing to the repository. The probe file never existed in the tree, and `git status --porcelain` printed nothing afterwards.
 - It covered 64 paths: the skill files, guides, records, source files and documents the PRD expects the Tasks to change, this Spec's planning files, ADR-0407 and the three new ADRs, and controls. The result is recorded in [`references/2026-11-17-item-branch-commits-and-author-session-measurement.md`](references/2026-11-17-item-branch-commits-and-author-session-measurement.md).
-- The fourteen paths above are the governed ones the PRD's design changes: the `SKILL.md` pair of the Roundfix skill and of each of the four authoring skills, and the Roundfix skill's canonical `deliver`, `phase`, `review` and `spec-delivery` references.
+- Fourteen of the paths above are the governed ones the PRD's design changes: the `SKILL.md` pair of the Roundfix skill and of each of the four authoring skills, and the Roundfix skill's canonical `deliver`, `phase`, `review` and `spec-delivery` references.
+- The author of the TechSpec measured the set again on 2026-11-17, in the same clone rebased on `a8236a87`, with the same probe over 109 paths: every file the TechSpec names or expects the Tasks to create. `git status --porcelain` printed nothing afterwards. The design changes two more governed paths, both canonical references of the Roundfix skill, and this record now bounds them under the grant of every skill quoted above: `.agents/skills/roundfix/references/corrections.md`, the one reference of the new `corrections` command group, which the skill's reference index requires, and `.agents/skills/roundfix/references/storage.md`, the reference of `roundfix gc`, whose Run Retention section gains the corrections record. The result is recorded in [`references/2026-11-17-techspec-design-measurements.md`](references/2026-11-17-techspec-design-measurements.md).
 - These governed paths are not granted, and no Task may change them:
   - `.roundfixrc.yml`, as the section above says;
-  - `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go` and `docs/references/coverage-record.json`; new tests go in new files;
+  - `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `internal/baseline/repository_test.go`, `internal/docscontract/testdata/corpus-golden.json` and `docs/references/coverage-record.json`; new tests go in new files, and no existing test is renamed or removed;
+  - `.agents/skills/roundfix/references/runs.md`: `roundfix runs causes` does not change;
   - the controls: the `Makefile`, `.github/workflows/ci-verify.yml` and `go.mod`.
 
-This is the measurement a PRD can make. The TechSpec names every file the design changes, and `write-tasks` measures the paths the Tasks declare on a scratch copy. When either finds a governed path outside `paths`, such as another reference of the Roundfix skill, the operator amends this record before the plan merges, outside the change it authorizes.
+The first measurement is the one a PRD can make, and the second the one a TechSpec can make. `write-tasks` measures the paths the Tasks declare on a scratch copy. When it finds a governed path outside `paths`, the operator amends this record before the plan merges, outside the change it authorizes.
 
 ## What is not governed
 
 - Every Go source and test file the Tasks declare, except the governed tests above.
-- The mirrors under `skills/roundfix/references/`, `skills/testdata/owned-skill-versions.json` and the tests under `skills/`.
+- The mirrors under `skills/roundfix/references/`, the new `corrections.md` among them, `skills/testdata/owned-skill-versions.json` and the tests under `skills/`.
 - The generated subagents under `.claude/agents/` and `skills-lock.json`.
-- The user guide, `CONTEXT.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, ADR-0407, ADR-0417, ADR-0418 and ADR-0419.
+- The user guide, `CONTEXT.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, ADR-0407, ADR-0417, ADR-0418, ADR-0419 and the seven decision records of the TechSpec, ADR-0420 to ADR-0426.
 - Every planning file of this Spec and its references.
 
 ## Sanctioned regeneration
@@ -104,7 +108,7 @@ outputs:
   - docs/references/behavior-surfaces.json
 ```
 
-No mirror, version field, digest or record is hand-edited. The TechSpec confirms this list against the design, and adds the installation that regenerates the subagents under `.claude/agents/` if the design changes what installation writes into them.
+No mirror, version field, digest or record is hand-edited. The TechSpec confirmed this list against the design: `make skills-sync` also writes the mirror of the new `corrections.md` reference, and the design changes nothing that installation writes into the subagents under `.claude/agents/`, so no installation is declared.
 
 ## Limits
 
