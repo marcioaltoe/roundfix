@@ -4,7 +4,7 @@ Measured by the author on 2026-11-17 on the Mac mini, read-only, from the two da
 
 ## Method
 
-The author listed every entry whose `kind` is `phase`, in the order of its `time`, with its phase, the number of its Spec, the last segment of its `repository`, its `boundary` mark and its `previous_phase` and `previous_spec`. Every entry carries the same Claude Code session: the operator's Supervisor session, which started each Authoring Phase itself or through a subagent that shares its session identifier. The session identifier and the full repository paths are left out of this record. The last column applies the rule this Spec adopts: an entry is marked only when the same session's latest earlier entry is `release` and the new entry is not a `release` of the same Spec.
+The author listed every entry whose `kind` is `phase`, in the order of its `time`, with its phase, the number of its Spec, the last segment of its `repository`, its `boundary` mark and its `previous_phase` and `previous_spec`. Every entry carries the same Claude Code session: the operator's Supervisor session, which started each Authoring Phase itself or through a subagent that shares its session identifier. The session identifier and the full repository paths are left out of this record. The last column applies the rule this Spec adopts: `roundfix phase start` reads no earlier entry and marks none. (The first plan of this Spec, of the same morning, marked an entry only after a `release`; it gave the same column, because no entry follows a release.)
 
 ## Table
 
@@ -24,7 +24,7 @@ The author listed every entry whose `kind` is `phase`, in the order of its `time
 - Eight phase entries, one session, three Specs authored, no delivery and no release recorded yet.
 - Roundfix 0.147.0 printed the Boundary Notice four times: entries 4, 6, 7 and 8. Each followed an Authoring Phase; none followed a release.
 - Entry 5 printed none only because entry 4 was a `follow-up`, which the 0.147.0 rule exempts as an earlier phase.
-- Under this Spec's rule none of the eight entries is marked, because no earlier entry is a `release`.
+- Under this Spec's rule none of the eight entries is marked, and none would be after a `release` either, because the command marks no entry.
 - Entries 2 and 3 repeat the same phase of the same Spec, which no rule marks.
 
 The maintainer's message of the same evening, "Esse negocio de criar sessões a cada etapa está atrasando demais.", came while entries 1 to 4 were being written.
