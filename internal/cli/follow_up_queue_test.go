@@ -35,7 +35,7 @@ func followUpQueueDiscover(t *testing.T, in *followUpQueueInput) {
 
 func followUpQueuePhase(t *testing.T, in followUpQueueInput, at time.Time, phase phaserecord.Phase, slug, repo string) {
 	t.Helper()
-	_, err := phaserecord.New(in.Loaded.HomeDir, func() time.Time { return at }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: phase, Spec: slug, Repository: repo})
+	err := phaserecord.New(in.Loaded.HomeDir, func() time.Time { return at }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: phase, Spec: slug, Repository: repo})
 	if err != nil {
 		t.Fatal(err)
 	}

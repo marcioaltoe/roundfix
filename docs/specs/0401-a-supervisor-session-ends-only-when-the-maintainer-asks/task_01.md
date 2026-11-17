@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0401-a-supervisor-session-ends-only-when-the-maintainer-asks
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -194,3 +194,89 @@ and the derived records are regenerated.
 - `_techspec.md` → Interfaces (invariants 1–4); API Contracts 1, 2 and 6; Surface Transcripts 1 and 2; Testing Approach (Task 1); Build Order 1
 - [`references/2026-11-16-the-phase-boundary-ends-the-session-after-every-authoring-phase.md`](references/2026-11-16-the-phase-boundary-ends-the-session-after-every-authoring-phase.md), the Backlog Entry of 2026-11-16 this Spec adopts
 - ADR-0414, ADR-0407, ADR-0410
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+The writer now returns only an error and appends the same nine ordered keys
+with `boundary:false`, without reading history or writing either `previous_`
+key. The boundary type and lookup helpers are removed. The command retains
+its result line, parsing, refusals and exit codes and emits no successful
+append notice. All callers use the new signature; `read.go` is unchanged.
+
+The canonical phase reference uses API Contract 6 verbatim, both user-guide
+passages describe the new rule, and the usage guide's Coverage Review names
+Spec 0401 task_01. Its existing `skills` and `sources` are unchanged.
+
+### Focused implementation checks
+
+These checks are implementation evidence, not Daemon Verification:
+
+- `rtk proxy go test -count=1 -timeout 3m ./internal/phaserecord -run '^(TestStartPhase|TestAPhaseEntry|TestPhasesReadsBack|TestParsePhase)'` — exit 0.
+- `rtk proxy go test -count=1 -timeout 3m ./internal/cli -run '^TestPhase'` — exit 0.
+- `rtk proxy go test -count=1 -timeout 3m ./internal/cli -run '^(TestASpecIsBeingAuthored|TestTheQueueRowsComeInTableOrder)$'` — exit 0; the queue consumer retains its existing assertions with the new writer signature.
+- `rtk proxy go test -count=1 -timeout 3m ./skills -run 'TestThePhaseReferenceDocumentsTheCommandAndTheRecord|TestEveryOwnedSkillVersionIsRecorded'` — exit 0.
+- `rtk proxy go test -count=1 -timeout 3m -tags docscontract ./internal/docscontract -run '^(TestTheSkillCoverageMapIsCurrent|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$'` — exit 0.
+- `rtk proxy git diff --check` — exit 0. A read-only scope audit found all 17 changed paths in this Task's interfaces or its own Task file, confirmed `read.go` unchanged, and checked exact reference text and matching canonical/embedded bytes.
+
+Before changing production code, focused runs of
+`TestStartPhaseMarksNoBoundaryWhateverCameBefore`,
+`TestStartPhaseReadsNoEarlierEntry` and
+`TestPhaseStartPrintsNoNoticeAfterAnyPhase` each exited 1 against the old
+implementation. Failures showed the extra `previous_` keys, the attempted
+read of yesterday's directory and the old notice on standard error.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Every earlier phase/Spec, including an old mark, produces nine keys with `boundary:false` and no notice | `TestStartPhaseMarksNoBoundaryWhateverCameBefore` covers all twelve required named cases, checks the supplied phase/Spec/session and compares every earlier line byte for byte. `TestPhaseStartPrintsNoNoticeAfterAnyPhase` and `transcript_3` assert empty standard error and exact written lines. |
+| An unreadable earlier day does not prevent the append | `TestStartPhaseReadsNoEarlierEntry/an_unreadable_earlier_day` succeeds with a directory at yesterday's UTC day path. `a_malformed_day_file` preserves a 1 MiB malformed line and an earlier release, then appends exactly one nine-key unmarked line. |
+| The reader still accepts an old marked entry | `TestPhasesReadsBackThePhaseEntriesOfTheWindow/an_entry_an_earlier_version_marked` returns the marked idea entry at `since` before the other entry, with zero skipped lines. The reader source is byte-identical to HEAD. |
+| Both Surface Transcripts hold line for line | `surface_transcript_1` and `surface_transcript_2` record their earlier entry through the same command and fixture, read the session from that fixture's `CLAUDE_CODE_SESSION_ID`, and assert the complete stdout, empty stderr, exit 0 and exact JSON lines. The release-without-Spec case does the same. |
+| Reference and user guide describe no boundary or notice | Both copies pass `the_record_is_never_read_back` and `no_boundary_notice`. A read-only text audit confirmed the exact API Contract 6 paragraph and the new rule on both guide pages, without the old notice wording. Version and coverage checks exited 0. |
+| Restoring lookup, marking or the notice is detected | Four temporary Go-overlay probes exited 1 on their intended behavioral assertions, as detailed below. No probe changed repository sources. |
+
+### Regression probes
+
+Each probe ran `rtk proxy go test -overlay <temporary-overlay.json> -count=1
+-timeout 3m <package> -run <selection>` against temporary source replacements:
+
+- Restoring the old lookup and its helpers without restoring marking:
+  `./internal/phaserecord`, selection
+  `^TestStartPhaseReadsNoEarlierEntry$/^an_unreadable_earlier_day$` — exit 1
+  at the named subtest because reading yesterday's day path returns
+  `is a directory`.
+- Restoring `boundary:true`:
+  `./internal/phaserecord`, selection
+  `^TestStartPhaseMarksNoBoundaryWhateverCameBefore$/^after_prd$` — exit 1
+  at the named subtest on the written mark.
+- The same mark mutation:
+  `./internal/cli`, selection
+  `^TestPhaseStartPrintsNoNoticeAfterAnyPhase$/^surface_transcript_1$` — exit 1
+  at the named subtest because the recorded lines differ from the exact
+  expected unmarked lines.
+- Restoring the old notice text for the next `techspec`:
+  `./internal/cli`, the same transcript selection — exit 1 at the named
+  subtest because standard error contains the notice instead of being empty.
+
+The probe harness checked the intended `--- FAIL:` subtest in every output
+and rejected compilation failures as evidence.
+
+### Sanctioned regeneration
+
+- `make skills-sync` — exit 0; run before recording versions and again after.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — exit 0; the recorder raised both Roundfix skill version fields from `0.1.254` to `0.1.255` and added the version/digest record.
+- `make baseline-digests` — exit 0, `changed:false`; no Baseline artifact changed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — exit 0; only the two edited guide fingerprints changed.
+
+Task status, checkboxes, the Task Graph, other Tasks, CONTEXT.md and ADRs
+were left as supplied. Declared Verification and repository Verification
+were not run; the Daemon owns them. No commit, push, pull request or
+cross-project message was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T184233Z_1a94d8d70063e40c`
+- Source commit: `f115fe003ec2e6b1ac5aca7b02fcf76720c6e8b6`

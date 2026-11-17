@@ -28,24 +28,13 @@ Only one result line is printed. ` of <spec>` is omitted when no Spec was
 named. The harness and session come from `CLAUDE_CODE_SESSION_ID` in the
 command environment; when it is absent, both fields are empty strings.
 
-When the same non-empty session last recorded a different phase or Spec in
-the current UTC day or the six preceding dates, the command marks the entry
-and prints the Boundary Notice on standard error:
-
-```text
-roundfix: notice: this session already recorded <phase> of <spec>; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.
-```
-
-The notice omits ` of <spec>` when the earlier entry names no Spec. Three
-exceptions print no notice: an earlier `follow-up`; `delivery` followed by
-`release` of the same Spec or with no Spec; and the same phase of the same
-Spec again. Another session, or an entry without a session, never matches.
-The command refuses nothing at a boundary: standard output and the exit code
-stay as they are.
+The command reads no earlier entry. Whatever the session recorded before, it
+writes the entry's `boundary` as `false` and prints nothing on standard
+error. A phase entry ends no session.
 
 | Exit | Meaning |
 | --- | --- |
-| `0` | One phase entry recorded, including at a boundary |
+| `0` | One phase entry recorded |
 | `1` | The record could not be written |
 | `2` | Unknown phase, missing or malformed `--spec`, extra argument, missing or unknown subcommand, or working directory outside a Git repository; nothing is written |
 
