@@ -574,7 +574,7 @@ Rules for every Verification and QA row of this Spec:
 
 - A test creates its own repository and refs. It reads no ref, tag or history of this repository, and none that a fresh checkout or the Linux Lane's copy lacks.
 - A test sets or clears `CLAUDE_CODE_SESSION_ID` and `CLAUDE_EFFORT` through the injected lookup or `t.Setenv`.
-- A command names its tests with `-run`. No row runs the whole `./internal/cli` package under a temporary home, because its Baseline tests resolve the host's Rust toolchain through the home directory.
+- A Task's Verification names its tests with `-run`. A QA row that runs the whole `./internal/cli` package under a temporary home passes the host's `RUSTUP_HOME` and `CARGO_HOME` to it, used read only, because its Baseline tests resolve the Rust toolchain through the home directory.
 - A Verification command holds no backtick.
 - The QA gate runs each Surface Transcript through the built product with a temporary home, and requires only the invariants this TechSpec numbers.
 
