@@ -1,7 +1,7 @@
 ---
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
 created: 2026-11-17
-status: proposed
+status: promoted
 leverage: compounding
 ---
 
