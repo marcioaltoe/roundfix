@@ -110,9 +110,12 @@ ignore, `.txt` for command output, and links only files it kept.
    the audited head's with the same value, except `priorCatalog`,
    `currentCatalog`, `fileChanges`, `planDigest` and the `nextAction`
    string that embeds that digest when the catalog moved; and that both
-   exit with the same code. The same-version checks stay: on each binary,
-   the Plan Digest with the passage equals the one without it, and the
-   exit code with the passage equals the one without it.
+   exit with the same code. On each binary, the exit code with the passage
+   equals the one without it. The Plan Digest binds the source file's bytes
+   (ADR-0071), so removing the passage changes it; instead, on the audited
+   head, two runs over identical repository bytes print the same Plan
+   Digest, and `misplacedRepositoryRules` is absent from the plan document
+   the digest hashes.
 7. MUST record the outside-evidence row of `_prd.md` → Success Metric 5 and
    Acceptance evidence. For each adopted checkout that
    [`references/2026-11-16-adopter-rule-placement-inventory.md`](references/2026-11-16-adopter-rule-placement-inventory.md)
