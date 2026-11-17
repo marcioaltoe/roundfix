@@ -8,7 +8,7 @@ created: 2026-11-17
 
 ## Executive Summary
 
-The design adds one key to the Authoring Model Declaration (`fallback`, with `model` and `reasoning_effort`). It adds a new entry kind to the Phase Record, `fallback`, under the present schema. Two subcommands are added: `roundfix phase fallback` decides and records an Authoring Fallback from the error an Author Subagent ended on, and `roundfix phase model` prints the model and effort a phase's Author Subagent starts on. The four authoring skills and the Roundfix skill's phase reference tell the session to run them and pass what they print. Nothing is generated: the model and effort passed when a subagent starts override its file. `roundfix phase start`, the installation of skills and subagents, and the Run's fallbacks keep their contracts.
+The design adds one key to the Authoring Model Declaration (`fallback`, with `model` and `reasoning_effort`). It adds a new entry kind to the Phase Record, `fallback`, under the present schema. Two subcommands are added: `roundfix phase fallback` decides and records an Authoring Fallback from the error an Author Subagent ended on, and `roundfix phase model` prints the model and effort a phase's Author Subagent starts on. The four authoring skills and the Roundfix skill's phase reference tell the session to run them and pass what they print. Nothing is generated: the model and effort passed when a subagent starts override its file. The Recommended Authoring Declaration of Spec 0402 gains the fallbacks the maintainer chose, and its repository contract compares a fallback only where this repository declares one. `roundfix phase start`, the installation of skills and subagents, and the Run's fallbacks keep their contracts.
 
 The primary trade-off: Roundfix recognises a usage limit by the text Claude Code writes, and a model's family by a name contained in a model name. It needs no list of models and no access to the harness, so it ships no model name (ADR-0401). In exchange, a new wording or a model name without its family stops the phase as today, never on the wrong model.
 
@@ -16,7 +16,7 @@ The primary trade-off: Roundfix recognises a usage limit by the text Claude Code
 
 - Identifier strategy: not applicable — no identifier is minted; a fallback entry carries the phase, the Spec slug, the repository path and the repository identity that Spec 0404 records in a phase entry. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no endpoint, credential or network call is added; neither command reads a remote, starts a harness or asks a judge. Source: `docs/agents/cli.md`, `docs/agents/agent-instructions.md`.
-- Active ADR obligations: applicable — the PRD's row stands, with ADR-0427 and ADR-0428 as the decisions this design implements and ADR-0401, ADR-0407, ADR-0414, ADR-0408, ADR-0392, ADR-0050, ADR-0256 and ADR-0349 as the ones it obeys or amends. This stage adds ADR-0429 (ADR-0429: "A refusal exits `3`"). ADR-0405, ADR-0410, ADR-0412 and ADR-0415 are listed as not applicable, as the PRD's row says. The phase command keeps its contract (ADR-0414: "records each phase as before and reads no earlier entry"). Source: `docs/agents/domain.md`, `docs/agents/spec-routing.md`.
+- Active ADR obligations: applicable — the PRD's row stands, with ADR-0427 and ADR-0428 as the decisions this design implements and ADR-0401, ADR-0407, ADR-0414, ADR-0408, ADR-0392, ADR-0050, ADR-0256 and ADR-0349 as the ones it obeys or amends. This stage adds ADR-0429 (ADR-0429: "A refusal exits `3`"), and ADR-0430 amends ADR-0415 (ADR-0430: "a fallback it does not declare is not compared"). ADR-0418, ADR-0421 and ADR-0425 are obeyed as their Spec delivers them, ADR-0426 is not applicable, and ADR-0405, ADR-0410, ADR-0412 and ADR-0420 are listed as not applicable, as the PRD's row says. The phase command keeps its contract (ADR-0414: "records each phase as before and reads no earlier entry"). Source: `docs/agents/domain.md`, `docs/agents/spec-routing.md`.
 - Tooling authority: applicable — express maintainer authorization: the answer "Mesmas do BE (Recommended)" of 2026-11-17, quoted in the authorization record, which keeps the grant of every owned skill. The design changes no Makefile, workflow, Go module, lint or formatter file, no Baseline module and no file under `docs/agents/`, and no Task changes `.roundfixrc.yml`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0405-authoring-model-fallback/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/phase.md`, `.agents/skills/roundfix/references/setup.md`, `.agents/skills/write-idea/SKILL.md`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/write-idea/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-tasks/SKILL.md`, `skills/write-techspec/SKILL.md`.
 
 ## System Architecture
@@ -26,6 +26,10 @@ No package is new. Each subsection below is a component, and the Coverage Map na
 ### Fallback declaration
 
 `internal/config/authoring.go` gains `AuthoringFallback` and a `Fallback` field on the entries of `idea`, `prd`, `techspec` and `tasks`. `validateAuthoringEntry` accepts the `fallback` key on those entries and refuses it on `research`. The installation's declaration (`authoringDeclaration` in `internal/cli/authoring_models.go`) ignores the field, so headers, subagent files and the three checks do not change. The configuration guide and the Roundfix skill's setup reference, which describe the declaration, describe the key.
+
+### Recommendation
+
+`internal/config/authoring_recommendation.go`, which Spec 0402 adds, holds the Recommended Authoring Declaration as one table and renders it. The table gains the fallbacks of ADR-0430, and the rendering prints each as a `fallback` mapping after `reasoning_effort` (API Contract 9). The Doctor Command and the Update Check print the block unchanged in every other respect. The repository contract test `internal/docscontract/authoring_recommendation_test.go` keeps comparing the configuration guide's block in full, and compares this repository's declared fallbacks only where they are declared.
 
 ### Limit reader
 
@@ -175,6 +179,15 @@ The refusal of an unknown entry key now reads `expected model, reasoning_effort 
    - **ADR-0401** carries `Amended by ADR-0427 (2026-11-17)` with what changed.
    - **ADR-0407** carries `Amended by ADR-0428 (2026-11-17)` with what changed.
 
+9. API Contract: the Recommended Authoring Declaration.
+   - **The table.** `idea`, `prd` and `techspec` gain the fallback `opus`/`xhigh`; `tasks` gains `sonnet`/`high`; `research` gains none. The models and efforts Spec 0402 sets stay as they are.
+   - **The rendering.** Under each phase, after `reasoning_effort`, two more spaces of indentation hold `fallback:` with its `model` and `reasoning_effort`. Surface Transcript 9 shows the block in the Update Check. The rendered block still loads as Project Config and equals the table, now with the fallbacks.
+   - **The contract** (invariant 6 of Spec 0402, amended by ADR-0430):
+     - the configuration guide's first block under `## Authoring models` equals the rendering, fallbacks included;
+     - this repository's `.roundfixrc.yml` declares each key's model and effort of the table;
+     - a fallback this repository declares equals the table's, and one it does not declare is not compared.
+   - **The tests.** A test fixture copy of `.roundfixrc.yml` with a fallback that differs from the table fails the contract, and one without fallbacks passes.
+
 ### Surface Transcripts
 
 The transcripts run in a Git repository whose Project Config declares `idea`, `prd` and `techspec` as `fable`/`xhigh` with the fallback `opus`/`xhigh`, and `tasks` as `opus`/`high` with the fallback `sonnet`/`high`. `CLAUDE_CODE_SESSION_ID` is set, and the home is temporary. Transcripts 3 to 5 run after transcript 2, in the same home.
@@ -267,6 +280,50 @@ The transcripts run in a Git repository whose Project Config declares `idea`, `p
    exit: 2
    ```
 
+9. Surface Transcript: in a Git repository where `roundfix skills install --target project` installed the skills and `.roundfixrc.yml` declares no `skills`, the Update Check recommends the declaration with its fallbacks.
+
+   ```transcript
+   $ roundfix update check
+   stdout:
+   ...
+   Authoring models: the authoring skills are installed without a declaration: write-idea, write-prd, write-techspec, write-tasks; add the Recommended Authoring Declaration below to .roundfixrc.yml, then apply with roundfix skills install --target project.
+     skills:
+       authoring:
+         claude:
+           idea:
+             model: fable
+             reasoning_effort: xhigh
+             fallback:
+               model: opus
+               reasoning_effort: xhigh
+           prd:
+             model: fable
+             reasoning_effort: high
+             fallback:
+               model: opus
+               reasoning_effort: xhigh
+           techspec:
+             model: fable
+             reasoning_effort: high
+             fallback:
+               model: opus
+               reasoning_effort: xhigh
+           tasks:
+             model: opus
+             reasoning_effort: high
+             fallback:
+               model: sonnet
+               reasoning_effort: high
+           research:
+             model: sonnet
+             reasoning_effort: medium
+   ...
+   stderr:
+   exit: 0
+   ```
+
+   The first `...` stands for the version and Baseline lines, and the last for the `Next:` line, as in Spec 0402's transcript.
+
 ## Coverage Map
 
 - Goal 1 → Phase subcommands (API Contracts 1 and 2), Skill and guide texts (API Contract 6).
@@ -286,10 +343,12 @@ The transcripts run in a Git repository whose Project Config declares `idea`, `p
 - Core Feature 4 → Phase subcommands (API Contract 2), Skill and guide texts (API Contract 6).
 - Core Feature 5 → Fallback entries (API Contract 4).
 - Core Feature 6 → Phase subcommands: refusal 7 of API Contract 1 for a fallback's own limit; Skill and guide texts, the typed-skill sentence of the phase reference.
-- Core Feature 7 → Skill and guide texts (API Contracts 7 and 8).
+- Core Feature 7 → Recommendation (API Contract 9, Surface Transcript 9).
+- Core Feature 8 → Skill and guide texts (API Contracts 7 and 8).
 - Success Metrics 1 and 2 → Phase subcommands, Fallback entries, Skill and guide texts.
 - Success Metric 3 → Phase subcommands (API Contract 2, Surface Transcript 5).
-- Success Metric 4 → Fallback declaration, Skill and guide texts: the declared line and the older-Roundfix sentence.
+- Success Metric 4 → Fallback declaration, Skill and guide texts: the declared line and the older-Roundfix sentence; Recommendation, for the block.
+- Success Metric 5 → Recommendation (API Contract 9, Surface Transcript 9).
 
 Deviations from the PRD:
 
@@ -302,7 +361,8 @@ Deviations from the PRD:
 2. The limit reader — command: `grep -rn "hit your\|limit reached\|UsageLimit" internal --include=*.go`; result: no match outside tests of other packages.
 3. The fallback entry kind — command: `grep -rn '"fallback"' internal/phaserecord internal/cli/phase.go`; result: no match; `Phases` skips every kind but `phase`.
 4. The two subcommands — command: `grep -n '"model"\|"fallback"' internal/cli/phase.go`; result: no match; `parsePhaseStart` refuses every subcommand but `start`.
-5. The glossary term — command: `grep -c "Authoring Fallback" CONTEXT.md`; result: 0.
+5. The fallbacks of the Recommended Authoring Declaration — command: `grep -rn "fallback" internal/config/authoring_recommendation.go`; result: the file is not on this tree; Spec 0402 adds it with a model and an effort per key and no fallback.
+6. The glossary term — command: `grep -c "Authoring Fallback" CONTEXT.md`; result: 0.
 
 ## ADR Alternatives
 
@@ -317,7 +377,13 @@ Deviations from the PRD:
 - ADR-0405: not applicable — a user-level skill copy is reported as before.
 - ADR-0410: not applicable — the status view keeps reading phase entries only, and a fallback entry is not one.
 - ADR-0412: not applicable — planning references and the release preparation keep their release impact.
-- ADR-0415: not applicable — the recommended declaration of the Doctor Command and the Update Check gains no fallback in this Spec.
+- ADR-0415: amended by ADR-0430; the recommendation stays one table held equal to this repository and the guide by the contract, and no option it rejected is taken.
+- ADR-0430: the design is its decision; leaving the recommendation without fallbacks, comparing every fallback from the start, skipping them in the contract and adding them to this repository in the same change are the options it rejected.
+- ADR-0418: the restarted Author Subagent records its phase entry as that ADR decides; the fallback entry is a separate kind and reads no declaration into a phase entry, and no option it rejected is taken.
+- ADR-0425: the session passes the restarted subagent's model to `roundfix phase start` as that ADR decides; no option it rejected is taken.
+- ADR-0421: the fallback entry names its repository by the same identity as a phase entry, and falls back to the path only when an identity is empty, as a reader of older entries must; no option it rejected is taken.
+- ADR-0420: not applicable — the corrections record is untouched.
+- ADR-0426: not applicable — the Corrections Report is untouched.
 - ADR-0050: not applicable — the fallbacks of a Run, and their rule that work already begun is not switched, are untouched.
 - ADR-0256: the skills and the phase reference describe both commands in the same change.
 - ADR-0349: the authorization record carries the Release Ceiling `minor` for a new key and two command paths.
@@ -347,6 +413,14 @@ Deviations from the PRD:
   - `phase model` follows invariants 4 and 7, across two Specs and two repositories.
   - Surface Transcripts 1 to 8 are asserted line by line.
 - **Skill tests.** A test under `skills/` asserts the paragraph of API Contract 6 in the four authoring skills and the section of API Contract 7.
+- **Recommendation tests.** Spec 0402's tests that hold the rendered block change their expectation to the block of Surface Transcript 9. They are not on the tree this plan was measured on, so the Task finds them on its base by the block's text:
+  - `TestRecommendedAuthoringDeclarationRendersValidProjectConfig`;
+  - `TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared`;
+  - `TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared`;
+  - `TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration`;
+  - `TestRunDoctorRealRepositoryCheckDoesNotMutateState`.
+
+  `TestTheRecommendedAuthoringDeclarationMatchesThisRepository` gains the fallback rule of API Contract 9, with a subtest for a fixture copy whose declared fallback differs.
 - **Tests this change moves**, measured in the prototype of the references (`references/2026-11-17-harness-and-test-measurements.md`), which the Tasks declare:
   - `TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow/phase_field` in `./internal/config`;
   - `TestPhaseStartSurfaceTranscripts/transcript_1` in `./internal/cli`, and, once Spec 0404 is delivered, its test of the full `roundfix phase --help`;
@@ -355,7 +429,7 @@ Deviations from the PRD:
 
 ## Build Order
 
-1. Fallback declaration: the key, its validation and the configuration guide.
+1. Fallback declaration and Recommendation: the key, its validation, the recommended table with its fallbacks, the contract and the configuration guide.
 2. Limit reader, Fallback entries and Phase subcommands: `phase fallback`, `phase model`, the helps, the command guide, the Phase Record section, and the coverage and surface records (depends on: 1).
 3. Skill and guide texts: the four authoring skills, the Roundfix skill and its phase reference, the glossary and the ADR notices, with the regeneration (depends on: 2).
 4. The QA gate (depends on: 1, 2, 3).
@@ -379,3 +453,4 @@ None.
 - `phase model` prints "no Author Subagent model" rather than failing when a phase declares no model, so a skill can always run it before starting.
 - A fallback entry stays in the record when the restart fails, so the Spec keeps its fallback (ADR-0429, Consequences).
 - The installation ignores the new key: no header, subagent file or check changes.
+- The contract compares this repository's fallbacks only where declared, until the operator's step adds them. See ADR-0430.

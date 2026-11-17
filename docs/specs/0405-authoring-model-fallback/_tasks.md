@@ -23,7 +23,7 @@ graph:
 
 | id      | title                                                                                         | type    | complexity | needs            |
 | ------- | --------------------------------------------------------------------------------------------- | ------- | ---------- | ---------------- |
-| task_01 | The Authoring Model Declaration accepts a fallback for each Authoring Phase                    | backend | medium     | —                |
+| task_01 | The Authoring Model Declaration accepts a fallback for each Authoring Phase, and the recommendation carries one | backend | medium     | —                |
 | task_02 | Roundfix decides and records an Authoring Fallback and prints the model a phase starts on      | backend | high       | task_01          |
 | task_03 | The authoring skills start the Author Subagent on the printed model and switch on its limit    | docs    | medium     | task_01, task_02 |
 | task_04 | Run the final QA gate                                                                          | qa      | high       | task_03          |
@@ -52,7 +52,7 @@ The Spec holds one context, the fallback of an Authoring Phase, in three
 implementation Tasks and the QA gate, under the reference size. Each Task
 earns its verification cycle:
 
-- a configuration key with its refusals and its guide;
+- a configuration key with its refusals, its guide and the recommended block with its contract;
 - a pure reader, a record kind and two commands;
 - four skills and their test.
 
@@ -76,6 +76,7 @@ tree, so each Task runs its packages again on its own base.
   `TestTheSkillCoverageMapIsCurrent`) pass once task 02 writes the guide, the
   reference and the coverage entries and runs the regeneration.
 - **Untouched packages.** `./skills` passed.
+- **Files of Spec 0402.** Task 01 declares under `creates:` the four files Spec 0402 adds: the recommendation, its test, its command test and its repository contract. They were not on this plan's tree, so `interface:` could not resolve. On the delivery base, which holds Spec 0402, the Task edits them.
 - **Governed Paths.** The record bounds the Roundfix skill's setup reference,
   which describes the Authoring Model Declaration and which task 01 changes.
 

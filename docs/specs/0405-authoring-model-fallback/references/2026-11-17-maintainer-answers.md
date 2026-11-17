@@ -39,6 +39,11 @@ Idea-stage judgment: indicated (shape_open yes 0.90, unverified_assumption no
   Opus limit — "Vamos manter opus high e sonnet high só para fallback ter
   algo."
 
+## Plan review, about 18:40 BRT
+
+- Which later phases stay on the fallback — "Só as do modelo esgotado (Recommended)".
+- Whether the Recommended Authoring Declaration that the Doctor Command and the Update Check print carries the fallbacks — "Incluir os reservas (Recommended)": the Idea, the PRD and the TechSpec fall back to Opus xhigh, the Tasks (Opus high) to Sonnet high, and research declares none.
+
 ## Authoring model
 
 Every phase of this Spec was authored on Opus 5.5 (`claude-opus-5-5`), not on

@@ -32,9 +32,10 @@ report.
    - the spend-limit lines as not a model's limit;
    - the observed `You've hit your Fable limit · resets Nov 22 at 8pm` as the Fable limit.
 8. MUST verify that a Project Config with a fallback on `research`, a fallback without a model, or a fallback that names its entry's model is refused with the messages of `_techspec.md` → Data Models.
-9. MUST run the glossary check of `docs/agents/domain.md` for **Authoring Fallback**, **Authoring Model Declaration**, **Author Subagent** and **Phase Record**. MUST confirm that ADR-0401 carries `Amended by ADR-0427` and ADR-0407 carries `Amended by ADR-0428`.
-10. MUST verify that this repository's `.roundfixrc.yml` is byte-identical to the Delivery Base: its fallbacks are the operator's step after the release.
-11. MUST NOT start an Agent session, an Author Subagent or a harness, and MUST NOT reach a provider or the network.
+9. MUST run the glossary check of `docs/agents/domain.md` for **Authoring Fallback**, **Authoring Model Declaration**, **Author Subagent** and **Phase Record**. MUST confirm that ADR-0401 carries `Amended by ADR-0427`, ADR-0407 carries `Amended by ADR-0428` and ADR-0415 carries `Amended by ADR-0430`.
+10. MUST verify Success Metric 5. Reproduce Surface Transcript 9 with the built binary in a fixture repository where `roundfix skills install --target project` installed the skills and `.roundfixrc.yml` declares no `skills`. Check that `roundfix doctor` prints the same block and that the configuration guide's block equals it.
+11. MUST verify that this repository's `.roundfixrc.yml` is byte-identical to the Delivery Base: its fallbacks are the operator's step after the release.
+12. MUST NOT start an Agent session, an Author Subagent or a harness, and MUST NOT reach a provider or the network.
 
 ## Subtasks
 
@@ -61,7 +62,7 @@ report.
 
 ## References
 
-- `_prd.md` → Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; User Stories 1 to 7; Glossary
-- `_techspec.md` → API Contracts 1 to 8; Surface Transcript 1, Surface Transcript 2, Surface Transcript 3, Surface Transcript 4, Surface Transcript 5, Surface Transcript 6, Surface Transcript 7, Surface Transcript 8; Interfaces (invariants 1 to 8); Data Models
+- `_prd.md` → Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; User Stories 1 to 7; Glossary
+- `_techspec.md` → API Contracts 1 to 8; Surface Transcript 1, Surface Transcript 2, Surface Transcript 3, Surface Transcript 4, Surface Transcript 5, Surface Transcript 6, Surface Transcript 7, Surface Transcript 8, Surface Transcript 9; API Contract 9; Interfaces (invariants 1 to 8); Data Models
 - [`references/2026-11-17-harness-and-test-measurements.md`](references/2026-11-17-harness-and-test-measurements.md)
-- ADR-0427, ADR-0428, ADR-0429, ADR-0401, ADR-0407
+- ADR-0427, ADR-0428, ADR-0429, ADR-0430, ADR-0415, ADR-0401, ADR-0407

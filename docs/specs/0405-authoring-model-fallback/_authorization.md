@@ -1,7 +1,7 @@
 ---
 status: approved
 granted: 2026-11-17
-action: let each Authoring Phase declare a fallback model and effort, add the commands that decide and record an Authoring Fallback and print the model a phase starts on, tell the four authoring skills and the Roundfix skill to switch and tell, and describe all of it in the guides, the glossary and the amended ADR-0401 and ADR-0407
+action: let each Authoring Phase declare a fallback model and effort, add the commands that decide and record an Authoring Fallback and print the model a phase starts on, tell the four authoring skills and the Roundfix skill to switch and tell, add the fallbacks to the Recommended Authoring Declaration and its contract, and describe all of it in the guides, the glossary and the amended ADR-0401, ADR-0407 and ADR-0415
 consuming: 0405-authoring-model-fallback
 paths:
   - .agents/skills/roundfix/SKILL.md
@@ -60,7 +60,8 @@ The author measured the governed set on 2026-11-17 in a clone on the branch `doc
 
 - Every Go source and test file under `internal/config`, `internal/phaserecord` and `internal/cli` that the Tasks declare, `internal/cli/cli.go` included.
 - The mirrors under `skills/roundfix/references/`, `skills/testdata/owned-skill-versions.json` and the tests under `skills/`.
-- `docs/user-guide/commands/phase.md`, `docs/user-guide/configuration.md`, `docs/user-guide/usage.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, `CONTEXT.md`, ADR-0401, ADR-0407, ADR-0427, ADR-0428 and ADR-0429.
+- `docs/user-guide/commands/phase.md`, `docs/user-guide/configuration.md`, `docs/user-guide/usage.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, `CONTEXT.md`, ADR-0401, ADR-0407, ADR-0415, ADR-0427, ADR-0428, ADR-0429 and ADR-0430.
+- The files Spec 0402 adds for the Recommended Authoring Declaration: `internal/config/authoring_recommendation.go`, its tests, `internal/cli/authoring_recommendation_test.go`, `internal/docscontract/authoring_recommendation_test.go`, `internal/cli/doctor_test.go` and the Doctor and Update Check guides, measured not governed.
 - Every planning file of this Spec and its references.
 
 ## Sanctioned regeneration
