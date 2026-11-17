@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.35
+  version: 0.0.36
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.35
+version: 0.0.36
 ---
 
 # Write Tasks
@@ -460,10 +460,10 @@ Wherever the phase runs, send its codebase, knowledge-base and web sweeps to the
 
 Once the Spec's slug is known, record the phase: run `roundfix phase start tasks --spec <slug>` in the session or the Author Subagent that runs it. When the installed Roundfix does not know the command, say so in the report and continue.
 
-When the phase ends, a Phase Boundary follows:
+When the phase ends, the session goes on: no phase of a Spec ends the session, whether a person is present or not.
 
-- **You are the phase's Author Subagent:** return your report and end no session; the session that started you applies the rule.
-- **Otherwise** write the Session Handoff with the Spec, the phase that ended, the next phase, each decision still open and what stays armed, tell the user what stays armed, and start no further phase in this session. The next session starts with the Roundfix skill's `follow-up` Skill Mode, which claims the handoff.
+- **You are the phase's Author Subagent:** return your report and end no session; the session that started you goes on with the next phase.
+- **Otherwise** go on in this session with the next phase or the next queued work, handing an Authoring Phase to its Author Subagent as its skill's `Declared model` section says, and write no Session Handoff for this phase. End the session only when the user asks or the work stops because nothing remains or what remains waits on the user; then write the Session Handoff with the Spec, the phase that ended, the next phase, each decision still open and what stays armed, and tell the user what stays armed. The next session starts with the Roundfix skill's `follow-up` Skill Mode, which claims the handoff.
 
 ## Process
 

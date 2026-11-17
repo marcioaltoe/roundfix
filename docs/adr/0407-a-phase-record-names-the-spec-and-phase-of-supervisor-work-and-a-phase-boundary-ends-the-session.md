@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-16T11:00:00Z
-updated_at: 2026-11-16T18:42:53Z
+updated_at: 2026-11-17T19:21:38Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -71,6 +71,8 @@ fails costs one warning and never changes a Run, a review or a command's
 result.
 
 **Amended by [ADR-0410](0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md) (2026-11-16).** The status view of the Follow-up Command reads the phase entries of the last seven days and names the latest Authoring Phase of a Spec being authored and when it was recorded. It reads no prompt entry and reports no usage: no command reads a harness transcript, prices a token or computes a limit percentage, and a failed write to the record still changes no command's result.
+
+**Amended by [ADR-0414](0414-a-supervisor-session-ends-only-when-the-maintainer-asks.md) (2026-11-17).** No phase of a Spec ends the Supervisor session, which writes the Session Handoff and ends only when the maintainer asks or the work stops. `roundfix phase start` reads no earlier entry, writes `boundary` as `false` without `previous_phase` or `previous_spec`, and prints no Boundary Notice. The Phase Record, its entries and the refusal of nothing stay.
 
 ## Considered Options
 

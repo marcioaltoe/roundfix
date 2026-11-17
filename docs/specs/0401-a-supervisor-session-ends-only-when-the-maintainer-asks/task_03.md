@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0401-a-supervisor-session-ends-only-when-the-maintainer-asks
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -159,3 +159,36 @@ version records are regenerated.
 - `_techspec.md` → API Contracts 4 and 5; Testing Approach (Task 3); Build Order 3; ADR Alternatives; Glossary
 - [`references/2026-11-16-the-phase-boundary-ends-the-session-after-every-authoring-phase.md`](references/2026-11-16-the-phase-boundary-ends-the-session-after-every-authoring-phase.md), the Backlog Entry of 2026-11-16 this Spec adopts
 - ADR-0414, ADR-0407, ADR-0401, ADR-0408
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, testing-boss
+
+Implementation:
+
+- Replaced the four canonical authoring-skill `## Phase boundary` bodies with API Contract 4 and changed the two Roundfix mode passages with API Contract 5.
+- Updated the boundary tests to assert the new phrases once and the retired phrases zero times in both layout copies.
+- Revised the `Phase Boundary` and `Session Handoff` glossary entries, removed the `Boundary Notice` entry, and amended ADR-0407 with ADR-0414 at `2026-11-17T19:21:38Z`.
+- Ran `make skills-sync`; canonical and mirrored skill files compare byte-for-byte. The owned-skill recorder added the next versions for `roundfix`, `write-idea`, `write-prd`, `write-tasks` and `write-techspec`.
+
+Focused checks:
+
+- `make skills-sync` — passed.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — passed (`1 passed in 1 packages`).
+- `go test ./skills -run '^$'` — passed compilation (`No tests found`).
+- Canonical/mirror `cmp` checks — passed; text counts show one new authoring rule per skill, zero old boundary sentences, one new rule in each Roundfix mode passage, zero `Boundary Notice` in `CONTEXT.md`, and one ADR-0414 amendment.
+- `git diff --check` — passed.
+
+Acceptance evidence:
+
+1. The authoring skills and Roundfix modes now state that no phase ends the session and that it ends only when the user asks or the work stops; the updated named tests encode these occurrences and the retired wording as zero-count checks.
+2. The diff changes only the phase-boundary bodies (plus sanctioned skill-version headers/records); the first paragraph and `Declared model` sections remain unchanged.
+3. `CONTEXT.md` and ADR-0407 carry the same no-automatic-session-end rule, and the glossary no longer names `Boundary Notice`.
+4. The named test checks now require the old boundary and stop phrases to occur zero times, so restoring either retired sentence violates the check contract.
+
+The Daemon must run the Task's declared Verification and settle status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T184233Z_1a94d8d70063e40c`
+- Source commit: `d1528d4eb09a3204ca0b9bd8ddacab4b8274182b`
