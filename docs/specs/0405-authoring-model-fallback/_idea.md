@@ -1,7 +1,7 @@
 ---
 spec: 0405-authoring-model-fallback
 created: 2026-11-17
-status: proposed
+status: promoted
 leverage: quick-win
 ---
 
