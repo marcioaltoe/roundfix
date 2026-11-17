@@ -135,6 +135,6 @@ output.
 
 ## References
 
-- `_prd.md` → Goals 1, 2, 3 and 5; Core Features 1 and 2; Success Metric 1; Success Metric 2; Success Metric 3; Non-Goals
+- `_prd.md` → Goals 1, 2, 3 and 6; Core Features 1 and 2; Success Metric 1; Success Metric 2; Success Metric 3; Non-Goals
 - `_techspec.md` → Recommendation; Reports; Interfaces (invariants 1 to 5 and 7); Data Models; API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Testing Approach (Task 1, Declared expectation changes); Build Order 1
 - ADR-0415, ADR-0401, ADR-0408, ADR-0402

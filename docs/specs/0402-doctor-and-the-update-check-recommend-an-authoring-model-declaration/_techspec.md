@@ -17,7 +17,7 @@ The primary trade-off is that the recommendation is a copy in the binary of what
 - Identifier strategy: not applicable — no persistent identifier is minted. The new names are a JSON state (`undeclared`) and two JSON fields (`installed`, `recommendation`), public CLI contract under `docs/agents/cli.md`. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — both checks read files of the checkout; the Update Check's release lookup is unchanged and this Spec adds no network call. Source: `docs/agents/cli.md`, `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0415 (new), ADR-0401, ADR-0408 and ADR-0402 bind the design; ADR-0405 and ADR-0414 cite ADR-0401 and do not apply. ADR Alternatives relates each one. Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization: "Mesmas do BE (Recommended)" (2026-11-17), quoted in the record. It covers the Roundfix skill's setup and modes references and its `SKILL.md` pair. It grants no Makefile, workflow, Go module, lint or formatter change, and no change to `.roundfixrc.yml`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/modes.md`, `.agents/skills/roundfix/references/setup.md`, `skills/roundfix/SKILL.md`.
+- Tooling authority: applicable — express maintainer authorization: "Mesmas do BE (Recommended)" (2026-11-17), quoted in the record. It covers the Roundfix skill's setup and modes references and its `SKILL.md` pair. It also covers the three changed lines of this repository's `.roundfixrc.yml` declaration, which must equal the maintainer's recommended values. It grants no Makefile, workflow, Go module, lint or formatter change. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/modes.md`, `.agents/skills/roundfix/references/setup.md`, `.roundfixrc.yml`, `skills/roundfix/SKILL.md`.
 
 ## System Architecture
 
@@ -25,7 +25,7 @@ No package, layer or directory is new. The fix extends three seams.
 
 ### Recommendation
 
-A new file `internal/config/authoring_recommendation.go` sits beside `recommendations.go`, which holds the Recommended Profile. It holds one unexported `AuthoringHarness` value and two exported functions: one returns a fresh copy, the other renders the block with fixed bytes. The table's values are this repository's declaration on 2026-11-17: `fable`/`xhigh` for `idea`, `prd` and `techspec`, `fable`/`high` for `tasks`, and `sonnet`/`medium` for `research`, with no `tools`.
+A new file `internal/config/authoring_recommendation.go` sits beside `recommendations.go`, which holds the Recommended Profile. It holds one unexported `AuthoringHarness` value and two exported functions: one returns a fresh copy, the other renders the block with fixed bytes. The table's values are the maintainer's of 2026-11-17 (about 12:40 BRT, "Bloco recomendado: - Fable xhigh para Ideia - Fable high para PRD e TechSpec - Opus high para Tasks - Sonnet medium para pesquisa"): `fable`/`xhigh` for `idea`, `fable`/`high` for `prd` and `techspec`, `opus`/`high` for `tasks`, and `sonnet`/`medium` for `research`, with no `tools`. This repository's declaration then declared `fable`/`xhigh` for `prd` and `techspec` and `fable`/`high` for `tasks`, so task_02 changes those three entries of `.roundfixrc.yml` to the table and regenerates the three Author Subagents they produce.
 
 ### Reports
 
@@ -39,7 +39,7 @@ The Doctor and Update Check call sites keep their order and conditions: the line
 
 ### Contract and guides
 
-A new repository contract test `internal/docscontract/authoring_recommendation_test.go` reads this repository's `.roundfixrc.yml` and `docs/user-guide/configuration.md`. The configuration guide's example block becomes the rendered recommendation. The Doctor and Update Check guides, the Roundfix skill's setup reference and `--update` mode, the glossary and ADR-0401 describe the report.
+A new repository contract test `internal/docscontract/authoring_recommendation_test.go` reads this repository's `.roundfixrc.yml` and `docs/user-guide/configuration.md`. This repository's declaration changes to the table in the same Task, and `roundfix skills install --target project`, run from the tree, regenerates `.claude/agents/roundfix-prd-author.md`, `roundfix-techspec-author.md` and `roundfix-tasks-author.md`; the four authoring skills receive no header, because this repository publishes them (ADR-0408). The configuration guide's example block becomes the rendered recommendation. The Doctor and Update Check guides, the Roundfix skill's setup reference and `--update` mode, the glossary and ADR-0401 describe the report.
 
 ## Implementation Design
 
@@ -107,12 +107,12 @@ No stored data changes. The Update Check JSON's `authoringModels` gains the stat
              reasoning_effort: xhigh
            prd:
              model: fable
-             reasoning_effort: xhigh
+             reasoning_effort: high
            techspec:
              model: fable
-             reasoning_effort: xhigh
+             reasoning_effort: high
            tasks:
-             model: fable
+             model: opus
              reasoning_effort: high
            research:
              model: sonnet
@@ -129,8 +129,9 @@ The first `...` stands for the version and Baseline lines, which depend on the b
 - Goal 1 (the warning) → Reports, API Contracts 1–3, Task 1.
 - Goal 2 (the block and the next step) → Recommendation, Reports, API Contracts 1–3, Surface Transcript 1, Task 1.
 - Goal 3 (no failure, no exit change, no write) → invariant 4, Task 1.
-- Goal 4 (one source, no silent drift) → Recommendation, Contract and guides, invariants 5 and 6, Tasks 1 and 2.
-- Goal 5 (today's cases keep their bytes) → invariants 3 and 7, Task 1.
+- Goal 4 (the maintainer's values, declared here too) → Recommendation, Contract and guides, Tasks 1 and 2.
+- Goal 5 (one source, no silent drift) → Recommendation, Contract and guides, invariants 5 and 6, Tasks 1 and 2.
+- Goal 6 (today's cases keep their bytes) → invariants 3 and 7, Task 1.
 - Core Feature 1 → Task 1. Core Feature 2 → Task 1. Core Feature 3 → Task 2. Core Feature 4 → Tasks 1 and 2.
 - Success Metrics 1, 2 and 3 → Task 1. Success Metric 4 → Task 2. Success Metric 5 → QA gate.
 
@@ -173,13 +174,13 @@ Deviations from the PRD: None.
 ## Build Order
 
 1. Recommendation and reports: `internal/config/authoring_recommendation.go`, the `undeclared` report in `internal/cli/authoring_reports.go`, `Lines` in `health.go` and `doctor.go`, their tests and the two changed tests, and the Doctor and Update Check guides with the Behavior Surface Record.
-2. Contract and documentation: the repository contract test, the configuration guide's block, the Roundfix skill's setup reference and `--update` mode with the mirror, the version record and the changed skills test, the glossary through `domain-modeling`, ADR-0401's amendment line and the Behavior Surface Record (depends on: 1 — the contract test calls the rendering and the guides describe the report step 1 builds).
+2. Contract and documentation: this repository's declaration changed to the table with its three regenerated Author Subagents, the repository contract test, the configuration guide's block, the Roundfix skill's setup reference and `--update` mode with the mirror, the version record and the changed skills test, the glossary through `domain-modeling`, ADR-0401's amendment line and the Behavior Surface Record (depends on: 1 — the contract test calls the rendering and the guides describe the report step 1 builds).
 3. QA gate: the PRD's metrics, the transcript and the outside-evidence fixture (depends on: 1, 2).
 
 ## Risks & Considerations
 
 - **A paste into a file that already has `skills:`.** The block starts at `skills:`. A repository whose `.roundfixrc.yml` holds `skills: {authoring: {}}` reaches the report too and must merge by hand; the guides say so. A duplicate key is refused when the configuration loads, so the mistake cannot pass silently.
-- **The recommendation names `fable`.** The alias depends on the Claude Code installed; a model name the harness refuses fails the subagent call, as ADR-0401 measured. The block is a recommendation the user reads before pasting.
+- **The recommendation names `fable` and `opus`.** The alias depends on the Claude Code installed; a model name the harness refuses fails the subagent call, as ADR-0401 measured. The block is a recommendation the user reads before pasting.
 - **Spec 0401 changes `modes.md`.** Both Specs change the Roundfix skill; the second to deliver records the next version on the merge base and rebases its sentence.
 - **Doctor parsers.** Tools that read Doctor's output line by line now see indented lines in one case; every check line still starts at the first column with its name.
 
@@ -190,6 +191,7 @@ Deviations from the PRD: None.
 
 ## Decisions
 
+- The table holds the maintainer's values of 2026-11-17, and this repository's declaration changes to them.
 - The recommendation lives in one table in `internal/config`, held equal to this repository's declaration and the configuration guide by a repository contract test. See ADR-0415.
 - The block omits `research.tools`. See ADR-0415 and ADR-0402.
 - A problem the inspection finds keeps today's report; `undeclared` applies only without one, so a leftover generated file is fixed by installation first.

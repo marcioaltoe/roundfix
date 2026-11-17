@@ -76,12 +76,24 @@ it.
    Recommended Authoring Declaration when the authoring skills are
    installed without one, and Roundfix still applies no model name by
    itself. Change nothing else in ADR-0401.
-8. MUST change no Governed Path outside `_authorization.md` `paths` and no
-   file outside the ones this Task declares; `.roundfixrc.yml` stays
-   unchanged.
+8. MUST change this repository's `.roundfixrc.yml` only in
+   `skills.authoring.claude`: `prd` and `techspec` to `fable`/`high` and
+   `tasks` to `opus`/`high`, the values of `_techspec.md` → Recommendation;
+   `idea` and `research`, its `tools` included, and every other line stay
+   as they are. Then run the sanctioned
+   `go run -buildvcs=false ./cmd/roundfix skills install --target project`,
+   which regenerates `.claude/agents/roundfix-prd-author.md`,
+   `.claude/agents/roundfix-techspec-author.md` and
+   `.claude/agents/roundfix-tasks-author.md`, one line each, and writes no
+   header into the four authoring skills, because this repository publishes
+   them (ADR-0408). Keep any other file the installation would change out
+   of the commit and report it. Hand-edit no generated subagent.
+9. MUST change no Governed Path outside `_authorization.md` `paths` and no
+   file outside the ones this Task declares.
 
 ## Subtasks
 
+- [ ] Set this repository's authoring declaration to the recommendation and regenerate its three Author Subagents.
 - [ ] Add the repository contract test for the configuration and the guide.
 - [ ] Show the recommendation in the configuration guide and re-record the Behavior Surface Record.
 - [ ] Describe the report in the Roundfix skill's setup reference and `--update` mode, synchronize and record the version.
@@ -94,6 +106,7 @@ it.
 - [ ] The configuration guide, the setup reference, the `--update` mode and the glossary describe the Recommended Authoring Declaration and the `undeclared` report.
 - [ ] The mirrors, the `SKILL.md` pair and the version record follow the canonical copies, and every skills test passes.
 - [ ] ADR-0401 names its amendment by ADR-0415 and keeps the rest of its text.
+- [ ] This repository's declaration and its generated Author Subagents carry the recommended values, and `roundfix skills check` reports them applied.
 
 ## Context
 
@@ -110,6 +123,10 @@ it.
 - interface: `skills/roundfix/SKILL.md`
 - interface: `skills/testdata/owned-skill-versions.json`
 - interface: `skills/authoring_delegation_test.go`
+- interface: `.roundfixrc.yml`
+- interface: `.claude/agents/roundfix-prd-author.md`
+- interface: `.claude/agents/roundfix-techspec-author.md`
+- interface: `.claude/agents/roundfix-tasks-author.md`
 - interface: `CONTEXT.md`
 - interface: `docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md`
 
@@ -125,8 +142,10 @@ it.
 - `grep -F -- '**Recommended Authoring Declaration**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Recommended Authoring Declaration\*\*(:| —( |$))' && grep -F -- '**Authoring Model Declaration**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Authoring Model Declaration\*\*(:| —( |$))'` — expected: exit 0. Before this Task the glossary has no **Recommended Authoring Declaration** line, so the command fails; afterwards both entries are definitions.
 - `tr -s '[:space:]' ' ' < docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md | grep -qF -- "Amended by [ADR-0415]" || { printf 'missing phrase in %s: %s\n' docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md "Amended by [ADR-0415]" >&2; exit 1; }` — expected: exit 0. Before this Task ADR-0401 names no amendment by ADR-0415.
 
+- `tr -s '[:space:]' ' ' < .claude/agents/roundfix-tasks-author.md | grep -qF -- "model: opus" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-tasks-author.md "model: opus" >&2; exit 1; }; tr -s '[:space:]' ' ' < .claude/agents/roundfix-prd-author.md | grep -qF -- "effort: high" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-prd-author.md "effort: high" >&2; exit 1; }; tr -s '[:space:]' ' ' < .claude/agents/roundfix-techspec-author.md | grep -qF -- "effort: high" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-techspec-author.md "effort: high" >&2; exit 1; }` — expected: exit 0. Before this Task the tasks author runs on `fable` and the PRD and TechSpec authors on `xhigh`, so the command fails; afterwards the regenerated subagents carry the recommended values.
+
 ## References
 
-- `_prd.md` → Goal 4; Core Features 3 and 4; Success Metric 4; Glossary
+- `_prd.md` → Goals 4 and 5; Core Features 3 and 4; Success Metric 4; Glossary
 - `_techspec.md` → Contract and guides; Interfaces (invariant 6); API Contract 4; Testing Approach (Task 2, contract and skill); ADR Alternatives (ADR-0401); Build Order 2
 - ADR-0415, ADR-0401, ADR-0402

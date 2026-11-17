@@ -29,6 +29,9 @@ authoring phases run on whatever model the session uses, and no report says
 so. The maintainer chose on 2026-11-17 "Avisar e sugerir (Recommended)":
 Doctor and the Update Check warn in that case and show the block to paste,
 with the models Roundfix itself declares; they never fail and never write.
+The same day he set the values (verbatim): "Bloco recomendado: - Fable xhigh para Ideia - Fable high para PRD e TechSpec - Opus high para Tasks - Sonnet medium para pesquisa".
+This repository's own declaration then said `fable`/`xhigh` for `prd` and
+`techspec` and `fable`/`high` for `tasks`, and changes to those values.
 
 ADR-0401 rejected "Model names shipped as defaults" because "a name ages and
 assumes one vendor". The Recommended Profile already ships dated model names
@@ -57,7 +60,9 @@ Update Check's `next`.
 
 **The source.** `internal/config` holds the Recommended Authoring
 Declaration as one table: the model and reasoning effort of `idea`, `prd`,
-`techspec`, `tasks` and `research`, and the function that renders the block.
+`techspec`, `tasks` and `research` (`fable`/`xhigh`, `fable`/`high`,
+`fable`/`high`, `opus`/`high` and `sonnet`/`medium`), and the function that
+renders the block.
 The block holds no `research.tools`: reaching the network or an MCP server
 stays each repository's choice (ADR-0402). A repository contract test fails
 when this repository's `.roundfixrc.yml` declares another model or effort for

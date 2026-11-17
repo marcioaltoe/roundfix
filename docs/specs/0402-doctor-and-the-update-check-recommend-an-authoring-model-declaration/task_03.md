@@ -102,7 +102,7 @@ ignore, `.txt` for command output, and links only files it kept.
       `TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared`.
    4. The rendering gains `tools: [WebSearch]` under `research`:
       `TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes`.
-   5. One effort of the table changes from `xhigh` to `high`:
+   5. The `tasks` model of the table changes from `opus` to `fable`:
       `TestTheRecommendedAuthoringDeclarationMatchesThisRepository/repository_config`.
    6. One line of the configuration guide's block changes:
       `TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide`.
@@ -119,7 +119,7 @@ ignore, `.txt` for command output, and links only files it kept.
     - the Task commit range changes none of these: the Makefile, the CI
       workflows, `go.mod`, `go.sum`, `skills-lock.json`, `CHANGELOG.md`,
       `internal/app/version.go`, `dist/npm/roundfix/package.json`,
-      `.roundfixrc.yml`, `internal/cli/cli_test.go`,
+      `internal/cli/cli_test.go`,
       `internal/docscontract/publicdocs_test.go`,
       `internal/config/recommendations.go`, `internal/agent/catalog.go`,
       `docs/references/model-selection.md`,
@@ -128,6 +128,11 @@ ignore, `.txt` for command output, and links only files it kept.
       or `internal/baseline/assets/`, any Vendored Skill under
       `.agents/skills`, any ADR other than ADR-0401, and any owned skill
       other than `roundfix`;
+    - `.roundfixrc.yml` differs from the Delivery Base only in the `prd`,
+      `techspec` and `tasks` entries of `skills.authoring.claude`, and
+      `.claude/agents/` differs only in `roundfix-prd-author.md`,
+      `roundfix-techspec-author.md` and `roundfix-tasks-author.md`, each
+      matching what `bin/roundfix skills install --target project` writes;
     - ADR-0401 differs from the Delivery Base (the merge base of the
       audited head with the default branch) only by the added amendment
       paragraph;

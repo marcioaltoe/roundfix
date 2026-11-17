@@ -56,12 +56,13 @@ Each was measured or derived on the planning branch, based on `bcd716df`.
   `TestRunDoctorRealRepositoryCheckDoesNotMutateState`. task_01 declares
   both files and names both changes.
 - **The governed set was measured** with a `go test -overlay` probe of
-  `speccheck.GovernedPath` over the 38 paths the Tasks declare or read.
-  The governed ones the Tasks change are the four in `_authorization.md`
-  `paths`. `internal/cli/cli_test.go`,
-  `internal/docscontract/publicdocs_test.go` and `.roundfixrc.yml` are
-  governed and no Task changes them; the contract test reads
-  `.roundfixrc.yml` and no Task declares it.
+  `speccheck.GovernedPath` over the 38 paths the Tasks declare or read,
+  rerun with the five generated subagents, `skills-lock.json` and ADR-0414
+  after the maintainer set the recommended values. The governed ones the
+  Tasks change are the five in `_authorization.md` `paths`, `.roundfixrc.yml`
+  included. `internal/cli/cli_test.go` and
+  `internal/docscontract/publicdocs_test.go` are governed and no Task
+  changes them; the generated subagents are not governed.
 - **The derived set of task_02** follows the pattern Spec 0400 measured for
   the Roundfix skill: `make skills-sync` rewrites the two mirrors under
   `skills/roundfix/references/`, and the `-record-skill-versions` step
@@ -77,6 +78,13 @@ Each was measured or derived on the planning branch, based on `bcd716df`.
   "Roundfix ships no model name" in the setup reference; task_02 declares
   it and changes the phrase. No other `_test.go` file pins the sentences the
   Tasks change.
+- **This repository's declaration follows the table.** The maintainer set
+  the values on 2026-11-17, so task_02 changes three entries of
+  `.roundfixrc.yml`. On a scratch worktree, the installation from the tree
+  then changed exactly `.claude/agents/roundfix-prd-author.md`,
+  `roundfix-techspec-author.md` and `roundfix-tasks-author.md`, one line
+  each, and withheld the header of the four published authoring skills
+  (ADR-0408); task_02 declares the three files and runs it.
 - **The transcript runs on a development version.** The QA gate builds a
   binary stamped `0.0.0-dev`, so the Update Check makes no release lookup
   and needs no network.

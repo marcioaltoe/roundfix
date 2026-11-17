@@ -1,12 +1,13 @@
 ---
 status: approved
 granted: 2026-11-17
-action: report installed authoring skills without an Authoring Model Declaration in roundfix doctor and roundfix update check with the Recommended Authoring Declaration from one table in internal/config, hold this repository's declaration and the configuration guide equal to it with a repository contract test, and describe the report in the guides, the Roundfix skill's setup reference and --update mode, the glossary and ADR-0401
+action: set this repository's authoring declaration to the maintainer's recommended values, report installed authoring skills without an Authoring Model Declaration in roundfix doctor and roundfix update check with the Recommended Authoring Declaration from one table in internal/config, hold this repository's declaration and the configuration guide equal to it with a repository contract test, and describe the report in the guides, the Roundfix skill's setup reference and --update mode, the glossary and ADR-0401
 consuming: 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration
 paths:
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/roundfix/references/modes.md
   - .agents/skills/roundfix/references/setup.md
+  - .roundfixrc.yml
   - skills/roundfix/SKILL.md
 operations:
   - implement
@@ -28,6 +29,8 @@ The maintainer reported the defect and chose the fix on 2026-11-17. The answers 
 
 - 17/11 ~10:20 BRT: falta de skills.authoring.claude não é avisada → "Avisar e sugerir (Recommended)": doctor e update check dão warn quando as skills de autoria estão instaladas sem declaração, mostrando o bloco recomendado para colar no .roundfixrc.yml; não falha nem grava; Spec fix após a 0401. Autorização da Spec 0402 → "Mesmas do BE (Recommended)".
 
+The maintainer then set the recommended values (2026-11-17 ~12:40 BRT, verbatim): "Bloco recomendado: - Fable xhigh para Ideia - Fable high para PRD e TechSpec - Opus high para Tasks - Sonnet medium para pesquisa". This repository's `.roundfixrc.yml` declared other values for `prd`, `techspec` and `tasks`, and the contract test holds it equal to the table, so the Spec changes those entries. The grant "Mesmas do BE" covers the Governed Paths each Spec declares, and this record declares `.roundfixrc.yml` for those authoring entries only.
+
 "Mesmas do BE" keeps the cycle BE rules of 2026-11-13 and, through them, the grants of the cycles before it. These include the 2026-09-30 grant of every skill ("considere autorizado a ajustar todas as skills se necessário") and the cycle AJ grant of 2026-10-19 "Mexer em Governed Paths declarados", whose option text reads: "'Concedo' para os caminhos que cada Spec declarar (módulos Baseline, registros, skills, testes governados; fora: Makefile, CI, go.mod, lint, que pedem autorização específica)."
 
 The Makefile, `.github/workflows`, `go.mod`, `go.sum` and the lint and formatter configuration are granted only for a correction that requires one. This Spec's design needs none of them.
@@ -39,11 +42,10 @@ This record grants `implement`, `commit`, `push`, `pull_request`, `merge` and `r
 The author measured the governed set on 2026-11-17 in a clone on the branch `docs/plan-0402`, based on `bcd716df`, with `speccheck.GovernedPath`.
 
 - The measurement used a `go test -overlay` probe in `internal/speccheck` that wrote nothing to the repository. The probe file never existed in the tree.
-- It covered 38 paths: every source, test, guide, skill, record and document file the TechSpec names or expects the Tasks to change or create, this Spec's planning files, ADR-0401 and ADR-0415, and controls.
-- The four paths above are the governed ones this Spec's design changes: the Roundfix skill's canonical setup and modes references and its `SKILL.md` pair.
+- It covered 38 paths on 2026-11-17 and was rerun on a scratch worktree of the planning branch with 7 more: the five generated subagents under `.claude/agents/`, `skills-lock.json` and ADR-0414. In all, every source, test, guide, skill, record and document file the TechSpec names or expects the Tasks to change or create, this Spec's planning files, ADR-0401 and ADR-0415, and controls.
+- The five paths above are the governed ones this Spec's design changes: the Roundfix skill's canonical setup and modes references, its `SKILL.md` pair, and `.roundfixrc.yml`. The generated subagents and `skills-lock.json` are not governed.
 - These governed paths are not granted, and no Task may change them:
   - `internal/cli/cli_test.go` and `internal/docscontract/publicdocs_test.go`; new tests go in new files;
-  - `.roundfixrc.yml`, whose declaration the contract test reads and never changes;
   - the controls: the `Makefile`, `.github/workflows/ci-verify.yml` and `go.mod`.
 
 `write-tasks` measures the exact derived set on a scratch copy before the Run. If a sanctioned regeneration rewrites a governed path outside `paths`, the operator amends this record before the Run, outside the change it authorizes.
@@ -52,6 +54,7 @@ The author measured the governed set on 2026-11-17 in a clone on the branch `doc
 
 - Every Go source and test file under `internal/config`, `internal/cli` and `internal/docscontract` that the Tasks declare, except the two governed tests above.
 - The mirrors `skills/roundfix/references/setup.md` and `skills/roundfix/references/modes.md`, `skills/testdata/owned-skill-versions.json` and the tests under `skills/`.
+- `.claude/agents/roundfix-prd-author.md`, `.claude/agents/roundfix-techspec-author.md` and `.claude/agents/roundfix-tasks-author.md`.
 - `docs/user-guide/commands/doctor.md`, `docs/user-guide/commands/update.md`, `docs/user-guide/configuration.md`, `CONTEXT.md`, `docs/references/behavior-surfaces.json`, ADR-0401 and ADR-0415.
 - Every planning file of this Spec and its references.
 
@@ -77,14 +80,24 @@ outputs:
   - docs/references/behavior-surfaces.json
 ```
 
-No mirror, version field, digest or record is hand-edited.
+```yaml
+command: go run -buildvcs=false ./cmd/roundfix skills install --target project
+outputs:
+  - .claude/agents/roundfix-prd-author.md
+  - .claude/agents/roundfix-techspec-author.md
+  - .claude/agents/roundfix-tasks-author.md
+```
+
+Measured on a scratch worktree of the planning branch on 2026-11-17: with the three entries changed, the installation changed exactly those three files, one `model` or `effort` line each; it withheld the header of the four published authoring skills (ADR-0408) and left `.agents/skills`, `skills-lock.json`, `roundfix-idea-author.md` and `roundfix-researcher.md` unchanged.
+
+No mirror, version field, digest, record or generated subagent is hand-edited.
 
 ## Limits
 
 - No change to any of these:
   - the Makefile, the CI workflows, `go.mod` or `go.sum`;
   - the lint, formatter or test-runner configuration;
-  - `.roundfixrc.yml` or `skills-lock.json`;
+  - `.roundfixrc.yml` beyond the `prd`, `techspec` and `tasks` entries of `skills.authoring.claude`, or `skills-lock.json`;
   - any Baseline module, template, profile, Source Baseline or Setup Snapshot, and any file under `docs/agents/`;
   - any other skill, Vendored Skill or Archive Record;
   - the `### QA settlement` section of any skill;

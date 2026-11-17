@@ -4,6 +4,10 @@ The maintainer answered through AskUserQuestion on 2026-11-17, about 10:20 BRT, 
 
 - 17/11 ~10:20 BRT: falta de skills.authoring.claude não é avisada → "Avisar e sugerir (Recommended)": doctor e update check dão warn quando as skills de autoria estão instaladas sem declaração, mostrando o bloco recomendado para colar no .roundfixrc.yml; não falha nem grava; Spec fix após a 0401. Autorização da Spec 0402 → "Mesmas do BE (Recommended)".
 
+At about 12:40 BRT the same day the maintainer set the block's values, relayed by the operator verbatim:
+
+- "Bloco recomendado: - Fable xhigh para Ideia - Fable high para PRD e TechSpec - Opus high para Tasks - Sonnet medium para pesquisa"
+
 The operator's brief for the TechSpec adds:
 
 - the block shows the models Roundfix itself declares or uses;

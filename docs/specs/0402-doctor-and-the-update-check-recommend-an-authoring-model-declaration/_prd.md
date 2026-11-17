@@ -28,13 +28,14 @@ None in `requires`. Authored against `bcd716df` (`docs/plan-0402`, `v0.147.1`). 
 - Identifier strategy: not applicable — no identifier is minted. The new JSON state and fields are named in the TechSpec. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — both checks stay local and read files of the checkout; the Update Check's release lookup is unchanged. Source: `docs/agents/cli.md`, `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0415 (new) records the decision and amends ADR-0401; ADR-0408 (published skills stay exempt) and ADR-0402 (the Research Subagent's tools) bind it; ADR-0405 and ADR-0414, which cite ADR-0401, are listed as not applying; the TechSpec relates each one. Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization: the answer "Mesmas do BE (Recommended)" of 2026-11-17, quoted in the authorization record. It covers the Roundfix skill's setup and modes references, their `SKILL.md` pair and the governed tests the record lists. It grants no Makefile, workflow, Go module, lint or formatter change. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/modes.md`, `.agents/skills/roundfix/references/setup.md`, `skills/roundfix/SKILL.md`.
+- Tooling authority: applicable — express maintainer authorization: the answer "Mesmas do BE (Recommended)" of 2026-11-17, quoted in the authorization record. It covers the Roundfix skill's setup and modes references, their `SKILL.md` pair, and the authoring entries of this repository's `.roundfixrc.yml`. It grants no Makefile, workflow, Go module, lint or formatter change. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/modes.md`, `.agents/skills/roundfix/references/setup.md`, `.roundfixrc.yml`, `skills/roundfix/SKILL.md`.
 
 ## Goals
 
 - A repository with an installed authoring skill it does not publish and no `skills.authoring.claude` gets `authoring-models: warn` from Doctor and `Authoring models:` with `authoringModels.state` `undeclared` from the Update Check.
 - Both print the Recommended Authoring Declaration as a block ready for `.roundfixrc.yml`, and name `roundfix skills install --target project` as the step after it.
 - Neither check fails, changes its exit code or the Update Check's `next`, or writes a file.
+- The block carries the maintainer's values: `fable`/`xhigh` for `idea`, `fable`/`high` for `prd` and `techspec`, `opus`/`high` for `tasks` and `sonnet`/`medium` for `research`, and this repository declares the same.
 - The block's values have one source in the binary, and this repository's own declaration and the configuration guide cannot drift from it unnoticed.
 - Every case reported today keeps its bytes: a declaration, a leftover generated file, a repository that publishes every installed authoring skill, no installed authoring skill, Project Config not read, and outside a Git repository.
 
@@ -74,7 +75,7 @@ authoring-models: warn (the authoring skills are installed without an Authoring 
 - `roundfix skills check`, `roundfix skills install` and `roundfix baseline update`.
 - A key that silences the warning, or a harness other than `claude`.
 - Recommending `research.tools`.
-- Changing this repository's `.roundfixrc.yml`, the Recommended Profile or the Model Catalog.
+- Changing anything in this repository's `.roundfixrc.yml` beyond the three authoring entries that must equal the recommendation, or the Recommended Profile or the Model Catalog.
 
 ## Success Metrics
 
@@ -110,6 +111,8 @@ The decisions were checked on 2026-11-17 against these sources:
 
 - 2026-11-17: What happens when the authoring skills are installed and `skills.authoring.claude` is not declared? — "Avisar e sugerir (Recommended)": Doctor and the Update Check warn in that case and show the recommended block to paste into `.roundfixrc.yml`; they never fail and never write; a fix Spec after 0401.
 - 2026-11-17: Which authorization applies to Spec 0402? — "Mesmas do BE (Recommended)": implement, commit, push, pull request, merge and release right after the Spec, up to three corrections. Makefile, CI, `go.mod` and lint only if a correction requires one.
+
+- 2026-11-17 (about 12:40 BRT): Which values does the recommended block carry? — "Bloco recomendado: - Fable xhigh para Ideia - Fable high para PRD e TechSpec - Opus high para Tasks - Sonnet medium para pesquisa". This repository's own declaration changes to the same values, because the contract test holds it to the table.
 
 Autonomous route: no person present during authoring; the remaining decisions were taken from the operator's brief for the TechSpec of Spec 0402 of 2026-11-17 and the measurement.
 
