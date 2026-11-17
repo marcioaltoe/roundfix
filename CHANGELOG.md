@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.147.1] - 2026-11-17
+
+### A repository's own rules go to the specific-repository guide, and Roundfix names the ones that do not
+
+- **The Baseline says where a repository rule belongs.** The adopted guides (`agent-instructions.md`, `skill-dispatch.md`), the root instruction pointer and the starter of `docs/agents/specific-repository.md` now state, with an example, that every rule or variation of a repository goes only in `docs/agents/specific-repository.md`, never in a Baseline-owned file or in the root `AGENTS.md`/`CLAUDE.md`.
+- **`roundfix baseline update` and `roundfix doctor` name each Misplaced Repository Rule.** A passage outside the Baseline markers in a file the Setup Manifest lists, a hand edit inside a marked region, or a regular root `CLAUDE.md` with its own rules is reported with its path, line range, first line and the destination `docs/agents/specific-repository.md`. `baseline update` adds `misplacedRepositoryRules` to its JSON and a `Misplaced repository rules` section to its text, outside the plan document, so the Plan Digest and exit codes do not change; `doctor` adds a `baseline-rules` line that warns with `DR-BASELINE-RULE-MISPLACED` and never fails. Nothing is moved automatically: the `setup-context-driven` skill reports the passages and moves them only with the person's approval. Blocks other tools write between their own `BEGIN:`/`END:` comments and symbolic-link `CLAUDE.md` files are skipped. ADR-0411.
+
 ## [0.147.0] - 2026-11-16
 
 ### The status view shows the Spec queue with a forecast start and end
