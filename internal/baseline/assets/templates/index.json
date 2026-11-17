@@ -4,7 +4,7 @@
   "templates": [
     {
       "id": "template.extension.repository-rules",
-      "version": 1,
+      "version": 2,
       "kind": "repository-extension",
       "path": "extensions/specific-repository.md",
       "tokens": []
@@ -115,7 +115,7 @@
     },
     {
       "id": "template.root.repository-extension",
-      "version": 1,
+      "version": 2,
       "kind": "root-block",
       "path": "root/repository-extension.md",
       "tokens": ["reference.repository-extension"]
@@ -136,7 +136,7 @@
     },
     {
       "id": "template.guide.agent-instructions",
-      "version": 3,
+      "version": 4,
       "kind": "guide",
       "path": "guides/agent-instructions.md",
       "tokens": ["artifact.rules", "verification.gate", "verification.incremental", "branch.prefix"]
@@ -303,7 +303,7 @@
     },
     {
       "id": "template.guide.skill-dispatch",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/skill-dispatch.md",
       "tokens": ["artifact.rules", "active-modules.skill-dispatch"]

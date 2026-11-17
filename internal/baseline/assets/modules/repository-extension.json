@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "repository-extension",
-  "version": 1,
+  "version": 2,
   "kind": "repository-policy",
   "title": "Repository-Specific Normative Rules",
   "dependsOn": ["core"],
@@ -12,7 +12,7 @@
   "rootBlocks": [
     {
       "id": "root.repository-extension",
-      "version": 1,
+      "version": 2,
       "template": "template.root.repository-extension",
       "rules": [],
       "references": [

@@ -161,6 +161,42 @@ writes nothing. A declared decision also answers a new decision without
 `--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
 `roundfix baseline update --decision auth.base_path=/auth`.
 
+#### Misplaced repository rules
+
+After reading a valid Setup Manifest, every update result names each
+Misplaced Repository Rule: a passage outside a Managed Region or a region
+whose bytes differ from the recorded digest. The section follows
+`Unrecorded managed regions` when present and precedes `Retention evidence`:
+
+```text
+Misplaced repository rules: <n>
+- <path>:<start>-<end>: <firstLine>
+  Move to: docs/agents/specific-repository.md
+- <path>:<start>-<end> (managed identity <id>): <firstLine>
+  Move to: docs/agents/specific-repository.md
+```
+
+Each entry uses the matching form above. Paths are repository-relative and
+line numbers are 1-based, measured after the apply for an applied result.
+An empty report prints `Misplaced repository rules: 0`. With at least one
+passage and `repository.extension.enabled` not `true`, the section adds:
+
+```text
+Next for misplaced rules: roundfix baseline update --decision repository.extension.enabled=true, then move each passage
+```
+
+JSON adds `misplacedRepositoryRules`, an array whose entries have `path`,
+`startLine`, `endLine`, `firstLine`, `moveTo` and, only for a digest mismatch,
+`managedId`. It is `[]` when empty and omitted before a valid Setup Manifest
+is read. The field is outside the Plan Document; it changes neither the Plan
+Digest nor any exit code. A detector error is a `Warning:` line and a JSON
+`warnings` entry; it adds no failure.
+
+A block another tool delimits with matching `<!-- BEGIN:<name> -->` and
+`<!-- END:<name> -->` lines is not reported. The command moves nothing. A
+person or a supervised Agent moves each passage into
+`docs/agents/specific-repository.md`; the Agent needs the person's approval.
+
 Roundfix checks a required external skill only for presence: an entry in
 `skills-lock.json` and a folder under `.agents/skills`. It reads neither the
 folder's files nor the entry's `computedHash`, never compares the skill with

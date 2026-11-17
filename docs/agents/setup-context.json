@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:83769cd0e24e7960b7c226bf21f60dd0cd19d0c1436192131794d2ba07185df7",
+  "catalogDigest": "sha256:f894bdf824bb135ddb238c00f4bd430795ec666c83a3cb7217e0c006cc371ec0",
   "modules": [
     "core",
     "context-workflow",
@@ -66,7 +66,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "d1221ce4e5da9705c94309d289a48079c2deedbebbf10c30d2b5362e3dc8020b"
+      "digest": "193652e757a7149077b2c4de44d0b363a1d8643d1f29e231f2f090ba876be429"
     },
     {
       "id": "root.core",
@@ -84,7 +84,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "64b394052ea39d7a3859ce6d695f7e98686a25920d6596a01e6aea4cb4a32b88"
+      "digest": "c884c0023e22c98c9d2a2e285e243ef782d52440953dbd49e1a662d159ff7c6c"
     },
     {
       "id": "root.context-workflow",
@@ -156,7 +156,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "3a13dfa996b2e97ae429efaf50c83cf9b9773681ecb35d7ac7dcf2109c996452"
+      "digest": "cc65fc8d43c04a09d02ff7a2fd58e9f37a610c810964722e04f0b2500700ecaf"
     },
     {
       "id": "root.cli-surface",
@@ -246,7 +246,7 @@
       "module": "repository-extension",
       "template": "template.root.repository-extension",
       "version": "0.0.1",
-      "digest": "62ff0225ef4c1b6f53f2be4a54522d69d387c8ba20a8419a71968aa30b0c2780"
+      "digest": "9ebba467fceaf7594a0e9015aa198c07639c8cdd9e3a5a0d71c87f72eec3eafc"
     }
   ],
   "localSkills": [],
@@ -270,5 +270,5 @@
       "declarationDigest": "sha256:387cf4f9a887b8224148bb286b78aff411273f139812ec0ffee9481dbb41bd3d"
     }
   ],
-  "roundfixVersion": "0.145.1"
+  "roundfixVersion": "0.147.0"
 }

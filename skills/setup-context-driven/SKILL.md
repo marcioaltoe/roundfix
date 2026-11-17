@@ -4,10 +4,10 @@ description: Adopt, update, or verify a repository's Context-Driven Baseline thr
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.8
+  version: 0.0.9
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.8
+version: 0.0.9
 ---
 
 # Setup Context-Driven
@@ -171,6 +171,10 @@ still resolve. A profile change produces a new full interactive plan. If the
 maintainer rejects the plan, use the command's decision-area revision flow.
 Every accepted correction must produce a new Plan Digest and another complete
 review.
+
+When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+Repository Rule, report each passage to the person and move it into
+`docs/agents/specific-repository.md` only with the person's approval.
 
 Profile alignment runs before instruction classification. For
 profile-specific blockers, the interactive command offers **Change Baseline

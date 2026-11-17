@@ -108,6 +108,7 @@ type baselineUpdateResult struct {
 	CurrentCatalog           baseline.CatalogIdentity             `json:"currentCatalog"`
 	FileChanges              []baseline.FileChange                `json:"fileChanges"`
 	UnrecordedManagedRegions []baseline.UnrecordedManagedRegion   `json:"unrecordedManagedRegions,omitempty"`
+	MisplacedRepositoryRules *[]baseline.MisplacedRepositoryRule  `json:"misplacedRepositoryRules,omitempty"`
 	Retention                []baseline.RetentionEvidence         `json:"retention"`
 	ClauseDelta              *baseline.ClauseDelta                `json:"clauseDelta,omitempty"`
 	Warnings                 []baseline.Finding                   `json:"warnings"`
@@ -121,6 +122,9 @@ type baselineUpdateResult struct {
 	VerifiedHistoryMoves     []baseline.HistoryMove               `json:"verifiedHistoryMoves,omitempty"`
 	StatusMatrix             *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
 	Skills                   baselineUpdateSkillsResult           `json:"skills"`
+
+	misplacedRulesRoot             string
+	misplacedRulesExtensionEnabled bool
 }
 
 func runBaselineUpdateCommand(
@@ -193,6 +197,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 
 	input, resolveErr := baseline.ResolveManifestInput(request.repo, catalog)
 	if input.Manifest.CatalogDigest != "" {
+		result.misplacedRulesRoot = request.repo
 		result.PriorCatalog = baseline.CatalogIdentity{
 			SchemaVersion: baseline.CatalogSchemaVersion(),
 			Digest:        input.Manifest.CatalogDigest,
@@ -806,6 +811,23 @@ func writeBaselineUpdateOutcome(
 	stdout io.Writer,
 	stderr io.Writer,
 ) int {
+	// Detect at emission so every post-manifest outcome describes the final bytes,
+	// including an apply followed by a failed history or skills stage.
+	if result.misplacedRulesRoot != "" {
+		rules := []baseline.MisplacedRepositoryRule{}
+		result.MisplacedRepositoryRules = &rules
+		report, err := baseline.MisplacedRepositoryRules(result.misplacedRulesRoot)
+		if err != nil {
+			result.Warnings = append(result.Warnings, baseline.Finding{
+				Code:    "baseline.misplaced-rules.unread",
+				Path:    "docs/agents/setup-context.json",
+				Message: err.Error(),
+			})
+		} else {
+			rules = append(rules, report.Rules...)
+			result.misplacedRulesExtensionEnabled = report.ExtensionEnabled
+		}
+	}
 	result.OK = exit == exitOK
 	if err := writeBaselineUpdateResult(result, jsonOutput, stdout); err != nil {
 		fmt.Fprintf(stderr, "%s: baseline update output failed: %v\n", app.Name, err)
@@ -872,6 +894,21 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 			if region.RemovedLinesTruncated != 0 {
 				fmt.Fprintf(stdout, "    ... %d additional lines omitted\n", region.RemovedLinesTruncated)
 			}
+		}
+	}
+	if result.MisplacedRepositoryRules != nil {
+		rules := *result.MisplacedRepositoryRules
+		fmt.Fprintf(stdout, "Misplaced repository rules: %d\n", len(rules))
+		for _, rule := range rules {
+			identity := ""
+			if rule.ManagedID != "" {
+				identity = " (managed identity " + rule.ManagedID + ")"
+			}
+			fmt.Fprintf(stdout, "- %s:%d-%d%s: %s\n", rule.Path, rule.StartLine, rule.EndLine, identity, rule.FirstLine)
+			fmt.Fprintf(stdout, "  Move to: %s\n", rule.MoveTo)
+		}
+		if !result.misplacedRulesExtensionEnabled && len(rules) != 0 {
+			fmt.Fprintln(stdout, "Next for misplaced rules: roundfix baseline update --decision repository.extension.enabled=true, then move each passage")
 		}
 	}
 	fmt.Fprintf(stdout, "Retention evidence: %d\n", len(result.Retention))

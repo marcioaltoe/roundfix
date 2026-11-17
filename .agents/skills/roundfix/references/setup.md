@@ -1,5 +1,17 @@
 ## Setup, doctor, and upgrade
 
+Doctor prints `baseline-rules:` after `skills:` and any `user-skills:` and
+`authoring-models:` lines, before residue. It is `ok` with no misplaced
+passages, `warn` with `DR-BASELINE-RULE-MISPLACED` listing every
+`<path>:<start>-<end>` and the move into
+`docs/agents/specific-repository.md`, or `skipped` without a Setup Manifest.
+An invalid manifest or unreadable carrier warns with
+`DR-BASELINE-RULES-UNREAD` and asks to re-run Doctor after fixing the manifest.
+With the extension decision off, it asks to run
+`roundfix baseline update --decision repository.extension.enabled=true, then move each passage`.
+The line never fails Doctor or changes its exit code. Neither command moves
+a passage; an Agent moves it only with the person's approval.
+
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
 Run-ready. It checks Node.js and minimum-supported acpx, proves Adapter
 Readiness for every distinct runtime referenced by the effective required

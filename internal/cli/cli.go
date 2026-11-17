@@ -5359,6 +5359,8 @@ The recommendations: line reports ok, found, or skipped after profiles: and
 never fails Doctor. Doctor is read-only and mutates nothing. Only the gh and
 remote lines contact the repository's forge; each read is bounded by a
 ten-second limit. Every other check stays offline.
+The baseline-rules: line names each passage outside a Managed Region that belongs
+in docs/agents/specific-repository.md, moves none, and never fails Doctor.
 `
 	case "migrate":
 		return `Usage:
@@ -5764,6 +5766,8 @@ file to docs/references/, and Stale History Citations name targets history-full 
 Promotions copy committed history at the planned revision into references read by
 every later Spec, and never overwrite an existing file or rewrite a citing file.
 
+The result names each passage outside a Managed Region that belongs in
+docs/agents/specific-repository.md and moves none.
 JSON output uses roundfix/baseline-update-result/v1.
 
 Exit codes:

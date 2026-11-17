@@ -2,8 +2,10 @@
 
 # Agent instructions
 
-This setup-owned guide defines the portable baseline. Repository authors own
-project-specific extensions outside setup markers and may add stricter rules.
+This setup-owned guide defines the portable baseline. Repository authors write
+every project-specific rule or variation, stricter or not, only in
+`docs/agents/specific-repository.md`, never in this guide or in a root
+instruction file.
 The selected repository Verification is `make verify`.
 The selected incremental Verification is `make verify-incremental`.
 The branch-prefix pattern is `ma/`; `<type>` is replaced by the
@@ -12,7 +14,7 @@ value. Legacy personal-prefix values must be revised through Baseline and do
 not override the purpose-based branch rule below. Tool-owned Run and Task
 branches follow their tool's documented namespace.
 
-- **mandatory**: Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents.
+- **mandatory**: Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents. Write each rule or variation of this repository only in `docs/agents/specific-repository.md`, never in a root instruction file or in a Baseline guide, inside or outside its setup markers. Write it there under a heading of its own, as a bullet that states its force, such as `- **mandatory**: <rule>`, with the date of the decision that set it when it has one.
 
 - **mandatory**: Fix root causes.
 
