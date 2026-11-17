@@ -84,7 +84,7 @@ The TechSpec Author Subagent ends on its model's limit, and the session asks Rou
 
 ```text
 $ roundfix phase fallback techspec --spec 0412-example --error "You've hit your Fable limit · resets Nov 22 at 8pm"
-Start roundfix-techspec-author with model opus and effort xhigh: the Fable limit of fable ran out ("You've hit your Fable limit · resets Nov 22 at 8pm").
+Start roundfix-techspec-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
 ```
 
 The session tells the user, in its own words: the TechSpec of Spec 0412 switched from fable xhigh to opus xhigh because the Fable limit ran out, and it goes on.
@@ -96,11 +96,13 @@ $ roundfix phase fallback techspec --spec 0412-example --error "You've hit your 
 No fallback for techspec of 0412-example: a weekly limit is shared by every model. Report the error.
 ```
 
-The next phase of the same Spec:
+In a Spec whose Idea fell back on the Fable limit, the next phase declared on Fable starts on its fallback, and a phase declared on Opus starts as declared:
 
 ```text
+$ roundfix phase model prd --spec 0412-example
+Start roundfix-prd-author with model opus and effort xhigh, the fallback of fable: idea of 0412-example fell back when the Fable limit ran out.
 $ roundfix phase model tasks --spec 0412-example
-Start roundfix-tasks-author with model opus and effort xhigh: the fallback of fable, because techspec of 0412-example fell back when the Fable limit ran out.
+Start roundfix-tasks-author with no model and no effort: the declared model opus.
 ```
 
 ## Non-Goals / Out of Scope
