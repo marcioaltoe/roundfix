@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-16
-spec: null
+spec: 0401-the-phase-boundary-follows-only-the-release-of-a-spec
 reason: null
 ---
 

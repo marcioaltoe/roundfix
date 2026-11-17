@@ -12,7 +12,7 @@ since: 2026-11-16
 
 ## Slow
 
-Every call of a Supervisor session re-reads what the session loaded when it started, and every Authoring Phase reads the whole glossary and the agent guides before it reads anything about its Spec. Whoever supervises Spec work from an Agent harness with a usage limit pays for it on each call. Spec 0397 tells the Supervisor to end its session at each phase boundary, so a session starts more often and this floor is paid more often.
+Every call of a Supervisor session re-reads what the session loaded when it started, and every Authoring Phase reads the whole glossary and the agent guides before it reads anything about its Spec. Whoever supervises Spec work from an Agent harness with a usage limit pays for it on each call. Spec 0397 tells the Supervisor to end its session at each phase boundary, so a session starts more often and this floor is paid more often. Spec 0401 moves that boundary to the delivery and release of a Spec, so a Supervisor session starts once per Spec instead of once per phase; each Author Subagent still pays the Authoring Phase floor below.
 
 The maintainer sent this out of the Idea of Spec 0397 on the night of 2026-11-15 to 2026-11-16, choosing "Original + respostas (Recommended)": "Registro de fase, fronteira de sessão e adoção dos modelos numa Spec; o custo de nascer de cada sessão vira Backlog Entry."
 
