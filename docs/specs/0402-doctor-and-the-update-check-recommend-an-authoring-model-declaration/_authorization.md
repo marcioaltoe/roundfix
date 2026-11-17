@@ -8,6 +8,7 @@ paths:
   - .agents/skills/roundfix/references/modes.md
   - .agents/skills/roundfix/references/setup.md
   - .roundfixrc.yml
+  - internal/cli/cli_test.go
   - skills/roundfix/SKILL.md
 operations:
   - implement
@@ -36,6 +37,10 @@ The maintainer then set the recommended values (2026-11-17 ~12:40 BRT, verbatim)
 The Makefile, `.github/workflows`, `go.mod`, `go.sum` and the lint and formatter configuration are granted only for a correction that requires one. This Spec's design needs none of them.
 
 This record grants `implement`, `commit`, `push`, `pull_request`, `merge` and `release`. The Spec is a `type: fix`. Its Release Ceiling is `minor`, not `patch`, because the design adds a public output: a `warn` case of Doctor's `authoring-models:` line, and the `undeclared` state with the `installed` and `recommendation` members of `authoringModels` in the `roundfix/update-check/v1` JSON report. The release may change only the three version-only files in `release_paths`: the changelog, the npm package manifest and the application version. No Task performs it; the operator cuts it after the merge, up to three corrections included.
+
+## Amendment of 2026-11-17: `internal/cli/cli_test.go`
+
+The first Implement Run (`run_20261117T210428Z_16ba236a04b68ac7`) stopped at task_01's settlement with `QA-AUTH-PATHS`: the Task had to change one line of the governed `internal/cli/cli_test.go`. `CheckResult` gains a slice for Doctor's continuation lines, so `assertCheckResult` can no longer compare it with `!=` and compares it with `reflect.DeepEqual`. The TechSpec expected that file to stay untouched. The Supervisor adds the path under the cycle AJ grant quoted above ("'Concedo' para os caminhos que cada Spec declarar (… testes governados …)") and the maintainer's unattended grant of 2026-11-17 to carry the queue to its release; the change is limited to that assertion helper.
 
 ## How the governed set was measured
 
