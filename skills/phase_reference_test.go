@@ -22,12 +22,17 @@ func TestThePhaseReferenceDocumentsTheCommandAndTheRecord(t *testing.T) {
 				{"no_configuration", "It loads no Project Config and no User Config."},
 				{"an_unknown_command_continues", "When the installed Roundfix does not know the command, say so and continue."},
 				{"the_record", "the directory `phase-record` under Roundfix Home, one JSON object per line with the schema `roundfix/phase-record/v1`"},
-				{"the_notice_refuses_nothing", "The Boundary Notice refuses nothing: standard output and the exit code stay as they are."},
+				{"the_record_is_never_read_back", "The command never reads the record back: whatever the session recorded before, it writes `boundary` as `false` and prints nothing on standard error."},
+				{"no_boundary_notice", "Boundary Notice"},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					phrase := strings.Join(strings.Fields(tc.phrase), " ")
-					if count := strings.Count(text, phrase); count != 1 {
-						t.Fatalf("%q occurs %d times, want exactly one", phrase, count)
+					want := 1
+					if tc.name == "no_boundary_notice" {
+						want = 0
+					}
+					if count := strings.Count(text, phrase); count != want {
+						t.Fatalf("%q occurs %d times, want %d", phrase, count, want)
 					}
 					if tc.name == "the_command" && !strings.Contains(string(data), "```bash\n"+tc.phrase+"\n```") {
 						t.Fatal("usage must be in a bash block")

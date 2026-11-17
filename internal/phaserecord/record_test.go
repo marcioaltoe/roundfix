@@ -60,7 +60,7 @@ func decodeLine(t *testing.T, line []byte, keys []string) map[string]json.RawMes
 
 func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 	t.Parallel()
-	for _, name := range []string{"keys_in_order", "boundary_keys_only_at_a_boundary", "modes", "one_line_per_entry", "oversized_field"} {
+	for _, name := range []string{"keys_in_order", "no_boundary_keys_after_a_release", "modes", "one_line_per_entry", "oversized_field"} {
 		t.Run(name, func(t *testing.T) {
 			home := t.TempDir()
 			recorder := phaserecord.New(home, func() time.Time { return fixedTime })
@@ -71,8 +71,8 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 				entry.Harness = strings.Repeat("h", 1100)
 				entry.Session = strings.Repeat("x", 1100)
 			}
-			if boundary, err := recorder.StartPhase(t.Context(), entry); err != nil || boundary != (phaserecord.Boundary{}) {
-				t.Fatalf("first append: %+v, %v", boundary, err)
+			if err := recorder.StartPhase(t.Context(), entry); err != nil {
+				t.Fatal(err)
 			}
 			lines := readLines(t, home, fixedTime)
 			if len(lines) != 1 {
@@ -88,20 +88,20 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 				if string(lines[0]) != want {
 					t.Fatalf("line = %s, want %s", lines[0], want)
 				}
-			case "boundary_keys_only_at_a_boundary":
+			case "no_boundary_keys_after_a_release":
 				entry.Phase, entry.Spec = "release", ""
-				// A boundary must retain an empty previous_spec as a present key.
+				// A release without a Spec must not add boundary keys to the next entry.
 				entry.Session = "empty-spec"
-				if _, err := recorder.StartPhase(t.Context(), entry); err != nil {
+				if err := recorder.StartPhase(t.Context(), entry); err != nil {
 					t.Fatal(err)
 				}
 				entry.Phase = "follow-up"
-				if _, err := recorder.StartPhase(t.Context(), entry); err != nil {
+				if err := recorder.StartPhase(t.Context(), entry); err != nil {
 					t.Fatal(err)
 				}
 				lines = readLines(t, home, fixedTime)
-				got := decodeLine(t, lines[2], append(append([]string{}, phaseKeys...), "previous_phase", "previous_spec"))
-				if string(got["previous_spec"]) != `""` || string(got["previous_phase"]) != `"release"` {
+				got := decodeLine(t, lines[2], phaseKeys)
+				if string(got["boundary"]) != "false" {
 					t.Fatalf("boundary = %s", lines[2])
 				}
 			case "modes":
@@ -118,7 +118,7 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 				}
 			case "one_line_per_entry":
 				entry.Repository = "line\nbreak\"\\"
-				if _, err := recorder.StartPhase(t.Context(), entry); err != nil {
+				if err := recorder.StartPhase(t.Context(), entry); err != nil {
 					t.Fatal(err)
 				}
 				lines = readLines(t, home, fixedTime)
@@ -152,63 +152,57 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 	}
 }
 
-func TestStartPhaseMarksABoundaryOnlyAcrossPhasesOfOneSession(t *testing.T) {
+func TestStartPhaseMarksNoBoundaryWhateverCameBefore(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name                                                 string
-		previous, next                                       phaserecord.Phase
-		previousSpec, nextSpec, previousSession, nextSession string
-		age                                                  int
-		crossed                                              bool
+		name                   string
+		previous, next         phaserecord.Phase
+		previousSpec, nextSpec string
 	}{
-		{"another_phase", "prd", "techspec", "0412-example", "0412-example", "s", "s", 0, true},
-		{"another_spec", "prd", "prd", "0412-example", "0413-another", "s", "s", 0, true},
-		{"after_follow_up", "follow-up", "prd", "", "0412-example", "s", "s", 0, false},
-		{"delivery_then_release_of_the_spec", "delivery", "release", "0412-example", "0412-example", "s", "s", 0, false},
-		{"delivery_then_release_without_a_spec", "delivery", "release", "0412-example", "", "s", "s", 0, false},
-		{"delivery_then_release_of_another_spec", "delivery", "release", "0412-example", "0413-another", "s", "s", 0, true},
-		{"same_phase_again", "prd", "prd", "0412-example", "0412-example", "s", "s", 0, false},
-		{"another_session", "prd", "techspec", "0412-example", "0412-example", "a", "b", 0, false},
-		{"no_session", "prd", "techspec", "0412-example", "0412-example", "", "", 0, false},
-		{"six_days_old", "prd", "techspec", "0412-example", "0412-example", "s", "s", 6, true},
-		{"eight_days_old", "prd", "techspec", "0412-example", "0412-example", "s", "s", 8, false},
-		{"latest_entry_decides", "prd", "techspec", "0412-example", "0412-example", "s", "s", 0, false},
+		{"after_follow_up", "follow-up", "techspec", "", "0412-example"},
+		{"after_idea", "idea", "techspec", "0412-example", "0412-example"},
+		{"after_prd", "prd", "techspec", "0412-example", "0412-example"},
+		{"after_techspec", "techspec", "techspec", "0412-example", "0412-example"},
+		{"after_tasks", "tasks", "techspec", "0412-example", "0412-example"},
+		{"after_delivery", "delivery", "techspec", "0412-example", "0412-example"},
+		{"after_release", "release", "follow-up", "0412-example", ""},
+		{"after_prd_of_another_spec", "prd", "techspec", "0413-another", "0412-example"},
+		{"release_of_another_spec_after_release", "release", "release", "0412-example", "0413-another"},
+		{"release_of_the_same_spec_again", "release", "release", "0412-example", "0412-example"},
+		{"release_without_a_spec_again", "release", "release", "", ""},
+		{"after_a_marked_entry", "prd", "techspec", "0412-example", "0412-example"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()
-			earlier := fixedTime.AddDate(0, 0, -tc.age).Add(-time.Hour)
-			previous := phaserecord.PhaseEntry{Phase: tc.previous, Spec: tc.previousSpec, Session: tc.previousSession}
-			if _, err := phaserecord.New(home, func() time.Time { return earlier }).StartPhase(t.Context(), previous); err != nil {
+			earlier := fixedTime.Add(-time.Minute)
+			if tc.name == "after_a_marked_entry" {
+				directory := filepath.Join(home, ".roundfix", "phase-record")
+				if err := os.MkdirAll(directory, 0700); err != nil {
+					t.Fatal(err)
+				}
+				line := `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"` + earlier.UTC().Format(time.RFC3339) + `","phase":"prd","spec":"0412-example","repository":"/repo","harness":"claude","session":"s","boundary":true,"previous_phase":"idea","previous_spec":"0412-example"}` + "\n"
+				if err := os.WriteFile(filepath.Join(directory, earlier.UTC().Format("2006-01-02")+".jsonl"), []byte(line), 0600); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := phaserecord.New(home, func() time.Time { return earlier }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: tc.previous, Spec: tc.previousSpec, Session: "s"}); err != nil {
 				t.Fatal(err)
 			}
-			if tc.name == "latest_entry_decides" {
-				previous.Phase = "follow-up"
-				if _, err := phaserecord.New(home, func() time.Time { return fixedTime.Add(-time.Minute) }).StartPhase(t.Context(), previous); err != nil {
-					t.Fatal(err)
-				}
-				// Append an older timestamp later: latest means the recorded time, not file order.
-				previous.Phase = "prd"
-				if _, err := phaserecord.New(home, func() time.Time { return earlier }).StartPhase(t.Context(), previous); err != nil {
-					t.Fatal(err)
-				}
-			}
-			got, err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: tc.next, Spec: tc.nextSpec, Session: tc.nextSession})
-			want := phaserecord.Boundary{}
-			keys := append([]string{}, phaseKeys...)
-			if tc.crossed {
-				want = phaserecord.Boundary{Crossed: true, PreviousPhase: tc.previous, PreviousSpec: tc.previousSpec}
-				keys = append(keys, "previous_phase", "previous_spec")
-			}
-			if err != nil || got != want {
-				t.Fatalf("boundary = %+v, %v; want %+v", got, err, want)
+			before := readLines(t, home, fixedTime)
+			if err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: tc.next, Spec: tc.nextSpec, Session: "s"}); err != nil {
+				t.Fatal(err)
 			}
 			lines := readLines(t, home, fixedTime)
-			row := decodeLine(t, lines[len(lines)-1], keys)
-			if string(row["boundary"]) != map[bool]string{true: "true", false: "false"}[tc.crossed] || string(row["phase"]) != `"`+string(tc.next)+`"` || string(row["session"]) != `"`+tc.nextSession+`"` || string(row["spec"]) != `"`+tc.nextSpec+`"` {
-				t.Fatalf("written = %s", lines[len(lines)-1])
+			if len(lines) != len(before)+1 {
+				t.Fatalf("lines = %d, want %d", len(lines), len(before)+1)
 			}
-			if tc.crossed && (string(row["previous_phase"]) != `"`+string(tc.previous)+`"` || string(row["previous_spec"]) != `"`+tc.previousSpec+`"`) {
-				t.Fatalf("previous = %s", lines[len(lines)-1])
+			for i, line := range before {
+				if !bytes.Equal(line, lines[i]) {
+					t.Fatalf("earlier line %d changed: %s", i, lines[i])
+				}
+			}
+			row := decodeLine(t, lines[len(lines)-1], phaseKeys)
+			if string(row["boundary"]) != "false" || string(row["phase"]) != `"`+string(tc.next)+`"` || string(row["session"]) != `"s"` || string(row["spec"]) != `"`+tc.nextSpec+`"` {
+				t.Fatalf("written = %s", lines[len(lines)-1])
 			}
 		})
 	}
@@ -231,62 +225,54 @@ func TestParsePhaseKnowsTheSevenPhases(t *testing.T) {
 	}
 }
 
-func TestStartPhaseSkipsUnrelatedAndMalformedHistory(t *testing.T) {
+func TestStartPhaseReadsNoEarlierEntry(t *testing.T) {
 	t.Parallel()
-	home := t.TempDir()
-	directory := filepath.Join(home, ".roundfix", "phase-record")
-	if err := os.MkdirAll(directory, 0700); err != nil {
-		t.Fatal(err)
-	}
-	// Malformed lines larger than a scanner's usual token limit must not hide
-	// the valid phase entry that follows them.
-	history := strings.Repeat("x", 1<<20) + "\nnot json\n" +
-		`{"kind":"prompt","phase":"release","session":"s","time":"2026-11-21T02:05:10Z"}` + "\n" +
-		`{"kind":"phase","phase":"release","session":"s","time":"bad"}` + "\n" +
-		`{"kind":"phase","phase":"prd","spec":"0412-example","session":"s","time":"2026-11-21T01:00:00Z"}` + "\n" +
-		`{"kind":"phase","phase":"follow-up","session":"other","time":"2026-11-21T02:05:10Z"}` + "\n"
-	if err := os.WriteFile(filepath.Join(directory, "2026-11-21.jsonl"), []byte(history), 0600); err != nil {
-		t.Fatal(err)
-	}
-	ignored := `{"kind":"phase","phase":"follow-up","session":"s","time":"2026-11-21T02:05:10Z"}` + "\n"
-	if err := os.WriteFile(filepath.Join(directory, "not-a-date.jsonl"), []byte(ignored), 0600); err != nil {
-		t.Fatal(err)
-	}
-	boundary, err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: "techspec", Spec: "0412-example", Session: "s"})
-	want := phaserecord.Boundary{Crossed: true, PreviousPhase: "prd", PreviousSpec: "0412-example"}
-	if err != nil || boundary != want {
-		t.Fatalf("boundary = %+v, %v, want %+v", boundary, err, want)
-	}
-	lines := readLines(t, home, fixedTime)
-	row := decodeLine(t, lines[len(lines)-1], append(append([]string{}, phaseKeys...), "previous_phase", "previous_spec"))
-	if string(row["boundary"]) != "true" {
-		t.Fatalf("written = %s", lines[len(lines)-1])
-	}
-}
-
-// Not parallel: it measures the bytes allocated while reading a day file.
-func TestStartPhaseReadsAnOversizedLineWithoutBufferingIt(t *testing.T) {
-	home := t.TempDir()
-	directory := filepath.Join(home, ".roundfix", "phase-record")
-	if err := os.MkdirAll(directory, 0700); err != nil {
-		t.Fatal(err)
-	}
-	valid := `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-21T01:00:00Z","phase":"prd","spec":"0412-example","repository":"/repo","harness":"claude","session":"session","boundary":false}`
-	oversized := strings.Repeat("x", 32<<20)
-	data := oversized + "\n" + valid + "\n" + oversized
-	if err := os.WriteFile(filepath.Join(directory, fixedTime.UTC().Format("2006-01-02")+".jsonl"), []byte(data), 0600); err != nil {
-		t.Fatal(err)
-	}
-	data, oversized = "", ""
-	runtime.GC()
-	var before, after runtime.MemStats
-	runtime.ReadMemStats(&before)
-	boundary, err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: "techspec", Spec: "0412-example", Session: "session"})
-	runtime.ReadMemStats(&after)
-	if err != nil || boundary != (phaserecord.Boundary{Crossed: true, PreviousPhase: "prd", PreviousSpec: "0412-example"}) {
-		t.Fatalf("the entry after an oversized line was not read: %+v, %v", boundary, err)
-	}
-	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 4<<20 {
-		t.Fatalf("reading the day file allocated %d bytes; an oversized line was buffered", allocated)
+	for _, name := range []string{"an_unreadable_earlier_day", "a_malformed_day_file"} {
+		t.Run(name, func(t *testing.T) {
+			home := t.TempDir()
+			directory := filepath.Join(home, ".roundfix", "phase-record")
+			if err := os.MkdirAll(directory, 0700); err != nil {
+				t.Fatal(err)
+			}
+			var before []byte
+			if name == "an_unreadable_earlier_day" {
+				yesterday := fixedTime.UTC().AddDate(0, 0, -1)
+				if err := os.Mkdir(filepath.Join(directory, yesterday.Format("2006-01-02")+".jsonl"), 0700); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				earlier := fixedTime.Add(-time.Minute)
+				if err := phaserecord.New(home, func() time.Time { return earlier }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: "release", Session: "s"}); err != nil {
+					t.Fatal(err)
+				}
+				path := filepath.Join(directory, fixedTime.UTC().Format("2006-01-02")+".jsonl")
+				valid, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				before = append([]byte(strings.Repeat("x", 1<<20)+"\n"), valid...)
+				if err := os.WriteFile(path, before, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := phaserecord.New(home, func() time.Time { return fixedTime }).StartPhase(t.Context(), phaserecord.PhaseEntry{Phase: "techspec", Spec: "0412-example", Session: "s"}); err != nil {
+				t.Fatal(err)
+			}
+			after, err := os.ReadFile(filepath.Join(directory, fixedTime.UTC().Format("2006-01-02")+".jsonl"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.HasPrefix(after, before) {
+				t.Fatal("earlier bytes changed")
+			}
+			appended := after[len(before):]
+			if bytes.Count(appended, []byte("\n")) != 1 || !bytes.HasSuffix(appended, []byte("\n")) {
+				t.Fatalf("expected exactly one appended line: %q", appended)
+			}
+			row := decodeLine(t, bytes.TrimSuffix(appended, []byte("\n")), phaseKeys)
+			if string(row["boundary"]) != "false" {
+				t.Fatalf("written = %s", appended)
+			}
+		})
 	}
 }

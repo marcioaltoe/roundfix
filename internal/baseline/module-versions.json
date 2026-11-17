@@ -29,6 +29,10 @@
       {
         "version": 18,
         "digest": "sha256:a2b3d8c6107f3ae3fdf5b0818d9dc9c9acb9596bed06855316d982e02e04561c"
+      },
+      {
+        "version": 19,
+        "digest": "sha256:5a0c34d99058ac5b5d90010cbb3d0b48ff7e8f3077f447a22ec22a1fa5438eec"
       }
     ],
     "backend": [

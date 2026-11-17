@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestTheOutliveTheTurnClauseStatesThePhaseBoundary(t *testing.T) {
+func TestTheOutliveTheTurnClauseStatesWhenASessionEnds(t *testing.T) {
 	t.Parallel()
 
 	phrases := []struct {
@@ -17,11 +17,20 @@ func TestTheOutliveTheTurnClauseStatesThePhaseBoundary(t *testing.T) {
 		{name: "must_arm_something_that_outlives_its_turn", phrase: "must arm something that outlives its own turn before that turn ends: a detached Run, a scheduled wake-up, or a daemon"},
 		{name: "never_end_a_turn_stating_work_will_continue", phrase: "Never end a turn stating that work will continue"},
 		{name: "when_no_mechanism_is_armed_say_what_remains", phrase: "When no such mechanism is armed, say plainly that work is stopping and what remains."},
-		{name: "phase_boundary_is_recorded", phrase: "At a phase boundary of a Spec, after each authoring phase and after a Spec is delivered and released"},
 		{name: "session_handoff_names_boundary_state", phrase: "write the session handoff with the Spec, the phase that ended, the next phase, each open decision and what stays armed"},
 		{name: "user_is_told_what_stays_armed", phrase: "tell the user what stays armed"},
-		{name: "no_further_phase_starts", phrase: "start no further phase in that session"},
-		{name: "wake_up_stays_in_the_session", phrase: "A scheduled wake-up returns to the same session with its whole context, so it keeps a phase going and is never the way across a boundary."},
+		{name: "no_phase_ends_the_session", phrase: "No phase of a Spec ends the session, whether a person is present or not"},
+		{name: "the_session_goes_on", phrase: "after an authoring phase, a delivery or a release, the session goes on with the next queued work"},
+		{name: "authoring_skill_says_where_it_runs", phrase: "each authoring skill says when a phase runs in a subagent with its own context"},
+		{name: "the_session_ends_when_asked_or_stopped", phrase: "The session ends only when the user asks or the work stops because nothing remains or what remains waits on the user"},
+	}
+	oldBoundaryPhrases := []struct {
+		name   string
+		phrase string
+	}{
+		{name: "after_each_authoring_phase", phrase: "after each authoring phase"},
+		{name: "start_no_further_phase_in_that_session", phrase: "start no further phase in that session"},
+		{name: "the_way_across_a_boundary", phrase: "the way across a boundary"},
 	}
 
 	catalog := mustEmbeddedCatalog(t)
@@ -87,4 +96,27 @@ func TestTheOutliveTheTurnClauseStatesThePhaseBoundary(t *testing.T) {
 			}
 		})
 	}
+	t.Run("no_old_boundary", func(t *testing.T) {
+		t.Parallel()
+		for _, want := range oldBoundaryPhrases {
+			want := want
+			if got := strings.Count(guidance, want.phrase); got != 0 {
+				t.Fatalf("clause contains old phrase %d times, want zero", got)
+			}
+			literal := strings.Join(strings.Fields(want.phrase), " ")
+			for name, data := range map[string][]byte{
+				"Standard TypeScript golden": golden.Data,
+				"repository guide":           local,
+			} {
+				name, data := name, data
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
+					text := strings.Join(strings.Fields(string(data)), " ")
+					if got := strings.Count(text, literal); got != 0 {
+						t.Fatalf("guide contains old literal %d times, want zero", got)
+					}
+				})
+			}
+		}
+	})
 }

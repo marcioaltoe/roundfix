@@ -60,8 +60,7 @@ func runPhaseCommand(ctx context.Context, args []string, stdout, stderr io.Write
 		return exitRunFailed
 	}
 	entry.Harness, entry.Session = harnessSession(environment.dependencies.getenv)
-	boundary, err := phaserecord.New(environment.homeDir, environment.dependencies.phaseNow).StartPhase(ctx, entry)
-	if err != nil {
+	if err := phaserecord.New(environment.homeDir, environment.dependencies.phaseNow).StartPhase(ctx, entry); err != nil {
 		fmt.Fprintf(stderr, "roundfix: phase start failed: %v\n", err)
 		return exitRunFailed
 	}
@@ -73,13 +72,6 @@ func runPhaseCommand(ctx context.Context, args []string, stdout, stderr io.Write
 		fmt.Fprintln(stdout, " without a harness session: the environment names none")
 	} else {
 		fmt.Fprintf(stdout, " for claude session %s\n", entry.Session)
-	}
-	if boundary.Crossed {
-		previous := string(boundary.PreviousPhase)
-		if boundary.PreviousSpec != "" {
-			previous += " of " + boundary.PreviousSpec
-		}
-		fmt.Fprintf(stderr, "roundfix: notice: this session already recorded %s; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n", previous)
 	}
 	return exitOK
 }

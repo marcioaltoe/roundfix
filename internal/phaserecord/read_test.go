@@ -13,7 +13,7 @@ import (
 func TestPhasesReadsBackThePhaseEntriesOfTheWindow(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 11, 16, 14, 0, 0, 0, time.UTC)
-	for _, name := range []string{"oldest_first", "prompt_entries_are_skipped", "a_malformed_line_is_counted", "another_schema_is_counted", "before_since_is_left_out", "a_missing_directory_is_an_empty_record", "a_file_that_is_no_day_file_is_ignored", "an_unreadable_record_is_an_error", "nothing_is_written", "written_by_start_phase", "utc_day_and_instant"} {
+	for _, name := range []string{"oldest_first", "an_entry_an_earlier_version_marked", "prompt_entries_are_skipped", "a_malformed_line_is_counted", "another_schema_is_counted", "before_since_is_left_out", "a_missing_directory_is_an_empty_record", "a_file_that_is_no_day_file_is_ignored", "an_unreadable_record_is_an_error", "nothing_is_written", "written_by_start_phase", "utc_day_and_instant"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			home := t.TempDir()
@@ -50,6 +50,9 @@ func TestPhasesReadsBackThePhaseEntriesOfTheWindow(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(dir, since.UTC().Format("2006-01-02")+".jsonl"), []byte(line(since, "idea")), 0600); err != nil {
 					t.Fatal(err)
 				}
+				want = append([]RecordedPhase{{Time: since, Phase: "idea", Spec: "0001-widget", Repository: "fixture"}}, want...)
+			case "an_entry_an_earlier_version_marked":
+				content += `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"` + since.Format(time.RFC3339) + `","phase":"idea","spec":"0001-widget","repository":"fixture","harness":"claude","session":"s","boundary":true,"previous_phase":"prd","previous_spec":"0001-widget"}` + "\n"
 				want = append([]RecordedPhase{{Time: since, Phase: "idea", Spec: "0001-widget", Repository: "fixture"}}, want...)
 			case "oldest_first":
 				content += line(since, "idea")
@@ -90,7 +93,7 @@ func TestPhasesReadsBackThePhaseEntriesOfTheWindow(t *testing.T) {
 				}
 				return
 			case "written_by_start_phase":
-				if _, err := New(home, func() time.Time { return now }).StartPhase(context.Background(), PhaseEntry{Phase: "prd", Spec: "0001-widget", Repository: "fixture"}); err != nil {
+				if err := New(home, func() time.Time { return now }).StartPhase(context.Background(), PhaseEntry{Phase: "prd", Spec: "0001-widget", Repository: "fixture"}); err != nil {
 					t.Fatal(err)
 				}
 			}

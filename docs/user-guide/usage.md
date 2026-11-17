@@ -901,9 +901,9 @@ A phase entry holds these fields, in this order:
 | `repository` | Git root of the working directory |
 | `harness` | `claude` when the command environment names a session |
 | `session` | `CLAUDE_CODE_SESSION_ID` from the command environment |
-| `boundary` | Whether this session crossed a Phase Boundary |
-| `previous_phase` | Earlier phase; present only when `boundary` is true |
-| `previous_spec` | Earlier Spec; present only when `boundary` is true |
+| `boundary` | Always `false`; an entry an earlier Roundfix wrote may hold `true` |
+| `previous_phase` | Absent; an entry an earlier Roundfix marked holds the earlier phase |
+| `previous_spec` | Absent; an entry an earlier Roundfix marked holds the earlier Spec |
 
 The Daemon writes a prompt entry when a prompt of an Agent Session ends, and `roundfix review` after each prompt of a pre-PR review. A prompt that never returns leaves no entry. A failed write of a prompt entry prints one warning and changes no Task, Run, review or exit code.
 
@@ -927,7 +927,7 @@ A prompt entry has this format, in this order:
 
 Every time uses RFC 3339 in UTC with seconds, for example
 `2026-11-20T13:05:11Z`. An absent string value is the empty string, never a
-missing key; only the two boundary fields are conditional. Each string is cut
+missing key; a new entry never holds `previous_phase` or `previous_spec`. Each string is cut
 at 1,024 bytes while preserving valid JSON.
 
 `roundfix phase start <phase> [--spec <slug>]` records one of seven phases:
@@ -936,20 +936,10 @@ at 1,024 bytes while preserving valid JSON.
 `^[0-9]{4}(-[a-z0-9]+)+$`. The command loads no configuration. It records an
 entry without a harness session when the environment names none.
 
-Before appending, the command takes the latest phase entry of the same
-non-empty session from the current UTC date and the six preceding dates.
-A different phase or Spec crosses a Phase Boundary, with three exceptions:
-an earlier `follow-up`; `delivery` followed by `release` of the same Spec or
-with no Spec; and the same phase of the same Spec again. An entry without a
-session never crosses or matches. A boundary marks the new entry and prints
-the Boundary Notice on standard error:
-
-```text
-roundfix: notice: this session already recorded <phase> of <spec>; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.
-```
-
-` of <spec>` is omitted when the earlier entry names no Spec. The notice
-refuses nothing: standard output and the exit code stay as they are.
+The command reads no earlier entry. Whatever the session recorded before, it
+writes `boundary` as `false` and prints nothing on standard error. A phase
+entry ends no session: a Supervisor session goes on from phase to phase and
+ends only when the user asks or the work stops.
 
 Run Retention removes each day file dated before its cutoff, and a file whose name is not a date is left alone.
 

@@ -55,7 +55,7 @@ func phaseDay(t *testing.T, home string) []string {
 	return strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
 }
 
-func phaseExpectedLine(t *testing.T, phase, spec, repo, session string, boundary bool) string {
+func phaseExpectedLine(t *testing.T, phase, spec, repo, session string) string {
 	t.Helper()
 	quote := func(s string) string {
 		data, err := json.Marshal(s)
@@ -68,10 +68,7 @@ func phaseExpectedLine(t *testing.T, phase, spec, repo, session string, boundary
 	if session != "" {
 		harness = "claude"
 	}
-	line := fmt.Sprintf(`{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-20T13:05:11Z","phase":%s,"spec":%s,"repository":%s,"harness":%s,"session":%s,"boundary":%t`, quote(phase), quote(spec), quote(repo), quote(harness), quote(session), boundary)
-	if boundary {
-		line += `,"previous_phase":"prd","previous_spec":"0412-example"`
-	}
+	line := fmt.Sprintf(`{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-20T13:05:11Z","phase":%s,"spec":%s,"repository":%s,"harness":%s,"session":%s,"boundary":false`, quote(phase), quote(spec), quote(repo), quote(harness), quote(session))
 	return line + "}"
 }
 
@@ -116,7 +113,6 @@ Options:
 			if number == 3 {
 				phaseCall(t, []string{"phase", "start", "prd", "--spec", spec}, "Recorded prd of 0412-example for claude session "+session+"\n", "", 0)
 				phase = "techspec"
-				wantErr = "roundfix: notice: this session already recorded prd of 0412-example; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n"
 			}
 			args := []string{"phase", "start", phase, "--spec", spec}
 			wantOut := "Recorded " + phase + " of " + spec + " for claude session " + session + "\n"
@@ -134,10 +130,10 @@ Options:
 			if len(lines) != wantCount {
 				t.Fatalf("lines = %d, want %d", len(lines), wantCount)
 			}
-			if want := phaseExpectedLine(t, phase, spec, repo, session, number == 3); lines[len(lines)-1] != want {
+			if want := phaseExpectedLine(t, phase, spec, repo, session); lines[len(lines)-1] != want {
 				t.Fatalf("line = %s, want %s", lines[len(lines)-1], want)
 			}
-			if number == 3 && lines[0] != phaseExpectedLine(t, "prd", spec, repo, session, false) {
+			if number == 3 && lines[0] != phaseExpectedLine(t, "prd", spec, repo, session) {
 				t.Fatalf("previous line was changed: %s", lines[0])
 			}
 		})
@@ -167,7 +163,7 @@ func TestPhaseStartRecordsEachOfTheSevenPhases(t *testing.T) {
 			wantOut += " for claude session " + phaseTestSession + "\n"
 			phaseCall(t, args, wantOut, "", 0)
 			lines := phaseDay(t, home)
-			if len(lines) != 1 || lines[0] != phaseExpectedLine(t, phase, spec, repo, phaseTestSession, false) {
+			if len(lines) != 1 || lines[0] != phaseExpectedLine(t, phase, spec, repo, phaseTestSession) {
 				t.Fatalf("lines = %v", lines)
 			}
 			decoder := json.NewDecoder(strings.NewReader(lines[0]))
@@ -262,19 +258,42 @@ func TestPhaseStartLoadsNoConfiguration(t *testing.T) {
 	setCommandWorkDirForTest(t, work)
 	phaseCall(t, []string{"phase", "start", "prd", "--spec", "0412-example"}, "Recorded prd of 0412-example for claude session "+phaseTestSession+"\n", "", 0)
 	lines := phaseDay(t, home)
-	if len(lines) != 1 || lines[0] != phaseExpectedLine(t, "prd", "0412-example", repo, phaseTestSession, false) {
+	if len(lines) != 1 || lines[0] != phaseExpectedLine(t, "prd", "0412-example", repo, phaseTestSession) {
 		t.Fatalf("line = %v", lines)
 	}
 }
 
-func TestPhaseBoundaryNoticeOmitsAnAbsentEarlierSpec(t *testing.T) {
+func TestPhaseStartPrintsNoNoticeAfterAnyPhase(t *testing.T) {
 	t.Parallel()
-	home, repo := phaseFixture(t, phaseTestSession)
-	phaseCall(t, []string{"phase", "start", "release"}, "Recorded release for claude session "+phaseTestSession+"\n", "", 0)
-	phaseCall(t, []string{"phase", "start", "follow-up"}, "Recorded follow-up for claude session "+phaseTestSession+"\n", "roundfix: notice: this session already recorded release; at a phase boundary, write the Session Handoff and continue in a new session. Nothing was refused.\n", 0)
-	lines := phaseDay(t, home)
-	want := strings.Replace(phaseExpectedLine(t, "follow-up", "", repo, phaseTestSession, true), `,"previous_phase":"prd","previous_spec":"0412-example"`, `,"previous_phase":"release","previous_spec":""`, 1)
-	if len(lines) != 2 || lines[1] != want {
-		t.Fatalf("lines = %v, want last %s", lines, want)
+	for _, tc := range []struct {
+		name, previous, previousSpec, next, nextSpec string
+		previousOut, nextOut                         string
+	}{
+		{"surface_transcript_1", "prd", "0412-example", "techspec", "0412-example",
+			"Recorded prd of 0412-example for claude session <session>\n",
+			"Recorded techspec of 0412-example for claude session <session>\n"},
+		{"surface_transcript_2", "release", "0412-example", "follow-up", "",
+			"Recorded release of 0412-example for claude session <session>\n",
+			"Recorded follow-up for claude session <session>\n"},
+		{"after_a_release_without_a_spec", "release", "", "follow-up", "",
+			"Recorded release for claude session <session>\n",
+			"Recorded follow-up for claude session <session>\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home, repo := phaseFixture(t, phaseTestSession)
+			session := commandEnvironmentForTest(t).dependencies.getenv("CLAUDE_CODE_SESSION_ID")
+			for _, entry := range []struct{ phase, spec, stdout string }{{tc.previous, tc.previousSpec, tc.previousOut}, {tc.next, tc.nextSpec, tc.nextOut}} {
+				args := []string{"phase", "start", entry.phase}
+				if entry.spec != "" {
+					args = append(args, "--spec", entry.spec)
+				}
+				phaseCall(t, args, strings.ReplaceAll(entry.stdout, "<session>", session), "", 0)
+			}
+			lines := phaseDay(t, home)
+			want := []string{phaseExpectedLine(t, tc.previous, tc.previousSpec, repo, session), phaseExpectedLine(t, tc.next, tc.nextSpec, repo, session)}
+			if !reflect.DeepEqual(lines, want) {
+				t.Fatalf("lines = %v, want %v", lines, want)
+			}
+		})
 	}
 }
