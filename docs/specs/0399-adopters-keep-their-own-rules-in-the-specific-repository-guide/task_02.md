@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -152,3 +152,43 @@ None. The Task adds an exported function and types that no code calls yet; task 
 - `_techspec.md` → Misplaced Repository Rule detector; Interfaces (invariants 1 to 7); Testing Approach (Task 2); Build Order 2
 - [`references/2026-11-16-adopter-rule-placement-inventory.md`](references/2026-11-16-adopter-rule-placement-inventory.md), sections Method and Passages outside every Managed Region
 - ADR-0411, ADR-0145, ADR-0203
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Added the read-only detector, exact-report table tests, and the glossary entry beside Unrecorded Managed Region. No command calls the new exported API yet. Changes are limited to `internal/baseline/misplaced_rules.go`, `internal/baseline/misplaced_rules_test.go`, `CONTEXT.md`, and this Result. The pre-existing Daemon status transition is preserved; no Task status, Task Graph, other Task, or Governed Path was edited.
+
+The verification feedback artifact was inspected. It identified the absent required table test; no diagnostic log body is copied here. The detector and all 17 required named cases now exist, with 8 additional cases for foreign-block splitting and name matching, excluded and unlisted carriers, missing carriers, sorting, CRLF, and a non-boolean extension decision.
+
+Implementation detail for the earlier helper-boundary conflict: `classifyManagedRegions` is reused when every manifest artifact is an eligible carrier. It has no filtering parameter and otherwise would read excluded files or reject a symbolic-link `CLAUDE.md`. When its carrier set includes exclusions, the detector instead reuses `managedEntryMatchesManifest` on eligible partitions, preserving the classifier's duplicate-ID exclusion. The manifest parser, partitioner, and digest matcher are not copied, and `preservation.go` is unchanged. Thus classifier reuse is conditional rather than universal; the excluded-carrier case includes a digest mismatch to exercise this path. Root `CLAUDE.md` is read only when manifest-listed and regular, following this Task's explicit manifest-only boundary; the TechSpec and ADR describe a broader exception for an unlisted regular root file.
+
+Acceptance evidence:
+
+- Inventory shapes: whole-report assertions check the exact path, inclusive line range, trimmed first line, managed identity, destination, and report flags. The foreign-block cases assert both exclusion and separate passages on either side. UTF-8 truncation uses a 130-byte line with a three-byte rune crossing byte 120. Clean, unlisted, nested, non-Markdown, destination-guide, and symbolic-link cases produce exactly the expected absence of entries.
+- Unrecorded regions: `digest_mismatch_region` asserts the marker pair's lines and `ManagedID`; `marker_absent_region_is_not_an_entry` asserts no entry. `excluded_carriers_are_not_opened` lists absent excluded files alongside an eligible digest mismatch, proving those paths are not opened by the detector or by an unconditional classifier call.
+- Manifest and errors: `no_manifest` asserts the zero report and no error; `invalid_manifest` asserts the entire wrapped manifest-code error and report. `missing_listed_carrier` asserts the entire path-bearing error. Decision cases cover absent, false, true, and string-valued decisions.
+- Read-only behavior: every case compares `snapshotInspectionTree` before and after the call, including paths, bytes, modes, and link targets. `reads_only` also gives the manifest and carrier files read-only modes. The detector contains no write, mutation, subprocess, Git, network, or semantic-classification operation.
+- Windows: the baseline package and its tests cross-compiled for `windows/amd64` using the focused compile-only command below. The Task's declared Windows build remains for the Daemon.
+- Glossary: only the Misplaced Repository Rule entry was added to `CONTEXT.md`, including the ADR-0411 link and `_Avoid_` line. Existing glossary contracts passed with their required build tag.
+
+Focused checks, all exit 0:
+
+- `go test -count=1 -timeout 3m ./internal/baseline -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/(after_|before_|between_|several_|digest_|marker_|unclosed_|first_|clean_|foreign_|crlf_)'`
+- `go test -count=1 -timeout 3m ./internal/baseline -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/(symbolic_|regular_|specific_|no_manifest|invalid_|extension_|reads_only|excluded_|unlisted_|missing_|paths_)'`
+- `go test -tags docscontract -count=1 -timeout 3m ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$'`. An earlier invocation without the build tag selected no tests; the tagged run above supplied the glossary evidence.
+- `env GOOS=windows GOARCH=amd64 go test -c -o /private/tmp/roundfix-0399-task02-windows.test.exe ./internal/baseline`
+- `git diff --check` and changed-path inspection.
+
+Negative probes used temporary Go overlays, without editing repository source, running `go test -json -overlay <temporary-overlay> -count=1 -timeout 2m ./internal/baseline -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/<named-subtest>$'`. Each returned exit 1 with the intended named subtest failing, and each actual assertion was inspected:
+
+- Removing foreign-block cutting made `between_root_managed_regions_beside_a_foreign_block` include foreign lines in its reported end line.
+- Removing blank-line trimming made `after_a_guide_managed_region` report blank outer lines and an empty first line.
+- Removing the root alias skip made `symbolic_link_claude_md` return a regular-file error instead of its expected report.
+
+No declared Verification command, repository Verification, or full test suite was run. No commit, push, or pull request was created. Daemon Verification and settlement remain outstanding.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T004735Z_ff97830eca75451a`
+- Source commit: `e929c1b2091c45462e8aac16fd7914690bf193f4`
