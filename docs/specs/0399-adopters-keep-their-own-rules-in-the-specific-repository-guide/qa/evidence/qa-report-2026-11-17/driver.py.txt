@@ -1,0 +1,47 @@
+from pathlib import Path
+import os, subprocess, tempfile, json, re, hashlib, tarfile, io, shlex, shutil, sys
+ROOT=Path(__file__).resolve().parents[6]
+SPEC="0399-adopters-keep-their-own-rules-in-the-specific-repository-guide"
+SD=ROOT/"docs/specs"/SPEC
+E=SD/"qa/evidence/qa-report-2026-11-17"
+REPORT=SD/"qa/qa-report-2026-11-17.md"
+BIN=ROOT/"bin/roundfix"
+ORIGINAL=os.environ.copy()
+MOD=subprocess.check_output(["go","env","GOMODCACHE"],text=True).strip()
+CACHE=subprocess.check_output(["go","env","GOCACHE"],text=True).strip()
+RUST=ORIGINAL.get("RUSTUP_HOME",str(Path.home()/".rustup"))
+CARGO=ORIGINAL.get("CARGO_HOME",str(Path.home()/".cargo"))
+KEYS=["GH_TOKEN","GITHUB_TOKEN","TYPESAFE_API_KEY","CLAUDE_CODE_SESSION_ID","ROUNDFIX_OPENROUTER_JUDGE_API_KEY","ROUNDFIX_OPENROUTER_API_KEY","ROUNDFIX_TYPESAFE_API_KEY"]
+def run(name,args,cwd=ROOT,extra=None,expected=None,rust=False):
+    with tempfile.TemporaryDirectory(prefix="qa399-home-",dir="/tmp") as h, tempfile.TemporaryDirectory(prefix="qa399-tmp-",dir="/tmp") as t:
+        en=ORIGINAL.copy()
+        for key in KEYS: en.pop(key,None)
+        en.update(HOME=h,TMPDIR=t,GOMODCACHE=MOD,GOCACHE=CACHE,GOPROXY="off",GOSUMDB="off",GIT_CONFIG_NOSYSTEM="1",GIT_CONFIG_GLOBAL="/dev/null",GOTOOLCHAIN="local")
+        if rust: en.update(RUSTUP_HOME=RUST,CARGO_HOME=CARGO)
+        if extra: en.update(extra)
+        r=subprocess.run([str(a) for a in args],cwd=cwd,env=en,stdin=subprocess.DEVNULL,capture_output=True,text=True)
+    shown=[str(a).replace(str(ROOT)+"/bin/roundfix","./bin/roundfix") for a in args]
+    (E/(name+".txt")).write_text("cwd: "+str(cwd)+"\n$ "+shlex.join(shown)+"\nstdout:\n"+r.stdout+"\nstderr:\n"+r.stderr+"\nexit: "+str(r.returncode)+"\n")
+    print(name, "exit",r.returncode,flush=True)
+    if expected is not None: assert r.returncode==expected,(name,r.stdout[-3000:],r.stderr[-3000:])
+    return r
+
+def finish(row,status,detail):
+    text=REPORT.read_text()
+    old=re.search(r"^\| "+re.escape(row)+r" \| pending \|.*$",text,re.M)
+    assert old, row
+    text=text[:old.start()]+old.group().replace("| pending |","| "+status+" |",1)+text[old.end():]
+    text+="\n### "+row+" observed result\n\n"+detail+"\n"
+    REPORT.write_text(text)
+
+def git(args,cwd=ROOT):
+    return subprocess.check_output(["git",*args],cwd=cwd,text=True).strip()
+
+def archived(rev):
+    d=Path(tempfile.mkdtemp(prefix="qa399-tree-",dir="/tmp"))
+    data=subprocess.check_output(["git","archive",rev],cwd=ROOT)
+    with tarfile.open(fileobj=io.BytesIO(data)) as tf: tf.extractall(d,filter="data")
+    env=ORIGINAL.copy(); env.update(HOME=str(d),GIT_CONFIG_GLOBAL="/dev/null",GIT_CONFIG_NOSYSTEM="1")
+    for args in [["init","-q"],["add","."],["-c","user.name=QA Fixture","-c","user.email=qa@example.invalid","-c","core.hooksPath=/dev/null","commit","-qm","scratch fixture"]]:
+        subprocess.run(["git",*args],cwd=d,env=env,check=True,stdin=subprocess.DEVNULL,capture_output=True)
+    return d

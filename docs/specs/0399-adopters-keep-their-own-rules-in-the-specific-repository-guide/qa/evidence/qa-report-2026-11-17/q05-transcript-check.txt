@@ -1,0 +1,1 @@
+Surface Transcript 1: all eight literal/pattern lines match in order; trailing ... matched remaining lines; stderr empty; exit 0.

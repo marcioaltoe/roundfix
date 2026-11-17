@@ -1,0 +1,6 @@
+command: rg -n 'Preserve repository-authored extensions outside setup markers|Repository authors own project-specific extensions|repository-authored dispatch extensions may add stricter triggers' docs/agents internal/baseline/assets/templates .agents/skills/roundfix skills/roundfix .agents/skills/setup-context-driven skills/setup-context-driven
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013
+exit: 1
+stdout:
+
+stderr:

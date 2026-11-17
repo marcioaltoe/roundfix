@@ -1,0 +1,12 @@
+{
+  "method": "Setup Manifest Markdown carriers plus regular root CLAUDE.md; split managed regions; exclude matched foreign blocks; trim outer blank lines; preserve inclusive line ranges.",
+  "rules": [
+    {
+      "path": "docs/agents/skill-dispatch.md",
+      "startLine": 183,
+      "endLine": 189,
+      "firstLine": "## Repository-specific rules",
+      "moveTo": "docs/agents/specific-repository.md"
+    }
+  ]
+}

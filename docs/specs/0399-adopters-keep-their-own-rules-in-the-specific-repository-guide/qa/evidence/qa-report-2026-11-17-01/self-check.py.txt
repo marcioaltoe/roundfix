@@ -1,0 +1,63 @@
+import pathlib,runpy,urllib.parse
+globals().update(runpy.run_path(str(pathlib.Path(__file__).with_name("gate.py.txt"))))
+check("self-check","Audit in progress.")
+s=REPORT.read_text();assert s.startswith("---\n")
+fm=s.split("---",2)[1];assert "verdict: partial\n" in fm and "status: closed\n" in fm
+assert 'auditing_binary: "0.147.0 (d23cf4ba, built 2026-11-17 07:45:55 -0300)"' in fm
+assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in fm
+assert "evidence_snapshots" not in s
+block=s.split("## Results\n",1)[1].split("\n## ",1)[0]
+lines=block.strip().splitlines();assert lines[:2]==["| # | Status | Provenance |","| - | --- | --- |"]
+assert len(lines)==20 and all(l.startswith("| ") and l.endswith(" |") for l in lines)
+rows=[]
+for line in lines[2:]:
+    cells=[x.strip() for x in line.strip("|").split("|")];assert len(cells)==3
+    q,status,source=cells;assert status!="pending";rows.append((q,status,source))
+    m=re.search(r"(?ms)^### "+re.escape(q)+r"\n(.*?)(?=^### |^## |\Z)",s);assert m,q
+    body=m.group(1);assert "```yaml\ninputs:\n" in body and "kind: repository_path" in body,q
+    if q in ["Q06","Q10","Q12","Q13"]:assert "kind: commit_range" in body,q
+assert len({r[0] for r in rows})==18
+assert sum(r[1]=="pass" for r in rows)==17
+assert sum(r[1].startswith("blocked (environment:") for r in rows)==1
+assert not any(r[1] in ["pending","fail","skipped"] or r[1].startswith(("blocked (finding:","blocked (declared:")) for r in rows)
+for field,number in [("rows_blocked_environment",1),("rows_blocked_finding",0),("rows_blocked_declared",0)]:assert f"{field}: {number}\n" in fm
+assert "<!-- detail:" not in s
+for source in ["Requirement 2","Requirement 3","Requirement 4","Requirement 8","Requirement 12","repository Verification","outside-evidence row","Pull Request row"]:assert any(source in r[2] for r in rows),source
+assert "| consequent-fix commit order | consequent-fix declaration |" in s
+for commit in ["0d2b95539cd81f8f909ec59fe70fc4785ea4f3e2","114022eb05d23fb49655aa6228bed4988e0a0cb8"]:assert commit in s
+assert '## Mechanical findings\n\nNone.' in s
+links=[]
+for raw in re.findall(r"\[[^\]]+\]\(([^)]+)\)",s):
+    if re.match(r"https?://",raw):continue
+    assert raw.startswith("evidence/qa-report-2026-11-17-01/"),raw
+    p=(REPORT.parent/urllib.parse.unquote(raw)).resolve();assert p.is_file(),raw
+    assert p.is_relative_to(EVID),raw;links.append(p)
+    old=subprocess.run(["git","cat-file","-e",HEAD+":"+str(p.relative_to(ROOT))],capture_output=True)
+    assert old.returncode!=0,"evidence path existed at audited head: "+raw
+files=[REPORT]+sorted(p for p in EVID.rglob("*") if p.is_file())
+ignored=subprocess.run(["git","check-ignore","--stdin"],input="\n".join(str(p.relative_to(ROOT)) for p in files)+"\n",text=True,capture_output=True)
+assert ignored.returncode==1 and not ignored.stdout,ignored.stdout
+exelist=fm.split("user_flow_executables:\n",1)[1].split("\n",1)[0] if False else re.search(r"user_flow_executables:\n((?:  - .+\n)+)",fm).group(1)
+executables=[x[4:] for x in exelist.splitlines()]
+for p in executables:
+    path=(ROOT/p).resolve();assert path.is_relative_to(ROOT) and path.is_file(),p
+assert "bin/roundfix" in executables and "bin/roundfix-qa399-base-01" in executables
+# Interpret the repository's actual secret patterns; never persist a matching value.
+patterns=re.findall(r'\{"([^"]+)", regexp.MustCompile\(`([^`]+)`\)\}',(ROOT/"internal/secretscan/patterns.go").read_text())
+assert len(patterns)==10
+matches=[]
+for p in files:
+    data=p.read_bytes();assert b"\0" not in data[:8000],str(p)
+    for i,line in enumerate(data.decode().splitlines(),1):
+        for kind,expression in patterns:
+            found=list(re.finditer(expression,line))
+            if kind=="credential-assignment":found=[m for m in found if re.search("[A-Za-z]",m.group(1)) and re.search("[0-9]",m.group(1))]
+            if found:matches.append({"path":str(p.relative_to(ROOT)),"line":i,"kind":kind});break
+assert not matches,json.dumps(matches)
+status=subprocess.check_output(["git","status","--porcelain","--untracked-files=all"],text=True)
+for line in status.splitlines():
+    p=line[3:];assert p.startswith(str(SPEC.relative_to(ROOT))+"/qa/"),line
+assert subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()==HEAD
+assert subprocess.check_output(["git","branch","--show-current"],text=True).strip()=="roundfix/run-run_20261117T104659Z_7436eda7d0594013"
+check("self-check",json.dumps({"result":"pass","rows":18,"passed":17,"blockedEnvironment":1,"blockedFinding":0,"blockedDeclared":0,"failed":0,"skipped":0,"pending":0,"evidenceLinksChecked":len(links),"reportAndEvidenceFilesChecked":len(files),"secretPatternCount":len(patterns),"secretMatches":matches,"ignoredFiles":[],"seededAuditorAndMechanicalSectionsPreserved":True,"allEvidencePathsFresh":True,"allExecutablesInsideThisRun":True,"headAndRunBranchUnchanged":True,"changedScope":"Spec qa report and evidence only","delivery":"no Run/user commit, push, PR or archive mutation"},indent=2))
+print((EVID/"self-check.txt").read_text())

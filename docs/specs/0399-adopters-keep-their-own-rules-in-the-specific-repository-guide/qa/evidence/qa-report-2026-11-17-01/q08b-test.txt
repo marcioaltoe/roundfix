@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 10m -v -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$/^after_a_guide_managed_region$' ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa399-sabotage-b-o_k1a9aa
+exit: 1
+stdout:
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+    misplaced_rules_test.go:229: report = baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"docs/agents/agent-instructions.md", StartLine:6, EndLine:11, FirstLine:"", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}, want baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"docs/agents/agent-instructions.md", StartLine:8, EndLine:10, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}
+--- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 162.544417ms before and 166.950041ms after
+FAIL	roundfix/internal/baseline	0.619s
+FAIL
+
+stderr:

@@ -1,0 +1,11 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ rg -n -F DR-BASELINE-RULES-UNREAD docs/user-guide/commands/baseline.md docs/user-guide/commands/doctor.md .agents/skills/roundfix skills/roundfix .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md
+stdout:
+docs/user-guide/commands/doctor.md:358:baseline-rules: warn (DR-BASELINE-RULES-UNREAD: <error>; next: re-run roundfix doctor after fixing the Setup Manifest)
+docs/user-guide/commands/doctor.md:368:`DR-BASELINE-RULES-UNREAD` means an invalid manifest or unreadable carrier.
+skills/roundfix/references/setup.md:9:`DR-BASELINE-RULES-UNREAD` and asks to re-run Doctor after fixing the manifest.
+.agents/skills/roundfix/references/setup.md:9:`DR-BASELINE-RULES-UNREAD` and asks to re-run Doctor after fixing the manifest.
+
+stderr:
+
+exit: 0

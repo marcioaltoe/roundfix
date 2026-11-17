@@ -1,0 +1,44 @@
+import pathlib
+exec(compile((pathlib.Path(__file__).with_name("gate.py.txt")).read_text(),"gate.py.txt","exec"))
+
+def test(name,package,pattern=None,tags=None,rust=False):
+    args=["go","test","-count=1","-timeout","30m"]
+    if pattern:args += ["-v","-run",pattern]
+    if tags:args += ["-tags",tags]
+    args += [package]
+    return run(name,args,expected=0,rust=rust)
+row("Q01","pass","Daemon supplied `make verify-changed`: pass, exit 0, at the audited head; diagnostics removed on success. Recorded as the static gate without rerunning it. Fresh `make build` also exited 0; see [build](evidence/qa-report-2026-11-17-01/build.txt).")
+r=test("q02-named","./internal/baseline",r"^(TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide|TestTheVendoredSkillClausesCarryTheDivergenceOrder|TestTheVendoredSkillClausesRenderInTheGuides|TestEveryBaselineModuleVersionIsRecorded)$")
+for n in ["keep_root_compact","activate_matching_skills","docs_one_job_per_directory","agent_instructions_guide","skill_dispatch_guide","docs_layout_guide","root_pointer","starter"]:
+    assert "--- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/"+n+" " in r.stdout,n
+test("q02-baseline-package","./internal/baseline")
+paths={"docs/agents/agent-instructions.md":"never in a root instruction file or in a Baseline guide, inside or outside its setup markers", "docs/agents/skill-dispatch.md":"or any other dispatch rule of this repository in", "docs/agents/docs-layout.md":"and add a repository rule only to", "AGENTS.md":"write every rule or variation of this repository there, never in this file or in a Baseline guide"}
+checks=[]
+for path,expected in paths.items():
+    content=" ".join((ROOT/path).read_text().split());assert expected in content,path
+    checks.append(path+": "+expected)
+for guide in ["agent-instructions.md","docs-layout.md","skill-dispatch.md"]:
+    path="internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/"+guide
+    assert paths["docs/agents/"+guide] in " ".join((ROOT/path).read_text().split()),path
+    checks.append(path+": required sentence present")
+check("q02-sentences","\n".join(checks))
+r=run("q02-current",[BIN,"baseline","update","--repo",".","--no-skills","--no-history","--format","json"],expected=0)
+j=json.loads(r.stdout);assert j["state"]=="current" and j["misplacedRepositoryRules"]==[]
+row("Q02","pass","Named catalog tests and all required subtests passed, as did the whole Baseline package. All four local carriers and three formatter goldens contain the prescribed text. The whole-value tests verify the clause IDs, force, owner and starter. Public JSON reports current with no misplaced rule. [Named tests](evidence/qa-report-2026-11-17-01/q02-named.txt), [package](evidence/qa-report-2026-11-17-01/q02-baseline-package.txt), [sentences](evidence/qa-report-2026-11-17-01/q02-sentences.txt), [current result](evidence/qa-report-2026-11-17-01/q02-current.txt).")
+r=test("q03-detector","./internal/baseline",r"^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$")
+for n in ["after_a_guide_managed_region","before_a_guide_managed_region","between_root_managed_regions_beside_a_foreign_block","several_sections_after_one_managed_region","digest_mismatch_region","marker_absent_region_is_not_an_entry","unclosed_begin_stays_in_the_passage","first_line_is_cut_at_120_bytes","clean_carrier","symbolic_link_claude_md","regular_claude_md","specific_repository_is_not_read","no_manifest","invalid_manifest","extension_decision_off","extension_decision_on","reads_only"]:
+    assert "--- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/"+n+" " in r.stdout,n
+run("q03-windows",["go","build","-buildvcs=false","./internal/baseline"],expected=0,environment={"GOOS":"windows"})
+test("q03-glossary","./internal/docscontract",r"^TestGlossaryPhrasesAreDefinedTerms$","docscontract")
+assert "- adds: **Misplaced Repository Rule**" in (SPEC/"_prd.md").read_text()
+assert re.search(r"^\*\*Misplaced Repository Rule\*\*[: ]",(ROOT/"CONTEXT.md").read_text(),re.M)
+row("Q03","pass","Every required detector subtest passed by name, including exact whole-report inventory shapes, unlisted regular root CLAUDE.md, foreign blocks, UTF-8, manifest errors, excluded carriers and read-only snapshots. Windows build exited 0. Supplemental glossary definition and tagged glossary test passed. [Detector](evidence/qa-report-2026-11-17-01/q03-detector.txt), [Windows](evidence/qa-report-2026-11-17-01/q03-windows.txt), [glossary](evidence/qa-report-2026-11-17-01/q03-glossary.txt).")
+r=test("q04-named","./internal/cli",r"^(TestBaselineUpdateNamesMisplacedRepositoryRules|TestDoctorReportsMisplacedRepositoryRules|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent)$")
+for n in ["plan_text","plan_json","current_text","current_json","applied_json","plan_digest_unchanged","exit_code_unchanged","extension_decision_off","no_manifest_omits_the_field"]:
+    assert "--- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/"+n+" " in r.stdout,n
+for n in ["ok","warn_one_passage","warn_two_passages","warn_extension_off","skipped","unread_invalid_manifest","after_skills_and_exit_code"]:
+    assert "--- PASS: TestDoctorReportsMisplacedRepositoryRules/"+n+" " in r.stdout,n
+test("q04-cli-package","./internal/cli",rust=True)
+test("q04-skills-package","./skills")
+test("q04-docscontract","./internal/docscontract",tags="docscontract")
+row("Q04","pass","All three named CLI tests and every required subtest passed. The whole internal/cli suite passed with existing Rust toolchain paths supplied read-only; skills and tagged docscontract suites passed separately. [Named](evidence/qa-report-2026-11-17-01/q04-named.txt), [CLI](evidence/qa-report-2026-11-17-01/q04-cli-package.txt), [skills](evidence/qa-report-2026-11-17-01/q04-skills-package.txt), [docscontract](evidence/qa-report-2026-11-17-01/q04-docscontract.txt).")

@@ -1,0 +1,20 @@
+cwd: /tmp/qa399-tree-u7w_0f1r
+$ go test -count=1 -timeout 5m -v -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$/^symbolic_link_claude_md$' ./internal/baseline
+stdout:
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+    misplaced_rules_test.go:223: error = "read misplaced-rule carrier \"CLAUDE.md\": inspect planned path \"CLAUDE.md\": expected a regular file or missing path", want ""
+--- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 146.424167ms before and 135.279375ms after
+FAIL	roundfix/internal/baseline	0.597s
+FAIL
+
+stderr:
+
+exit: 1

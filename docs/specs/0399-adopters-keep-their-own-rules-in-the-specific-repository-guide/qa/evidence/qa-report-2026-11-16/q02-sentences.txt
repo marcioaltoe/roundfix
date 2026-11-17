@@ -1,0 +1,8 @@
+docs/agents/agent-instructions.md: never in a root instruction file or in a Baseline guide, inside or outside its setup markers
+docs/agents/skill-dispatch.md: or any other dispatch rule of this repository in
+docs/agents/docs-layout.md: and add a repository rule only to
+AGENTS.md: write every rule or variation of this repository there, never in this file or in a Baseline guide
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md: matching sentence
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md: matching sentence
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md: matching sentence
+Clause IDs, mandatory enforcement and complete values are independently asserted in q02-placement.txt.

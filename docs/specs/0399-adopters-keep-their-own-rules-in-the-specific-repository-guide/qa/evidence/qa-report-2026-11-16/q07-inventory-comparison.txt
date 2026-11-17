@@ -1,0 +1,324 @@
+{
+  "checkouts": [
+    {
+      "checkout": "/Users/marcio/dev/argus",
+      "commit": "fc53eb7cc1ebb7708d06774f5a281a4297e48623",
+      "inventoryCommit": "fc53eb7c",
+      "commitMoved": false,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [],
+      "observed": [],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/dev/quaestor",
+      "commit": "6ffa8c1ad6435e5c3d24584ff32e78481983f32a",
+      "inventoryCommit": "fdd3d184",
+      "commitMoved": true,
+      "statusBefore": " M docs/adr/0020-estoque-contabil-no-cadastro-depois-do-bloco-h.md\n M docs/adr/0025-ajuste-do-inventario-do-erp-ao-estoque-contabil.md\n M docs/adr/0031-ajuste-do-bloco-h-da-efd-ao-estoque-contabil-como-correcao-confirmada.md\n M docs/adr/0041-auditoria-do-sped-fiscal-so-com-a-quebra-de-sequencia.md\n M docs/adr/0047-cadastro-de-empresas-numa-planilha-google.md\n M docs/adr/0098-simples-pelo-regime-e-empresa-sem-arquivos-fiscais.md\n M docs/adr/0117-estoque-contabil-lido-da-planilha-de-estoque.md\n M docs/specs/0116-inventario-de-fim-de-trimestre/_idea.md\n?? docs/adr/0119-inventario-de-fim-de-trimestre-cobrado-pela-periodicidade-do-estoque.md\n?? docs/specs/0116-inventario-de-fim-de-trimestre/_authorization.md\n?? docs/specs/0116-inventario-de-fim-de-trimestre/_prd.md\n",
+      "statusAfter": " M docs/adr/0020-estoque-contabil-no-cadastro-depois-do-bloco-h.md\n M docs/adr/0025-ajuste-do-inventario-do-erp-ao-estoque-contabil.md\n M docs/adr/0031-ajuste-do-bloco-h-da-efd-ao-estoque-contabil-como-correcao-confirmada.md\n M docs/adr/0041-auditoria-do-sped-fiscal-so-com-a-quebra-de-sequencia.md\n M docs/adr/0047-cadastro-de-empresas-numa-planilha-google.md\n M docs/adr/0098-simples-pelo-regime-e-empresa-sem-arquivos-fiscais.md\n M docs/adr/0117-estoque-contabil-lido-da-planilha-de-estoque.md\n M docs/specs/0116-inventario-de-fim-de-trimestre/_idea.md\n?? docs/adr/0119-inventario-de-fim-de-trimestre-cobrado-pela-periodicidade-do-estoque.md\n?? docs/specs/0116-inventario-de-fim-de-trimestre/_authorization.md\n?? docs/specs/0116-inventario-de-fim-de-trimestre/_prd.md\n",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 109,
+          "endLine": 115,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "observed": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 109,
+          "endLine": 115,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/srv/quaestor",
+      "commit": "fdd3d1845775d3785ff9152ef4b2c2268bd12e36",
+      "inventoryCommit": "fdd3d184",
+      "commitMoved": false,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 109,
+          "endLine": 115,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "observed": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 109,
+          "endLine": 115,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/srv/fiscus",
+      "commit": "55bac1b1e1855f5b54b42bbe74adfb167a81d39b",
+      "inventoryCommit": "55bac1b1",
+      "commitMoved": false,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [
+        {
+          "path": "AGENTS.md",
+          "startLine": 1,
+          "endLine": 3,
+          "firstLine": "### Repository review policy",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "startLine": 89,
+          "endLine": 91,
+          "firstLine": "### Product tax review (client registers)",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "startLine": 1,
+          "endLine": 5,
+          "firstLine": "## Maintainer review override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "startLine": 1,
+          "endLine": 6,
+          "firstLine": "## Repository delivery override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/backend.md",
+          "startLine": 37,
+          "endLine": 53,
+          "firstLine": "<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/secondbrain.md",
+          "startLine": 31,
+          "endLine": 62,
+          "firstLine": "<!-- repository-authored: maintainer instruction, 2026-09-08 -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "observed": [
+        {
+          "path": "AGENTS.md",
+          "startLine": 1,
+          "endLine": 3,
+          "firstLine": "### Repository review policy",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "startLine": 89,
+          "endLine": 91,
+          "firstLine": "### Product tax review (client registers)",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "startLine": 1,
+          "endLine": 5,
+          "firstLine": "## Maintainer review override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "startLine": 1,
+          "endLine": 6,
+          "firstLine": "## Repository delivery override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/backend.md",
+          "startLine": 37,
+          "endLine": 53,
+          "firstLine": "<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/secondbrain.md",
+          "startLine": 31,
+          "endLine": 62,
+          "firstLine": "<!-- repository-authored: maintainer instruction, 2026-09-08 -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/srv/fiscus-mcp",
+      "commit": "55bac1b1e1855f5b54b42bbe74adfb167a81d39b",
+      "inventoryCommit": "55bac1b1",
+      "commitMoved": false,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [
+        {
+          "path": "AGENTS.md",
+          "startLine": 1,
+          "endLine": 3,
+          "firstLine": "### Repository review policy",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "startLine": 89,
+          "endLine": 91,
+          "firstLine": "### Product tax review (client registers)",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "startLine": 1,
+          "endLine": 5,
+          "firstLine": "## Maintainer review override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "startLine": 1,
+          "endLine": 6,
+          "firstLine": "## Repository delivery override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/backend.md",
+          "startLine": 37,
+          "endLine": 53,
+          "firstLine": "<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/secondbrain.md",
+          "startLine": 31,
+          "endLine": 62,
+          "firstLine": "<!-- repository-authored: maintainer instruction, 2026-09-08 -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "observed": [
+        {
+          "path": "AGENTS.md",
+          "startLine": 1,
+          "endLine": 3,
+          "firstLine": "### Repository review policy",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "AGENTS.md",
+          "startLine": 89,
+          "endLine": 91,
+          "firstLine": "### Product tax review (client registers)",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "startLine": 1,
+          "endLine": 5,
+          "firstLine": "## Maintainer review override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "startLine": 1,
+          "endLine": 6,
+          "firstLine": "## Repository delivery override",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/backend.md",
+          "startLine": 37,
+          "endLine": 53,
+          "firstLine": "<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        },
+        {
+          "path": "docs/agents/secondbrain.md",
+          "startLine": 31,
+          "endLine": 62,
+          "firstLine": "<!-- repository-authored: maintainer instruction, 2026-09-08 -->",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/srv/indexus",
+      "commit": "3e48f0d0551163604003c6b31836243e5890e793",
+      "inventoryCommit": "3e48f0d0",
+      "commitMoved": false,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 183,
+          "endLine": 189,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "observed": [
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "startLine": 183,
+          "endLine": 189,
+          "firstLine": "## Repository-specific rules",
+          "moveTo": "docs/agents/specific-repository.md"
+        }
+      ],
+      "exactMatch": true,
+      "exit": 3
+    },
+    {
+      "checkout": "/Users/marcio/dev/roundfix",
+      "commit": "dde9f4a59fa92d6e2d3da63f3f49e1f5dded3efa",
+      "inventoryCommit": "bcf0e675",
+      "commitMoved": true,
+      "statusBefore": "",
+      "statusAfter": "",
+      "statusUnchanged": true,
+      "method": "Independent marker-pair and foreign-block partition; trimmed maximal spans; root regular CLAUDE exception",
+      "freshInventory": [],
+      "observed": [],
+      "exactMatch": true,
+      "exit": 3
+    }
+  ],
+  "missing": [],
+  "errors": []
+}

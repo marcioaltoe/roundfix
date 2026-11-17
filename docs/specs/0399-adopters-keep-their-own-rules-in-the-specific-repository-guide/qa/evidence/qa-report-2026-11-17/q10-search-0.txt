@@ -1,0 +1,10 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ rg -n -F misplacedRepositoryRules docs/user-guide/commands/baseline.md docs/user-guide/commands/doctor.md .agents/skills/roundfix skills/roundfix .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md
+stdout:
+docs/user-guide/commands/baseline.md:188:JSON adds `misplacedRepositoryRules`, an array whose entries have `path`,
+skills/roundfix/references/baseline.md:124:The update result's `misplacedRepositoryRules` array names each Misplaced
+.agents/skills/roundfix/references/baseline.md:124:The update result's `misplacedRepositoryRules` array names each Misplaced
+
+stderr:
+
+exit: 0

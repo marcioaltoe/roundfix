@@ -1,0 +1,41 @@
+from pathlib import Path
+exec(compile((Path(__file__).parent/'driver.py.txt').read_text(),str(Path(__file__).parent/'driver.py.txt'),'exec'))
+import difflib
+cases=[
+ ('a','internal/baseline/misplaced_rules.go','./internal/baseline','TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest','between_root_managed_regions_beside_a_foreign_block'),
+ ('b','internal/baseline/misplaced_rules.go','./internal/baseline','TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest','after_a_guide_managed_region'),
+ ('c','internal/baseline/misplaced_rules.go','./internal/baseline','TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest','symbolic_link_claude_md'),
+ ('d','internal/baseline/misplaced_rules.go','./internal/baseline','TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest','marker_absent_region_is_not_an_entry'),
+ ('e','internal/cli/baseline_update.go','./internal/cli','TestBaselineUpdateNamesMisplacedRepositoryRules','applied_json'),
+ ('f','internal/cli/doctor.go','./internal/cli','TestDoctorReportsMisplacedRepositoryRules','warn_one_passage'),
+ ('g','internal/baseline/assets/modules/context-workflow.json','./internal/baseline','TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide','docs_one_job_per_directory'),
+ ('h','internal/baseline/assets/templates/extensions/specific-repository.md','./internal/baseline','TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide','starter')]
+for letter,file,pkg,test,sub in cases:
+    tree=archived('HEAD')
+    try:
+        p=tree/file;before=p.read_text();after=before
+        if letter=='a': after=before.replace('if begin == nil || string(begin[1]) != "BEGIN" {','if begin == nil || string(begin[1]) == "BEGIN" {',1)
+        elif letter=='b':
+            after=before.replace('for start < end && len(bytes.TrimSpace(lines[start])) == 0 {','for false && start < end && len(bytes.TrimSpace(lines[start])) == 0 {',1).replace('for start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {','for false && start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {',1)
+        elif letter=='c': after=before.replace('if !info.Mode().IsRegular() {','if !info.Mode().IsRegular() && info.Mode().IsRegular() {',1)
+        elif letter=='d': after=before.replace('for _, region := range unrecorded {','for _, region := range unrecorded {\n\t\tif region.Reason == UnrecordedManagedRegionReasonMarkerAbsent {\n\t\t\treport.Rules = append(report.Rules, MisplacedRepositoryRule{Path: region.Path, StartLine: 1, EndLine: 1, ManagedID: region.ManagedID, MoveTo: SpecificRepositoryPath})\n\t\t}',1)
+        elif letter=='e':
+            after=before.replace('applyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)','qaBeforeApply, _ := baseline.MisplacedRepositoryRules(request.repo)\n\tapplyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)',1)
+            target='\treturn writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)\n}'
+            assert target in after
+            after=after.replace(target,'\tresult.MisplacedRepositoryRules = &qaBeforeApply.Rules\n\tresult.misplacedRulesRoot = ""\n'+target,1)
+        elif letter=='f': after=before.replace('result.Status = CheckStatusWarn\n\tresult.Detail = "DR-BASELINE-RULE-MISPLACED:', 'result.Status = CheckStatusFailed\n\tresult.Detail = "DR-BASELINE-RULE-MISPLACED:',1)
+        elif letter=='g': after=before.replace('Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`.','Preserve repository-authored extensions outside setup markers.',1)
+        elif letter=='h': after=before.split('\n\n',1)[0]+'\n'
+        assert before!=after,letter
+        p.write_text(after)
+        diff=''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile=file,tofile=file))
+        (E/('q08'+letter+'-mutation.txt')).write_text('Fresh committed git archive of audited HEAD; only this mutation; no regeneration or synchronization.\n'+diff)
+        r=run('q08'+letter+'-test',['go','test','-count=1','-timeout','5m','-v','-run','^'+test+'$/^'+sub+'$',pkg],cwd=tree)
+        name=test+'/'+sub
+        diagnostic=r.stdout+r.stderr
+        failed=r.returncode!=0 and ('--- FAIL: '+name+' ') in diagnostic and 'build failed' not in diagnostic
+        assert failed,(letter,diagnostic[-5000:])
+        (E/('q08'+letter+'-assertion.txt')).write_text('The named subtest failed on the intended mutation, exit '+str(r.returncode)+'.\n'+diagnostic[diagnostic.find('=== RUN'):][-5500:])
+        finish('Q08'+letter,'pass','Fresh committed archived copy with exactly the authored defect; inspected assertion failure in `'+name+'`, exit '+str(r.returncode)+'. No regeneration, synchronization or mutation of this Run source. Evidence: [mutation](evidence/qa-report-2026-11-17/q08'+letter+'-mutation.txt), [full test output](evidence/qa-report-2026-11-17/q08'+letter+'-test.txt), [assertion](evidence/qa-report-2026-11-17/q08'+letter+'-assertion.txt).')
+    finally: shutil.rmtree(tree)

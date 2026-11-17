@@ -1,0 +1,9 @@
+{
+  "preview_read_only": true,
+  "applied_passage_bytes_preserved": true,
+  "line_before_apply": 7,
+  "line_after_apply": 115,
+  "foreign_block_excluded": true,
+  "unlisted_regular_claude_reported": true,
+  "doctor_path": "Git only; no other executable exposed"
+}

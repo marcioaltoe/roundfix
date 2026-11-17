@@ -1,0 +1,391 @@
+{
+  "commitRange": "379803c8f78cd110638e82621c3f1e497d902909..f9376c79472de9ab33eaa1021cd03373f16424d1",
+  "authorizationRevision": "379803c8f78cd110638e82621c3f1e497d902909",
+  "authorizationChronologicallyBeforeTasks": true,
+  "taskCommits": [
+    {
+      "task": "task_01",
+      "commit": "a92e4b81d9e38380b049857ada239df808204e1b",
+      "paths": [
+        {
+          "path": "AGENTS.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/agents/docs-layout.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/agents/setup-context.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/task_01.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/skill-dispatch.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/modules/context-workflow.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/modules/core.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/modules/repository-extension.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/profiles/standard-typescript-monorepo.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/templates/extensions/specific-repository.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/templates/guides/agent-instructions.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/templates/guides/skill-dispatch.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/templates/index.json",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/assets/templates/root/repository-extension.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/module-versions.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/repository_rule_placement_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.diagnostics.golden.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.digest",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/catalog.normalized.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/clean-adoption.golden.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/vendored_skill_clauses_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "task_02",
+      "commit": "e929c1b2091c45462e8aac16fd7914690bf193f4",
+      "paths": [
+        {
+          "path": "CONTEXT.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/task_02.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/misplaced_rules.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/baseline/misplaced_rules_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "task": "task_03",
+      "commit": "f9376c79472de9ab33eaa1021cd03373f16424d1",
+      "paths": [
+        {
+          "path": ".agents/skills/roundfix/SKILL.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": ".agents/skills/roundfix/references/baseline.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": ".agents/skills/roundfix/references/setup.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": ".agents/skills/setup-context-driven/SKILL.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/references/behavior-surfaces.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/task_03.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/user-guide/commands/baseline.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "docs/user-guide/commands/doctor.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/baseline_update.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/baseline_update_misplaced_rules_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/cli.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/doctor.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/doctor_baseline_rules_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/doctor_test.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "internal/cli/health.go",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "skills/roundfix/SKILL.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "skills/roundfix/references/baseline.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "skills/roundfix/references/setup.md",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "skills/setup-context-driven/SKILL.md",
+          "declared": true,
+          "governed": true,
+          "authorized": true,
+          "errors": []
+        },
+        {
+          "path": "skills/testdata/owned-skill-versions.json",
+          "declared": true,
+          "governed": false,
+          "authorized": true,
+          "errors": []
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "workingTree": "?? docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/\n"
+}

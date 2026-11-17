@@ -1,0 +1,16 @@
+docs/user-guide/commands/baseline.md: field and section present
+.agents/skills/roundfix/references/baseline.md: field and section present
+skills/roundfix/references/baseline.md: field and section present
+docs/user-guide/commands/doctor.md: line and both codes present
+.agents/skills/roundfix/references/setup.md: line and both codes present
+skills/roundfix/references/setup.md: line and both codes present
+.agents/skills/roundfix/references/baseline.md: exact approval sentence matches
+skills/roundfix/references/baseline.md: exact approval sentence matches
+.agents/skills/setup-context-driven/SKILL.md: exact approval sentence matches
+skills/setup-context-driven/SKILL.md: exact approval sentence matches
+roundfix/SKILL.md: canonical and mirror byte-identical
+roundfix/references/baseline.md: canonical and mirror byte-identical
+roundfix/references/setup.md: canonical and mirror byte-identical
+setup-context-driven/SKILL.md: canonical and mirror byte-identical
+detector mutation/subprocess call search: no matches; reviewed readOptionalRegular, classifier, partitioner, digest matcher, pure range/UTF-8 helpers
+PlanDocument struct is byte-identical to Delivery Base and has no misplacedRepositoryRules field

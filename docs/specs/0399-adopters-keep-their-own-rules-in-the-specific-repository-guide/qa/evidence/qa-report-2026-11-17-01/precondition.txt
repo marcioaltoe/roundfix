@@ -1,0 +1,13 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013/bin/roundfix spec check 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide --strict
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013
+exit: 0
+stdout:
+Spec 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/_techspec.md Vocabulary Contract
+
+stderr:

@@ -1,0 +1,22 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ ./bin/roundfix baseline update --repo /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c --no-skills --no-history --format text
+stdout:
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:f894bdf824bb135ddb238c00f4bd430795ec666c83a3cb7217e0c006cc371ec0
+Current catalog: sha256:f894bdf824bb135ddb238c00f4bd430795ec666c83a3cb7217e0c006cc371ec0
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:31fbe7acd1d19e53acf921bd3005c3c67f2e7f5bf87e98886196490fc75f6aa2
+
+stderr:
+
+exit: 0

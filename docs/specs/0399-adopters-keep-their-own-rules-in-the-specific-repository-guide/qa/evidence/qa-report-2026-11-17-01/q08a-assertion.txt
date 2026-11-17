@@ -1,0 +1,2 @@
+Confirmed nonzero exit and named assertion failure: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+No generator or sync command ran. Inspect the linked test output for the actual assertion difference.

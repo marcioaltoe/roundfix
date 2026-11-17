@@ -1,0 +1,105 @@
+from pathlib import Path
+exec(compile((Path(__file__).parent/'driver.py.txt').read_text(),str(Path(__file__).parent/'driver.py.txt'),'exec'))
+checks=[]
+def check(label,ok):
+    checks.append({'check':label,'pass':bool(ok)})
+    assert ok,label
+
+def text(path):return (ROOT/path).read_text()
+def norm(s):return ' '.join(s.split())
+# Exact catalog clauses and local/golden rendered text.
+expected_clauses={}
+source=text('internal/baseline/repository_rule_placement_test.go')
+for module,ruleid,clauseid,const,guide in [
+ ('core','rule.core.compact-root','clause.core.keep-root-compact','keepRootCompactGuidance','agent-instructions'),
+ ('core','rule.core.skill-dispatch','clause.core.activate-matching-skills','activateMatchingSkillsGuidance','skill-dispatch'),
+ ('context-workflow','rule.context.docs-layout','clause.context.docs-one-job-per-directory','docsOneJobPerDirectoryGuidance','docs-layout')]:
+    # Decode the Go quoted literal as a JSON string; the source contains no Go-only escapes.
+    want=json.loads(re.search(r'\b'+const+r'\s*=\s*("[^\n]+")',source)[1])
+    doc=json.loads(text('internal/baseline/assets/modules/'+module+'.json'))
+    rule=next(x for x in doc['rules'] if x['id']==ruleid);clause=next(x for x in rule['clauses'] if x['id']==clauseid)
+    check(clauseid+' identity, force, rule and whole guidance',clause['guidance']==want and clause['enforcement']=='mandatory' and 'replaces' not in clause)
+    for prefix in ['docs/agents/','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/']:
+        p=prefix+guide+'.md';check(p+' exact forced guidance',('- **mandatory**: '+want) in text(p).splitlines())
+        expected_clauses[p]=want
+check('root pointer','write every rule or variation of this repository there, never in this file or in a Baseline guide' in norm(text('AGENTS.md')))
+for p in ['docs/agents/docs-layout.md','internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md']:
+    check(p+' old sentence absent','Preserve repository-authored extensions outside setup markers.' not in text(p))
+# Fixed-string documentation contract and byte-identical mirrors.
+for p in ['docs/user-guide/commands/baseline.md','.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md']:
+    check(p+' result field','misplacedRepositoryRules' in text(p));check(p+' text section','Misplaced repository rules:' in text(p))
+for p in ['docs/user-guide/commands/doctor.md','.agents/skills/roundfix/references/setup.md','skills/roundfix/references/setup.md']:
+    for code in ['DR-BASELINE-RULE-MISPLACED','DR-BASELINE-RULES-UNREAD']:
+        check(p+' '+code,code in text(p))
+for p in ['.agents/skills/roundfix/references/baseline.md','skills/roundfix/references/baseline.md','.agents/skills/setup-context-driven/SKILL.md','skills/setup-context-driven/SKILL.md']:
+    check(p+' exact approval sentence',"names a Misplaced Repository Rule, report each passage to the person and move it into `docs/agents/specific-repository.md` only with the person's approval." in norm(text(p)))
+versions={}
+for skill in ['roundfix','setup-context-driven']:
+    for relative in ['SKILL.md']+(['references/baseline.md','references/setup.md'] if skill=='roundfix' else []):
+        a='.agents/skills/'+skill+'/'+relative;b='skills/'+skill+'/'+relative
+        check('mirror '+b,(ROOT/a).read_bytes()==(ROOT/b).read_bytes())
+    versions[skill]=re.findall(r'^\s*version: (.+)$',text('.agents/skills/'+skill+'/SKILL.md'),re.M)
+# Record exact searches rather than counting a read as acceptance.
+for index,pattern in enumerate(['misplacedRepositoryRules','DR-BASELINE-RULE-MISPLACED','DR-BASELINE-RULES-UNREAD','names a Misplaced']):
+    run('q10-search-'+str(index),['rg','-n','-F',pattern,'docs/user-guide/commands/baseline.md','docs/user-guide/commands/doctor.md','.agents/skills/roundfix','skills/roundfix','.agents/skills/setup-context-driven/SKILL.md','skills/setup-context-driven/SKILL.md'],expected=0)
+# No mutation calls and unchanged PlanDocument structure from exact history.
+detector=text('internal/baseline/misplaced_rules.go')
+mutators=r'\b(?:os\.(?:WriteFile|Create|CreateTemp|Remove|RemoveAll|Mkdir|MkdirAll|Rename|Chmod|Symlink|OpenFile)|exec\.Command(?:Context)?)\s*\('
+check('detector calls no file mutation or process function',not re.search(mutators,detector))
+base=git(['merge-base','HEAD','origin/main'])
+old=git(['show',base+':internal/baseline/plan.go']);current=text('internal/baseline/plan.go')
+plan=lambda x:re.search(r'type PlanDocument struct \{.*?\n\}',x,re.S)[0]
+check('PlanDocument byte-identical to Delivery Base',plan(old)==plan(current))
+# Every required named positive test and subtest is present as a PASS line.
+for logfile,names in [('q02-named.txt',['TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/'+n for n in ['keep_root_compact','activate_matching_skills','docs_one_job_per_directory','agent_instructions_guide','skill_dispatch_guide','docs_layout_guide','root_pointer','starter']]+['TestTheVendoredSkillClausesCarryTheDivergenceOrder','TestTheVendoredSkillClausesRenderInTheGuides','TestEveryBaselineModuleVersionIsRecorded']),('q03-detector.txt',['TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/'+n for n in ['after_a_guide_managed_region','before_a_guide_managed_region','between_root_managed_regions_beside_a_foreign_block','several_sections_after_one_managed_region','digest_mismatch_region','marker_absent_region_is_not_an_entry','unclosed_begin_stays_in_the_passage','first_line_is_cut_at_120_bytes','clean_carrier','symbolic_link_claude_md','regular_claude_md','specific_repository_is_not_read','no_manifest','invalid_manifest','extension_decision_off','extension_decision_on','reads_only']])]:
+    log=(E/logfile).read_text()
+    for name in names:check('named PASS '+name,('--- PASS: '+name+' ') in log)
+# Glossary declaration, one-entry Task diff and live glossary test.
+check('PRD declares adds for term','- adds: **Misplaced Repository Rule**' in text(str(SD.relative_to(ROOT)/'_prd.md')))
+check('glossary entry defined',re.search(r'^\*\*Misplaced Repository Rule\*\*:',text('CONTEXT.md'),re.M))
+diff=git(['show','64cac648','--','CONTEXT.md'])
+plus=[x[1:] for x in diff.splitlines() if x.startswith('+') and not x.startswith('+++')]
+minus=[x for x in diff.splitlines() if x.startswith('-') and not x.startswith('---')]
+check('task_02 adds only the named glossary entry',sum(x.startswith('**') for x in plus)==1 and any('**Misplaced Repository Rule**' in x for x in plus) and not minus)
+(E/'q11-glossary-history.txt').write_text(diff+'\n')
+(E/'q10-contract-checks.txt').write_text(json.dumps({'checks':checks,'skill_versions':versions,'detector_calls':sorted(set(re.findall(r'\b([\w.]+)\(',detector))),'plan_document':plan(current)},indent=2)+'\n')
+# History scope for each Task and the explicit pre-QA repair commit.
+commits={'task_01':'0d2b95539cd81f8f909ec59fe70fc4785ea4f3e2','task_02':'64cac648','task_03':'114022eb05d23fb49655aa6228bed4988e0a0cb8'}
+authority=text(str(SD.relative_to(ROOT)/'_authorization.md'))
+grants=set(re.findall(r'^  - (.+)$',authority.split('paths:\n',1)[1].split('operations:',1)[0],re.M))
+governed=text('internal/speccheck/governed.go')
+patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',governed)
+exacts=set(re.findall(r'"([^"]+)"',governed.split('paths: exactGovernedPaths(',1)[1].split('),',1)[0]))
+isgoverned=lambda p:p in exacts or any(re.search(pattern,p) for pattern in patterns)
+history=[];allpaths=set();declared_all=set()
+for task,commit in commits.items():
+    authored=git(['show',commit+':'+str(SD.relative_to(ROOT)/(task+'.md'))])
+    declarations=set(re.findall(r'^- (?:interface|creates|instruction): `([^`]+)`',authored,re.M));declarations.add(str(SD.relative_to(ROOT)/(task+'.md')))
+    recorded=authored.split('## Recorded paths',1)[-1] if '## Recorded paths' in authored else ''
+    declarations.update(re.findall(r'`([^`]+)`',recorded))
+    paths=git(['diff-tree','--no-commit-id','--name-only','-r',commit]).splitlines();allpaths.update(paths);declared_all.update(declarations)
+    check(task+' changed files declared',set(paths)<=declarations)
+    gov=[p for p in paths if isgoverned(p)];check(task+' governed files authorized',set(gov)<=grants)
+    history.append({'task':task,'commit':git(['rev-parse',commit]),'changed_paths':paths,'declarations':sorted(declarations),'governed_paths':gov})
+repairpaths=git(['diff-tree','--no-commit-id','--name-only','-r','f7a132d4']).splitlines();allpaths.update(repairpaths)
+check('repair only Task01/02 files plus QA contract',set(repairpaths)<=declared_all|{str(SD.relative_to(ROOT)/'task_04.md')})
+forbidden=[]
+for p in allpaths:
+    bad=p in {'Makefile','go.mod','go.sum','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json','internal/cli/cli_test.go','.roundfixrc.yml','docs/agents/specific-repository.md'} or p.startswith(('.github/workflows/','docs/adr/','internal/baseline/assets/source-baselines/','internal/baseline/assets/setups/')) or (p.startswith('internal/baseline/assets/profiles/') and p!='internal/baseline/assets/profiles/standard-typescript-monorepo.json')
+    if p.startswith(('.agents/skills/','skills/')):
+        parts=p.split('/')
+        skill=parts[2] if parts[0]=='.agents' else parts[1]
+        if skill not in ['roundfix','setup-context-driven','testdata'] and (parts[0]=='.agents' or parts[2]=='SKILL.md'):bad=True
+    if bad:forbidden.append(p)
+check('no forbidden Task-range file changes',not forbidden)
+for p in allpaths:
+    if not p.endswith('SKILL.md'):continue
+    before=git(['show',base+':'+p]);after=text(p)
+    section=lambda x:re.search(r'^### QA settlement\n.*?(?=^##|\Z)',x,re.M|re.S)
+    a,b=section(before),section(after);check('unchanged QA settlement '+p,(a.group() if a else None)==(b.group() if b else None))
+(E/'q12-history-scope.txt').write_text(json.dumps({'range':base+'..'+git(['rev-parse','HEAD']),'tasks':history,'repair_commit':git(['rev-parse','f7a132d4']),'repair_paths':repairpaths,'authorization_paths':sorted(grants),'governed_classifier_patterns':patterns,'checks':checks,'forbidden_paths':forbidden},indent=2)+'\n')
+finish('Q02','pass','Named placement, vendored-clause and module-version tests passed with every required subtest recorded; the whole Baseline suite passed. Exact rendered sentences, mandatory clause identity/ownership and the root pointer matched; public update returned current with no passages. Evidence: [named tests](evidence/qa-report-2026-11-17/q02-named.txt), [Baseline suite](evidence/qa-report-2026-11-17/q09-baseline-package.txt), [current JSON](evidence/qa-report-2026-11-17/q02-current.txt), [exact contract checks](evidence/qa-report-2026-11-17/q10-contract-checks.txt).')
+finish('Q03','pass','All named detector cases passed, including exact reports, read-only snapshots, foreign blocks, symbolic links and absent markers. Windows build exited 0. The public command now also reports an unlisted regular root CLAUDE.md, closing prior F-01. Evidence: [detector tests](evidence/qa-report-2026-11-17/q03-detector.txt), [Windows build](evidence/qa-report-2026-11-17/q03-windows.txt), [public root-file check](evidence/qa-report-2026-11-17/q03-unlisted-root.txt).')
+finish('Q10','pass','Fixed-string searches and whole-value assertions passed for local guides, formatter goldens, public docs and both skill copies. Mirrors are byte-identical; Roundfix version '+versions['roundfix'][0]+' and setup-context-driven '+versions['setup-context-driven'][0]+'. Detector has no mutation/process call; PlanDocument is byte-identical to the Delivery Base. PRD declares the added glossary term, Task02 adds no other entry, and the live tagged glossary test passed. Evidence: [contract checks](evidence/qa-report-2026-11-17/q10-contract-checks.txt), [glossary history](evidence/qa-report-2026-11-17/q11-glossary-history.txt), [glossary test](evidence/qa-report-2026-11-17/q11-glossary.txt).')
+finish('Q12','pass','Each Task commit stays within its authored paths and each changed Governed Path appears in the operative grant. The separate pre-QA correction changes only Task01/02 files and Task04 contract text. No prohibited path or QA settlement section changed. Evidence: [exact history/scope audit](evidence/qa-report-2026-11-17/q12-history-scope.txt).')
+finish('Q13','blocked (environment: no open Pull Request)','Assignment confirms no open Pull Request. Approval equivalent: approved Spec authorization at revision 379803c8f78cd110638e82621c3f1e497d902909 grants delivery operations. Checks: Daemon supplied make verify-changed pass, exit 0 at audited head f7a132d4c7651f7ca2f1726e2e36c342301197ab. Unresolved threads: none because no Pull Request exists. Merge-Ready acceptance: none yet, not credited. Claimed candidate and review-artifact ancestry: this audited head; no current review artifact exists. The Supervisor must check all controls on the eventual target-branch Pull Request; no gh or mutation was attempted.')

@@ -1,0 +1,122 @@
+import runpy
+from pathlib import Path
+R=Path.cwd(); D=R/'docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-16'
+g=runpy.run_path(str(D/'qa-runner.py.txt'));globals().update({k:v for k,v in g.items() if not k.startswith('__')})
+
+def snapshot(repo):
+ result=[]
+ for p in sorted(repo.rglob('*')):
+  if '.git' in p.relative_to(repo).parts: continue
+  if p.is_symlink(): result.append((str(p.relative_to(repo)),'link',os.readlink(p)))
+  elif p.is_file(): result.append((str(p.relative_to(repo)),p.stat().st_size,hashlib.sha256(p.read_bytes()).hexdigest()))
+ return result
+
+def initrepo(p,en):
+ for args in [['init','--quiet'],['config','user.name','QA Fixture'],['config','user.email','qa@example.test'],['config','commit.gpgsign','false']]:
+  s=subprocess.run(['git',*args],cwd=p,env=en,capture_output=True,text=True);assert s.returncode==0,s.stderr
+
+def commit(p,en):
+ for args in [['add','--all'],['commit','--quiet','--allow-empty','-m','QA fixture']]:
+  s=subprocess.run(['git',*args],cwd=p,env=en,capture_output=True,text=True);assert s.returncode==0,s.stderr
+
+def main():
+ p=command([BIN,'baseline','update','--repo','.', '--no-skills','--no-history','--format','text'],'q05-transcript')
+ wanted=['Baseline update: current','Result: the repository already matches the current Baseline catalog',r'Prior catalog: sha256:.+',r'Current catalog: sha256:.+','File changes: 0','Misplaced repository rules: 0','Retention evidence: 0','Declared decisions: 0']
+ assert p.returncode==0 and not p.stderr
+ assert all(re.fullmatch(w,l) for w,l in zip(wanted,p.stdout.splitlines())) and len(p.stdout.splitlines())>=8
+ basebin=ROOT/'bin/roundfix-qa399-delivery-base'
+ with tempfile.TemporaryDirectory(prefix='qa399-base-') as bt,isolated() as en:
+  br=Path(bt);arc=subprocess.check_output(['git','archive',BASE],cwd=ROOT)
+  with tarfile.open(fileobj=io.BytesIO(arc)) as tf:tf.extractall(br,filter='data')
+  initrepo(br,en);commit(br,en)
+  bp=command(['go','build','-buildvcs=false','-o',basebin,'./cmd/roundfix'],'q06-build-base',br,en);assert bp.returncode==0
+  command([basebin,'--version'],'q06-base-version',br,en)
+ with tempfile.TemporaryDirectory(prefix='qa399-fixture-') as ft,isolated() as en:
+  repo=Path(ft);initrepo(repo,en)
+  for f,b in {'Makefile':'verify:\n\t@true\nverify-incremental:\n\t@true\n','.agents/skills/context7/SKILL.md':'# context7\n','.agents/skills/exa-web-search/SKILL.md':'# exa\n'}.items():
+   f=repo/f;f.parent.mkdir(parents=True,exist_ok=True);f.write_text(b)
+  commit(repo,en)
+  decisions={'preservation.mode':'greenfield','language.generated':'English','verification.gate':'make verify','verification.incremental':'make verify-incremental','branch.prefix':'<type>/','spec.scaffold':'true','domain.layout':'single-context','triage.external':'false','autonomous.enabled':'false','secondbrain.enabled':'false','repository.extension.enabled':'true'}
+  cmd=[BIN,'baseline','plan','--repo',repo,'--profile','go-cli-tui','--format','json']
+  for k,v in decisions.items():cmd+=['--decision',k+'='+v]
+  p=command(cmd,'q05-adoption-plan',en=en);assert p.returncode==0,p.stdout+p.stderr
+  plan=json.loads(p.stdout);pf=Path(en['TMPDIR'])/'plan.json';pf.write_text(p.stdout)
+  p=command([BIN,'baseline','apply','--repo',repo,'--plan',pf,'--confirm-plan',plan['planDigest'],'--format','json'],'q05-adoption-apply',en=en);assert p.returncode==0,p.stdout+p.stderr
+  commit(repo,en)
+  carrier=repo/'docs/agents/skill-dispatch.md';clean=carrier.read_text()
+  # A short valid managed region makes the approved apply visibly shift the outside passage.
+  marker=re.search(r'<!-- setup-context-driven:begin id=guide.skill-dispatch version=([^ ]+) -->',clean).group(1)
+  stale='<!-- setup-context-driven:begin id=guide.skill-dispatch version='+marker+' -->\n\n# Stale guide\n\n<!-- setup-context-driven:end id=guide.skill-dispatch -->\n'
+  cleanPreview=command([BIN,'baseline','update','--repo',repo,'--no-skills','--no-history','--format','json'],'q05-clean-no-passage',en=en)
+  assert cleanPreview.returncode==0 and json.loads(cleanPreview.stdout)['misplacedRepositoryRules']==[]
+  carrier.write_text(stale)
+  def update(binary,fmt,label,*extra):return command([binary,'baseline','update','--repo',repo,'--no-skills','--no-history','--format',fmt,*extra],label,en=en)
+  pre=update(BIN,'json','q05-no-passage-plan');assert pre.returncode==3
+  passage='## Repository-specific rules\n- Preserve the review checklist.\n- Keep the local release policy.\n'
+  carrier.write_text(stale+'\n'+passage)
+  before=snapshot(repo)
+  text=update(BIN,'text','q05-passage-plan-text');new=update(BIN,'json','q05-passage-plan-json')
+  assert text.returncode==new.returncode==pre.returncode
+  result=json.loads(new.stdout);start=8
+  want=[dict(path='docs/agents/skill-dispatch.md',startLine=1,endLine=5,firstLine='# Stale guide',managedId='guide.skill-dispatch',moveTo='docs/agents/specific-repository.md'),dict(path='docs/agents/skill-dispatch.md',startLine=7,endLine=9,firstLine='## Repository-specific rules',moveTo='docs/agents/specific-repository.md')]
+  # First complete the exact one-passage scenario on a current managed guide.
+  carrier.write_text(clean+'\n'+passage)
+  before=snapshot(repo);text=update(BIN,'text','q05-one-passage-text');new=update(BIN,'json','q05-one-passage-json');after=snapshot(repo)
+  rules=json.loads(new.stdout)['misplacedRepositoryRules'];lineStart=len(clean.splitlines())+2
+  expectedRule=dict(path='docs/agents/skill-dispatch.md',startLine=lineStart,endLine=lineStart+2,firstLine='## Repository-specific rules',moveTo='docs/agents/specific-repository.md')
+  assert rules==[expectedRule] and text.returncode==new.returncode==cleanPreview.returncode
+  assert f'- docs/agents/skill-dispatch.md:{lineStart}-{lineStart+2}: ## Repository-specific rules\n' in text.stdout
+  assert 'Misplaced repository rules: 1\n' in text.stdout and '  Move to: docs/agents/specific-repository.md\n' in text.stdout
+  assert before==after
+  (E/'q05-plan-files.txt').write_text(json.dumps({'before':before,'after':after,'equal':before==after},indent=2)+'\n')
+  # Force a refresh through a harmless declared decision; passage bytes stay exact.
+  applied=update(BIN,'json','q05-applied','--decision','triage.external=true','--yes');assert applied.returncode==0,applied.stdout+applied.stderr
+  ar=json.loads(applied.stdout)['misplacedRepositoryRules'];lines=carrier.read_text().splitlines();actual=lines.index('## Repository-specific rules')+1
+  assert ar==[dict(path='docs/agents/skill-dispatch.md',startLine=actual,endLine=actual+2,firstLine='## Repository-specific rules',moveTo='docs/agents/specific-repository.md')]
+  assert carrier.read_text().endswith(passage)
+  agents=repo/'AGENTS.md';agents.write_text(agents.read_text()+'\n<!-- BEGIN:tool-rules -->\nExternal tool guidance.\n<!-- END:tool-rules -->\n')
+  foreign=update(BIN,'json','q05-foreign-block');assert not any(x['path']=='AGENTS.md' for x in json.loads(foreign.stdout)['misplacedRepositoryRules'])
+  # Cross-version plan on the same fixture, with a stale managed guide and one passage.
+  currentGuide=carrier.read_text();version=re.search(r'begin id=guide.skill-dispatch version=([^ ]+)',currentGuide).group(1)
+  carrier.write_text('<!-- setup-context-driven:begin id=guide.skill-dispatch version='+version+' -->\n\n# Stale guide\n\n<!-- setup-context-driven:end id=guide.skill-dispatch -->\n\n'+passage)
+  oldText=update(basebin,'text','q06-base-plan-text');newText=update(BIN,'text','q06-head-plan-text')
+  oldJSON=update(basebin,'json','q06-base-plan-json');newJSON=update(BIN,'json','q06-head-plan-json')
+  a,b=json.loads(oldJSON.stdout),json.loads(newJSON.stdout)
+  allowed={'priorCatalog','currentCatalog','fileChanges','planDigest'}
+  diff={k:{'base':v,'head':b.get(k)} for k,v in a.items() if k not in allowed and (k not in b or b[k]!=v)}
+  headLines=newText.stdout.splitlines();start=headLines.index(next(x for x in headLines if x.startswith('Misplaced repository rules:')));end=headLines.index(next(x for x in headLines[start:] if x.startswith('Retention evidence:')))
+  reduced=headLines[:start]+headLines[end:]
+  exact=oldText.stdout.splitlines()==reduced
+  exitMatch=oldText.returncode==newText.returncode==oldJSON.returncode==newJSON.returncode
+  (E/'q06-comparison.txt').write_text(json.dumps({'jsonDifferencesOutsideExceptions':diff,'exitMatch':exitMatch,'literalTextEqualAfterRemovingNewSection':exact,'textDiff':list(__import__('difflib').unified_diff(oldText.stdout.splitlines(),reduced,fromfile='delivery base',tofile='audited head'))},indent=2)+'\n')
+  row('Q06','pass' if not diff and exitMatch and exact else 'fail','Built the Delivery Base from a fresh git archive committed in a temporary Git repository; output binary stays inside this Run. All exit codes match, but nextAction differs because it embeds the changed Plan Digest outside the four allowed JSON exceptions. '+('Exact text matches after removing the added section.' if exact else 'F-02: literal text parity fails on catalog, planned-file, Plan Digest and next-action lines; the authored text comparison has no catalog exception.'),('q06-build-base.txt','q06-base-version.txt','q06-base-plan-text.txt','q06-head-plan-text.txt','q06-base-plan-json.txt','q06-head-plan-json.txt','q06-comparison.txt'))
+  carrier.write_text(currentGuide)
+  # Risk probe: the accepted ADR includes a regular root CLAUDE even when not manifest-listed.
+  claude=repo/'CLAUDE.md';claude.write_text('## Root repository policy\n- Keep the reviewer checklist.\n')
+  probe=update(BIN,'json','q03-unlisted-claude')
+  got=json.loads(probe.stdout)['misplacedRepositoryRules'];hasClaude=any(x['path']=='CLAUDE.md' for x in got)
+  (E/'q03-unlisted-claude-check.txt').write_text(json.dumps({'manifestListsClaude':any(x['path']=='CLAUDE.md' for x in json.loads((repo/'docs/agents/setup-context.json').read_text())['managedArtifacts']),'regularFile':claude.is_file() and not claude.is_symlink(),'expectedClaudeEntry':True,'actualClaudeEntry':hasClaude,'fileContents':claude.read_text(),'observedRules':got},indent=2)+'\n')
+  if not hasClaude:row('Q03','fail','F-01: all required seventeen detector subtests and Windows build pass, but an additional public-CLI boundary probe misses an unlisted regular root CLAUDE.md. This contradicts TechSpec invariant 1 and accepted ADR-0411; its regular_claude_md test only covers a manifest-listed file.',('q03-unlisted-claude.txt','q03-unlisted-claude-check.txt'))
+  claude.unlink()
+  # Use only Git and Go as visible tools for Doctor; no installed harness or gh can be reached.
+  toolsdir=ROOT/'bin/qa399-tools';toolsdir.mkdir(exist_ok=True)
+  for name in ['git','go']:
+   target=toolsdir/name
+   if not target.exists():target.symlink_to(shutil.which(name))
+  den=en.copy();den['PATH']=str(toolsdir)+':/usr/bin:/bin';den['ROUNDFIX_CODEX_PATH']=str(toolsdir/'absent-codex')
+  states=[]
+  for state in ['warn','ok','skipped']:
+   if state=='ok':carrier.write_text(carrier.read_text().removesuffix(passage))
+   if state=='skipped':(repo/'docs/agents/setup-context.json').unlink()
+   a=command([BIN,'doctor'],'q05-doctor-'+state,repo,den);b=command([basebin,'doctor'],'q06-base-doctor-'+state,repo,den)
+   line=[l for l in a.stdout.splitlines() if l.startswith('baseline-rules:')]
+   assert len(line)==1,(a.stdout,a.stderr)
+   assert line[0].startswith('baseline-rules: '+state+' '),line
+   assert a.returncode==b.returncode,(a.returncode,b.returncode)
+   states.append(dict(state=state,line=line[0],headExit=a.returncode,baseExit=b.returncode))
+  (E/'q05-doctor-comparison.txt').write_text(json.dumps(states,indent=2)+'\n')
+ row('Q05','pass','Surface Transcript 1 matches stdout, empty stderr and exit 0. Fresh public adoption, exact one-passage text/JSON, full file hash listing before/after plan, applied on-disk ranges and unchanged passage, foreign-block exclusion, and Doctor warn/ok/skipped with Delivery Base exit parity all pass. Doctor runs with only Git/Go and OS tools on PATH to prevent real gh, harness or adapter execution.',('q05-transcript.txt','q05-adoption-plan.txt','q05-adoption-apply.txt','q05-clean-no-passage.txt','q05-one-passage-text.txt','q05-one-passage-json.txt','q05-plan-files.txt','q05-applied.txt','q05-foreign-block.txt','q05-doctor-comparison.txt'))
+ # The cross-version plan comparison is run on the same public-adopted fixture in a separate phase.
+ text=REPORT.read_text().replace('user_flow_executables: [bin/roundfix]','user_flow_executables: [bin/roundfix, bin/roundfix-qa399-delivery-base]');REPORT.write_text(text)
+
+if __name__=='__main__':main()

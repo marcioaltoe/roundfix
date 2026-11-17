@@ -1,0 +1,16 @@
+Fresh committed git archive of audited HEAD; only this mutation; no regeneration or synchronization.
+--- internal/baseline/misplaced_rules.go
++++ internal/baseline/misplaced_rules.go
+@@ -187,10 +187,10 @@
+ 	}
+ 	var rules []MisplacedRepositoryRule
+ 	appendPassage := func(start, end int) {
+-		for start < end && len(bytes.TrimSpace(lines[start])) == 0 {
++		for false && start < end && len(bytes.TrimSpace(lines[start])) == 0 {
+ 			start++
+ 		}
+-		for start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {
++		for false && start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {
+ 			end--
+ 		}
+ 		if start < end {

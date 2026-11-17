@@ -1,0 +1,14 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013/bin/roundfix archive 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide --plan --offline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013
+exit: 0
+stdout:
+archive plan for 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide: removes 331 file(s) (1881955 bytes) and writes docs/history/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide.md
+core 12 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-16.md, qa/qa-report-2026-11-17-01.md, qa/qa-report-2026-11-17.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 316 file(s) (1603353 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-16-adopter-rule-placement-inventory.md 6341 bytes: no advice (offline)
+candidate references/2026-11-16-adopters-put-their-own-rules-in-baseline-owned-files.md 1795 bytes: no advice (offline)
+candidate references/2026-11-16-maintainer-answers.md 1028 bytes: no advice (offline)
+promote with: roundfix archive 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide --promote <path>
+
+stderr:

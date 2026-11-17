@@ -1,0 +1,20 @@
+cwd: /tmp/qa399-tree-wcfbotev
+$ go test -count=1 -timeout 5m -v -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$/^between_root_managed_regions_beside_a_foreign_block$' ./internal/baseline
+stdout:
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+    misplaced_rules_test.go:229: report = baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"AGENTS.md", StartLine:7, EndLine:12, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}, want baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"AGENTS.md", StartLine:7, EndLine:8, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}
+--- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 163.142917ms before and 136.387959ms after
+FAIL	roundfix/internal/baseline	0.621s
+FAIL
+
+stderr:
+
+exit: 1

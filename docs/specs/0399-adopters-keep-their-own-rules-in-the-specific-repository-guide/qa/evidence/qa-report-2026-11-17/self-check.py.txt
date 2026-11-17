@@ -1,0 +1,47 @@
+from pathlib import Path
+exec(compile((Path(__file__).parent/"driver.py.txt").read_text(),str(Path(__file__).parent/"driver.py.txt"),"exec"))
+s=REPORT.read_text()
+front=s.split("---",2)[1]
+assert s.startswith("---\n") and len(re.findall(r"^---$",s,re.M))==2
+assert "verdict: fail" in front and "status: closed" in front
+assert 'auditing_binary: "0.147.0 (f7a132d4, built 2026-11-17 07:14:40 -0300)"' in front
+assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in front
+assert "evidence_snapshots:" not in s
+body=s.split("## Results\n",1)[1].split("\n## ",1)[0]
+lines=body.strip().splitlines();assert lines[0]=="| # | Status | Provenance |" and lines[1]=="| - | --- | --- |"
+rows=[]
+for line in lines[2:]:
+    assert line.startswith("| ") and line.count("|")==4,line
+    cells=[c.strip() for c in line.strip("|").split("|")];rows.append(cells)
+assert len(rows)==18 and len({x[0] for x in rows})==18
+counts={status:sum(r[1]==status for r in rows) for status in ["pass","fail","pending","skipped"]}
+assert counts=={"pass":16,"fail":1,"pending":0,"skipped":0}
+assert sum(r[1].startswith("blocked (environment:") for r in rows)==1
+assert all("blocked (finding:" not in r[1] and "blocked (declared:" not in r[1] for r in rows)
+assert "rows_blocked_environment: 1" in front and "rows_blocked_finding: 0" in front and "rows_blocked_declared: 0" in front
+for row,_,_ in rows:
+    m=re.search(r"^### "+re.escape(row)+r"\n(.*?)(?=^### |^## |\Z)",s,re.S|re.M)
+    assert m and "inputs:" in m[1] and "kind: repository_path" in m[1],row
+    if row in ["Q06","Q10","Q12","Q13"]:assert "kind: commit_range" in m[1],row
+    if row=="Q07":assert m[1].count("kind: external_repository")==7
+links=[]
+for target in re.findall(r"\]\(([^)]+)\)",s):
+    if "://" in target or target.startswith("#"):continue
+    f=(REPORT.parent/target.split("#",1)[0]).resolve()
+    assert f.exists() or f==E/"self-check.txt",str(f)
+    assert f.is_relative_to(ROOT),str(f)
+    links.append(f)
+exes=json.loads(re.search(r"^user_flow_executables: (.*)$",s,re.M)[1])
+for relative in exes:
+    f=(ROOT/relative).resolve();assert f.is_file() and f.is_relative_to(ROOT),relative
+for f in set(links):
+    if f==E/"self-check.txt" and not f.exists():continue
+    r=subprocess.run(["git","check-ignore","--",str(f.relative_to(ROOT))],cwd=ROOT,capture_output=True,text=True)
+    assert r.returncode==1,(f,r.stdout,r.stderr)
+    borrowed=subprocess.run(["git","cat-file","-e","HEAD:"+str(f.relative_to(ROOT))],cwd=ROOT,capture_output=True)
+    assert borrowed.returncode!=0,("borrowed",f)
+assert 'consequent-fix commit order | consequent-fix declaration' in s
+assert 'Q08h | re-run: not pass' in s
+summary={"results_rows":len(rows),"counts":counts,"environment_blocked":1,"finding_blocked":0,"declared_blocked":0,"resolved_local_links":len(set(links)),"executables":exes,"daemon_auditor_fields_unchanged":True,"typed_inputs_present":True,"linked_evidence_new_in_this_run":True,"ignored_or_missing_links":0}
+(E/"self-check.txt").write_text(json.dumps(summary,indent=2)+"\n")
+print(json.dumps(summary,indent=2))

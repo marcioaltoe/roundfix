@@ -1,0 +1,7 @@
+command: git rev-parse HEAD
+cwd: /Users/marcio/dev/quaestor
+exit: 0
+stdout:
+e1889441a8a1e2075bb22a78a03eb73111366215
+
+stderr:

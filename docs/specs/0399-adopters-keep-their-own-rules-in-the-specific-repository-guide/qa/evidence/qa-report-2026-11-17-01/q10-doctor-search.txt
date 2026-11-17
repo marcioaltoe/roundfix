@@ -1,0 +1,20 @@
+command: rg -n 'baseline-rules:|DR-BASELINE-RULE-MISPLACED|DR-BASELINE-RULES-UNREAD' docs/user-guide/commands/doctor.md .agents/skills/roundfix/references/setup.md skills/roundfix/references/setup.md
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013
+exit: 0
+stdout:
+docs/user-guide/commands/doctor.md:90:- `baseline-rules:` — after `skills:` and any `user-skills:` and
+docs/user-guide/commands/doctor.md:352:The offline `baseline-rules:` check reads the Setup Manifest's carriers and
+docs/user-guide/commands/doctor.md:356:baseline-rules: ok (no repository rule outside docs/agents/specific-repository.md)
+docs/user-guide/commands/doctor.md:357:baseline-rules: warn (DR-BASELINE-RULE-MISPLACED: <n> passages belong in docs/agents/specific-repository.md: <path>:<start>-<end>[, ...]; next: move each passage into docs/agents/specific-repository.md; roundfix baseline update lists them)
+docs/user-guide/commands/doctor.md:358:baseline-rules: warn (DR-BASELINE-RULES-UNREAD: <error>; next: re-run roundfix doctor after fixing the Setup Manifest)
+docs/user-guide/commands/doctor.md:359:baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)
+docs/user-guide/commands/doctor.md:367:`DR-BASELINE-RULE-MISPLACED` names the passages to move;
+docs/user-guide/commands/doctor.md:368:`DR-BASELINE-RULES-UNREAD` means an invalid manifest or unreadable carrier.
+.agents/skills/roundfix/references/setup.md:3:Doctor prints `baseline-rules:` after `skills:` and any `user-skills:` and
+.agents/skills/roundfix/references/setup.md:5:passages, `warn` with `DR-BASELINE-RULE-MISPLACED` listing every
+.agents/skills/roundfix/references/setup.md:9:`DR-BASELINE-RULES-UNREAD` and asks to re-run Doctor after fixing the manifest.
+skills/roundfix/references/setup.md:3:Doctor prints `baseline-rules:` after `skills:` and any `user-skills:` and
+skills/roundfix/references/setup.md:5:passages, `warn` with `DR-BASELINE-RULE-MISPLACED` listing every
+skills/roundfix/references/setup.md:9:`DR-BASELINE-RULES-UNREAD` and asks to re-run Doctor after fixing the manifest.
+
+stderr:

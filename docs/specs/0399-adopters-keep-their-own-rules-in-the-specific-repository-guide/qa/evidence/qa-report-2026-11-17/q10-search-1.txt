@@ -1,0 +1,11 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ rg -n -F DR-BASELINE-RULE-MISPLACED docs/user-guide/commands/baseline.md docs/user-guide/commands/doctor.md .agents/skills/roundfix skills/roundfix .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md
+stdout:
+docs/user-guide/commands/doctor.md:357:baseline-rules: warn (DR-BASELINE-RULE-MISPLACED: <n> passages belong in docs/agents/specific-repository.md: <path>:<start>-<end>[, ...]; next: move each passage into docs/agents/specific-repository.md; roundfix baseline update lists them)
+docs/user-guide/commands/doctor.md:367:`DR-BASELINE-RULE-MISPLACED` names the passages to move;
+skills/roundfix/references/setup.md:5:passages, `warn` with `DR-BASELINE-RULE-MISPLACED` listing every
+.agents/skills/roundfix/references/setup.md:5:passages, `warn` with `DR-BASELINE-RULE-MISPLACED` listing every
+
+stderr:
+
+exit: 0

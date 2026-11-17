@@ -1,0 +1,27 @@
+{
+  "results_rows": 18,
+  "counts": {
+    "pass": 16,
+    "fail": 1,
+    "pending": 0,
+    "skipped": 0
+  },
+  "environment_blocked": 1,
+  "finding_blocked": 0,
+  "declared_blocked": 0,
+  "resolved_local_links": 71,
+  "executables": [
+    "bin/roundfix",
+    "bin/roundfix-qa399-base",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/driver.py.txt",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/product.py.txt",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/sabotage.py.txt",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/outside.py.txt",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/audit.py.txt",
+    "docs/specs/0399-adopters-keep-their-own-rules-in-the-specific-repository-guide/qa/evidence/qa-report-2026-11-17/self-check.py.txt"
+  ],
+  "daemon_auditor_fields_unchanged": true,
+  "typed_inputs_present": true,
+  "linked_evidence_new_in_this_run": true,
+  "ignored_or_missing_links": 0
+}

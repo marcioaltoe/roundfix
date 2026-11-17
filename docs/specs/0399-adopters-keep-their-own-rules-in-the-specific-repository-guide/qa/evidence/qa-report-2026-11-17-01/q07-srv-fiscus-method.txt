@@ -1,0 +1,47 @@
+{
+  "method": "Setup Manifest Markdown carriers plus regular root CLAUDE.md; split managed regions; exclude matched foreign blocks; trim outer blank lines; preserve inclusive line ranges.",
+  "rules": [
+    {
+      "path": "AGENTS.md",
+      "startLine": 1,
+      "endLine": 3,
+      "firstLine": "### Repository review policy",
+      "moveTo": "docs/agents/specific-repository.md"
+    },
+    {
+      "path": "AGENTS.md",
+      "startLine": 89,
+      "endLine": 91,
+      "firstLine": "### Product tax review (client registers)",
+      "moveTo": "docs/agents/specific-repository.md"
+    },
+    {
+      "path": "docs/agents/agent-instructions.md",
+      "startLine": 1,
+      "endLine": 5,
+      "firstLine": "## Maintainer review override",
+      "moveTo": "docs/agents/specific-repository.md"
+    },
+    {
+      "path": "docs/agents/autonomous-work.md",
+      "startLine": 1,
+      "endLine": 6,
+      "firstLine": "## Repository delivery override",
+      "moveTo": "docs/agents/specific-repository.md"
+    },
+    {
+      "path": "docs/agents/backend.md",
+      "startLine": 37,
+      "endLine": 53,
+      "firstLine": "<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->",
+      "moveTo": "docs/agents/specific-repository.md"
+    },
+    {
+      "path": "docs/agents/secondbrain.md",
+      "startLine": 31,
+      "endLine": 62,
+      "firstLine": "<!-- repository-authored: maintainer instruction, 2026-09-08 -->",
+      "moveTo": "docs/agents/specific-repository.md"
+    }
+  ]
+}

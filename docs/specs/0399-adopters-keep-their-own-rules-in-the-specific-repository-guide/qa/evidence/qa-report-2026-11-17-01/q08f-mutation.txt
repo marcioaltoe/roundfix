@@ -1,0 +1,14 @@
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index ef9b151..79f45bd 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -192,7 +192,7 @@ func doctorBaselineRulesResult(repositoryRoot string) CheckResult {
+ 	if len(report.Rules) != 1 {
+ 		passages = fmt.Sprintf("%d passages belong", len(report.Rules))
+ 	}
+-	result.Status = CheckStatusWarn
++	result.Status = CheckStatusFailed
+ 	result.Detail = "DR-BASELINE-RULE-MISPLACED: " + passages + " in " + baseline.SpecificRepositoryPath + ": " + strings.Join(locations, ", ")
+ 	result.NextAction = "move each passage into " + baseline.SpecificRepositoryPath + "; roundfix baseline update lists them"
+ 	if !report.ExtensionEnabled {
+

@@ -1,0 +1,7 @@
+cwd: /Users/marcio/srv/indexus
+$ git --no-optional-locks status --porcelain
+stdout:
+
+stderr:
+
+exit: 0

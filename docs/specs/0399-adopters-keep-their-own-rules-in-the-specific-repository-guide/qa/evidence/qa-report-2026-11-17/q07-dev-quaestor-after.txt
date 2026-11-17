@@ -1,0 +1,29 @@
+cwd: /Users/marcio/dev/quaestor
+$ git --no-optional-locks status --porcelain
+stdout:
+ M docs/adr/0020-estoque-contabil-no-cadastro-depois-do-bloco-h.md
+ M docs/adr/0025-ajuste-do-inventario-do-erp-ao-estoque-contabil.md
+ M docs/adr/0031-ajuste-do-bloco-h-da-efd-ao-estoque-contabil-como-correcao-confirmada.md
+ M docs/adr/0041-auditoria-do-sped-fiscal-so-com-a-quebra-de-sequencia.md
+ M docs/adr/0047-cadastro-de-empresas-numa-planilha-google.md
+ M docs/adr/0098-simples-pelo-regime-e-empresa-sem-arquivos-fiscais.md
+ M docs/adr/0117-estoque-contabil-lido-da-planilha-de-estoque.md
+ M docs/specs/0116-inventario-de-fim-de-trimestre/_idea.md
+?? docs/adr/0119-inventario-de-fim-de-trimestre-cobrado-pela-periodicidade-do-estoque.md
+?? docs/adr/0120-planilha-de-estoque-lida-pelo-gog-pelos-rotulos-e-sem-copia.md
+?? docs/backlog/2026-11-17-inventario-de-31-12-de-toda-empresa-e-lista-antecipada.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/_authorization.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/_prd.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/_tasks.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/_techspec.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_01.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_02.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_03.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_04.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_05.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_06.md
+?? docs/specs/0116-inventario-de-fim-de-trimestre/task_07.md
+
+stderr:
+
+exit: 0

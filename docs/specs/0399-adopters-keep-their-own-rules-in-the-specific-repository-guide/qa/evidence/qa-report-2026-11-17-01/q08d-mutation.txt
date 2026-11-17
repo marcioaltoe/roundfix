@@ -1,0 +1,13 @@
+diff --git a/internal/baseline/misplaced_rules.go b/internal/baseline/misplaced_rules.go
+index c0ce835..fdc2a86 100644
+--- a/internal/baseline/misplaced_rules.go
++++ b/internal/baseline/misplaced_rules.go
+@@ -111,6 +111,7 @@ func MisplacedRepositoryRules(root string) (MisplacedRepositoryRuleReport, error
+ 	}
+ 	mismatches := make(map[string]map[string]bool)
+ 	for _, region := range unrecorded {
++		if region.Reason == "marker-absent" { report.Rules = append(report.Rules, MisplacedRepositoryRule{Path: region.Path, StartLine: 1, EndLine: 1, ManagedID: region.ManagedID, MoveTo: SpecificRepositoryPath}) }
+ 		if region.Reason == UnrecordedManagedRegionReasonDigestMismatch {
+ 			if mismatches[region.Path] == nil {
+ 				mismatches[region.Path] = make(map[string]bool)
+

@@ -1,0 +1,20 @@
+$ go test -count=1 -timeout 20m -v -run ^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$/^symbolic_link_claude_md$ ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa399-q08c-kovo_c26
+stdout:
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+    misplaced_rules_test.go:220: report = baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"AGENTS.md", StartLine:7, EndLine:7, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}, baseline.MisplacedRepositoryRule{Path:"CLAUDE.md", StartLine:7, EndLine:7, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}, want baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"AGENTS.md", StartLine:7, EndLine:7, FirstLine:"# Local rules", ManagedID:"", MoveTo:"docs/agents/specific-repository.md"}}}
+--- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 168.719584ms before and 152.003125ms after
+FAIL	roundfix/internal/baseline	0.624s
+FAIL
+
+stderr:
+
+exit: 1

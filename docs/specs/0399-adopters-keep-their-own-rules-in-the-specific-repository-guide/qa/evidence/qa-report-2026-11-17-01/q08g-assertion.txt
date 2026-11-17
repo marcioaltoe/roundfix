@@ -1,0 +1,2 @@
+Confirmed nonzero exit and named assertion failure: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory
+No generator or sync command ran. Inspect the linked test output for the actual assertion difference.

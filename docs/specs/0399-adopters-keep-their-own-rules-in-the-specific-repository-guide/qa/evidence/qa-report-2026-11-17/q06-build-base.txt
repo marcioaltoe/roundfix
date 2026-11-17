@@ -1,0 +1,7 @@
+cwd: /tmp/qa399-tree-z8ezkdv9
+$ go build -buildvcs=false -o ./bin/roundfix-qa399-base ./cmd/roundfix
+stdout:
+
+stderr:
+
+exit: 0

@@ -1,0 +1,99 @@
+docs/user-guide/commands/baseline.md: field present
+.agents/skills/roundfix/references/baseline.md: field present
+skills/roundfix/references/baseline.md: field present
+docs/user-guide/commands/doctor.md: both codes present
+.agents/skills/roundfix/references/setup.md: both codes present
+skills/roundfix/references/setup.md: both codes present
+roundfix/references/baseline.md: canonical/mirror byte-identical
+roundfix/references/setup.md: canonical/mirror byte-identical
+roundfix/SKILL.md: canonical/mirror byte-identical
+setup-context-driven/SKILL.md: canonical/mirror byte-identical
+.agents/skills/roundfix/references/baseline.md: approval sentence present
+skills/roundfix/references/baseline.md: approval sentence present
+.agents/skills/setup-context-driven/SKILL.md: approval sentence present
+skills/setup-context-driven/SKILL.md: approval sentence present
+Detector imports and call sites: no os writer, exec command, mode mutation, remove, network or semantic classifier; uses readOptionalRegular, os.Lstat, classifyManagedRegions and managedEntryMatchesManifest.
+PlanDocument definition byte-identical between Delivery Base and audited head.
+
+type PlanDocument struct {
+	SchemaVersion            string                    `json:"schemaVersion"`
+	PreservationMode         PreservationMode          `json:"preservationMode,omitempty"`
+	UnrecordedManagedRegions []UnrecordedManagedRegion `json:"unrecordedManagedRegions,omitempty"`
+	Repository               RepositoryIdentity        `json:"repository"`
+	Catalog                  CatalogIdentity           `json:"catalog"`
+	Profile                  ResolvedProfile           `json:"profile"`
+	Decisions                []DecisionValue           `json:"decisions"`
+	Retention                []RetentionEvidence       `json:"retention"`
+	ClauseDelta              *ClauseDelta              `json:"clauseDelta,omitempty"`
+	Preimages                []Preimage                `json:"preimages"`
+	Postimages               []Postimage               `json:"postimages"`
+	HistoryMoves             []HistoryMove             `json:"historyMoves,omitempty"`
+	Warnings                 []Finding                 `json:"warnings"`
+	SetupManifest            SetupManifest             `json:"setupManifest"`
+	ManagedEntries           []ManagedEntry            `json:"managedEntries"`
+	FileChanges              []FileChange              `json:"fileChanges"`
+	PlanDigest               string                    `json:"planDigest"`
+}
+
+Detector call inventory:
+39: func MisplacedRepositoryRules(root string) (MisplacedRepositoryRuleReport, error) {
+41: manifestBytes, err := readOptionalRegular(root, manifestPath)
+43: return report, fmt.Errorf("read misplaced-rule Setup Manifest: %w", err)
+49: manifest, valid := parseManagedSetupManifest(manifestBytes)
+51: return report, fmt.Errorf("read misplaced-rule Setup Manifest: %w", errors.New(
+56: sourceByPath := manifestArtifactsByPath(manifest.ManagedArtifacts)
+57: contents := make(map[string][]byte)
+59: for _, relative := range sortedKeys(sourceByPath) {
+60: if !misplacedRuleCarrier(relative) {
+65: info, err := os.Lstat(filepath.Join(root, relative))
+67: return report, fmt.Errorf("inspect misplaced-rule carrier %q: %w", relative, err)
+69: if !info.Mode().IsRegular() {
+74: content, err := readOptionalRegular(root, relative)
+76: return report, fmt.Errorf("read misplaced-rule carrier %q: %w", relative, err)
+79: return report, fmt.Errorf("read misplaced-rule carrier %q: %w", relative, fs.ErrNotExist)
+89: unrecorded, _, err = classifyManagedRegions(root)
+91: return report, fmt.Errorf("classify misplaced-rule carriers: %w", err)
+94: mismatches := make(map[string]map[string]bool)
+98: mismatches[region.Path] = make(map[string]bool)
+103: for _, relative := range sortedKeys(contents) {
+105: entries := partitionRootSource(relative, content)
+106: managedCounts := make(map[string]int)
+115: report.Rules = append(report.Rules, misplacedUnmarkedPassages(relative, content, entry)...)
+122: mismatch = recorded && managedCounts[id] == 1 && !managedEntryMatchesManifest(entry, artifact)
+127: rule := misplacedRuleAt(relative, content, entry.Start, entry.End)
+130: beginEnd := bytes.Index(body, []byte("-->")) + len("-->")
+131: endStart := bytes.LastIndex(body, []byte("<!--"))
+133: for _, line := range strings.Split(string(body[beginEnd:endStart]), "\n") {
+134: if strings.TrimSpace(line) != "" {
+135: rule.FirstLine = misplacedFirstLine(line)
+139: report.Rules = append(report.Rules, rule)
+142: sort.Slice(report.Rules, func(i, j int) bool {
+151: func misplacedRuleCarrier(relative string) bool {
+152: if relative == SpecificRepositoryPath || path.Ext(relative) != ".md" {
+157: base := path.Base(relative)
+161: var misplacedForeignMarker = regexp.MustCompile(`^\s*<!--\s*(BEGIN|END):([^\s]+?)\s*-->\s*$`)
+163: func misplacedUnmarkedPassages(relative string, content []byte, entry ReadoptionSourceEntry) []MisplacedRepositoryRule {
+164: lines := bytes.SplitAfter(entry.SourceBytes, []byte("\n"))
+165: offsets := make([]int, len(lines)+1)
+168: offsets[i+1] = offsets[i] + len(line)
+171: appendPassage := func(start, end int) {
+172: for start < end && len(bytes.TrimSpace(lines[start])) == 0 {
+175: for start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {
+179: rules = append(rules, misplacedRuleAt(relative, content, offsets[start], offsets[end]))
+183: for i := 0; i < len(lines); i++ {
+184: begin := misplacedForeignMarker.FindSubmatch(bytes.TrimRight(lines[i], "\r\n"))
+185: if begin == nil || string(begin[1]) != "BEGIN" {
+188: for j := i + 1; j < len(lines); j++ {
+189: end := misplacedForeignMarker.FindSubmatch(bytes.TrimRight(lines[j], "\r\n"))
+190: if end == nil || string(end[1]) != "END" || !bytes.Equal(begin[2], end[2]) {
+193: appendPassage(start, i)
+199: appendPassage(start, len(lines))
+203: func misplacedRuleAt(relative string, content []byte, start, end int) MisplacedRepositoryRule {
+209: if newline := bytes.IndexByte(first, '\n'); newline >= 0 {
+213: Path: relative, StartLine: bytes.Count(content[:start], []byte("\n")) + 1,
+214: EndLine:   bytes.Count(content[:end], []byte("\n")) + 1,
+215: FirstLine: misplacedFirstLine(string(first)), MoveTo: SpecificRepositoryPath,
+219: func misplacedFirstLine(line string) string {
+220: line = strings.TrimSpace(line)
+221: if len(line) <= 120 {
+225: for !utf8.RuneStart(line[end]) {

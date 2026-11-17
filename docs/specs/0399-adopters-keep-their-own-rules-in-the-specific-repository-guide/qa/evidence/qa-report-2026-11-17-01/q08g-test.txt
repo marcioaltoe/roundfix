@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 10m -v -run '^TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide$/^docs_one_job_per_directory$' ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa399-sabotage-g-_4hthqz2
+exit: 1
+stdout:
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== PAUSE TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== CONT  TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory
+    repository_rule_placement_test.go:46: clause.context.docs-one-job-per-directory guidance = Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder., want "Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder."
+    repository_rule_placement_test.go:46: clause.context.docs-one-job-per-directory still carries the old placement sentence
+--- FAIL: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide (0.02s)
+    --- FAIL: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 163.566625ms before and 165.228167ms after
+FAIL	roundfix/internal/baseline	0.638s
+FAIL
+
+stderr:

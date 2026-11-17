@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

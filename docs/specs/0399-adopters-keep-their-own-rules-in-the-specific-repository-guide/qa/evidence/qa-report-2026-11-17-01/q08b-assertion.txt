@@ -1,0 +1,2 @@
+Confirmed nonzero exit and named assertion failure: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+No generator or sync command ran. Inspect the linked test output for the actual assertion difference.

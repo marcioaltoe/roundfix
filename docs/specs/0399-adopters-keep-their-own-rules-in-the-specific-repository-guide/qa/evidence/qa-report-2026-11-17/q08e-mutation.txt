@@ -1,0 +1,20 @@
+Fresh committed git archive of audited HEAD; only this mutation; no regeneration or synchronization.
+--- internal/cli/baseline_update.go
++++ internal/cli/baseline_update.go
+@@ -410,6 +410,7 @@
+ 		result.State = "action_required"
+ 		return writeBaselineUpdateFailure(result, fmt.Errorf("confirmed Plan Digest %q does not match supplied plan %q", confirmation, result.PlanDigest), "approval", "review the supplied plan and rerun with --confirm-plan "+result.PlanDigest, exitUnverified, jsonOutput, stdout, stderr)
+ 	}
++	qaBeforeApply, _ := baseline.MisplacedRepositoryRules(request.repo)
+ 	applyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
+ 	if err != nil {
+ 		return writeBaselineUpdateApplyFailure(result, err, jsonOutput, stdout, stderr)
+@@ -461,6 +462,8 @@
+ 			return writeBaselineUpdateFailure(result, err, "execution", baselineUpdateSkillsLockNextAction(err), exitRunFailed, jsonOutput, stdout, stderr)
+ 		}
+ 	}
++	result.MisplacedRepositoryRules = &qaBeforeApply.Rules
++	result.misplacedRulesRoot = ""
+ 	return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
+ }
+ 

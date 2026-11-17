@@ -1,0 +1,54 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ go test -count=1 -timeout 20m -v -run '^(TestBaselineUpdateNamesMisplacedRepositoryRules|TestDoctorReportsMisplacedRepositoryRules|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent)$' ./internal/cli
+stdout:
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules
+=== PAUSE TestBaselineUpdateNamesMisplacedRepositoryRules
+=== RUN   TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== PAUSE TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestDoctorReportsMisplacedRepositoryRules
+=== PAUSE TestDoctorReportsMisplacedRepositoryRules
+=== CONT  TestBaselineUpdateNamesMisplacedRepositoryRules
+=== CONT  TestDoctorReportsMisplacedRepositoryRules
+=== CONT  TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/ok
+--- PASS: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.14s)
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_one_passage
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_two_passages
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_text
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_extension_off
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_json
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/skipped
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged
+--- PASS: TestDoctorReportsMisplacedRepositoryRules (8.03s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/ok (1.28s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_one_passage (1.26s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_two_passages (1.25s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_extension_off (0.96s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/skipped (1.03s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest (1.13s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code (1.12s)
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field
+--- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules (9.60s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text (1.30s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json (1.26s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_text (1.25s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_json (1.28s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json (1.42s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged (1.02s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged (0.95s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off (0.56s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field (0.55s)
+PASS
+suiteguard: guard cost: measured 3314 paths; fingerprint took 157.908125ms before and 146.348958ms after
+ok  	roundfix/internal/cli	10.368s
+
+stderr:
+
+exit: 0

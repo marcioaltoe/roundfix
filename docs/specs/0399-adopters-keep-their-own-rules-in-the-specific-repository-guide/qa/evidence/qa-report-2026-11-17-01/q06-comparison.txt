@@ -1,0 +1,46 @@
+{
+  "deliveryBase": "379803c8f78cd110638e82621c3f1e497d902909",
+  "catalogMoved": true,
+  "allowedChangedKeys": [
+    "nextAction",
+    "currentCatalog",
+    "fileChanges",
+    "planDigest"
+  ],
+  "baseKeysChecked": [
+    "history",
+    "schemaVersion",
+    "operation",
+    "ok",
+    "state",
+    "category",
+    "message",
+    "nextAction",
+    "priorCatalog",
+    "currentCatalog",
+    "fileChanges",
+    "retention",
+    "warnings",
+    "declaredDecisions",
+    "newDecisions",
+    "adoptedSuggestions",
+    "planDigest",
+    "skills"
+  ],
+  "baseHeadPlanExit": [
+    3,
+    3
+  ],
+  "headWithWithoutExit": [
+    3,
+    3
+  ],
+  "baseWithWithoutExit": [
+    3,
+    3
+  ],
+  "identicalBytesDigest": "sha256:c31b09a10a30ff69bfd8dbb16265a855bda93303d80a1c57420ca79733b71844",
+  "repeatedDigest": "sha256:c31b09a10a30ff69bfd8dbb16265a855bda93303d80a1c57420ca79733b71844",
+  "textOrderPreserved": true,
+  "planDocumentResultFieldAbsentAtAdoption": true
+}

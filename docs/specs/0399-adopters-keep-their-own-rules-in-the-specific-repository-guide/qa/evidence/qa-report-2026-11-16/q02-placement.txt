@@ -1,0 +1,50 @@
+$ go test -count=1 -timeout 30m -v -run ^(TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide|TestTheVendoredSkillClausesCarryTheDivergenceOrder|TestTheVendoredSkillClausesRenderInTheGuides|TestEveryBaselineModuleVersionIsRecorded)$ ./internal/baseline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T004735Z_ff97830eca75451a
+stdout:
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== PAUSE TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== RUN   TestTheVendoredSkillClausesCarryTheDivergenceOrder
+=== PAUSE TestTheVendoredSkillClausesCarryTheDivergenceOrder
+=== RUN   TestTheVendoredSkillClausesRenderInTheGuides
+=== PAUSE TestTheVendoredSkillClausesRenderInTheGuides
+=== CONT  TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide
+=== CONT  TestTheVendoredSkillClausesRenderInTheGuides
+=== CONT  TestTheVendoredSkillClausesCarryTheDivergenceOrder
+=== RUN   TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.core.activate-matching-skills
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/keep_root_compact
+=== RUN   TestTheVendoredSkillClausesRenderInTheGuides/clause.core.activate-matching-skills
+=== RUN   TestTheVendoredSkillClausesRenderInTheGuides/clause.core.prohibit-editing-vendored-skills
+--- PASS: TestTheVendoredSkillClausesRenderInTheGuides (0.02s)
+    --- PASS: TestTheVendoredSkillClausesRenderInTheGuides/clause.core.activate-matching-skills (0.00s)
+    --- PASS: TestTheVendoredSkillClausesRenderInTheGuides/clause.core.prohibit-editing-vendored-skills (0.00s)
+=== RUN   TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.core.prohibit-editing-vendored-skills
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/activate_matching_skills
+=== RUN   TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.rust.read-current-docs
+--- PASS: TestTheVendoredSkillClausesCarryTheDivergenceOrder (0.02s)
+    --- PASS: TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.core.activate-matching-skills (0.00s)
+    --- PASS: TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.core.prohibit-editing-vendored-skills (0.00s)
+    --- PASS: TestTheVendoredSkillClausesCarryTheDivergenceOrder/clause.rust.read-current-docs (0.00s)
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/agent_instructions_guide
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/skill_dispatch_guide
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_layout_guide
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/root_pointer
+=== RUN   TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/starter
+--- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide (0.15s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/keep_root_compact (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/activate_matching_skills (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/agent_instructions_guide (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/skill_dispatch_guide (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_layout_guide (0.00s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/root_pointer (0.07s)
+    --- PASS: TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/starter (0.07s)
+PASS
+suiteguard: guard cost: measured 3230 paths; fingerprint took 198.112167ms before and 149.570875ms after
+ok  	roundfix/internal/baseline	1.008s
+
+stderr:
+
+exit: 0

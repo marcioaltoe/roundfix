@@ -1,0 +1,6 @@
+command: make build
+exit: 0
+Built in this Run Worktree. Build stdout was observed directly in this session.
+gocache-bound warned no cache entry was idle; build continued and exited 0.
+roundfix 0.147.0 (d23cf4ba-dirty, built 2026-11-17 07:59:09 -0300)
+

@@ -1,0 +1,68 @@
+import os, sys, json, re, subprocess, tempfile, pathlib, hashlib, shutil, tarfile, io, contextlib, shlex
+ROOT=pathlib.Path.cwd().resolve()
+SLUG="0399-adopters-keep-their-own-rules-in-the-specific-repository-guide"
+SPEC=ROOT/"docs/specs"/SLUG
+EVID=SPEC/"qa/evidence/qa-report-2026-11-17-01"
+REPORT=SPEC/"qa/qa-report-2026-11-17-01.md"
+BIN=ROOT/"bin/roundfix"
+BASEBIN=ROOT/"bin/roundfix-qa399-base-01"
+HEAD="d23cf4baad2610fd4921643d80752019aaa56c81"
+HOSTHOME=os.environ.get("HOME","")
+RUST=os.environ.get("RUSTUP_HOME",str(pathlib.Path(HOSTHOME)/".rustup"))
+CARGO=os.environ.get("CARGO_HOME",str(pathlib.Path(HOSTHOME)/".cargo"))
+CACHE={n:subprocess.check_output(["go","env",n],text=True).strip() for n in ["GOMODCACHE","GOCACHE"]}
+@contextlib.contextmanager
+def isolated(rust=False,doctor=False):
+    with tempfile.TemporaryDirectory(prefix="qa399-home-") as home, tempfile.TemporaryDirectory(prefix="qa399-tmp-") as tmp:
+        e=os.environ.copy()
+        for k in list(e):
+            if k.endswith(("API_KEY","TOKEN","SECRET","PASSWORD")) or k in ["CLAUDE_CODE_SESSION_ID","ROUNDFIX_HOME","ROUNDFIX_CONFIG","XDG_CONFIG_HOME","XDG_CACHE_HOME","XDG_DATA_HOME","RUSTUP_HOME","CARGO_HOME"] or k.startswith("GIT_"):
+                e.pop(k,None)
+        e.update(CACHE,HOME=home,TMPDIR=tmp,GOPROXY="off",GOSUMDB="off",GIT_CONFIG_NOSYSTEM="1",GIT_CONFIG_GLOBAL=os.devnull,GIT_TERMINAL_PROMPT="0")
+        if rust:e.update(RUSTUP_HOME=RUST,CARGO_HOME=CARGO)
+        if doctor:
+            safe=ROOT/"bin/qa399-tools-01"
+            safe.mkdir(exist_ok=True)
+            git=safe/"git"
+            if not git.exists():git.symlink_to(shutil.which("git"))
+            e["PATH"]=str(safe)
+        yield e
+
+def run(name,args,cwd=ROOT,expected=None,rust=False,doctor=False,environment=None):
+    print("RUN",name,flush=True)
+    with isolated(rust,doctor) as e:
+        if environment:e.update(environment)
+        r=subprocess.run([str(x) for x in args],cwd=cwd,env=e,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    (EVID/(name+".txt")).write_text("command: "+shlex.join([str(x) for x in args])+"\ncwd: "+str(cwd)+"\nexit: "+str(r.returncode)+"\nstdout:\n"+r.stdout+"\nstderr:\n"+r.stderr)
+    print("EXIT",name,r.returncode,flush=True)
+    if expected is not None and r.returncode not in ([expected] if isinstance(expected,int) else expected):
+        raise AssertionError(name+": exit "+str(r.returncode)+"\n"+r.stdout[-3000:]+r.stderr[-1000:])
+    return r
+
+def row(q,status,detail):
+    s=REPORT.read_text()
+    s,n=re.subn(r"(?m)^\| "+re.escape(q)+r" \| [^|]+ \|", "| "+q+" | "+status+" |",s,count=1)
+    assert n==1,q
+    s=s.replace("<!-- detail:"+q+" -->",detail)
+    REPORT.write_text(s)
+    print("ROW",q,status,flush=True)
+
+def check(name,data):
+    (EVID/(name+".txt")).write_text(data+"\n")
+
+def archive(rev,target):
+    raw=subprocess.check_output(["git","archive",rev],cwd=ROOT)
+    with tarfile.open(fileobj=io.BytesIO(raw)) as t:t.extractall(target,filter="data")
+    for args in [["git","init","-q"],["git","add","."],["git","-c","user.name=QA Fixture","-c","user.email=qa@example.invalid","-c","core.hooksPath=/dev/null","commit","-qm","QA fixture"]]:
+        with isolated() as e:subprocess.run(args,cwd=target,env=e,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
+
+def getbase():
+    r=subprocess.run(["git","symbolic-ref","refs/remotes/origin/HEAD"],text=True,capture_output=True)
+    default=r.stdout.strip() or "origin/main"
+    return subprocess.check_output(["git","merge-base",HEAD,default],text=True).strip()
+
+if __name__=="__main__":
+    v=run("version",[BIN,"--version"],expected=0)
+    run("precondition",[BIN,"spec","check",SLUG,"--strict"],expected=0)
+    check("build", "command: make build\nexit: 0\nBuilt in this Run Worktree. Build stdout was observed directly in this session.\ngocache-bound warned no cache entry was idle; build continued and exited 0.\n"+v.stdout)
+    print("BASE",getbase())

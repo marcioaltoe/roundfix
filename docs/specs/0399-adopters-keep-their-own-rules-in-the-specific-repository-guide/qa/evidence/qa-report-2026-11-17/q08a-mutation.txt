@@ -1,0 +1,12 @@
+Fresh committed git archive of audited HEAD; only this mutation; no regeneration or synchronization.
+--- internal/baseline/misplaced_rules.go
++++ internal/baseline/misplaced_rules.go
+@@ -200,7 +200,7 @@
+ 	start := 0
+ 	for i := 0; i < len(lines); i++ {
+ 		begin := misplacedForeignMarker.FindSubmatch(bytes.TrimRight(lines[i], "\r\n"))
+-		if begin == nil || string(begin[1]) != "BEGIN" {
++		if begin == nil || string(begin[1]) == "BEGIN" {
+ 			continue
+ 		}
+ 		for j := i + 1; j < len(lines); j++ {

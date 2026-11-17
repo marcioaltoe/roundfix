@@ -1,0 +1,2 @@
+Confirmed nonzero exit and named assertion failure: TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json
+No generator or sync command ran. Inspect the linked test output for the actual assertion difference.

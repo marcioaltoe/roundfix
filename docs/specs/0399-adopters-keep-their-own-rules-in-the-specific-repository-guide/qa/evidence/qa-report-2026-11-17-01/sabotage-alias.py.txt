@@ -1,0 +1,37 @@
+import pathlib, runpy
+context=runpy.run_path(str(pathlib.Path(__file__).with_name("gate.py.txt")));globals().update(context)
+D="internal/baseline/misplaced_rules.go"
+parent="TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest"
+cases=[
+("a",D,parent+"/between_root_managed_regions_beside_a_foreign_block","./internal/baseline",'\t\t\tappendPassage(start, i)\n\t\t\tstart = j + 1','\t\t\t// sabotage: retain foreign block\n'),
+("b",D,parent+"/after_a_guide_managed_region","./internal/baseline",'\t\tfor start < end && len(bytes.TrimSpace(lines[start])) == 0 {\n\t\t\tstart++\n\t\t}\n\t\tfor start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {\n\t\t\tend--\n\t\t}', '\t\t// sabotage: no blank-line trim'),
+("c",D,parent+"/symbolic_link_claude_md","./internal/baseline",'if !info.Mode().IsRegular() {','if info.Mode().IsRegular() && false {'),
+("d",D,parent+"/marker_absent_region_is_not_an_entry","./internal/baseline",'for _, region := range unrecorded {','for _, region := range unrecorded {\n\t\tif region.Reason == "marker-absent" { report.Rules = append(report.Rules, MisplacedRepositoryRule{Path: region.Path, StartLine: 1, EndLine: 1, ManagedID: region.ManagedID, MoveTo: SpecificRepositoryPath}) }'),
+("e","internal/cli/baseline_update.go","TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json","./internal/cli",'\tapplyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)','\tpreApplyRules, _ := baseline.MisplacedRepositoryRules(request.repo)\n\tresult.MisplacedRepositoryRules = &preApplyRules.Rules\n\tresult.misplacedRulesRoot = ""\n\tapplyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)'),
+("f","internal/cli/doctor.go","TestDoctorReportsMisplacedRepositoryRules/warn_one_passage","./internal/cli",'result.Status = CheckStatusWarn\n\tresult.Detail = "DR-BASELINE-RULE-MISPLACED:', 'result.Status = CheckStatusFailed\n\tresult.Detail = "DR-BASELINE-RULE-MISPLACED:'),
+("g","internal/baseline/assets/modules/context-workflow.json","TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/docs_one_job_per_directory","./internal/baseline",'Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`.','Preserve repository-authored extensions outside setup markers.'),
+("h","internal/baseline/assets/templates/extensions/specific-repository.md","TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide/starter","./internal/baseline",None,None),
+]
+for letter,path,named,pkg,old,new in cases:
+    if letter != "c":continue
+    q="Q08"+letter
+    try:
+        with tempfile.TemporaryDirectory(prefix="qa399-sabotage-"+letter+"-") as td:
+            tree=pathlib.Path(td);archive(HEAD,tree)
+            p=tree/path;s=p.read_text()
+            if letter=="h":changed=s.split("\n",1)[0]+"\n"
+            else:
+                assert s.count(old)==1,(letter,s.count(old));changed=s.replace(old,new,1)
+            p.write_text(changed)
+            diff=subprocess.check_output(["git","diff","--",path],cwd=tree,text=True)
+            check("q08"+letter+"-retry-mutation",diff)
+            pattern="^"+named.split("/",1)[0]+"$/^"+named.split("/",1)[1]+"$"
+            r=run("q08"+letter+"-retry-test",["go","test","-count=1","-timeout","10m","-v","-run",pattern,pkg],cwd=tree)
+            assert r.returncode!=0,"sabotage survived"
+            assert "--- FAIL: "+named+" " in r.stdout,"named assertion did not fail: "+r.stdout[-2500:]+r.stderr
+            assert "[build failed]" not in r.stdout and "[build failed]" not in r.stderr
+            check("q08"+letter+"-retry-assertion","Confirmed nonzero exit and named assertion failure: "+named+"\nNo generator or sync command ran. Inspect the linked test output for the actual assertion difference.")
+        row(q,"pass","A separate archived, initialized and committed disposable copy received only this mutation. The intended named assertion failed; no compile-only or unrelated error was credited. No regeneration or synchronization ran. [Mutation](evidence/qa-report-2026-11-17-01/q08"+letter+"-mutation.txt), [failing assertion](evidence/qa-report-2026-11-17-01/q08"+letter+"-test.txt), [classification](evidence/qa-report-2026-11-17-01/q08"+letter+"-assertion.txt).")
+    except Exception as exc:
+        check("q08"+letter+"-retry-probe-problem",str(exc))
+        print("PROBE PROBLEM",q,str(exc),flush=True)

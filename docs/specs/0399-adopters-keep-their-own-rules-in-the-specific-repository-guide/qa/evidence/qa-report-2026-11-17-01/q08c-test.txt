@@ -1,0 +1,10 @@
+command: go test -count=1 -timeout 10m -v -run '^TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest$/^symbolic_link_claude_md$' ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa399-sabotage-c-m97iwe02
+exit: 1
+stdout:
+FAIL	roundfix/internal/baseline [build failed]
+FAIL
+
+stderr:
+# roundfix/internal/baseline [roundfix/internal/baseline.test]
+internal/baseline/misplaced_rules.go:65:4: declared and not used: info

@@ -1,0 +1,8 @@
+Pull Request: none open, supplied in assignment.
+Approval equivalent: approved authorization at 379803c8f78cd110638e82621c3f1e497d902909 grants delivery operations; existing seeded operative grants preserved.
+Checks equivalent: Daemon make verify-changed pass, exit 0, at d23cf4baad2610fd4921643d80752019aaa56c81.
+Unresolved review threads: none because no Pull Request exists.
+Merge-Ready acceptance: none yet; not credited.
+Claimed candidate: d23cf4baad2610fd4921643d80752019aaa56c81 on the Spec target branch; Run branch is never published.
+Review-artifact ancestry: no current PR/review artifact exists; not credited.
+No real gh, provider, reviewer or mutation was invoked.

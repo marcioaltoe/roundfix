@@ -1,0 +1,68 @@
+from pathlib import Path
+exec(compile((Path(__file__).parent/'driver.py.txt').read_text(),str(Path(__file__).parent/'driver.py.txt'),'exec'))
+checkouts=[('argus','/Users/marcio/dev/argus','fc53eb7c'),('quaestor','/Users/marcio/dev/quaestor','fdd3d184'),('quaestor','/Users/marcio/srv/quaestor','fdd3d184'),('fiscus','/Users/marcio/srv/fiscus','55bac1b1'),('fiscus','/Users/marcio/srv/fiscus-mcp','55bac1b1'),('indexus','/Users/marcio/srv/indexus','3e48f0d0'),('roundfix','/Users/marcio/dev/roundfix','bcf0e675')]
+# Add non-repository inputs before observing this still-pending row.
+s=REPORT.read_text();i=s.index('### Q07\n');j=s.index('```\n',s.index('inputs:',i))
+s=s[:j]+''.join('  - kind: external_repository\n    ref: '+json.dumps(p)+'\n' for _,p,_ in checkouts)+s[j:];REPORT.write_text(s)
+expected={
+'quaestor':[('docs/agents/skill-dispatch.md',109,115,'## Repository-specific rules')],
+'indexus':[('docs/agents/skill-dispatch.md',183,189,'## Repository-specific rules')],
+'fiscus':[('AGENTS.md',1,3,'### Repository review policy'),('AGENTS.md',89,91,'### Product tax review (client registers)'),('docs/agents/agent-instructions.md',1,5,'## Maintainer review override'),('docs/agents/autonomous-work.md',1,6,'## Repository delivery override'),('docs/agents/backend.md',37,53,'<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->'),('docs/agents/secondbrain.md',31,62,'<!-- repository-authored: maintainer instruction, 2026-09-08 -->')],
+'argus':[],'roundfix':[]}
+
+def independently_read(repo):
+    manifest=json.loads((repo/'docs/agents/setup-context.json').read_text())
+    paths={a['path'] for a in manifest['managedArtifacts'] if a['path'].endswith('.md') and a['path']!='docs/agents/specific-repository.md'}
+    alias=repo/'CLAUDE.md'
+    if alias.is_file() and not alias.is_symlink(): paths.add('CLAUDE.md')
+    results=[]
+    for path in sorted(paths):
+        p=repo/path
+        if p.is_symlink(): continue
+        lines=p.read_text().splitlines();keep=[True]*len(lines)
+        a=0
+        while a<len(lines):
+            match=re.match(r'^\s*<!-- setup-context-driven:begin id=([^ ]+) .*-->\s*$',lines[a])
+            if match:
+                end=next((b for b in range(a+1,len(lines)) if re.match(r'^\s*<!-- setup-context-driven:end id='+re.escape(match[1])+r' -->\s*$',lines[b])),None)
+                if end is not None:
+                    for b in range(a,end+1): keep[b]=False
+                    a=end+1;continue
+            foreign=re.match(r'^\s*<!--\s*BEGIN:([^\s]+?)\s*-->\s*$',lines[a])
+            if foreign:
+                end=next((b for b in range(a+1,len(lines)) if re.match(r'^\s*<!--\s*END:'+re.escape(foreign[1])+r'\s*-->\s*$',lines[b])),None)
+                if end is not None:
+                    for b in range(a,end+1): keep[b]=False
+                    a=end+1;continue
+            a+=1
+        a=0
+        while a<len(lines):
+            if not keep[a]: a+=1;continue
+            end=a
+            while end<len(lines) and keep[end]:end+=1
+            left,right=a,end
+            while left<right and not lines[left].strip():left+=1
+            while right>left and not lines[right-1].strip():right-=1
+            if left<right: results.append((path,left+1,right,lines[left].strip()))
+            a=end
+    return sorted(results)
+summary=[]
+for name,path,pin in checkouts:
+    repo=Path(path);label=path.removeprefix('/Users/marcio/').replace('/','-')
+    if not (repo/'docs/agents/setup-context.json').exists():
+        summary.append({'checkout':path,'missing':True});continue
+    before=run('q07-'+label+'-before',['git','--no-optional-locks','status','--porcelain'],cwd=repo,expected=0)
+    head=run('q07-'+label+'-head',['git','rev-parse','HEAD'],cwd=repo,expected=0).stdout.strip()
+    fresh=independently_read(repo)
+    r=run('q07-'+label+'-product',[BIN,'baseline','update','--repo',repo,'--no-skills','--no-history','--format','json'])
+    data=json.loads(r.stdout); actual=sorted((x['path'],x['startLine'],x['endLine'],x['firstLine']) for x in data['misplacedRepositoryRules'])
+    after=run('q07-'+label+'-after',['git','--no-optional-locks','status','--porcelain'],cwd=repo,expected=0)
+    assert before.stdout==after.stdout,(path,'status moved')
+    want=sorted(expected[name]) if head.startswith(pin) else fresh
+    assert actual==want,(path,actual,want)
+    assert all('turborepo-agent-rules' not in x[3] for x in actual)
+    summary.append({'checkout':path,'commit':head,'inventory_commit':pin,'commit_moved':not head.startswith(pin),'method':'independent marker-pair subtraction, foreign-block exclusion and blank-line trimming','independent_passages':fresh,'product_passages':actual,'exit':r.returncode,'status_unchanged':True})
+(E/'q07-comparison.txt').write_text(json.dumps(summary,indent=2,ensure_ascii=False)+'\n')
+missing=[x['checkout'] for x in summary if x.get('missing')]
+assert not missing,missing
+finish('Q07','pass','Read all seven adopted checkouts (five repositories) named by the inventory, with current commit and unchanged porcelain before/after. Unmoved commits matched the inventory; moved commits matched an independently implemented fresh marker scan. Clean repositories and foreign Turborepo blocks produced no passage. No confirmation or write was used. Evidence: [comparison and independent method output](evidence/qa-report-2026-11-17/q07-comparison.txt); individual product, commit and porcelain transcripts are retained beside it. Missing checkouts: none.')

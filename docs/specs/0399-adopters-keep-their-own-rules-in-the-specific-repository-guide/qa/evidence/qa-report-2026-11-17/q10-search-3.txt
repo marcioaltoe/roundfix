@@ -1,0 +1,11 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ rg -n -F 'names a Misplaced' docs/user-guide/commands/baseline.md docs/user-guide/commands/doctor.md .agents/skills/roundfix skills/roundfix .agents/skills/setup-context-driven/SKILL.md skills/setup-context-driven/SKILL.md
+stdout:
+skills/setup-context-driven/SKILL.md:175:When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+.agents/skills/setup-context-driven/SKILL.md:175:When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+skills/roundfix/references/baseline.md:137:When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+.agents/skills/roundfix/references/baseline.md:137:When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+
+stderr:
+
+exit: 0

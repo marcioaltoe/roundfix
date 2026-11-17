@@ -1,0 +1,16 @@
+PRD declares adds: Misplaced Repository Rule. Task 02 changed no existing glossary bytes and added exactly one four-line entry.
+diff --git a/CONTEXT.md b/CONTEXT.md
+index c6039ed5..af989b17 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -1479,6 +1479,10 @@ _Avoid_: Baseline Readoption, reapply, overwrite
+ A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+ _Avoid_: Hand-edited marker, corrupted block, drift
+ 
++**Misplaced Repository Rule**:
++A passage of an instruction carrier the Setup Manifest lists, outside every Managed Region and outside a block another tool delimits, or an Unrecorded Managed Region, which belongs in `docs/agents/specific-repository.md`. Roundfix names it and never moves it ([ADR-0411](docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md)).
++_Avoid_: Damaged rule, automatic migration, repository extension
++
+ **Baseline ADR**:
+ An architecture decision record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+ _Avoid_: Example ADR, project ADR, template copy

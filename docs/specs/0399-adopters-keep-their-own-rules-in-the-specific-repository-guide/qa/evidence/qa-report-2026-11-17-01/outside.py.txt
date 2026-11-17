@@ -1,0 +1,88 @@
+import pathlib,runpy
+globals().update(runpy.run_path(str(pathlib.Path(__file__).with_name("gate.py.txt"))))
+def inventory(root):
+    manifest=json.loads((root/"docs/agents/setup-context.json").read_text())
+    paths={x["path"] for x in manifest["managedArtifacts"] if x["path"].endswith(".md")}
+    alias=root/"CLAUDE.md"
+    if alias.is_file() and not alias.is_symlink():paths.add("CLAUDE.md")
+    result=[]
+    for path in sorted(paths):
+        if path=="docs/agents/specific-repository.md":continue
+        p=root/path
+        if p.is_symlink():continue
+        lines=p.read_text().splitlines()
+        active=None;outside=[];spans=[]
+        def emit():
+            nonlocal outside
+            while outside and not outside[0][1].strip():outside.pop(0)
+            while outside and not outside[-1][1].strip():outside.pop()
+            if outside:spans.append(outside)
+            outside=[]
+        for i,line in enumerate(lines,1):
+            b=re.match(r"^\s*<!--\s*setup-context-driven:begin id=([^\s]+).*-->\s*$",line)
+            e=re.match(r"^\s*<!--\s*setup-context-driven:end id=([^\s]+).*-->\s*$",line)
+            if b:emit();active=b.group(1);continue
+            if e and active==e.group(1):active=None;continue
+            if active is None:outside.append((i,line))
+        emit()
+        for span in spans:
+            keep=[];i=0
+            def cut():
+                nonlocal keep
+                while keep and not keep[0][1].strip():keep.pop(0)
+                while keep and not keep[-1][1].strip():keep.pop()
+                if keep:
+                    first=keep[0][1].strip().encode()
+                    if len(first)>120:
+                        first=first[:120]
+                        while True:
+                            try:first=first.decode();break
+                            except UnicodeDecodeError:first=first[:-1]
+                        first+="..."
+                    else:first=first.decode()
+                    result.append({"path":path,"startLine":keep[0][0],"endLine":keep[-1][0],"firstLine":first,"moveTo":"docs/agents/specific-repository.md"})
+                keep=[]
+            while i<len(span):
+                b=re.match(r"^\s*<!--\s*BEGIN:([^\s]+)\s*-->\s*$",span[i][1])
+                found=None
+                if b:
+                    for j in range(i+1,len(span)):
+                        e=re.match(r"^\s*<!--\s*END:([^\s]+)\s*-->\s*$",span[j][1])
+                        if e and e.group(1)==b.group(1):found=j;break
+                if found is not None:cut();i=found+1
+                else:keep.append(span[i]);i+=1
+            cut()
+    return sorted(result,key=lambda x:(x["path"],x["startLine"]))
+locations=[("dev/argus","fc53eb7c","argus"),("dev/quaestor","fdd3d184","quaestor"),("srv/quaestor","fdd3d184","quaestor"),("srv/fiscus","55bac1b1","fiscus"),("srv/fiscus-mcp","55bac1b1","fiscus"),("srv/indexus","3e48f0d0","indexus"),("dev/roundfix","bcf0e675","roundfix")]
+expected={
+ "argus":[],"roundfix":[],
+ "quaestor":[("docs/agents/skill-dispatch.md",109,115,"## Repository-specific rules")],
+ "indexus":[("docs/agents/skill-dispatch.md",183,189,"## Repository-specific rules")],
+ "fiscus":[("AGENTS.md",1,3,"### Repository review policy"),("AGENTS.md",89,91,"### Product tax review (client registers)"),("docs/agents/agent-instructions.md",1,5,"## Maintainer review override"),("docs/agents/autonomous-work.md",1,6,"## Repository delivery override"),("docs/agents/backend.md",37,53,"<!-- repository-authored: fora dos marcadores de setup, preservado por docs/agents/docs-layout.md -->"),("docs/agents/secondbrain.md",31,62,"<!-- repository-authored: maintainer instruction, 2026-09-08 -->")]}
+summary=[];missing=[];issues=[]
+for location,old,repo in locations:
+    root=pathlib.Path(HOSTHOME)/location
+    name="q07-"+location.replace("/","-")
+    if not (root/"docs/agents/setup-context.json").exists():missing.append(str(root));continue
+    head=run(name+"-head",["git","rev-parse","HEAD"],cwd=root,expected=0).stdout.strip()
+    before=run(name+"-before",["git","status","--porcelain"],cwd=root,expected=0).stdout
+    method=inventory(root);check(name+"-method",json.dumps({"method":"Setup Manifest Markdown carriers plus regular root CLAUDE.md; split managed regions; exclude matched foreign blocks; trim outer blank lines; preserve inclusive line ranges.","rules":method},indent=2,ensure_ascii=False))
+    result=run(name+"-product",[BIN,"baseline","update","--repo",root,"--no-skills","--no-history","--format","json"],expected=[0,2,3])
+    got=json.loads(result.stdout).get("misplacedRepositoryRules")
+    after=run(name+"-after",["git","status","--porcelain"],cwd=root,expected=0).stdout
+    assert before==after,location+": checkout changed"
+    if got!=method:issues.append(location+": product differs from fresh inventory method")
+    if head.startswith(old):
+        compact=[(x["path"],x["startLine"],x["endLine"],x["firstLine"]) for x in method]
+        if compact!=expected[repo]:issues.append(location+": same-commit inventory mismatch")
+    if repo in ["argus","roundfix"] and got:issues.append(location+": expected clean repository")
+    if repo=="fiscus" and got:
+        assert not any("turborepo" in x["firstLine"].lower() for x in got)
+    summary.append({"checkout":str(root),"head":head,"inventoryCommit":old,"sameCommit":head.startswith(old),"passages":got,"freshMethodMatches":got==method,"statusUnchanged":before==after})
+check("q07-comparison",json.dumps({"observed":summary,"missing":missing,"issues":issues},indent=2,ensure_ascii=False))
+if issues:
+    row("Q07","fail","Fresh read-only observations found differences: "+str(issues)+". [Comparison](evidence/qa-report-2026-11-17-01/q07-comparison.txt).")
+elif missing:
+    row("Q07","blocked (environment: adopter checkouts missing)","Missing checkouts: "+str(missing)+". Present checkouts were tested read-only and unchanged. [Comparison](evidence/qa-report-2026-11-17-01/q07-comparison.txt).")
+else:
+    row("Q07","pass","All seven inventory checkouts, representing five repositories, were reached read-only. Each product array equals the inventory at an unchanged commit or the freshly recomputed inventory method at a moved commit. Argus and Roundfix report none; Fiscus foreign Turborepo blocks are excluded. Every before/after git status is identical. No confirmation or adopter write occurred. [Comparison](evidence/qa-report-2026-11-17-01/q07-comparison.txt); per-checkout command, commit, status and method evidence share the q07 prefix in this pass's evidence directory.")

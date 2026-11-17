@@ -1,0 +1,7 @@
+cwd: /Users/marcio/dev/argus
+$ git --no-optional-locks status --porcelain
+stdout:
+
+stderr:
+
+exit: 0

@@ -1,0 +1,14 @@
+The named subtest failed on the intended mutation, exit 1.
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+    misplaced_rules_test.go:229: report = baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule{baseline.MisplacedRepositoryRule{Path:"docs/agents/agent-instructions.md", StartLine:1, EndLine:1, FirstLine:"", ManagedID:"guide.core", MoveTo:"docs/agents/specific-repository.md"}}}, want baseline.MisplacedRepositoryRuleReport{ManifestFound:true, ExtensionEnabled:false, Rules:[]baseline.MisplacedRepositoryRule(nil)}
+--- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- FAIL: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry (0.00s)
+FAIL
+suiteguard: guard cost: measured 3221 paths; fingerprint took 152.984125ms before and 133.895ms after
+FAIL	roundfix/internal/baseline	0.597s
+FAIL

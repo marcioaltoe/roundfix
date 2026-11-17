@@ -1,0 +1,15 @@
+diff --git a/internal/cli/baseline_update.go b/internal/cli/baseline_update.go
+index 9d8c2c9..348216f 100644
+--- a/internal/cli/baseline_update.go
++++ b/internal/cli/baseline_update.go
+@@ -410,6 +410,9 @@ func runBaselineUpdateCommandWithSkillsStage(
+ 		result.State = "action_required"
+ 		return writeBaselineUpdateFailure(result, fmt.Errorf("confirmed Plan Digest %q does not match supplied plan %q", confirmation, result.PlanDigest), "approval", "review the supplied plan and rerun with --confirm-plan "+result.PlanDigest, exitUnverified, jsonOutput, stdout, stderr)
+ 	}
++	preApplyRules, _ := baseline.MisplacedRepositoryRules(request.repo)
++	result.MisplacedRepositoryRules = &preApplyRules.Rules
++	result.misplacedRulesRoot = ""
+ 	applyResult, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
+ 	if err != nil {
+ 		return writeBaselineUpdateApplyFailure(result, err, jsonOutput, stdout, stderr)
+

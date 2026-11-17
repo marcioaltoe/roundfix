@@ -1,0 +1,33 @@
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T101541Z_e808549dfc67ff7c
+$ ./bin/roundfix baseline update --repo /tmp/qa399-product-44uorupq/repo --no-skills --no-history --format text
+stdout:
+Baseline update: plan ready
+Category: approval
+Result: managed-refresh plan is ready; repository bytes are unchanged
+Prior catalog: sha256:f894bdf824bb135ddb238c00f4bd430795ec666c83a3cb7217e0c006cc371ec0
+Current catalog: sha256:f894bdf824bb135ddb238c00f4bd430795ec666c83a3cb7217e0c006cc371ec0
+File changes: 1
+- update docs/agents/skill-dispatch.md (1 managed entries)
+Unrecorded managed regions: 1
+- Path: docs/agents/skill-dispatch.md
+  Managed identity: guide.skill-dispatch
+  Reason: digest-mismatch
+  Removed lines:
+    # QA older managed guidance
+Misplaced repository rules: 2
+- docs/agents/skill-dispatch.md:1-5 (managed identity guide.skill-dispatch): # QA older managed guidance
+  Move to: docs/agents/specific-repository.md
+- docs/agents/skill-dispatch.md:7-9: ## QA repository rules
+  Move to: docs/agents/specific-repository.md
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:2506de4867d5395a69014acf525dd7ea58413c2c20e616354e765d92a3eee792
+Next action: review the plan and rerun with --confirm-plan sha256:2506de4867d5395a69014acf525dd7ea58413c2c20e616354e765d92a3eee792, or use --yes to approve the digest computed in one invocation
+
+stderr:
+
+exit: 3

@@ -1,0 +1,7 @@
+command: git rev-parse HEAD
+cwd: /Users/marcio/srv/fiscus-mcp
+exit: 0
+stdout:
+55bac1b1e1855f5b54b42bbe74adfb167a81d39b
+
+stderr:
