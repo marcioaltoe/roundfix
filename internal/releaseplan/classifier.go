@@ -2,6 +2,7 @@ package releaseplan
 
 import (
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -41,6 +42,10 @@ func ClassifyChanges(request ClassifyRequest) (ClassificationResult, error) {
 
 	for _, commit := range request.Commits {
 		evidence := ClassifyCommit(commit)
+		if evidence.AutomaticImpact == ImpactNone && onlyReleasePaths(commit.ChangedPaths, request.ReleasePaths) {
+			evidence.ReleasePreparation = true
+			evidence.CrossesMaintenanceOnlyBoundary = false
+		}
 		changes = append(changes, evidence)
 
 		switch {
@@ -209,6 +214,19 @@ func crossesMaintenanceOnlyBoundary(paths []string) bool {
 	return false
 }
 
+func onlyReleasePaths(changedPaths, releasePaths []string) bool {
+	if len(changedPaths) == 0 || len(releasePaths) == 0 {
+		return false
+	}
+	for _, changedPath := range changedPaths {
+		clean := cleanChangedPath(changedPath)
+		if clean == "" || !slices.Contains(releasePaths, clean) {
+			return false
+		}
+	}
+	return true
+}
+
 func cleanChangedPath(changedPath string) string {
 	clean := path.Clean(strings.TrimSpace(strings.ReplaceAll(changedPath, "\\", "/")))
 	if clean == "." || strings.HasPrefix(clean, "../") || clean == ".." || strings.HasPrefix(clean, "/") {
@@ -224,6 +242,7 @@ func isPlanningEvidencePath(changedPath string) bool {
 		"docs/adr/",
 		"docs/findings/",
 		"docs/handoffs/",
+		"docs/references/",
 	} {
 		if strings.HasPrefix(changedPath, prefix) {
 			return true

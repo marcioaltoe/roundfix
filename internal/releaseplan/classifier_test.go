@@ -145,6 +145,7 @@ func TestMaintenanceOnly(t *testing.T) {
 		{path: "docs/adr/0048-release-planning-is-read-only-and-confirmation-gated.md", want: true},
 		{path: "docs/findings/2026-07-16-release-version-strategy-and-approval-gates.md", want: true},
 		{path: "docs/handoffs/2026-07-16-release-plan.md", want: true},
+		{path: "docs/references/evidence.md", want: true},
 		{path: "internal/releaseplan/classifier_test.go", want: true},
 		{path: ".agents/skills/setup-context-driven/tests/test_assets.py", want: true},
 		{path: "internal/releaseplan/testdata/commit.txt", want: true},
