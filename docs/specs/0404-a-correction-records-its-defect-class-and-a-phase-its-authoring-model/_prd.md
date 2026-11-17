@@ -266,6 +266,8 @@ The maintainer's answers of 2026-11-17, as the operator recorded them in [`refer
 - 2026-11-17: Is the draft of the Idea approved? — "Aprovar e seguir (Recommended)".
 - 2026-11-17: What is the minimum for a comparison? — "20 Specs (Recommended)".
 - 2026-11-17: Does this repository turn the setting on, and does the list keep a fifth class? — "Ligar e manter unclear (Recommended)".
+- 2026-11-17 (about 17:10 BRT): How is a commit by hand on the Item Branch declared when it applies a decision of the maintainer and corrects no defect? — "Sexta resposta (Recommended)": a sixth answer, `not-a-correction`, with a reason; the commit is recorded and stays out of the defect rates, instead of being declared `operator`. The TechSpec amends ADR-0417, ADR-0422, ADR-0423 and ADR-0424 for it.
+- 2026-11-17 (about 17:25 BRT): The Fable quota ran out during the TechSpec stage (it resets on 2026-11-22 at 20:00 BRT); how does the plan finish? — "Terminar em Opus agora (Recommended)". The amendment of the TechSpec for `not-a-correction` and the Tasks were authored on Opus (`claude-opus-5-5`), not on the Fable the repository declares for the TechSpec: this Spec's own authoring-model accounting counts that amendment and the Task Graph against Opus.
 
 The author settled the following from those answers, the approved Idea and its defaults, and the research of this phase, without a further question:
 

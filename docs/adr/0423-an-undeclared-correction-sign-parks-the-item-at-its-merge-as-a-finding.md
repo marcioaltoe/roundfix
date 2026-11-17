@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-17T19:30:00Z
-updated_at: 2026-11-17T19:30:00Z
+updated_at: 2026-11-17T20:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -52,7 +52,7 @@ Signs of the candidate head and appends them to the corrections record.
 
 **The park.** Its Park Class is `finding`: the item's own work lacks an
 answer only the Supervisor can give. Its next action names the five classes,
-the declaring command and the Delivery Retry. The retry is counted, and it
+the answer `not-a-correction`, the declaring command and the Delivery Retry. The retry is counted, and it
 takes the existing way back: `checking`, then `merging`, where the step runs
 again.
 

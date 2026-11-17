@@ -34,3 +34,10 @@ The six answers to the questions of the Idea came through AskUserQuestion at abo
 ```
 
 On the authoring models, the same file records that the maintainer keeps the recommended declaration, Fable on the Idea, the PRD and the TechSpec, for now: "[...] Então podemos manter, vai ser interessante para saber o consumo até lá."
+
+## The answers after the TechSpec, as the operator recorded them
+
+Two more answers came through AskUserQuestion on 2026-11-17, after the TechSpec was committed, and the operator recorded them in the brief of the session that finished the plan. Each quoted label is the option the maintainer chose.
+
+- At about 17:10 BRT, on a commit made by hand on the Item Branch that applies a decision of the maintainer and corrects no defect, which the TechSpec had the Supervisor declare `operator`: "Sexta resposta (Recommended)". The option adds a sixth answer, `not-a-correction`, with a reason: the commit is recorded and stays out of the defect rates, instead of being forced into `operator`.
+- At about 17:25 BRT, after the session that authored the TechSpec on Fable reached the Fable quota, which resets on 2026-11-22 at 20:00 BRT: "Terminar em Opus agora (Recommended)". The amendment of the TechSpec and the Tasks were then authored on Opus.

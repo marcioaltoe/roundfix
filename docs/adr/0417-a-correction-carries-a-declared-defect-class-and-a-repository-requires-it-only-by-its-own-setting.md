@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-17T18:45:00Z
-updated_at: 2026-11-17T18:45:00Z
+updated_at: 2026-11-17T20:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -36,7 +36,11 @@ unit, "Uma por causa (Recommended)"; who declares, "Quem corrige
 (Recommended)"; whether it is required, "Só onde é ligado e por default é
 desligado, nos projetos da gesttione vai ser configurado para ligar"; the
 artifact of a plan defect, "Sim (Recommended)"; this repository and the fifth
-class, "Ligar e manter unclear (Recommended)".
+class, "Ligar e manter unclear (Recommended)". After the TechSpec, at about
+17:10 BRT, he answered how a commit by hand that applies his own decision and
+corrects no defect is declared: "Sexta resposta (Recommended)", a sixth answer
+`not-a-correction` with a reason, which keeps the commit out of the defect
+rates instead of forcing it into `operator`.
 
 The pre-PR review of Spec 0398 returned one defect of the plan and one of the
 implementation in the same round, and the delivery of Spec 0399 had three
@@ -64,6 +68,16 @@ Supervisor or of a person during the delivery caused it. `unclear`: the
 declarer cannot tell, and the reason says what is known. A `plan` Correction
 also names the artifact that was wrong, the PRD, the TechSpec or the Tasks; a
 defect that comes from the Idea names the PRD, which adopts it.
+
+**A sixth answer: `not-a-correction`.** A declaration may answer
+`not-a-correction` instead of a Defect Class, with a reason and no artifact,
+for a Correction Sign whose change repaired no defect, such as a commit by
+hand that applies a new decision of the maintainer. The declaration is
+recorded like any other and covers the signs it names, so they are not
+`undeclared`, and the report counts it apart: it enters no count of
+Corrections, of plan defects or of a comparison. It is an answer of the
+declaration, not a sixth Defect Class; the list of Defect Classes keeps its
+five.
 
 **Whoever corrects declares, and the last declaration counts.** The
 Supervisor or person who makes the correction declares it: together with the
@@ -117,6 +131,10 @@ Archive Record, and no text leaves the machine.
 - **A refusal at the moment of the fix.** Rejected: a correction commit runs
   no Roundfix command that could refuse, so the merge is the one point every
   correction passes.
+- **Declaring a commit that applies a decision of the maintainer as
+  `operator`.** Rejected by the maintainer ("Sexta resposta (Recommended)"):
+  `operator` would count a decision as a defect of the delivery and raise the
+  defect rates; `not-a-correction` records the commit and keeps it out.
 - **Four classes, without `unclear`.** Rejected by the maintainer, so that
   nobody is made to guess. Orthogonal Defect Classification warns that a label
   of where a defect was injected is an opinion (Chillarege et al., 1992).
@@ -136,6 +154,9 @@ Archive Record, and no text leaves the machine.
   report says how many Corrections are `undeclared`.
 - The signs are read only for a delivery the Delivery Queue made. A Spec
   delivered by hand shows what was declared and nothing else.
+- A declarer who answers `not-a-correction` for a repair hides a defect from
+  the rates. The reason stays visible, the report counts these answers per
+  Spec, and a later declaration may give the sign a Defect Class.
 - A merge of the default branch into the Item Branch is not a sign. A repair
   made inside one is a Correction only when someone declares it.
 - A Roundfix older than the release that carries the setting refuses a

@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-17T19:30:00Z
-updated_at: 2026-11-17T19:30:00Z
+updated_at: 2026-11-17T20:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -83,6 +83,7 @@ head each time an item reaches its merge and records them (ADR-0420);
 - A branch merged into the Item Branch by hand is one sign, its merge commit.
 - A plan change that records a new decision of the maintainer is no sign when
   it reaches the Item Branch through a merge of the default branch. Committed
-  by hand on the Item Branch it is a sign, and its Correction is declared
-  `operator` with the decision as its reason.
+  by hand on the Item Branch it is a sign, and it is declared
+  `not-a-correction` with the decision as its reason (ADR-0417), which covers
+  the sign and keeps it out of every defect count.
 - A commit by hand that copies a `Roundfix-Spec` trailer is not seen.

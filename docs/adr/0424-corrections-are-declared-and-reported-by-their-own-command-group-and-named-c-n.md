@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-17T19:30:00Z
-updated_at: 2026-11-17T19:30:00Z
+updated_at: 2026-11-17T20:30:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -32,7 +32,8 @@ the report also takes `--since`, `--until` and `--format`, with the meanings
 they have in `roundfix runs causes`.
 
 **The declaration.** `--class` is one of `plan`, `implementation`,
-`environment`, `operator` and `unclear`; `--artifact` is one of `prd`,
+`environment`, `operator` and `unclear`, or the answer `not-a-correction`
+(ADR-0417); `--artifact` is one of `prd`,
 `techspec` and `tasks`; `--reason` is the one line; `--finding`, `--commit`
 and `--task` each name a Correction Sign and may repeat; `--correction <id>`
 declares an existing Correction again, `--withdraw` withdraws it, and `--by`
