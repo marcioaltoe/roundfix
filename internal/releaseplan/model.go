@@ -76,6 +76,7 @@ type ChangeEvidence struct {
 	Breaking                       bool
 	AutomaticImpact                Impact
 	CrossesMaintenanceOnlyBoundary bool
+	ReleasePreparation             bool
 }
 
 // Commit is one normalized committed change supplied by a Git adapter. The
@@ -173,6 +174,7 @@ type ClassifyRequest struct {
 	Commits      []Commit
 	ManualImpact Impact
 	ManualReason string
+	ReleasePaths []string // release_paths of granted records the range delivers
 }
 
 // ClassificationResult carries the aggregate classification and all commit

@@ -14,7 +14,7 @@ The Quaestor wrote on 2026-11-16 (ai-memory message `01a1e522-a608-7563-8568-289
 
 1. "Com a exigência de branch atualizada, um PR de entrega que fica atrás da main é recusado com \"base branch policy prohibits the merge\" e, na segunda recusa, vai para delivery-error (.agents/skills/roundfix/references/deliver.md, seção Check Wait). A recuperação volta a reviewing, e revisão, gate e CI rodam de novo. A fila poderia atualizar sozinha uma branch que ficou para trás."
 
-Its second observation, that the release guide assumes tag-triggered releases, was split from this entry on 2026-11-16 and adopted by Spec 0400 (`docs/specs/0400-planning-references-and-release-preparation-need-no-manual-classification/references/2026-11-16-the-release-guide-assumes-tag-triggered-releases.md`), following the maintainer's decision of 2026-11-16 ~20:55 BRT, "Spec fix depois da 0399 (Recommended)", which keeps this half in the backlog.
+Its second observation, that the release guide assumes tag-triggered releases, was split from this entry on 2026-11-16 and adopted by Spec 0400 (`docs/references/2026-11-16-the-release-guide-assumes-tag-triggered-releases.md`), following the maintainer's decision of 2026-11-16 ~20:55 BRT, "Spec fix depois da 0399 (Recommended)", which keeps this half in the backlog.
 
 ## Where
 

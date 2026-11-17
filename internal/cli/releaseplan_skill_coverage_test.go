@@ -50,6 +50,14 @@ func newCoverageFixture(t *testing.T, review string, uncovered, declared bool) s
 	gitReleasePlan(t, repo, "tag", "-f", "v0.4.0")
 	return repo
 }
+
+// writeReleasedCoverageChange adds a released source change beside the coverage
+// edits, so the commit models a release whatever the classifier decides for a
+// change confined to docs/references/ (ADR-0412 makes that maintenance-only).
+func writeReleasedCoverageChange(t *testing.T, repo string) {
+	t.Helper()
+	writeReleasePlanFile(t, repo, "internal/cli/output.go", "package cli\n")
+}
 func commitCoverageFixture(t *testing.T, repo, subject string) {
 	t.Helper()
 	gitReleasePlan(t, repo, "add", "-A")
@@ -76,6 +84,7 @@ func TestReleasePlanBlocksALaggingSurface(t *testing.T) {
 		t.Run(subject, func(t *testing.T) {
 			repo := newCoverageFixture(t, "", false, true)
 			writeCoverageFixture(t, repo, coverageFixtureMap("", false), "after")
+			writeReleasedCoverageChange(t, repo)
 			commitCoverageFixture(t, repo, subject)
 			plan := checkCoverageFixture(t, repo, "behind", true, exitUnverified)
 			wantState, wantVersion := releaseplan.StateReady, "v0.4.1"
@@ -130,6 +139,7 @@ func TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges(t *testing.T) {
 			if tc.skill {
 				writeReleasePlanFile(t, repo, coverageFixtureSkill, "updated skill\n")
 			}
+			writeReleasedCoverageChange(t, repo)
 			commitCoverageFixture(t, repo, "fix: correct output")
 			status, code := "current", exitOK
 			if tc.outcome == "lagging" {
@@ -217,6 +227,7 @@ func TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap(t *testing.T) {
 			} else if err := os.Remove(filepath.Join(repo, skillcoverage.RecordPath)); err != nil {
 				t.Fatal(err)
 			}
+			writeReleasedCoverageChange(t, repo)
 			commitCoverageFixture(t, repo, "fix: correct output")
 			before := snapshotReleasePlanRepo(t, repo)
 			plan := checkCoverageFixture(t, repo, "failed", true, exitUnverified)

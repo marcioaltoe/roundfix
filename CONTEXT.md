@@ -1159,6 +1159,10 @@ _Avoid_: Release execution, automatic release, version guess
 The highest impact (`patch`, `minor` or `major`) an approved Spec authorization record that grants `release` answers in the Release Plan without a second approval, together with its exact release paths ([ADR-0349](docs/adr/0349-a-spec-release-ceiling-answers-the-release-plan-approval.md)).
 _Avoid_: Release permission, automatic release approval
 
+**Release-Preparation Commit**:
+A commit with no automatic release impact whose every changed path is a `release_paths` entry of a Spec the range delivers with a Release Ceiling, such as the commit that writes the changelog and the version files; the Release Plan counts it as maintenance-only (ADR-0412).
+_Avoid_: Release commit, version bump commit, publication commit
+
 **Release Plan Command**:
 The support command that produces a Release Plan without editing release files, creating or pushing tags, publishing packages, or creating a GitHub release.
 _Avoid_: Release Command, publish command, cut-release command

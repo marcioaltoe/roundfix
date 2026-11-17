@@ -461,6 +461,7 @@ type releasePlanChangeJSON struct {
 	Breaking                       bool               `json:"breaking"`
 	AutomaticImpact                releaseplan.Impact `json:"automaticImpact"`
 	CrossesMaintenanceOnlyBoundary bool               `json:"crossesMaintenanceOnlyBoundary"`
+	ReleasePreparation             bool               `json:"releasePreparation,omitempty"`
 }
 
 type releaseResetPlanJSON struct {
@@ -503,6 +504,7 @@ func releasePlanJSONFromPlan(plan releaseplan.Plan) releasePlanJSON {
 			Breaking:                       change.Breaking,
 			AutomaticImpact:                change.AutomaticImpact,
 			CrossesMaintenanceOnlyBoundary: change.CrossesMaintenanceOnlyBoundary,
+			ReleasePreparation:             change.ReleasePreparation,
 		})
 	}
 	var authorization *releasePlanAuthorizationJSON
