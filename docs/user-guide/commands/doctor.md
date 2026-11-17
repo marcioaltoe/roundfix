@@ -87,6 +87,9 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   binary fails this line until it is refreshed.
   `DR-SKILL-LOCK-STALE` warns when an installed owned skill has a `ref` or
   a `computedHash` that differs from its installed tree in `skills-lock.json`.
+- `baseline-rules:` — after `skills:` and any `user-skills:` and
+  `authoring-models:` lines, before residue. Names Misplaced Repository Rules
+  without moving them. It never fails Doctor or changes its exit code.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage. A terminal Run whose recorded owner
   PID is alive with a different start identity adds nothing: its owner is gone
@@ -343,3 +346,25 @@ exit code. With no declared cache, the storage line stays byte-identical.
 ```text
 storage: found (Runs reclaimable: 0; Run Database free bytes: 0; Worktree Build Caches reclaimable: 1 (11 bytes); next: roundfix gc)
 ```
+
+#### Repository rule placement
+
+The offline `baseline-rules:` check reads the Setup Manifest's carriers and
+prints exactly one of these four forms:
+
+```text
+baseline-rules: ok (no repository rule outside docs/agents/specific-repository.md)
+baseline-rules: warn (DR-BASELINE-RULE-MISPLACED: <n> passages belong in docs/agents/specific-repository.md: <path>:<start>-<end>[, ...]; next: move each passage into docs/agents/specific-repository.md; roundfix baseline update lists them)
+baseline-rules: warn (DR-BASELINE-RULES-UNREAD: <error>; next: re-run roundfix doctor after fixing the Setup Manifest)
+baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)
+```
+
+For one entry, the warning says `1 passage belongs`; otherwise it says
+`<n> passages belong`. It lists every path and line range, separated by `, `.
+When `repository.extension.enabled` is not `true`, the misplaced warning's
+next action is `roundfix baseline update --decision repository.extension.enabled=true, then move each passage`.
+
+`DR-BASELINE-RULE-MISPLACED` names the passages to move;
+`DR-BASELINE-RULES-UNREAD` means an invalid manifest or unreadable carrier.
+Both codes warn and never fail Doctor. Roundfix moves nothing; a person or a
+supervised Agent moves a passage, with the person's approval for the Agent.

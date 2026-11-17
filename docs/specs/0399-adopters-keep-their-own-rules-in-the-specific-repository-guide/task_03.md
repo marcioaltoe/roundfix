@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -171,3 +171,118 @@ never Roundfix.
 - `_prd.md` → Goals (second and third bullets); User Experience; Core Features 3, 4 and 5; Success Metric 3; Success Metric 4; Non-Goals
 - `_techspec.md` → Command surfaces; API Contract 1; API Contract 2; Surface Transcript 1; Data Models; Interfaces (invariants 6 and 8); Testing Approach (Task 3); Build Order 3
 - ADR-0411, ADR-0220, ADR-0145
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, skill-creator, evidence-gate, knowledge-workspace, roundfix, systematic-debugging.
+
+### Verification feedback repair
+
+The Daemon's attempt-1 diagnostic artifact was inspected at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261117T004735Z_ff97830eca75451a/verification/batch-003-attempt-1.log`.
+It identifies four existing Doctor tests whose whole-output or ordered-name
+expectations omit the new line. The subsequent Verification Feedback directs
+repair of the affected tests in this Task's slice, resolving the earlier
+request for authority to update those expectations beyond the two counts.
+
+Only the corresponding expectations in the declared
+`internal/cli/doctor_test.go` interface changed during this repair:
+
+- The three profile-readiness cases and the missing-repository-root case now
+  expect the skipped line after skills and before residue.
+- The adapter test's ordered-name list includes `HealthCheckBaselineRules`
+  after skills, preserving the complete ordering assertion.
+- The real-repository state-preservation test expects the unread warning:
+  its existing fixture has a partial manifest accepted by the skill reader
+  but invalid for Baseline parsing. The fixture itself is unchanged.
+
+Exit-code, adapter, runtime, profile-proof and state-preservation assertions
+remain intact. No production behavior, fixture, skill, record or guide was
+changed in this feedback repair. No terminal Task verdict is claimed.
+
+### Implementation and acceptance evidence
+
+- **Plan/current/applied reporting:** the result gains the required pointer
+  field and computes the report at result emission, only after manifest
+  parsing succeeded. This also covers decision refusals and later operation
+  failures. Applied results read the bytes after apply. Text emits exact
+  ranges, managed identities, first lines and destinations between the
+  existing unrecorded-region and retention sections. Extension advice depends
+  on the recorded extension decision. A detector error adds one warning and
+  an empty array without changing the command's existing state or exit.
+  All nine required `TestBaselineUpdateNamesMisplacedRepositoryRules`
+  subtests pass. They check whole section lines, whole JSON arrays, the
+  direct planner's digest, unchanged preview bytes, shifted applied ranges
+  and unchanged exit behavior with the outside passage removed.
+- **No manifest and earlier failures:** `no_manifest_omits_the_field` checks
+  text and JSON omission. The additional
+  `TestBaselineUpdateMisplacedRuleReportAcrossFailures` passes for an empty
+  array, invalid-manifest omission, a declaration refusal after a valid
+  manifest, and a missing carrier. The missing-carrier case checks the whole
+  detector warning line exactly once and preserves the existing
+  `action_required` exit 3; the new test's initial expectation of exit 2 was
+  corrected after reading the actual planner outcome.
+- **Doctor:** the new check produces the four required forms and both DR
+  codes, including singular/plural wording and extension-off advice. It is
+  appended after skill, user-skill and authoring-model reports, before
+  residue, and only returns ok/warn/skipped. All seven required
+  `TestDoctorReportsMisplacedRepositoryRules` subtests pass, asserting whole
+  lines, position, repository byte preservation and both advisory exit 0
+  and an independent failure's exit 1. The existing repository-skill table
+  test passes with its count change. After the feedback repair, the adapter
+  table, profile-readiness table, missing-root case and real-repository
+  state-preservation case also pass their focused checks.
+- **Surface Transcript 1:**
+  `TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent` passes through
+  `runCLI` against this repository with a temporary home and no confirmation.
+  Its first eight stdout lines match the transcript with the embedded
+  catalog digest, more lines follow, stderr is empty and exit is 0.
+- **Documentation and skills:** both usage sentences, both command guides,
+  the Roundfix baseline/setup references and the managed-refresh paragraph
+  of setup-context-driven describe the public surfaces and approval before
+  an Agent moves a passage. The required move sentence matches all four
+  canonical/mirror files. Generated versions are Roundfix `0.1.248` and
+  setup-context-driven `0.0.9`; both copies match byte for byte. The owned
+  version record and Behavior Surface Record were generated, never edited
+  by hand.
+
+### Focused checks and generation
+
+- Feedback repair check: `go test ./internal/cli -count=1 -run '^(TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts|TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes|TestRunDoctorMissingRepositoryRoot|TestRunDoctorRealRepositoryCheckDoesNotMutateState|TestRunDoctorRepositorySkillReadiness|TestDoctorReportsMisplacedRepositoryRules)$' -v`
+  exited 0 after the repair. All six selected tests and their subtests
+  passed, including all four test groups named in the Daemon diagnostic.
+  `git diff --check` also exited 0.
+- Red starting point: `go test ./internal/cli -run 'TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json$' -count=1`
+  rejected the absent `misplacedRepositoryRules` array before the implementation.
+- Final focused CLI check: `go test ./internal/cli -run '^(TestBaselineUpdateNamesMisplacedRepositoryRules|TestDoctorReportsMisplacedRepositoryRules|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestBaselineUpdateMisplacedRuleReportAcrossFailures|TestRunDoctorRepositorySkillReadiness)$' -count=1 -v`
+  exited 0; every selected test and subtest passed.
+- The earlier focused check also selected
+  `TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes`; its three
+  subtests exposed the expected-name-list mismatch subsequently repaired
+  under the Verification Feedback instruction.
+- `make skills-sync` regenerated the mirrors after source edits and version
+  recording.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+  exited 0 and generated both skill version fields and their record.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 after the final skill-reference edit.
+- `make baseline-digests` exited 0 with `changed: false`; no Baseline asset or
+  derived Baseline path changed.
+- `go test ./skills -run '^(TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$' -count=1`
+  exited 0.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestBaselineDocumentationContract|TestTheSkillCoverageMapIsCurrent|TestEveryCommandIsNamedInTheRoundfixSkill|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$' -count=1`
+  exited 0 after the final reference edit.
+- Scope inspection found exactly 20 changed paths, all declared by this Task;
+  four canonical/mirror pairs match byte for byte. `git diff --check` is clean.
+
+The initial worktree had only the Daemon-owned status change in this Task.
+Task status, the Task Graph, other Task files, the forbidden paths and QA
+settlement sections are unchanged by this implementation. No declared
+Verification command, repository Verification, full suite, commit, push,
+pull request or cross-project message was run. The Daemon owns Verification
+and settlement; the configured sequence has not been rerun by this Agent.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T004735Z_ff97830eca75451a`
+- Source commit: `f9376c79472de9ab33eaa1021cd03373f16424d1`

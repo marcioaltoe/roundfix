@@ -132,6 +132,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if state, report := loadedAuthoringState(loaded); report {
 		results = append(results, doctorAuthoringModelsResult(state))
 	}
+	results = append(results, doctorBaselineRulesResult(repositoryRoot))
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
 	if dependencies.diskSpace != nil {
@@ -159,6 +160,45 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+// doctorBaselineRulesResult names passages without failing Doctor or moving them.
+func doctorBaselineRulesResult(repositoryRoot string) CheckResult {
+	result := CheckResult{Name: HealthCheckBaselineRules, Status: CheckStatusSkipped,
+		Detail: "no Setup Manifest at docs/agents/setup-context.json"}
+	if repositoryRoot == "" {
+		return result
+	}
+	report, err := baseline.MisplacedRepositoryRules(repositoryRoot)
+	if err != nil {
+		result.Status = CheckStatusWarn
+		result.Detail = "DR-BASELINE-RULES-UNREAD: " + err.Error()
+		result.NextAction = "re-run roundfix doctor after fixing the Setup Manifest"
+		return result
+	}
+	if !report.ManifestFound {
+		return result
+	}
+	result.Status = CheckStatusOK
+	result.Detail = "no repository rule outside " + baseline.SpecificRepositoryPath
+	if len(report.Rules) == 0 {
+		return result
+	}
+	locations := make([]string, len(report.Rules))
+	for i, rule := range report.Rules {
+		locations[i] = fmt.Sprintf("%s:%d-%d", rule.Path, rule.StartLine, rule.EndLine)
+	}
+	passages := "1 passage belongs"
+	if len(report.Rules) != 1 {
+		passages = fmt.Sprintf("%d passages belong", len(report.Rules))
+	}
+	result.Status = CheckStatusWarn
+	result.Detail = "DR-BASELINE-RULE-MISPLACED: " + passages + " in " + baseline.SpecificRepositoryPath + ": " + strings.Join(locations, ", ")
+	result.NextAction = "move each passage into " + baseline.SpecificRepositoryPath + "; roundfix baseline update lists them"
+	if !report.ExtensionEnabled {
+		result.NextAction = "roundfix baseline update --decision repository.extension.enabled=true, then move each passage"
+	}
+	return result
 }
 
 // doctorLinuxLaneCheck reads only effective checkout configuration, go.mod at

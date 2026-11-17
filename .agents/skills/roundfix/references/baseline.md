@@ -121,6 +121,23 @@ lists, and `baseline.history.citation.unscanned` when a tracked file could not
 be scanned. The Plan Digest covers these warnings. Planning never rewrites a
 citation, and apply writes the same files.
 
+The update result's `misplacedRepositoryRules` array names each Misplaced
+Repository Rule with `path`, `startLine`, `endLine`, `firstLine`, `moveTo`
+and, for a digest-mismatch region, `managedId`. It is `[]` when empty and
+omitted before a valid Setup Manifest is read. It sits outside the Plan
+Document and changes neither its digest nor any exit code. Applied results
+use the bytes after the apply. Text prints `Misplaced repository rules: <n>`
+after `Unrecorded managed regions` and before `Retention evidence`, with each
+`- <path>:<start>-<end>: <firstLine>` (or a ` (managed identity <id>)` before
+`: <firstLine>`) followed by `  Move to: docs/agents/specific-repository.md`.
+With entries and the extension decision off, it adds
+`Next for misplaced rules: roundfix baseline update --decision repository.extension.enabled=true, then move each passage`.
+Foreign matching `BEGIN:`/`END:` blocks are excluded. Roundfix moves nothing.
+
+When `roundfix baseline update` or `roundfix doctor` names a Misplaced
+Repository Rule, report each passage to the person and move it into
+`docs/agents/specific-repository.md` only with the person's approval.
+
 An absent Spec Root inside the repository reads as an empty one. A root is
 absent when its resolved path has no filesystem entry and its nearest existing ancestor, after symbolic links are evaluated, lies inside
 or at the evaluated repository root.

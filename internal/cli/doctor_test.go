@@ -248,6 +248,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -268,6 +269,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -288,6 +290,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"pre-pr-review: ok (provider=codex; source=default)\n" +
 				doctorReadyReadinessLines +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -812,10 +815,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 15 || lines[2] != test.wantLine {
+			if len(lines) != 16 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", "residue", "storage", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", HealthCheckBaselineRules, "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1255,7 +1258,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 15 || lines[11] != test.wantLine {
+			if len(lines) != 16 || lines[11] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 11", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
@@ -1497,6 +1500,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"pre-pr-review: ok (provider=codex; source=default)\n" +
 		doctorReadyReadinessLines +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
+		"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"codex: ok\n"
@@ -1599,6 +1603,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 			len(skills.Names()),
 			len(external),
 		) +
+		"baseline-rules: warn (DR-BASELINE-RULES-UNREAD: read misplaced-rule Setup Manifest: baseline.preservation.managed-refresh.manifest.invalid; next: re-run roundfix doctor after fixing the Setup Manifest)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"verification-capacity: ok (runs.max_verifying 1; 0 held, 0 waiting)\n" +
