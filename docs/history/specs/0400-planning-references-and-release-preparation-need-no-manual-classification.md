@@ -39,6 +39,7 @@ promoted:
   - docs/references/2026-11-16-the-release-guide-assumes-tag-triggered-releases.md
 relinked:
   - docs/backlog/2026-11-16-the-delivery-queue-and-the-release-guide-assume-loose-branch-rules-and-tag-releases.md
+pull_request: "897"
 type: fix
 ---
 
