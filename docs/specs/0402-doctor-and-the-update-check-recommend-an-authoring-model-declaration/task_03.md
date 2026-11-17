@@ -49,7 +49,12 @@ ignore, `.txt` for command output, and links only files it kept.
 2. MUST verify Success Metric 1, Success Metric 2 and Success Metric 3 by
    running, with `-v`, the tests task_01 names in its Verification,
    recording every test and subtest by name, and the whole
-   `./internal/config` and `./internal/cli` packages.
+   `./internal/config` and `./internal/cli` packages. For the whole
+   `./internal/cli` package only, the fresh home keeps the host's Rust
+   toolchain: take `RUSTUP_HOME` and `CARGO_HOME` before `HOME` changes
+   (their values, or `$HOME/.rustup` and `$HOME/.cargo` when unset) and pass
+   them to the command, read-only, so `TestGuidanceCompositionJourney/rust-cli`
+   can select its toolchain.
 3. MUST reproduce Surface Transcript 1 of `_techspec.md` through `"$b"
    update check` in a temporary Git repository with one commit, where
    `"$b" skills install --target project` installed the skills and
@@ -119,7 +124,9 @@ ignore, `.txt` for command output, and links only files it kept.
     - the Task commit range changes none of these: the Makefile, the CI
       workflows, `go.mod`, `go.sum`, `skills-lock.json`, `CHANGELOG.md`,
       `internal/app/version.go`, `dist/npm/roundfix/package.json`,
-      `internal/cli/cli_test.go`,
+      `internal/cli/cli_test.go` apart from the `assertCheckResult` helper
+      the authorization record's amendment of 2026-11-17 grants (task_01
+      may change only that helper, to `reflect.DeepEqual`),
       `internal/docscontract/publicdocs_test.go`,
       `internal/config/recommendations.go`, `internal/agent/catalog.go`,
       `docs/references/model-selection.md`,
