@@ -1,7 +1,0 @@
-cwd: /Users/marcio/srv/quaestor
-$ git --no-optional-locks status --porcelain
-stdout:
-
-stderr:
-
-exit: 0

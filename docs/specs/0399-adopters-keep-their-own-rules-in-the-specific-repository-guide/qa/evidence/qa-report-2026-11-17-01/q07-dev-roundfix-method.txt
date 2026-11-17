@@ -1,4 +1,0 @@
-{
-  "method": "Setup Manifest Markdown carriers plus regular root CLAUDE.md; split managed regions; exclude matched foreign blocks; trim outer blank lines; preserve inclusive line ranges.",
-  "rules": []
-}

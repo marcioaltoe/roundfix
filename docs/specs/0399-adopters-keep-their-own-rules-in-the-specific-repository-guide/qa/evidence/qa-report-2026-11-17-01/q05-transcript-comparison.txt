@@ -1,1 +1,0 @@
-First eight stdout lines match Surface Transcript 1; digest placeholders match; remaining lines accepted by ...; stderr empty; exit 0.

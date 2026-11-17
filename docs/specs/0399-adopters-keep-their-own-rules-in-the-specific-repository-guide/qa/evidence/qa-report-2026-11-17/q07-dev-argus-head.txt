@@ -1,8 +1,0 @@
-cwd: /Users/marcio/dev/argus
-$ git rev-parse HEAD
-stdout:
-fc53eb7cc1ebb7708d06774f5a281a4297e48623
-
-stderr:
-
-exit: 0

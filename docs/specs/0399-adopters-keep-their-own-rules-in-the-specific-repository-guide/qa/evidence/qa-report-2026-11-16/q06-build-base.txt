@@ -1,7 +1,0 @@
-$ go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T004735Z_ff97830eca75451a/bin/roundfix-qa399-delivery-base ./cmd/roundfix
-cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa399-base-bem0f12e
-stdout:
-
-stderr:
-
-exit: 0

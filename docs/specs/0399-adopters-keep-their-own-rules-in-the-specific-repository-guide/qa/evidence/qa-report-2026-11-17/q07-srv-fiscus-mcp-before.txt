@@ -1,7 +1,0 @@
-cwd: /Users/marcio/srv/fiscus-mcp
-$ git --no-optional-locks status --porcelain
-stdout:
-
-stderr:
-
-exit: 0

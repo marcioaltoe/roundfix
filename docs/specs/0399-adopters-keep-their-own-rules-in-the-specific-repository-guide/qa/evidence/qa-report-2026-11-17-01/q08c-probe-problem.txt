@@ -1,5 +1,0 @@
-named assertion did not fail: FAIL	roundfix/internal/baseline [build failed]
-FAIL
-# roundfix/internal/baseline [roundfix/internal/baseline.test]
-internal/baseline/misplaced_rules.go:65:4: declared and not used: info
-

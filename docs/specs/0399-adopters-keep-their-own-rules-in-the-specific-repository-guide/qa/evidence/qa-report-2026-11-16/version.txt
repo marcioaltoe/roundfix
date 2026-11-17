@@ -1,7 +1,0 @@
-$ ./bin/roundfix --version
-stdout:
-roundfix 0.147.0 (f9376c79-dirty, built 2026-11-16 23:18:43 -0300)
-
-stderr:
-
-exit: 0

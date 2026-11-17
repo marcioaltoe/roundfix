@@ -1,2 +1,0 @@
-Confirmed nonzero exit and named assertion failure: TestDoctorReportsMisplacedRepositoryRules/warn_one_passage
-No generator or sync command ran. Inspect the linked test output for the actual assertion difference.

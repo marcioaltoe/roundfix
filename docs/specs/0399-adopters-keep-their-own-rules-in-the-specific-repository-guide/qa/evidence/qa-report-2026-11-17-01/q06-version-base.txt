@@ -1,7 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013/bin/roundfix-qa399-base-01 --version
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0399-adopters-keep-their-own-rules-in-the-specific-repository-guide-bf702f107d8859f5-ca3c51ce-2a06d5bc/run_20261117T104659Z_7436eda7d0594013
-exit: 0
-stdout:
-roundfix 0.147.0 (0a88953, built 2026-11-17 08:08:22 -0300)
-
-stderr:
