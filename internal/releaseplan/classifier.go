@@ -42,7 +42,7 @@ func ClassifyChanges(request ClassifyRequest) (ClassificationResult, error) {
 
 	for _, commit := range request.Commits {
 		evidence := ClassifyCommit(commit)
-		if evidence.AutomaticImpact == ImpactNone && onlyReleasePaths(commit.ChangedPaths, request.ReleasePaths) {
+		if evidence.AutomaticImpact == ImpactNone && evidence.CrossesMaintenanceOnlyBoundary && onlyReleasePaths(commit.ChangedPaths, request.ReleasePaths) {
 			evidence.ReleasePreparation = true
 			evidence.CrossesMaintenanceOnlyBoundary = false
 		}

@@ -117,6 +117,14 @@ func TestReleasePreparationCommitSetsNoImpact(t *testing.T) {
 			wantEvidence: ChangeEvidence{CommitSHA: "preparation", Subject: "chore: release v0.2.0", ConventionalType: "chore", AutomaticImpact: ImpactNone, CrossesMaintenanceOnlyBoundary: true},
 		},
 		{
+			name: "maintenance_only_path_listed_in_release_paths", withFix: true,
+			commit:       Commit{SHA: "planning", Subject: "docs: plan 0001", ChangedPaths: []string{"docs/references/evidence.md"}},
+			releasePaths: []string{"docs/references/evidence.md"},
+			wantState:    StateReady,
+			wantClass:    Classification{Source: SourceMixed, Impact: ImpactPatch},
+			wantEvidence: ChangeEvidence{CommitSHA: "planning", Subject: "docs: plan 0001", ConventionalType: "docs", AutomaticImpact: ImpactNone},
+		},
+		{
 			name:         "invalid_changed_path",
 			commit:       Commit{SHA: "invalid", Subject: "chore: release v0.2.0", ChangedPaths: []string{"../VERSION"}},
 			releasePaths: []string{"", "../VERSION", "VERSION"},
