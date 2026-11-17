@@ -26,7 +26,8 @@ Base, except the outside-evidence row of requirement 7, which reads the
 adopted checkouts the inventory names, read-only. No row starts an Agent
 harness, an Agent session or an ACP adapter, starts a Run, a Daemon or a
 Delivery Owner, calls ai-memory, reads or writes the real `~/.roundfix` or
-the real home directory, runs the real `gh`, reaches the network, sends a
+the real home directory (apart from reading the Rust toolchain requirement 4
+names), runs the real `gh`, reaches the network, sends a
 request to a provider, the judge or a reviewer, or asserts a wall-clock
 duration. Every `go test` it runs carries an explicit `-timeout`.
 
@@ -63,7 +64,12 @@ ignore, `.txt` for command output, and links only files it kept.
    the three `internal/cli` tests task_03 names in its Verification,
    recording every test and subtest by name, and the whole `./internal/cli`
    package, `./skills` package and `-tags docscontract
-   ./internal/docscontract`, recording each pass.
+   ./internal/docscontract`, recording each pass. For the whole
+   `./internal/cli` package only, the fresh home keeps the host's existing
+   Rust toolchain: take `RUSTUP_HOME` and `CARGO_HOME` before `HOME` changes
+   (their values, or `$HOME/.rustup` and `$HOME/.cargo` when unset) and pass
+   them to the command, read-only, so `TestGuidanceCompositionJourney/rust-cli`
+   can select its toolchain.
 5. MUST reproduce Surface Transcript 1 of `_techspec.md` through
    `bin/roundfix baseline update --repo . --no-skills --no-history --format
    text` in this repository, recording standard output, standard error and
@@ -97,10 +103,16 @@ ignore, `.txt` for command output, and links only files it kept.
    committed in a fresh Git repository, outside the checkout. On the fixture
    of requirement 5 with the passage, record that every line the Delivery
    Base's `baseline update` plan prints is printed by the audited head's in
-   the same order apart from the new section, that every key of the
-   Delivery Base's JSON result is in the audited head's with the same value,
-   except `priorCatalog`, `currentCatalog`, `fileChanges` and `planDigest`
-   when the catalog moved, and that both exit with the same code.
+   the same order apart from the new section and, when the catalog moved,
+   the lines derived from the catalog change (`Current catalog:`, the
+   `File changes:` count and its planned-file lines, `Plan Digest:` and
+   `Next action:`); that every key of the Delivery Base's JSON result is in
+   the audited head's with the same value, except `priorCatalog`,
+   `currentCatalog`, `fileChanges`, `planDigest` and the `nextAction`
+   string that embeds that digest when the catalog moved; and that both
+   exit with the same code. The same-version checks stay: on each binary,
+   the Plan Digest with the passage equals the one without it, and the
+   exit code with the passage equals the one without it.
 7. MUST record the outside-evidence row of `_prd.md` → Success Metric 5 and
    Acceptance evidence. For each adopted checkout that
    [`references/2026-11-16-adopter-rule-placement-inventory.md`](references/2026-11-16-adopter-rule-placement-inventory.md)
@@ -185,7 +197,8 @@ ignore, `.txt` for command output, and links only files it kept.
     NOT do any of these:
     - accept a row whose only evidence is that a file was read;
     - run a `roundfix` found on `PATH`;
-    - read or write `~/.roundfix` or the real home directory;
+    - read or write `~/.roundfix` or the real home directory, apart from
+      reading the Rust toolchain of requirement 4;
     - run the real `gh`, call ai-memory or reach the network;
     - start an Agent harness, an Agent session, an ACP adapter, a Run, a
       Daemon or a Delivery Owner;

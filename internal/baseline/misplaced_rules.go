@@ -80,6 +80,24 @@ func MisplacedRepositoryRules(root string) (MisplacedRepositoryRuleReport, error
 		}
 		contents[relative] = content
 	}
+	// A regular root CLAUDE.md is read even when the manifest does not list
+	// it. A symbolic link is skipped, so its target is reported only once.
+	if _, listed := sourceByPath["CLAUDE.md"]; !listed {
+		info, err := os.Lstat(filepath.Join(root, "CLAUDE.md"))
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+		case err != nil:
+			return report, fmt.Errorf("inspect misplaced-rule carrier %q: %w", "CLAUDE.md", err)
+		case info.Mode().IsRegular():
+			content, err := readOptionalRegular(root, "CLAUDE.md")
+			if err != nil {
+				return report, fmt.Errorf("read misplaced-rule carrier %q: %w", "CLAUDE.md", err)
+			}
+			if content != nil {
+				contents["CLAUDE.md"] = content
+			}
+		}
+	}
 
 	// Managed refresh reads every artifact. Use its classifier only when that
 	// does not cross this detector's narrower read boundary. Otherwise the

@@ -83,14 +83,18 @@ func TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide(t *testing.
 		{
 			name: "starter",
 			run: func(t *testing.T) {
-				repo := newPlanRepository(t)
+				// The expected bytes come only from the embedded starter
+				// template, never from a fixture this test writes.
 				want := "# Repository-Specific Normative Rules\n\nWrite each rule or variation of this repository here, never in a root instruction file or in a Baseline guide. Give each rule a heading of its own and state it as a bullet with its force, such as `- **mandatory**: run the schema check before changing a migration (2026-11-16)`, with the date of the decision that set it when it has one.\n"
-				writeInspectionFile(t, repo, "AGENTS.md", want)
-				commitInspectionRepository(t, repo, "seed readoption repository rule")
-				plan := buildRootPreservationPlan(t, repo, "repository-rules", specificRepositoryPath)
-				starter := planPostimage(t, plan, "docs/agents/specific-repository.md")
-				if string(starter.Content) != want {
-					t.Fatalf("specific-repository.md = %q, want %q", starter.Content, want)
+				starter, ok := catalog.TemplateContent("template.extension.repository-rules")
+				if !ok {
+					t.Fatal("missing template.extension.repository-rules")
+				}
+				if starter.Path != "templates/extensions/specific-repository.md" {
+					t.Fatalf("starter template path = %q, want templates/extensions/specific-repository.md", starter.Path)
+				}
+				if string(starter.Data) != want {
+					t.Fatalf("specific-repository.md starter = %q, want %q", starter.Data, want)
 				}
 			},
 		},

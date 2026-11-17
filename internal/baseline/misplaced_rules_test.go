@@ -134,7 +134,16 @@ func TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest(t *testing.T) {
 		},
 		{
 			name:  "unlisted_carriers_are_not_read",
-			files: map[string]string{guide: block, "AGENTS.md": "Unlisted root.\n", "CLAUDE.md": "Unlisted alias.\n", "nested/AGENTS.md": "Nested.\n", "docs/agents/unlisted.md": "Unlisted guide.\n"},
+			files: map[string]string{guide: block, "AGENTS.md": "Unlisted root.\n", "nested/AGENTS.md": "Nested.\n", "nested/CLAUDE.md": "Nested alias.\n", "docs/agents/unlisted.md": "Unlisted guide.\n"},
+		},
+		{
+			name:      "unlisted_regular_claude_md_is_read",
+			files:     map[string]string{guide: block, "AGENTS.md": "Unlisted root.\n", "CLAUDE.md": "\n# Root repository policy\nKeep this rule.\n"},
+			wantRules: []MisplacedRepositoryRule{rule("CLAUDE.md", 2, 3, "# Root repository policy")},
+		},
+		{
+			name:  "unlisted_symbolic_link_claude_md_is_not_read",
+			files: map[string]string{guide: block, "AGENTS.md": "Unlisted root.\n"}, claudeLink: true,
 		},
 		{
 			name:      "missing_listed_carrier",
