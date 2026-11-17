@@ -206,6 +206,11 @@ func TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted(t *testing.T) {
 		t.Run(command, func(t *testing.T) {
 			_, root := withCLIWorkspace(t)
 			installAuthoringReportFixture(t)
+			if command == "doctor" || command == "update_check" {
+				for _, phase := range roundskills.AuthoringPhases() {
+					writeAuthoringCommandFile(t, root, "skills/"+phase.Skill+"/SKILL.md", "# Published authoring skill\n")
+				}
+			}
 			var stdout, stderr bytes.Buffer
 			switch command {
 			case "skills_check":

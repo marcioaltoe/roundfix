@@ -946,9 +946,12 @@ func printDoctorResult(stdout io.Writer, result CheckResult) {
 	}
 	if detail == "" {
 		fmt.Fprintf(stdout, "%s: %s\n", result.Name, result.Status)
-		return
+	} else {
+		fmt.Fprintf(stdout, "%s: %s (%s)\n", result.Name, result.Status, detail)
 	}
-	fmt.Fprintf(stdout, "%s: %s (%s)\n", result.Name, result.Status, detail)
+	for _, line := range result.Lines {
+		fmt.Fprintf(stdout, "  %s\n", line)
+	}
 }
 
 func printDoctorFailure(err error, stderr io.Writer) {

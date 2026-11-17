@@ -54,6 +54,7 @@ type CheckResult struct {
 	Detail     string
 	NextAction string
 	Err        error
+	Lines      []string
 }
 
 type HealthChecker interface {

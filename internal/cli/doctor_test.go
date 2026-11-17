@@ -1603,6 +1603,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 			len(skills.Names()),
 			len(external),
 		) +
+		authoringRecommendationDoctorLine + "\n" + authoringRecommendationBlock +
 		"baseline-rules: warn (DR-BASELINE-RULES-UNREAD: read misplaced-rule Setup Manifest: baseline.preservation.managed-refresh.manifest.invalid; next: re-run roundfix doctor after fixing the Setup Manifest)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +

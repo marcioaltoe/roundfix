@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -143,3 +143,79 @@ output.
 - `_prd.md` → Goals 1, 2, 3 and 6; Core Features 1 and 2; Success Metric 1; Success Metric 2; Success Metric 3; Non-Goals
 - `_techspec.md` → Recommendation; Reports; Interfaces (invariants 1 to 5 and 7); Data Models; API Contract 1; API Contract 2; API Contract 3; Surface Transcript 1; Testing Approach (Task 1, Declared expectation changes); Build Order 1
 - ADR-0415, ADR-0401, ADR-0408, ADR-0402
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+Implemented the recommendation as one private `AuthoringHarness` table in
+`internal/config`. Its accessor copies all five entries and its renderer
+produces the specified YAML bytes with a final newline and no tools key.
+Doctor now supports indented `CheckResult.Lines`; results without continuation
+lines retain their existing formatting. Both reports inspect installed,
+unpublished authoring skills only when no declaration or inspection problem
+exists. The Update Check adds `installed` and `recommendation` only for
+`undeclared`; the existing states retain their JSON members and order.
+
+Updated the two declared expectations, both command guides, and the Behavior
+Surface Record through its sanctioned recorder. In `internal/cli/cli_test.go`,
+the only change is `assertCheckResult` using `reflect.DeepEqual`, as the
+approved amendment permits. The Task file was already changed on entry by
+the Daemon (`status: in_progress`); this turn preserved that status and added
+only this Result section. No Task Graph or other Task file changed.
+
+Focused checks (all commands below are implementation checks, not declared
+Verification):
+
+- Red baseline: `go test ./internal/config -run '^TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes$' -count=1`
+  exited 1 because the two recommendation functions did not exist.
+- Behavioral red baseline: `go test ./internal/cli -run '^TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared$' -count=1`
+  exited 1: `baseline-rules:` followed `skills:` immediately, with the
+  recommendation missing.
+- `go test ./internal/config ./internal/cli -count=1 -run '^(TestRecommendedAuthoringDeclarationRendersValidProjectConfig|TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration|TestARepositoryWithoutTheDeclarationPrintsWhatItPrinted|TestRunDoctorRealRepositoryCheckDoesNotMutateState|TestDoctorReportsTheAuthoringModels|TestUpdateCheckReportsTheAuthoringModels|TestSkillsCheckWarnsOfAnUnappliedDeclarationAndKeepsItsExit)$'`
+  exited 0 in both packages. An earlier focused run exposed a leftover-file
+  fixture without frontmatter; the existing parser requires the generated
+  marker after frontmatter. Corrected the fixture and retained the expected
+  `unapplied` output.
+- `go test ./internal/cli -count=1 -run '^(TestHealthCheckerReturnsStructuredReadOnlyResults|TestHealthCheckerAcceptsNewerACPXVersion|TestHealthCheckerReportsFailedPrerequisitesWithNextActions|TestHealthCheckerReportsCodexResult|TestUpdateCheckTranscripts|TestRunDoctorMissingRepositoryRoot|TestRunDoctorContinuesChecksAfterProfileReadinessFailure)$'`
+  exited 0, including the existing whole-output Update Check transcripts.
+- Required sanctioned regeneration:
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0 and changed only the two guide hashes in
+  `docs/references/behavior-surfaces.json`.
+- `git diff --check` exited 0. `gofmt -l` reported no files for the nine
+  changed or added Go files. Changed and untracked path inspection found
+  only this Task's declared paths and this Task file.
+
+Acceptance evidence:
+
+1. The new Doctor and Update Check tests exercise `undeclared` and
+   `partly_published`, pinning the entire warning and block in position,
+   skill order, and the complete `authoringModels` JSON bytes. The named
+   Surface Transcript test checks every stdout line outside the permitted
+   version/Baseline variation, empty stderr, and exit 0 through `runCLI`.
+2. All six cases of both new report tests assert exit 0 and unchanged
+   repository and disposable-home snapshots; Update Check asserts top-level
+   `next: "none"` and no `Next:` text. The existing real-repository Doctor
+   fixture also retains its filesystem, lock and configuration snapshots.
+3. The six-case tests pin the declaration, marked leftover, fully published
+   and no-authoring-skill reports. Existing authoring report checks also
+   cover Project Config not read, outside Git, unapplied declarations,
+   missing links, and placement after `user-skills:` / `User skills:`.
+   Existing Update Check transcripts retain their whole-output byte checks,
+   and existing health checks exercise the amended comparison helper.
+4. `exact_bytes`, `loads_as_project_config`, and `returns_a_copy` exercise
+   the complete rendered block, the real Project Config loader, empty
+   `Research.Tools`, and mutation isolation for every returned entry.
+
+Declared Verification, full package suites and repository Verification were
+not run; they remain Daemon-owned. No commit, push, pull request, ai-memory
+message or Spec announcement was performed. Task 02 retains the repository's
+own declaration, generated subagents, configuration guide, skills, glossary
+and ADR changes; none is included in this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T222450Z_a00f2c8f9217d395`
+- Source commit: `85cd0cf26aa402aa9d8501862c1d2cc79b4b2b2f`
