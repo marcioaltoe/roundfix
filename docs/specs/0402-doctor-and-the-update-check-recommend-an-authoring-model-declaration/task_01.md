@@ -86,7 +86,11 @@ output.
    `-record-skill-coverage` step to re-record
    `docs/references/behavior-surfaces.json`.
 8. MUST change no Governed Path and no file outside the ones this Task
-   declares.
+   declares, except the one Governed Path the authorization record's
+   amendment of 2026-11-17 grants: in `internal/cli/cli_test.go`, only
+   `assertCheckResult` changes, comparing `CheckResult` with
+   `reflect.DeepEqual` instead of `!=`, because `CheckResult` gains the
+   `Lines []string` field of requirement 3.
 
 ## Subtasks
 
@@ -119,6 +123,7 @@ output.
 - interface: `internal/cli/authoring_models_test.go`
 - interface: `internal/cli/authoring_reports_test.go`
 - interface: `internal/cli/doctor_test.go`
+- interface: `internal/cli/cli_test.go`
 - interface: `docs/user-guide/commands/doctor.md`
 - interface: `docs/user-guide/commands/update.md`
 - interface: `docs/references/behavior-surfaces.json`
