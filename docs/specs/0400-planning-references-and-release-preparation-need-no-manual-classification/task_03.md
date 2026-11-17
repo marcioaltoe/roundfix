@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0400-planning-references-and-release-preparation-need-no-manual-classification
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -110,3 +110,40 @@ this repository's own history.
 - `_prd.md` → Goals (second, third and fourth bullets); Core Feature 3; User Experience; Success Metric 2; Success Metric 3
 - `_techspec.md` → Command surface; API Contracts 1-3; Surface Transcript 1; Testing Approach (Task 3); Build Order 3
 - ADR-0412, ADR-0349, ADR-0143
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, roundfix, tech-writer, evidence-gate, no-workarounds, systematic-debugging.
+
+The JSON adapter now copies `ChangeEvidence.ReleasePreparation` immediately
+after `crossesMaintenanceOnlyBoundary`, with `omitempty`. The text renderer
+is unchanged. The new command tests use committed disposable repositories;
+each synthetic case snapshots the repository before the commands and asserts
+it is unchanged afterwards.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Planning references and preparation preserve the decision, version and ceiling answer | `planning_reference_is_answered`, `without_the_reference_the_same_decision` and `preparation_keeps_the_decision` each assert `ready`, `v0.2.0` and answered authorization through text and JSON. All three passed. |
+| JSON marks exactly the preparation; text keeps its shape | The preparation case asserts the raw JSON key is present and true only for that commit, with a false maintenance-boundary flag; every other change omits the key. Text ends with only the determining delivery and has no blocking section. The focused preparation case first failed on the missing JSON key before the adapter change, then passed after it. |
+| Other shapes retain their answers | The unlisted-path and no-ceiling cases identify the preparation as the sole blocking commit in text and JSON. The fix retains patch evidence; an additional patch-only range prints `[impact=patch, type=fix]` and proposes `v0.1.2`. Manual classification retains `approval_required` and the exact authorization refusal reason. All four cases passed. |
+| Historical Surface Transcript and read-only behavior | `TestTheV0143ReleaseRangeIsReadyWithItsPreparationCommit` passed on a local shared clone checked out detached at `v0.143.4`: exact eight opening lines, variable check lines, exact final two determining lines, empty stderr and exit 0. Git snapshots confirm unchanged HEAD, refs, remotes, local config and tracked/untracked/ignored status. The existing file snapshot helper cannot read the historical checkout's directory symlinks, so this test invokes the public command directly and checks Git state; every synthetic case retains the prescribed file snapshot helper. |
+
+Focused checks (all final runs exited 0):
+
+- `rtk proxy go test ./internal/cli -count=1 -timeout=8m -run '^TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation$/.' -v` — all seven named subtests passed.
+- `rtk proxy go test ./internal/cli -count=1 -timeout=8m -run '^TestTheV0143ReleaseRangeIsReadyWithItsPreparationCommit$' -v` — transcript passed.
+- `rtk proxy go test ./internal/cli -count=1 -timeout=8m -run '^(TestReleasePlanAnswersApprovalFromTheReleaseCeiling|TestReleasePlanSkillCoverage.*|TestReleasePlanReportsTheSkillsAndBaselineChecks)$' -v` — existing ceiling, skill-coverage and advisory-check regressions passed without edits to their tests.
+- `rtk proxy go test ./internal/cli -count=1 -timeout=8m -run '^TestReleasePlanBlocksALaggingSurface$' -v` — both existing blocking cases passed.
+- `rtk proxy git diff --check` and `gofmt -l internal/cli/releaseplan_command.go internal/cli/releaseplan_release_preparation_test.go` — no diagnostics.
+
+Scope inspection shows only the two declared Go paths and this Task file.
+The pre-existing Task status change remains Daemon-owned. No Governed Path,
+other Task, Task Graph or existing test was edited. No commit, push or Pull
+Request was made. The declared Verification, full package suite and repository
+Verification were not run; they remain with the Daemon. No follow-up work
+was identified outside this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T144618Z_b10f0601da4b4084`
+- Source commit: `bb7a343d894bb5f580b9d22a87bb0d0d7f2a6c0a`
