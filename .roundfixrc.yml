@@ -285,12 +285,12 @@ skills:
         reasoning_effort: xhigh
       prd:
         model: fable
-        reasoning_effort: xhigh
+        reasoning_effort: high
       techspec:
         model: fable
-        reasoning_effort: xhigh
+        reasoning_effort: high
       tasks:
-        model: fable
+        model: opus
         reasoning_effort: high
       research:
         model: sonnet

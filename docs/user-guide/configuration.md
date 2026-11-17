@@ -107,29 +107,39 @@ Project Config can declare the model and reasoning effort of each authoring
 phase for Claude Code under `skills.authoring.claude`. Every key is optional;
 without a declaration, installation writes the shipped bundle unchanged.
 
-The names below are an example: Roundfix ships no model name and accepts what the harness accepts.
+The block below is the Recommended Authoring Declaration that Doctor and the
+Update Check print. Roundfix applies no model name by itself.
 
 ```yaml
 skills:
   authoring:
     claude:
       idea:
-        model: opus
+        model: fable
         reasoning_effort: xhigh
       prd:
-        model: opus
-        reasoning_effort: xhigh
+        model: fable
+        reasoning_effort: high
       techspec:
-        model: opus
-        reasoning_effort: xhigh
+        model: fable
+        reasoning_effort: high
       tasks:
         model: opus
         reasoning_effort: high
       research:
         model: sonnet
         reasoning_effort: medium
-        tools: [WebSearch, WebFetch]
 ```
+
+The repository can add this option under `research`:
+
+```yaml
+research:
+  tools: [WebSearch, WebFetch]
+```
+
+If the file already holds `skills:`, take the lines under it and merge them
+there.
 
 `skills` accepts only `authoring`, which accepts only the harness `claude`.
 That harness accepts `idea`, `prd`, `techspec`, `tasks` and `research`.

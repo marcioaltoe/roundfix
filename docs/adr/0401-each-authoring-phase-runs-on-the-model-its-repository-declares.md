@@ -68,6 +68,8 @@ first, and the subagent returns its open questions instead of guessing one.
 
 **Amended by [ADR-0408](0408-a-repository-that-publishes-an-authoring-skill-receives-no-header-for-it-and-a-fix-is-authored-in-the-session.md) (2026-11-16).** Installation writes no Declared Skill Header into an authoring skill whose source the repository itself publishes under `skills/<name>/`, and still generates every declared subagent; this repository declares the section on those terms. An authoring skill the agent activated on the fix or refactor route runs its phase in the session and starts the Author Subagent only when the user asks. A feature's phases are still handed over, a typed skill still runs on its header where one is written, and Roundfix still ships no model name.
 
+**Amended by [ADR-0415](0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md) (2026-11-17).** Doctor and the Update Check print a Recommended Authoring Declaration when the authoring skills are installed without one. Roundfix still applies no model name by itself.
+
 **Generated files carry a marker.** The first line of a generated subagent's
 body is `<!-- roundfix:generated skills.authoring.<harness>.<key> -->`.
 Installation overwrites a file at a generated name only when it carries the

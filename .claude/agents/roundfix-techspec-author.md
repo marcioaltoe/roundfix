@@ -2,7 +2,7 @@
 name: roundfix-techspec-author
 description: Authors the TechSpec of one Spec with the write-techspec skill, on the model this repository declares. Start it only when the write-techspec skill hands it the phase.
 model: fable
-effort: xhigh
+effort: high
 ---
 
 <!-- roundfix:generated skills.authoring.claude.techspec -->

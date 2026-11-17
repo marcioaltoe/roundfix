@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -144,8 +144,55 @@ it.
 
 - `tr -s '[:space:]' ' ' < .claude/agents/roundfix-tasks-author.md | grep -qF -- "model: opus" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-tasks-author.md "model: opus" >&2; exit 1; }; tr -s '[:space:]' ' ' < .claude/agents/roundfix-prd-author.md | grep -qF -- "effort: high" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-prd-author.md "effort: high" >&2; exit 1; }; tr -s '[:space:]' ' ' < .claude/agents/roundfix-techspec-author.md | grep -qF -- "effort: high" || { printf 'missing phrase in %s: %s\n' .claude/agents/roundfix-techspec-author.md "effort: high" >&2; exit 1; }` — expected: exit 0. Before this Task the tasks author runs on `fable` and the PRD and TechSpec authors on `xhigh`, so the command fails; afterwards the regenerated subagents carry the recommended values.
 
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, domain-modeling, roundfix, evidence-gate
+
+Implementation:
+
+- Added the `docscontract` drift test with `repository_config` and `configuration_guide` subtests. The repository comparison names each missing or mismatched model and reasoning-effort key and intentionally ignores `research.tools`; the guide comparison requires the first YAML fence under `## Authoring models` to equal `config.RecommendedAuthoringYAML()`.
+- Changed this repository's `skills.authoring.claude` declaration to the recommendation, updated the guide, setup reference, `--update` mode, glossary and ADR-0401, and updated the declared skills phrase test.
+- Ran the sanctioned generators. The three Author Subagents now carry `fable/high`, `fable/high` and `opus/high`; the canonical and mirror Roundfix skills are synchronized at version `0.1.257`, the owned-skill version record and Behavior Surface Record are regenerated, and no other installer output changed in the worktree.
+- Repaired the repository-contract expectation exposed by the Daemon gate: the required new docscontract file makes the always-selected docscontract count 10 instead of 9. The existing contract's expected count was updated without changing gate selection logic.
+
+Focused checks:
+
+- `gofmt -w internal/docscontract/authoring_recommendation_test.go`: passed.
+- `git diff --check`: passed.
+- `go test -count=1 -tags docscontract -v ./internal/docscontract -run 'TestTheRecommendedAuthoringDeclarationMatchesThisRepository/(repository_config|configuration_guide)'`: passed, 3 tests including both named subtests.
+- `go test -count=1 ./internal/config -run '^TestRecommendedAuthoringDeclarationRendersValidProjectConfig$'`: passed, 4 tests.
+- `go test -count=1 ./skills -run 'TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase|TestTheAuthoringSkillsDelegateADeclaredPhase'`: passed, 172 tests.
+- `make skills-sync`: exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: passed, 1 test.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: passed, 1 test and regenerated `docs/references/behavior-surfaces.json`.
+- `go run -buildvcs=false ./cmd/roundfix skills install --target project`: exited 0 and regenerated only the three declared Author Subagents among changed generated files.
+- `go run -buildvcs=false ./cmd/roundfix skills check`: exited 0 with `Roundfix skill check passed`.
+- `go test -count=1 ./internal/verifyselect -run '^TestRepositoryContractTestsDeclareTheirRelevance$'`: passed, 4 tests.
+
+Acceptance evidence:
+
+- The contract test observes a changed declaration or guide line through the respective named subtest and reports the affected key or exact block mismatch.
+- The repository-contract declaration inventory now accounts for the required new docscontract file; its focused gate test passes.
+- The configuration guide, setup reference, `--update` mode and glossary name the Recommended Authoring Declaration and the `undeclared` report; the optional research tools are shown separately so the governed recommendation remains tool-free.
+- `make skills-sync`, the version recorder, mirror comparisons and the focused skills tests provide current evidence for synchronized skills and records.
+- ADR-0401 contains the required ADR-0415 amendment immediately after the ADR-0408 amendment, without other ADR-0401 edits.
+- The declaration, generated Author Subagents and local `skills check` output carry the recommended values and applied state.
+
+The Task's declared Verification commands and the repository Verification were not run; they remain Daemon-owned. No commit, push or pull request was made.
+
 ## References
 
 - `_prd.md` → Goals 4 and 5; Core Features 3 and 4; Success Metric 4; Glossary
 - `_techspec.md` → Contract and guides; Interfaces (invariant 6); API Contract 4; Testing Approach (Task 2, contract and skill); ADR Alternatives (ADR-0401); Build Order 2
 - ADR-0415, ADR-0401, ADR-0402
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/verifyselect/contracts_repository_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T222450Z_a00f2c8f9217d395`
+- Source commit: `f2ea52308c584184440d174fd9236250bd2e00e4`
