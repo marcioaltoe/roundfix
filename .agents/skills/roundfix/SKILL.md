@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.248
+  version: 0.1.254
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.248
+version: 0.1.254
 ---
 
 # Roundfix
@@ -41,8 +41,9 @@ becomes `ready` with the same proposed version.
 A Release Ceiling never answers a breaking plan or a manual classification.
 Text adds `Release authorization: answered` or
 `Release authorization: not answered — <reason>` and the records; JSON adds
-`releaseAuthorization`. Backlog Entries are planning evidence. A `refactor:`
-delivery changing released code is a commit to classify by hand.
+`releaseAuthorization`. docs/references/ and Release-Preparation Commit:
+maintenance. A `refactor:` delivery changing released code is a commit to
+classify by hand.
 See the [release reference](references/release.md) for the read-only command,
 record paths, refusal reasons and checks.
 

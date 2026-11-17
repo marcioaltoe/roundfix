@@ -48,9 +48,13 @@ When no delivered record grants a ceiling, both outputs keep their bytes and
 omit this authorization evidence. The `skill-coverage` check can still block
 an answered plan.
 
-Backlog Entries under `docs/backlog/` are planning evidence alongside
-`docs/specs/`, `docs/adr/`, `docs/findings/` and `docs/handoffs/`; commits
-changing only those paths are maintenance-only. A `refactor:` delivery that
+Backlog Entries under `docs/backlog/` and outside evidence under
+`docs/references/` are planning evidence alongside `docs/specs/`,
+`docs/adr/`, `docs/findings/` and `docs/handoffs/`; commits changing only
+those paths are maintenance-only. A Release-Preparation Commit, a commit
+with no automatic impact whose every changed path is a `release_paths` entry
+of a Spec the range delivers with a Release Ceiling, is maintenance-only too,
+and JSON marks it `releasePreparation: true`. A `refactor:` delivery that
 changes released code is a commit to classify by hand.
 
 The record carries `release_ceiling: patch | minor | major` and
@@ -58,7 +62,11 @@ The record carries `release_ceiling: patch | minor | major` and
 using the same path rules as `executables`. A ceiling requires `release` in
 `operations` and non-empty release paths; paths require a ceiling. The plan
 reads the record at the delivering commit's first parent and reports those
-paths; the release runbook governs which files the later release changes.
+paths; the record must list in `release_paths` every file the
+release-preparation commit changes, including a lockfile or a generated file
+the release regenerates, because a preparation commit that changes any other
+path is a commit to classify by hand. The release runbook governs which files
+the later release changes.
 
 For ordinary range planning, after the plan's required decision is satisfied,
 keep using the tag-triggered publication workflow below.
