@@ -72,6 +72,8 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 
 ### Repository-owned rules
 
-- Read `docs/agents/specific-repository.md` for project-specific hard rules.
+- Read `docs/agents/specific-repository.md` for project-specific hard rules,
+  and write every rule or variation of this repository there, never in this
+  file or in a Baseline guide.
 
 <!-- setup-context-driven:end id=root.repository-extension -->

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -178,3 +178,37 @@ which a second refresh reports `current`.
 - `_prd.md` → Goals (first bullet); Core Feature 1; Success Metric 1; Decisions
 - `_techspec.md` → Catalog text; API Contract 3; Testing Approach (Task 1); Risks & Considerations (fixture churn); Build Order 1
 - ADR-0411, ADR-0186, ADR-0257, ADR-0145
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, setup-context-driven, roundfix, tech-writer, evidence-gate, systematic-debugging
+
+Implementation:
+
+- Reworded the three Baseline clauses without changing their IDs, mandatory enforcement, rules or `replaces` shape; raised the requested rule, guide, root-block, template and module versions.
+- Updated the four source templates, the vendored-skill literal, and added the whole-value placement regression test with the requested named subtests.
+- Regenerated module records and derived Baseline artifacts through the sanctioned commands. Refreshed the managed carriers; the second refresh reported the same catalog digest, `File changes: 0`, and `Idempotence: verified`.
+
+Focused checks:
+
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`: passed, 1 test in 1 package.
+- `make baseline-digests`: passed, `internal/baseline` and `skills`.
+- `go test -count=1 -timeout 60s ./internal/baseline -run '^TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide$'`: passed, 9 subtests.
+- `git diff --check`: passed.
+
+Acceptance evidence:
+
+- For the rendered guide criterion, the focused placement test passed `keep_root_compact`, `activate_matching_skills`, `docs_one_job_per_directory`, `agent_instructions_guide`, `skill_dispatch_guide` and `docs_layout_guide`; the refreshed local guides contain the placement text.
+- For the root pointer and starter criterion, the focused placement test passed `root_pointer` and `starter`; the starter assertion compares the complete heading, blank line and paragraph.
+- For clause identity and force, the focused clause subtests assert the exact guidance, `mandatory` enforcement, owning rule and absence of `replaces`; the vendored literal was updated. The vendored-clause tests and full Baseline suite remain for Daemon Verification.
+- For derived artifacts and managed carriers, the sanctioned recorder, digest generator and two refreshes ran; the second refresh was idempotent. Documentation-contract and CLI checks remain for Daemon Verification.
+- The named subtests compare complete guidance, rendered lines and complete template/pointer values, so restoring any old sentence removes the expected whole value and fails the corresponding subtest.
+
+Not run:
+
+- The commands in `## Verification` were not run; they are owned by the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261117T004735Z_ff97830eca75451a`
+- Source commit: `a92e4b81d9e38380b049857ada239df808204e1b`

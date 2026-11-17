@@ -89,6 +89,10 @@
       {
         "version": 30,
         "digest": "sha256:29606a54c5e13586aa070658611c103546958558f81ebe02ac85e80cb881535d"
+      },
+      {
+        "version": 31,
+        "digest": "sha256:01fff7f787632fcaced6df5b901b9f256ff4f957f10bd44244650e05d15089a7"
       }
     ],
     "core": [
@@ -143,6 +147,10 @@
       {
         "version": 30,
         "digest": "sha256:8bab6cc93474c297aeb6a5fe4ca76237ea4f0f94cd5f4f4c28df6407d47e9eae"
+      },
+      {
+        "version": 31,
+        "digest": "sha256:fda4784228bbc196de0c02081bd123f58e33b2165dc1d1b4b7193a9521071db4"
       }
     ],
     "external-triage": [
@@ -195,6 +203,10 @@
       {
         "version": 1,
         "digest": "sha256:a56704a8490ebd32cd63f4cd28aee93ff4ac14c8f814674abcce736a89d709d9"
+      },
+      {
+        "version": 2,
+        "digest": "sha256:d655caa1ef95c57b94bca719c58547dde58a6c4a109638ca0c38e98b7a20ecf0"
       }
     ],
     "rust": [
