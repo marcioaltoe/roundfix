@@ -16,7 +16,7 @@ The primary trade-off is that the recommendation is a copy in the binary of what
 
 - Identifier strategy: not applicable — no persistent identifier is minted. The new names are a JSON state (`undeclared`) and two JSON fields (`installed`, `recommendation`), public CLI contract under `docs/agents/cli.md`. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — both checks read files of the checkout; the Update Check's release lookup is unchanged and this Spec adds no network call. Source: `docs/agents/cli.md`, `docs/agents/agent-instructions.md`.
-- Active ADR obligations: applicable — ADR-0415 (new), ADR-0401, ADR-0408 and ADR-0402 bind the design; ADR-0405 and ADR-0413 cite ADR-0401 and do not apply. ADR Alternatives relates each one. Source: `docs/agents/domain.md`.
+- Active ADR obligations: applicable — ADR-0415 (new), ADR-0401, ADR-0408 and ADR-0402 bind the design; ADR-0405 and ADR-0414 cite ADR-0401 and do not apply. ADR Alternatives relates each one. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: "Mesmas do BE (Recommended)" (2026-11-17), quoted in the record. It covers the Roundfix skill's setup and modes references and its `SKILL.md` pair. It grants no Makefile, workflow, Go module, lint or formatter change, and no change to `.roundfixrc.yml`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/modes.md`, `.agents/skills/roundfix/references/setup.md`, `skills/roundfix/SKILL.md`.
 
 ## System Architecture
@@ -150,7 +150,7 @@ Deviations from the PRD: None.
 - ADR-0408: kept. A skill the repository publishes counts as not installed for the `undeclared` report, so this repository, which publishes all four, is exempt; the rejected configuration key that withholds the header stays rejected, and no key silences the warning either.
 - ADR-0402: kept. The block declares `research` without `tools`, so the generated Research Subagent receives `Read`, `Grep` and `Glob` only; the rejected "web tools in the fixed list" stays rejected, in the recommendation too.
 - ADR-0405: not applicable — it reports user-level copies of a declared phase's skill; the `undeclared` report exists only when no phase is declared, so no copy hides a header, and the `user-skills:` line and `userSkills` keep their rules.
-- ADR-0413: not applicable — it moves the Phase Boundary of the authoring skills; this Spec changes no phase boundary and no Boundary Notice.
+- ADR-0414: not applicable — it decides when a Supervisor session ends; this Spec changes no session end and no phase record.
 
 ## Integration Points
 
