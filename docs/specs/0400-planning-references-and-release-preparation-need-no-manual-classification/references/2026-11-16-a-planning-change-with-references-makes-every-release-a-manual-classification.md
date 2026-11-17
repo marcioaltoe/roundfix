@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-16
-spec: null
+spec: 0400-planning-references-and-release-preparation-need-no-manual-classification
 reason: null
 ---
 
