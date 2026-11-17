@@ -240,7 +240,7 @@ func misplacedFirstLine(line string) string {
 		return line
 	}
 	end := 120
-	for !utf8.RuneStart(line[end]) {
+	for end > 0 && !utf8.RuneStart(line[end]) {
 		end--
 	}
 	return line[:end] + "..."

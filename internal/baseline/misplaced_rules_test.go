@@ -231,3 +231,21 @@ func TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest(t *testing.T) {
 		})
 	}
 }
+
+func TestMisplacedFirstLineNeverPanicsOnInvalidUTF8(t *testing.T) {
+	t.Parallel()
+	cases := map[string]string{
+		"continuation_bytes_only": strings.Repeat("\x80", 200),
+		"leading_continuation":    strings.Repeat("\x80", 121) + "tail",
+		"multibyte_at_cut":        strings.Repeat("a", 119) + "é" + strings.Repeat("b", 10),
+	}
+	for name, line := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got := misplacedFirstLine(line)
+			if !strings.HasSuffix(got, "...") || len(got) > 123 {
+				t.Fatalf("misplacedFirstLine(%q) = %q, want a cut of at most 120 bytes plus \"...\"", line, got)
+			}
+		})
+	}
+}
