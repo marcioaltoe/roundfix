@@ -60,11 +60,11 @@ repository.
 - **Governed and changed by the Tasks:**
   - `.agents/skills/write-idea/SKILL.md`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-tasks/SKILL.md` and their mirrors under `skills/`;
   - `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`;
-  - `.agents/skills/roundfix/references/phase.md`.
+  - `.agents/skills/roundfix/references/phase.md` and `.agents/skills/roundfix/references/setup.md`, which describes the Authoring Model Declaration.
 - **Governed and not changed:** `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `.roundfixrc.yml`, the `Makefile`, `go.mod` and `.github/workflows/ci-verify.yml`.
 - **Not governed:**
   - every Go source and test file under `internal/config`, `internal/phaserecord` and `internal/cli` the design names, `internal/cli/cli.go` included;
-  - `skills/roundfix/references/phase.md`, `skills/phase_reference_test.go` and new tests under `skills/`;
+  - `skills/roundfix/references/phase.md`, `skills/roundfix/references/setup.md`, `skills/phase_reference_test.go` and new tests under `skills/`;
   - `docs/user-guide/commands/phase.md`, `docs/user-guide/configuration.md` and `docs/user-guide/usage.md`;
   - `CONTEXT.md`, ADR-0401, ADR-0407, the new ADRs and this Spec's files;
   - `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, `skills/testdata/owned-skill-versions.json` and `skills-lock.json`.

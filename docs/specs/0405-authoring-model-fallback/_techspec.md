@@ -16,8 +16,8 @@ The primary trade-off: Roundfix recognises a usage limit by the text Claude Code
 
 - Identifier strategy: not applicable — no identifier is minted; a fallback entry carries the phase, the Spec slug, the repository path and the repository identity that Spec 0404 records in a phase entry. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no endpoint, credential or network call is added; neither command reads a remote, starts a harness or asks a judge. Source: `docs/agents/cli.md`, `docs/agents/agent-instructions.md`.
-- Active ADR obligations: applicable — the PRD's row stands, with ADR-0427 and ADR-0428 as the decisions this design implements and ADR-0401, ADR-0407, ADR-0414, ADR-0408, ADR-0392, ADR-0050, ADR-0256 and ADR-0349 as the ones it obeys or amends. This stage adds ADR-0429 (ADR-0429: "A refusal exits `3`"). The phase command keeps its contract (ADR-0414: "records each phase as before and reads no earlier entry"). Source: `docs/agents/domain.md`, `docs/agents/spec-routing.md`.
-- Tooling authority: applicable — express maintainer authorization: the answer "Mesmas do BE (Recommended)" of 2026-11-17, quoted in the authorization record, which keeps the grant of every owned skill. The design changes no Makefile, workflow, Go module, lint or formatter file, no Baseline module and no file under `docs/agents/`, and no Task changes `.roundfixrc.yml`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0405-authoring-model-fallback/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/phase.md`, `.agents/skills/write-idea/SKILL.md`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/write-idea/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-tasks/SKILL.md`, `skills/write-techspec/SKILL.md`.
+- Active ADR obligations: applicable — the PRD's row stands, with ADR-0427 and ADR-0428 as the decisions this design implements and ADR-0401, ADR-0407, ADR-0414, ADR-0408, ADR-0392, ADR-0050, ADR-0256 and ADR-0349 as the ones it obeys or amends. This stage adds ADR-0429 (ADR-0429: "A refusal exits `3`"). ADR-0405, ADR-0410, ADR-0412 and ADR-0415 are listed as not applicable, as the PRD's row says. The phase command keeps its contract (ADR-0414: "records each phase as before and reads no earlier entry"). Source: `docs/agents/domain.md`, `docs/agents/spec-routing.md`.
+- Tooling authority: applicable — express maintainer authorization: the answer "Mesmas do BE (Recommended)" of 2026-11-17, quoted in the authorization record, which keeps the grant of every owned skill. The design changes no Makefile, workflow, Go module, lint or formatter file, no Baseline module and no file under `docs/agents/`, and no Task changes `.roundfixrc.yml`. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`; Spec-contained authorization record: `docs/specs/0405-authoring-model-fallback/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/references/phase.md`, `.agents/skills/roundfix/references/setup.md`, `.agents/skills/write-idea/SKILL.md`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/write-idea/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-tasks/SKILL.md`, `skills/write-techspec/SKILL.md`.
 
 ## System Architecture
 
@@ -25,7 +25,7 @@ No package is new. Each subsection below is a component, and the Coverage Map na
 
 ### Fallback declaration
 
-`internal/config/authoring.go` gains `AuthoringFallback` and a `Fallback` field on the entries of `idea`, `prd`, `techspec` and `tasks`. `validateAuthoringEntry` accepts the `fallback` key on those entries and refuses it on `research`. The installation's declaration (`authoringDeclaration` in `internal/cli/authoring_models.go`) ignores the field, so headers, subagent files and the three checks do not change.
+`internal/config/authoring.go` gains `AuthoringFallback` and a `Fallback` field on the entries of `idea`, `prd`, `techspec` and `tasks`. `validateAuthoringEntry` accepts the `fallback` key on those entries and refuses it on `research`. The installation's declaration (`authoringDeclaration` in `internal/cli/authoring_models.go`) ignores the field, so headers, subagent files and the three checks do not change. The configuration guide and the Roundfix skill's setup reference, which describe the declaration, describe the key.
 
 ### Limit reader
 
@@ -314,6 +314,10 @@ Deviations from the PRD:
 - ADR-0414: the phase command still records each phase as before and reads no earlier entry; `phase model` reads entries in a subcommand of its own.
 - ADR-0408: the key reaches this repository's Project Config only after a release, in the operator's step; no option it rejected is taken.
 - ADR-0392: an older binary refuses a Project Config that holds the key, as it does every unknown key; the guide says so.
+- ADR-0405: not applicable — a user-level skill copy is reported as before.
+- ADR-0410: not applicable — the status view keeps reading phase entries only, and a fallback entry is not one.
+- ADR-0412: not applicable — planning references and the release preparation keep their release impact.
+- ADR-0415: not applicable — the recommended declaration of the Doctor Command and the Update Check gains no fallback in this Spec.
 - ADR-0050: not applicable — the fallbacks of a Run, and their rule that work already begun is not switched, are untouched.
 - ADR-0256: the skills and the phase reference describe both commands in the same change.
 - ADR-0349: the authorization record carries the Release Ceiling `minor` for a new key and two command paths.

@@ -6,6 +6,7 @@ consuming: 0405-authoring-model-fallback
 paths:
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/roundfix/references/phase.md
+  - .agents/skills/roundfix/references/setup.md
   - .agents/skills/write-idea/SKILL.md
   - .agents/skills/write-prd/SKILL.md
   - .agents/skills/write-tasks/SKILL.md
@@ -48,7 +49,7 @@ The author measured the governed set on 2026-11-17 in a clone on the branch `doc
 
 - The measurement used a `go test -overlay` probe in `internal/speccheck` that wrote nothing to the repository.
 - It covered every source, test, guide, skill, record and configuration file the TechSpec names or expects the Tasks to create, ADR-0401, ADR-0407 and the new ADRs, and four controls.
-- The eleven paths above are the governed ones this Spec's design changes.
+- The twelve paths above are the governed ones this Spec's design changes.
 - These governed paths are not granted, and no Task may change them:
   - `internal/cli/cli_test.go`; new tests go in new files;
   - `internal/docscontract/publicdocs_test.go`;
