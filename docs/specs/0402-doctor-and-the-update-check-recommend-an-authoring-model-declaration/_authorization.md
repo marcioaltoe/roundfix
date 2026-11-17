@@ -50,7 +50,7 @@ The author measured the governed set on 2026-11-17 in a clone on the branch `doc
 - It covered 38 paths on 2026-11-17 and was rerun on a scratch worktree of the planning branch with 7 more: the five generated subagents under `.claude/agents/`, `skills-lock.json` and ADR-0414. In all, every source, test, guide, skill, record and document file the TechSpec names or expects the Tasks to change or create, this Spec's planning files, ADR-0401 and ADR-0415, and controls.
 - The five paths above are the governed ones this Spec's design changes: the Roundfix skill's canonical setup and modes references, its `SKILL.md` pair, and `.roundfixrc.yml`. The generated subagents and `skills-lock.json` are not governed.
 - These governed paths are not granted, and no Task may change them:
-  - `internal/cli/cli_test.go` and `internal/docscontract/publicdocs_test.go`; new tests go in new files;
+  - `internal/docscontract/publicdocs_test.go`, and `internal/cli/cli_test.go` apart from the `assertCheckResult` helper the amendment below grants; new tests go in new files;
   - the controls: the `Makefile`, `.github/workflows/ci-verify.yml` and `go.mod`.
 
 `write-tasks` measures the exact derived set on a scratch copy before the Run. If a sanctioned regeneration rewrites a governed path outside `paths`, the operator amends this record before the Run, outside the change it authorizes.
