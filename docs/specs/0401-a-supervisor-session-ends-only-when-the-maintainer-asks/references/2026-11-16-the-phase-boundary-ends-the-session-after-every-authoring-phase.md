@@ -2,7 +2,7 @@
 type: fix
 status: promoted
 created: 2026-11-16
-spec: 0401-the-phase-boundary-follows-only-the-release-of-a-spec
+spec: 0401-a-supervisor-session-ends-only-when-the-maintainer-asks
 reason: null
 ---
 

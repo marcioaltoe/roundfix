@@ -1,8 +1,8 @@
 ---
 status: approved
 granted: 2026-11-16
-action: mark a Phase Record entry and print the Boundary Notice only after a release of the same session, and state the Phase Boundary after a Spec's delivery and release, never after an Authoring Phase, in the autonomous-work Baseline clause and this repository's managed guide, the four authoring skills, the Roundfix skill's modes and phase reference, the glossary, ADR-0407 and the user guide
-consuming: 0401-the-phase-boundary-follows-only-the-release-of-a-spec
+action: record every Supervisor Phase without marking a boundary or printing the Boundary Notice, and state that no phase of a Spec ends the Supervisor session, which ends only when the maintainer asks or the work stops, in the autonomous-work Baseline clause and this repository's managed guide, the four authoring skills, the Roundfix skill's modes and phase reference, the glossary, ADR-0407 and the user guide
+consuming: 0401-a-supervisor-session-ends-only-when-the-maintainer-asks
 paths:
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/roundfix/references/modes.md
@@ -37,24 +37,27 @@ release_paths:
 
 # Approved authority for Spec 0401
 
-The Spec adopts one Backlog Entry, recorded by the operator from the maintainer's message and answer of 2026-11-16. The maintainer's answers are recorded whole in [`references/2026-11-16-maintainer-answers.md`](references/2026-11-16-maintainer-answers.md). The answers this record rests on are, verbatim (AskUserQuestion, 2026-11-16):
+The Spec adopts one Backlog Entry, recorded by the operator from the maintainer's message and answer of 2026-11-16. The maintainer's answers are recorded whole in [`references/2026-11-16-maintainer-answers.md`](references/2026-11-16-maintainer-answers.md). The answers this record rests on are, verbatim (AskUserQuestion, 2026-11-16 and 2026-11-17):
 
 - Mensagem do Marcio logo depois: "Esse negocio de criar sessões a cada etapa está atrasando demais."
 - Fronteira de fase → "Só por Spec (Recommended)" (~21:00 BRT): sessão encerra só depois da entrega+release da Spec; fases de autoria em agentes; Spec fix ajusta skills e o aviso do roundfix phase.
 - 16/11 ~21:45 BRT: Spec 0401 (fronteira só por Spec) autorização → "Mesmas do BE (Recommended)".
+- 17/11 ~10:00 BRT: Marcio notou que ao fim de implementação de Spec a sessão para pedindo reinício (prejudica autonomous work) → fronteira "Só quando você pedir (Recommended)": nenhuma parada automática (nem fase nem Spec, presente ou não); handoff só ao encerrar de fato; Phase Record segue medindo; aviso do roundfix phase sai; ajustar ~/.claude/CLAUDE.md. Emendar plano 0401 antes de rodar; skills só depois da 0401.
+
+The answer of 2026-11-17 changes the decision and not the authorization: the operator's brief for the amendment records it as unchanged, "Mesmas do BE" of 2026-11-16. Adjusting the maintainer's own instruction file outside the repository is not part of this Spec.
 
 "Mesmas do BE" keeps the cycle BE rules of 2026-11-13 and, through them, the grants of the cycles before it. These include the 2026-09-30 grant of every skill ("considere autorizado a ajustar todas as skills se necessário") and the cycle AJ grant of 2026-10-19 "Mexer em Governed Paths declarados", whose option text reads: "'Concedo' para os caminhos que cada Spec declarar (módulos Baseline, registros, skills, testes governados; fora: Makefile, CI, go.mod, lint, que pedem autorização específica)."
 
 The Makefile, `.github/workflows`, `go.mod`, `go.sum` and the lint and formatter configuration are granted only for a correction that requires one. This Spec's design needs none of them.
 
-This record grants `implement`, `commit`, `push`, `pull_request`, `merge` and `release`. The Spec is a `type: fix`, and its Release Ceiling is `patch`: the design adds no command, flag, field or output, and the Boundary Notice only prints in fewer cases. The release may change only the three version-only files in `release_paths`: the changelog, the npm package manifest and the application version. No Task performs it; the operator cuts it after the merge, up to three corrections included.
+This record grants `implement`, `commit`, `push`, `pull_request`, `merge` and `release`. The Spec is a `type: fix`, and its Release Ceiling is `patch`: the design adds and removes no command, flag, record key or exit code; the `boundary` key stays in the schema, always `false`. The Boundary Notice it removes was an advisory line on standard error that never changed standard output or the exit code, and `docs/agents/cli.md` makes the placement of standard error, not each diagnostic, public. The release may change only the three version-only files in `release_paths`: the changelog, the npm package manifest and the application version. No Task performs it; the operator cuts it after the merge, up to three corrections included.
 
 ## How the governed set was measured
 
-The author measured the governed set on 2026-11-17 on the branch `docs/plan-0401`, based on `379803c8`, with `speccheck.GovernedPath`.
+The author first measured the governed set on 2026-11-17 on the branch `docs/plan-0401`, based on `379803c8`, and measured it again for the amended plan on a scratch worktree of `bcd716df`, with `speccheck.GovernedPath`.
 
 - The measurement used a `go test -overlay` probe in `internal/speccheck` that wrote nothing to the repository. The probe file never existed in the tree.
-- It covered 49 paths: every source, test, guide, skill, record and document file the TechSpec names or expects the Tasks to change, every derived file the regeneration commands rewrote on a scratch worktree, this Spec's planning files, ADR-0413, the adopted Backlog Entry, and three controls.
+- The second measurement covered 50 paths: every source, test, guide, skill, record and document file the TechSpec names or expects the Tasks to change, every derived file the regeneration commands rewrote on that worktree with the texts reworded and the writer changed, this Spec's PRD, ADR-0413, ADR-0414, ADR-0407, the revised Backlog Entry, and three controls.
 - The 17 paths above are the governed ones this Spec's design changes:
   - the `autonomous-work` Baseline module, its Standard TypeScript formatter golden and the profile's golden pin;
   - this repository's managed `docs/agents/autonomous-work.md` and its Setup Manifest;
@@ -66,10 +69,10 @@ The author measured the governed set on 2026-11-17 on the branch `docs/plan-0401
 
 ## What is not governed
 
-- `internal/phaserecord/record.go`, `internal/phaserecord/record_test.go`, `internal/cli/phase.go` and `internal/cli/phase_test.go`.
+- `internal/phaserecord/record.go`, `internal/phaserecord/record_test.go`, `internal/phaserecord/read_test.go`, `internal/cli/phase.go`, `internal/cli/phase_test.go` and `internal/cli/follow_up_queue_test.go`.
 - `internal/baseline/module-versions.json`, the catalog snapshots and plan goldens under `internal/baseline/testdata/`, and `internal/baseline/phase_boundary_clause_test.go`.
 - The mirrors `skills/roundfix/references/modes.md` and `skills/roundfix/references/phase.md`, `skills/testdata/owned-skill-versions.json`, `skills/phase_boundary_test.go` and `skills/phase_reference_test.go`.
-- `docs/user-guide/commands/phase.md`, `docs/user-guide/usage.md`, `CONTEXT.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, ADR-0407 and ADR-0413.
+- `docs/user-guide/commands/phase.md`, `docs/user-guide/usage.md`, `CONTEXT.md`, `docs/references/behavior-surfaces.json`, `docs/references/skill-coverage.json`, ADR-0407, ADR-0413 and ADR-0414.
 - Every planning file of this Spec and its references.
 
 ## Sanctioned regeneration
