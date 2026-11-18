@@ -1,8 +1,0 @@
-command: ls -l CLAUDE.md
-cwd: /Users/marcio/dev/argus
-stdout:
-lrwxr-xr-x@ 1 marcio  staff  9 Nov 11 07:38 CLAUDE.md -> AGENTS.md
-
-stderr:
-
-exit: 0

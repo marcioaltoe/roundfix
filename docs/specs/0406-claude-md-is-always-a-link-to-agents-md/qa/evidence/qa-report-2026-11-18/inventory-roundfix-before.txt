@@ -1,7 +1,0 @@
-command: git status --porcelain
-cwd: /Users/marcio/dev/roundfix
-stdout:
-
-stderr:
-
-exit: 0

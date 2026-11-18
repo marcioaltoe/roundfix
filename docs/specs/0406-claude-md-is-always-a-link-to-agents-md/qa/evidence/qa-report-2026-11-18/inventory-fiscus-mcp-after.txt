@@ -1,7 +1,0 @@
-command: git status --porcelain
-cwd: /Users/marcio/srv/fiscus-mcp
-stdout:
-
-stderr:
-
-exit: 0

@@ -1,1 +1,0 @@
-['schemaVersion', 'repository', 'catalog', 'profile', 'decisions', 'retention', 'preimages', 'postimages', 'warnings', 'setupManifest', 'managedEntries', 'fileChanges', 'planDigest']

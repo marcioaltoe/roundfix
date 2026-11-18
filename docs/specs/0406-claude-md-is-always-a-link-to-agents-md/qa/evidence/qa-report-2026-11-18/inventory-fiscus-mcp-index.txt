@@ -1,8 +1,0 @@
-command: git ls-files -s -- CLAUDE.md
-cwd: /Users/marcio/srv/fiscus-mcp
-stdout:
-120000 47dc3e3d863cfb5727b87d785d09abf9743c0a72 0	CLAUDE.md
-
-stderr:
-
-exit: 0

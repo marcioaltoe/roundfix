@@ -1,8 +1,0 @@
-command: git rev-parse HEAD
-cwd: /Users/marcio/dev/roundfix
-stdout:
-9b00d595073fdfd4d43833ab7da185ea71320057
-
-stderr:
-
-exit: 0

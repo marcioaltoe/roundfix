@@ -1,8 +1,0 @@
-command: ls -l CLAUDE.md
-cwd: /Users/marcio/srv/fiscus
-stdout:
-lrwxr-xr-x@ 1 marcio  staff  9 Nov  1 15:28 CLAUDE.md -> AGENTS.md
-
-stderr:
-
-exit: 0
