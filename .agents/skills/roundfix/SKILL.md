@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.265
+  version: 0.1.266
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.265
+version: 0.1.266
 ---
 
 # Roundfix
@@ -75,7 +75,7 @@ Each command has one reference, edited when its command changes. Read its row;
 | --- | --- | --- |
 | [archive](references/archive.md) | `archive`, `cancel`, `history`, `supersede` | Archiving, cancelling, sanitizing history, or superseding a Spec. |
 | [baseline](references/baseline.md) | `baseline` | Adopting or updating the Context-Driven Baseline. |
-| [corrections](references/corrections.md) | `corrections` | Using `roundfix corrections declare`. |
+| [corrections](references/corrections.md) | `corrections` | Using `roundfix corrections declare` and `roundfix corrections report`. |
 | [deliver](references/deliver.md) | `deliver`, `window` | Starting or monitoring delivery, or setting a Run Window. |
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |

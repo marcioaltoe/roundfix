@@ -248,6 +248,17 @@
       ]
     },
     {
+      "id": "command corrections report",
+      "skills": [
+        ".agents/skills/roundfix/references/corrections.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/corrections.md",
+        "internal/cli/corrections_report.go",
+        "internal/cli/corrections.go"
+      ]
+    },
+    {
       "id": "command deliver lane",
       "skills": [
         ".agents/skills/roundfix/references/deliver.md"

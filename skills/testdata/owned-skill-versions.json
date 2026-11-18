@@ -1305,6 +1305,10 @@
       {
         "version": "0.1.265",
         "digest": "97b5f8ab0d07e3b30f6c337ccf6c02a7668fd4bc013916e83bdab800a05ef5ba"
+      },
+      {
+        "version": "0.1.266",
+        "digest": "7c94881404d6a045bf987fab2f6c3e55016656241e3359bc1ea6e035af3ce652"
       }
     ],
     "setup-context-driven": [

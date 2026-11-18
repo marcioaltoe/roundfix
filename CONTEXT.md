@@ -244,6 +244,12 @@ _Avoid_: Check presence, generic approval, inferred clean state
 One cause repaired during a Spec's delivery, declared by the person or session that corrects it with a Defect Class, a reason and an identifier unique within that Spec; its last declaration stands, earlier declarations remain, and a withdrawal names no sign ([ADR-0417](docs/adr/0417-a-correction-carries-a-declared-defect-class-and-a-repository-requires-it-only-by-its-own-setting.md), [ADR-0420](docs/adr/0420-the-corrections-record-is-one-append-only-file-per-spec-under-roundfix-home.md)).
 _Avoid_: Commit count, review round, inferred cause
 
+**Corrections Report**:
+A read-only view of delivered Specs' Corrections and plan defects by Authoring
+Phase, Delivery Type, model and effort, beside their sample in Specs and Tasks;
+it withholds comparisons below twenty Specs per group ([ADR-0419](docs/adr/0419-the-corrections-report-prints-counts-and-sets-two-models-side-by-side-only-above-twenty-specs-each.md)).
+_Avoid_: Model ranking, cause report, authoring verdict
+
 **Correction Sign**:
 Evidence that a delivery was corrected: an unmarked commit on the Item Branch’s first-parent line, a fixed review finding together with its fixing commit, or a Corrective Task. A sign names no cause until a standing Correction covers it, and a merge of the default branch is no sign ([ADR-0422](docs/adr/0422-a-commit-without-a-mark-of-a-run-or-of-the-queue-on-the-item-branch-is-a-correction-sign.md)).
 _Avoid_: Inferred cause, declaration, commit count

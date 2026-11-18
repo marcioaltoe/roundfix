@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -190,3 +190,118 @@ when the Supervisor declares.
 - `_prd.md` → Goals (third and fourth bullets); User Stories 9, 10, 11 and 12; Core Features 14–19, 21 and 22; Success Metrics 2, 10, 11, 12, 13, 14, 15, 16 and 17; Acceptance evidence
 - `_techspec.md` → Corrections Report; Skill and guide texts; Interfaces (invariants 8, 9, 10 and 11); API Contracts 8, 9 and 11; Surface Transcripts 1, 4 and 5; Testing Approach; Build Order 4
 - ADR-0419, ADR-0426, ADR-0420, ADR-0421, ADR-0214, ADR-0256, ADR-0415
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, roundfix, systematic-debugging, no-workarounds, evidence-gate.
+
+Implemented the read-only `corrections report` command, its complete group help,
+and the single new root-help usage line. The report reads Archive Records and
+their first-parent plans from local default-branch objects, excludes cancelled
+Specs and Tasks at or above the QA gate, and joins standing declarations,
+recorded signs, identity-matched phases, and retained Run information. Historical
+plan paths come from the Archive Record; no source revision is recovered or
+fetched. Window flags select deliveries without filtering out their earlier
+phase entries or failed attempts.
+
+Text and `roundfix/corrections-report/v1` JSON expose Spec rows, phase/effort
+groups, model totals, comparisons at twenty Specs per eligible group, excluded
+counts, unavailable sources, and skipped lines. `--spec` shows labelled, quoted
+declarer text and current queue-branch signs or the recorded delivery signs.
+Withdrawals and `not-a-correction` answers enter neither Correction totals nor
+defect numerators. JSON escapes restricted words and percent characters in
+recorded data without changing their decoded values; terminal output keeps
+free text on one line. Auxiliary-source failures preserve readable rows;
+unreadable database or corrections records keep exit 1.
+
+Additional implementation path: `internal/runcause/report.go` adds an
+`AttemptsOnly` request projection so this report reuses failed-attempt
+classification without graph/source recovery. Its zero value preserves
+`runs causes`; `internal/cli/runs_causes.go`, the signatures, the governed CLI
+tests and the runs reference are unchanged. No existing test expectation was
+changed, and no test was renamed or removed.
+
+The canonical corrections reference and guide now describe the report, its JSON,
+two denominators, twenty-Spec minimum and text-as-data boundary. The delivery
+reference says when the Supervisor declares each cause and when to answer
+`not-a-correction`; the Roundfix index names the report. `CONTEXT.md` defines
+Corrections Report through domain-modeling.
+
+### Focused implementation evidence
+
+- `go test ./internal/cli ./skills -run '^(TestCorrections|TestTheCorrectionsReference|TestEveryCommandPathPrintsItsHelp)' -count=1`: exit 0 after the final source edits. This includes all required report/transcript tests, the reference test over both copies, declaration regressions, and discovery of both report help forms.
+- `go test ./internal/runcause`: exit 0 for the shared projection's package.
+- Temporary overlay probes first reproduced two time-boundary defects: a delivery-date filter dropped an earlier failed attempt, and a retained phase before the cutoff was missed. Both became regular fixture tests (`TestCorrectionsReportDeliveryWindowKeepsEarlierAttempts` and `TestCorrectionsReportUsesRetainedPhaseBeforeRetentionCutoff`) and pass in the focused command above.
+- `git diff --check`: exit 0.
+
+Requirement 6 characterization: the base `go test ./internal/cli ./skills`
+passed in a local clone of the Run's starting HEAD with its original history;
+`go test -tags docscontract ./internal/docscontract` passed on the base.
+The initial base attempt was invalidated by concurrent implementation edits;
+a history-free archive snapshot then lacked objects two existing tests need.
+The history-preserving clone supplied the valid replacement baseline.
+
+Final change characterization (after the time-boundary fixes):
+
+- `go test ./internal/cli ./skills`: exit 0; CLI package ran uncached, skills reused its unchanged successful result.
+- `go test -tags docscontract ./internal/docscontract`: exit 0.
+
+These are the Task-required Requirement 6 characterization checks, not the
+Task's declared Verification commands.
+
+Sanctioned regeneration, in order: `make skills-sync`; `go test ./skills -run
+'^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; then `go test
+-count=1 -tags docscontract ./internal/docscontract -run
+'^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`. Each exited 0;
+the last recorder was rerun after removing a forbidden `internal/cli/cli.go`
+source from the authored coverage entry. Both Roundfix skill copies are
+`0.1.266`. Mirrors, versions and behavior fingerprints were generated; only
+the `corrections report` coverage-map entry was authored.
+
+### Acceptance evidence
+
+- Spec cells and order: `TestCorrectionsReportRowsOfDeliveredSpecs` exercises
+  distinct Correction causes sharing commits, several commits for one cause,
+  changed and withdrawn declarations, `not-a-correction` sign coverage, all five
+  classes, multiple phase recordings before the first Implement Run, absent PRD
+  fallback, efforts/model totals, cancellation exclusion and dirty-tree
+  independence.
+- Samples and integer rates: `TestCorrectionsReportComparesOnlyAboveTwentySpecs`
+  exercises 20/20, 20/19 and one cohort in text and decoded JSON; rows show both
+  Spec and Task denominators and the insufficient-sample explanation.
+- Output vocabulary: `TestCorrectionsReportPrintsNoPercentAndNoRanking` checks
+  both formats and both views, including those strings inside recorded data;
+  decoded JSON retains the supplied reason.
+- Beside-only counts and unchanged causes:
+  `TestCorrectionsReportShowsDismissedAndFailedAttemptsBeside` checks dismissals,
+  de-duplicated failed attempts, identical causes text/JSON before and after the
+  report, and the signature digest. The causes package and CLI characterization
+  retain their existing expectations.
+- Read-only boundary:
+  `TestCorrectionsReportChangesNoFileUnderTheRepositoryOrTheHome` compares file
+  bytes, modes and modification times for all four report views, excluding only
+  the actual Run Database's WAL/SHM sidecars. Fixture Git runners reject every
+  non-reading operation. The identity test removes the originating clone,
+  rejects a different repository's entries at the same path and checks that a
+  credential-bearing fixture remote never appears in output.
+- Partial sources, omissions, data quoting and refusals:
+  `TestCorrectionsReportStatesWhatItLeftOut`, `TestCorrectionsReportForOneSpec`,
+  `TestCorrectionsReportRefusesInvalidUsageAndUnreadableRecords` and Surface
+  Transcripts 1, 4 and 5 cover the window, home, unknown models, undeclared
+  signs, absent records/plans, damaged lines/Archive Records, an unreadable
+  Phase Record with exit 0, record/database exit 1, complete help and refusal
+  streams, queue-tip coverage and an instruction-shaped reason printed as data.
+
+Declared Verification and repository settlement remain Daemon-owned; neither
+was run here. Task status and the Task Graph were not edited.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/runcause/report.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T051745Z_d63008af9d14015a`
+- Source commit: `e90ffc1f2d4f77f0e83434d9a8d815fc7ef4518c`

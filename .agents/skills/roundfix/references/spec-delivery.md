@@ -9,6 +9,18 @@ run the configured pre-PR review, archive on the branch, pass the repository
 gate, open the Pull Request, verify current-head checks, and merge. With
 pre-PR review set to `none`, the review is recorded as omitted.
 
+Declare each Correction when you make it, while its cause and signs are
+known. For a fixed review finding, declare with its disposition using
+`roundfix review dispose <finding-id> --fixed-by <commit> --class <class>
+--reason <text> [--artifact <artifact>] [--spec <slug>]`. For a repaired QA
+finding, a correction commit, a Corrective Task or a plan change that repairs
+a defect, use `roundfix corrections declare --spec <slug> --class <class>
+--reason <text> [--artifact <artifact>]` and name the signs it covers.
+A commit that applies a maintainer decision and repairs no defect takes
+`--class not-a-correction` with a reason and no artifact. The declaration
+covers its signs and enters no defect rate. See [Corrections](corrections.md)
+for the classes and the read-only `roundfix corrections report`.
+
 ADR-0091 keeps the authored QA gate before any Pull Request exists, while
 ADR-0080 lets environment-blocked rows pass with equivalent evidence. Spec
 0078 proved that path: eleven of eighteen rows were blocked, nine of those

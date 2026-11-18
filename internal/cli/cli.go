@@ -102,6 +102,7 @@ Usage:
   roundfix runs show <run-id> [--json]
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
   roundfix corrections declare --spec <slug> --class <class> --reason <text> [--artifact <artifact>]
+  roundfix corrections report [--spec <slug>] [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix events <run-id> [--follow] [--filter <categories>]
@@ -5614,7 +5615,7 @@ Options:
 `
 	case "implement":
 		return implementUsage
-	case "corrections", "corrections declare":
+	case "corrections", "corrections declare", "corrections report":
 		return correctionsUsage
 	case "phase":
 		return phaseUsage

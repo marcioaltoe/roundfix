@@ -28,6 +28,8 @@ type Reader interface {
 }
 
 type Request struct {
+	// AttemptsOnly projects failed attempts without reading graphs or archive history.
+	AttemptsOnly           bool
 	Reader                 Reader
 	RepositoryRoot         string
 	SpecsRoot, ArchiveRoot string
@@ -308,6 +310,9 @@ func classifyItem(t Table, e Evidence) (string, *string, *string) {
 }
 
 func findGraph(ctx context.Context, req Request, slug string) (*spec.CauseGraph, *ArchivedSpec, error) {
+	if req.AttemptsOnly {
+		return nil, nil, nil
+	}
 	for _, root := range []string{req.SpecsRoot, req.ArchiveRoot} {
 		if root == "" {
 			continue

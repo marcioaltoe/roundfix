@@ -25,9 +25,11 @@ const correctionsUsage = `Usage:
   roundfix corrections declare --spec <slug> --class <class> --reason <text> [--artifact <artifact>] [--finding <id>]... [--commit <rev>]... [--task <task_id>]... [--by <name>]
   roundfix corrections declare --spec <slug> --correction <id> [--class <class>] [--reason <text>] [--artifact <artifact>] [--finding <id>]... [--commit <rev>]... [--task <task_id>]... [--by <name>]
   roundfix corrections declare --spec <slug> --correction <id> --withdraw --reason <text> [--by <name>]
+  roundfix corrections report [--spec <slug>] [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
 
 Commands:
   declare  Declare the cause of one Correction of a Spec, declare it again, or withdraw it
+  report   Show the Corrections of delivered Specs and the plan defects by authoring model
 
 Classes:
   plan            the plan said something wrong, missing or impossible
@@ -50,8 +52,11 @@ Options:
   --correction  identifier of a Correction to declare again or withdraw, such as C2
   --withdraw    withdraw the Correction: it then covers no Correction Sign
   --by          name of the person on whose word the Correction is declared
+  --since       first delivery date of the report's window, UTC, inclusive
+  --until       end of the report's window, UTC, exclusive
+  --format      text (default) or json
 
-Exit codes: 0 for a recorded declaration; 2 for a refusal or invalid usage, which writes nothing; 1 when a record cannot be read or written.
+Exit codes: 0 for a recorded declaration or a report; 2 for a refusal or invalid usage, which writes nothing; 1 when a record cannot be read or written.
 `
 
 type correctionStrings []string
@@ -176,6 +181,9 @@ func runCorrectionsCommand(ctx context.Context, args []string, stdout, stderr io
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, correctionsUsage)
 		return exitOK
+	}
+	if len(args) > 0 && args[0] == "report" {
+		return runCorrectionsReport(ctx, args[1:], stdout, stderr, environment)
 	}
 	if len(args) == 0 || args[0] != "declare" {
 		reason := "missing subcommand"
