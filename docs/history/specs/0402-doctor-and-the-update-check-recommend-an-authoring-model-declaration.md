@@ -34,6 +34,7 @@ regeneration:
       - .claude/agents/roundfix-tasks-author.md
       - .claude/agents/roundfix-techspec-author.md
 promoted: []
+pull_request: "903"
 type: fix
 ---
 
