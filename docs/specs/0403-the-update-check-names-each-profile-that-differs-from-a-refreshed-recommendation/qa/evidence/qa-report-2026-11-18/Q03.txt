@@ -1,0 +1,162 @@
+$ git init -q
+stdout:
+stderr:
+exit: 0
+
+$ git add .
+stdout:
+stderr:
+exit: 0
+
+$ git -c user.name=QA -c user.email=qa@example.test commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:10:23Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+Profiles: docs (project) differs from the Recommended Profile of 2026-11-17: configured codex / gpt-5.6-luna / max, then claude / sonnet / high; recommended codex / gpt-6.1-terra / high, then claude / sonnet / high; adopt with roundfix profiles check --apply --scope project.
+Profiles: review (project) is pinned to an older snapshot (2026-09-30: Keep the validated model); recommended codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high as of 2026-11-17; re-pin with profiles.review.deviation.from: 2026-11-17 in Project Config, or adopt with roundfix profiles check --apply --scope project.
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:10:23Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"recommendations":{"snapshot":"2026-11-17","categories":[{"category":"docs","state":"differs","source":"project","configured":{"preferred":{"runtime":"codex","model":"gpt-5.6-luna","reasoning_effort":"max"},"fallbacks":[{"runtime":"claude","model":"sonnet","reasoning_effort":"high"}]},"recommended":{"preferred":{"runtime":"codex","model":"gpt-6.1-terra","reasoning_effort":"high"},"fallbacks":[{"runtime":"claude","model":"sonnet","reasoning_effort":"high"}]},"adopt":"roundfix profiles check --apply --scope project"},{"category":"review","state":"pinned_to_older_snapshot","source":"project","configured":{"preferred":{"runtime":"codex","model":"gpt-5.6-luna","reasoning_effort":"max"},"fallbacks":[{"runtime":"codex","model":"gpt-6.1-sol","reasoning_effort":"high"}]},"recommended":{"preferred":{"runtime":"codex","model":"gpt-6-luna","reasoning_effort":"max"},"fallbacks":[{"runtime":"codex","model":"gpt-6.1-sol","reasoning_effort":"high"}]},"deviation":{"from":"2026-09-30","reason":"Keep the validated model"},"repin":"profiles.review.deviation.from: 2026-11-17","adopt":"roundfix profiles check --apply --scope project"}]},"next":"none"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+Profiles: docs (project) differs from the Recommended Profile of 2026-11-17: configured codex / gpt-5.6-luna / max, then claude / sonnet / high; recommended codex / gpt-6.1-terra / high, then claude / sonnet / high; adopt with roundfix profiles check --apply --scope project.
+Profiles: review (project) is pinned to an older snapshot (2026-09-30: Keep the validated model); recommended codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high as of 2026-11-17; re-pin with profiles.review.deviation.from: 2026-11-17 in Project Config, or adopt with roundfix profiles check --apply --scope project.
+stderr:
+exit: 0
+
+$ go test -c -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-cli.test ./internal/cli
+stdout:
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-cli.test -test.v -test.timeout=5m -test.run=^(TestUpdateCheckNamesEachProfileThatDiffers|TestUpdateCheckOmitsAnUnavailableProfileComparison|TestUpdateCheckUsage)$
+stdout:
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== RUN   TestUpdateCheckUsage
+=== PAUSE TestUpdateCheckUsage
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers
+=== CONT  TestUpdateCheckUsage
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== RUN   TestUpdateCheckUsage/bare_group
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== PAUSE TestUpdateCheckUsage/bare_group
+=== RUN   TestUpdateCheckUsage/unknown_subcommand
+=== PAUSE TestUpdateCheckUsage/unknown_subcommand
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== RUN   TestUpdateCheckUsage/unexpected_argument
+=== PAUSE TestUpdateCheckUsage/unexpected_argument
+=== RUN   TestUpdateCheckUsage/invalid_format
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/json
+=== PAUSE TestUpdateCheckUsage/invalid_format
+=== RUN   TestUpdateCheckUsage/invalid_configuration
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/json
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== PAUSE TestUpdateCheckUsage/invalid_configuration
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== RUN   TestUpdateCheckUsage/help
+=== PAUSE TestUpdateCheckUsage/help
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== RUN   TestUpdateCheckUsage/group_help
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== PAUSE TestUpdateCheckUsage/group_help
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== RUN   TestUpdateCheckUsage/short_help
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== PAUSE TestUpdateCheckUsage/short_help
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+=== RUN   TestUpdateCheckUsage/short_group_help
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== PAUSE TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/bare_group
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== CONT  TestUpdateCheckUsage/help
+=== CONT  TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/short_help
+=== CONT  TestUpdateCheckUsage/group_help
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== CONT  TestUpdateCheckUsage/invalid_format
+=== CONT  TestUpdateCheckUsage/invalid_configuration
+=== CONT  TestUpdateCheckUsage/unexpected_argument
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+--- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison (0.00s)
+    --- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error (0.00s)
+    --- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config (0.00s)
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/json
+=== CONT  TestUpdateCheckUsage/unknown_subcommand
+--- PASS: TestUpdateCheckUsage (0.00s)
+    --- PASS: TestUpdateCheckUsage/help (0.00s)
+    --- PASS: TestUpdateCheckUsage/bare_group (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/short_group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/group_help (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_format (0.00s)
+    --- PASS: TestUpdateCheckUsage/invalid_configuration (0.00s)
+    --- PASS: TestUpdateCheckUsage/unexpected_argument (0.00s)
+    --- PASS: TestUpdateCheckUsage/unknown_subcommand (0.00s)
+--- PASS: TestUpdateCheckNamesEachProfileThatDiffers (0.00s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason (0.06s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/transcript (0.06s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason (0.06s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes (0.06s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next (0.07s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/user_config_source (0.04s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/user_pin (0.04s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing (0.04s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/json (0.06s)
+PASS
+stderr:
+suiteguard: guard cost: measured 3293 paths; fingerprint took 495.491417ms before and 151.079791ms after
+exit: 0
+
+Result: pass
+Surface Transcript 1 matched every literal stdout line, empty stderr and exit 0. JSON matched all fields, category order, next and exit; repeat reads and file/mode snapshots proved read-only behavior. Named CLI cases cover user scope, newer Baseline, bounded Unicode reasons and release-update next.

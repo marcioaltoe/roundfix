@@ -1,0 +1,7 @@
+Source: current assignment says no open Pull Request for the Spec target branch.
+Approval: no current-candidate acceptance supplied.
+Checks/status: Daemon repository Verification passed; GitHub head-specific required checks unobserved.
+Unresolved threads: no open Pull Request; no equivalent review-thread observation supplied.
+Merge-Ready acceptance: no Review Source artifact for this candidate supplied.
+Review-artifact ancestry: none available; audited head f182f643e073971937fbd118ad71e398e0864321.
+Unblocking: delivery owner opens the Pull Request on the Spec target branch and observes all controls for its head.

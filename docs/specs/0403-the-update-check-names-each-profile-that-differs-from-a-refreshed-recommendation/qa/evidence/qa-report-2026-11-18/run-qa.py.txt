@@ -1,0 +1,211 @@
+import os, sys, json, pathlib, tempfile, subprocess, shutil, hashlib, re, difflib, io, tarfile, datetime, traceback
+_file=pathlib.Path(__file__).resolve(); _root=_file.parents[6]; _home=tempfile.mkdtemp(prefix='qa0403-home-')
+_env=os.environ.copy(); _env.update(HOME=_home,GOMODCACHE=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip(),GOPROXY='off',GOSUMDB='off',RUSTUP_HOME=os.environ.get('RUSTUP_HOME',str(pathlib.Path.home()/'.rustup')),CARGO_HOME=os.environ.get('CARGO_HOME',str(pathlib.Path.home()/'.cargo')))
+S={'root':str(_root),'spec':str(_file.parents[3]),'evidence':str(_file.parent),'home':_home,'env':_env,'base':'7bc0c6f0c15daaa94424c311de4a910d32a15f9f'}
+R=pathlib.Path(S['root']); E=pathlib.Path(S['evidence']); SPEC=pathlib.Path(S['spec']); REPORT=SPEC/'qa/qa-report-2026-11-18.md'; BASE=S['base']; ENV=S['env']
+ROOT=R/'bin/qa0403-work'; ROOT.mkdir(parents=True,exist_ok=True)
+EXE=R/'bin/roundfix'; BASEEXE=R/'bin/qa-delivery-base/roundfix'
+LOG=[]
+def command(args,cwd=R,env=None,ok=True):
+    p=subprocess.run([str(x) for x in args],cwd=cwd,env=env or ENV,text=True,capture_output=True,timeout=300)
+    LOG.append('$ '+ ' '.join(str(x) for x in args)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n')
+    if ok and p.returncode: raise AssertionError('command failed: '+str(args)+'\n'+p.stdout[-1500:]+p.stderr[-1500:])
+    return p
+
+def update(row,status,detail):
+    t=REPORT.read_text(); t=re.sub(r'^\| '+row+r' \| [^|]+ \|', '| '+row+' | '+status+' |',t,flags=re.M)
+    start=t.index('### '+row+'\n'); end=t.find('\n### ',start+5)
+    if end<0: end=len(t)
+    old=t[start:end]; closing=old.index('```',old.index('```')+3)+3
+    intro=old[closing:].split('\n\n',2)[1] if '\n\n' in old[closing:] else ''
+    block=old[:closing]+'\n\n'+intro+'\n\n'+detail+'\n'
+    REPORT.write_text(t[:start]+block+t[end:]); print(row+': '+status+' — '+detail[:180],flush=True)
+
+def row(rowid,fn):
+    LOG.clear()
+    try: detail=fn(); status='pass'
+    except Exception as e:
+        detail=str(e); status='fail'; LOG.append(traceback.format_exc())
+    (E/(rowid+'.txt')).write_text('\n'.join(LOG)+'\nResult: '+status+'\n'+detail+'\n')
+    update(rowid,status,detail+' [Evidence](evidence/qa-report-2026-11-18/'+rowid+'.txt).')
+    return status
+
+def fresh(name,profiles=None,user=None,mode='notify'):
+    repo=ROOT/name; repo.mkdir(); home=ROOT/(name+'-home'); home.mkdir(); env=ENV.copy(); env['HOME']=str(home)
+    (repo/'bin').symlink_to(R/'bin',target_is_directory=True)
+    command(['git','init','-q'],repo,env)
+    if profiles is not None: (repo/'.roundfixrc.yml').write_text(json.dumps({'profiles':profiles}))
+    (repo/'.gitignore').write_text('bin\n')
+    command(['git','add','.'],repo,env); command(['git','-c','user.name=QA','-c','user.email=qa@example.test','commit','-qm','fixture'],repo,env)
+    (home/'.roundfix').mkdir(); (home/'.roundfix/config.yml').write_text(json.dumps({'update':{'mode':mode},**({'profiles':user} if user else {})}))
+    cache={'schemaVersion':'roundfix/update-check-cache/v1','checkedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'releases':[{'version':'0.147.1','titles':['Fresh offline QA fixture'],'url':'https://example.test/release'}],'error':''}
+    (home/'.roundfix/update-check.json').write_text(json.dumps(cache))
+    return repo,home,env
+
+def cli(f,*args,base=False):
+    repo,home,env=f
+    target=BASEEXE.parent if base else R/'bin'
+    link=repo/'bin'
+    if link.resolve()!=target.resolve(): link.unlink(); link.symlink_to(target,target_is_directory=True)
+    return command(['./bin/roundfix',*args],repo,env)
+
+def snapshot(paths):
+    out={}
+    for root in paths:
+        for p in root.rglob('*'):
+            if '.git' in p.parts or p.is_symlink() or not p.is_file(): continue
+            out[str(p.relative_to(root))+'@'+str(root)]=(hashlib.sha256(p.read_bytes()).hexdigest(),p.stat().st_mode)
+    return out
+
+def selection(runtime,model,effort): return {'runtime':runtime,'model':model,'reasoning_effort':effort}
+def profile(a,b): return {'preferred':selection(*a),'fallbacks':[selection(*b)]}
+P={x:profile(('codex','gpt-6.1-sol','high'),('claude','opus','high')) for x in ['general','backend','data','infra','test','qa']}
+P['frontend']=profile(('claude','opus','high'),('codex','gpt-6.1-sol','xhigh'))
+P['review']=profile(('codex','gpt-6-luna','max'),('codex','gpt-6.1-sol','high'))
+P['docs']=profile(('codex','gpt-6.1-terra','high'),('claude','sonnet','high'))
+P['chore']=profile(('codex','gpt-6-luna','max'),('claude','sonnet','high'))
+OLD=json.loads(json.dumps(P))
+for x in ['review','docs','chore']: OLD[x]['preferred']=selection('codex','gpt-5.6-luna','max')
+DEVIATION={'from':'2026-09-30','reason':'Keep the validated model'}
+D={'docs':OLD['docs'],'review':{**OLD['review'],'deviation':DEVIATION}}
+
+def q01():
+    global SHOW
+    f=fresh('snapshot'); a=cli(f,'profiles','show','--json'); b=cli(f,'profiles','show','--json'); assert a.stdout==b.stdout and a.stderr==b.stderr==''
+    SHOW=json.loads(a.stdout); assert SHOW['schema']=='roundfix/profiles/v2'; assert {x['category'] for x in SHOW['profiles']}==set(P)
+    for item in SHOW['profiles']:
+        rows=item['recommendations']; expected=[P[item['category']]['preferred'],*P[item['category']]['fallbacks']]
+        assert [x['selection'] for x in rows]==expected
+        assert all(x['source_as_of']=='2026-11-17' and x['selection']['reasoning_effort']!='ultra' for x in rows)
+        assert item['source']!='project'
+    (E/'recommended-profile.json.txt').write_text(a.stdout)
+    return 'Two fresh public reads in a repository with no profiles matched the approved table for all ten categories, with source_as_of 2026-11-17 and no ultra effort.'
+
+def compile_test(pkg,name,tags=None,overlay=None):
+    args=['go','test','-c','-o',str(R/'bin'/name)]
+    if tags: args+=['-tags',tags]
+    if overlay: args+=['-overlay',str(overlay)]
+    args+=[pkg]; command(args)
+
+def run_test(name,pattern,fail=False):
+    pkg={'qa-agent.test':'internal/agent','qa-cli.test':'internal/cli','qa-config.test':'internal/config','qa-skills.test':'skills','qa-docscontract.test':'internal/docscontract'}[name]
+    p=command([R/'bin'/name,'-test.v','-test.timeout=5m','-test.run='+pattern],cwd=R/pkg,ok=not fail)
+    if fail: assert p.returncode==1 and '--- FAIL:' in p.stdout and 'stdout' in p.stdout, 'sabotage must fail its output assertion'
+    else: assert 'PASS' in p.stdout and 'no tests to run' not in p.stderr
+    return p
+
+def q02():
+    compile_test('./internal/agent','qa-agent.test')
+    p=run_test('qa-agent.test','^TestModelCatalog(OpensWithTheCurrentModels|sExposeOrderedPickerData|OffersNoRetiredModel)$')
+    for name in ['TestModelCatalogOpensWithTheCurrentModels/codex','TestModelCatalogOpensWithTheCurrentModels/claude','TestModelCatalogOffersNoRetiredModel/codex/gpt-5.5','TestModelCatalogOffersNoRetiredModel/claude/claude-fable-5-1']: assert '--- PASS: '+name+' ' in p.stdout
+    compile_test('./internal/config','qa-config.test'); run_test('qa-config.test','^TestRecommendedModelsAreInTheModelCatalog$')
+    for path in ['docs/user-guide/usage.md','docs/user-guide/configuration.md','.agents/skills/roundfix/references/profiles.md','skills/roundfix/references/profiles.md','docs/references/model-selection.md']:
+        raw=(R/path).read_text(); raw=raw.split('### Model Catalog and picker efforts',1)[1] if path=='docs/references/model-selection.md' else raw; text=' '.join(raw.split()); start=text.index('`gpt-6.1-sol`, `gpt-6-astra`'); block=text[start:start+600]; assert block.index('gpt-6-astra')<block.index('gpt-6.1-terra'); assert '`fable`' in text and 'claude-fable-5-1' not in text.split('## ',1)[0]; LOG.append(path+': catalog guidance agrees')
+    return 'Named catalog, retired-model, ordered-picker and recommendation-membership tests passed; five public guide/reference copies agree on Terra and fable.'
+
+def q03():
+    f=fresh('transcript'); before=snapshot(f[:2]); control=cli(f,'update','check'); cj=json.loads(cli(f,'update','check','--format','json').stdout)
+    (f[0]/'.roundfixrc.yml').write_text(json.dumps({'profiles':D})); before=snapshot(f[:2]); a=cli(f,'update','check'); b=cli(f,'update','check','--format','json'); c=cli(f,'update','check'); assert a.stdout==c.stdout and not a.stderr and not b.stderr and not c.stderr
+    tech=(SPEC/'_techspec.md').read_text(); expected=re.search(r'   stdout:\n   \.\.\.\n(.*?)   stderr:',tech,re.S).group(1); expected=''.join(x[3:]+'\n' for x in expected.rstrip('\n').splitlines())
+    lines=a.stdout.splitlines(keepends=True); idx=next(i for i,x in enumerate(lines) if x.startswith('Profiles:')); assert ''.join(lines[idx:])==expected and a.returncode==0
+    j=json.loads(b.stdout); expectedrows=[]
+    for category in ['docs','review']:
+        x={'category':category,'state':'pinned_to_older_snapshot' if category=='review' else 'differs','source':'project','configured':{k:D[category][k] for k in ['preferred','fallbacks']},'recommended':P[category]}
+        if category=='review': x.update(deviation=DEVIATION,repin='profiles.review.deviation.from: 2026-11-17')
+        x['adopt']='roundfix profiles check --apply --scope project'; expectedrows.append(x)
+    assert j['recommendations']=={'snapshot':'2026-11-17','categories':expectedrows}; assert j['schemaVersion']=='roundfix/update-check/v1' and j['next']==cj['next'] and a.returncode==control.returncode
+    assert list(j).index('recommendations')<list(j).index('next')
+    assert snapshot(f[:2])==before, 'read-only commands modified fixture content or modes'
+    (E/'surface-transcript.txt').write_text(a.stdout); (E/'surface-transcript-json.txt').write_text(b.stdout)
+    compile_test('./internal/cli','qa-cli.test'); run_test('qa-cli.test','^(TestUpdateCheckNamesEachProfileThatDiffers|TestUpdateCheckOmitsAnUnavailableProfileComparison|TestUpdateCheckUsage)$')
+    return 'Surface Transcript 1 matched every literal stdout line, empty stderr and exit 0. JSON matched all fields, category order, next and exit; repeat reads and file/mode snapshots proved read-only behavior. Named CLI cases cover user scope, newer Baseline, bounded Unicode reasons and release-update next.'
+
+def build_base():
+    src=ROOT/'delivery-base-source'; src.mkdir()
+    archive=subprocess.check_output(['git','archive',BASE],cwd=R,env=ENV)
+    with tarfile.open(fileobj=io.BytesIO(archive)) as t: t.extractall(src,filter='data')
+    BASEEXE.parent.mkdir(exist_ok=True)
+    command(['go','build','-buildvcs=false','-ldflags=-X roundfix/internal/app.BuildCommit='+BASE[:8],'-o',BASEEXE,'./cmd/roundfix'],src)
+    LOG.append('Delivery Base source regenerated from git archive '+BASE+'; binary built inside this Run Worktree.')
+
+def fmt(p):
+    return ', then '.join(' / '.join(x[k] for k in ['runtime','model','reasoning_effort']) for x in [p['preferred'],*p['fallbacks']])
+
+def q04():
+    build_base()
+    for name,profiles in [('none',None),('current',P),('pinned',{'review':{**OLD['review'],'deviation':{'from':'2026-11-17','reason':'Keep current pin'}}})]:
+        f=fresh('quiet-'+name,profiles); before=snapshot(f[:2])
+        new=cli(f,'update','check'); old=cli(f,'update','check',base=True); nj=cli(f,'update','check','--format','json'); oj=cli(f,'update','check','--format','json',base=True)
+        assert new.stdout==old.stdout and new.stderr==old.stderr and new.returncode==old.returncode
+        assert nj.stdout==oj.stdout and nj.stderr==oj.stderr and nj.returncode==oj.returncode
+        assert 'Profiles:' not in new.stdout and 'recommendations' not in json.loads(nj.stdout); assert snapshot(f[:2])==before
+    f=fresh('profiles-check-compatibility',P); new=cli(f,'profiles','check'); old=cli(f,'profiles','check',base=True); nj=cli(f,'profiles','check','--json'); oj=cli(f,'profiles','check','--json',base=True)
+    n=json.loads(nj.stdout); o=json.loads(oj.stdout); expected=json.loads(json.dumps(n)); expected['snapshot']='2026-09-30'; expected['current']=7; expected['differ']=3
+    for x in expected['categories']:
+        x['recommended']=OLD[x['category']]
+        if x['category'] in ['docs','chore','review']: x['status']='differs'
+    assert expected==o
+    assert nj.stdout==json.dumps(n,indent=2)+'\n' and oj.stdout==json.dumps(expected,indent=2)+'\n'
+    want=''
+    for category in [x['category'] for x in o['categories'] if x['status']=='differs']:
+        want+='recommendations: '+category+' differs from snapshot 2026-09-30\n  configured:  '+fmt(P[category])+' (project)\n  recommended: '+fmt(OLD[category])+'\n'
+    want+='recommendations: snapshot 2026-09-30; 7 current, 3 differ, 0 pinned\nrecommendations: adopt with `roundfix profiles check --apply --scope user|project`, or declare a deviation\n'
+    assert old.stdout==want and new.stdout=='recommendations: snapshot 2026-11-17; 10 current, 0 differ, 0 pinned\n'; assert new.stderr==old.stderr==nj.stderr==oj.stderr==''
+    for path in ['internal/cli/profiles_check.go','internal/cli/profiles_check_apply.go','internal/cli/doctor.go','internal/cli/upgrade.go']:
+        assert subprocess.check_output(['git','show',BASE+':'+path],cwd=R,env=ENV)==(R/path).read_bytes(); LOG.append(path+': byte-identical to Delivery Base')
+    (E/'profiles-check-base-diff.txt').write_text(''.join(difflib.unified_diff(old.stdout.splitlines(True),new.stdout.splitlines(True),fromfile='Delivery Base',tofile='audited head'))+'\nJSON differences are confined to the snapshot, the three changed recommended profiles, their statuses and resulting counts.\n')
+    return 'No-config, all-current and current-snapshot-pin text/JSON bytes matched the freshly built Delivery Base exactly. profiles check text/JSON differences are exactly the new snapshot and three changed recommendations, statuses and counts; legacy check/apply/Doctor/upgrade source bytes are unchanged.'
+
+def q05():
+    source=(SPEC/'references/2026-11-17-model-evidence.md').read_text(); missing=[]
+    for category,p in P.items():
+        for x in [p['preferred'],*p['fallbacks']]:
+            assert x['runtime'] in ['codex','claude']
+            if x['runtime']=='codex':
+                line=next((line for line in source.splitlines() if line.startswith('| `'+x['model']+'` |')),None)
+                assert line and x['reasoning_effort'] in [v.strip() for v in line.split('|')[-2].strip().strip('.').split(',')]
+            else:
+                missing.append(category+': '+x['runtime']+' / '+x['model']+' / '+x['reasoning_effort'])
+    LOG.append('Offline source: references/2026-11-17-model-evidence.md; Codex 0.169.0 listing, codex-acp 2.7.0, claude-agent-acp 0.107.3 and quoted vendor releases. No network lookup.\n'+source)
+    assert not missing, 'F-01: The required outside-evidence record does not list accepted Claude efforts or enumerate opus/sonnet as adapter offerings. Unproven selections: '+', '.join(missing)+'. Codex tuples are supported; this is an evidence gap, not proof that the Claude tuples are invalid.'
+    return 'Every tuple is listed by the recorded runtime and accepted effort.'
+
+def q06():
+    f=fresh('repository-config'); content=(R/'.roundfixrc.yml').read_text(); (f[0]/'.roundfixrc.yml').write_text(content)
+    j=json.loads(cli(f,'profiles','show','--json').stdout)
+    for x in j['profiles']: assert x['source']=='project' and x['preferred']==P[x['category']]['preferred'] and x['fallbacks']==P[x['category']]['fallbacks'] and x['recommendation_status']=='current'
+    old=subprocess.check_output(['git','show',BASE+':.roundfixrc.yml'],cwd=R,env=ENV,text=True)
+    def nonprofiles(t):
+        lines=t.splitlines(True); start=next(i for i,l in enumerate(lines) if l.startswith('profiles:')); end=next((i for i in range(start+1,len(lines)) if re.match(r'^[a-zA-Z_][^:]*:',lines[i])),len(lines)); before=lines[:start]
+        while before and (before[-1].startswith('#') or not before[-1].strip()): before.pop()
+        return ''.join(before)+''.join(lines[end:])
+    assert nonprofiles(content)==nonprofiles(old), 'non-profile keys differ from Delivery Base'
+    compile_test('./internal/config','qa-config.test'); run_test('qa-config.test','^TestRepositoryProfilesFollowTheRecommendedProfile$')
+    return 'Public profile parser loaded the repository config in an isolated fixture: all ten project profiles match the recommendation. Exact non-profile key blocks match the Delivery Base; only profiles and their adjoining comment block differ.'
+
+def q07():
+    paths=['.agents/skills/roundfix/references/modes.md','skills/roundfix/references/modes.md']; texts=[(R/p).read_text().split('## --update',1)[1] for p in paths]; assert texts[0]==texts[1]
+    phrases=['recommendations.categories[]','recommended option first','ask once, in one question','roundfix profiles check --apply --scope <scope> --yes','re-pin before adopting','Run only what the user chooses','never edit a configuration or run `--apply` without that answer','run no profile fix','After `roundfix upgrade` succeeds, run `roundfix update check --format json` again with the installed binary']
+    for path,text in zip(paths,texts):
+        flat=' '.join(text.split())
+        for phrase in phrases: assert phrase in flat, path+' missing '+phrase
+        LOG.append(path+'\n'+text)
+    compile_test('./skills','qa-skills.test'); run_test('qa-skills.test','^(TestTheUpdateModeOffersTheProfileCommands|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$')
+    compile_test('./internal/docscontract','qa-docscontract.test','docscontract'); run_test('qa-docscontract.test','^(TestProfilesDocumentationContractMatchesPublicGuidance|TestModelSelectionReferenceStatesTheShippedSnapshot|TestTheSkillCoverageMapIsCurrent)$')
+    return 'Both mode copies agree on recommendation reporting, the post-upgrade re-check, one recommended-first adopt/re-pin/keep choice, re-pin ordering and explicit choice before any fix; auto only reports. Skill, mirror/version and focused documentation/coverage checks passed.'
+
+def q08():
+    text=(R/'CONTEXT.md').read_text(); block=text.split('**Update Check**:',1)[1].split('\n\n',1)[0]; assert 'ADR-0416' in block and 'Recommended Profile' in block
+    adr=(R/'docs/adr/0181-a-configuration-is-compared-with-the-recommendation-only-where-a-person-asked.md').read_text(); assert '**Amended by [ADR-0416]' in adr and '(2026-11-17).**' in adr
+    LOG.append('CONTEXT.md — Update Check:'+block+'\n\nADR-0181 amendment:\n'+adr[adr.index('**Amended by [ADR-0416]'):])
+    return 'The canonical Update Check glossary entry defines the profile comparison and cites ADR-0416; ADR-0181 carries its dated amendment. The strict glossary check passed in the precondition.'
+
+def main():
+    for i,f in [('Q01',q01),('Q02',q02),('Q03',q03),('Q04',q04),('Q05',q05),('Q06',q06),('Q07',q07),('Q08',q08)]:
+        if len(sys.argv)==1 or i in sys.argv[1:]: row(i,f)
+    update('Q09','pass','Daemon-supplied repository Verification: make verify-changed, exit 0; successful diagnostics removed. Not rerun.')
+    update('Q10','blocked (environment: no open Pull Request)','The assignment establishes that no Pull Request is open for the Spec target branch. No supervised equivalent evidence of its controls is available. Unblocking: the delivery owner opens the Pull Request and observes required checks for its head. This Pull Request row alone qualifies for partial when no other row is unmet.')
+    shutil.rmtree(ROOT)
+    shutil.rmtree(S['home'])
+    print('Fixture repositories, source extraction and temporary HOME removed.',flush=True)
+if __name__=='__main__': main()

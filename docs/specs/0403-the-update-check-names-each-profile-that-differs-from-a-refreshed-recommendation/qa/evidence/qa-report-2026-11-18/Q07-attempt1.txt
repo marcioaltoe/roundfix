@@ -1,0 +1,172 @@
+.agents/skills/roundfix/references/modes.md
+
+
+Run this mode in the repository the session works in, never in a Daemon-assigned Run.
+
+1. Check: run `roundfix update check --refresh --format json`. When the installed Roundfix does not know the command, run `roundfix upgrade` and then the check again. Report the installed and latest versions, each newer release with its titles, the Baseline line, and every `recommendations.categories[]` row with its `category`, `state`, configured and recommended profiles, its `deviation` and `repin` when present, and its `adopt` command. When the report carries `userSkills`, show each copy with its `remove` and `refresh` commands, say which copies hide a declared header (`hidesDeclaredHeader`), and ask once which commands to run, recommending the removals, before going on: both write outside the repository, a refresh through any link the copy's `resolved` names, and a removal deletes the copy; run only the ones the user approves. Before the mode's report, when the report carries `recommendations.categories`, ask once, in one question, with the recommended option first: adopt every reported category by running `roundfix profiles check --apply --scope <scope> --yes` for each scope; re-pin each category whose state is `pinned_to_older_snapshot` by setting `profiles.<category>.deviation.from` to the report's `snapshot` in the configuration file named by its `source`, then adopt every remaining reported category with the same command; or keep the configuration. Run only what the user chooses, re-pin before adopting, and never edit a configuration or run `--apply` without that answer. When the mode runs at session start because `update.mode` is `auto`, report the `recommendations` categories and run no profile fix. When `state` is `unknown` or `development` and `baseline.state` is not `plan_ready`, report that nothing can be applied now and stop.
+2. Upgrade: when `state` is `update_available`, run `roundfix upgrade`. When it fails, report its manual fallback and stop without applying a Baseline plan. After `roundfix upgrade` succeeds, run `roundfix update check --format json` again with the installed binary and use that report, including its `recommendations`, for the remaining steps.
+3. Preview: run `roundfix baseline update --repo <root> --format json` with the binary now installed and show its state, each file change, each history unit with its paths, each skill it refreshes, restores or deletes, and its `planDigest`. When the state is `current`, report the versions and stop. When it needs a new decision or an adoption, ask the user as the stop-and-ask clause of `docs/agents/agent-instructions.md` says, and never pass `--adopt-suggested` unasked.
+4. Apply: apply exactly the previewed plan with `roundfix baseline update --repo <root> --confirm-plan <planDigest> --format json`. Ask first, in one question with the recommended option first, when the plan deletes files, that is when `history.units` or `skills.retired` is not empty: apply the whole plan, apply it without history (preview again with `--no-history` and confirm that digest), or stop. Ask first, too, when `git status --porcelain` shows uncommitted changes. When the mode runs at session start because `update.mode` is `auto`, apply no Baseline plan over uncommitted changes; report it for a later `--update`.
+5. Report the versions before and after, the applied Plan Digest and the changed files. When the check's `authoringModels.state` is `unapplied` after these steps, name its `next` command. When it is `undeclared`, show its `recommendation` and leave `.roundfixrc.yml` to the user; never write it. This mode never commits, pushes or opens a pull request; committing follows the repository's own rules.
+
+skills/roundfix/references/modes.md
+
+
+Run this mode in the repository the session works in, never in a Daemon-assigned Run.
+
+1. Check: run `roundfix update check --refresh --format json`. When the installed Roundfix does not know the command, run `roundfix upgrade` and then the check again. Report the installed and latest versions, each newer release with its titles, the Baseline line, and every `recommendations.categories[]` row with its `category`, `state`, configured and recommended profiles, its `deviation` and `repin` when present, and its `adopt` command. When the report carries `userSkills`, show each copy with its `remove` and `refresh` commands, say which copies hide a declared header (`hidesDeclaredHeader`), and ask once which commands to run, recommending the removals, before going on: both write outside the repository, a refresh through any link the copy's `resolved` names, and a removal deletes the copy; run only the ones the user approves. Before the mode's report, when the report carries `recommendations.categories`, ask once, in one question, with the recommended option first: adopt every reported category by running `roundfix profiles check --apply --scope <scope> --yes` for each scope; re-pin each category whose state is `pinned_to_older_snapshot` by setting `profiles.<category>.deviation.from` to the report's `snapshot` in the configuration file named by its `source`, then adopt every remaining reported category with the same command; or keep the configuration. Run only what the user chooses, re-pin before adopting, and never edit a configuration or run `--apply` without that answer. When the mode runs at session start because `update.mode` is `auto`, report the `recommendations` categories and run no profile fix. When `state` is `unknown` or `development` and `baseline.state` is not `plan_ready`, report that nothing can be applied now and stop.
+2. Upgrade: when `state` is `update_available`, run `roundfix upgrade`. When it fails, report its manual fallback and stop without applying a Baseline plan. After `roundfix upgrade` succeeds, run `roundfix update check --format json` again with the installed binary and use that report, including its `recommendations`, for the remaining steps.
+3. Preview: run `roundfix baseline update --repo <root> --format json` with the binary now installed and show its state, each file change, each history unit with its paths, each skill it refreshes, restores or deletes, and its `planDigest`. When the state is `current`, report the versions and stop. When it needs a new decision or an adoption, ask the user as the stop-and-ask clause of `docs/agents/agent-instructions.md` says, and never pass `--adopt-suggested` unasked.
+4. Apply: apply exactly the previewed plan with `roundfix baseline update --repo <root> --confirm-plan <planDigest> --format json`. Ask first, in one question with the recommended option first, when the plan deletes files, that is when `history.units` or `skills.retired` is not empty: apply the whole plan, apply it without history (preview again with `--no-history` and confirm that digest), or stop. Ask first, too, when `git status --porcelain` shows uncommitted changes. When the mode runs at session start because `update.mode` is `auto`, apply no Baseline plan over uncommitted changes; report it for a later `--update`.
+5. Report the versions before and after, the applied Plan Digest and the changed files. When the check's `authoringModels.state` is `unapplied` after these steps, name its `next` command. When it is `undeclared`, show its `recommendation` and leave `.roundfixrc.yml` to the user; never write it. This mode never commits, pushes or opens a pull request; committing follows the repository's own rules.
+
+$ go test -c -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-skills.test ./skills
+stdout:
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-skills.test -test.v -test.timeout=5m -test.run=^(TestTheUpdateModeOffersTheProfileCommands|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$
+stdout:
+=== RUN   TestAuthorialSkillSync
+=== PAUSE TestAuthorialSkillSync
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+    owned_skill_versions_test.go:246: read owned skill versions: open testdata/owned-skill-versions.json: no such file or directory; run go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+--- FAIL: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== RUN   TestTheUpdateModeOffersTheProfileCommands
+=== PAUSE TestTheUpdateModeOffersTheProfileCommands
+=== CONT  TestAuthorialSkillSync
+=== CONT  TestTheUpdateModeOffersTheProfileCommands
+=== RUN   TestTheUpdateModeOffersTheProfileCommands/canonical
+=== PAUSE TestTheUpdateModeOffersTheProfileCommands/canonical
+=== RUN   TestTheUpdateModeOffersTheProfileCommands/embedded
+=== PAUSE TestTheUpdateModeOffersTheProfileCommands/embedded
+=== CONT  TestTheUpdateModeOffersTheProfileCommands/canonical
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed
+=== CONT  TestTheUpdateModeOffersTheProfileCommands/embedded
+=== NAME  TestTheUpdateModeOffersTheProfileCommands/canonical
+    roundfix_update_mode_recommendations_test.go:18: open roundfix/references/modes.md: no such file or directory
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== RUN   TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== RUN   TestAuthorialSkillSync/roundfix
+=== PAUSE TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+=== NAME  TestAuthorialSkillSync/roundfix
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/roundfix: lstat ../.agents/skills/roundfix: no such file or directory
+=== NAME  TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical
+    roundfix_modes_test.go:702: open roundfix/references/modes.md: no such file or directory
+=== CONT  TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded
+=== RUN   TestAuthorialSkillSync/write-idea
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/write-idea: lstat ../.agents/skills/write-idea: no such file or directory
+=== RUN   TestAuthorialSkillSync/write-prd
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/write-prd: lstat ../.agents/skills/write-prd: no such file or directory
+=== RUN   TestAuthorialSkillSync/write-techspec
+--- FAIL: TestTheUpdateModeAppliesOnlyThePlanItShowed (0.00s)
+    --- FAIL: TestTheUpdateModeAppliesOnlyThePlanItShowed/canonical (0.00s)
+    --- PASS: TestTheUpdateModeAppliesOnlyThePlanItShowed/embedded (0.00s)
+=== NAME  TestAuthorialSkillSync/write-techspec
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/write-techspec: lstat ../.agents/skills/write-techspec: no such file or directory
+=== RUN   TestAuthorialSkillSync/write-tasks
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/write-tasks: lstat ../.agents/skills/write-tasks: no such file or directory
+=== RUN   TestAuthorialSkillSync/setup-context-driven
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/setup-context-driven: lstat ../.agents/skills/setup-context-driven: no such file or directory
+--- FAIL: TestTheUpdateModeOffersTheProfileCommands (0.00s)
+    --- FAIL: TestTheUpdateModeOffersTheProfileCommands/canonical (0.00s)
+    --- PASS: TestTheUpdateModeOffersTheProfileCommands/embedded (0.00s)
+=== RUN   TestAuthorialSkillSync/implement-task
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/implement-task: lstat ../.agents/skills/implement-task: no such file or directory
+=== RUN   TestAuthorialSkillSync/brainstorming
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/brainstorming: lstat ../.agents/skills/brainstorming: no such file or directory
+=== RUN   TestAuthorialSkillSync/business-analyst
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/business-analyst: lstat ../.agents/skills/business-analyst: no such file or directory
+=== RUN   TestAuthorialSkillSync/archive-spec
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/archive-spec: lstat ../.agents/skills/archive-spec: no such file or directory
+=== RUN   TestAuthorialSkillSync/qa-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/qa-gate: lstat ../.agents/skills/qa-gate: no such file or directory
+=== RUN   TestAuthorialSkillSync/evidence-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/evidence-gate: lstat ../.agents/skills/evidence-gate: no such file or directory
+=== NAME  TestAuthorialSkillSync
+    baseline_skill_contract_test.go:427: canonical setup snapshots are missing
+--- FAIL: TestAuthorialSkillSync (0.00s)
+    --- FAIL: TestAuthorialSkillSync/roundfix (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-idea (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-prd (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- FAIL: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- FAIL: TestAuthorialSkillSync/implement-task (0.00s)
+    --- FAIL: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- FAIL: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- FAIL: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- FAIL: TestAuthorialSkillSync/evidence-gate (0.00s)
+FAIL
+stderr:
+exit: 1
+
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/qa/evidence/qa-report-2026-11-18/run-qa.py.txt", line 22, in row
+    try: detail=fn(); status='pass'
+                ~~^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/qa/evidence/qa-report-2026-11-18/run-qa.py.txt", line 188, in q07
+    compile_test('./skills','qa-skills.test'); run_test('qa-skills.test','^(TestTheUpdateModeOffersTheProfileCommands|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$')
+                                               ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/qa/evidence/qa-report-2026-11-18/run-qa.py.txt", line 87, in run_test
+    p=command([R/'bin'/name,'-test.v','-test.timeout=5m','-test.run='+pattern],ok=not fail)
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/qa/evidence/qa-report-2026-11-18/run-qa.py.txt", line 10, in command
+    if ok and p.returncode: raise AssertionError('command failed: '+str(args)+'\n'+p.stdout[-1500:]+p.stderr[-1500:])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: command failed: [PosixPath('/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-skills.test'), '-test.v', '-test.timeout=5m', '-test.run=^(TestTheUpdateModeOffersTheProfileCommands|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$']
+: no such file or directory
+=== RUN   TestAuthorialSkillSync/archive-spec
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/archive-spec: lstat ../.agents/skills/archive-spec: no such file or directory
+=== RUN   TestAuthorialSkillSync/qa-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/qa-gate: lstat ../.agents/skills/qa-gate: no such file or directory
+=== RUN   TestAuthorialSkillSync/evidence-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/evidence-gate: lstat ../.agents/skills/evidence-gate: no such file or directory
+=== NAME  TestAuthorialSkillSync
+    baseline_skill_contract_test.go:427: canonical setup snapshots are missing
+--- FAIL: TestAuthorialSkillSync (0.00s)
+    --- FAIL: TestAuthorialSkillSync/roundfix (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-idea (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-prd (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- FAIL: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- FAIL: TestAuthorialSkillSync/implement-task (0.00s)
+    --- FAIL: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- FAIL: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- FAIL: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- FAIL: TestAuthorialSkillSync/evidence-gate (0.00s)
+FAIL
+
+
+Result: fail
+command failed: [PosixPath('/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-skills.test'), '-test.v', '-test.timeout=5m', '-test.run=^(TestTheUpdateModeOffersTheProfileCommands|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$']
+: no such file or directory
+=== RUN   TestAuthorialSkillSync/archive-spec
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/archive-spec: lstat ../.agents/skills/archive-spec: no such file or directory
+=== RUN   TestAuthorialSkillSync/qa-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/qa-gate: lstat ../.agents/skills/qa-gate: no such file or directory
+=== RUN   TestAuthorialSkillSync/evidence-gate
+    baseline_skill_contract_test.go:361: walk canonical skill tree ../.agents/skills/evidence-gate: lstat ../.agents/skills/evidence-gate: no such file or directory
+=== NAME  TestAuthorialSkillSync
+    baseline_skill_contract_test.go:427: canonical setup snapshots are missing
+--- FAIL: TestAuthorialSkillSync (0.00s)
+    --- FAIL: TestAuthorialSkillSync/roundfix (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-idea (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-prd (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- FAIL: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- FAIL: TestAuthorialSkillSync/implement-task (0.00s)
+    --- FAIL: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- FAIL: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- FAIL: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- FAIL: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- FAIL: TestAuthorialSkillSync/evidence-gate (0.00s)
+FAIL
+

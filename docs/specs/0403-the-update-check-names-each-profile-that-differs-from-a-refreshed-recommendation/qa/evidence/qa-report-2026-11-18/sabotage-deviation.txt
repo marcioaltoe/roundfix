@@ -1,0 +1,32 @@
+$ go test -c -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-sabotage-deviation.test -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa0403-work/deviation.json ./internal/cli
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-sabotage-deviation.test -test.v -test.timeout=5m -test.run=^TestUpdateCheckNamesEachProfileThatDiffers$/transcript$
+stdout:
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/transcript
+    update_check_recommendations_test.go:172: text: exit=0
+        stdout=Roundfix 99.0.0 is current (latest release 99.0.0; update.mode notify).
+        Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+        Profiles: docs (project) differs from the Recommended Profile of 2026-11-17: configured codex / gpt-5.6-luna / max, then claude / sonnet / high; recommended codex / gpt-6.1-terra / high, then claude / sonnet / high; adopt with roundfix profiles check --apply --scope project.
+        Profiles: review (project) differs from the Recommended Profile of 2026-11-17: configured codex / gpt-5.6-luna / max, then codex / gpt-6.1-sol / high; recommended codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high; adopt with roundfix profiles check --apply --scope project.
+        
+        want stdout=Roundfix 99.0.0 is current (latest release 99.0.0; update.mode notify).
+        Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+        Profiles: docs (project) differs from the Recommended Profile of 2026-11-17: configured codex / gpt-5.6-luna / max, then claude / sonnet / high; recommended codex / gpt-6.1-terra / high, then claude / sonnet / high; adopt with roundfix profiles check --apply --scope project.
+        Profiles: review (project) is pinned to an older snapshot (2026-09-30: Keep the validated model); recommended codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high as of 2026-11-17; re-pin with profiles.review.deviation.from: 2026-11-17 in Project Config, or adopt with roundfix profiles check --apply --scope project.
+        
+        stderr="" want stderr=""
+--- FAIL: TestUpdateCheckNamesEachProfileThatDiffers (0.00s)
+    --- FAIL: TestUpdateCheckNamesEachProfileThatDiffers/transcript (0.04s)
+FAIL
+stderr:
+suiteguard: guard cost: measured 3299 paths; fingerprint took 162.422291ms before and 146.328333ms after
+exit: 1
+
+Expected negative probe: failed at its named full-output assertion. Repository source unchanged.

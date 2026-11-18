@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

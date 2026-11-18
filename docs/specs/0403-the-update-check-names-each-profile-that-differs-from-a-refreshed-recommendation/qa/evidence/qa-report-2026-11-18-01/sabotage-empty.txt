@@ -1,0 +1,30 @@
+Mutation: if len(report.Categories) == 0 { => if false {
+$ go test -c -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-neg-fxz84457/overlay.json -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-empty.test ./internal/cli
+stdout:
+
+stderr:
+
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-empty.test -test.v -test.timeout=5m -test.run=^TestUpdateCheckNamesEachProfileThatDiffers$/no_profiles_keep_the_report_bytes$
+stdout:
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+    update_check_recommendations_test.go:172: json: exit=0
+        stdout={"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"99.0.0","latest":"99.0.0","state":"current","lookup":{"source":"network","checkedAt":"2026-11-06T15:00:00Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"recommendations":{"snapshot":"2026-11-17","categories":null},"next":"none"}
+        
+        want stdout={"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"99.0.0","latest":"99.0.0","state":"current","lookup":{"source":"network","checkedAt":"2026-11-06T15:00:00Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+        
+        stderr="" want stderr=""
+--- FAIL: TestUpdateCheckNamesEachProfileThatDiffers (0.00s)
+    --- FAIL: TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes (0.05s)
+FAIL
+
+stderr:
+suiteguard: guard cost: measured 3325 paths; fingerprint took 497.323334ms before and 148.114583ms after
+
+exit: 1
+PASS: mutation killed by the named complete-output assertion; repository source SHA256 f619f103876f0a1457c50f8418ddd627e8e6a8f3b2af749ce2ea60ad2af63cde unchanged.

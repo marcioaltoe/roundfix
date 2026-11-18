@@ -1,0 +1,9 @@
+Report structure: one frontmatter; contiguous three-column Results table; ten terminal rows; typed inputs on every row; correct blocked counts.
+Seeded auditor fields, authorization audit and mechanical skips preserved.
+Counts: 8 pass, 1 fail, 1 environment-blocked; findings: F-01 Trust-Damage.
+All 20 report links resolve; 27 evidence files are UTF-8 text and unignored.
+All declared user-flow executables and interpreted entry points exist inside the Run Worktree.
+Saved harnesses parse and reconstruct their environment without a temporary state file.
+Audited HEAD is unchanged; tracked source diff is empty; git diff --check exits 0.
+Only the assigned Spec qa/ directory is untracked.
+No fixture repository, Delivery Base source extraction or QA temporary HOME remains.

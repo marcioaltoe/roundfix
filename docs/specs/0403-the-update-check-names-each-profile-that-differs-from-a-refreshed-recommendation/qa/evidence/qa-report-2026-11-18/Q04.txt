@@ -1,0 +1,860 @@
+$ go build -buildvcs=false -ldflags=-X roundfix/internal/app.BuildCommit=7bc0c6f0 -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T033001Z_a32a9a0e9d248cbd/bin/qa-delivery-base/roundfix ./cmd/roundfix
+stdout:
+stderr:
+exit: 0
+
+Delivery Base source regenerated from git archive 7bc0c6f0c15daaa94424c311de4a910d32a15f9f; binary built inside this Run Worktree.
+$ git init -q
+stdout:
+stderr:
+exit: 0
+
+$ git add .
+stdout:
+stderr:
+exit: 0
+
+$ git -c user.name=QA -c user.email=qa@example.test commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:25Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:25Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ git init -q
+stdout:
+stderr:
+exit: 0
+
+$ git add .
+stdout:
+stderr:
+exit: 0
+
+$ git -c user.name=QA -c user.email=qa@example.test commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:26Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:26Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ git init -q
+stdout:
+stderr:
+exit: 0
+
+$ git add .
+stdout:
+stderr:
+exit: 0
+
+$ git -c user.name=QA -c user.email=qa@example.test commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1 is current (latest release 0.147.1; update.mode notify).
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:26Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"0.147.1","state":"current","lookup":{"source":"cache","checkedAt":"2026-11-18T04:09:26Z","error":""},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"next":"none"}
+stderr:
+exit: 0
+
+$ git init -q
+stdout:
+stderr:
+exit: 0
+
+$ git add .
+stdout:
+stderr:
+exit: 0
+
+$ git -c user.name=QA -c user.email=qa@example.test commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+$ ./bin/roundfix profiles check
+stdout:
+recommendations: snapshot 2026-11-17; 10 current, 0 differ, 0 pinned
+stderr:
+exit: 0
+
+$ ./bin/roundfix profiles check
+stdout:
+recommendations: docs differs from snapshot 2026-09-30
+  configured:  codex / gpt-6.1-terra / high, then claude / sonnet / high (project)
+  recommended: codex / gpt-5.6-luna / max, then claude / sonnet / high
+recommendations: chore differs from snapshot 2026-09-30
+  configured:  codex / gpt-6-luna / max, then claude / sonnet / high (project)
+  recommended: codex / gpt-5.6-luna / max, then claude / sonnet / high
+recommendations: review differs from snapshot 2026-09-30
+  configured:  codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high (project)
+  recommended: codex / gpt-5.6-luna / max, then codex / gpt-6.1-sol / high
+recommendations: snapshot 2026-09-30; 7 current, 3 differ, 0 pinned
+recommendations: adopt with `roundfix profiles check --apply --scope user|project`, or declare a deviation
+stderr:
+exit: 0
+
+$ ./bin/roundfix profiles check --json
+stdout:
+{
+  "schema": "roundfix/profiles-check/v1",
+  "snapshot": "2026-11-17",
+  "current": 10,
+  "differ": 0,
+  "pinned": 0,
+  "categories": [
+    {
+      "category": "general",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "backend",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "frontend",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "claude",
+          "model": "opus",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "xhigh"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "claude",
+          "model": "opus",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "xhigh"
+          }
+        ]
+      }
+    },
+    {
+      "category": "data",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "infra",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "docs",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-terra",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-terra",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "test",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "chore",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "qa",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "review",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    }
+  ]
+}
+stderr:
+exit: 0
+
+$ ./bin/roundfix profiles check --json
+stdout:
+{
+  "schema": "roundfix/profiles-check/v1",
+  "snapshot": "2026-09-30",
+  "current": 7,
+  "differ": 3,
+  "pinned": 0,
+  "categories": [
+    {
+      "category": "general",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "backend",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "frontend",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "claude",
+          "model": "opus",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "xhigh"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "claude",
+          "model": "opus",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "xhigh"
+          }
+        ]
+      }
+    },
+    {
+      "category": "data",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "infra",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "docs",
+      "status": "differs",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-terra",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-5.6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "test",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "chore",
+      "status": "differs",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-5.6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "sonnet",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "qa",
+      "status": "current",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6.1-sol",
+          "reasoning_effort": "high"
+        },
+        "fallbacks": [
+          {
+            "runtime": "claude",
+            "model": "opus",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    },
+    {
+      "category": "review",
+      "status": "differs",
+      "source": "project",
+      "configured": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "high"
+          }
+        ]
+      },
+      "recommended": {
+        "preferred": {
+          "runtime": "codex",
+          "model": "gpt-5.6-luna",
+          "reasoning_effort": "max"
+        },
+        "fallbacks": [
+          {
+            "runtime": "codex",
+            "model": "gpt-6.1-sol",
+            "reasoning_effort": "high"
+          }
+        ]
+      }
+    }
+  ]
+}
+stderr:
+exit: 0
+
+internal/cli/profiles_check.go: byte-identical to Delivery Base
+internal/cli/profiles_check_apply.go: byte-identical to Delivery Base
+internal/cli/doctor.go: byte-identical to Delivery Base
+internal/cli/upgrade.go: byte-identical to Delivery Base
+Result: pass
+No-config, all-current and current-snapshot-pin text/JSON bytes matched the freshly built Delivery Base exactly. profiles check text/JSON differences are exactly the new snapshot and three changed recommendations, statuses and counts; legacy check/apply/Doctor/upgrade source bytes are unchanged.

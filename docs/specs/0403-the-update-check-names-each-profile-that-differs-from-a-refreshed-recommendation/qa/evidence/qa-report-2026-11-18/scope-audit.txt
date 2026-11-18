@@ -1,0 +1,24 @@
+git diff-tree --no-commit-id --name-only -r 5de07339
+internal/cli/recommendation_check_scope_test.go
+
+git merge-base --is-ancestor 7bc0c6f0c15daaa94424c311de4a910d32a15f9f 5de07339
+exit: 0
+git diff-tree --no-commit-id --name-only -r d290734e
+docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/task_04.md
+
+git merge-base --is-ancestor 7bc0c6f0c15daaa94424c311de4a910d32a15f9f d290734e
+exit: 0
+git diff-tree --no-commit-id --name-only -r 61d5d3b607d3ba7d6fb180833d8f42b9758c509f
+docs/references/behavior-surfaces.json
+docs/specs/0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation/task_04.md
+internal/cli/cli.go
+internal/cli/update_check.go
+internal/cli/update_check_recommendations.go
+internal/cli/update_check_recommendations_test.go
+internal/cli/update_check_test.go
+
+git merge-base --is-ancestor 7bc0c6f0c15daaa94424c311de4a910d32a15f9f 61d5d3b607d3ba7d6fb180833d8f42b9758c509f
+exit: 0
+internal/daemon: unchanged from Delivery Base
+internal/preflight: unchanged from Delivery Base
+Seeded mechanical authorization rows cover task_01 through task_03. Remaining Task04 and prerequisite commits touch only CLI implementation/test, the declared Task file and the sanctioned Behavior Surface Record; none introduces a new governed tooling path. No consequent-fix declaration exists; the seeded mechanical skip remains.

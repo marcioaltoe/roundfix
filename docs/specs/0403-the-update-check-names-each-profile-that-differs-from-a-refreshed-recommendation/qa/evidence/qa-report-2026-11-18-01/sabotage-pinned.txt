@@ -1,0 +1,33 @@
+Mutation: if row.Status != roundconfig.RecommendationDiffers { => if row.Status != roundconfig.RecommendationDiffers && row.Status != roundconfig.RecommendationPinned {
+$ go test -c -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-neg-3w03k4et/overlay.json -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-pinned.test ./internal/cli
+stdout:
+
+stderr:
+
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation-bb90e40dab2376a1-819e6d83-d171622f/run_20261118T041900Z_30f6d4090953ff40/bin/qa403-pinned.test -test.v -test.timeout=5m -test.run=^TestUpdateCheckNamesEachProfileThatDiffers$/pinned_and_current_add_nothing$
+stdout:
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+    update_check_recommendations_test.go:172: text: exit=0
+        stdout=Roundfix 99.0.0 is current (latest release 99.0.0; update.mode notify).
+        Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+        Profiles: review (project) is pinned to an older snapshot (2026-11-17: Keep the validated model); recommended codex / gpt-6-luna / max, then codex / gpt-6.1-sol / high as of 2026-11-17; re-pin with profiles.review.deviation.from: 2026-11-17 in Project Config, or adopt with roundfix profiles check --apply --scope project.
+        
+        want stdout=Roundfix 99.0.0 is current (latest release 99.0.0; update.mode notify).
+        Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+        
+        stderr="" want stderr=""
+--- FAIL: TestUpdateCheckNamesEachProfileThatDiffers (0.00s)
+    --- FAIL: TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing (0.05s)
+FAIL
+
+stderr:
+suiteguard: guard cost: measured 3323 paths; fingerprint took 526.935125ms before and 152.097833ms after
+
+exit: 1
+PASS: mutation killed by the named complete-output assertion; repository source SHA256 f619f103876f0a1457c50f8418ddd627e8e6a8f3b2af749ce2ea60ad2af63cde unchanged.
