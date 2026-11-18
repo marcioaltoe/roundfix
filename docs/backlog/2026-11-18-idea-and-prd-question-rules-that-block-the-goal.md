@@ -4,8 +4,6 @@ status: open
 created: 2026-11-18
 spec: null
 reason: null
-waiting_on: "the single release of the 0399-0406 queue (maintainer: Spec after the release)"
-since: 2026-11-18
 ---
 
 # The Idea and PRD stages question the rules that block the goal
@@ -17,6 +15,8 @@ The maintainer, 2026-11-18, verbatim: "E eu quero também que esteja no baseline
 ## Decisions
 
 - 2026-11-18: when → "Spec após a release"; authorization → "Mesmas do BE (Recommended)" (to be recorded in the Spec's `_authorization.md` when it is written).
+
+- 2026-11-18 (`/roundfix --follow-up`): the single release v0.148.0 is out, so the wait ended; Idea-stage judgment (Jev) indicated (shape_open 0.86, unverified_assumption 0.64, market_question 0.12); the maintainer chose "Ideia agora (Recommended)". Delivery order: third, after the corrective qa-gate Spec and the Delivery Queue fix.
 
 ## Where
 

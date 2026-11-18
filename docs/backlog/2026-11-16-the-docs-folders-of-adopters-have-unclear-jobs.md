@@ -4,8 +4,6 @@ status: open
 created: 2026-11-16
 spec: null
 reason: null
-waiting_on: "the maintainer's decision to schedule it (he said not now on 2026-11-16)"
-since: 2026-11-16
 ---
 
 # The documentation folders of adopters have unclear jobs, and reference files sit at the repository root
@@ -26,3 +24,7 @@ Each repository uses the Baseline without a common layout. An agent and a person
 ## Shape
 
 Non-binding: rename or regroup the folders so each name says its job, decide whether backlog and findings stay apart, state what `docs/design/` holds, give root reference files a home under `docs/`, and have `roundfix doctor` detect a layout that departs from the standard and offer the fix. The maintainer asked for this as future work, not now: "Não isso como algo a ser feito agora, mas eu quero que fique no backlog para futuro." He also doubted the benefit: "talvez a gente vai ter impacto zero de benefício."
+
+## Decisions
+
+- 2026-11-18 (`/roundfix --follow-up`, AskUserQuestion): grouped into the Spec that adopts `docs/backlog/2026-11-18-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export.md` — "Juntar à Spec do Indexus (Recommended)".
