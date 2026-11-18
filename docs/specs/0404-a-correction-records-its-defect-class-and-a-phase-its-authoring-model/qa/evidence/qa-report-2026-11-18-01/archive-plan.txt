@@ -1,0 +1,16 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix archive 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model --plan --offline
+stdout:
+archive plan for 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model: removes 110 file(s) (14248185 bytes) and writes docs/history/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model.md
+core 12 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-18-01.md, qa/qa-report-2026-11-18.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 91 file(s) (13788515 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 39155 bytes: no advice (offline)
+candidate references/2026-11-17-fable-and-opus-authoring-study.md 8848 bytes: no advice (offline)
+candidate references/2026-11-17-item-branch-commits-and-author-session-measurement.md 5467 bytes: no advice (offline)
+candidate references/2026-11-17-maintainer-request-and-answers.md 5216 bytes: no advice (offline)
+candidate references/2026-11-17-phase-record-and-causes-view-measurement.md 3172 bytes: no advice (offline)
+candidate references/2026-11-17-tasks-measurements.md 5117 bytes: no advice (offline)
+candidate references/2026-11-17-techspec-design-measurements.md 10237 bytes: no advice (offline)
+promote with: roundfix archive 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model --promote <path>
+stderr:
+exit: 0

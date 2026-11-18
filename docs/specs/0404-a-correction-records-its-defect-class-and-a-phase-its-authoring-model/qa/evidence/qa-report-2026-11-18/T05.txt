@@ -1,0 +1,7 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T051745Z_d63008af9d14015a/bin/roundfix corrections report
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-transcript-4kneqovz/repo
+stdout:
+Corrections of 0 Specs delivered from 2026-10-19 to 2026-11-18, read from /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-home-po62hisn/.roundfix.
+Not counted: 0 Specs with an unknown model for a phase; 0 undeclared Corrections; 0 Specs delivered without a record on this machine; 0 Specs without their plan on the default branch.
+stderr:
+exit: 0

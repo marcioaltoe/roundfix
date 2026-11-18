@@ -1,0 +1,212 @@
+[
+  [
+    "Q01",
+    "repository Verification",
+    "Daemon supplied make verify-changed, exit 0; no rerun.",
+    "static-gate.txt"
+  ],
+  [
+    "Q02",
+    "Requirement 2",
+    "Run named tests and all eight packages with -v and explicit timeout, plus docscontract; check every named pass.",
+    "packages.txt"
+  ],
+  [
+    "T01",
+    "Requirement 7 (Surface Transcript 1)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T01.txt"
+  ],
+  [
+    "T02",
+    "Requirement 4 (Surface Transcript 2)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T02.txt"
+  ],
+  [
+    "T03",
+    "Requirement 4 (Surface Transcript 3)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T03.txt"
+  ],
+  [
+    "T04",
+    "Requirement 7 (Surface Transcript 4)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T04.txt"
+  ],
+  [
+    "T05",
+    "Requirement 7 (Surface Transcript 5)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T05.txt"
+  ],
+  [
+    "T06",
+    "Requirement 6 (Surface Transcript 6)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T06.txt"
+  ],
+  [
+    "T07",
+    "Requirement 6 (Surface Transcript 7)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T07.txt"
+  ],
+  [
+    "T08",
+    "Requirement 4 (Surface Transcript 8)",
+    "Run the transcript command in a fresh Git fixture and HOME; match stdout and stderr line by line and exit exactly; re-read any written record.",
+    "T08.txt"
+  ],
+  [
+    "Q04",
+    "Requirement 4",
+    "Declare all answers, reject malformed input without writes, count one and many signs, redeclare and withdraw, reopen from linked worktree and clone, compare fixed dispositions with Delivery Base.",
+    "declarations.txt"
+  ],
+  [
+    "Q05",
+    "Requirement 5",
+    "Run named sign, merge, retry, status and configuration tests; exercise invalid Project Config, ignored User Config and ClassifyPark next action.",
+    "controls.txt"
+  ],
+  [
+    "Q06",
+    "Requirement 6",
+    "Run all authoring phases with model, missing model, missing session, long model and effort alone; compare release and old entry with Delivery Base; verify clone identity and credential absence.",
+    "phases.txt"
+  ],
+  [
+    "Q07",
+    "Requirement 7",
+    "Read report text and JSON from delivered fixture; assert counts, no percent or ranking, quoted hostile reason, integer counts and unchanged repository/HOME inventory.",
+    "report.txt"
+  ],
+  [
+    "Q08",
+    "Requirement 8",
+    "Compare actual runs causes text, JSON and signature digest with freshly built Delivery Base on the same fixture.",
+    "causes-parity.txt"
+  ],
+  [
+    "Q09",
+    "Requirement 9",
+    "Build Delivery Base from a fresh committed archive; compare fixed finding, release phase and deliver status through both binaries with the key absent.",
+    "base-parity.txt"
+  ],
+  [
+    "S01",
+    "Requirement 10 sabotage 1",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S01.txt"
+  ],
+  [
+    "S02",
+    "Requirement 10 sabotage 2",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S02.txt"
+  ],
+  [
+    "S03",
+    "Requirement 10 sabotage 3",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S03.txt"
+  ],
+  [
+    "S04",
+    "Requirement 10 sabotage 4",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S04.txt"
+  ],
+  [
+    "S05",
+    "Requirement 10 sabotage 5",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S05.txt"
+  ],
+  [
+    "S06",
+    "Requirement 10 sabotage 6",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S06.txt"
+  ],
+  [
+    "S07",
+    "Requirement 10 sabotage 7",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S07.txt"
+  ],
+  [
+    "S08",
+    "Requirement 10 sabotage 8",
+    "Mutate only its named behavior in a separate freshly archived and committed temporary head; run its exact named test with -v and -timeout; require the intended assertion to fail.",
+    "S08.txt"
+  ],
+  [
+    "Q11",
+    "Requirement 2 (glossary contracts); Requirement 12 (glossary history)",
+    "Run glossary/closed-list contracts; compare every definition against Delivery Base and assert exactly five additions and two revisions.",
+    "history-glossary.txt"
+  ],
+  [
+    "Q12",
+    "Requirement 12",
+    "Read each Task commit changed-file scope, declarations, recorded paths, governed authorization and chronology; check every forbidden path and protected skill section.",
+    "history-scope.txt"
+  ],
+  [
+    "PR",
+    "Pull Request row",
+    "Use prompt no-open-PR fact and pre-PR equivalent controls: authority, Daemon checks, threads, Merge-Ready and claimed head.",
+    "pull-request.txt"
+  ],
+  [
+    "OUT",
+    "outside-evidence row; Requirement 7",
+    "Check the published CONSORT and NCHS excerpts supplied in PRD Acceptance evidence offline against actual count/rate and suppression-reason output.",
+    "outside-evidence.txt"
+  ],
+  [
+    "U01",
+    "over the first 20 Specs this repository delivers after the setting is on, the report's `undeclared` count is 0 and no `plan` Correction lacks its artifact.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U02",
+    "over the same 20 Specs, at most one Correction in ten is declared `unclear`.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U03",
+    "at least 95 of every 100 entries of an Authoring Phase written after the release hold a model and an effort.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U04",
+    "of the first 20 Corrections the maintainer reads, at least 16 keep their class.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U05",
+    "the operator answers \"plan defects per authoring model\" for those 20 Specs from the report alone and records what was missing.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U06",
+    "one adopter that leaves the setting off delivers its first Spec after its update with no new refusal and no new required input.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ],
+  [
+    "U07",
+    "this repository's Project Config holds the setting on.",
+    "Verify the release/adopter/maintainer requirement cannot be observed in this hermetic gate; retain exact criterion and satisfied-by.",
+    "unreachable.txt"
+  ]
+]

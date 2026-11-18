@@ -1,0 +1,39 @@
+Fixed disposition without declaration: exact payload/streams/exit match except recordedAt.
+{"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo","headCommit":"99b4862254b0b9328d8fed125c5f5f2f39df46d7","finding":"F1","text":"seed.txt:1: fixture finding","disposition":"fixed","fixedBy":"231ac3d13c58532370416bacb1a6084b98992c6a","recordedAt":"2026-11-18T09:59:27Z"}
+
+{"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo","headCommit":"99b4862254b0b9328d8fed125c5f5f2f39df46d7","finding":"F1","text":"seed.txt:1: fixture finding","disposition":"fixed","fixedBy":"231ac3d13c58532370416bacb1a6084b98992c6a","recordedAt":"2026-11-18T09:59:27Z"}
+
+With class: same ledger payload and stdout prefix, plus Correction declaration.
+{"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo","headCommit":"99b4862254b0b9328d8fed125c5f5f2f39df46d7","finding":"F1","text":"seed.txt:1: fixture finding","disposition":"fixed","fixedBy":"231ac3d13c58532370416bacb1a6084b98992c6a","recordedAt":"2026-11-18T09:59:27Z"}
+Correction C12 of 0412-example: implementation; covers finding F1@99b4862 and commit 231ac3d.
+
+Recorded release for claude session qa-session
+exit 0 keys ['schema', 'kind', 'time', 'phase', 'spec', 'repository', 'harness', 'session', 'boundary']
+Recorded release for claude session qa-session
+exit 0 keys ['schema', 'kind', 'time', 'phase', 'spec', 'repository', 'harness', 'session', 'boundary']
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid rev-parse HEAD
+stdout:
+e8a6ec05340f6094b5d330a14880a6c965a41a6b
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/qa-0404-fixture queue /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo 0412-example main e8a6ec05340f6094b5d330a14880a6c965a41a6b
+stdout:
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix-qa-base deliver status
+stdout:
+0412-example	merging	-	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo
+Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix deliver status
+stdout:
+0412-example	merging	-	/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo
+Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none
+Usage: no Runs recorded
+stderr:
+exit: 0

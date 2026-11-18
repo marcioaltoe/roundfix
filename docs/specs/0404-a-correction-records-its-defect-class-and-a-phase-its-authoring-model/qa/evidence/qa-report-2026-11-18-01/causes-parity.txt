@@ -1,0 +1,25 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix-qa-base runs causes --format text
+stdout:
+Causes: 0 item(s) from 0 terminal Spec Run(s) in window *..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 0, implementation-defect 0, environment 0, unclassified 0; repository knowledge 0 of 0 classified; signatures 53e5e5a76410
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix runs causes --format text
+stdout:
+Causes: 0 item(s) from 0 terminal Spec Run(s) in window *..*; scope-or-authorization 0, shared-section-contract 0, repository-convention 0, implementation-defect 0, environment 0, unclassified 0; repository knowledge 0 of 0 classified; signatures 53e5e5a76410
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix-qa-base runs causes --format json
+stdout:
+{"schema":"roundfix/runs-causes/v1","window":{"since":null,"until":null},"signatures_sha256":"53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f","runs":0,"items":[],"tasks":[],"summary":{"classified":0,"environment":0,"implementation-defect":0,"items":0,"repository-convention":0,"repository_knowledge":0,"scope-or-authorization":0,"shared-section-contract":0,"unclassified":0},"specs_not_found":[]}
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix runs causes --format json
+stdout:
+{"schema":"roundfix/runs-causes/v1","window":{"since":null,"until":null},"signatures_sha256":"53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f","runs":0,"items":[],"tasks":[],"summary":{"classified":0,"environment":0,"implementation-defect":0,"items":0,"repository-convention":0,"repository_knowledge":0,"scope-or-authorization":0,"shared-section-contract":0,"unclassified":0},"specs_not_found":[]}
+stderr:
+exit: 0
+
+Equal signature digest: 53e5e5a764109b92806c6efe4d88603c13e5de2c6d21816755406deb11b6dd5f

@@ -1,0 +1,41 @@
+command: go test -count=1 -timeout 10m -v -run '^TestCorrectionSignsOfAnItemBranchLikePullRequest892$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-sabotage-4-h1y54yor
+stdout:
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892
+=== PAUSE TestCorrectionSignsOfAnItemBranchLikePullRequest892
+=== CONT  TestCorrectionSignsOfAnItemBranchLikePullRequest892
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/nine_commits_and_queue_proofs
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/default_merge_and_derived_merge
+    correction_signs_test.go:154: merge signs=[{Kind:commit ID:ea276905ab16e42412129ca2c42148bf3c934062 Subject:derived content}]
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/fixed_finding_and_dismissal
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/finding_recorded_in_an_earlier_worktree
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/Corrective_Task_in_active_and_archived_graph
+=== RUN   TestCorrectionSignsOfAnItemBranchLikePullRequest892/subject_is_bounded_data
+--- FAIL: TestCorrectionSignsOfAnItemBranchLikePullRequest892 (1.63s)
+    --- PASS: TestCorrectionSignsOfAnItemBranchLikePullRequest892/nine_commits_and_queue_proofs (0.56s)
+    --- FAIL: TestCorrectionSignsOfAnItemBranchLikePullRequest892/default_merge_and_derived_merge (0.30s)
+    --- PASS: TestCorrectionSignsOfAnItemBranchLikePullRequest892/fixed_finding_and_dismissal (0.17s)
+    --- PASS: TestCorrectionSignsOfAnItemBranchLikePullRequest892/finding_recorded_in_an_earlier_worktree (0.16s)
+    --- PASS: TestCorrectionSignsOfAnItemBranchLikePullRequest892/Corrective_Task_in_active_and_archived_graph (0.29s)
+    --- PASS: TestCorrectionSignsOfAnItemBranchLikePullRequest892/subject_is_bounded_data (0.15s)
+FAIL
+suiteguard: guard cost: measured 3281 paths; fingerprint took 603.765959ms before and 160.659041ms after
+FAIL	roundfix/internal/cli	2.872s
+FAIL
+stderr:
+exit: 1
+
+Mutation:
+diff --git a/internal/cli/correction_signs.go b/internal/cli/correction_signs.go
+index a697f9a..43d6c24 100644
+--- a/internal/cli/correction_signs.go
++++ b/internal/cli/correction_signs.go
+@@ -73,7 +73,7 @@ func (workflow *commandDeliveryWorkflow) CorrectionSigns(ctx context.Context, gi
+ 			seen[id] = true
+ 		}
+ 	}
+-	commits, err := workflow.git.RunGit(ctx, gitRoot, "rev-list", "--first-parent", defaultHead+".."+head)
++	commits, err := workflow.git.RunGit(ctx, gitRoot, "rev-list", defaultHead+".."+head)
+ 	if err != nil {
+ 		return snapshot, fmt.Errorf("read first-parent item commits: %w", err)
+ 	}

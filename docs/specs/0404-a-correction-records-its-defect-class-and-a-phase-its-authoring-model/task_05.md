@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

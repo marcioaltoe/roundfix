@@ -1,0 +1,10 @@
+package main
+import("context";"encoding/json";"fmt";"os";"time";"roundfix/internal/store";"roundfix/internal/delivery";"roundfix/internal/spec")
+func main(){if err:=run();err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}}
+func run()error{ctx:=context.Background();a:=os.Args[1:];if len(a)==0{return fmt.Errorf("mode required")};switch a[0]{
+case "archive":
+ r:=spec.ArchiveRecord{Spec:a[1],Title:"QA fixture",Created:time.Now().UTC().Format("2006-01-02"),Archived:time.Now().UTC().Format("2006-01-02"),Disposition:spec.ArchivePass,Source:"docs/specs/"+a[1],SourceRevision:a[2],QATask:"task_03",QAVerdict:"pass",Type:"feat",Outcome:"Offline QA fixture"};b,e:=spec.RenderArchiveRecord(r);if e!=nil{return e};_,e=os.Stdout.Write(b);return e
+case "park":return json.NewEncoder(os.Stdout).Encode(delivery.ClassifyPark(store.DeliveryQueue{},store.DeliveryQueueItem{SpecSlug:a[1],Blocker:"defect-class-undeclared: commit abcdef0"}))
+case "init","queue":
+ db,e:=store.Open(ctx,os.Getenv("HOME"));if e!=nil{return e};defer db.Close();if a[0]=="init"{return nil};q,e:=db.CreateDeliveryQueue(ctx,a[1],[]string{a[2]});if e!=nil{return e};it:=q.Items[0];it.Branch=a[3];it.Worktree=a[1];it.Stage=store.DeliveryStageMerging;it.CandidateCommits=[]string{a[4]};if _,_,_,e=db.RecordDeliveryQueueItemWorktree(ctx,a[1],it.SpecSlug,it.Branch,it.Worktree);e!=nil{return e};return db.UpdateDeliveryQueueItem(ctx,a[1],it)
+};return fmt.Errorf("unknown mode")}

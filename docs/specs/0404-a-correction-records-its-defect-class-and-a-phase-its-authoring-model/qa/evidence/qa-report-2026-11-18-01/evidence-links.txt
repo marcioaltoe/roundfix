@@ -1,0 +1,2 @@
+All 51 local QA Report links resolve; git check-ignore exits 1 with no ignored path.
+Results table is contiguous, 35 rows and exactly three columns. Terminal statuses: pass 27; environment block 1; declared block 7. Every row has non-empty typed inputs. No Agent-authored evidence_snapshots.

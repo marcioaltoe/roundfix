@@ -1,0 +1,8 @@
+{
+  "local_links": 58,
+  "missing": [],
+  "ignored": [],
+  "results_rows": 37,
+  "typed_input_blocks": 34,
+  "commands_running": 0
+}

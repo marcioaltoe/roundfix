@@ -1,0 +1,39 @@
+// QA-only fixture setup and read-only auditors, compiled via a temporary overlay.
+package main
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "os"
+ "path/filepath"
+ "strings"
+ "time"
+ "roundfix/internal/spec"
+ "roundfix/internal/store"
+ "roundfix/internal/delivery"
+ "roundfix/internal/speccheck"
+ "roundfix/internal/secretscan"
+ "roundfix/internal/baseline"
+ "roundfix/internal/correction"
+)
+func must(err error) { if err!=nil { panic(err) } }
+func main() {
+ ctx:=context.Background(); repo,err:=os.Getwd();must(err);h,err:=os.UserHomeDir();must(err)
+ switch os.Args[1] {
+ case "db": db,err:=store.Open(ctx,h);must(err);must(db.Close());fmt.Println("Fixture Run Database initialized; no Run started")
+ case "queue":
+  db,err:=store.Open(ctx,h);must(err);defer db.Close()
+  s:=os.Args[2];branch:=os.Args[3];head:=os.Args[4]
+  q,err:=db.CreateDeliveryQueue(ctx,repo,[]string{s});must(err);item:=q.Items[0];item.Branch=branch;item.Worktree=repo;item.Stage=store.DeliveryStageMerging;item.CandidateCommits=[]string{head}
+  _,_,_,err=db.RecordDeliveryQueueItemWorktree(ctx,repo,s,branch,repo);must(err);must(db.UpdateDeliveryQueueItem(ctx,repo,item));fmt.Println("Fixture queue persisted; no Delivery Owner started")
+ case "park": p:=delivery.ClassifyPark(store.DeliveryQueue{},store.DeliveryQueueItem{SpecSlug:"0412-example",Blocker:delivery.BlockerDefectClassUndeclared+": Corrective Task task_04"});must(json.NewEncoder(os.Stdout).Encode(p))
+ case "archive":
+  s:=os.Args[2];now:=time.Now().UTC().Format("2006-01-02");r:=spec.ArchiveRecord{Spec:s,Title:"QA fixture",Created:now,Archived:now,Disposition:spec.ArchivePass,Source:"docs/specs/"+s,SourceRevision:os.Args[3],QATask:"task_03",QAVerdict:"pass",Type:"feat",Outcome:"QA fixture delivery"};b,err:=spec.RenderArchiveRecord(r);must(err);dir:=filepath.Join(repo,"docs/history/specs");must(os.MkdirAll(dir,0700));must(os.WriteFile(filepath.Join(dir,s+".md"),b,0600))
+ case "snapshot":
+  id,err:=baseline.InspectRepositoryIdentity(ctx,repo,nil);must(err);s:=os.Args[2];p:=correction.Path(h,id.Digest,s);b,err:=correction.EncodeSnapshot(s,correction.Snapshot{Time:time.Now().UTC(),Head:os.Args[3],Signs:[]correction.Sign{{Kind:"task",ID:"task_04"}},Dismissed:1});must(err);f,err:=os.OpenFile(p,os.O_WRONLY|os.O_APPEND,0600);must(err);_,err=f.Write(b);must(err);must(f.Close());fmt.Println("Fixture signs snapshot appended")
+ case "governed": m:=map[string]bool{};for _,p:=range os.Args[2:] {m[p]=speccheck.GovernedPath(p)};must(json.NewEncoder(os.Stdout).Encode(m))
+ case "scan":
+  n:=0;err:=filepath.WalkDir(os.Args[2],func(p string,d os.DirEntry,e error)error {if e!=nil{return e};if d.IsDir(){return nil};b,e:=os.ReadFile(p);if e!=nil{return e};for _,m:=range secretscan.ScanContent(p,b){fmt.Println(m.String());n++};return nil});must(err);fmt.Printf("Secret Matches: %d\n",n);if n>0{os.Exit(1)}
+ default: panic(strings.Join(os.Args," "))
+ }
+}

@@ -1,0 +1,7 @@
+command: ./bin/roundfix spec check 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model --strict
+stdout:
+stderr:
+roundfix: spec check failed: git rev-parse --is-inside-work-tree: error: missing config key GIT_CONFIG_KEY_0
+fatal: unable to parse command-line config: exit status 128
+Run 'roundfix spec check --help' for usage.
+exit: 2

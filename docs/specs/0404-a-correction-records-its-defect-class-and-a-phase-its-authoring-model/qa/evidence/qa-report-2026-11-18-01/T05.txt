@@ -1,0 +1,33 @@
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid init -b main
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qax-9kx0y7mz/repo/.git/
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid add -A
+stdout:
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid commit --allow-empty -m 'chore: QA root'
+stdout:
+[main (root-commit) d76877f] chore: QA root
+ 1 file changed, 1 insertion(+)
+ create mode 100644 seed
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid rev-parse HEAD
+stdout:
+d76877fc9f8b855fa2d759d2003f7d89fe35e3b4
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix corrections report
+stdout:
+Corrections of 0 Specs delivered from 2026-10-19 to 2026-11-18, read from /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-e5of4799/.roundfix.
+Not counted: 0 Specs with an unknown model for a phase; 0 undeclared Corrections; 0 Specs delivered without a record on this machine; 0 Specs without their plan on the default branch.
+stderr:
+exit: 0
+
+stdout, stderr and exit match Surface Transcript 5 independently, line by line.

@@ -1,0 +1,637 @@
+Before: path -> size, modification time in nanoseconds, SHA-256
+{
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/COMMIT_EDITMSG": [
+    22,
+    1794995968128865855,
+    "3aad5e22321a134c83d035dc95097aaf9474a598f98f95cf90c2b2da2b7749e8"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/HEAD": [
+    21,
+    1794995966562898170,
+    "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/config": [
+    137,
+    1794995966562574838,
+    "cae33efdb02cf774435c1ff9cb16bcc1014606908530c6e1dc727615fe3e8cda"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/description": [
+    73,
+    1794995966560171225,
+    "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/applypatch-msg.sample": [
+    478,
+    1794995966560647764,
+    "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/commit-msg.sample": [
+    1972,
+    1794995966560316516,
+    "efc1401b0e99d1ff51494d154d98b46c1e99059bcd8bf9f73cecde19fd3eb23b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/fsmonitor-watchman.sample": [
+    4611,
+    1794995966560741722,
+    "9159720099ad5595b8e66645cbfd47763c1e920f46e0b50ae75e642bbec57ef0"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/post-update.sample": [
+    189,
+    1794995966560951388,
+    "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-applypatch.sample": [
+    424,
+    1794995966561092304,
+    "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-commit.sample": [
+    1649,
+    1794995966560575223,
+    "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-merge-commit.sample": [
+    416,
+    1794995966561021763,
+    "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-push.sample": [
+    1374,
+    1794995966561165887,
+    "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-rebase.sample": [
+    4898,
+    1794995966560423265,
+    "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-receive.sample": [
+    544,
+    1794995966560809722,
+    "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/prepare-commit-msg.sample": [
+    1492,
+    1794995966560883263,
+    "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/push-to-checkout.sample": [
+    2783,
+    1794995966561307136,
+    "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/sendemail-validate.sample": [
+    2308,
+    1794995966560503515,
+    "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/update.sample": [
+    3650,
+    1794995966561238303,
+    "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/index": [
+    412,
+    1794995968128208150,
+    "c7e726c405423df61e0507c0800b7dffbbb916b5066f4c69ccb0634a08840464"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/info/exclude": [
+    240,
+    1794995966560091850,
+    "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/HEAD": [
+    484,
+    1794995968129596351,
+    "29b6f09a4180c706db15854fc54b6390f3548df145331239f76eb4859981d207"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/refs/heads/main": [
+    484,
+    1794995968129632476,
+    "29b6f09a4180c706db15854fc54b6390f3548df145331239f76eb4859981d207"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/refs/heads/test/qa-linked": [
+    157,
+    1794995967189454127,
+    "9624d79fdb52a6f7107d9b60c32b72a6c6234e16a5f1bb105d166598fabc339d"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/08/c97c2e0faa2aa365c25eecaa3ab495c57d2e3e": [
+    102,
+    1794995966596428000,
+    "c43678152953ad757005872942917955f3b3187b22c80dab3a43cba9baa575d4"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/23/1ac3d13c58532370416bacb1a6084b98992c6a": [
+    168,
+    1794995966606912671,
+    "86ae8b63bad94e8d20fa2d7e6c71deed0b30da2661bedf16014279fe23016a38"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/24/3c2761971b96702c1677d83a2299f840a9e1ef": [
+    60,
+    1794995968126752865,
+    "6cdeb38e6a91e11199a3fe18a221cdb1656ba49d327e8a87f1277e7518320d4e"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/33/648912e12bf3171db6157fab6cb87ff902bed5": [
+    54,
+    1794995966605190471,
+    "3096402ce1e2180fdcbc392cdf42ad2e24c126904ed2fe3415669fae2a652339"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/3e/7acdf3f869a951f0c5632d03f04381dceab2ae": [
+    75,
+    1794995966598100379,
+    "91b81d8d792a6cc31908455f59f5e156f86e27c9ba77791553c82d389943bd85"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/4c/7603f05b4f05cfd8f3756508b44f9c3cf5bc84": [
+    104,
+    1794995966596582678,
+    "9abde3d0c7712901abba8009125d7b99f584abd63df9932523a5f8bcaba1b305"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/79/b7f0ba0fd15e52da2dc60eb9759c147fcb603c": [
+    75,
+    1794995966597717506,
+    "da4351a6ac492b455d439af80bce2628ce53c5c1e2b32308e3e596b741d520b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/7a/af4377959ef1e6c64e444054f62b81fa23414d": [
+    49,
+    1794995968127526611,
+    "f81fce347b89d479298780f7578c6b0536f5b7c44e0da34fabd303cde0983136"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/7b/fcd205cf74de974f9b0d235f11a156c96a47fb": [
+    139,
+    1794995966597350883,
+    "3c44f2c7123e4fe6d7a394aeab457921afb085d0f6f04eaa5a1493edc2dfcca7"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/86/7555239ed623614e855c0fcb14bc0eacc79ffa": [
+    47,
+    1794995968127150405,
+    "a64e86951a92f615dd28cbba93293b9055e6914af9eee55e2f01a258310d4e86"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/8c/746e8438ac69ded34d5d92456140a9665fcbc2": [
+    167,
+    1794995966604809472,
+    "0f67c0573b271ed41e19022c7fb6fb099aa1720d9303ec212a1c3cc089632f3b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/95/f2dcc18e9494be99207ded57c5d6c4c0c812ba": [
+    70,
+    1794995966598491544,
+    "1e7e619f7194c9fbe27194322375bec40a05f64e093f91236a4d166c31cb96bd"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/99/b4862254b0b9328d8fed125c5f5f2f39df46d7": [
+    131,
+    1794995966577048687,
+    "564de0181034411ca9211fb65d34620755a8dfc53d02a3d1c289011f1fce475c"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/a8/88fc540c9bef8fbf8a9de38a82d599d43f75df": [
+    272,
+    1794995968120229229,
+    "fba1455fe75cd5d2aab1e50884887708429175508202acdc3f34849cb8ca9193"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/b2/4329d42538b0b0d9634f9636c62f6b0e57da9a": [
+    47,
+    1794995966605548219,
+    "76000288883b25f21010f185b2750516e98803022fcbbb285e869f9d9bb3cfdb"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/da/18525c4ae1734708d560f0ca0486fff0a9fa67": [
+    49,
+    1794995966576016483,
+    "8fc35edcfa12b7c5c37ad965837a1e9f8a51c4c34721fefe6e402b88cbbee99a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/e6/c109c0206096ab38f718cc320703339bfb410f": [
+    79,
+    1794995966596977884,
+    "f23edab1fe7c6f4f2f6cb71439e8089158266a5827fa429f644b16de433337d1"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/e8/a6ec05340f6094b5d330a14880a6c965a41a6b": [
+    164,
+    1794995968129045979,
+    "a300dc7e4a40c267cebc3bfdd276f0d798e9dc67adf83e99458df9d575f61ace"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/f4/9e88967cc567569a6a15ada14c461cc620d7fa": [
+    119,
+    1794995968127920318,
+    "43375b63829ffcbac324c8f1a3df7ea06b2b0e8ca1fb132440aa8d0799dbf405"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/fd/57d13ccaf15d5a0e7d0122150f31822b850d9f": [
+    120,
+    1794995966605911217,
+    "f0c6ee839faf91345b383770bb346560bbc436d8935f6c21e3a20cfd774d8c2b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/refs/heads/main": [
+    41,
+    1794995968129554768,
+    "d59890132ff8045ada5231b869d86b5ee7160100d1baeb0619bc6b69f5fd274f"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/refs/heads/test/qa-linked": [
+    41,
+    1794995967189014837,
+    "993c04608f03559d5c3af66b46206fb110042db05f0011c06484812a20c498b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/HEAD": [
+    31,
+    1794995967190874245,
+    "a53b43635b2cf260ca3e25b81df17a30a105c3cc977c304360ee56c2629f29bf"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/ORIG_HEAD": [
+    41,
+    1794995967197755504,
+    "993c04608f03559d5c3af66b46206fb110042db05f0011c06484812a20c498b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/commondir": [
+    6,
+    1794995967190655829,
+    "340ddcb67a6204f742cd1e28e5b462622dde7daaa8ee36001897196aacdc6d47"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/gitdir": [
+    82,
+    1794995967190541705,
+    "beef8653ede2b31a44846097a8486d51bdcc339556a848e2c06af6eddea6ad7d"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/index": [
+    817,
+    1794995967197544130,
+    "4385471ff52261dad5a91cc4d2b03c94c67011446e15d89756157f7029f8e421"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/logs/HEAD": [
+    284,
+    1794995967198220669,
+    "9674585d3fdce91c1590ea919121589349ed468316f7b3a376856cf3d5774e0a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.roundfixrc.yml": [
+    98,
+    1794995966590680539,
+    "509a322abe20e6d5048de857f8a6cd772e759ba14df0000ea9d921d4753c9a0b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/docs/history/specs/0412-example.md": [
+    407,
+    1794995968113635427,
+    "fb19be1fda89f5fcd0fdda7c24353c6aaba253b05f30d416a9cb192da70515ff"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/seed": [
+    89,
+    1794995966563637583,
+    "ffcbd7f35520f43830dcba08c4f37da8e7dbb8632041cff2c758fea560288c1f"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/corrections/7f467c5b79769582.lock": [
+    0,
+    1794995966712312839,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/corrections/7f467c5b79769582/0412-example.jsonl": [
+    4534,
+    1794995968088046589,
+    "c89831628e955c2326770dc30614a30e119240da33cb1f46a95bd261aeae1320"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/phase-record/2026-11-18.jsonl": [
+    13359,
+    1794995968087934798,
+    "5b9bba6d2162de908930763e60f268d875739f8f89171557626a2440a613b086"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db": [
+    135168,
+    1794995968154607025,
+    "330aa5ccbbec5de54d5c3a11caeb863b2adef2baaa12fac3259e7f9ff5f80afb"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db.lock": [
+    0,
+    1794995968148031598,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review-dispositions.jsonl": [
+    311,
+    1794995967473628534,
+    "b8e44e0087df056a02aa9ac1e4148727e123e1174455cbab15471169fd46ecc8"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review-dispositions.jsonl.lock": [
+    0,
+    1794995967359484448,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review/721e4d7ec2560b2d/pre-pr-review.json": [
+    525,
+    1794995966590960704,
+    "3c6470d623f31d10c5a4f92b237729319e0915acec425a8e1310d1bfe77b4d94"
+  ]
+}
+After: path -> size, modification time in nanoseconds, SHA-256
+{
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/COMMIT_EDITMSG": [
+    22,
+    1794995968128865855,
+    "3aad5e22321a134c83d035dc95097aaf9474a598f98f95cf90c2b2da2b7749e8"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/HEAD": [
+    21,
+    1794995966562898170,
+    "28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/config": [
+    137,
+    1794995966562574838,
+    "cae33efdb02cf774435c1ff9cb16bcc1014606908530c6e1dc727615fe3e8cda"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/description": [
+    73,
+    1794995966560171225,
+    "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/applypatch-msg.sample": [
+    478,
+    1794995966560647764,
+    "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/commit-msg.sample": [
+    1972,
+    1794995966560316516,
+    "efc1401b0e99d1ff51494d154d98b46c1e99059bcd8bf9f73cecde19fd3eb23b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/fsmonitor-watchman.sample": [
+    4611,
+    1794995966560741722,
+    "9159720099ad5595b8e66645cbfd47763c1e920f46e0b50ae75e642bbec57ef0"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/post-update.sample": [
+    189,
+    1794995966560951388,
+    "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-applypatch.sample": [
+    424,
+    1794995966561092304,
+    "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-commit.sample": [
+    1649,
+    1794995966560575223,
+    "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-merge-commit.sample": [
+    416,
+    1794995966561021763,
+    "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-push.sample": [
+    1374,
+    1794995966561165887,
+    "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-rebase.sample": [
+    4898,
+    1794995966560423265,
+    "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/pre-receive.sample": [
+    544,
+    1794995966560809722,
+    "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/prepare-commit-msg.sample": [
+    1492,
+    1794995966560883263,
+    "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/push-to-checkout.sample": [
+    2783,
+    1794995966561307136,
+    "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/sendemail-validate.sample": [
+    2308,
+    1794995966560503515,
+    "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/hooks/update.sample": [
+    3650,
+    1794995966561238303,
+    "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/index": [
+    412,
+    1794995968128208150,
+    "c7e726c405423df61e0507c0800b7dffbbb916b5066f4c69ccb0634a08840464"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/info/exclude": [
+    240,
+    1794995966560091850,
+    "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/HEAD": [
+    484,
+    1794995968129596351,
+    "29b6f09a4180c706db15854fc54b6390f3548df145331239f76eb4859981d207"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/refs/heads/main": [
+    484,
+    1794995968129632476,
+    "29b6f09a4180c706db15854fc54b6390f3548df145331239f76eb4859981d207"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/logs/refs/heads/test/qa-linked": [
+    157,
+    1794995967189454127,
+    "9624d79fdb52a6f7107d9b60c32b72a6c6234e16a5f1bb105d166598fabc339d"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/08/c97c2e0faa2aa365c25eecaa3ab495c57d2e3e": [
+    102,
+    1794995966596428000,
+    "c43678152953ad757005872942917955f3b3187b22c80dab3a43cba9baa575d4"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/23/1ac3d13c58532370416bacb1a6084b98992c6a": [
+    168,
+    1794995966606912671,
+    "86ae8b63bad94e8d20fa2d7e6c71deed0b30da2661bedf16014279fe23016a38"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/24/3c2761971b96702c1677d83a2299f840a9e1ef": [
+    60,
+    1794995968126752865,
+    "6cdeb38e6a91e11199a3fe18a221cdb1656ba49d327e8a87f1277e7518320d4e"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/33/648912e12bf3171db6157fab6cb87ff902bed5": [
+    54,
+    1794995966605190471,
+    "3096402ce1e2180fdcbc392cdf42ad2e24c126904ed2fe3415669fae2a652339"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/3e/7acdf3f869a951f0c5632d03f04381dceab2ae": [
+    75,
+    1794995966598100379,
+    "91b81d8d792a6cc31908455f59f5e156f86e27c9ba77791553c82d389943bd85"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/4c/7603f05b4f05cfd8f3756508b44f9c3cf5bc84": [
+    104,
+    1794995966596582678,
+    "9abde3d0c7712901abba8009125d7b99f584abd63df9932523a5f8bcaba1b305"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/79/b7f0ba0fd15e52da2dc60eb9759c147fcb603c": [
+    75,
+    1794995966597717506,
+    "da4351a6ac492b455d439af80bce2628ce53c5c1e2b32308e3e596b741d520b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/7a/af4377959ef1e6c64e444054f62b81fa23414d": [
+    49,
+    1794995968127526611,
+    "f81fce347b89d479298780f7578c6b0536f5b7c44e0da34fabd303cde0983136"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/7b/fcd205cf74de974f9b0d235f11a156c96a47fb": [
+    139,
+    1794995966597350883,
+    "3c44f2c7123e4fe6d7a394aeab457921afb085d0f6f04eaa5a1493edc2dfcca7"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/86/7555239ed623614e855c0fcb14bc0eacc79ffa": [
+    47,
+    1794995968127150405,
+    "a64e86951a92f615dd28cbba93293b9055e6914af9eee55e2f01a258310d4e86"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/8c/746e8438ac69ded34d5d92456140a9665fcbc2": [
+    167,
+    1794995966604809472,
+    "0f67c0573b271ed41e19022c7fb6fb099aa1720d9303ec212a1c3cc089632f3b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/95/f2dcc18e9494be99207ded57c5d6c4c0c812ba": [
+    70,
+    1794995966598491544,
+    "1e7e619f7194c9fbe27194322375bec40a05f64e093f91236a4d166c31cb96bd"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/99/b4862254b0b9328d8fed125c5f5f2f39df46d7": [
+    131,
+    1794995966577048687,
+    "564de0181034411ca9211fb65d34620755a8dfc53d02a3d1c289011f1fce475c"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/a8/88fc540c9bef8fbf8a9de38a82d599d43f75df": [
+    272,
+    1794995968120229229,
+    "fba1455fe75cd5d2aab1e50884887708429175508202acdc3f34849cb8ca9193"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/b2/4329d42538b0b0d9634f9636c62f6b0e57da9a": [
+    47,
+    1794995966605548219,
+    "76000288883b25f21010f185b2750516e98803022fcbbb285e869f9d9bb3cfdb"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/da/18525c4ae1734708d560f0ca0486fff0a9fa67": [
+    49,
+    1794995966576016483,
+    "8fc35edcfa12b7c5c37ad965837a1e9f8a51c4c34721fefe6e402b88cbbee99a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/e6/c109c0206096ab38f718cc320703339bfb410f": [
+    79,
+    1794995966596977884,
+    "f23edab1fe7c6f4f2f6cb71439e8089158266a5827fa429f644b16de433337d1"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/e8/a6ec05340f6094b5d330a14880a6c965a41a6b": [
+    164,
+    1794995968129045979,
+    "a300dc7e4a40c267cebc3bfdd276f0d798e9dc67adf83e99458df9d575f61ace"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/f4/9e88967cc567569a6a15ada14c461cc620d7fa": [
+    119,
+    1794995968127920318,
+    "43375b63829ffcbac324c8f1a3df7ea06b2b0e8ca1fb132440aa8d0799dbf405"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/objects/fd/57d13ccaf15d5a0e7d0122150f31822b850d9f": [
+    120,
+    1794995966605911217,
+    "f0c6ee839faf91345b383770bb346560bbc436d8935f6c21e3a20cfd774d8c2b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/refs/heads/main": [
+    41,
+    1794995968129554768,
+    "d59890132ff8045ada5231b869d86b5ee7160100d1baeb0619bc6b69f5fd274f"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/refs/heads/test/qa-linked": [
+    41,
+    1794995967189014837,
+    "993c04608f03559d5c3af66b46206fb110042db05f0011c06484812a20c498b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/HEAD": [
+    31,
+    1794995967190874245,
+    "a53b43635b2cf260ca3e25b81df17a30a105c3cc977c304360ee56c2629f29bf"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/ORIG_HEAD": [
+    41,
+    1794995967197755504,
+    "993c04608f03559d5c3af66b46206fb110042db05f0011c06484812a20c498b5"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/commondir": [
+    6,
+    1794995967190655829,
+    "340ddcb67a6204f742cd1e28e5b462622dde7daaa8ee36001897196aacdc6d47"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/gitdir": [
+    82,
+    1794995967190541705,
+    "beef8653ede2b31a44846097a8486d51bdcc339556a848e2c06af6eddea6ad7d"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/index": [
+    817,
+    1794995967197544130,
+    "4385471ff52261dad5a91cc4d2b03c94c67011446e15d89756157f7029f8e421"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.git/worktrees/linked/logs/HEAD": [
+    284,
+    1794995967198220669,
+    "9674585d3fdce91c1590ea919121589349ed468316f7b3a376856cf3d5774e0a"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.roundfixrc.yml": [
+    98,
+    1794995966590680539,
+    "509a322abe20e6d5048de857f8a6cd772e759ba14df0000ea9d921d4753c9a0b"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/docs/history/specs/0412-example.md": [
+    407,
+    1794995968113635427,
+    "fb19be1fda89f5fcd0fdda7c24353c6aaba253b05f30d416a9cb192da70515ff"
+  ],
+  "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/seed": [
+    89,
+    1794995966563637583,
+    "ffcbd7f35520f43830dcba08c4f37da8e7dbb8632041cff2c758fea560288c1f"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/corrections/7f467c5b79769582.lock": [
+    0,
+    1794995966712312839,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/corrections/7f467c5b79769582/0412-example.jsonl": [
+    4534,
+    1794995968088046589,
+    "c89831628e955c2326770dc30614a30e119240da33cb1f46a95bd261aeae1320"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/phase-record/2026-11-18.jsonl": [
+    13359,
+    1794995968087934798,
+    "5b9bba6d2162de908930763e60f268d875739f8f89171557626a2440a613b086"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db": [
+    135168,
+    1794995968154607025,
+    "330aa5ccbbec5de54d5c3a11caeb863b2adef2baaa12fac3259e7f9ff5f80afb"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db-shm": [
+    32768,
+    1794995968369007846,
+    "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db-wal": [
+    0,
+    1794995968186417833,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db.lock": [
+    0,
+    1794995968148031598,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review-dispositions.jsonl": [
+    311,
+    1794995967473628534,
+    "b8e44e0087df056a02aa9ac1e4148727e123e1174455cbab15471169fd46ecc8"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review-dispositions.jsonl.lock": [
+    0,
+    1794995967359484448,
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  ],
+  "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/artifacts/pre-pr-review/721e4d7ec2560b2d/pre-pr-review.json": [
+    525,
+    1794995966590960704,
+    "3c6470d623f31d10c5a4f92b237729319e0915acec425a8e1310d1bfe77b4d94"
+  ]
+}
+Only differences: ["/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db-shm", "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix/roundfix.db-wal"]

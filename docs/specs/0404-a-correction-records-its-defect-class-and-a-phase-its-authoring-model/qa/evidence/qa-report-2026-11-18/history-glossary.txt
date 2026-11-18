@@ -1,0 +1,215 @@
+task_01 commit d509f0f78d6ae82d51c7587233b25af76a376d89
+actual git diff-tree paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/corrections.md
+.agents/skills/roundfix/references/review.md
+.agents/skills/roundfix/references/storage.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_01.md
+docs/user-guide/commands.md
+docs/user-guide/commands/corrections.md
+docs/user-guide/commands/gc.md
+docs/user-guide/commands/review.md
+internal/baseline/repository.go
+internal/baseline/repository_identity_export_test.go
+internal/cli/cli.go
+internal/cli/corrections.go
+internal/cli/corrections_declare_test.go
+internal/cli/gc.go
+internal/cli/phase_record_test.go
+internal/cli/review.go
+internal/cli/review_dispose_correction_test.go
+internal/cli/run_retention.go
+internal/cli/worktree_build_cache_test.go
+internal/correction/correction.go
+internal/correction/correction_test.go
+internal/docscontract/user_guide_contract_test.go
+skills/corrections_reference_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/corrections.md
+skills/roundfix/references/review.md
+skills/roundfix/references/storage.md
+skills/roundfix_layout_test.go
+skills/testdata/owned-skill-versions.json
+outside Context / Recorded paths / assigned Task: []
+
+task_02 commit 92c3e40972c1f8dcc47aa100194241a7edb4710d
+actual git diff-tree paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/phase.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-tasks/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+CONTEXT.md
+docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_02.md
+docs/user-guide/commands/phase.md
+docs/user-guide/usage.md
+internal/cli/cli.go
+internal/cli/phase.go
+internal/cli/phase_model_test.go
+internal/cli/phase_test.go
+internal/phaserecord/model_keys_test.go
+internal/phaserecord/read.go
+internal/phaserecord/read_test.go
+internal/phaserecord/record.go
+internal/phaserecord/record_test.go
+skills/phase_model_paragraph_test.go
+skills/phase_reference_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/phase.md
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-tasks/SKILL.md
+skills/write-techspec/SKILL.md
+outside Context / Recorded paths / assigned Task: []
+
+task_03 commit e834903982eebcf81f6fc17a6f1449b3edd260dd
+actual git diff-tree paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_03.md
+docs/user-guide/commands/deliver.md
+docs/user-guide/configuration.md
+internal/cli/correction_signs.go
+internal/cli/correction_signs_test.go
+internal/cli/deliver.go
+internal/cli/deliver_corrections_status_test.go
+internal/cli/deliver_workflow.go
+internal/config/authoring.go
+internal/config/config.go
+internal/config/require_defect_class_test.go
+internal/delivery/correction_sign_step_test.go
+internal/delivery/engine.go
+internal/delivery/park_class.go
+internal/delivery/park_class_test.go
+internal/docscontract/command_documentation_test.go
+internal/runcause/corrective_tasks_test.go
+internal/runcause/report.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+outside Context / Recorded paths / assigned Task: []
+
+task_04 commit e90ffc1f2d4f77f0e83434d9a8d815fc7ef4518c
+actual git diff-tree paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/corrections.md
+.agents/skills/roundfix/references/spec-delivery.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_04.md
+docs/user-guide/commands/corrections.md
+internal/cli/cli.go
+internal/cli/corrections.go
+internal/cli/corrections_report.go
+internal/cli/corrections_report_test.go
+internal/cli/corrections_report_transcripts_test.go
+internal/runcause/report.go
+skills/corrections_reference_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/corrections.md
+skills/roundfix/references/spec-delivery.md
+skills/testdata/owned-skill-versions.json
+outside Context / Recorded paths / assigned Task: []
+
+GovernedPath evaluated by the product predicate:
+{
+  ".agents/skills/roundfix/SKILL.md": true,
+  ".agents/skills/roundfix/references/corrections.md": true,
+  ".agents/skills/roundfix/references/deliver.md": true,
+  ".agents/skills/roundfix/references/phase.md": true,
+  ".agents/skills/roundfix/references/review.md": true,
+  ".agents/skills/roundfix/references/spec-delivery.md": true,
+  ".agents/skills/roundfix/references/storage.md": true,
+  ".agents/skills/write-idea/SKILL.md": true,
+  ".agents/skills/write-prd/SKILL.md": true,
+  ".agents/skills/write-tasks/SKILL.md": true,
+  ".agents/skills/write-techspec/SKILL.md": true,
+  "CONTEXT.md": false,
+  "docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md": false,
+  "docs/references/behavior-surfaces.json": false,
+  "docs/references/skill-coverage.json": false,
+  "docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_01.md": false,
+  "docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_02.md": false,
+  "docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_03.md": false,
+  "docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/task_04.md": false,
+  "docs/user-guide/commands.md": false,
+  "docs/user-guide/commands/corrections.md": false,
+  "docs/user-guide/commands/deliver.md": false,
+  "docs/user-guide/commands/gc.md": false,
+  "docs/user-guide/commands/phase.md": false,
+  "docs/user-guide/commands/review.md": false,
+  "docs/user-guide/configuration.md": false,
+  "docs/user-guide/usage.md": false,
+  "internal/baseline/repository.go": false,
+  "internal/baseline/repository_identity_export_test.go": false,
+  "internal/cli/cli.go": false,
+  "internal/cli/correction_signs.go": false,
+  "internal/cli/correction_signs_test.go": false,
+  "internal/cli/corrections.go": false,
+  "internal/cli/corrections_declare_test.go": false,
+  "internal/cli/corrections_report.go": false,
+  "internal/cli/corrections_report_test.go": false,
+  "internal/cli/corrections_report_transcripts_test.go": false,
+  "internal/cli/deliver.go": false,
+  "internal/cli/deliver_corrections_status_test.go": false,
+  "internal/cli/deliver_workflow.go": false,
+  "internal/cli/gc.go": false,
+  "internal/cli/phase.go": false,
+  "internal/cli/phase_model_test.go": false,
+  "internal/cli/phase_record_test.go": false,
+  "internal/cli/phase_test.go": false,
+  "internal/cli/review.go": false,
+  "internal/cli/review_dispose_correction_test.go": false,
+  "internal/cli/run_retention.go": false,
+  "internal/cli/worktree_build_cache_test.go": false,
+  "internal/config/authoring.go": false,
+  "internal/config/config.go": false,
+  "internal/config/require_defect_class_test.go": false,
+  "internal/correction/correction.go": false,
+  "internal/correction/correction_test.go": false,
+  "internal/delivery/correction_sign_step_test.go": false,
+  "internal/delivery/engine.go": false,
+  "internal/delivery/park_class.go": false,
+  "internal/delivery/park_class_test.go": false,
+  "internal/docscontract/command_documentation_test.go": false,
+  "internal/docscontract/user_guide_contract_test.go": false,
+  "internal/phaserecord/model_keys_test.go": false,
+  "internal/phaserecord/read.go": false,
+  "internal/phaserecord/read_test.go": false,
+  "internal/phaserecord/record.go": false,
+  "internal/phaserecord/record_test.go": false,
+  "internal/runcause/corrective_tasks_test.go": false,
+  "internal/runcause/report.go": false,
+  "skills/corrections_reference_test.go": false,
+  "skills/phase_model_paragraph_test.go": false,
+  "skills/phase_reference_test.go": false,
+  "skills/roundfix/SKILL.md": true,
+  "skills/roundfix/references/corrections.md": false,
+  "skills/roundfix/references/deliver.md": false,
+  "skills/roundfix/references/phase.md": false,
+  "skills/roundfix/references/review.md": false,
+  "skills/roundfix/references/spec-delivery.md": false,
+  "skills/roundfix/references/storage.md": false,
+  "skills/roundfix_layout_test.go": false,
+  "skills/testdata/owned-skill-versions.json": false,
+  "skills/write-idea/SKILL.md": true,
+  "skills/write-prd/SKILL.md": true,
+  "skills/write-tasks/SKILL.md": true,
+  "skills/write-techspec/SKILL.md": true
+}
+ungranted: []
+
+Protected paths/skill sections deviations: []
+
+Glossary additions: ["Correction", "Correction Sign", "Corrections Report", "Defect Class", "Repository Identity"]; revised: ["Phase Record", "Review Finding Disposition"]; removed: []

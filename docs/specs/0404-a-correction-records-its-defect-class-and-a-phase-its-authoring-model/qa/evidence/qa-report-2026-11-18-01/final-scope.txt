@@ -1,0 +1,10 @@
+$ git diff --exit-code HEAD -- .
+stdout:
+stderr:
+exit: 0
+
+$ git status --short
+stdout:
+?? docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/qa/
+stderr:
+exit: 0

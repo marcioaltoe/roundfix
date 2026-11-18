@@ -1,0 +1,5 @@
+Daemon-supplied command: make verify-changed
+audited head: 6bd53345a7d597a9504ee9cc7f5f1cf2b40fd762
+verdict: pass; exit 0; diagnostics removed on success.
+Not rerun by QA Agent.
+make build: exit 0; see build.txt. Strict precondition: exit 0; see strict.txt.

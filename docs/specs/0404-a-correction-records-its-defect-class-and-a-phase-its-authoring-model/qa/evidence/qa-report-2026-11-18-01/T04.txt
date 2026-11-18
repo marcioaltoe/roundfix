@@ -1,0 +1,33 @@
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid init -b main
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qax-29anb_jz/repo/.git/
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid add -A
+stdout:
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid commit --allow-empty -m 'chore: QA root'
+stdout:
+[main (root-commit) 656badd] chore: QA root
+ 1 file changed, 1 insertion(+)
+ create mode 100644 seed
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid rev-parse HEAD
+stdout:
+656baddab82ee551b0d8eec05a84fa01d29bbb9f
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix corrections report --since 2026-11-02 --until 2026-11-01
+stdout:
+stderr:
+roundfix: corrections report refused: --until must be after --since
+Run 'roundfix corrections --help' for usage.
+exit: 2
+
+stdout, stderr and exit match Surface Transcript 4 independently, line by line.

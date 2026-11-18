@@ -1,0 +1,33 @@
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid init -b main
+stdout:
+Initialized empty Git repository in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qax-h3ocfvjk/repo/.git/
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid add -A
+stdout:
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid commit --allow-empty -m 'chore: QA root'
+stdout:
+[main (root-commit) 58e8ced] chore: QA root
+ 1 file changed, 1 insertion(+)
+ create mode 100644 seed
+stderr:
+exit: 0
+
+$ git -c 'user.name=QA Fixture' -c user.email=qa@example.invalid rev-parse HEAD
+stdout:
+58e8ced8e7cda6e161e937cccc9db549728f29ed
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix corrections declare --spec 0412-example --class plan --reason 'The TechSpec named a file that does not exist'
+stdout:
+stderr:
+roundfix: corrections declare refused: class plan requires --artifact prd, techspec or tasks
+Run 'roundfix corrections --help' for usage.
+exit: 2
+
+stdout, stderr and exit match Surface Transcript 3 independently, line by line.

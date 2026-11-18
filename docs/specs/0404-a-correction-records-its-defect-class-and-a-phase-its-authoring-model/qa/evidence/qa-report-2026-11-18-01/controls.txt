@@ -1,0 +1,29 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix corrections report
+stdout:
+stderr:
+roundfix: corrections report refused: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qaf-o9ysfh11/repo/.roundfixrc.yml": delivery.require_defect_class must be boolean: cannot unmarshal non-boolean value
+Run 'roundfix corrections --help' for usage.
+exit: 2
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix corrections report
+stdout:
+Corrections of 1 Spec delivered from 2026-10-19 to 2026-11-18, read from /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qah-z9a_9r7m/.roundfix.
+Spec          Type  Tasks  idea     prd      techspec                              tasks                                   Corrections                                                                                             Plan defects  Beside
+0412-example  feat  2      unknown  unknown  claude-fable-5-2 / high (4 recorded)  claude-opus-5-5 / unknown (5 recorded)  10: plan 1, implementation 6, environment 2, operator 1, undeclared 1; not a correction 1; withdrawn 1  techspec 1    dismissed 1; failed attempts 0
+Phase     Type  Model / effort             Specs  Tasks  Plan defects of its artifact
+techspec  feat  claude-fable-5-2 / high    1      2      1/1 Spec, 1/2 Tasks
+tasks     feat  claude-opus-5-5 / unknown  1      2      0/1 Spec, 0/2 Tasks
+Comparison, techspec, feat: insufficient sample (claude-fable-5-2 / high 1 Spec and no second group; 20 each needed).
+Comparison, tasks, feat: insufficient sample (claude-opus-5-5 / unknown 1 Spec and no second group; 20 each needed).
+Not counted: 1 Spec with an unknown model for a phase; 1 undeclared Correction; 0 Specs delivered without a record on this machine; 0 Specs without their plan on the default branch.
+stderr:
+config: delivery.require_defect_class in User Config is ignored; set delivery.require_defect_class in Project Config
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/qa-0404-fixture park 0412-example
+stdout:
+{"Class":"finding","Next":"declare a Defect Class (plan, implementation, environment, operator or unclear), or not-a-correction for a change that repaired no defect, for commit abcdef0 with roundfix corrections declare --spec 0412-example, then run roundfix deliver retry 0412-example"}
+stderr:
+exit: 0
+
+Named sign/merge/retry/status/queue/config tests are independently retained in packages logs; actual public CLI refused invalid project value and emitted exactly one warning for ignored user value.

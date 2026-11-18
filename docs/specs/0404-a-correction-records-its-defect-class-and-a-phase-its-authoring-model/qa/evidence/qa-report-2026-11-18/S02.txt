@@ -1,0 +1,26 @@
+command: go test -count=1 -timeout 10m -v -run '^TestStandingTakesTheLastDeclarationOfEachCorrection$' ./internal/correction
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-sabotage-2-kl2lno29
+stdout:
+=== RUN   TestStandingTakesTheLastDeclarationOfEachCorrection
+=== PAUSE TestStandingTakesTheLastDeclarationOfEachCorrection
+=== CONT  TestStandingTakesTheLastDeclarationOfEachCorrection
+--- PASS: TestStandingTakesTheLastDeclarationOfEachCorrection (0.00s)
+PASS
+ok  	roundfix/internal/correction	0.218s
+stderr:
+exit: 0
+
+Mutation:
+diff --git a/internal/correction/correction.go b/internal/correction/correction.go
+index 504f744..e9b503e 100644
+--- a/internal/correction/correction.go
++++ b/internal/correction/correction.go
+@@ -165,7 +165,7 @@ func Undeclared(signs []Sign, standing []Declaration) []Sign {
+ 	type key struct{ kind, id string }
+ 	covered := make(map[key]bool)
+ 	for _, d := range standing {
+-		if !d.Withdrawn {
++		if !d.Withdrawn && d.Class != NotACorrection {
+ 			for _, s := range d.Signs {
+ 				covered[key{s.Kind, s.ID}] = true
+ 			}

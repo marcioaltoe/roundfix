@@ -1,0 +1,307 @@
+command: go test -count=1 -timeout 10m -v -run '^TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-sabotage-5-hjce5ay5
+stdout:
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/reported_model_and_environment
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/reported_model_and_environment
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/reported_model_and_environment
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_by_flag_only
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/reported_model_and_environment
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_by_flag_only
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/reported_model_and_environment
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/reported_model_and_environment
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_by_flag_only
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_by_flag_only
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_reported_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_reported_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_by_flag_only
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/reported_model_and_environment
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_reported_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/reported_model_and_environment
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_by_flag_only
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_values
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_by_flag_only
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_by_flag_only
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_values
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_reported_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_reported_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_values
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_reported_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_values
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_values
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_values
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_session
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_session
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_session
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_session
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_of_300_characters
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_of_300_characters
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/empty_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_of_300_characters
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_reported_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_of_300_characters
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_reported_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_values
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_session
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_session
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_values
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_of_300_characters
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_identifier_punctuation
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_of_300_characters
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_identifier_punctuation
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_environment_no_fallback
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_model
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_session
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_session
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_of_300_characters
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_identifier_punctuation
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_of_300_characters
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_identifier_punctuation
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_environment_no_fallback
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_environment_no_fallback
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_environment_no_fallback
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_identifier_punctuation
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_effort_flag
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_effort_flag
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_effort_flag
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_over_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_effort_flag
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_identifier_punctuation
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_over_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_environment_no_fallback
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_over_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_over_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/author_subagent
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/author_subagent
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/author_subagent
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_environment_no_fallback
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/reported_model_and_environment
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_effort_flag
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_effort_flag
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_over_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_over_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/author_subagent
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/author_subagent
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/empty_model
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/empty_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_identifier_punctuation
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_identifier_punctuation
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_environment_no_fallback
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_environment_no_fallback
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_effort_flag
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_effort_flag
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_over_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_over_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_at_limit
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_at_limit
+=== RUN   TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/author_subagent
+=== PAUSE TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_over_limit
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/empty_model
+    phase_model_test.go:156: [phase start idea --spec 0412-example --model=]: exit = 1, want 0; stdout = "", want "Recorded idea of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_effort_flag
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_environment_no_fallback
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_identifier_punctuation
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_session
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_of_300_characters
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_reported_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_values
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_by_flag_only
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_model
+    phase_model_test.go:156: [phase start idea --spec 0412-example --model bad model]: exit = 1, want 0; stdout = "", want "Recorded idea of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_of_300_characters
+    phase_model_test.go:156: [phase start idea --spec 0412-example --model aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]: exit = 1, want 0; stdout = "", want "Recorded idea of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort high (environment), run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/reported_model_and_environment
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_over_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_effort_flag
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_environment_no_fallback
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_identifier_punctuation
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/empty_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_of_300_characters
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/empty_model
+    phase_model_test.go:156: [phase start prd --spec 0412-example --model=]: exit = 1, want 0; stdout = "", want "Recorded prd of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_session
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_model
+    phase_model_test.go:156: [phase start prd --spec 0412-example --model bad model]: exit = 1, want 0; stdout = "", want "Recorded prd of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_values
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_reported_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_by_flag_only
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_of_300_characters
+    phase_model_test.go:156: [phase start prd --spec 0412-example --model aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]: exit = 1, want 0; stdout = "", want "Recorded prd of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort high (environment), run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/reported_model_and_environment
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_over_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_effort_flag
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_environment_no_fallback
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_identifier_punctuation
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_session
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/empty_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_of_300_characters
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_reported_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_values
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/empty_model
+    phase_model_test.go:156: [phase start techspec --spec 0412-example --model=]: exit = 1, want 0; stdout = "", want "Recorded techspec of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_by_flag_only
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_model
+    phase_model_test.go:156: [phase start techspec --spec 0412-example --model bad model]: exit = 1, want 0; stdout = "", want "Recorded techspec of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/reported_model_and_environment
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_of_300_characters
+    phase_model_test.go:156: [phase start techspec --spec 0412-example --model aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]: exit = 1, want 0; stdout = "", want "Recorded techspec of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort high (environment), run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/author_subagent
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_at_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_over_limit
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_effort_flag
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_environment_no_fallback
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_identifier_punctuation
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_session
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/empty_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_of_300_characters
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_reported_model
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_values
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/empty_model
+    phase_model_test.go:156: [phase start tasks --spec 0412-example --model=]: exit = 1, want 0; stdout = "", want "Recorded tasks of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== CONT  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_by_flag_only
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_of_300_characters
+    phase_model_test.go:156: [phase start tasks --spec 0412-example --model aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]: exit = 1, want 0; stdout = "", want "Recorded tasks of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort high (environment), run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+=== NAME  TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_model
+    phase_model_test.go:156: [phase start tasks --spec 0412-example --model bad model]: exit = 1, want 0; stdout = "", want "Recorded tasks of 0412-example for claude session 11111111-2222-4333-8444-555555555555: model unknown, effort unknown, run by the session\n"; stderr = "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n", want "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown\n"
+--- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase (0.00s)
+    --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea (0.00s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/empty_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_over_limit (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/author_subagent (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_at_limit (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/reported_model_and_environment (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_environment_no_fallback (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_effort_flag (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_session (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_identifier_punctuation (0.02s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/malformed_model (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/model_of_300_characters (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_values (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/no_reported_model (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/idea/effort_by_flag_only (0.02s)
+    --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd (0.00s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/reported_model_and_environment (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/author_subagent (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_over_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_effort_flag (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_environment_no_fallback (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/empty_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_at_limit (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/malformed_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_identifier_punctuation (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_session (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/model_of_300_characters (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/effort_by_flag_only (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_reported_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/prd/no_values (0.02s)
+    --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec (0.00s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/reported_model_and_environment (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/author_subagent (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_over_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_effort_flag (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_environment_no_fallback (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_identifier_punctuation (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_session (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/empty_model (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/malformed_model (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/model_of_300_characters (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_reported_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/no_values (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/techspec/effort_by_flag_only (0.01s)
+    --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks (0.00s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/reported_model_and_environment (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_at_limit (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/author_subagent (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_over_limit (0.02s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_effort_flag (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_environment_no_fallback (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_identifier_punctuation (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_session (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/empty_model (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/model_of_300_characters (0.01s)
+        --- FAIL: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/malformed_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_reported_model (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/no_values (0.01s)
+        --- PASS: TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase/tasks/effort_by_flag_only (0.01s)
+FAIL
+suiteguard: guard cost: measured 3281 paths; fingerprint took 168.720083ms before and 166.709875ms after
+FAIL	roundfix/internal/cli	0.982s
+FAIL
+stderr:
+exit: 1
+
+Mutation:
+diff --git a/internal/cli/phase.go b/internal/cli/phase.go
+index 03ee789..4cba55a 100644
+--- a/internal/cli/phase.go
++++ b/internal/cli/phase.go
+@@ -86,6 +86,7 @@ func runPhaseCommand(ctx context.Context, args []string, stdout, stderr io.Write
+ 					entry.Model, entry.ModelSource = options.Model, "reported"
+ 				} else {
+ 					fmt.Fprintln(stderr, "roundfix: warning: phase start: --model is not a model identifier of at most 200 characters; the model is recorded as unknown")
++					return exitRunFailed
+ 				}
+ 			}
+ 			effort, source, label := environment.dependencies.getenv("CLAUDE_EFFORT"), "environment", "CLAUDE_EFFORT"
