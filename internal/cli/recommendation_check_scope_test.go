@@ -20,6 +20,9 @@ func TestRecommendationCheckIsReachedOnlyFromItsCommands(t *testing.T) {
 		"internal/cli/profiles.go":                true,
 		"internal/cli/doctor.go":                  true,
 		"internal/cli/upgrade.go":                 true,
+		// ADR-0416 amends ADR-0181: the Update Check names each configured
+		// profile that differs from the Recommended Profile.
+		"internal/cli/update_check_recommendations.go": true,
 	}
 	references := 0
 	for _, dir := range []string{"internal", "cmd"} {
