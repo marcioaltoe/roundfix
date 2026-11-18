@@ -153,8 +153,7 @@ command output, and links only files it kept.
        artifact: `TestValidateNamesTheAcceptedValues`.
     2. `correction.Undeclared` counts a sign covered by a
        `not-a-correction` answer as undeclared:
-       `TestStandingTakesTheLastDeclarationOfEachCorrection` or
-       `TestTheMergeStepParksAnUndeclaredCorrectionSign`.
+       `TestUndeclaredCountsEverySignNoStandingDeclarationNames`.
     3. The merge step parks with the key off:
        `TestTheMergeStepParksAnUndeclaredCorrectionSign`.
     4. The sign reader drops the first-parent restriction and reads every
