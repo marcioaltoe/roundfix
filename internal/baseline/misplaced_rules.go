@@ -120,6 +120,9 @@ func MisplacedRepositoryRules(root string) (MisplacedRepositoryRuleReport, error
 	}
 	for _, relative := range sortedKeys(contents) {
 		content := contents[relative]
+		if relative == "CLAUDE.md" && string(content) == ClaudeInstructionLinkTarget {
+			continue
+		}
 		entries := partitionRootSource(relative, content)
 		managedCounts := make(map[string]int)
 		for _, entry := range entries {
@@ -142,19 +145,7 @@ func MisplacedRepositoryRules(root string) (MisplacedRepositoryRuleReport, error
 			if !mismatch {
 				continue
 			}
-			rule := misplacedRuleAt(relative, content, entry.Start, entry.End)
-			rule.ManagedID = id
-			body := entry.SourceBytes
-			beginEnd := bytes.Index(body, []byte("-->")) + len("-->")
-			endStart := bytes.LastIndex(body, []byte("<!--"))
-			rule.FirstLine = ""
-			for _, line := range strings.Split(string(body[beginEnd:endStart]), "\n") {
-				if strings.TrimSpace(line) != "" {
-					rule.FirstLine = misplacedFirstLine(line)
-					break
-				}
-			}
-			report.Rules = append(report.Rules, rule)
+			report.Rules = append(report.Rules, misplacedManagedPassage(relative, content, entry))
 		}
 	}
 	sort.Slice(report.Rules, func(i, j int) bool {
@@ -193,6 +184,9 @@ func misplacedUnmarkedPassages(relative string, content []byte, entry Readoption
 		for start < end && len(bytes.TrimSpace(lines[end-1])) == 0 {
 			end--
 		}
+		if relative == "CLAUDE.md" && bytes.Equal(bytes.TrimSpace(content[offsets[start]:offsets[end]]), []byte("@AGENTS.md")) {
+			return
+		}
 		if start < end {
 			rules = append(rules, misplacedRuleAt(relative, content, offsets[start], offsets[end]))
 		}
@@ -216,6 +210,22 @@ func misplacedUnmarkedPassages(relative string, content []byte, entry Readoption
 	}
 	appendPassage(start, len(lines))
 	return rules
+}
+
+func misplacedManagedPassage(relative string, content []byte, entry ReadoptionSourceEntry) MisplacedRepositoryRule {
+	rule := misplacedRuleAt(relative, content, entry.Start, entry.End)
+	rule.ManagedID, _ = entry.StructuralProvenance["managedId"].(string)
+	body := entry.SourceBytes
+	beginEnd := bytes.Index(body, []byte("-->")) + len("-->")
+	endStart := bytes.LastIndex(body, []byte("<!--"))
+	rule.FirstLine = ""
+	for _, line := range strings.Split(string(body[beginEnd:endStart]), "\n") {
+		if strings.TrimSpace(line) != "" {
+			rule.FirstLine = misplacedFirstLine(line)
+			break
+		}
+	}
+	return rule
 }
 
 func misplacedRuleAt(relative string, content []byte, start, end int) MisplacedRepositoryRule {

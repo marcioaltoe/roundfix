@@ -97,6 +97,8 @@ func TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest(t *testing.T) {
 			artifacts: []ManifestArtifact{artifact("AGENTS.md", "root.core"), artifact("CLAUDE.md", "claude.core")},
 			wantRules: []MisplacedRepositoryRule{rule("AGENTS.md", 7, 7, "# Local rules")},
 		},
+		{name: "import_line_claude_md", files: map[string]string{"CLAUDE.md": "@AGENTS.md\n"}, artifacts: []ManifestArtifact{artifact("CLAUDE.md", "root.core")}},
+		{name: "unlinked_checkout_claude_md", files: map[string]string{"CLAUDE.md": "AGENTS.md"}, artifacts: []ManifestArtifact{artifact("CLAUDE.md", "root.core")}},
 		{
 			name: "regular_claude_md", files: map[string]string{"CLAUDE.md": "\n# Local rules\nKeep this rule.\n\n"},
 			artifacts: []ManifestArtifact{artifact("CLAUDE.md", "root.core")},

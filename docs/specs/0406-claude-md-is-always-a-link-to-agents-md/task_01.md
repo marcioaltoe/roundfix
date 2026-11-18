@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0406-claude-md-is-always-a-link-to-agents-md
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -91,3 +91,26 @@ A new read-only reader in `internal/baseline` tells whether the root `CLAUDE.md`
 - `_prd.md` → Goals (second and fourth bullets); Core Features 1 and 3; Success Metric 3; Decisions
 - `_techspec.md` → Claude Instruction Link reader; Detector; Interfaces and invariants 1 to 4; Testing Approach (Task 1); Absence Evidence; Build Order 1
 - ADR-0432, ADR-0433, ADR-0411
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the read-only Claude Instruction Link reader with all six shapes, the original link target, passage locations and `Convertible`. It reuses the inventory's safe alias resolver, the detector's foreign-block passage parser and the manifest digest matcher. Only a regular `CLAUDE.md` holding exactly `AGENTS.md` consults Git, through `ls-files -s -- CLAUDE.md`. Missing, absolute, escaping, cyclic and non-regular link targets return errors naming `CLAUDE.md`; cancellation and Git errors retain their error chains.
+
+Narrowed the detector only for the exact unlinked-checkout bytes and the standalone import passage. Shared the existing managed-passage rendering so digest-mismatch locations and first lines retain the detector's behavior. Added the two required detector cases, the glossary definition and exclusions, and the appended ADR-0411 amendment.
+
+Focused evidence by acceptance criterion:
+
+1. Shapes, exact passages and no mutation: `go test ./internal/baseline -run '^(TestReadClaudeInstructionLink.*|TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest|TestMisplacedFirstLineNeverPanicsOnInvalidUTF8)$' -count=1 -timeout=3m` exited 0. The shape table covers all 17 required cases and additional safety, foreign-block, duplicate-region and import/copy cases. Every shape case asserts the whole reader value and `Convertible`, checks permitted Git arguments/call count/context, and compares the complete fixture tree's bytes, modes, links and paths before and after the read. `reads_only` also uses read-only carrier and manifest modes. The companion test checks cancellation and Git-error propagation.
+2. Git provenance: the same focused command exercised `unlinked_checkout`, committing a symbolic link and recreating it with `git -c core.symlinks=false checkout -- CLAUDE.md`, alongside `agents_bytes_tracked_as_a_file` (a committed regular file) and `agents_bytes_untracked`. The former is `unlinked-checkout` and non-convertible; the latter two are `file`, without passages, and convertible. The newline variant remains a passage and runs no Git command.
+3. Detector compatibility: the focused command exercised every existing case of `TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest` as well as `import_line_claude_md` and `unlinked_checkout_claude_md`; all passed, including the prior `regular_claude_md` case. The invalid-UTF8 first-line cases passed too.
+4. Regression sensitivity: three isolated `go test -overlay <overlay.json> ./internal/baseline -run <selector> -count=1 -timeout=2m -v` probes each exited 1 with an assertion failure in the intended named case, rather than a build or environment failure:
+   - Removed the mode predicate `fields[0] == "120000"`: selector `^TestReadClaudeInstructionLinkClassifiesEveryShape$/^agents_bytes_tracked_as_a_file$` failed because the reader reported `unlinked-checkout` and non-convertible instead of `file` and convertible.
+   - Disabled the import exception: selector `^TestReadClaudeInstructionLinkClassifiesEveryShape$/^import_line$` failed because an `@AGENTS.md` passage appeared and conversion was withheld.
+   - Disabled the byte-identical copy rule: selector `^TestReadClaudeInstructionLinkClassifiesEveryShape$/^copy_of_agents$` failed because the root instructions appeared as a passage and conversion was withheld.
+   The overlays and full failure logs are in the session scratch directory `roundfix-0406-mutations-2e_5h59l` under the host temporary directory. Production source files were never mutated by these probes.
+
+Documentation evidence: `go test -tags=docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1 -timeout=3m` exited 0. The first attempt without `-tags=docscontract` reported `[no test files]`; it was not counted as glossary evidence. Before implementation, the focused `copy_of_agents` check failed to build because the reader interface was absent.
+
+Scope: changed only this Task's declared implementation, test and documentation paths plus this Result. The pre-existing `status: in_progress` remains unchanged. No Task Graph, other Task, Governed Path, Plan Document, golden, CLI, guide or skill was edited. Declared Verification, repository Verification and the complete package suites were left to the Daemon. No commit, push or pull request. No follow-up implementation was added.

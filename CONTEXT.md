@@ -15,6 +15,10 @@ or a profile-changing apply, named by its warning and owned by the repository
 to commit ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
 _Avoid_: Temporary copy, nested backup, automatic commit
 
+**Claude Instruction Link**:
+The root `CLAUDE.md` of an adopted repository, a relative symbolic link whose target is exactly `AGENTS.md`, created by the Baseline at adoption and restored in a Managed Refresh when nothing would be lost ([ADR-0432](docs/adr/0432-claude-md-is-always-a-symbolic-link-to-agents-md.md), [ADR-0433](docs/adr/0433-a-checkout-without-symbolic-links-keeps-the-link-git-records-for-claude-md.md)).
+_Avoid_: Claude Skill Link, separate instruction file, instruction copy
+
 **Claude Skill Link**:
 A repository-owned symbolic link under `.claude/skills` to the corresponding
 `.agents/skills/<name>` tree, restored when the repository already uses that
@@ -1510,7 +1514,7 @@ A Managed Region whose bytes are not the bytes the adopted Setup Manifest record
 _Avoid_: Hand-edited marker, corrupted block, drift
 
 **Misplaced Repository Rule**:
-A passage of an instruction carrier the Setup Manifest lists, outside every Managed Region and outside a block another tool delimits, or an Unrecorded Managed Region, which belongs in `docs/agents/specific-repository.md`. Roundfix names it and never moves it ([ADR-0411](docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md)).
+A passage of an instruction carrier the Setup Manifest lists, outside every Managed Region and outside a block another tool delimits, or an Unrecorded Managed Region, which belongs in `docs/agents/specific-repository.md`. The `@AGENTS.md` import line of a regular root `CLAUDE.md` and the bytes of an unlinked checkout are not a Misplaced Repository Rule; Roundfix names every other passage and never moves it ([ADR-0411](docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md)).
 _Avoid_: Damaged rule, automatic migration, repository extension
 
 **Baseline ADR**:
