@@ -11,6 +11,9 @@ delivery:
   # a0d3d843 (Specs 0282 and 0284; ADR-0294, ADR-0297). Off 2026-10-18 to
   # 2026-10-20 while the container lacked an init, CI tools and history.
   linux_lane: true
+  # Spec 0404 (ADR-0423): every delivery Correction carries a declared Defect Class;
+  # the maintainer turned it on for Gesttione projects on 2026-11-17.
+  require_defect_class: true
   item_binary:
     build: make build
     path: bin/roundfix
@@ -266,15 +269,27 @@ skills:
       idea:
         model: fable
         reasoning_effort: xhigh
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       prd:
         model: fable
         reasoning_effort: high
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       techspec:
         model: fable
         reasoning_effort: high
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       tasks:
         model: opus
         reasoning_effort: high
+        fallback:
+          model: sonnet
+          reasoning_effort: high
       research:
         model: sonnet
         reasoning_effort: medium
