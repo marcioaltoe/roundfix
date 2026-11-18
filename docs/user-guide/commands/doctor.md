@@ -188,15 +188,27 @@ authoring-models: warn (the authoring skills are installed without an Authoring 
         idea:
           model: fable
           reasoning_effort: xhigh
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         prd:
           model: fable
           reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         techspec:
           model: fable
           reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         tasks:
           model: opus
           reasoning_effort: high
+          fallback:
+            model: sonnet
+            reasoning_effort: high
         research:
           model: sonnet
           reasoning_effort: medium

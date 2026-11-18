@@ -17,6 +17,12 @@ test holds this repository's own declaration and the configuration guide's
 block equal to it. Nothing fails and nothing is written. This amends
 ADR-0401, which shipped no model name.
 
+**Amended by ADR-0430 (2026-11-17).** The Recommended Authoring Declaration
+includes `opus`/`xhigh` fallbacks for `idea`, `prd` and `techspec`, and a
+`sonnet`/`high` fallback for `tasks`. The configuration guide matches the full
+rendering; the repository contract compares a fallback only where Project
+Config declares one. This repository declares its fallbacks after the release.
+
 ## Context
 
 ADR-0401 made the declaration optional and silent: "Nothing is declared by

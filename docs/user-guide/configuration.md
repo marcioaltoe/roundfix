@@ -117,15 +117,27 @@ skills:
       idea:
         model: fable
         reasoning_effort: xhigh
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       prd:
         model: fable
         reasoning_effort: high
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       techspec:
         model: fable
         reasoning_effort: high
+        fallback:
+          model: opus
+          reasoning_effort: xhigh
       tasks:
         model: opus
         reasoning_effort: high
+        fallback:
+          model: sonnet
+          reasoning_effort: high
       research:
         model: sonnet
         reasoning_effort: medium
@@ -143,8 +155,9 @@ there.
 
 `skills` accepts only `authoring`, which accepts only the harness `claude`.
 That harness accepts `idea`, `prd`, `techspec`, `tasks` and `research`.
-Each phase accepts `model` and `reasoning_effort`; `research` also accepts
-`tools`. The `skills`, `authoring`, `claude` and entry nodes must be mappings.
+Each phase accepts `model`, `reasoning_effort` and `fallback`; `research`
+accepts `model`, `reasoning_effort` and `tools`, but refuses `fallback`. The
+`skills`, `authoring`, `claude` and entry nodes must be mappings.
 An empty `authoring` or `claude` mapping declares nothing; a phase entry must
 set a model, an effort or both, and a research entry must set a model, an
 effort or at least one tool.
@@ -155,6 +168,16 @@ starting with a letter or digit, with no spaces. It is never checked against
 a list of model names. `reasoning_effort` must be a string: `low`, `medium`,
 `high`, `xhigh` or `max`. Unknown keys and invalid values stop configuration
 loading with a message naming the key or value.
+
+Each Authoring Phase may declare `fallback`, a mapping with a required `model`
+and optional `reasoning_effort`, using the same model pattern and effort values
+as the entry. Its model is a name the harness accepts when a subagent is
+started, an alias in Claude Code. The entry must declare its own model, and
+a fallback must name another model, compared ignoring letter case. A fallback
+cannot declare another fallback. Installation ignores it: adding a fallback
+changes neither the Declared Skill Header nor the generated subagent files.
+A Roundfix older than the release that introduces `fallback` refuses a
+Project Config that holds it; upgrade every machine before declaring it.
 
 `research.tools` must be a list of strings with no duplicate. Each name must
 be `WebSearch`, `WebFetch` or match `^mcp__[A-Za-z0-9_.*-]+$`. The Research

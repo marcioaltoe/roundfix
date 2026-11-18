@@ -69,7 +69,7 @@ func TestTheAuthoringModelDeclarationRefusesWhatItDoesNotKnow(t *testing.T) {
 		{"skills_key", "skills: {other: {}}", "skills.other is not a supported key; expected authoring"},
 		{"harness", "skills: {authoring: {codex: {}}}", "skills.authoring.codex is not a supported harness; this Roundfix supports claude"},
 		{"phase_key", "skills: {authoring: {claude: {other: {}}}}", "skills.authoring.claude.other is not a supported key; expected idea, prd, techspec, tasks or research"},
-		{"phase_field", "skills: {authoring: {claude: {prd: {effort: high}}}}", "skills.authoring.claude.prd.effort is not a supported key; expected model or reasoning_effort"},
+		{"phase_field", "skills: {authoring: {claude: {prd: {effort: high}}}}", "skills.authoring.claude.prd.effort is not a supported key; expected model, reasoning_effort or fallback"},
 		{"research_field", "skills: {authoring: {claude: {research: {effort: high}}}}", "skills.authoring.claude.research.effort is not a supported key; expected model, reasoning_effort or tools"},
 		{"empty_phase", "skills: {authoring: {claude: {prd: {}}}}", "skills.authoring.claude.prd declares nothing; set model, reasoning_effort or both"},
 		{"empty_research", "skills: {authoring: {claude: {research: {}}}}", "skills.authoring.claude.research declares nothing; set model, reasoning_effort or tools"},

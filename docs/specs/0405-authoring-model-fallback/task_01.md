@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0405-authoring-model-fallback
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -104,3 +104,55 @@ ignores it, so no header, subagent file or check changes. The Recommended Author
 - `_techspec.md` → Fallback declaration; Recommendation; Interfaces; Data Models (Project Config); API Contract 5; API Contract 9; Surface Transcript 9; Build Order 1; Testing Approach
 - [`references/2026-11-17-harness-and-test-measurements.md`](references/2026-11-17-harness-and-test-measurements.md)
 - ADR-0427, ADR-0430, ADR-0415, ADR-0401, ADR-0408, ADR-0392
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Added the optional fallback declaration and its ordered validation. The four Authoring Phases accept a required fallback model and optional effort; research refuses it. The recommendation carries `opus`/`xhigh` for idea, prd and techspec and `sonnet`/`high` for tasks, preserving every existing primary model and effort. Recommendation copies own their fallback values. The configuration, Doctor and Update Check guides show the same block; the setup reference, glossary terms and ADR-0415 notice describe the change.
+
+Acceptance evidence from focused checks:
+
+- All four phases decode fallbacks with and without an effort in `internal/config`'s `TestAnAuthoringEntryAcceptsAFallback`. Its companion in `internal/cli` installs through `runCLI` before and after adding each fallback and compares the complete installed `.agents` and `.claude` snapshots. Both tests call `t.Parallel()`.
+- `TestAFallbackIsRefusedWhereItEscapesNoLimit` asserts full messages for research, non-mappings, unknown keys and a nested fallback, malformed/non-string values, missing models, equal models including mixed case, and refusal precedence. The existing unknown-key test changes only its `phase_field` expectation. All selected cases passed.
+- Installation's `authoringDeclaration` and production installation code remain unchanged. The CLI installation comparisons passed for all four phases with and without fallback effort, including the generated subagents and skill links. Existing skills-install and Baseline-install declaration tests also passed.
+- The configuration guide and setup reference describe both fields, the harness-start alias requirement, another-model rule and older-binary refusal; the two glossary definitions and ADR-0415 amendment were updated. Focused glossary contracts passed. The setup mirror and version fields were regenerated, never hand-edited.
+- The recommendation rendering loads as Project Config and keeps independent fallback copies. Doctor/Update Check recommendation tests, the existing transcript, the real-repository Doctor immutability test and the new line-by-line `TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks` passed. The shared expected block updates the existing Doctor test without changing its other expectations.
+- `TestTheRecommendedAuthoringDeclarationMatchesThisRepository` compares the guide block in full, accepts undeclared or matching fallbacks, and detects model and effort drift for every phase through `a_declared_fallback_that_differs_fails` on fixture copies of `.roundfixrc.yml`. The actual repository config remains without fallbacks and passed the same comparison.
+
+Focused commands and outcomes (each exited 0 unless noted):
+
+- Initial red signal: `rtk proxy go test ./internal/config -run '^TestAFallbackIsRefusedWhereItEscapesNoLimit$/scalar$' -count=1` exited 1 before implementation: `AuthoringEntry` had no `Fallback` field and `AuthoringFallback` was undefined.
+- `rtk proxy go test ./internal/config ./internal/cli -run 'Test(AnAuthoringEntryAcceptsAFallback|AFallbackIsRefusedWhereItEscapesNoLimit|TheAuthoringModelDeclaration|UserConfigIgnoresTheAuthoringModelDeclaration|RecommendedAuthoring|SurfaceTranscript[19]UpdateCheck|DoctorRecommendsAnAuthoringDeclaration|UpdateCheckRecommendsAnAuthoringDeclaration|RunDoctorRealRepositoryCheckDoesNotMutateState|SkillsInstallAppliesTheAuthoringModelDeclaration|BaselineUpdateAppliesTheAuthoringModelDeclaration)' -count=1 -timeout=5m` — both packages passed against the regenerated bundle.
+- `rtk proxy go test ./internal/docscontract -tags docscontract -run 'Test(TheRecommendedAuthoringDeclarationMatchesThisRepository|Glossary|TheSkillCoverageMapIsCurrent)' -count=1 -timeout=5m` — passed.
+- After tightening the transcript's final-newline assertion: `rtk proxy go test ./internal/cli -run '^TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks$' -count=1` — passed.
+- After final import formatting: `rtk proxy go test ./internal/docscontract -tags docscontract -run '^TestTheRecommendedAuthoringDeclarationMatchesThisRepository$' -count=1` — passed.
+
+Sanctioned regeneration ran in the required order, all exiting 0:
+
+1. `rtk proxy make skills-sync`.
+2. `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — recorded Roundfix `0.1.267` in both canonical and mirrored version fields and the owned-skill record.
+3. `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — refreshed `config keys` and the changed configuration/Doctor/Update Check guide surfaces.
+
+Scope inspection: only declared Task paths changed, plus this Result; the incoming `status: in_progress` remains untouched. `.roundfixrc.yml`, `.claude/agents/`, `internal/cli/cli_test.go`, the Task Graph and other Task files remain unchanged. `git diff --check` passed. The initial sandbox process error required escalation because the configured writable root contains a symlink; the work stayed in the same physical Run Worktree.
+
+The declared Verification commands, full package suites, repository Verification and terminal Task settlement are left to the Daemon. No commit, push, pull request, memory message or Spec Event Announcement was made. Phase execution and authoring-skill behavior belong to the later Tasks.
+
+### Verification feedback repair — attempt 1
+
+The Daemon diagnostic artifact isolated the failure to the existing setup-declaration prose contract in `TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase`. The new fallback explanation had interrupted the original declaration sentence. Restored that sentence intact and placed the fallback explanation immediately after it, preserving all required fallback guidance. The owning test and its assertions remain unchanged; the repair changes only the canonical setup reference and sanctioned generated skill artifacts, plus this Result.
+
+Focused reproduction and repair evidence:
+
+- Before repair, `rtk proxy go test ./skills -run '^TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase$' -count=1` exited 1 for the canonical and embedded setup-declaration cases, reproducing the reported failure.
+- After repair and regeneration, `rtk proxy go test ./skills -run 'Test(TheRoundfixSkillGathersDecisionsBeforeADelegatedPhase|EveryOwnedSkillVersionIsRecorded)' -count=1` exited 0. Both copies satisfy the original prose contract and the version record matches.
+- `rtk proxy go test ./internal/cli -run 'Test(AnAuthoringEntryAcceptsAFallback|SurfaceTranscript9UpdateCheckRecommendsTheFallbacks)' -count=1` exited 0 against the regenerated bundle, retaining byte-identical installation behavior and the fallback recommendation transcript.
+- Repeated the sanctioned generators in order: `rtk proxy make skills-sync`; `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`. Each exited 0. The version recorder now records Roundfix `0.1.268` in both version fields and the owned-skill history.
+- Final scope inspection confirms only declared paths changed, the Roundfix mirror is byte-identical to its canonical source, and authored Task content and status remain unchanged. `git diff --check` exited 0.
+
+The diagnostic artifact was read, not embedded. Declared Verification and terminal settlement remain with the Daemon; no commit, push or pull request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T111508Z_d52e529984ea1f74`
+- Source commit: `151b7590d1e5f6f06a8b6c39ee1d1158eec2f752`
