@@ -18,6 +18,21 @@ AskUserQuestion, 2026-11-18 about 02:40 BRT, verbatim:
   pull_request, merge and release; up to five corrections; the Makefile, CI,
   `go.mod` and lint only if a correction requires one.
 
+## The root files' standard (about 06:30 BRT)
+
+AskUserQuestion and the session, 2026-11-18 about 06:30 BRT, verbatim:
+
+> "Temos que ter sempre um padrão igual para todos os projetos que usam o baseline do roundfix. Então se for necessário instruções diferentes no AGENTS.md e CLAUDE.md, vamos ter sempre dois arquivos e sem symlink já sem nem dar opção ao usuário, é regra de uso do baseline. Se não for necessário e formos manter arquivo AGENTS.md e o CLAUDE.md com symlink para o AGENTS.md, vai ser sempre assim. Sem opção ao usuário de mudar o baseline no projeto. O único caminho para personalização do baseline é o arquivo que contem regras especificas do repositorio, hoje chamado de specific-repository.md"
+
+> "eu gosto da ideia de usar o CLAUDE.md como symlink para o AGENTS.md, porém… o trecho que fala sobre o uso da skill afeta de alguma forma … o uso das skills no Codex ou Open Code? Se não afeta, a gente vai ter dessa forma: um AGENTS.md, que é o arquivo, e o CLAUDE.md sempre o symlink… Mas se houver necessidade de separar… essa instrução, que é específica para o Claude, ficaria no CLAUDE.md."
+
+The Supervisor answered that the statement opens with "In Claude Code," and
+says it does not apply to Codex or OpenCode, whose models come from the Agent
+Selection Profiles; so the instruction does not differ per harness, and the
+standard is one `AGENTS.md` with `CLAUDE.md` a symbolic link to it. The rule
+that makes the link mandatory → "Spec 0406 depois da 0405 (Recommended)";
+authorization → "Mesmas do BE (Recommended)".
+
 ## Where the root files get the statement
 
 Measured on a scratch worktree of `eb888135`, removed afterwards.
@@ -33,7 +48,7 @@ Measured on a scratch worktree of `eb888135`, removed afterwards.
   apply`) in a temporary repository whose `CLAUDE.md` was a regular file
   created `AGENTS.md` with the statement and left `CLAUDE.md` without any
   managed block, writing a backup copy of it. The Baseline writes no root block
-  into a regular `CLAUDE.md` today, and this Spec does not change that.
+  into a regular `CLAUDE.md` today; Spec 0406 makes `CLAUDE.md` always a link to `AGENTS.md`.
 - Every adopter checkout under `~/dev` that holds a Setup Manifest (argus,
   quaestor, roundfix) keeps `CLAUDE.md` as a symbolic link to `AGENTS.md`
   (`ls -l`, read only). In each, the statement in `AGENTS.md` is the statement
@@ -41,7 +56,7 @@ Measured on a scratch worktree of `eb888135`, removed afterwards.
 
 ## The prototype
 
-The prototype added one bullet to the template, raised the template's version
+The prototype added one bullet to the template (the wording before the 06:30 decision, without the Claude Code scope; the scope changes no file the regeneration touches), raised the template's version
 (1 to 2) and the root block's version (2 to 3), then ran, in this order:
 
 1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`, which raised `spec-workflow` from 26 to 27 and recorded it in `internal/baseline/module-versions.json`;

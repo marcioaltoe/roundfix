@@ -10,7 +10,7 @@ created: 2026-11-17
 
 The design adds one key to the Authoring Model Declaration (`fallback`, with `model` and `reasoning_effort`). It adds a new entry kind to the Phase Record, `fallback`, under the present schema. Two subcommands are added: `roundfix phase fallback` decides and records an Authoring Fallback from the error an Author Subagent ended on, and `roundfix phase model` prints the model and effort a phase's Author Subagent starts on. The four authoring skills and the Roundfix skill's phase reference tell the session to run them and pass what they print. Nothing is generated: the model and effort passed when a subagent starts override its file. The Recommended Authoring Declaration of Spec 0402 gains the fallbacks the maintainer chose, and its repository contract compares a fallback only where this repository declares one. `roundfix phase start`, the installation of skills and subagents, and the Run's fallbacks keep their contracts.
 
-The Baseline's root block `root.spec-workflow` gains one bullet that states the header rule and the hand-over to the Author Subagent (API Contract 10, ADR-0431). Every built-in profile writes that block into `AGENTS.md`, so an adopter receives it with its next `roundfix baseline update`, and this repository through the Managed Refresh of the Spec. No user-level file is read or written.
+The Baseline's root block `root.spec-workflow` gains one bullet, scoped to Claude Code by its opening words "In Claude Code,", that states the header rule and the hand-over to the Author Subagent, and says it does not apply to Codex or OpenCode (API Contract 10, ADR-0431). The Baseline keeps one instruction file, `AGENTS.md`, with `CLAUDE.md` a link to it; Spec 0406 makes that link the rule. Every built-in profile writes that block into `AGENTS.md`, so an adopter receives it with its next `roundfix baseline update`, and this repository through the Managed Refresh of the Spec. No user-level file is read or written.
 
 The primary trade-off: Roundfix recognises a usage limit by the text Claude Code writes, and a model's family by a name contained in a model name. It needs no list of models and no access to the harness, so it ships no model name (ADR-0401). In exchange, a new wording or a model name without its family stops the phase as today, never on the wrong model.
 
@@ -54,7 +54,7 @@ No package is new. Each subsection below is a component, and the Coverage Map na
 
 ### Root instruction statement
 
-The `spec-workflow` module's root block `root.spec-workflow` renders `internal/baseline/assets/templates/root/spec-workflow.md`. The template gains the bullet of API Contract 10 after its pointer, and keeps its tokens. The block holds no clause (`"rules": []`), so no Source Baseline row, Setup Snapshot or other profile changes. Every built-in profile includes the module, and the Baseline writes the block into `AGENTS.md`; a `CLAUDE.md` that links to `AGENTS.md` shows it, and a regular `CLAUDE.md` receives no root block, as today (`references/2026-11-18-root-statement-decision-and-measurement.md`). The template version, the root block version and the module version rise by one, the module's through its record command, and the derived files and this repository's `AGENTS.md` and Setup Manifest follow from the sanctioned regeneration.
+The `spec-workflow` module's root block `root.spec-workflow` renders `internal/baseline/assets/templates/root/spec-workflow.md`. The template gains the bullet of API Contract 10 after its pointer, and keeps its tokens. The block holds no clause (`"rules": []`), so no Source Baseline row, Setup Snapshot or other profile changes. Every built-in profile includes the module, and the Baseline writes the block into `AGENTS.md`; `CLAUDE.md`, a link to `AGENTS.md` under the Baseline's one-file standard, shows it (`references/2026-11-18-root-statement-decision-and-measurement.md`); Spec 0406 makes that link the rule for every adopting repository. The template version, the root block version and the module version rise by one, the module's through its record command, and the derived files and this repository's `AGENTS.md` and Setup Manifest follow from the sanctioned regeneration.
 
 ## Implementation Design
 
@@ -201,18 +201,20 @@ The refusal of an unknown entry key now reads `expected model, reasoning_effort 
      ### Local Spec workflow
 
      - Route and execute local Specs through {{reference.spec-routing}} and {{reference.issue-tracker}}.
-     - A skill's `model` and `effort` header applies only when a person types the
-       skill (`/skill`); a skill an Agent activates runs on the session's model
-       (anthropics/claude-code#98898, measured 2026-11-14). To hold an Authoring
-       Phase to its declared model, hand the phase to its Author Subagent,
-       `.claude/agents/roundfix-<phase>-author.md`, which
+     - In Claude Code, a skill's `model` and `effort` header applies only when a
+       person types the skill (`/skill`); a skill an Agent activates runs on the
+       session's model (anthropics/claude-code#98898, measured 2026-11-14). To
+       hold an Authoring Phase to its declared model there, hand the phase to its
+       Author Subagent, `.claude/agents/roundfix-<phase>-author.md`, which
        `roundfix skills install --target project` generates from
        `skills.authoring.<harness>`; when that model's usage limit ends the
        subagent, run `roundfix phase fallback` and restart it on the model it prints.
+       This bullet does not apply to Codex or OpenCode, whose models come from
+       the Agent Selection Profiles.
      ```
 
    - **Versions.** In `internal/baseline/assets/templates/index.json` the version of `template.root.spec-workflow` rises from 1 to 2; in `internal/baseline/assets/modules/spec-workflow.json` the version of `root.spec-workflow` rises from 2 to 3, and the module's version is the next one its record command writes. Ids, tokens and references stay as they are.
-   - **Rendered.** A plan for any built-in profile writes the bullet once into the `AGENTS.md` postimage, inside the `root.spec-workflow` markers. Normalized to single spaces, the postimage holds the bullet's first sentence exactly as the template writes it, from "A skill's" to "measured 2026-11-14)."
+   - **Rendered.** A plan for any built-in profile writes the bullet once into the `AGENTS.md` postimage, inside the `root.spec-workflow` markers. Normalized to single spaces, the postimage holds the bullet's first sentence exactly as the template writes it, from "In Claude Code," to "measured 2026-11-14)." It also holds the last sentence, "This bullet does not apply to Codex or OpenCode, whose models come from the Agent Selection Profiles."
    - **Unchanged.** Every other root block, guide, clause, Source Baseline, Setup Snapshot and profile but the Standard TypeScript profile's formatter pin.
 
 ### Surface Transcripts
@@ -417,7 +419,7 @@ Deviations from the PRD:
 - ADR-0426: not applicable — the Corrections Report is untouched.
 - ADR-0050: not applicable — the fallbacks of a Run, and their rule that work already begun is not switched, are untouched.
 - ADR-0256: the skills and the phase reference describe both commands in the same change.
-- ADR-0431: the design is its decision; a rule in the user's `~/.claude/CLAUDE.md`, a new root block, a clause in a Baseline guide and writing the block into a regular `CLAUDE.md` are the options it rejected.
+- ADR-0431: the design is its decision; a rule in the user's `~/.claude/CLAUDE.md`, a new root block, a clause in a Baseline guide and a separate `CLAUDE.md` that carries the bullet alone are the options it rejected.
 - ADR-0186: the bullet names no ADR and no Spec of this repository; no option it rejected is taken.
 - ADR-0349: the authorization record carries the Release Ceiling `minor` for a new key and two command paths.
 
@@ -476,7 +478,7 @@ Deviations from the PRD:
 - **The fallback must be an alias.** The Agent tool takes an alias for the model at start; a full model identifier is refused by the start, and the skill then reports the error.
 - **Untrusted text.** The error is text from the harness. Only the matched line is kept, as one line of at most 200 characters, and it is printed in quotes. The skill text says it is data.
 - **Two machines.** A Spec authored on two machines falls back only where the record holds the entry (ADR-0428).
-- **A regular `CLAUDE.md`.** The Baseline writes root blocks into `AGENTS.md` only. A repository whose `CLAUDE.md` is a regular file, not a link to `AGENTS.md`, shows the statement only in `AGENTS.md`; every adopter measured on 2026-11-18 links it (ADR-0431, Consequences).
+- **Other harnesses.** Codex and OpenCode read the same `AGENTS.md`. The bullet opens with "In Claude Code," and ends by saying it does not apply to Codex or OpenCode, whose models come from the Agent Selection Profiles, so the file stays one for every harness (ADR-0431). A repository whose `CLAUDE.md` is not a link to `AGENTS.md` is Spec 0406's case.
 - **Order of Specs.** Specs 0401 to 0404 change the same help, the same phase command and the same skill sections first. Each Task runs its packages again on its own base.
 
 ## Glossary
@@ -492,3 +494,4 @@ None.
 - The installation ignores the new key: no header, subagent file or check changes.
 - The contract compares this repository's fallbacks only where declared, until the operator's step adds them. See ADR-0430.
 - The header rule goes into the existing root block `root.spec-workflow`, which every built-in profile writes, rather than a new block or a guide clause. See ADR-0431.
+- The bullet opens with "In Claude Code," and says it does not apply to Codex or OpenCode, so `AGENTS.md` stays the one instruction file and `CLAUDE.md` its link. See ADR-0431.

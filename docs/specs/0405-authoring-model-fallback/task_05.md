@@ -37,9 +37,9 @@ report.
 11. MUST verify that this repository's `.roundfixrc.yml` is byte-identical to the Delivery Base: its fallbacks are the operator's step after the release.
 12. MUST verify Success Metric 6 with the built binary, in a fresh temporary Git repository with a fresh temporary `HOME`:
     - adopt it with `roundfix baseline plan --profile go-cli-tui` and every required decision, then `roundfix baseline apply` with the printed Plan Digest; the profile's required skills may be copied into the fixture from this worktree first, and the fixture's `CLAUDE.md` is a symbolic link to `AGENTS.md`, as the measured adopters keep it;
-    - confirm that `AGENTS.md`, and `CLAUDE.md` read through its link, each hold the first sentence of the bullet of `_techspec.md` → API Contract 10 exactly once, normalized to single spaces, inside the `root.spec-workflow` markers, and that `CLAUDE.md` is still a link;
+    - confirm that `AGENTS.md`, and `CLAUDE.md` read through its link, each hold the first sentence of the bullet of `_techspec.md` → API Contract 10, which opens with "In Claude Code,", and its last sentence, "This bullet does not apply to Codex or OpenCode, whose models come from the Agent Selection Profiles.", each exactly once, normalized to single spaces, inside the `root.spec-workflow` markers, and that `CLAUDE.md` is still a link;
     - confirm that a second `roundfix baseline update --no-skills --no-history` on the fixture reports `current`;
-    - confirm that this repository's `AGENTS.md`, through `CLAUDE.md`, holds the same sentence once;
+    - confirm that this repository's `AGENTS.md`, through `CLAUDE.md`, holds the same two sentences once, with the scoping words;
     - confirm that no file outside the fixture and the temporary `HOME` changed, and that no user-level instruction file was read or written.
 13. MUST NOT start an Agent session, an Author Subagent or a harness, and MUST NOT reach a provider or the network.
 
