@@ -2,67 +2,92 @@
 task: task_04
 spec: 0405-authoring-model-fallback
 status: pending
-type: qa
-complexity: high
+type: backend
+complexity: medium
 ---
 
-# Task 04: Run the final QA gate
+# Task 04: The Baseline tells each root instruction file how an Authoring Phase keeps its model
 
 ## Overview
 
-Execute the `qa-gate` skill as this Spec's authored terminal gate. It derives
-the QA matrix from the PRD and the Task evidence, exercises the key and the
-two subcommands through the built binary, checks the limit reader against the
-outside evidence the planning change committed, and writes the dated QA
-report.
+The Baseline's root block `root.spec-workflow`, which every built-in profile
+writes into an adopting repository's `AGENTS.md`, gains one bullet scoped to
+Claude Code: in Claude Code, a skill's `model` and `effort` header applies
+only when a person types the skill; a skill an Agent activates runs on the
+session's model; the Agent hands an Authoring Phase to its Author Subagent
+and, on that model's usage limit, follows `roundfix phase fallback`. The
+bullet says it does not apply to Codex or OpenCode, so `AGENTS.md` stays the
+one instruction file and `CLAUDE.md` its link. The versions rise, the derived files are
+regenerated, and this repository's `AGENTS.md` and Setup Manifest receive the
+bullet through the Managed Refresh. No user-level file is read or written.
 
 ## Requirements
 
-1. MUST build the binary from the worktree and run every check with a fresh temporary `HOME` and temporary fixture repositories it creates and removes. MUST NEVER use the real `~/.roundfix`, `~/.codex` or `~/.claude`. A fresh `HOME` that runs the whole `./internal/cli` package MUST keep the host Rust toolchain: `PATH`, `RUSTUP_HOME` and `CARGO_HOME` pointing at the host's toolchain, read-only.
-2. MUST reproduce Surface Transcript 1, Surface Transcript 2, Surface Transcript 3, Surface Transcript 4, Surface Transcript 5, Surface Transcript 6, Surface Transcript 7, Surface Transcript 8 of `_techspec.md` with the built binary, in the fixture the Surface Transcripts section describes, with `CLAUDE_CODE_SESSION_ID` set. Transcripts 3 to 5 run after transcript 2 in the same home.
-3. MUST verify Success Metric 2: after transcript 2 the home holds exactly one fallback entry with the keys of `_techspec.md` → Data Models, in order. Each refusal of API Contract 1 MUST leave the day files byte-identical.
-4. MUST verify Success Metric 3, through transcripts 4 and 5 and through `roundfix phase model idea --spec 0413-another`.
-5. MUST verify Success Metric 4:
-   - in a fixture whose Project Config declares no fallback, `roundfix skills install --target project` writes the same skills and subagents as the binary built from the Delivery Base;
-   - `roundfix phase start` prints the same lines and exit codes as that binary.
-6. MUST verify Success Metric 1 through the four authoring skills' text: each, in both copies, runs `roundfix phase model` before starting its Author Subagent and `roundfix phase fallback` on an error, for its own phase, and restarts on the printed model and effort without waiting.
-7. MUST verify the outside-evidence row without the network. Each Claude Code usage-limit message quoted in `references/2026-11-17-harness-and-test-measurements.md` → Usage limit messages is classified as that documentation says, through `roundfix phase fallback` with the built binary:
-   - the session and weekly limits as shared;
-   - the Opus and Sonnet limits as a model's own;
-   - the spend-limit lines as not a model's limit;
-   - the observed `You've hit your Fable limit · resets Nov 22 at 8pm` as the Fable limit.
-8. MUST verify that a Project Config with a fallback on `research`, a fallback without a model, or a fallback that names its entry's model is refused with the messages of `_techspec.md` → Data Models.
-9. MUST run the glossary check of `docs/agents/domain.md` for **Authoring Fallback**, **Authoring Model Declaration**, **Author Subagent** and **Phase Record**. MUST confirm that ADR-0401 carries `Amended by ADR-0427`, ADR-0407 carries `Amended by ADR-0428` and ADR-0415 carries `Amended by ADR-0430`.
-10. MUST verify Success Metric 5. Reproduce Surface Transcript 9 with the built binary in a fixture repository where `roundfix skills install --target project` installed the skills and `.roundfixrc.yml` declares no `skills`. Check that `roundfix doctor` prints the same block and that the configuration guide's block equals it.
-11. MUST verify that this repository's `.roundfixrc.yml` is byte-identical to the Delivery Base: its fallbacks are the operator's step after the release.
-12. MUST NOT start an Agent session, an Author Subagent or a harness, and MUST NOT reach a provider or the network.
+1. MUST change `internal/baseline/assets/templates/root/spec-workflow.md` to the text of `_techspec.md` → API Contract 10 → The template, word for word and with its line breaks. Its tokens stay `reference.spec-routing` and `reference.issue-tracker`.
+2. MUST raise by one, in `internal/baseline/assets/templates/index.json`, the `version` of `template.root.spec-workflow`, and, in `internal/baseline/assets/modules/spec-workflow.json`, the `version` of the root block `root.spec-workflow`. MUST keep every id, token, reference and the empty `rules` list. MUST add no root block, clause or rule.
+3. MUST regenerate, in this order and never by hand, with the commands of `_authorization.md` → Sanctioned regeneration:
+   - the module record (`go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`), which writes the module's next version; the Spec names no number;
+   - the derived Baseline files (`make baseline-digests`);
+   - as the Task's last step, this repository's managed carriers (`go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`), whose second run reports `current`.
+
+   The files these commands rewrote in the measurement of `references/2026-11-18-root-statement-decision-and-measurement.md` are declared below; any other file they rewrite on the tree the Task runs on is recorded by the Daemon.
+4. MUST add `internal/baseline/authoring_root_statement_test.go` with `TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel`, calling `t.Parallel()` first, with these subtests. Each compares whole sentences of the bullet, normalized to single spaces, never a word alone: the first sentence, which opens with "In Claude Code,", and the last, "This bullet does not apply to Codex or OpenCode, whose models come from the Agent Selection Profiles."
+   - `plan_postimage`: a plan built on a temporary repository with the existing plan seams of `internal/baseline/plan_test.go` writes each of the two sentences exactly once into the `AGENTS.md` postimage, between the `root.spec-workflow` begin and end markers;
+   - `formatter_golden`: the Standard TypeScript formatter golden `AGENTS.md` holds each of the two sentences exactly once;
+   - `scoped_to_claude_code`: in the template, the bullet's first words are "In Claude Code,".
+5. MUST NOT change, by hand or by command, any Source Baseline, Setup Snapshot, other module, other root block, guide template, profile other than `standard-typescript-monorepo.json`, any guide under `docs/agents/` other than `docs/agents/setup-context.json`, `CLAUDE.md`, `.roundfixrc.yml`, the Makefile, a workflow, `go.mod` or a lint configuration. Of the Governed Paths the Task changes only those it declares below, all listed in `_authorization.md`.
+6. MUST NOT read or write any user-level file, such as `~/.claude/CLAUDE.md`, and no test may read the real home directory.
 
 ## Subtasks
 
-- [ ] Build the binary and prepare the fixtures.
-- [ ] Reproduce the eight transcripts and check the record.
-- [ ] Check the outside-evidence row, the refusals and the case without a fallback.
-- [ ] Check the skill text, the glossary, the ADR notices and this repository's Project Config.
-- [ ] Write the dated QA report.
+- [ ] Add the bullet to the root block template and raise the template and root block versions.
+- [ ] Add the root statement test.
+- [ ] Record the module version and regenerate the derived files.
+- [ ] Refresh this repository's managed carriers and confirm a second refresh reports `current`.
 
 ## Acceptance Criteria
 
-- [ ] Every Success Metric of the PRD has a passing row with its evidence.
-- [ ] The outside-evidence row cites `references/2026-11-17-harness-and-test-measurements.md` and the Claude Code documentation pages it records.
-- [ ] The QA report is written under this Spec's folder.
+- [ ] A plan for a built-in profile writes the statement once into `AGENTS.md`, inside the `root.spec-workflow` markers, and the Standard TypeScript formatter golden holds it once.
+- [ ] This repository's `AGENTS.md`, which `CLAUDE.md` links to, holds the statement, and a second managed refresh reports `current`.
+- [ ] The block keeps its id, tokens and references; no other block, clause, guide, Source Baseline, Setup Snapshot or profile changes.
+- [ ] Removing the bullet from the template makes the three subtests fail, and removing its opening words "In Claude Code," or its last sentence makes at least one fail.
 
 ## Context
 
-- instruction: `docs/specs/0405-authoring-model-fallback/references/2026-11-17-harness-and-test-measurements.md`
-- instruction: `docs/specs/0405-authoring-model-fallback/references/2026-11-17-maintainer-answers.md`
+- instruction: `docs/adr/0431-the-baseline-tells-each-root-instruction-file-how-an-authoring-phase-keeps-its-model.md`
+- instruction: `docs/specs/0405-authoring-model-fallback/references/2026-11-18-root-statement-decision-and-measurement.md`
+- instruction: `internal/baseline/plan_test.go`
+- instruction: `internal/baseline/repository_rule_placement_test.go`
+- interface: `internal/baseline/assets/templates/root/spec-workflow.md`
+- interface: `internal/baseline/assets/templates/index.json`
+- interface: `internal/baseline/assets/modules/spec-workflow.json`
+- interface: `internal/baseline/module-versions.json`
+- interface: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`
+- interface: `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md`
+- interface: `internal/baseline/testdata/catalog.diagnostics.golden.json`
+- interface: `internal/baseline/testdata/catalog.digest`
+- interface: `internal/baseline/testdata/catalog.normalized.json`
+- interface: `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+- interface: `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+- creates: `internal/baseline/authoring_root_statement_test.go`
+- interface: `AGENTS.md`
+- interface: `docs/agents/setup-context.json`
+
+## Consumers
+
+- The root block template, the module and the derived catalog records — consumers: `./internal/baseline`, `./internal/cli`
+- This repository's root instruction file and Setup Manifest — consumers: `./internal/docscontract`
 
 ## Verification
 
-- `newest="$(find 'docs/specs/0405-authoring-model-fallback/qa' -type f -name "qa-report-*.md" -print 2>/dev/null | awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); date=substr(name, 1, 10); suffix=substr(name, 11); shape=(length(date) == 10 && substr(date, 5, 1) == \"-\" && substr(date, 8, 1) == \"-\"); for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\"0123456789\", substr(date, i, 1)) == 0) shape=0 } year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\"\"; if (suffix == \"\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \"-\"); for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\"0123456789\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; test -n "$newest" || exit 1; awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } END { exit(closed && verdicts == 1 && length(verdict) > 0 ? 0 : 1) }" "$newest"`
+- `out="$(go test -count=1 -timeout 20m -v -run '^(TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel|TestEveryBaselineModuleVersionIsRecorded)$' ./internal/baseline 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel/plan_postimage TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel/formatter_golden TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel/scoped_to_claude_code TestEveryBaselineModuleVersionIsRecorded; do printf '%s\n' "$out" | grep -qF -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done; go test -count=1 -timeout 30m ./internal/baseline` — expected: exit 0. Before this Task the root statement test does not exist, so its pass lines are missing; afterwards the plan and the formatter golden carry the statement once, the module version is recorded, and the whole Baseline suite passes.
+- `tr -s '[:space:]' ' ' < AGENTS.md | grep -qF -- "In Claude Code, a skill" || { echo 'AGENTS.md lacks the scoped header rule' >&2; exit 1; }; tr -s '[:space:]' ' ' < AGENTS.md | grep -qF -- "This bullet does not apply to Codex or OpenCode" || { echo 'AGENTS.md lacks the harness scope' >&2; exit 1; }; test -L CLAUDE.md || { echo 'CLAUDE.md is not a link' >&2; exit 1; }; tr -s '[:space:]' ' ' < CLAUDE.md | grep -qF -- "hand the phase to its Author Subagent" || { echo 'CLAUDE.md lacks the hand-over' >&2; exit 1; }; f="$(mktemp)"; go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --format json > "$f"; status=$?; grep -q '"state":"current"' "$f" || { cat "$f"; rm -f "$f"; exit 1; }; rm -f "$f"; test "$status" -eq 0 && go test -count=1 -timeout 30m -tags docscontract ./internal/docscontract && go test -count=1 -timeout 30m ./internal/cli` — expected: exit 0. Before this Task this repository's root file lacks the statement; afterwards `AGENTS.md`, and `CLAUDE.md` through its link, carry it, a managed refresh reports `current`, and the documentation contracts and the whole CLI suite pass.
 
 ## References
 
-- `_prd.md` → Success Metric 1; Success Metric 2; Success Metric 3; Success Metric 4; Success Metric 5; User Stories 1 to 7; Glossary
-- `_techspec.md` → API Contracts 1 to 8; Surface Transcript 1, Surface Transcript 2, Surface Transcript 3, Surface Transcript 4, Surface Transcript 5, Surface Transcript 6, Surface Transcript 7, Surface Transcript 8, Surface Transcript 9; API Contract 9; Interfaces (invariants 1 to 8); Data Models
-- [`references/2026-11-17-harness-and-test-measurements.md`](references/2026-11-17-harness-and-test-measurements.md)
-- ADR-0427, ADR-0428, ADR-0429, ADR-0430, ADR-0415, ADR-0401, ADR-0407
+- `_prd.md` → Goals (sixth bullet); User Story 8; Core Feature 9; Success Metric 6; Non-Goals; Decisions (2026-11-18, both)
+- `_techspec.md` → Root instruction statement; API Contract 10; Testing Approach; Build Order 4; Risks & Considerations (other harnesses)
+- [`references/2026-11-18-root-statement-decision-and-measurement.md`](references/2026-11-18-root-statement-decision-and-measurement.md)
+- ADR-0431, ADR-0401, ADR-0186
