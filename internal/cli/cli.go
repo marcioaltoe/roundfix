@@ -5368,6 +5368,8 @@ remote lines contact the repository's forge; each read is bounded by a
 ten-second limit. Every other check stays offline.
 The baseline-rules: line names each passage outside a Managed Region that belongs
 in docs/agents/specific-repository.md, moves none, and never fails Doctor.
+The baseline-claude-link: line reports whether CLAUDE.md is a symbolic link to
+AGENTS.md and never fails Doctor.
 `
 	case "migrate":
 		return `Usage:

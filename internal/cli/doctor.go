@@ -133,6 +133,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		results = append(results, doctorAuthoringModelsResult(state))
 	}
 	results = append(results, doctorBaselineRulesResult(repositoryRoot))
+	results = append(results, doctorClaudeLinkResult(ctx, repositoryRoot))
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
 	if dependencies.diskSpace != nil {
@@ -160,6 +161,69 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+// doctorClaudeLinkResult reports the root instruction link without failing Doctor.
+func doctorClaudeLinkResult(ctx context.Context, repositoryRoot string) CheckResult {
+	result := CheckResult{Name: HealthCheckClaudeLink, Status: CheckStatusSkipped,
+		Detail: "no Setup Manifest at docs/agents/setup-context.json"}
+	if repositoryRoot == "" {
+		return result
+	}
+	_, err := os.Stat(filepath.Join(repositoryRoot, baselineSetupManifestPath))
+	if errors.Is(err, os.ErrNotExist) {
+		return result
+	}
+	unread := func(err error) CheckResult {
+		return CheckResult{Name: HealthCheckClaudeLink, Status: CheckStatusWarn,
+			Detail:     "DR-BASELINE-CLAUDE-LINK-UNREAD: " + err.Error(),
+			NextAction: "re-run roundfix doctor after fixing CLAUDE.md"}
+	}
+	if err != nil {
+		return unread(err)
+	}
+	link, err := baseline.ReadClaudeInstructionLink(ctx, repositoryRoot, baseline.ExecGitRunner{})
+	if err != nil {
+		return unread(err)
+	}
+	result.Status = CheckStatusWarn
+	result.NextAction = "run roundfix baseline update to replace it with a symbolic link to AGENTS.md"
+	switch link.Shape {
+	case baseline.ClaudeInstructionLinkLinked:
+		result.Status = CheckStatusOK
+		result.Detail = "CLAUDE.md is a symbolic link to AGENTS.md"
+		result.NextAction = ""
+		return result
+	case baseline.ClaudeInstructionLinkAbsent:
+		result.Detail = "CLAUDE.md is absent"
+		result.NextAction = "run roundfix baseline update to create the symbolic link to AGENTS.md"
+	case baseline.ClaudeInstructionLinkFile, baseline.ClaudeInstructionLinkElsewhere:
+		result.Detail = "CLAUDE.md is a regular file"
+		if link.Shape == baseline.ClaudeInstructionLinkElsewhere {
+			result.Detail = "CLAUDE.md is a symbolic link to " + link.Target
+		}
+		if len(link.Passages) != 0 {
+			locations := make([]string, len(link.Passages))
+			for i, passage := range link.Passages {
+				locations[i] = fmt.Sprintf("%s:%d-%d", passage.Path, passage.StartLine, passage.EndLine)
+			}
+			noun := "1 passage"
+			if len(link.Passages) != 1 {
+				noun = fmt.Sprintf("%d passages", len(link.Passages))
+			}
+			result.Detail += " with " + noun + " of its own: " + strings.Join(locations, ", ")
+			result.NextAction = "move each passage into docs/agents/specific-repository.md, then run roundfix baseline update"
+		}
+	case baseline.ClaudeInstructionLinkAgentsNotRegular:
+		result.Detail = "AGENTS.md is not a regular file"
+		result.NextAction = "make AGENTS.md the root instruction file, then run roundfix baseline update"
+	case baseline.ClaudeInstructionLinkUnlinkedCheckout:
+		result.Detail = "DR-BASELINE-CLAUDE-LINK-UNLINKED: CLAUDE.md is the symbolic link to AGENTS.md checked out as a regular file"
+		result.NextAction = "run git config core.symlinks true, then check CLAUDE.md out again"
+		return result
+	}
+	result.Detail = "DR-BASELINE-CLAUDE-LINK: " + result.Detail
+	return result
 }
 
 // doctorBaselineRulesResult names passages without failing Doctor or moving them.

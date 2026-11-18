@@ -23,6 +23,7 @@ const (
 
 	HealthCheckBaselineVersion      = "baseline-version"
 	HealthCheckBaselineRules        = "baseline-rules"
+	HealthCheckClaudeLink           = "baseline-claude-link"
 	HealthCheckNode                 = "node"
 	HealthCheckACPX                 = "acpx"
 	HealthCheckAdapter              = "adapter"

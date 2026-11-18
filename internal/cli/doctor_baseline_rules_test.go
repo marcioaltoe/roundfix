@@ -92,7 +92,7 @@ func TestDoctorReportsMisplacedRepositoryRules(t *testing.T) {
 					}
 				}
 			}
-			if count != 1 || position+1 >= len(lines) || !strings.HasPrefix(lines[position+1], "residue:") {
+			if count != 1 || position+2 >= len(lines) || !strings.HasPrefix(lines[position+1], "baseline-claude-link:") || !strings.HasPrefix(lines[position+2], "residue:") {
 				t.Fatalf("baseline rules position: %s", stdout.String())
 			}
 			if name == "after_skills_and_exit_code" {

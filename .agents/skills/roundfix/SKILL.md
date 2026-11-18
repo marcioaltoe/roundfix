@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.270
+  version: 0.1.273
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.270
+version: 0.1.273
 ---
 
 # Roundfix
@@ -26,7 +26,7 @@ A request names a Skill Mode with the first word after the skill's name: `follow
 - `--follow-up`: take the project's handoff, inventory pending work, plan, gather decisions, author and deliver the resulting work, and leave no handed-in message pending. The mode names where each listed Finding and Backlog Entry went.
 - `--status`: run a short read-only status report that accepts no handoff and consumes no message.
 - `--unattended`: gather every decision in calls of up to three questions.
-- `--update`: run the Update Check, show what a newer Roundfix and this repository's Baseline plan change, and apply them, asking before a step that deletes files.
+- `--update`: run the Update Check, show newer releases and this repository's Baseline plan, then apply them, asking before deleting files or replacing `CLAUDE.md`.
 
 Read [Skill Modes](references/modes.md) before running a mode.
 

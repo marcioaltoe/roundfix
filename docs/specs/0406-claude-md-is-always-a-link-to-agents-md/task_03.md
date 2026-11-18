@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0406-claude-md-is-always-a-link-to-agents-md
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -97,3 +97,44 @@ complexity: high
 - `_prd.md` → Goals (third, fourth and fifth bullets); Core Features 4 and 5; Success Metric 4; User Experience
 - `_techspec.md` → Command surfaces; invariant 9; API Contracts 2, 3 and 5; Surface Transcript 1; Testing Approach (Task 3); Risks & Considerations (Doctor tests that count lines); Build Order 3
 - ADR-0432, ADR-0433, ADR-0220, ADR-0411
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, tech-writer, evidence-gate, roundfix, systematic-debugging.
+
+### Implementation and acceptance evidence
+
+- Doctor now reads the Task 01 reader with `baseline.ExecGitRunner{}` and prints exactly one advisory `baseline-claude-link:` line immediately after `baseline-rules:`. The line covers all API Contract 3 shapes, singular and plural passage counts, comma-separated locations, absent manifest and reader failure; it never returns `failed`. The Doctor usage describes it. `TestDoctorReportsTheClaudeInstructionLink` exercises all eleven required subtests through `runCLI`, checks whole lines and adjacent checks, preserves repository snapshots, and proves an independent failed check still controls the exit code.
+- `TestBaselineUpdateWarnsAboutTheClaudeInstructionLink` covers both API Contract 2 warnings in text and JSON on adopted temporary Git repositories. The fixtures preserve `CLAUDE.md` byte-for-byte and the repository snapshot during preview, compare exits against the same fixture with the link, and exercise both exit 0 and exit 3 with an unrelated pending guide change. The unlinked fixture uses `core.symlinks=false` and a Git checkout of the tracked link, rather than a fake reader.
+- `TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink` asserts Surface Transcript 1's ordered output prefix and empty stderr, exit 0, the declared remaining-output variation, no `CLAUDE.md` plan or `baseline.root.claude-link` warning, and the `AGENTS.md` symbolic-link target before and after the read-only preview of this repository.
+- The two user guide pages and the canonical skill references describe the rule, both warning messages, Doctor's forms and codes, the passage-move approval requirement, and the single whole-plan-or-stop question before deletion or a `fileChanges` entry that updates `CLAUDE.md`. Preservation wording includes the narrow root-link exception. The mirrors were regenerated with `make skills-sync`, versions with the owned-skill recorder, and `docs/references/behavior-surfaces.json` with the coverage recorder. Final recorded skill versions: Roundfix `0.1.273`; setup-context-driven `0.0.10`.
+
+### Focused checks
+
+- Initial reproduction: `go test -count=1 -timeout 5m ./internal/cli -run '^TestDoctorReportsTheClaudeInstructionLink$/^ok$'` exited 1 because the required whole line was absent before the implementation.
+- `go test -count=1 -timeout 5m -v ./internal/cli -run '^(TestDoctorReportsTheClaudeInstructionLink|TestBaselineUpdateWarnsAboutTheClaudeInstructionLink|TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink|TestDoctorReportsMisplacedRepositoryRules)$'` exited 0; every required new subtest and the existing misplaced-rule cases reported PASS.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^TestRunDoctor(ProfileReadinessProvesEffectiveCategoriesAndReportsCounts|AdapterReadinessReportsRequiredProfileRuntimes|RepositorySkillReadiness|MissingRepositoryRoot|RealRepositoryCheckDoesNotMutateState)$'` exited 0 for the existing outputs and line counts affected by insertion.
+- `go test -count=1 -timeout 5m ./skills -run '^(TestTheUpdateModeAppliesOnlyThePlanItShowed|TestBaselineSkillContract|TestThinSetupSkill|TestRoundfixSkillIndexNamesEveryReference|TestNoOwnedSkillRepeatsAPhraseAcrossALineBreak)$'` exited 0 against the final skill text.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestBaselineDocumentationContract|TestUserGuideLinksResolve|TestGlossaryPhrasesAreDefinedTerms|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$'` exited 0.
+- Required generation commands exited 0: `make skills-sync`; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; and, after the last guide edit, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`. Mirrors were synchronized again after recording versions.
+- `gofmt -l` reported no changed Go file; `git diff --check` reported no whitespace error. A changed-path audit found only the declared paths, this Task file and the companion assertion below; all five canonical/mirror pairs matched byte-for-byte. `CLAUDE.md` remained a symbolic link to `AGENTS.md`.
+
+### Companion assertion and execution boundary
+
+`internal/cli/doctor_baseline_rules_test.go` previously required `residue:` immediately after `baseline-rules:`. A focused run reproduced its failure with the required new line. Its sole changed assertion now requires `baseline-claude-link:` between them. This is an ordinary, non-Governed companion path within the same output-ordering slice, permitted by `docs/agents/spec-routing.md`; the Daemon can record it under Recorded paths. No assertion about passages or exit codes was weakened. The existing `doctor_test.go` fixture without root instruction files correctly gains the contract's `agents-not-regular` warning; its other expected additions are skipped lines.
+
+The sandbox rejected its symlinked writable root before process creation; commands ran through the physical checkout with escalation. No other Task, Task Graph, prohibited path, Baseline source or golden was edited. Task status remains Daemon-owned. The Agent did not run declared Verification or repository Verification; no terminal Task verdict, commit, push or pull request is claimed.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon's `batch-003-attempt-1.log` and the entry-size assertion in `skills/roundfix_layout_test.go`. The added mode-summary wording put the Roundfix skill entry over its existing 20,000-byte budget. Shortened only that summary, preserving the Update Check, release and Baseline preview, and approval before deleting files or replacing `CLAUDE.md`. The detailed approval question remains in `references/modes.md`; the budget and its test are unchanged.
+
+Regenerated the mirror with `make skills-sync`, recorded Roundfix `0.1.273` with `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`, synchronized again, and ran the sanctioned coverage recorder after the final edit. All commands exited 0. Canonical and embedded entries are byte-identical at 19,990 bytes each.
+
+Focused repair check: `go test -count=1 -timeout 5m ./skills -run '^(TestRoundfixSkillEntryFileStaysWithinItsBudget|TestTheUpdateModeAppliesOnlyThePlanItShowed|TestTheRoundfixSkillReadsItsModeFromTheRequest)$'` exited 0. `git diff --check` reported no whitespace errors. The full declared Verification sequence remains for the Daemon's next attempt; Task status and all other implementation files were left unchanged in this repair turn.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/doctor_baseline_rules_test.go`

@@ -12,6 +12,17 @@ With the extension decision off, it asks to run
 The line never fails Doctor or changes its exit code. Neither command moves
 a passage; an Agent moves it only with the person's approval.
 
+Doctor prints `baseline-claude-link:` immediately after `baseline-rules:` and
+before residue. It reports `ok` for `CLAUDE.md` a symbolic link to `AGENTS.md`,
+`warn` with `DR-BASELINE-CLAUDE-LINK` for an absent file, a regular file, a link
+elsewhere or a non-regular `AGENTS.md`, listing any passages as
+`<path>:<start>-<end>` separated by `, ` (`1 passage` or `<n> passages`).
+`DR-BASELINE-CLAUDE-LINK-UNLINKED` warns for a link checked out as a regular file
+and asks to run `git config core.symlinks true`, then check `CLAUDE.md` out again.
+`DR-BASELINE-CLAUDE-LINK-UNREAD` warns on a read error and asks to re-run Doctor
+after fixing `CLAUDE.md`. Without a Setup Manifest the line is `skipped`.
+It never fails Doctor, changes its exit code or writes a file.
+
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
 Run-ready. It checks Node.js and minimum-supported acpx, proves Adapter
 Readiness for every distinct runtime referenced by the effective required

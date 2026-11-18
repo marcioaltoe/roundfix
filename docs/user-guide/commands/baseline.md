@@ -161,6 +161,42 @@ writes nothing. A declared decision also answers a new decision without
 `--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
 `roundfix baseline update --decision auth.base_path=/auth`.
 
+#### Claude Instruction Link
+
+`AGENTS.md` is the root instruction file; `CLAUDE.md` is always a relative
+symbolic link to `AGENTS.md`, with no repository option to keep a separate file.
+Adoption creates the link or replaces a regular file or a safe link elsewhere.
+A managed refresh creates an absent link and replaces a regular file or safe
+link elsewhere only when it holds no passage of its own. A replaced regular
+file gets the root backup `CLAUDE.<digest>.md`; a link's target stays untouched.
+
+When passages remain, the plan leaves `CLAUDE.md` unchanged and refreshes the
+rest. Text prints this warning; JSON carries its code, path and message in
+`warnings`:
+
+```text
+Warning: baseline.root.claude-link.withheld: CLAUDE.md: CLAUDE.md holds <n> passage[s] of its own (<path>:<start>-<end>[, ...]); move each into docs/agents/specific-repository.md, then run roundfix baseline update to replace it with a symbolic link to AGENTS.md
+```
+
+Use `1 passage` or `<n> passages`. For a link elsewhere the message begins
+`CLAUDE.md links to <target>, which holds`. When `AGENTS.md` is not a regular
+file, the same code instead says:
+
+```text
+AGENTS.md is not a regular file, so CLAUDE.md cannot link to it; make AGENTS.md the root instruction file, then run roundfix baseline update
+```
+
+An unlinked checkout holds exactly `AGENTS.md` as regular-file bytes while Git
+records mode `120000`. The plan leaves it unchanged and warns:
+
+```text
+Warning: baseline.root.claude-link.unlinked-checkout: CLAUDE.md: this checkout holds the symbolic link CLAUDE.md -> AGENTS.md as a regular file; run git config core.symlinks true, then check CLAUDE.md out again
+```
+
+Both warnings preserve the update's exit code. Move every passage into
+`docs/agents/specific-repository.md` before the next update converts the file.
+The command never moves a passage itself.
+
 #### Misplaced repository rules
 
 After reading a valid Setup Manifest, every update result names each
