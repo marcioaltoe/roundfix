@@ -156,13 +156,14 @@ type PrePRReview struct {
 }
 
 type Delivery struct {
-	CheckTimeout      time.Duration
-	ReviewConcurrency int
-	DerivedPaths      []DerivedPathDeclaration
-	NumberedFiles     []string
-	ItemBinary        ItemBinaryDeclaration
-	LinuxLane         bool
-	LinuxLaneImage    string
+	CheckTimeout       time.Duration
+	ReviewConcurrency  int
+	DerivedPaths       []DerivedPathDeclaration
+	NumberedFiles      []string
+	ItemBinary         ItemBinaryDeclaration
+	RequireDefectClass bool
+	LinuxLane          bool
+	LinuxLaneImage     string
 }
 
 // ItemBinaryDeclaration names the command that builds the repository's own
@@ -458,13 +459,14 @@ func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type deliveryOverlay struct {
-	CheckTimeout      *durationValue            `yaml:"check_timeout"`
-	ReviewConcurrency *int                      `yaml:"review_concurrency"`
-	DerivedPaths      *[]DerivedPathDeclaration `yaml:"derived_paths"`
-	NumberedFiles     *[]string                 `yaml:"numbered_files"`
-	ItemBinary        *ItemBinaryDeclaration    `yaml:"item_binary"`
-	LinuxLane         *bool                     `yaml:"linux_lane"`
-	LinuxLaneImage    *string                   `yaml:"linux_lane_image"`
+	CheckTimeout       *durationValue            `yaml:"check_timeout"`
+	ReviewConcurrency  *int                      `yaml:"review_concurrency"`
+	DerivedPaths       *[]DerivedPathDeclaration `yaml:"derived_paths"`
+	NumberedFiles      *[]string                 `yaml:"numbered_files"`
+	ItemBinary         *ItemBinaryDeclaration    `yaml:"item_binary"`
+	RequireDefectClass *bool                     `yaml:"require_defect_class"`
+	LinuxLane          *bool                     `yaml:"linux_lane"`
+	LinuxLaneImage     *string                   `yaml:"linux_lane_image"`
 }
 
 type watchOverlay struct {
@@ -1862,6 +1864,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 	if value, found := yamlValueAtPath(&document, []string{"secondbrain"}); found && value.Kind == yaml.MappingNode && len(value.Content) == 0 {
 		removeYAMLPath(&document, []string{"secondbrain"})
 	}
+	if node, found := yamlValueAtPath(&document, []string{"delivery", "require_defect_class"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!bool") {
+		return fmt.Errorf("parse config %q: delivery.require_defect_class must be boolean: cannot unmarshal non-boolean value", label)
+	}
 	if node, found := yamlValueAtPath(&document, []string{"delivery", "linux_lane"}); found && (node.Kind != yaml.ScalarNode || node.Tag != "!!bool") {
 		return fmt.Errorf("parse config %q: delivery.linux_lane must be boolean: cannot unmarshal non-boolean value", label)
 	}
@@ -2048,6 +2053,9 @@ func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
 	}
 	if overlay.Delivery != nil && overlay.Delivery.NumberedFiles != nil {
 		config.Delivery.NumberedFiles = *overlay.Delivery.NumberedFiles
+	}
+	if overlay.Delivery != nil && overlay.Delivery.RequireDefectClass != nil {
+		config.Delivery.RequireDefectClass = *overlay.Delivery.RequireDefectClass
 	}
 	if overlay.Delivery != nil && overlay.Delivery.LinuxLane != nil {
 		config.Delivery.LinuxLane = *overlay.Delivery.LinuxLane

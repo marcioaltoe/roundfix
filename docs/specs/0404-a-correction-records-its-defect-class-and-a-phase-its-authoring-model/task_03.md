@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -194,3 +194,45 @@ not turn the requirement on delivers as it does today.
 - `_prd.md` → Goals (fifth bullet); User Stories 6 and 7; Core Features 7, 8, 9, 10 and 22; Success Metrics 5, 6, 7 and 15
 - `_techspec.md` → Correction Sign reader; Merge step and setting; Interfaces (invariants 4 and 10); API Contracts 3, 4, 5, 6 and 11; Testing Approach; Build Order 3
 - ADR-0422, ADR-0423, ADR-0417, ADR-0420, ADR-0288, ADR-0408, ADR-0392, ADR-0395, ADR-0398, ADR-0214
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented only this Task's Correction Sign reader, Project Config key, merge step, status lines, documentation and glossary term. The approved design supplied the behavior; no design-authoring skill or person-only skill was activated. The Daemon retains status and declared Verification ownership.
+
+Acceptance evidence:
+
+- Sign identity and exclusions: `commandDeliveryWorkflow.CorrectionSigns` is shared by the owner and status and available for task_04. It reads only local Git objects and refs, uses first-parent commit signs, real trailer metadata, default-parent ancestry and the queue's exact archive/retirement/PR-record proofs. Fixed dispositions suppress their fixing commit; dismissed dispositions are counted separately. `runcause.CorrectiveTasks` exports the existing numeric-above-QA rule without changing causes classification. The real-Git #892 fixture returns exactly the three corrections; separate cases cover default and derived merges, one fixed finding, and active/archived Corrective Tasks from `source_revision`.
+- Required declarations and retry: the gate runs after authorization and candidate-head resolution, before merge intent. The setting comes from `DeliveryConfigAtCommit` at the resolved default head. Undeclared signs park as `defect-class-undeclared`, class `finding`; the next action names the signs, all five classes, `not-a-correction`, declaration and retry. A fixture runs status, parks, declares through the actual CLI, retries through `checking` and merges with one counted retry. Moved-head retry returns through `reviewing`; covered signs and `not-a-correction` are accepted. Nil dependency and on/off errors are exercised.
+- Default-off compatibility and persistence: explicit false and absent keys preserve the exact Delivery Base status bytes. A real engine merge with the key absent writes a snapshot silently; replacing the queue and deleting the Item Branch preserve and leave readable the same record. Read failures are recorded as unavailable while off; record failures are ignored while off and returned while on. No resolvable default means no requirement and no snapshot. Status reads without writing, omits unreadable records, and appears after review notices before owner status.
+- Subject boundary: a 300-character instruction-like subject becomes one quoted line of 72 characters ending in an ellipsis. Controls, line/paragraph separators and double quotes are sanitized. The second message line is not rendered.
+- Config validation: absent/true/false, non-booleans and immutable commit reads are covered. User Config values, including invalid ones, are removed before validation with exactly the specified warning. The configuration guide documents Project Config ownership and upgrading every machine before adding the key. No Project Config in this repository was edited.
+
+Focused checks:
+
+- Clean base at `92c3e409`, isolated detached checkout `/tmp/roundfix-0404-task03-base`: `go test ./internal/cli ./internal/delivery ./internal/config ./internal/runcause` passed (CLI 272.372s; delivery 3.898s; config 1.653s; runcause 0.440s). Before isolation, the first Run-checkout measurement was rejected by suiteguard because implementation edits occurred while it was running; that result is not counted as a product failure or a clean baseline.
+- Base `go test -tags docscontract ./internal/docscontract` passed (10.743s), before documentation edits.
+- `go test ./internal/cli ./internal/delivery ./internal/config ./internal/runcause -run 'Test(CorrectionSignsOf|DeliverStatusShowsUndeclared|TheQueueOwnerRecords|CorrectiveTasksLists|RequireDefectClassIs|TheMergeStepParks|ADefectClassPark|ParkClassesAndNextActions)'` passed (CLI 2.950s; delivery 1.013s; config 1.207s; runcause 0.318s). Earlier new-fixture failures were repaired at their source: a missing fake PR caused the retry to wait for checks, and a Corrective Task needed to be added to its QA gate's dependencies.
+- Final post-change `go test ./internal/cli ./internal/delivery ./internal/config ./internal/runcause` passed (CLI 257.317s; the other three packages reused unchanged successful test-cache entries). An earlier post-change measurement also passed (CLI 255.726s; delivery 3.275s; config 1.659s; runcause 0.274s), before the two additional reader-boundary probes below.
+- Two additional regression probes first failed for a fixed finding recorded in an earlier worktree and for an unreadable default ref. The reader now trusts the repository-scoped ledger plus D..H membership without imposing the current checkout path; default-resolution failure now skips both requirement and recording. After those repairs, the focused four-package command above passed again (CLI 3.208s; other packages cached), and the final package measurement passed.
+- Final post-change `go test -tags docscontract ./internal/docscontract` passed (13.083s). Its first post-change run exposed the glossary's required final `_Avoid_` list; that list was added to Correction Sign without changing any existing expectation.
+- `go test ./skills -run 'Test(EveryOwnedSkillVersionIsRecorded|RoundfixReferenceIndex|RoundfixSkill|Deliver)'` passed (0.285s). Direct byte comparisons of the canonical/mirrored Roundfix entry and delivery reference also passed.
+- Changed-path postflight found 25 paths, including the seven requested new tests, all within this Task's declared interfaces/creates plus its own file. The Task status remains `in_progress`, as supplied by the Daemon.
+- `git diff --check` passed.
+
+Existing expectations changed, and no others: `TestParkClassesAndNextActions` in `internal/delivery/park_class_test.go` gains the new blocker/class/next-action row; `parkFindingBlockerCell` and its documented-action list in `internal/docscontract/command_documentation_test.go` gain that blocker and action. No existing test was renamed or removed. `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `_tasks.md` and other Task files were not edited.
+
+Sanctioned regeneration, executed in the authored order:
+
+1. `make skills-sync` passed.
+2. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` passed. Both canonical and mirrored Roundfix skill version fields changed from `0.1.264` to `0.1.265` through the recorder.
+3. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` passed, regenerating `docs/references/behavior-surfaces.json`. The three steps were confirmed again in this order after the final source/glossary adjustments; the version stayed `0.1.265`.
+
+The Task's two declared Verification commands were not run; the Daemon owns them and settlement. No commit, push, PR, Spec announcement, other-repository read or memory write was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T051745Z_d63008af9d14015a`
+- Source commit: `e834903982eebcf81f6fc17a6f1449b3edd260dd`

@@ -1328,3 +1328,11 @@ refusal behavior.
 The start of every Implement Run and every repository gate of the Delivery
 Queue apply the same trim by themselves under a thirty-second budget; see
 [GC](commands/gc.md#automatic-trims).
+
+## Require a Defect Class before delivery merge
+
+`delivery.require_defect_class` is a Project Config boolean, `false` when absent. With `true`, the Delivery Queue reads Correction Signs at its candidate head and parks as `defect-class-undeclared` while any sign has no standing declaration. Declare the cause with `roundfix corrections declare --spec <slug>`, then run `roundfix deliver retry <slug>`. The five classes are `plan`, `implementation`, `environment`, `operator` and `unclear`; `not-a-correction` covers a change that repaired no defect.
+
+The Queue Owner and `roundfix deliver status` read the key at the default branch head, preferring its remote-tracking ref and falling back to its local branch, rather than the Item Branch or the owner's working tree. With the key off or absent, the step records signs silently and cannot stop a merge. In User Config, the key is removed before validation, even if its value is invalid, with one warning: `config: delivery.require_defect_class in User Config is ignored; set delivery.require_defect_class in Project Config`. A non-boolean in Project Config is refused by name.
+
+A Roundfix older than the release that introduces this key refuses a Project Config that holds it. Turn it on only after every machine that runs Roundfix for the repository has upgraded to that release or later.

@@ -81,6 +81,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven
+		{BlockerDefectClassUndeclared, ParkClassFinding},
 		{BlockerSecretFound, ParkClassFinding}, {BlockerRunUnresolved, ParkClassFinding}, {BlockerReviewFindings, ParkClassFinding}, {BlockerCorrectiveSpecRequired, ParkClassFinding}, {BlockerGateFailed, ParkClassFinding}, {BlockerChecksFailed, ParkClassFinding}, {BlockerRevalidationFailed, ParkClassFinding},
 		{BlockerRunBudgetExceeded, ParkClassBudget}, {BlockerQueueDeadline, ParkClassBudget}, {BlockerReviewBlocked, ParkClassReview}, {BlockerReviewStale, ParkClassReview}, {BlockerUnauthorized, ParkClassAuthorization}, {BlockerFlakyCheck, ParkClassFlakyCheck}, {"unknown", ParkClassUnclassified},
 	} {
@@ -94,6 +95,16 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				}
 				if tt.blocker == BlockerArchivedItemUnproven && park.Next != "in /worktrees/example, make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry example" {
 					t.Fatalf("archived-item-unproven next action = %q", park.Next)
+				}
+				if tt.blocker == BlockerDefectClassUndeclared {
+					signs := "<signs>"
+					if suffix != "" {
+						signs = "pkg"
+					}
+					want := "declare a Defect Class (plan, implementation, environment, operator or unclear), or not-a-correction for a change that repaired no defect, for " + signs + " with roundfix corrections declare --spec example, then run roundfix deliver retry example"
+					if park.Next != want {
+						t.Fatalf("defect-class-undeclared next action = %q, want %q", park.Next, want)
+					}
 				}
 				if tt.blocker == BlockerSecretFound && park.Next != "in /worktrees/example, rewrite the item branch from the earliest commit the blocker names so that each named line holds a value no Secret Pattern matches and nothing else in the final tree changes, then run roundfix deliver retry example" {
 					t.Fatalf("secret-found next action = %q", park.Next)

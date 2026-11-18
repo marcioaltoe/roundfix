@@ -29,6 +29,7 @@ const (
 	BlockerChecksFailed           = "checks-failed"
 	BlockerChecksTimeout          = "checks-timeout"
 	BlockerUnauthorized           = "unauthorized"
+	BlockerDefectClassUndeclared  = "defect-class-undeclared"
 	BlockerDeliveryError          = "delivery-error"
 	BlockerSecretFound            = "secret-found"
 	BlockerItemWorktreeMissing    = "item-worktree-missing"
@@ -386,7 +387,18 @@ type FreeSpaceChecker interface {
 	LowFreeSpace(ctx context.Context) []string
 }
 
+// CorrectionSignGate records the candidate signs and checks their declarations.
+type CorrectionSignGate interface {
+	CheckCorrectionSigns(ctx context.Context, gitRoot, workDir, specSlug, head string) (CorrectionSignCheck, error)
+}
+
+type CorrectionSignCheck struct {
+	Required   bool
+	Undeclared []string
+}
+
 type EngineDependencies struct {
+	CorrectionSigns  CorrectionSignGate
 	TurnRecorder     TurnRecorder
 	ReviewCapacity   int
 	TurnPollInterval time.Duration
@@ -423,6 +435,7 @@ type EngineDependencies struct {
 }
 
 type Engine struct {
+	correctionSigns   CorrectionSignGate
 	turnRecorder      TurnRecorder
 	turnMu            sync.Mutex
 	advancing         string
@@ -503,6 +516,7 @@ func NewEngine(runStore *store.Store, dependencies EngineDependencies) *Engine {
 		turnPollInterval = defaultTurnPollInterval
 	}
 	return &Engine{
+		correctionSigns:  dependencies.CorrectionSigns,
 		turnRecorder:     dependencies.TurnRecorder,
 		reviewCapacity:   reviewCapacity,
 		turnPollInterval: turnPollInterval,
@@ -1921,6 +1935,15 @@ func (engine *Engine) mergeCandidate(ctx context.Context, gitRoot string, item *
 	head, err := candidateHead(*item)
 	if err != nil {
 		return err
+	}
+	if engine.correctionSigns != nil {
+		check, err := engine.correctionSigns.CheckCorrectionSigns(ctx, gitRoot, workDir, item.SpecSlug, head)
+		if err != nil && check.Required {
+			return fmt.Errorf("check Correction Signs: %w", err)
+		}
+		if check.Required && len(check.Undeclared) != 0 {
+			return engine.park(ctx, gitRoot, item, BlockerDefectClassUndeclared+": "+strings.Join(check.Undeclared, ", "))
+		}
 	}
 	intent, unmatched, err := engine.actionIntent(ctx, gitRoot, item.SpecSlug, store.DeliveryActionMerge)
 	if err != nil {
