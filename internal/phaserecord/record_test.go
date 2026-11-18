@@ -78,13 +78,13 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 			if len(lines) != 1 {
 				t.Fatalf("lines = %d", len(lines))
 			}
-			row := decodeLine(t, lines[0], phaseKeys)
+			row := decodeLine(t, lines[0], authoringKeys)
 			if string(row["schema"]) != `"roundfix/phase-record/v1"` || string(row["kind"]) != `"phase"` || string(row["time"]) != `"2026-11-21T02:05:11Z"` || string(row["boundary"]) != "false" {
 				t.Fatalf("row = %s", lines[0])
 			}
 			switch name {
 			case "keys_in_order":
-				want := `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-21T02:05:11Z","phase":"prd","spec":"0412-example","repository":"/repo","harness":"claude","session":"session","boundary":false}`
+				want := `{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-21T02:05:11Z","phase":"prd","spec":"0412-example","repository":"/repo","harness":"claude","session":"session","boundary":false,"repository_id":"","model":"","model_source":"unknown","effort":"","effort_source":"unknown","runner":"unknown"}`
 				if string(lines[0]) != want {
 					t.Fatalf("line = %s, want %s", lines[0], want)
 				}
@@ -125,7 +125,7 @@ func TestAPhaseEntryIsOneLineOfItsDeclaredKeys(t *testing.T) {
 				if len(lines) != 2 {
 					t.Fatalf("lines = %d", len(lines))
 				}
-				got := decodeLine(t, lines[1], phaseKeys)
+				got := decodeLine(t, lines[1], authoringKeys)
 				var repository string
 				if err := json.Unmarshal(got["repository"], &repository); err != nil {
 					t.Fatal(err)
@@ -200,7 +200,11 @@ func TestStartPhaseMarksNoBoundaryWhateverCameBefore(t *testing.T) {
 					t.Fatalf("earlier line %d changed: %s", i, lines[i])
 				}
 			}
-			row := decodeLine(t, lines[len(lines)-1], phaseKeys)
+			keys := phaseKeys
+			if tc.next.IsAuthoring() {
+				keys = authoringKeys
+			}
+			row := decodeLine(t, lines[len(lines)-1], keys)
 			if string(row["boundary"]) != "false" || string(row["phase"]) != `"`+string(tc.next)+`"` || string(row["session"]) != `"s"` || string(row["spec"]) != `"`+tc.nextSpec+`"` {
 				t.Fatalf("written = %s", lines[len(lines)-1])
 			}
@@ -269,7 +273,7 @@ func TestStartPhaseReadsNoEarlierEntry(t *testing.T) {
 			if bytes.Count(appended, []byte("\n")) != 1 || !bytes.HasSuffix(appended, []byte("\n")) {
 				t.Fatalf("expected exactly one appended line: %q", appended)
 			}
-			row := decodeLine(t, bytes.TrimSuffix(appended, []byte("\n")), phaseKeys)
+			row := decodeLine(t, bytes.TrimSuffix(appended, []byte("\n")), authoringKeys)
 			if string(row["boundary"]) != "false" {
 				t.Fatalf("written = %s", appended)
 			}

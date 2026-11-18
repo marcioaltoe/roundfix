@@ -57,7 +57,7 @@ Usage:
   roundfix implement --spec <slug>
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
-  roundfix phase start <phase> [--spec <slug>]
+  roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>

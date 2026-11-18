@@ -29,12 +29,28 @@ func ParsePhase(name string) (Phase, error) {
 	}
 }
 
+// IsAuthoring reports whether the phase produces a Spec authoring artifact.
+func (p Phase) IsAuthoring() bool {
+	switch p {
+	case "idea", "prd", "techspec", "tasks":
+		return true
+	default:
+		return false
+	}
+}
+
 type PhaseEntry struct {
-	Phase      Phase
-	Spec       string
-	Repository string
-	Harness    string
-	Session    string
+	Phase        Phase
+	Spec         string
+	Repository   string
+	Harness      string
+	Session      string
+	RepositoryID string
+	Model        string
+	ModelSource  string
+	Effort       string
+	EffortSource string
+	Runner       string
 }
 
 type Recorder struct {
@@ -57,6 +73,24 @@ type phaseLine struct {
 	Harness    string `json:"harness"`
 	Session    string `json:"session"`
 	Boundary   bool   `json:"boundary"`
+	*phaseModel
+}
+
+// phaseModel is present only on authoring entries; its order follows phaseLine.
+type phaseModel struct {
+	RepositoryID string `json:"repository_id"`
+	Model        string `json:"model"`
+	ModelSource  string `json:"model_source"`
+	Effort       string `json:"effort"`
+	EffortSource string `json:"effort_source"`
+	Runner       string `json:"runner"`
+}
+
+func sourceOrUnknown(value string) string {
+	if value == "" {
+		return "unknown"
+	}
+	return bounded(value)
 }
 
 // StartPhase appends a phase entry without reading earlier entries.
@@ -74,6 +108,12 @@ func (r *Recorder) StartPhase(ctx context.Context, entry PhaseEntry) error {
 		Repository: bounded(entry.Repository),
 		Harness:    bounded(entry.Harness),
 		Session:    bounded(entry.Session),
+	}
+	if entry.Phase.IsAuthoring() {
+		row.phaseModel = &phaseModel{
+			RepositoryID: bounded(entry.RepositoryID), Model: bounded(entry.Model), ModelSource: sourceOrUnknown(entry.ModelSource),
+			Effort: bounded(entry.Effort), EffortSource: sourceOrUnknown(entry.EffortSource), Runner: sourceOrUnknown(entry.Runner),
+		}
 	}
 	data, err := json.Marshal(row)
 	if err != nil {

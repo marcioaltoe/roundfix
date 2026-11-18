@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -188,3 +188,48 @@ phase reference, the guides, the glossary and ADR-0407 describe it.
 - `_prd.md` → Goals (second bullet); User Story 8; Core Features 11, 12, 13 and 22; Success Metrics 8, 9 and 16
 - `_techspec.md` → Phase entry values; Interfaces (invariants 6 and 7); Data Models; API Contracts 7, 11 and 12; Surface Transcripts 6 and 7; Testing Approach; Build Order 2
 - ADR-0418, ADR-0421, ADR-0425, ADR-0407, ADR-0414, ADR-0410, ADR-0401, ADR-0415
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, systematic-debugging, evidence-gate.
+
+Implemented only this Task's phase-entry slice. Authoring entries append the six keys in the required order, preserve the schema, and read earlier entries with unknown sources and empty values. Other phases still serialize exactly the original nine keys. The command accepts the three flags, uses only its injected environment lookup for session and effort, preserves environment precedence even for malformed effort, records local Git lineage without consulting remotes, and warns without refusing malformed reported values. The help and result lines follow Surface Transcripts 6 and 7. Identity remains best effort and is computed even without a session.
+
+The canonical authoring skills now carry the same paragraph, apart from their phase name, immediately after their preserved recording paragraph. Both copies describe exact harness identifiers, omission when none is stated, the Author Subagent flag, and fallback when an older installed command refuses the flags. The phase reference and guides cover the six fields, flags, result, warnings and shallow-clone identity. The Phase Record glossary entry and the dated ADR-0407 amendment describe the changed model and effort record. Only the Phase Record section of `usage.md` changed; its dated Coverage Review names this Task and the covering phase reference.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Reported model, environment/flag effort, sources and runner for all four Authoring Phases; unknown values without a model or session | `TestPhaseStartRecordsTheModelAndEffortOfEachAuthoringPhase` exercises each phase, environment precedence, flag-only effort, absent values, no session, both runners, accepted punctuation and exact length limits. It asserts all six written values, their readback, the whole result line, stderr and exit 0. `TestPhaseSurfaceTranscript6` and `TestPhaseSurfaceTranscript7` assert the complete stdout/stderr/exit transcripts. |
+| Oversized or malformed values remain unknown with one warning and exit 0 | The same CLI matrix covers a 300-character model, malformed and empty models, malformed environment effort with a valid fallback flag, malformed flag effort and an overlong effort. The malformed environment case proves there is no fallback. |
+| Other phases retain nine keys; old entries remain readable | `TestPhaseStartIgnoresTheModelFlagsOnAnotherPhase` covers `release`, `follow-up` and `delivery`, including all flags, individual flags, explicitly empty/false flags and no flags. It compares each complete nine-key line and its warning/result/exit. `TestAnAuthoringPhaseEntryHoldsTheSixKeysInOrder` checks authoring key order, every source and runner, sessionless values, readback and the release format. `TestAnEntryWithoutTheSixKeysReadsBackAsUnknown` reads a literal old-format entry. |
+| Clone-stable identity without remote credentials | `TestPhaseStartRecordsTheRepositoryIdentityOfItsClone` uses a committed temporary repository, two full local clones and a linked worktree. Their entries match the shared Baseline identity. A clone whose remote contains a fixture user/password records the same digest and none of the remote address, user or password. It also checks a sessionless entry. The other CLI fixtures have no commit and prove an unavailable identity stays empty without a warning or refusal. |
+| Both copies of every authoring skill pass only the stated exact identifier and mark the Author Subagent | `TestTheAuthoringSkillsPassTheirModelToThePhaseCommand` checks both copies of all four skills, the preserved preceding paragraph, the exact new instructions and consistency between phases. The complete skills package check passed. |
+
+### Checks and regeneration
+
+- Red starting point: `go test ./internal/phaserecord -run '^TestAn'` failed to compile because the six fields did not exist. The first implementation check exposed allocation of a private embedded JSON field group during decoding; initializing that group before decoding repaired the reader, and the schema tests then passed.
+- Required base comparison: `go test ./internal/phaserecord ./internal/cli ./skills` at base `d509f0f7`, in a separate detached checkout, exited 0 for all three packages. An earlier background attempt in the active checkout was invalidated by concurrent edits detected by suiteguard and was discarded; the isolated run supplies the baseline evidence. Its clean temporary checkout was removed afterwards.
+- Required changed-package comparison: `go test ./internal/phaserecord ./internal/cli ./skills` exited 0 for all three packages. After adding the final explicit session-runner case to the new schema test, `go test ./internal/phaserecord` again exited 0.
+- `go test ./internal/cli -run '^TestPhase'` exited 0, including the new transcripts, all authoring cases, ignored-flag cases and repository identities.
+- Sanctioned regeneration ran in the required order and each command exited 0: `make skills-sync`; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`. No generated record or version was hand-edited. The recorder updated both copies and both version fields: Roundfix 0.1.264, write-idea 0.0.13, write-prd 0.0.24, write-techspec 0.0.25 and write-tasks 0.0.37.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossary.*|TestEveryCommandIsNamedInTheUserGuide|TestUserGuideLinksResolve|TestTheSkillCoverageMapIsCurrent|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$'` exited 0.
+- `git diff --check` exited 0. A read-only postflight compared tracked and untracked changes with this Task's declared paths: all 31 paths are declared. It also confirmed byte-identical changed skill mirrors, unchanged `Declared model` and `QA settlement` sections, and exactly one changed root-help usage line.
+
+### Existing expectations changed
+
+No test was renamed or removed. The complete list is:
+
+- `internal/cli/phase_test.go`: `TestPhaseStartSurfaceTranscripts` (help and authoring result lines), `TestPhaseStartRecordsEachOfTheSevenPhases` (authoring result lines and fifteen keys), and `TestPhaseStartLoadsNoConfiguration` (authoring result line), together with their `phaseExpectedLine` helper. The additional expectation discovered on the actual base is `TestPhaseStartPrintsNoNoticeAfterAnyPhase`: only its `prd` and `techspec` result lines gain the authoring suffix; it still requires no boundary notice and preserves prior entries.
+- `internal/phaserecord/record_test.go`: `TestAPhaseEntryIsOneLineOfItsDeclaredKeys`, `TestStartPhaseMarksNoBoundaryWhateverCameBefore` and `TestStartPhaseReadsNoEarlierEntry` select the fifteen-key list for authoring entries while retaining the nine-key assertions for other phases. The literal `prd` line includes the six new defaults.
+- `internal/phaserecord/read_test.go`: `TestPhasesReadsBackThePhaseEntriesOfTheWindow` expects unknown sources and runner for its old-format authoring fixtures and checks all six readback fields.
+- `skills/phase_reference_test.go`: `TestThePhaseReferenceDocumentsTheCommandAndTheRecord` requires the extended usage line. No other skill-test expectation changed.
+
+The Task's pre-existing `status: in_progress` is preserved. No Task Graph, other Task, forbidden configuration, subagent file, commit, push or pull request was changed or created. Declared Task Verification, repository Verification and terminal settlement remain for the Daemon; no terminal Task verdict is claimed here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T051745Z_d63008af9d14015a`
+- Source commit: `92c3e40972c1f8dcc47aa100194241a7edb4710d`

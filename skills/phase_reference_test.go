@@ -16,7 +16,7 @@ func TestThePhaseReferenceDocumentsTheCommandAndTheRecord(t *testing.T) {
 			}
 			text := strings.Join(strings.Fields(string(data)), " ")
 			for _, tc := range []struct{ name, phrase string }{
-				{"the_command", "roundfix phase start <phase> [--spec <slug>]"},
+				{"the_command", "roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]"},
 				{"the_seven_phases", "`follow-up`, `idea`, `prd`, `techspec`, `tasks`, `delivery` or `release`"},
 				{"the_spec_option", "required for every phase but `follow-up` and `release`"},
 				{"no_configuration", "It loads no Project Config and no User Config."},

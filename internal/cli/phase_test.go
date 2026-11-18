@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"roundfix/internal/gittest"
+	"roundfix/internal/phaserecord"
 )
 
 const phaseTestSession = "11111111-2222-4333-8444-555555555555"
@@ -69,6 +70,13 @@ func phaseExpectedLine(t *testing.T, phase, spec, repo, session string) string {
 		harness = "claude"
 	}
 	line := fmt.Sprintf(`{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-20T13:05:11Z","phase":%s,"spec":%s,"repository":%s,"harness":%s,"session":%s,"boundary":false`, quote(phase), quote(spec), quote(repo), quote(harness), quote(session))
+	if phaserecord.Phase(phase).IsAuthoring() {
+		runner := "unknown"
+		if session != "" {
+			runner = "session"
+		}
+		line += `,"repository_id":"","model":"","model_source":"unknown","effort":"","effort_source":"unknown","runner":` + quote(runner)
+	}
 	return line + "}"
 }
 
@@ -82,7 +90,7 @@ func assertNoPhaseRecord(t *testing.T, home string) {
 func TestPhaseStartSurfaceTranscripts(t *testing.T) {
 	t.Parallel()
 	const help = `Usage:
-  roundfix phase start <phase> [--spec <slug>]
+  roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
 
 Commands:
   start  Record in the Phase Record that this session starts a phase
@@ -91,8 +99,12 @@ Phases:
   follow-up, idea, prd, techspec, tasks, delivery, release
 
 Options:
-  --spec  Spec folder slug the phase works on; required for every phase
-          but follow-up and release
+  --spec             Spec folder slug the phase works on; required for every phase
+                     but follow-up and release
+  --model            Model identifier the harness states for this session; recorded
+                     for idea, prd, techspec and tasks
+  --effort           Reasoning effort; used when CLAUDE_EFFORT is unset
+  --author-subagent  The phase's Author Subagent runs the phase
 `
 	t.Run("transcript_1", func(t *testing.T) {
 		home, _ := phaseFixture(t, phaseTestSession)
@@ -111,11 +123,11 @@ Options:
 			phase, spec := "prd", "0412-example"
 			wantErr := ""
 			if number == 3 {
-				phaseCall(t, []string{"phase", "start", "prd", "--spec", spec}, "Recorded prd of 0412-example for claude session "+session+"\n", "", 0)
+				phaseCall(t, []string{"phase", "start", "prd", "--spec", spec}, "Recorded prd of 0412-example for claude session "+session+": model unknown, effort unknown, run by the session\n", "", 0)
 				phase = "techspec"
 			}
 			args := []string{"phase", "start", phase, "--spec", spec}
-			wantOut := "Recorded " + phase + " of " + spec + " for claude session " + session + "\n"
+			wantOut := "Recorded " + phase + " of " + spec + " for claude session " + session + ": model unknown, effort unknown, run by the session\n"
 			if number == 4 {
 				phase, spec = "follow-up", ""
 				args = []string{"phase", "start", phase}
@@ -160,7 +172,11 @@ func TestPhaseStartRecordsEachOfTheSevenPhases(t *testing.T) {
 			if spec != "" {
 				wantOut += " of " + spec
 			}
-			wantOut += " for claude session " + phaseTestSession + "\n"
+			wantOut += " for claude session " + phaseTestSession
+			if phaserecord.Phase(phase).IsAuthoring() {
+				wantOut += ": model unknown, effort unknown, run by the session"
+			}
+			wantOut += "\n"
 			phaseCall(t, args, wantOut, "", 0)
 			lines := phaseDay(t, home)
 			if len(lines) != 1 || lines[0] != phaseExpectedLine(t, phase, spec, repo, phaseTestSession) {
@@ -183,6 +199,9 @@ func TestPhaseStartRecordsEachOfTheSevenPhases(t *testing.T) {
 				}
 			}
 			wantKeys := []string{"schema", "kind", "time", "phase", "spec", "repository", "harness", "session", "boundary"}
+			if phaserecord.Phase(phase).IsAuthoring() {
+				wantKeys = append(wantKeys, "repository_id", "model", "model_source", "effort", "effort_source", "runner")
+			}
 			if !reflect.DeepEqual(keys, wantKeys) {
 				t.Fatalf("keys = %v", keys)
 			}
@@ -256,7 +275,7 @@ func TestPhaseStartLoadsNoConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	setCommandWorkDirForTest(t, work)
-	phaseCall(t, []string{"phase", "start", "prd", "--spec", "0412-example"}, "Recorded prd of 0412-example for claude session "+phaseTestSession+"\n", "", 0)
+	phaseCall(t, []string{"phase", "start", "prd", "--spec", "0412-example"}, "Recorded prd of 0412-example for claude session "+phaseTestSession+": model unknown, effort unknown, run by the session\n", "", 0)
 	lines := phaseDay(t, home)
 	if len(lines) != 1 || lines[0] != phaseExpectedLine(t, "prd", "0412-example", repo, phaseTestSession) {
 		t.Fatalf("line = %v", lines)
@@ -270,8 +289,8 @@ func TestPhaseStartPrintsNoNoticeAfterAnyPhase(t *testing.T) {
 		previousOut, nextOut                         string
 	}{
 		{"surface_transcript_1", "prd", "0412-example", "techspec", "0412-example",
-			"Recorded prd of 0412-example for claude session <session>\n",
-			"Recorded techspec of 0412-example for claude session <session>\n"},
+			"Recorded prd of 0412-example for claude session <session>: model unknown, effort unknown, run by the session\n",
+			"Recorded techspec of 0412-example for claude session <session>: model unknown, effort unknown, run by the session\n"},
 		{"surface_transcript_2", "release", "0412-example", "follow-up", "",
 			"Recorded release of 0412-example for claude session <session>\n",
 			"Recorded follow-up for claude session <session>\n"},
