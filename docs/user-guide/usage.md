@@ -903,8 +903,29 @@ A phase entry holds these fields, in this order:
 | `harness` | `claude` when the command environment names a session |
 | `session` | `CLAUDE_CODE_SESSION_ID` from the command environment |
 | `boundary` | Always `false`; an entry an earlier Roundfix wrote may hold `true` |
-| `previous_phase` | Absent; an entry an earlier Roundfix marked holds the earlier phase |
-| `previous_spec` | Absent; an entry an earlier Roundfix marked holds the earlier Spec |
+
+Only an Authoring Phase (`idea`, `prd`, `techspec` or `tasks`) appends these
+six fields after `boundary`:
+
+| Field | Value |
+| --- | --- |
+| `repository_id` | Repository Identity digest; empty when it cannot be computed |
+| `model` | Exact model identifier reported with `--model`, or empty |
+| `model_source` | `reported` or `unknown` |
+| `effort` | `CLAUDE_EFFORT`, else `--effort`, or empty |
+| `effort_source` | `environment`, `reported` or `unknown` |
+| `runner` | `author-subagent`, `session` or `unknown` |
+
+An entry of `follow-up`, `delivery` or `release` keeps the nine fields.
+An earlier entry without the six fields reads with empty values and the three
+sources `unknown`. An entry an earlier Roundfix marked may also hold
+`previous_phase` and `previous_spec`.
+
+The Repository Identity comes only from the root commits of local Git
+history: full clones and linked working trees share it, and no remote address
+or credential is read. A shallow clone has a different identity because its
+history is truncated; its entry does not match a full clone in the
+Corrections Report. Identity is computed even without a harness session.
 
 The Daemon writes a prompt entry when a prompt of an Agent Session ends, and `roundfix review` after each prompt of a pre-PR review. A prompt that never returns leaves no entry. A failed write of a prompt entry prints one warning and changes no Task, Run, review or exit code.
 
@@ -931,15 +952,33 @@ Every time uses RFC 3339 in UTC with seconds, for example
 missing key; a new entry never holds `previous_phase` or `previous_spec`. Each string is cut
 at 1,024 bytes while preserving valid JSON.
 
-`roundfix phase start <phase> [--spec <slug>]` records one of seven phases:
+`roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]` records one of seven phases:
 `follow-up`, `idea`, `prd`, `techspec`, `tasks`, `delivery` or `release`.
 `--spec` is required except for `follow-up` and `release`, and matches
 `^[0-9]{4}(-[a-z0-9]+)+$`. The command loads no configuration. It records an
 entry without a harness session when the environment names none.
 
+For an Authoring Phase with a Claude Code session, `--model` records only
+the exact identifier the harness states, at most 200 characters matching
+`^[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0,199}$`. Leave it out when none is
+stated; configuration and model environment variables are never sources.
+`CLAUDE_EFFORT` takes precedence over `--effort`; both accept
+`^[a-z0-9][a-z0-9_-]{0,31}$`, and an invalid environment value does not fall
+back to the flag. `--author-subagent` sets the runner to `author-subagent`;
+otherwise it is `session`. Without a session, the model and effort are empty,
+their sources and the runner are `unknown`, and output stays the line
+without a harness session.
+
+With a session, the authoring result is
+`Recorded <phase> of <slug> for claude session <session>: model <m>, effort <e>, run by <the Author Subagent|the session>`.
+A learned value is `<value> (<source>)`; an unknown value is `unknown`.
+A malformed model or effort prints one warning on standard error and is
+recorded as unknown; the three flags on another phase print one warning and
+are ignored. Warnings never cost the entry or change the exit code. The
+[phase command reference](commands/phase.md) gives the warning text.
+
 The command reads no earlier entry. Whatever the session recorded before, it
-writes `boundary` as `false` and prints nothing on standard error. A phase
-entry ends no session: a Supervisor session goes on from phase to phase and
+writes `boundary` as `false`. A phase entry ends no session: a Supervisor session goes on from phase to phase and
 ends only when the user asks or the work stops.
 
 Run Retention removes each day file dated before its cutoff, and a file whose name is not a date is left alone.

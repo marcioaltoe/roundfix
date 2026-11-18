@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.12
+  version: 0.0.13
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.12
+version: 0.0.13
 ---
 
 # Write Idea
@@ -77,6 +77,8 @@ Wherever the phase runs, send its codebase, knowledge-base and web sweeps to the
 ## Phase boundary
 
 Once the Spec's slug is known, record the phase: run `roundfix phase start idea --spec <slug>` in the session or the Author Subagent that runs it. When the installed Roundfix does not know the command, say so in the report and continue.
+
+For `roundfix phase start idea --spec <slug>`, add `--model` with the exact model identifier the harness states for this session, never an alias and never a guess. Leave `--model` out when the session's instructions state none. Add `--author-subagent` when the phase's Author Subagent runs the phase. When the installed Roundfix refuses these flags, run the command without them and say so in the report.
 
 When the phase ends, the session goes on: no phase of a Spec ends the session, whether a person is present or not.
 

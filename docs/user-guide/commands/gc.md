@@ -66,6 +66,17 @@ reports `Directories removed: 0` when nothing else became eligible.
 
 ## Run Retention
 
+Run Retention also removes whole corrections records under
+`corrections/<repository key>/<slug>.jsonl` in Roundfix Home, with or without
+a Run Database. The newest decodable declaration or signs line must be
+older than the cutoff; a file with no decodable line is judged by its
+modification time. A newer line keeps the whole file. An empty repository
+directory is removed too. The GC report prints `Corrections records removed: <n>`,
+or `Corrections records removable: <n>` in a dry run, immediately after the
+Phase Record day file count. A record removal error is reported without
+stopping compaction or the sweep record.
+
+
 Run Retention also removes each Phase Record day file whose date is before the cutoff's UTC date, with or without a Run Database, and leaves a file whose name is not a date alone.
 
 The day file count follows the line that counts the Runs, with the same indentation:

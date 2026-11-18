@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-16T11:00:00Z
-updated_at: 2026-11-17T19:21:38Z
+updated_at: 2026-11-18T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -73,6 +73,15 @@ result.
 **Amended by [ADR-0410](0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md) (2026-11-16).** The status view of the Follow-up Command reads the phase entries of the last seven days and names the latest Authoring Phase of a Spec being authored and when it was recorded. It reads no prompt entry and reports no usage: no command reads a harness transcript, prices a token or computes a limit percentage, and a failed write to the record still changes no command's result.
 
 **Amended by [ADR-0414](0414-a-supervisor-session-ends-only-when-the-maintainer-asks.md) (2026-11-17).** No phase of a Spec ends the Supervisor session, which writes the Session Handoff and ends only when the maintainer asks or the work stops. `roundfix phase start` reads no earlier entry, writes `boundary` as `false` without `previous_phase` or `previous_spec`, and prints no Boundary Notice. The Phase Record, its entries and the refusal of nothing stay.
+
+**Amended by ADR-0418 (2026-11-17).** An entry of an Authoring Phase also
+records the model and reasoning effort that ran it, how each was learned,
+whether its Author Subagent or the session ran it, and its Repository
+Identity. The effort is the one environment value an entry may hold; a value
+not learned is unknown and never costs the entry. The Corrections Report
+reads phase entries, while no command reads prompt entries or harness
+transcripts, prices tokens or computes a limit percentage. See
+[ADR-0418](0418-a-phase-entry-holds-the-model-and-reasoning-effort-that-ran-an-authoring-phase.md).
 
 ## Considered Options
 

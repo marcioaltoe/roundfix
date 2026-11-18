@@ -28,6 +28,8 @@ type Reader interface {
 }
 
 type Request struct {
+	// AttemptsOnly projects failed attempts without reading graphs or archive history.
+	AttemptsOnly           bool
 	Reader                 Reader
 	RepositoryRoot         string
 	SpecsRoot, ArchiveRoot string
@@ -308,6 +310,9 @@ func classifyItem(t Table, e Evidence) (string, *string, *string) {
 }
 
 func findGraph(ctx context.Context, req Request, slug string) (*spec.CauseGraph, *ArchivedSpec, error) {
+	if req.AttemptsOnly {
+		return nil, nil, nil
+	}
 	for _, root := range []string{req.SpecsRoot, req.ArchiveRoot} {
 		if root == "" {
 			continue
@@ -385,6 +390,24 @@ func taskNumber(id string) int {
 		return -1
 	}
 	return n
+}
+
+// CorrectiveTasks lists graph members numbered above the QA gate, in Task order.
+// It uses the same rule as the causes report without changing its classification.
+func CorrectiveTasks(graph spec.CauseGraph) []string {
+	var tasks []string
+	for id := range graph.Tasks {
+		if isCorrective(graph, id) {
+			tasks = append(tasks, id)
+		}
+	}
+	slices.SortFunc(tasks, func(a, b string) int {
+		if n := taskNumber(a) - taskNumber(b); n != 0 {
+			return n
+		}
+		return strings.Compare(a, b)
+	})
+	return tasks
 }
 
 func isCorrective(g spec.CauseGraph, id string) bool {

@@ -240,8 +240,30 @@ _Avoid_: Review Provider, Agent, ACP Runtime
 A head-bound Review Source classification for one expected commit: `pending` has no usable expected-head signal, `reviewing` is still in progress, and `reviewed` is complete without proving Merge-Ready. `verified` proves the expected head with no unresolved Review Issues, `skipped` explicitly declines that head, and `failed` records an explicit Review Source failure.
 _Avoid_: Check presence, generic approval, inferred clean state
 
+**Correction**:
+One cause repaired during a Spec's delivery, declared by the person or session that corrects it with a Defect Class, a reason and an identifier unique within that Spec; its last declaration stands, earlier declarations remain, and a withdrawal names no sign ([ADR-0417](docs/adr/0417-a-correction-carries-a-declared-defect-class-and-a-repository-requires-it-only-by-its-own-setting.md), [ADR-0420](docs/adr/0420-the-corrections-record-is-one-append-only-file-per-spec-under-roundfix-home.md)).
+_Avoid_: Commit count, review round, inferred cause
+
+**Corrections Report**:
+A read-only view of delivered Specs' Corrections and plan defects by Authoring
+Phase, Delivery Type, model and effort, beside their sample in Specs and Tasks;
+it withholds comparisons below twenty Specs per group ([ADR-0419](docs/adr/0419-the-corrections-report-prints-counts-and-sets-two-models-side-by-side-only-above-twenty-specs-each.md)).
+_Avoid_: Model ranking, cause report, authoring verdict
+
+**Correction Sign**:
+Evidence that a delivery was corrected: an unmarked commit on the Item Branch’s first-parent line, a fixed review finding together with its fixing commit, or a Corrective Task. A sign names no cause until a standing Correction covers it, and a merge of the default branch is no sign ([ADR-0422](docs/adr/0422-a-commit-without-a-mark-of-a-run-or-of-the-queue-on-the-item-branch-is-a-correction-sign.md)).
+_Avoid_: Inferred cause, declaration, commit count
+
+**Defect Class**:
+The declared cause of a Correction: `plan` (a wrong, missing or impossible plan, naming the PRD, TechSpec or Tasks as its artifact), `implementation` (a right plan delivered wrongly), `environment` (a cause outside the Spec), `operator` (an action during delivery), or `unclear` (the declarer cannot tell). A declaration's sixth answer, `not-a-correction`, means the change repaired no defect and is not a Defect Class; it covers its signs and enters no defect rate ([ADR-0417](docs/adr/0417-a-correction-carries-a-declared-defect-class-and-a-repository-requires-it-only-by-its-own-setting.md)).
+_Avoid_: Cause Class, Park Class, model judgment
+
+**Repository Identity**:
+The identity of a repository's Git lineage, shared by its full clones and working trees and independent of a checkout path or remote address; it is the digest of its sorted root commits ([ADR-0421](docs/adr/0421-a-phase-entry-and-the-corrections-record-name-their-repository-by-its-git-lineage.md)).
+_Avoid_: Remote address, checkout path, branch name
+
 **Review Finding Disposition**:
-The recorded fix or evidence-backed dismissal of a finding from a pre-PR review, tied to the head the reviewer examined.
+The recorded fix or evidence-backed dismissal of a finding from a pre-PR review, tied to the head the reviewer examined. A fixed disposition may carry the declaration of its Correction.
 At the same repository, base, head, and provider, the findings verdict is reused without asking the reviewer; only exact evidence-backed dismissals of every finding produce `findings-dismissed`, while a fix requires a fresh review of its changed head. An evidence-backed dismissal may be recorded at a later `HEAD` that descends from the reviewed head when the finding's anchored lines are unchanged; it stays tied to the reviewed head and records `currentHead` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)).
 _Avoid_: Review Issue resolution, unrecorded operator decision, finding deletion
 
@@ -995,7 +1017,7 @@ The subagent that installation generates from the `research` entry of the Author
 _Avoid_: Researcher agent, read-only agent, sweep agent
 
 **Phase Record**:
-The append-only record under Roundfix Home, in the directory `phase-record`, of which Spec and Supervisor Phase each Supervisor session works on and which Work Item each prompt of a Run or of a pre-PR review served. It is a set of day files named by the UTC date, one JSON object per line under the schema `roundfix/phase-record/v1`. An entry holds identifiers and times, never prompt text, a token count, a price or an environment value; no line is rewritten, and the Run Retention Sweep removes a day file older than its cutoff ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md)).
+The append-only record under Roundfix Home, in the directory `phase-record`, of which Spec and Supervisor Phase each Supervisor session works on and which Work Item each prompt of a Run or of a pre-PR review served. It is a set of day files named by the UTC date, one JSON object per line under the schema `roundfix/phase-record/v1`. An entry holds identifiers and times; an entry of an Authoring Phase also holds the model and reasoning effort that ran it, how each was learned, whether its Author Subagent or the session ran it, and its Repository Identity. It never holds prompt text, a token count or a price; no line is rewritten, and the Run Retention Sweep removes a day file older than its cutoff ([ADR-0407](docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md), [ADR-0418](docs/adr/0418-a-phase-entry-holds-the-model-and-reasoning-effort-that-ran-an-authoring-phase.md)).
 _Avoid_: Usage log, phase marker, session journal
 
 **Supervisor Phase**:

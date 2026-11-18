@@ -13,10 +13,16 @@ import (
 
 // RecordedPhase is one phase entry read back.
 type RecordedPhase struct {
-	Time       time.Time
-	Phase      Phase
-	Spec       string
-	Repository string
+	Time         time.Time
+	Phase        Phase
+	Spec         string
+	Repository   string
+	RepositoryID string
+	Model        string
+	ModelSource  string
+	Effort       string
+	EffortSource string
+	Runner       string
 }
 
 // Phases returns phase entries at or after since, oldest first, counting invalid
@@ -56,7 +62,7 @@ func Phases(homeDir string, since time.Time) (entries []RecordedPhase, skipped i
 			if header.Kind != "phase" {
 				continue
 			}
-			var row phaseLine
+			row := phaseLine{phaseModel: &phaseModel{}}
 			if json.Unmarshal(line, &row) != nil {
 				skipped++
 				continue
@@ -68,7 +74,10 @@ func Phases(homeDir string, since time.Time) (entries []RecordedPhase, skipped i
 				continue
 			}
 			if !at.Before(since) {
-				entries = append(entries, RecordedPhase{Time: at, Phase: phase, Spec: row.Spec, Repository: row.Repository})
+				model := row.phaseModel
+				entries = append(entries, RecordedPhase{Time: at, Phase: phase, Spec: row.Spec, Repository: row.Repository,
+					RepositoryID: model.RepositoryID, Model: model.Model, ModelSource: sourceOrUnknown(model.ModelSource),
+					Effort: model.Effort, EffortSource: sourceOrUnknown(model.EffortSource), Runner: sourceOrUnknown(model.Runner)})
 			}
 		}
 	}

@@ -36,6 +36,13 @@ var authoringModelName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0
 var authoringMCPTool = regexp.MustCompile(`^mcp__[A-Za-z0-9_.*-]+$`)
 
 func prepareAuthoringConfig(document *yaml.Node, warnings *configWarnings, source ProfileSource) error {
+	if source == ProfileSourceUser && removeYAMLPath(document, []string{"delivery", "require_defect_class"}) {
+		const key = "delivery.require_defect_class"
+		if warnings != nil && !warnings.emitted[key] {
+			warnings.emitted[key] = true
+			fmt.Fprintln(warnings.stderr, "config: delivery.require_defect_class in User Config is ignored; set delivery.require_defect_class in Project Config")
+		}
+	}
 	node, found := yamlValueAtPath(document, []string{"skills"})
 	if !found {
 		return nil

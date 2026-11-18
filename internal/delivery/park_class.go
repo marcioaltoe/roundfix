@@ -71,6 +71,12 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 		classification.Class = ParkClassFlakyCheck
 		classification.Next = "the check failed twice in " + strings.TrimSpace(detail) + ", which " + item.SpecSlug +
 			" did not change; fix or re-run it, then run roundfix deliver retry " + item.SpecSlug
+	case BlockerDefectClassUndeclared:
+		if strings.TrimSpace(detail) == "" {
+			detail = "<signs>"
+		}
+		classification.Class = ParkClassFinding
+		classification.Next = "declare a Defect Class (plan, implementation, environment, operator or unclear), or not-a-correction for a change that repaired no defect, for " + strings.TrimSpace(detail) + " with roundfix corrections declare --spec " + item.SpecSlug + ", then run roundfix deliver retry " + item.SpecSlug
 	case BlockerArchivedItemUnproven:
 		classification.Class = ParkClassFinding
 		classification.Next = "in " + item.Worktree + ", make the item branch hold the Spec folder or one exact archive commit of the Spec, then run roundfix deliver retry " + item.SpecSlug

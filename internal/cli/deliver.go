@@ -452,6 +452,7 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 			}
 		}
 	}
+	printDeliveryCorrectionSigns(ctx, loaded, queue, stdout)
 	ownerLine, ownerLive := deliveryOwnerLine(ctx, queue, commandDependenciesForContext(ctx).ownerProcesses, stderr)
 	if ownerLine != "" {
 		fmt.Fprintln(stdout, ownerLine)

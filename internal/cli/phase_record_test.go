@@ -364,7 +364,7 @@ func TestGCCountsPhaseRecordDayFilesWithoutARunDatabase(t *testing.T) {
 		"  Journal Retention: 336h\n  Cutoff: 2026-11-02T12:00:00Z\n" +
 		"  Runs eligible: 0\n  Journal rows eligible: 0\n  Artifact bytes reclaimable: 0\n  Orphan artifact dirs eligible: 0\n" +
 		"  Run Retention: 30 days\n  Run Retention cutoff: 2026-10-17T12:00:00Z\n" +
-		"  Runs removable: 0\n  Phase Record day files removable: 2\n" +
+		"  Runs removable: 0\n  Phase Record day files removable: 2\n  Corrections records removable: 0\n" +
 		"  Runs kept past the cutoff: 0 (queue-referenced 0, worktree present 0, artifact root unproven 0)\n" +
 		"  Rows removable: runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0\n" +
 		"  Database bytes reclaimable (estimated): 0\n"

@@ -288,7 +288,7 @@ func checkParkActionDocumentation(documents []documentedText) error {
 		}
 
 		normalized := strings.Join(strings.Fields(document.content), " ")
-		for _, blocker := range []string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound, delivery.BlockerNumberedFileCollision, delivery.BlockerDiskFull} {
+		for _, blocker := range []string{delivery.BlockerArchivedItemUnproven, delivery.BlockerSecretFound, delivery.BlockerNumberedFileCollision, delivery.BlockerDiskFull, delivery.BlockerDefectClassUndeclared} {
 			want := parkActionSentence(blocker)
 			if count := strings.Count(normalized, want); count != 1 {
 				return fmt.Errorf("%s: documented action for %q occurred %d times; want exactly once: %q", document.path, blocker, count, want)
@@ -328,6 +328,7 @@ func parkFindingBlockerCell() string {
 		delivery.BlockerRevalidationFailed,
 		delivery.BlockerArchivedItemUnproven,
 		delivery.BlockerSecretFound,
+		delivery.BlockerDefectClassUndeclared,
 	}
 	for i := range blockers {
 		blockers[i] = "`" + blockers[i] + "`"

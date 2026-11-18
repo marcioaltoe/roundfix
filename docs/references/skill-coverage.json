@@ -237,6 +237,28 @@
       "review": "2026-10-20 — Spec 0288 task_02 builds archive and cancel repository paths from one root spelling; no flag, help text, output line or exit code changes"
     },
     {
+      "id": "command corrections declare",
+      "skills": [
+        ".agents/skills/roundfix/references/corrections.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/corrections.md",
+        "internal/cli/corrections.go",
+        "internal/correction/"
+      ]
+    },
+    {
+      "id": "command corrections report",
+      "skills": [
+        ".agents/skills/roundfix/references/corrections.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/corrections.md",
+        "internal/cli/corrections_report.go",
+        "internal/cli/corrections.go"
+      ]
+    },
+    {
       "id": "command deliver lane",
       "skills": [
         ".agents/skills/roundfix/references/deliver.md"
@@ -404,8 +426,11 @@
       "sources": [
         "docs/user-guide/commands/gc.md",
         "internal/cli/gc.go",
-        "internal/cli/worktree_build_cache.go"
-      ]
+        "internal/cli/run_retention.go",
+        "internal/cli/worktree_build_cache.go",
+        "internal/correction/"
+      ],
+      "review": "2026-11-18 — Spec 0404 task_01 adds whole corrections-record retention and its GC count after the Phase Record line."
     },
     {
       "id": "command history sanitize",
@@ -593,6 +618,7 @@
       ],
       "sources": [
         "docs/user-guide/commands/review.md",
+        "internal/cli/corrections.go",
         "internal/cli/review.go",
         "internal/cli/review_convention_validator.go",
         "internal/cli/review_conventions.go",
@@ -600,9 +626,10 @@
         "internal/cli/review_dispose_lock_unix.go",
         "internal/cli/review_dispose_lock_windows.go",
         "internal/cli/review_lineage.go",
-        "internal/cli/review_validation.go"
+        "internal/cli/review_validation.go",
+        "internal/correction/"
       ],
-      "review": "2026-11-16 — Spec 0397 task_02: The disposition command has no behavior change; its shared source only gains the advisory review prompt writer."
+      "review": "2026-11-18 — Spec 0404 task_01 adds an optional Correction declaration after a fixed disposition and refuses declaration flags on a dismissal."
     },
     {
       "id": "command runs",
@@ -923,6 +950,15 @@
         "docs/user-guide/commands/cancel.md"
       ],
       "review": "2026-10-20 — Spec 0288 task_02 builds archive and cancel repository paths from one root spelling; no flag, help text, output line or exit code changes"
+    },
+    {
+      "id": "guide docs/user-guide/commands/corrections.md",
+      "skills": [
+        ".agents/skills/roundfix/references/corrections.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/corrections.md"
+      ]
     },
     {
       "id": "guide docs/user-guide/commands/deliver.md",
@@ -1296,7 +1332,7 @@
       "sources": [
         "docs/user-guide/usage.md"
       ],
-      "review": "2026-11-17 — Spec 0401 task_01 changes only the Phase Record section, which the Roundfix skill's phase reference covers; the guide's skills and sources stay as they are."
+      "review": "2026-11-18 — Spec 0404 task_02 changes only the Phase Record section, which the Roundfix skill's phase reference covers; the guide's skills and sources stay as they are."
     }
   ]
 }

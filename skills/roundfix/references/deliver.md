@@ -469,7 +469,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry; `numbered-file-collision`; renumber the plan, or deliver the earlier item and merge the default branch, then retry |
 | `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`, `disk-full`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
-| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found` |
+| `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found`, `defect-class-undeclared` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
 | `review` | `review-blocked`, `review-stale` |
 | `authorization` | `unauthorized` |
@@ -1117,3 +1117,17 @@ deadline, the item parks as `delivery-error` with the same Implement failure
 reason it would have reported without waiting. Other refusals park as before.
 The blocker is cleared when the wait ends; stopping the owner clears it, and
 resume or retry starts a new wait.
+
+## Correction Signs before merge
+
+The Queue Owner reads `delivery.require_defect_class` from Project Config at the default branch head, preferring the remote-tracking ref and falling back to the local branch. At each merge it records the candidate's Correction Signs: commits without a Run or queue mark on the Item Branch's first-parent line, fixed review findings, and Corrective Tasks. A fixed finding and its fixing commit are one sign; a merge of the default branch is no sign.
+
+With the key on, an undeclared sign parks the item as `defect-class-undeclared`, of Park Class `finding`. A `defect-class-undeclared` park's next action is `declare a Defect Class (plan, implementation, environment, operator or unclear), or not-a-correction for a change that repaired no defect, for <signs> with roundfix corrections declare --spec <slug>, then run roundfix deliver retry <slug>`. A declaration may cover several signs; `not-a-correction` covers a change that repaired no defect. Retry follows the existing head proof: an archived item with an unchanged head and a Pull Request returns to `checking`, and a moved head returns to `reviewing`.
+
+With the key on, `deliver status` prints one line per unmerged item with undeclared signs, in queue order, after the `Review:` lines and before the `Owner:` line:
+
+```text
+Corrections: <slug> undeclared: <signs>; declare with roundfix corrections declare --spec <slug>
+```
+
+A sign is named as `finding F<n>@<7 hex>`, `commit <7 hex> "<subject>"` or `Corrective Task <id>`. Subjects are data: one line, at most 72 characters, ending in `…` when cut. Status prints no line when the default head, key, signs or record cannot be read. With the key off or absent, the merge step records the signs but never parks, never fails and prints nothing; status prints its existing output. If the signs cannot be read, the record says `unavailable`; a failed write is dropped. An unreadable Project Config at a resolved default head remains a step error.

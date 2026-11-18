@@ -53,11 +53,11 @@ Usage:
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix review [--base <ref>]
   roundfix review dispose <finding-id> --dismiss --evidence <text>
-  roundfix review dispose <finding-id> --fixed-by <commit>
+  roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
   roundfix implement --spec <slug>
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
-  roundfix phase start <phase> [--spec <slug>]
+  roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -101,6 +101,8 @@ Usage:
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
   roundfix runs show <run-id> [--json]
   roundfix runs causes [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
+  roundfix corrections declare --spec <slug> --class <class> --reason <text> [--artifact <artifact>]
+  roundfix corrections report [--spec <slug>] [--since <YYYY-MM-DD>] [--until <YYYY-MM-DD>] [--format <text|json>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix events <run-id> [--follow] [--filter <categories>]
@@ -140,6 +142,7 @@ Commands:
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   update     Report a newer release and this repository's Baseline plan
   runs       List Runs from the Run Database
+  corrections  Declare the cause of a delivery correction and report Corrections by authoring model
   attach     Replay a Run's event timeline from the Run Database
   events     Replay or follow a Run's Supervisor event stream as JSONL
   skills     List, check, or install the bundled Roundfix skills
@@ -641,6 +644,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "corrections":
+		return runCorrectionsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "phase":
 		return runPhaseCommand(ctx, args[1:], stdout, stderr, environment)
 	case "follow-up":
@@ -5378,7 +5383,7 @@ Options:
 		return `Usage:
   roundfix review [--base <ref>]
   roundfix review dispose <finding-id> --dismiss --evidence <text>
-  roundfix review dispose <finding-id> --fixed-by <commit>
+  roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
 
 Runs the configured pre-PR reviewer over the candidate from the base commit to
 the current HEAD and records the result under the configured Artifact Directory.
@@ -5389,10 +5394,11 @@ Options:
 	case "review dispose":
 		return `Usage:
   roundfix review dispose <finding-id> --dismiss --evidence <text>
-  roundfix review dispose <finding-id> --fixed-by <commit>
+  roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
 
 Records one evidence-backed disposition for a finding in the current
 pre-PR review record. A finding accepts at most one disposition.
+A fixed disposition may also declare its Correction with a class and reason, or name an existing Correction.
 `
 	case "gc":
 		return `Usage:
@@ -5406,6 +5412,7 @@ under the resolved run artifact root. Journal Retention never deletes Run rows o
 GC then removes terminal Runs past Run Retention, including their dependent
 rows, and compacts the Run Database.
 It also removes Phase Record day files older than the Run Retention cutoff.
+It removes whole corrections records whose newest line is older than that cutoff.
 It never removes Review artifacts outside the run artifact root.
 
 The sanitize subcommand discovers every recorded Artifact Root from the
@@ -5608,6 +5615,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "corrections", "corrections declare", "corrections report":
+		return correctionsUsage
 	case "phase":
 		return phaseUsage
 	case "follow-up":
