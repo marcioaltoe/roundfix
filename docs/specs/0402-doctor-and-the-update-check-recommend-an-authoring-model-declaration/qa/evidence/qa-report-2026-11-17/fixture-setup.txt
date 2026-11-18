@@ -1,0 +1,25 @@
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+$ /usr/bin/git config user.name "QA fixture"
+stdout:
+stderr:
+exit: 0
+$ /usr/bin/git config user.email qa@example.invalid
+stdout:
+stderr:
+exit: 0
+$ /usr/bin/git config core.hooksPath /dev/null
+stdout:
+stderr:
+exit: 0
+$ /usr/bin/git -c commit.gpgsign=false commit -qm fixture --allow-empty
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241-d1d47f4e-9017f90a/run_20261117T222450Z_a00f2c8f9217d395/bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0402-flows-1ooqn088/repo/.agents/skills (42 file(s))
+stderr:
+exit: 0

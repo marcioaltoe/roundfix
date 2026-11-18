@@ -1,0 +1,7 @@
+$ rtk proxy make build
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 3593 idle entries (2255128914 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 13756192536 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=f2ea5230-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-17 20:33:44 -0300'" -o bin/roundfix ./cmd/roundfix
+exit: 0
+$ rtk proxy go build -buildvcs=false -ldflags "-X roundfix/internal/app.Version=0.0.0-dev -X roundfix/internal/app.BuildCommit=f2ea52308c584184440d174fd9236250bd2e00e4" -o ./bin/roundfix ./cmd/roundfix
+exit: 0

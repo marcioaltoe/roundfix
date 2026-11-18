@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 30m -v -run '^TestRecommendedAuthoringDeclarationRendersValidProjectConfig$/^exact_bytes$' ./internal/config
+stdout:
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== PAUSE TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== CONT  TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes
+    authoring_recommendation_test.go:36: rendering="skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n        tools: [WebSearch]\n" want="skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n"
+--- FAIL: TestRecommendedAuthoringDeclarationRendersValidProjectConfig (0.00s)
+    --- FAIL: TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes (0.00s)
+FAIL
+suiteguard: guard cost: measured 3278 paths; fingerprint took 164.171417ms before and 166.016833ms after
+FAIL	roundfix/internal/config	0.569s
+FAIL
+
+stderr:
+
+exit: 1

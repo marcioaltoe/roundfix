@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

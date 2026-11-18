@@ -1,0 +1,11 @@
+--- internal/cli/authoring_reports.go
++++ internal/cli/authoring_reports.go
+@@ -64,7 +64,7 @@
+ 	var names []string
+ 	for _, phase := range roundskills.AuthoringPhases() {
+ 		info, err := os.Stat(filepath.Join(root, ".agents", "skills", phase.Skill, "SKILL.md"))
+-		if err == nil && info.Mode().IsRegular() && !roundskills.PublishesAuthoringSkill(root, phase.Skill) {
++		if err == nil && info.Mode().IsRegular() {
+ 			names = append(names, phase.Skill)
+ 		}
+ 	}

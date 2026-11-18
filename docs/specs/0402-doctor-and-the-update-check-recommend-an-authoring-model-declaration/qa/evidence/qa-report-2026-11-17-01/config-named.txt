@@ -1,0 +1,19 @@
+$ go test -count=1 -timeout 30m -v -run '^TestRecommendedAuthoringDeclarationRendersValidProjectConfig$' ./internal/config
+stdout:
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== PAUSE TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== CONT  TestRecommendedAuthoringDeclarationRendersValidProjectConfig
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig/loads_as_project_config
+=== RUN   TestRecommendedAuthoringDeclarationRendersValidProjectConfig/returns_a_copy
+--- PASS: TestRecommendedAuthoringDeclarationRendersValidProjectConfig (0.00s)
+    --- PASS: TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes (0.00s)
+    --- PASS: TestRecommendedAuthoringDeclarationRendersValidProjectConfig/loads_as_project_config (0.00s)
+    --- PASS: TestRecommendedAuthoringDeclarationRendersValidProjectConfig/returns_a_copy (0.00s)
+PASS
+suiteguard: guard cost: measured 3321 paths; fingerprint took 685.992ms before and 157.033375ms after
+ok  	roundfix/internal/config	1.086s
+
+stderr:
+
+exit: 0

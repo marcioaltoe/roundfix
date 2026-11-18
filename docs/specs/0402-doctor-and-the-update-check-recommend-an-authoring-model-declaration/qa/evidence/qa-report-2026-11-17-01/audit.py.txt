@@ -1,0 +1,105 @@
+exec((__import__('pathlib').Path.cwd()/'docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/qa/evidence/qa-report-2026-11-17-01/gate.py.txt').read_text().split("if __name__=='__main__':")[0])
+
+def git(*args):
+    r=run(['git',*args]);assert r.returncode==0,r.stderr;return r.stdout
+
+def history():
+    log=[]; failures=[]
+    commits=[('task_01','4b9e94b829390e5112ee3df9bd96a8ee65fe6546'),('task_02','e8ef5739de195805379523a0720a32beb5dad736')]
+    allpaths=set()
+    auth=(S/'_authorization.md').read_text().split('paths:\n',1)[1].split('operations:',1)[0]
+    granted=set(re.findall(r'^  - (.+)$',auth,re.M))
+    # Use the actual classifier's regex and exact path definitions, not a guessed governed subset.
+    classifier=(W/'internal/speccheck/governed.go').read_text()
+    patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]+)`\s*,?\s*\)',classifier)
+    exact=set(re.findall(r'"([^"\n]+)"',classifier.split('paths: exactGovernedPaths(',1)[1].split('),',1)[0]))
+    def governed(path):return path in exact or any(re.search(p,path) for p in patterns)
+    for task,commit in commits:
+        f=S/(task+'.md');text=f.read_text()
+        declared=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',text,re.M))
+        if '## Recorded paths' in text:
+            declared.update(re.findall(r'^- `([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0],re.M))
+        declared.add(str(f.relative_to(W)))
+        changed=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines();allpaths.update(changed)
+        log.append('$ git diff-tree --no-commit-id --name-only -r '+commit+'\n'+'\n'.join(changed))
+        outside=set(changed)-declared
+        if outside:failures.append(task+' outside declarations: '+str(sorted(outside)))
+        log.append(task+': actual paths within Context plus Recorded paths: '+str(not outside))
+        bad=[p for p in changed if governed(p) and p not in granted]
+        if bad:failures.append(task+' unauthorized governed paths '+str(bad))
+        log.append(task+' governed paths: '+str([p for p in changed if governed(p)])+'; all expressly granted: '+str(not bad))
+        ancestor=run(['git','merge-base','--is-ancestor',BASE,commit]).returncode==0
+        if not ancestor:failures.append('authorization does not precede '+task)
+        assert str(S.relative_to(W)/'_authorization.md') not in changed
+        log.append('operative authorization '+BASE+' is a separate ancestor of '+commit+': '+str(ancestor))
+    protected=['Makefile','go.mod','go.sum','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','internal/docscontract/publicdocs_test.go','internal/config/recommendations.go','internal/agent/catalog.go','docs/references/model-selection.md','docs/references/coverage-record.json','docs/references/skill-coverage.json']
+    forbidden=[p for p in allpaths if p in protected or p.startswith(('.github/workflows/','docs/agents/','internal/baseline/assets/')) or (p.startswith('docs/adr/') and not p.startswith('docs/adr/0401-')) or (p.startswith('.agents/skills/') and not p.startswith('.agents/skills/roundfix/')) or (p.startswith('skills/') and '/SKILL.md' in p and not p.startswith('skills/roundfix/'))]
+    if forbidden:failures.append('protected edits '+str(forbidden))
+    log.append('Protected paths and other ADRs/skills unchanged: '+str(not forbidden))
+    # Byte-check narrow exceptions, not just changed lines.
+    before=git('show',BASE+':internal/cli/cli_test.go');after=(W/'internal/cli/cli_test.go').read_text()
+    assert before.replace('if got != want {','if !reflect.DeepEqual(got, want) {',1)==after
+    log.append('internal/cli/cli_test.go differs only by assertCheckResult reflect.DeepEqual: pass')
+    before=git('show',BASE+':.roundfixrc.yml');after=(W/'.roundfixrc.yml').read_text()
+    expected=before.replace('      prd:\n        model: fable\n        reasoning_effort: xhigh','      prd:\n        model: fable\n        reasoning_effort: high').replace('      techspec:\n        model: fable\n        reasoning_effort: xhigh','      techspec:\n        model: fable\n        reasoning_effort: high').replace('      tasks:\n        model: fable','      tasks:\n        model: opus')
+    assert expected==after;log.append('.roundfixrc.yml: exactly three authorized authoring entries changed: pass')
+    adr='docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md'
+    before=git('show',BASE+':'+adr);after=(W/adr).read_text()
+    stripped=re.sub(r'^\*\*Amended by \[ADR-0415\].*\n\n','',after,flags=re.M)
+    assert stripped==before;log.append('ADR-0401: only added ADR-0415 amendment paragraph: pass')
+    assert git('merge-base',HEAD,'origin/main').strip()==BASE
+    log.append('Delivery Base equals merge-base of audited HEAD with origin/main: pass')
+    # Ensure no QA settlement block changed, even in otherwise authorized skill edits.
+    for p in sorted(allpaths):
+        if p.startswith(('.agents/skills/','skills/')):
+            a=git('show',BASE+':'+p);b=(W/p).read_text()
+            def settlement(s):
+                m=re.search(r'^### QA settlement\n.*?(?=^###? |\Z)',s,re.M|re.S);return m.group(0) if m else ''
+            assert settlement(a)==settlement(b),p
+    log.append('Every changed skill QA settlement section byte-identical: pass')
+    generated=['.claude/agents/roundfix-prd-author.md','.claude/agents/roundfix-techspec-author.md','.claude/agents/roundfix-tasks-author.md']
+    agentchanged=git('diff','--name-only',BASE,HEAD,'--','.claude/agents/').splitlines();assert sorted(agentchanged)==sorted(generated)
+    for p in generated:
+        a=git('show',BASE+':'+p).splitlines();b=(W/p).read_text().splitlines();assert len(a)==len(b) and sum(x!=y for x,y in zip(a,b))==1
+    with tempfile.TemporaryDirectory(prefix='rf402-regen-') as d,tempfile.TemporaryDirectory(prefix='rf402-home-') as h,tempfile.TemporaryDirectory(prefix='rf402-tmp-') as t:
+        root=pathlib.Path(d);tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive',HEAD]))).extractall(root,filter='data');env=safe_env(h,t)
+        for cmd in [['git','init','-q'],['git','add','-A'],['git','commit','-qm','audited tree']]:
+            r=run(cmd,root,env);assert r.returncode==0,r.stderr
+        checked('history-installer',[str(BIN),'skills','install','--target','project'],root,env)
+        for p in generated:assert (root/p).read_bytes()==(W/p).read_bytes()
+        checked('history-skills-check',[str(BIN),'skills','check'],root,env)
+    log.append('Only three generated author files differ, one line each; fresh installer reproduces all three byte-for-byte; skills check passes.')
+    log.append('Task 02 Recorded paths expressly includes internal/verifyselect/contracts_repository_test.go.')
+    log+=failures or ['No authorization, chronological ordering, scope or protected-path violations.']
+    (E/'history-audit.txt').write_text('\n\n'.join(log)+'\n')
+    note('Q13','fail' if failures else 'pass','Actual Task commit diffs, Context plus Recorded paths, operative ancestor grant, protected-file checks, byte-limited exceptions, generated-file reproduction and unchanged settlement sections.',['history-audit.txt','history-installer.txt','history-skills-check.txt'])
+    if failures:print('\n'.join(failures),flush=True)
+
+
+def glossary():
+    with tempfile.TemporaryDirectory(prefix='rf402-home-') as h,tempfile.TemporaryDirectory(prefix='rf402-tmp-') as t:
+        env=safe_env(h,t)
+        r=checked('glossary-test',['go','test','-count=1','-timeout','30m','-tags','docscontract','-v','-run','^TestGlossaryPhrasesAreDefinedTerms$','./internal/docscontract'],env=env)
+        assert '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in r.stdout
+    terms=['Recommended Authoring Declaration','Authoring Model Declaration']
+    for f in ['_prd.md','_techspec.md']:
+        text=(S/f).read_text();assert '- adds: **'+terms[0]+'**' in text and '- changes: **'+terms[1]+'**' in text
+    def definitions(text):
+        matches=list(re.finditer(r'^\*\*([^*]+)\*\*[: —]',text,re.M));return {m.group(1):text[m.start():matches[i+1].start() if i+1<len(matches) else len(text)] for i,m in enumerate(matches)}
+    a=definitions(git('show',BASE+':CONTEXT.md'));b=definitions((W/'CONTEXT.md').read_text());changed={k for k in a.keys()|b.keys() if a.get(k)!=b.get(k)}
+    assert changed==set(terms),changed
+    (E/'glossary-check.txt').write_text('PRD and TechSpec declare adds Recommended Authoring Declaration and changes Authoring Model Declaration. Definition-body comparison from Delivery Base to audited head: exactly these two definitions changed. Named glossary test passes.\n'+git('diff',BASE,HEAD,'--','CONTEXT.md'))
+    text=REPORT.read_text();text+='\n## Glossary check\n\nRequirement 9 execution constraint: PRD/TechSpec declarations and both resulting glossary definitions match; Task history changes exactly those two definition bodies. [Executable glossary test](evidence/qa-report-2026-11-17-01/glossary-test.txt) and [definition-body comparison](evidence/qa-report-2026-11-17-01/glossary-check.txt). The commit-range inputs are declared under Q13.\n';REPORT.write_text(text)
+
+
+def pr_and_archive():
+    assert run(['git','merge-base','--is-ancestor',BASE,HEAD]).returncode==0
+    (E/'pre-pr-controls.txt').write_text('Source: assigned Run prompt and operative _authorization.md at '+BASE+'.\nApproval: maintainer grants implement, commit, push, pull_request and merge; exact bounded paths and helper amendment recorded.\nChecks/status: Daemon make verify-changed at '+HEAD+': pass exit 0.\nUnresolved threads: none, because no Pull Request exists, per assigned fact.\nMerge-Ready acceptance: none yet; no review-source acceptance or equivalent is asserted.\nReview-artifact ancestry: claimed candidate '+HEAD+'; no later review-artifact acceptance exists.\nConclusion: blocked (environment: no open Pull Request); this pre-PR row qualifies for partial settlement but cannot prove Merge-Ready.\n')
+    note('Q14','blocked (environment: no open Pull Request)','Recorded authority and Daemon checks apply to the audited candidate; no threads exist; Merge-Ready acceptance and review-artifact evidence do not exist yet.',['pre-pr-controls.txt'])
+    with tempfile.TemporaryDirectory(prefix='rf402-home-') as h,tempfile.TemporaryDirectory(prefix='rf402-tmp-') as t:
+        r=run([str(BIN),'archive',SLUG,'--plan','--offline'],env=safe_env(h,t));record('archive-plan',[str(BIN),'archive',SLUG,'--plan','--offline'],r)
+    print('archive plan outcome recorded',flush=True)
+
+history()
+glossary()
+pr_and_archive()

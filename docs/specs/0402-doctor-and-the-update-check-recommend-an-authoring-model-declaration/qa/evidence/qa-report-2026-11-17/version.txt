@@ -1,0 +1,5 @@
+$ ./bin/roundfix --version
+stdout:
+roundfix 0.0.0-dev (f2ea52308c584184440d174fd9236250bd2e00e4)
+stderr:
+exit: 0

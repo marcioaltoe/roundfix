@@ -1,0 +1,87 @@
+git archive f2ea52308c584184440d174fd9236250bd2e00e4 extracted into a fresh temporary repository.
+$ git init -q
+stdout:
+stderr:
+exit: 0
+$ git config user.name "QA fixture"
+stdout:
+stderr:
+exit: 0
+$ git config user.email qa@example.invalid
+stdout:
+stderr:
+exit: 0
+$ git config core.hooksPath /dev/null
+stdout:
+stderr:
+exit: 0
+$ git add -f .
+stdout:
+stderr:
+exit: 0
+$ git -c commit.gpgsign=false commit -qm fixture
+stdout:
+stderr:
+exit: 0
+Mutation (no regeneration or sync):
+--- internal/cli/authoring_reports.go
++++ internal/cli/authoring_reports.go
+@@ -64,7 +64,7 @@
+ 	var names []string
+ 	for _, phase := range roundskills.AuthoringPhases() {
+ 		info, err := os.Stat(filepath.Join(root, ".agents", "skills", phase.Skill, "SKILL.md"))
+-		if err == nil && info.Mode().IsRegular() && !roundskills.PublishesAuthoringSkill(root, phase.Skill) {
++		if err == nil && info.Mode().IsRegular() {
+ 			names = append(names, phase.Skill)
+ 		}
+ 	}
+$ rtk proxy go test -count=1 -timeout 30m -v -run ^TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared$/^published$ ./internal/cli
+stdout:
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== PAUSE TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== CONT  TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published
+    authoring_recommendation_test.go:63: unexpected recommendation: node: ok
+        acpx: ok
+        adapter: ok (claude: claude-agent-acp | codex: codex-acp)
+        profiles: ok (0 distinct tuples; 0 category references)
+        recommendations: ok (snapshot 2026-09-30; 5 current, 0 differ, 0 pinned)
+        pre-pr-review: ok (provider=codex; source=default)
+        gh: ok
+        git: ok
+        remote: ok
+        toolchain: ok
+        environment: ok
+        skills: ok (39 required: 14 Roundfix-owned, 25 external)
+        authoring-models: warn (the authoring skills are installed without an Authoring Model Declaration: write-idea, write-prd, write-techspec, write-tasks; next: add the Recommended Authoring Declaration below to .roundfixrc.yml, then run roundfix skills install --target project)
+          skills:
+            authoring:
+              claude:
+                idea:
+                  model: fable
+                  reasoning_effort: xhigh
+                prd:
+                  model: fable
+                  reasoning_effort: high
+                techspec:
+                  model: fable
+                  reasoning_effort: high
+                tasks:
+                  model: opus
+                  reasoning_effort: high
+                research:
+                  model: sonnet
+                  reasoning_effort: medium
+        baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)
+        residue: ok (no process residue found)
+        storage: ok (no Run Database)
+        codex: ok
+--- FAIL: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared (0.01s)
+    --- FAIL: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published (0.01s)
+FAIL
+suiteguard: guard cost: measured 3278 paths; fingerprint took 166.950417ms before and 155.348666ms after
+FAIL	roundfix/internal/cli	0.983s
+FAIL
+stderr:
+exit: 1
+Named failing test/subtest observed: True

@@ -1,0 +1,72 @@
+[
+  [
+    "Q01",
+    "repository Verification",
+    "Build and supplied static gate"
+  ],
+  [
+    "Q02",
+    "Requirement 2",
+    "Named recommendation tests and whole config/CLI suites"
+  ],
+  [
+    "Q03",
+    "Requirement 2 (Surface Transcript 1)",
+    "Built Update Check transcript"
+  ],
+  [
+    "Q04",
+    "Requirement 2; Non-Goals: writing Project Config, changing exit/next, published skills, partial declarations",
+    "Doctor/JSON read-only report and exemption flows"
+  ],
+  [
+    "Q05",
+    "Requirement 5; Non-Goals: recommending research.tools, --update writing Project Config",
+    "Repository/guide contract, skills suites, mirrors, phrases and glossary"
+  ],
+  [
+    "Q06",
+    "outside-evidence row (PRD Success Metric 5 and Acceptance evidence)",
+    "Reproduce the independently measured Argus state"
+  ],
+  [
+    "Q07",
+    "Requirement 7.1",
+    "Sabotage published-skill exemption"
+  ],
+  [
+    "Q08",
+    "Requirement 7.2",
+    "Sabotage inspection-problem priority"
+  ],
+  [
+    "Q09",
+    "Requirement 7.3",
+    "Sabotage Doctor indentation"
+  ],
+  [
+    "Q10",
+    "Requirement 7.4",
+    "Sabotage research tools rendering"
+  ],
+  [
+    "Q11",
+    "Requirement 7.5",
+    "Sabotage tasks recommendation model"
+  ],
+  [
+    "Q12",
+    "Requirement 7.6",
+    "Sabotage configuration guide"
+  ],
+  [
+    "Q13",
+    "Requirement 10",
+    "Task history, exact path scope and generated subagents"
+  ],
+  [
+    "Q14",
+    "Pull Request row",
+    "Pre-PR equivalents and candidate identity"
+  ]
+]

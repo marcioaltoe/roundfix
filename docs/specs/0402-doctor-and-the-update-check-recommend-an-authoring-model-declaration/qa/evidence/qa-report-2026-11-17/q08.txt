@@ -1,0 +1,54 @@
+git archive f2ea52308c584184440d174fd9236250bd2e00e4 extracted into a fresh temporary repository.
+$ git init -q
+stdout:
+stderr:
+exit: 0
+$ git config user.name "QA fixture"
+stdout:
+stderr:
+exit: 0
+$ git config user.email qa@example.invalid
+stdout:
+stderr:
+exit: 0
+$ git config core.hooksPath /dev/null
+stdout:
+stderr:
+exit: 0
+$ git add -f .
+stdout:
+stderr:
+exit: 0
+$ git -c commit.gpgsign=false commit -qm fixture
+stdout:
+stderr:
+exit: 0
+Mutation (no regeneration or sync):
+--- internal/cli/authoring_reports.go
++++ internal/cli/authoring_reports.go
+@@ -54,7 +54,8 @@
+ 	}
+ 	declaration := authoringDeclaration(loaded.Config.Skills)
+ 	state := authoringReportState{AuthoringState: roundskills.InspectAuthoring(loaded.GitRoot, declaration)}
+-	if declaration == nil && len(state.Problems) == 0 {
++	if declaration == nil {
++        state.Problems = nil
+ 		state.Installed = installedUnpublishedAuthoringSkills(loaded.GitRoot)
+ 	}
+ 	return state, len(state.Declared) > 0 || len(state.Problems) > 0 || len(state.Installed) > 0
+$ rtk proxy go test -count=1 -timeout 30m -v -run ^TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared$/^leftover_generated$ ./internal/cli
+stdout:
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== PAUSE TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== CONT  TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated
+    authoring_recommendation_test.go:109: authoringModels={"state":"undeclared","harness":"claude","declared":[],"problems":[],"installed":["write-idea","write-prd","write-techspec","write-tasks"],"recommendation":"skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n"} want={"state":"unapplied","harness":"claude","declared":[],"problems":[".claude/agents/roundfix-prd-author.md has no declared entry"],"next":"roundfix skills install --target project"}
+--- FAIL: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared (0.03s)
+    --- FAIL: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated (0.03s)
+FAIL
+suiteguard: guard cost: measured 3278 paths; fingerprint took 167.732791ms before and 157.902208ms after
+FAIL	roundfix/internal/cli	0.816s
+FAIL
+stderr:
+exit: 1
+Named failing test/subtest observed: True

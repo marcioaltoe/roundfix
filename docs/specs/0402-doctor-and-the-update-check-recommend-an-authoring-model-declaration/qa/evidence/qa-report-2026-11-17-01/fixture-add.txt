@@ -1,0 +1,6 @@
+$ git add .
+stdout:
+
+stderr:
+
+exit: 0

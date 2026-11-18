@@ -1,0 +1,17 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241-d1d47f4e-9017f90a/run_20261117T235512Z_2f570b5a950ead41/bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf402-tmp-i0l126ed/fixture/.agents/skills (42 file(s))
+Withheld declared header: write-idea (this repository publishes skills/write-idea/SKILL.md)
+Withheld declared header: write-prd (this repository publishes skills/write-prd/SKILL.md)
+Withheld declared header: write-techspec (this repository publishes skills/write-techspec/SKILL.md)
+Withheld declared header: write-tasks (this repository publishes skills/write-tasks/SKILL.md)
+Generated subagent: .claude/agents/roundfix-idea-author.md
+Generated subagent: .claude/agents/roundfix-prd-author.md
+Generated subagent: .claude/agents/roundfix-techspec-author.md
+Generated subagent: .claude/agents/roundfix-tasks-author.md
+Generated subagent: .claude/agents/roundfix-researcher.md
+Claude skill symlink skipped: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf402-tmp-i0l126ed/fixture/.claude/skills/roundfix already exists
+
+stderr:
+
+exit: 0

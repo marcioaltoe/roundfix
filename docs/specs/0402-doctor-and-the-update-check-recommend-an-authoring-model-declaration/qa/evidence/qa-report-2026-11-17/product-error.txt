@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241-d1d47f4e-9017f90a/run_20261117T222450Z_a00f2c8f9217d395/docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/qa/evidence/qa-report-2026-11-17/qa-driver.py.txt", line 163, in <module>
+    try: products()
+         ~~~~~~~~^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241-d1d47f4e-9017f90a/run_20261117T222450Z_a00f2c8f9217d395/docs/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration/qa/evidence/qa-report-2026-11-17/qa-driver.py.txt", line 155, in products
+    (repo/'.claude/skills').symlink_to('../.agents/skills',target_is_directory=True)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/pathlib/__init__.py", line 1414, in symlink_to
+    os.symlink(target, self, target_is_directory)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '../.agents/skills' -> '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0402-flows-2p5d63ki/repo/.claude/skills'

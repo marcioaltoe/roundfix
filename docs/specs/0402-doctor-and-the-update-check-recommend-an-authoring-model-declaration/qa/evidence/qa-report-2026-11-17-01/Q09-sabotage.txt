@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 30m -v -run '^TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared$/^undeclared$' ./internal/cli
+stdout:
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== PAUSE TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== CONT  TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared
+    authoring_recommendation_test.go:63: output after skills:="authoring-models: warn (the authoring skills are installed without an Authoring Model Declaration: write-idea, write-prd, write-techspec, write-tasks; next: add the Recommended Authoring Declaration below to .roundfixrc.yml, then run roundfix skills install --target project)\nskills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\nbaseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ncodex: ok\n" want prefix="authoring-models: warn (the authoring skills are installed without an Authoring Model Declaration: write-idea, write-prd, write-techspec, write-tasks; next: add the Recommended Authoring Declaration below to .roundfixrc.yml, then run roundfix skills install --target project)\n  skills:\n    authoring:\n      claude:\n        idea:\n          model: fable\n          reasoning_effort: xhigh\n        prd:\n          model: fable\n          reasoning_effort: high\n        techspec:\n          model: fable\n          reasoning_effort: high\n        tasks:\n          model: opus\n          reasoning_effort: high\n        research:\n          model: sonnet\n          reasoning_effort: medium\n"
+--- FAIL: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared (0.01s)
+    --- FAIL: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared (0.01s)
+FAIL
+suiteguard: guard cost: measured 3278 paths; fingerprint took 171.880875ms before and 170.486083ms after
+FAIL	roundfix/internal/cli	0.790s
+FAIL
+
+stderr:
+
+exit: 1

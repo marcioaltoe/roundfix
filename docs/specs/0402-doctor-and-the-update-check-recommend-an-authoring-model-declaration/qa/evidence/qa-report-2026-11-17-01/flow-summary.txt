@@ -1,0 +1,1 @@
+Undeclared and published hash/size listings identical before/after read-only commands, including .git. Doctor exit 1 in both cases (offline prerequisite stubs); authoring warning adds no exit failure. Update Check exit 0 and top-level next none unchanged. Explicit user paste/install then skills check: pass.

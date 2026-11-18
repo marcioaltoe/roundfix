@@ -1,0 +1,7 @@
+Source: assigned Run prompt and operative _authorization.md at 62971267c32633d9cfa879d0093e9d7daa0fdc4a.
+Approval: maintainer grants implement, commit, push, pull_request and merge; exact bounded paths and helper amendment recorded.
+Checks/status: Daemon make verify-changed at cdf12d37b27970036483056e60d7b3616962518a: pass exit 0.
+Unresolved threads: none, because no Pull Request exists, per assigned fact.
+Merge-Ready acceptance: none yet; no review-source acceptance or equivalent is asserted.
+Review-artifact ancestry: claimed candidate cdf12d37b27970036483056e60d7b3616962518a; no later review-artifact acceptance exists.
+Conclusion: blocked (environment: no open Pull Request); this pre-PR row qualifies for partial settlement but cannot prove Merge-Ready.

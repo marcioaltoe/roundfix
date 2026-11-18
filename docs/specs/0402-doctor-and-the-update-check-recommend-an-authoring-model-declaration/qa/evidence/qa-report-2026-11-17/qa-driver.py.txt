@@ -1,0 +1,379 @@
+from pathlib import Path
+import os,sys,subprocess,tempfile,json,re,hashlib,shutil,tarfile,io,traceback,difflib
+ROOT=Path(__file__).resolve().parents[6]
+SPEC='0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration'
+EV=ROOT/'docs/specs'/SPEC/'qa/evidence/qa-report-2026-11-17'
+REPORT=EV.parents[1]/'qa-report-2026-11-17.md'
+BIN=ROOT/'bin/roundfix'
+BASE='62971267c32633d9cfa879d0093e9d7daa0fdc4a'
+HEAD='f2ea52308c584184440d174fd9236250bd2e00e4'
+SKILLS=['write-idea','write-prd','write-techspec','write-tasks']
+CACHES={k:subprocess.check_output(['go','env',k],text=True).strip() for k in ['GOMODCACHE','GOCACHE']}
+def cleanenv(home,tmp):
+ e=os.environ.copy()
+ for k in list(e):
+  if 'API_KEY' in k or k in ['GH_TOKEN','GITHUB_TOKEN','CLAUDE_CODE_SESSION_ID','CODEX_PATH','GIT_DIR','GIT_WORK_TREE','GIT_INDEX_FILE','GIT_CONFIG','GIT_CONFIG_GLOBAL','GIT_CONFIG_SYSTEM','GIT_CONFIG_COUNT']: e.pop(k,None)
+ e.update(CACHES);e.update(HOME=str(home),TMPDIR=str(tmp),GOPROXY='off',GOSUMDB='off',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_TERMINAL_PROMPT='0')
+ return e
+
+def command(args,cwd=ROOT,e=None):
+ p=subprocess.run(args,cwd=cwd,env=e,stdin=subprocess.DEVNULL,capture_output=True,text=True)
+ return p,'$ '+subprocess.list2cmdline([str(a) for a in args])+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+'exit: '+str(p.returncode)+'\n'
+
+def record(row,body,status='pass',name=None):
+ name=name or row.lower()+'.txt';(EV/name).write_text(body)
+ s=REPORT.read_text();s=re.sub(r'(?m)^\| '+row+r' \| [^|]* \|', '| '+row+' | '+status+' |',s)
+ pos=s.index('\n### '+row+'\n');end=s.find('\n### ',pos+1)
+ if end<0:end=len(s)
+ s=s[:end]+'\nObservation: '+status+'. [Evidence](evidence/qa-report-2026-11-17/'+name+').\n'+s[end:]
+ REPORT.write_text(s);print(row,status,flush=True)
+
+def checked(args,cwd=ROOT,e=None):
+ p,b=command(args,cwd,e)
+ if p.returncode:raise RuntimeError(b)
+ return p.stdout,b
+
+def tests():
+ record('Q01','make build: exit 0; details in build.txt.\nDaemon-supplied make verify-changed: pass (exit 0), audited head '+HEAD+'; diagnostics removed on success. Not rerun.\n./bin/roundfix --version: roundfix 0.0.0-dev ('+HEAD+')\nStrict check: exit 0; see precondition.txt.\n')
+ with tempfile.TemporaryDirectory(prefix='qa0402-tests-') as tmp:
+  h=Path(tmp)/'home';h.mkdir();t=Path(tmp)/'tmp';t.mkdir();e=cleanenv(h,t)
+  c1=['rtk','proxy','go','test','-count=1','-timeout','30m','-v','-run','^TestRecommendedAuthoringDeclarationRendersValidProjectConfig$','./internal/config']
+  c2=['rtk','proxy','go','test','-count=1','-timeout','30m','-v','-run','^(TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration)$','./internal/cli']
+  c3=['rtk','proxy','go','test','-count=1','-timeout','30m','./internal/config','./internal/cli']
+  body='';ok=True
+  for args in ([] if sys.argv[1]=='docs' else [c1,c2,c3]):
+   print('running',subprocess.list2cmdline(args),flush=True);p,b=command(args,e=e);body+=b;ok=ok and p.returncode==0
+  expected=['TestRecommendedAuthoringDeclarationRendersValidProjectConfig/'+n for n in ['exact_bytes','loads_as_project_config','returns_a_copy']]
+  expected += [test+'/'+n for test in ['TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared','TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared'] for n in ['undeclared','partly_published','published','no_authoring_skill','leftover_generated','declared']]
+  expected += ['TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration']
+  for n in expected:
+   present='--- PASS: '+n+' ' in body;body+='Named pass '+n+': '+str(present)+'\n';ok=ok and present
+  if sys.argv[1]!='docs':record('Q02',body,'pass' if ok else 'fail')
+  body='';ok=True
+  for args in [['rtk','proxy','go','test','-count=1','-timeout','30m','-tags','docscontract','-v','-run','^TestTheRecommendedAuthoringDeclarationMatchesThisRepository$','./internal/docscontract'],['rtk','proxy','go','test','-count=1','-timeout','30m','./skills'],['rtk','proxy','go','test','-count=1','-timeout','30m','-tags','docscontract','./internal/docscontract'],['rtk','proxy','go','test','-count=1','-timeout','30m','-tags','docscontract','-v','-run','^TestGlossaryPhrasesAreDefinedTerms$','./internal/docscontract']]:
+   print('running',subprocess.list2cmdline(args),flush=True);p,b=command(args,e=e);body+=b;ok=ok and p.returncode==0
+  for n in ['repository_config','configuration_guide']:
+   present='--- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/'+n+' ' in body;body+='Named contract pass '+n+': '+str(present)+'\n';ok=ok and present
+  for side in ['.agents/skills/roundfix','skills/roundfix']:
+   for name,phrase in [('references/setup.md','Recommended Authoring Declaration'),('references/modes.md','undeclared')]:
+    f=ROOT/side/name;found=phrase in ' '.join(f.read_text().split());body+=str(f.relative_to(ROOT))+' phrase '+repr(phrase)+': '+str(found)+'\n';ok=ok and found
+  for f in sorted((ROOT/'.agents/skills/roundfix').rglob('*')):
+   if f.is_file():
+    mirror=ROOT/'skills/roundfix'/f.relative_to(ROOT/'.agents/skills/roundfix');equal=mirror.is_file() and mirror.read_bytes()==f.read_bytes();body+='Mirror '+str(mirror.relative_to(ROOT))+': '+str(equal)+'\n';ok=ok and equal
+  for f,phrase in [('docs/user-guide/commands/update.md','undeclared'),('docs/user-guide/commands/doctor.md','installed without an Authoring Model Declaration')]:
+   present=phrase in ' '.join((ROOT/f).read_text().split());body+='Guide phrase '+f+': '+str(present)+'\n';ok=ok and present
+  for f in ['_prd.md','_techspec.md']:
+   text=(ROOT/'docs/specs'/SPEC/f).read_text();present='adds: **Recommended Authoring Declaration**' in text and 'changes: **Authoring Model Declaration**' in text;body+='Glossary declaration '+f+': '+str(present)+'\n';ok=ok and present
+  # Task 02's glossary verification, as authored.
+  for term in ['Recommended Authoring Declaration','Authoring Model Declaration']:
+   present=re.search(r'^\*\*'+term+r'\*\*:',(ROOT/'CONTEXT.md').read_text(),re.M) is not None;body+='Glossary definition '+term+': '+str(present)+'\n';ok=ok and present
+  glossary_delta,b=checked(['rtk','proxy','git','diff',BASE+'..'+HEAD,'--','CONTEXT.md']);body+=b
+  old,_=checked(['rtk','proxy','git','show',BASE+':CONTEXT.md']);now=(ROOT/'CONTEXT.md').read_text()
+  def defs(text):
+   parts=re.split(r'(?m)^\*\*([^*]+)\*\*:',text);return {parts[i]:parts[i+1] for i in range(1,len(parts)-1,2)}
+  olddefs,newdefs=defs(old),defs(now);changed=[k for k in set(olddefs)|set(newdefs) if olddefs.get(k)!=newdefs.get(k)];body+='Changed/added definitions: '+repr(sorted(changed))+'\n';ok=ok and set(changed)=={'Recommended Authoring Declaration','Authoring Model Declaration'}
+  # No old phrase may remain on the changed live surfaces.
+  paths=['docs/user-guide/configuration.md','docs/user-guide/commands/doctor.md','docs/user-guide/commands/update.md','.agents/skills/roundfix/references/setup.md','.agents/skills/roundfix/references/modes.md','skills/roundfix/references/setup.md','skills/roundfix/references/modes.md','CONTEXT.md']
+  for f in paths:
+   for n,line in enumerate((ROOT/f).read_text().splitlines(),1):
+    if 'Roundfix ships no model name' in line:body+='Stale phrase '+f+':'+str(n)+': '+line+'\n';ok=False
+  body+='Old wording sweep: completed over changed live command/config/skill/glossary surfaces.\nGuide YAML equality is observed by configuration_guide; exact renderer bytes and valid loading by Q02.\n'
+  (EV/'q05-tests.txt').write_text(body)
+  record('Q05',body,'pass' if ok else 'fail')
+
+if __name__=='__main__':
+ if sys.argv[1] in ['tests','docs']:tests()
+
+def manifest(repo):
+ rows=[]
+ for p in sorted(repo.rglob('*')):
+  if p.is_symlink():
+   data=os.readlink(p).encode();rows.append((str(p.relative_to(repo)),'symlink',len(data),hashlib.sha256(data).hexdigest()))
+  elif p.is_file():
+   data=p.read_bytes();rows.append((str(p.relative_to(repo)),'file',len(data),hashlib.sha256(data).hexdigest()))
+ return rows
+
+def products():
+ with tempfile.TemporaryDirectory(prefix='qa0402-flows-') as tmp:
+  tmp=Path(tmp);h=tmp/'home';h.mkdir();t=tmp/'tmp';t.mkdir();repo=tmp/'repo';repo.mkdir();e=cleanenv(h,t)
+  stubdir=ROOT/'bin/qa0402-rejecting-tools';stubdir.mkdir(exist_ok=True)
+  stub=EV/'reject-runtime.sh.txt';stub.write_text('#!/bin/sh\necho "QA fixture: runtime/tool unavailable" >&2\nexit 127\n');stub.chmod(0o755)
+  for n in ['node','acpx','claude','codex','gh','npm','npx','docker','curl','wget','ssh']:
+   link=stubdir/n
+   if link.is_symlink():link.unlink()
+   link.symlink_to(stub)
+  e['PATH']=str(stubdir)+':/usr/bin:/bin';e['CODEX_PATH']=str(stubdir/'codex')
+  for k in list(e):
+   if k.startswith('ROUNDFIX_') and k!='ROUNDFIX_RUN_ID':e.pop(k,None)
+  setup=''
+  for args in [['/usr/bin/git','init','-q'],['/usr/bin/git','config','user.name','QA fixture'],['/usr/bin/git','config','user.email','qa@example.invalid'],['/usr/bin/git','config','core.hooksPath','/dev/null'],['/usr/bin/git','-c','commit.gpgsign=false','commit','-qm','fixture','--allow-empty']]:
+   _,b=checked(args,repo,e);setup+=b
+  (repo/'.roundfixrc.yml').write_text('{}\n')
+  _,b=checked([str(BIN),'skills','install','--target','project'],repo,e);setup+=b
+  (EV/'fixture-setup.txt').write_text(setup)
+  before=manifest(repo)
+  p,body=command([str(BIN),'update','check'],repo,e)
+  tech=(ROOT/'docs/specs'/SPEC/'_techspec.md').read_text()
+  transcript=re.search(r'```transcript\n(.*?)```',tech,re.S).group(1)
+  lines=[line[3:] if line.startswith('   ') else line for line in transcript.splitlines()]
+  stdout=lines[lines.index('stdout:')+1:lines.index('stderr:')]
+  stderr=lines[lines.index('stderr:')+1:next(i for i,s in enumerate(lines) if s.startswith('exit:'))]
+  def matches(pattern,actual):
+   regex=''
+   for line in pattern:
+    if line=='...':regex+='(?:[^\n]*\n)*'
+    else:
+     pieces=re.split(r'(<[^<>]+>)',line);regex+=''.join('[^\n]+' if s.startswith('<') and s.endswith('>') else re.escape(s) for s in pieces)+'\n'
+   return re.fullmatch(regex,actual) is not None
+  good=p.returncode==0 and matches(stdout,p.stdout) and matches(stderr,p.stderr)
+  body+='Transcript stdout line matcher: '+str(matches(stdout,p.stdout))+'\nTranscript stderr line matcher: '+str(matches(stderr,p.stderr))+'\nExact exit 0: '+str(p.returncode==0)+'\n'
+  second,b=command([str(BIN),'update','check'],repo,e);body+=b
+  good=good and second.returncode==p.returncode and second.stdout==p.stdout and second.stderr==p.stderr and before==manifest(repo)
+  body+='Independent repeat command bytes and whole-repository manifest unchanged: '+str(good)+'\n';record('Q03',body,'pass' if good else 'fail')
+  before=manifest(repo);j,jbody=command([str(BIN),'update','check','--format','json'],repo,e);d,dbody=command([str(BIN),'doctor'],repo,e);after=manifest(repo)
+  (EV/'repo-before.txt').write_text(json.dumps(before,indent=2)+'\n');(EV/'repo-after.txt').write_text(json.dumps(after,indent=2)+'\n')
+  fields=json.loads(j.stdout);a=fields.get('authoringModels');rec=a.get('recommendation','') if a else ''
+  expected={'state':'undeclared','harness':'claude','declared':[],'problems':[],'installed':SKILLS,'recommendation':rec}
+  guide=(ROOT/'docs/user-guide/configuration.md').read_text().split('## Authoring models',1)[1];guideblock=re.search(r'```yaml\n(.*?)```',guide,re.S).group(1)
+  good=j.returncode==0 and a==expected and rec==guideblock and 'next' not in a and before==after
+  doctorlines=d.stdout.splitlines();ix=next((i for i,l in enumerate(doctorlines) if l.startswith('authoring-models:')),None);block=['  '+l for l in rec.splitlines()]
+  good=good and ix is not None and doctorlines[ix].startswith('authoring-models: warn (') and doctorlines[ix+1:ix+1+len(block)]==block
+  q4=jbody+dbody+'\nFull authoringModels: '+json.dumps(a,ensure_ascii=True)+'\nTop-level next: '+json.dumps(fields.get('next'))+'\nGuide block equals observed renderer recommendation: '+str(rec==guideblock)+'\nWhole repository manifest, file sizes and SHA-256 unchanged: '+str(before==after)+'\n'
+  q6='Outside source: references/2026-11-17-installed-authoring-skills-without-a-declaration-measurement.md; independently observed Argus main fc53eb7 using Roundfix 0.147.1.\nThe source records authoringModels absent/null. No access to Argus or another repository occurred.\n';shape=True
+  for name in SKILLS:
+   text=(repo/'.agents/skills'/name/'SKILL.md').read_text();absent=re.search(r'(?m)^(model|effort):',text) is None;q6+=name+' installed; no model/effort header: '+str(absent)+'\n';shape=shape and absent
+  shape=shape and not (repo/'.claude/agents').exists() and 'skills:' not in (repo/'.roundfixrc.yml').read_text() and not (repo/'skills').exists()
+  q6+='Measured shape reproduced: '+str(shape)+'\n'+jbody+'\nauthoringModels state/installed match the measured missing-declaration case: '+str(a is not None and a.get('state')=='undeclared' and a.get('installed')==SKILLS)+'\nThe installed skills are this Run binary’s shipped versions; the reproduced input is the measured structural state, not historical versions.\n'
+  record('Q06',q6,'pass' if shape and j.returncode==0 and a and a['state']=='undeclared' and a['installed']==SKILLS else 'fail')
+  for name in SKILLS:
+   target=repo/'skills'/name/'SKILL.md';target.parent.mkdir(parents=True);target.write_text('# Published skill fixture\n')
+  pubbefore=manifest(repo);pj,pjb=command([str(BIN),'update','check','--format','json'],repo,e);pd,pdb=command([str(BIN),'doctor'],repo,e);pt,ptb=command([str(BIN),'update','check'],repo,e);pubafter=manifest(repo);pubfields=json.loads(pj.stdout)
+  pubgood=pj.returncode==0 and 'authoringModels' not in pubfields and 'authoring-models:' not in pd.stdout and 'Authoring models:' not in pt.stdout and pubbefore==pubafter and d.returncode==pd.returncode and fields.get('next')==pubfields.get('next')
+  q4+=pjb+pdb+ptb+'Published skills suppressed both public reports: '+str(pubgood)+'\nDoctor exit unchanged after publishing: '+str(d.returncode==pd.returncode)+'\nTop-level next unchanged after publishing: '+str(fields.get('next')==pubfields.get('next'))+'\nPublished fixture unchanged: '+str(pubbefore==pubafter)+'\n'
+  (EV/'published-before.txt').write_text(json.dumps(pubbefore,indent=2)+'\n');(EV/'published-after.txt').write_text(json.dumps(pubafter,indent=2)+'\n')
+  for name in SKILLS:shutil.rmtree(repo/'skills'/name)
+  (repo/'.claude').mkdir(exist_ok=True)
+  (repo/'.claude/skills').symlink_to('../.agents/skills',target_is_directory=True)
+  (repo/'.roundfixrc.yml').write_text(rec)
+  _,b=checked([str(BIN),'skills','install','--target','project'],repo,e);q4+=b;applied_before=manifest(repo)
+  aj,ab=command([str(BIN),'update','check','--format','json'],repo,e);q4+=ab;ad,ab=command([str(BIN),'doctor'],repo,e);q4+=ab;ac,ab=command([str(BIN),'skills','check'],repo,e);q4+=ab
+  applied_fields=json.loads(aj.stdout).get('authoringModels',{});appliedgood=applied_fields.get('state')=='applied' and 'recommendation' not in applied_fields and ac.returncode==0 and applied_before==manifest(repo) and ad.returncode==d.returncode
+  q4+='Explicit paste/install followed by fresh public read and skills check: '+str(appliedgood)+'\n';record('Q04',q4,'pass' if good and pubgood and appliedgood else 'fail')
+
+if __name__=='__main__' and sys.argv[1]=='products':
+ try: products()
+ except Exception:
+  (EV/'product-error.txt').write_text(traceback.format_exc());raise
+
+def archived(ref,dest,e):
+ data=subprocess.check_output(['rtk','proxy','git','archive',ref],cwd=ROOT,env=e)
+ with tarfile.open(fileobj=io.BytesIO(data)) as a:a.extractall(dest,filter='data')
+ body='git archive '+ref+' extracted into a fresh temporary repository.\n'
+ for args in [['git','init','-q'],['git','config','user.name','QA fixture'],['git','config','user.email','qa@example.invalid'],['git','config','core.hooksPath','/dev/null'],['git','add','-f','.'],['git','-c','commit.gpgsign=false','commit','-qm','fixture']]:
+  _,b=checked(args,dest,e);body+=b
+ return body
+
+def sabotages():
+ specs=[
+ ('Q07','internal/cli/authoring_reports.go','if err == nil && info.Mode().IsRegular() && !roundskills.PublishesAuthoringSkill(root, phase.Skill) {','if err == nil && info.Mode().IsRegular() {', './internal/cli','TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published',False),
+ ('Q08','internal/cli/authoring_reports.go','if declaration == nil && len(state.Problems) == 0 {','if declaration == nil {\n        state.Problems = nil','./internal/cli','TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated',False),
+ ('Q09','internal/cli/doctor.go','fmt.Fprintf(stdout, "  %s\\n", line)','fmt.Fprintf(stdout, "%s\\n", line)','./internal/cli','TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared',False),
+ ('Q10','internal/config/authoring_recommendation.go','\treturn block.String()','\tblock.WriteString("        tools: [WebSearch]\\n")\n\treturn block.String()','./internal/config','TestRecommendedAuthoringDeclarationRendersValidProjectConfig/exact_bytes',False),
+ ('Q11','internal/config/authoring_recommendation.go','Tasks:    &AuthoringEntry{Model: "opus"','Tasks:    &AuthoringEntry{Model: "fable"','./internal/docscontract','TestTheRecommendedAuthoringDeclarationMatchesThisRepository/repository_config',True),
+ ('Q12','docs/user-guide/configuration.md',None,None,'./internal/docscontract','TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide',True)]
+ for row,path,old,new,pkg,test,tag in specs:
+  with tempfile.TemporaryDirectory(prefix='qa0402-'+row+'-') as tmp:
+   tmp=Path(tmp);h=tmp/'home';h.mkdir();t=tmp/'tmp';t.mkdir();repo=tmp/'repo';repo.mkdir();e=cleanenv(h,t);body=archived(HEAD,repo,e)
+   f=repo/path;original=f.read_text()
+   if old is None:
+    before,sep,after=original.partition('## Authoring models');assert sep
+    text=before+sep+after.replace('model: fable','model: opus',1)
+   else:
+    assert original.count(old)==1,(row,original.count(old));text=original.replace(old,new,1)
+   f.write_text(text)
+   body+='Mutation (no regeneration or sync):\n'+''.join(difflib.unified_diff(original.splitlines(True),text.splitlines(True),fromfile=path,tofile=path))
+   args=['rtk','proxy','go','test','-count=1','-timeout','30m','-v']+(['-tags','docscontract'] if tag else [])+['-run','^'+test.replace('/','$/^')+'$',pkg]
+   print('running sabotage',row,test,flush=True);p,b=command(args,repo,e);body+=b
+   named=p.returncode!=0 and re.search(r'--- FAIL: '+re.escape(test)+r'(?: |\n)',p.stdout+p.stderr) is not None
+   body+='Named failing test/subtest observed: '+str(named)+'\n';record(row,body,'pass' if named else 'fail')
+
+def base_repro():
+ with tempfile.TemporaryDirectory(prefix='qa0402-base-') as tmp:
+  tmp=Path(tmp);h=tmp/'home';h.mkdir();t=tmp/'tmp';t.mkdir();repo=tmp/'repo';repo.mkdir();e=cleanenv(h,t);body=archived(BASE,repo,e)
+  args=['rtk','proxy','go','test','-count=1','-timeout','30m','-v','-run','^TestGuidanceCompositionJourney$/^rust-cli$','./internal/cli']
+  p,b=command(args,repo,e);body+=b
+  proved=p.returncode!=0 and 'rustup could not choose a version of rustfmt' in p.stdout+p.stderr and '--- FAIL: TestGuidanceCompositionJourney/rust-cli' in p.stdout+p.stderr
+  body+='Unchanged Delivery Base reproduces exact isolated-HOME Rust toolchain error: '+str(proved)+'\n'
+  (EV/'rust-base-reproduction.txt').write_text(body)
+  if proved:
+   old=(EV/'q02.txt').read_text();record('Q02',old+'\nEnvironment diagnosis: unchanged Delivery Base reproduces the same rustup/rustfmt configuration error; see rust-base-reproduction.txt. This is not a passing whole CLI suite. Named recommendation tests and the config package pass. Unblocking: make an offline Rust toolchain usable under the isolated test home, then rerun the full CLI package.\n','blocked (environment: isolated HOME has no configured rustfmt toolchain)')
+  else:print('Base reproduction did not prove environmental cause',flush=True)
+
+if __name__=='__main__' and sys.argv[1]=='sabotages':sabotages()
+if __name__=='__main__' and sys.argv[1]=='base':base_repro()
+
+def history():
+ with tempfile.TemporaryDirectory(prefix='qa0402-scope-') as tmp:
+  tmp=Path(tmp);h=tmp/'home';h.mkdir();t=tmp/'tmp';t.mkdir();e=cleanenv(h,t);body='Delivery Base: '+BASE+' (merge-base of audited head and origin/main).\n';allpaths=set();scopeok=True
+  for task,commit in [('task_01','85cd0cf26aa402aa9d8501862c1d2cc79b4b2b2f'),('task_02',HEAD)]:
+   out,b=checked(['rtk','proxy','git','diff-tree','--no-commit-id','--name-only','-r',commit]);body+=b;paths=out.splitlines();allpaths.update(paths)
+   text=(ROOT/'docs/specs'/SPEC/(task+'.md')).read_text();context=text.split('## Context',1)[1].split('\n## ',1)[0];declared=set(re.findall(r'`([^`]+)`',context));declared.add('docs/specs/'+SPEC+'/'+task+'.md')
+   if '## Recorded paths' in text:declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1]))
+   escaped=[p for p in paths if p not in declared];body+=task+' outside declared/Recorded paths: '+repr(escaped)+'\n';scopeok=scopeok and not escaped
+  code=(ROOT/'internal/speccheck/governed.go').read_text();patterns=re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',code);exact=set(re.findall(r'"([^"\n]+)"',code.split('paths: exactGovernedPaths(',1)[1].split('),',1)[0]));auth=(ROOT/'docs/specs'/SPEC/'_authorization.md').read_text();allowed=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('\noperations:',1)[0],re.M))
+  governed=[p for p in sorted(allpaths) if p in exact or any(re.search(pattern,p) for pattern in patterns)];ungranted=[p for p in governed if p not in allowed];body+='Governed paths using shipped regex/exact set:\n'+ '\n'.join(governed)+'\nUnbounded governed paths: '+repr(ungranted)+'\n';scopeok=scopeok and not ungranted
+  forbidden={'Makefile','go.mod','go.sum','skills-lock.json','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','internal/cli/cli_test.go','internal/docscontract/publicdocs_test.go','internal/config/recommendations.go','internal/agent/catalog.go','docs/references/model-selection.md','docs/references/coverage-record.json','docs/references/skill-coverage.json'}
+  adr='docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md'
+  bad=[]
+  for p in sorted(allpaths):
+   if p in forbidden or p.startswith(('.github/workflows/','docs/agents/','internal/baseline/assets/')) or (p.startswith('docs/adr/') and p!=adr) or (p.startswith('.agents/skills/') and not p.startswith('.agents/skills/roundfix/')) or (p.startswith('skills/') and '/SKILL.md' in p and not p.startswith('skills/roundfix/')):bad.append(p)
+  body+='Requirement 10 unchanged-path violations: '+repr(bad)+'\n'
+  delta,b=checked(['rtk','proxy','git','diff',BASE+'..'+HEAD,'--','internal/cli/cli_test.go']);body+=b
+  old,_=checked(['rtk','proxy','git','show',BASE+':internal/cli/cli_test.go']);now=(ROOT/'internal/cli/cli_test.go').read_text();helperonly=now==old.replace('if got != want {','if !reflect.DeepEqual(got, want) {',1);body+='Authorization amendment helper-only limit satisfied: '+str(helperonly)+'\n';scopeok=scopeok and helperonly
+  out,b=checked(['rtk','proxy','git','merge-base','--is-ancestor',BASE,'85cd0cf26aa402aa9d8501862c1d2cc79b4b2b2f']);body+=b
+  body+='The pre-Task grant is the same revision listed by both seeded mechanical authorization audit rows. Those already-audited rows are preserved, not repeated. No prerequisite/consequent-fix declaration exists.\n'
+  old,_=checked(['rtk','proxy','git','show',BASE+':.roundfixrc.yml']);now=(ROOT/'.roundfixrc.yml').read_text();expected=old
+  for phase,model,effort in [('prd','fable','high'),('techspec','fable','high'),('tasks','opus','high')]:
+   pattern=r'(?m)(      '+phase+r':\n        model: )[^\n]+(\n        reasoning_effort: )[^\n]+';expected,n=re.subn(pattern,lambda m:m[1]+model+m[2]+effort,expected);assert n==1
+  confgood=expected==now;body+='Project config differs only in three authorized phase entries: '+str(confgood)+'\n';scopeok=scopeok and confgood
+  old,_=checked(['rtk','proxy','git','show',BASE+':'+adr]);now=(ROOT/adr).read_text();added=[line for line in now.splitlines() if line.startswith('**Amended by [ADR-0415]')];adrgood=len(added)==1 and now.replace(added[0]+'\n\n','',1)==old;body+='ADR-0401 only the new amendment paragraph: '+str(adrgood)+'\n';scopeok=scopeok and adrgood
+  settlements=True
+  for p in allpaths:
+   if p.startswith(('.agents/skills/','skills/')) and (ROOT/p).is_file():
+    now=(ROOT/p).read_text();op=subprocess.run(['git','show',BASE+':'+p],cwd=ROOT,capture_output=True,text=True)
+    def section(text):
+     m=re.search(r'(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)',text);return m.group(0) if m else None
+    same=section(now)==section(op.stdout);body+='QA settlement unchanged '+p+': '+str(same)+'\n';settlements=settlements and same
+  scopeok=scopeok and settlements
+  # Regenerate into this pass's archived scratch tree and compare all three generated outputs.
+  repo=tmp/'repo';repo.mkdir();body+=archived(HEAD,repo,e)
+  _,b=checked([str(BIN),'skills','install','--target','project'],repo,e);body+=b
+  for phase in ['prd','techspec','tasks']:
+   path='.claude/agents/roundfix-'+phase+'-author.md';same=(repo/path).read_bytes()==(ROOT/path).read_bytes();body+='Sanctioned installer reproduces '+path+': '+str(same)+'\n';scopeok=scopeok and same
+  _,b=checked([str(BIN),'skills','check'],repo,e);body+=b
+  changed_agents=[p for p in allpaths if p.startswith('.claude/agents/')];body+='Changed generated subagents: '+repr(sorted(changed_agents))+'\n';scopeok=scopeok and set(changed_agents)=={'.claude/agents/roundfix-'+p+'-author.md' for p in ['prd','techspec','tasks']}
+  out,b=checked(['rtk','proxy','git','diff','--name-only']);body+=b
+  out,b=checked(['rtk','proxy','git','ls-files','--others','--exclude-standard']);body+=b
+  reportdelta=[p for p in out.splitlines() if not p.startswith('docs/specs/'+SPEC+'/qa/')];body+='Current untracked paths outside QA: '+repr(reportdelta)+'\n';scopeok=scopeok and not reportdelta
+  body+='All scope clauses apart from the explicit stale cli_test.go prohibition: '+str(scopeok)+'\n'
+  body+='F-01: Requirement 10 says the Task range changes none of internal/cli/cli_test.go, but Task 01 changes its assertCheckResult helper. The later authorization amendment and amended Task 01 expressly require and bound that one-line change. This is a stale QA Requirement, not an ungranted tooling edit. QA cannot claim the literal unchanged-file criterion.\n'
+  record('Q13',body,'pass' if scopeok and not bad else 'fail')
+
+if __name__=='__main__' and sys.argv[1]=='history':history()
+
+def close_report():
+ record('Q14','Pull Request row; target branch roundfix/deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241.\nEnvironment fact from this QA assignment: no open Pull Request. No real gh command or network lookup ran.\nApproval: _authorization.md approved, granted 2026-11-17, implement/commit/push/pull_request/merge/release recorded in delivery-authority commit '+BASE+', before the Task commits. This QA session still performs none of those delivery mutations.\nChecks/status: Daemon make verify-changed passed (exit 0) at '+HEAD+'.\nUnresolved review threads: no Pull Request exists, so there are no Pull Request threads to resolve.\nMerge-Ready acceptance: absent; no equivalent acceptance exists yet.\nCandidate: audited '+HEAD+' on the assigned Run branch; any Pull Request belongs to the target branch, never the Run branch.\nUnblocking: open the delivery Pull Request after the scope and toolchain issues are settled, then obtain its required checks/review and Merge-Ready acceptance.\n','blocked (environment: no open Pull Request)')
+ with tempfile.TemporaryDirectory(prefix='qa0402-archive-') as tmp:
+  tmp=Path(tmp);h=tmp/'home';h.mkdir();t=tmp/'tmp';t.mkdir();e=cleanenv(h,t)
+  p,b=command([str(BIN),'archive',SPEC,'--plan','--offline'],ROOT,e)
+  (EV/'archive-plan.txt').write_text(b);print('archive plan exit',p.returncode,flush=True)
+ s=REPORT.read_text();s=s.replace('status: in-progress','status: closed',1).replace('verdict: pending','verdict: fail',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 2',1)
+ s=s.replace('## Performed repairs\n\nNone.', '## Performed repairs\n\nQA fixtures only: supplied the documented `.claude/skills` link before the explicit paste/install canary; compared glossary definition bodies as well as headers; retained evidence targets while rerunning the documentation contracts. No product source or Task artifact changed.')
+ s=s.replace('Requirement 2; Non-Goals: writing Project Config, changing exit/next, published skills, partial declarations', 'Requirement 2; Non-Goal: writing .roundfixrc.yml, installing skills, or failing any check')
+ s=s.replace('Requirement 5; Non-Goals: recommending research.tools, --update writing Project Config','Requirement 5; Non-Goal: recommending research.tools')
+ s=s.replace('| Q13 | fail | Requirement 10 |','| Q13 | fail | Requirement 10; Non-Goal: other Project Config entries, Recommended Profile and Model Catalog |')
+ # One terminal observation per row; attempt diagnostics remain in this pass's evidence.
+ for row in ['Q01','Q02','Q03','Q04','Q05','Q06','Q07','Q08','Q09','Q10','Q11','Q12','Q13','Q14']:
+  start=s.index('\n### '+row+'\n');end=s.find('\n### ',start+1)
+  if end<0:end=len(s)
+  block=s[start:end];obs=list(re.finditer(r'(?m)^Observation: .*\n',block))
+  for m in reversed(obs[:-1]):block=block[:m.start()]+block[m.end():]
+  s=s[:start]+block+s[end:]
+ s+='''
+## Findings
+
+### F-01 — Requirement 10 forbids the authorized assertion-helper change
+
+Impact: Trust-Damage. Affected row: Q13. Actor: maintainer accepting the
+Spec's QA evidence. Expected by the literal QA Requirement: no Task commit
+changes `internal/cli/cli_test.go`. Actual: Task 01 commit
+`85cd0cf26aa402aa9d8501862c1d2cc79b4b2b2f` changes only `assertCheckResult`
+from `got != want` to `!reflect.DeepEqual(got, want)`. This is expressly
+bounded by the prior authorization amendment and amended Task 01; the
+implementation is authorized, while the QA Task's unchanged-file assertion
+is stale. Reproduce with `git diff 62971267..f2ea5230 -- internal/cli/cli_test.go`.
+[Actual paths, diff and all scope checks](evidence/qa-report-2026-11-17/q13.txt).
+The full audit found no other scope violation, unbounded Governed Path,
+changed QA settlement section, or generated-subagent mismatch.
+
+The Supervisor must reconcile Requirement 10 with its existing authorization
+and Task 01 before this row can pass. QA did not alter the Task or weaken the
+criterion. This is a new finding in this Spec's first report. Other rows ran
+through their own entry points and do not depend on this stale scope clause.
+
+## Blocked and skipped
+
+Q02 is `blocked (environment: isolated HOME has no configured rustfmt toolchain)`.
+All 16 named feature tests/subtests and the whole config package passed, but
+the whole CLI package failed at `TestGuidanceCompositionJourney/rust-cli`:
+rustup cannot select a rustfmt toolchain in the fresh home. The exact failure
+also occurs on the unchanged Delivery Base. This proves the environment cause;
+it does not credit a passing whole CLI package. An offline Rust toolchain
+usable from the disposable test home is required before rerunning the full
+CLI suite. [Failure and named passes](evidence/qa-report-2026-11-17/q02.txt),
+[unchanged-base reproduction](evidence/qa-report-2026-11-17/rust-base-reproduction.txt).
+
+Q14 is `blocked (environment: no open Pull Request)`. Recorded authority,
+Daemon checks, absence of threads and candidate identity are available;
+Merge-Ready acceptance is not. [Each pre-PR control](evidence/qa-report-2026-11-17/q14.txt).
+This row alone never prevents a qualifying declared partial.
+
+There are no skipped Agent rows and no declared-blocked or finding-blocked
+rows. The seeded Mechanical skips are preserved above. No frontend is
+declared; backend behavior is a local report implementation exercised through
+the public CLI, rather than an HTTP server. No runtime/provider session,
+real gh, network lookup, other repository or real user state was exercised.
+
+## Coverage
+
+Coverage sources: Requirement 2 → Q02–Q04; Requirement 5 → Q05;
+Requirement 7.1–7.6 → Q07–Q12; Requirement 10 → Q13;
+repository Verification → Q01; outside-evidence row → Q06;
+Pull Request row → Q14. The PRD declares no Unreachable Acceptance criterion.
+Observable Non-Goals on the changed report/configuration surfaces are covered
+by Q04, Q05 and Q13. There is one Surface Transcript, reproduced through the
+Run-built executable in Q03. Requirements 1, 3, 4, 6, 8, 9, 11 and 12 constrain
+execution and were recorded through those rows and the archive-plan evidence;
+no additional coverage source was invented from them.
+
+Eleven rows pass, one fails, two are environment-blocked; zero are skipped,
+zero are finding-blocked and zero are declared-blocked. All six sabotages
+produced their named failing subtest. The whole skills and docscontract
+packages pass, both repository contract subtests pass, glossary definitions
+and its named test pass, all Roundfix skill mirrors match, and the guide YAML
+matches the recommendation observed through the CLI. Repository Verification
+is the supplied Daemon pass, not an Agent rerun. The direct product runs
+record stable file sizes/SHA-256 before and after Doctor and Update Check,
+stable top-level next, and the same Doctor exit with or without the warning.
+
+The additional paste/install canary first lacked the documented Claude skill
+link and correctly reported unapplied; its corrected fixture passes. A QA-only
+glossary comparison initially missed a changed definition body, and temporarily
+renamed evidence made the corpus contracts report missing links; those fixture
+errors were corrected and the affected documentation suite passed again.
+No application behavior was changed to obtain those results.
+
+## Outcome
+
+Doctor and the Update Check produce the recommended authoring declaration for
+the measured undeclared state without writing repository files, preserve the
+published-skill exemption and existing report behavior, and pass all six
+negative probes. This QA gate remains failed because its literal history
+criterion forbids an explicitly authorized helper change, with the full CLI
+package additionally blocked by the isolated Rust toolchain and the delivery
+Pull Request still absent. The offline archive plan was inspected without
+archiving, judge requests or promotions; its candidates contain Spec planning
+inputs and this pass's evidence, while reusable product contracts already live
+in the guides, glossary and accepted ADRs.
+
+## Final verdict
+
+`fail`: reconcile Requirement 10's stale helper prohibition and provide an
+offline Rust toolchain for the full CLI suite before rerunning QA. Counts:
+11 pass, 1 fail, 2 environment-blocked, 0 finding-blocked, 0 declared-blocked,
+0 skipped. Findings: 1 Trust-Damage; no product-flow defect observed.
+'''
+ REPORT.write_text(s)
+ print('closed report: fail; 11 pass, 1 fail, 2 environment-blocked',flush=True)
+
+if __name__=='__main__' and sys.argv[1]=='close':close_report()

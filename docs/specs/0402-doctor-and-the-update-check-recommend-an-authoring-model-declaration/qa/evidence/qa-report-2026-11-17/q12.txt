@@ -1,0 +1,52 @@
+git archive f2ea52308c584184440d174fd9236250bd2e00e4 extracted into a fresh temporary repository.
+$ git init -q
+stdout:
+stderr:
+exit: 0
+$ git config user.name "QA fixture"
+stdout:
+stderr:
+exit: 0
+$ git config user.email qa@example.invalid
+stdout:
+stderr:
+exit: 0
+$ git config core.hooksPath /dev/null
+stdout:
+stderr:
+exit: 0
+$ git add -f .
+stdout:
+stderr:
+exit: 0
+$ git -c commit.gpgsign=false commit -qm fixture
+stdout:
+stderr:
+exit: 0
+Mutation (no regeneration or sync):
+--- docs/user-guide/configuration.md
++++ docs/user-guide/configuration.md
+@@ -115,7 +115,7 @@
+   authoring:
+     claude:
+       idea:
+-        model: fable
++        model: opus
+         reasoning_effort: xhigh
+       prd:
+         model: fable
+$ rtk proxy go test -count=1 -timeout 30m -v -tags docscontract -run ^TestTheRecommendedAuthoringDeclarationMatchesThisRepository$/^configuration_guide$ ./internal/docscontract
+stdout:
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== PAUSE TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== CONT  TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide
+    authoring_recommendation_test.go:77: recommended declaration in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0402-Q12-hruypzsi/repo/docs/user-guide/configuration.md = "skills:\n  authoring:\n    claude:\n      idea:\n        model: opus\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n", want "skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n      techspec:\n        model: fable\n        reasoning_effort: high\n      tasks:\n        model: opus\n        reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n"
+--- FAIL: TestTheRecommendedAuthoringDeclarationMatchesThisRepository (0.00s)
+    --- FAIL: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.418s
+FAIL
+stderr:
+exit: 1
+Named failing test/subtest observed: True

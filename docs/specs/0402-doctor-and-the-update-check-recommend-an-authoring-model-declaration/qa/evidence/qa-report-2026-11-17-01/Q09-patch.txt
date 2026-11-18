@@ -1,0 +1,11 @@
+--- internal/cli/doctor.go
++++ internal/cli/doctor.go
+@@ -950,7 +950,7 @@
+ 		fmt.Fprintf(stdout, "%s: %s (%s)\n", result.Name, result.Status, detail)
+ 	}
+ 	for _, line := range result.Lines {
+-		fmt.Fprintf(stdout, "  %s\n", line)
++		fmt.Fprintf(stdout, "%s\n", line)
+ 	}
+ }
+ 

@@ -1,0 +1,13 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241-d1d47f4e-9017f90a/run_20261117T235512Z_2f570b5a950ead41/bin/roundfix archive 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration --plan --offline
+stdout:
+archive plan for 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration: removes 108 file(s) (462218 bytes) and writes docs/history/specs/0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-17-01.md, qa/qa-report-2026-11-17.md, references/_index.md, task_01.md, task_02.md, task_03.md
+evidence 96 file(s) (304472 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-17-installed-authoring-skills-without-a-declaration-measurement.md 2473 bytes: no advice (offline)
+candidate references/2026-11-17-maintainer-answers.md 1427 bytes: no advice (offline)
+promote with: roundfix archive 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration --promote <path>
+
+stderr:
+
+exit: 0
