@@ -91,12 +91,17 @@ func TestPhaseStartSurfaceTranscripts(t *testing.T) {
 	t.Parallel()
 	const help = `Usage:
   roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
+  roundfix phase model <phase> --spec <slug>
+  roundfix phase fallback <phase> --spec <slug> --error <message>
 
 Commands:
-  start  Record in the Phase Record that this session starts a phase
+  start     Record in the Phase Record that this session starts a phase
+  model     Print the model and effort a phase's Author Subagent starts on
+  fallback  Decide and record an Authoring Fallback from the error an Author Subagent ended on
 
 Phases:
   follow-up, idea, prd, techspec, tasks, delivery, release
+  model and fallback take idea, prd, techspec or tasks
 
 Options:
   --spec             Spec folder slug the phase works on; required for every phase
@@ -105,6 +110,7 @@ Options:
                      for idea, prd, techspec and tasks
   --effort           Reasoning effort; used when CLAUDE_EFFORT is unset
   --author-subagent  The phase's Author Subagent runs the phase
+  --error            Error the Author Subagent ended on; required for fallback
 `
 	t.Run("transcript_1", func(t *testing.T) {
 		home, _ := phaseFixture(t, phaseTestSession)

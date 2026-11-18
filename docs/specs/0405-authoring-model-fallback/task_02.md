@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0405-authoring-model-fallback
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -105,3 +105,78 @@ whether its Spec already fell back on its declared model.
 - `_techspec.md` → Limit reader; Fallback entries; Phase subcommands; Interfaces (invariants 1 to 8); Data Models (Fallback entry); API Contracts 1, 2, 3, 4, 7 and 8; Surface Transcript 1, Surface Transcript 2, Surface Transcript 3, Surface Transcript 4, Surface Transcript 5, Surface Transcript 6, Surface Transcript 7, Surface Transcript 8; Testing Approach; Build Order 2
 - [`references/2026-11-17-harness-and-test-measurements.md`](references/2026-11-17-harness-and-test-measurements.md)
 - ADR-0429, ADR-0428, ADR-0427, ADR-0407, ADR-0414, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented this Task's slice for Daemon Verification:
+
+- Added the model-independent limit reader, with the first matching line retained, either apostrophe and letter case accepted, shared and multi-word limits classified separately, controls replaced by spaces and output bounded to 200 runes.
+- Added the ordered `fallback` JSON line, private UTC day-file append and oldest-first reader. The existing `Phases` reader already skips non-phase kinds before decoding their payload; its behavior is preserved and covered for fallback entries, including an invalid phase payload.
+- Added `phase fallback` with the seven ordered refusals, usage/configuration diagnostics, byte limit, append-before-output behavior and runtime write errors. Added read-only `phase model`, selecting the oldest applicable entry by Spec, repository identity (or Git root when either identity is empty), and the current phase's declared model and fallback.
+- Preserved the `phase start` implementation and its output/record expectations. Updated only the help literals in its original transcript test and the Spec 0404 full-help test found on this base in `internal/cli/phase_model_test.go`, as Requirement 6 requests.
+- Updated both helps, the command guide, the Phase Record guide, the Roundfix skill and its phase reference, the authored coverage entries and dated review of `command phase start`, the Authoring Fallback and Phase Record glossary definitions through domain-modeling, and the ADR-0407 amendment notice. The sanctioned recorder raised both Roundfix skill version fields from `0.1.268` to `0.1.269`, then to `0.1.270` for the feedback repair below, and recorded the digests; the mirror and behavior record were generated.
+
+### Focused evidence by acceptance criterion
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Harness messages classified without model names in production reader code | `TestReadUsageLimitClassifiesTheHarnessMessages` covers all quoted usage messages, the Spec 0404 observation, straight/curly apostrophes, upper/lower case, multi-line order, control characters and a 300-character Unicode line. Initial focused compilation failed on the missing reader API; the implemented reader's focused run passed 21 tests. |
+| One fallback entry on success; no day-file writes on refusal or usage error | `TestAFallbackEntryIsOneLineOfItsDeclaredKeys` checks every serialized key and its order, UTC date/instant, append preservation, empty values, JSON-escaped newlines, private modes and cancellation. `TestFallbacksReadsBackTheFallbackEntries` checks invalid JSON/schema/phase/time, other entry kinds, oldest-first ordering and read-only behavior. `TestPhaseFallbackRefusesWithoutWriting` checks all seven ordered refusals, usage/configuration errors, absent record creation and preservation of existing day files. Runtime cases cover write failure, a 4,096-byte accepted error, oversized multibyte errors, recorded repository identity, no effort/session, and bounded output. All are included in the final focused run below. |
+| Later phases use only the same Spec/repository/model fallback; model writes nothing | `TestPhaseModelKeepsTheFallbackForItsSpecAndModel` covers two Specs, distinct committed repositories, a clone sharing identity, oldest applicable entry, different declared model, no fallback/model, fallback in the limited family, case-insensitive substring matching, and both empty-identity path rules. Read-only checks compare day files byte for byte, and an additional case checks use without a record directory. Included in the final focused run. |
+| phase start retains its base behavior | The final focused run includes the existing `TestPhaseStart*` tests and `TestPhaseSurfaceTranscript6`; only the two help literals changed. `TestPhasesSkipsAFallbackEntry` preserves phase-reader results and skipped count. |
+| Surface Transcripts 1–8 | `TestPhaseFallbackSurfaceTranscripts/transcript_1` through `transcript_8` compare complete stdout/stderr and exit codes. Transcripts 3–5 run after transcript 2 in the same temporary home, and every command except transcript 2 is checked for unchanged record files. Included in the final focused run. |
+| Guides, reference, coverage, glossary and ADR describe the change | Sanctioned generation succeeded in the required order. The focused documentation contract selection passed 48 tests, including command coverage, guide/skill command names, glossary rules and accepted ADR links. The existing phase-reference selection passed 19 tests. Full documentation Verification remains with the Daemon. |
+
+Focused commands and outcomes:
+
+- `go test ./internal/phaserecord -run '^TestReadUsageLimitClassifiesTheHarnessMessages$/curly$' -count=1` — initial red signal: missing `LimitKind`, `UsageLimit` and `ReadUsageLimit`.
+- `go test ./internal/phaserecord -run '^TestReadUsageLimitClassifiesTheHarnessMessages$' -count=1` — passed, 21 tests.
+- `go test ./internal/phaserecord ./internal/cli -run 'Test(ReadUsageLimit|AFallbackEntry|FallbacksReads|PhasesSkips|PhaseFallback|PhaseModelKeeps|PhaseStart|PhaseSurfaceTranscript6)' -count=1 -timeout 5m` — final run passed, 224 tests across both packages.
+- `make skills-sync` — succeeded.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — succeeded; generated the version/digest record and both version fields.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — succeeded; generated the behavior-surface record.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestEveryCommandIsNamedInTheUserGuide|TestAnUndocumentedCommandIsReported|TestCommandCoverageFollowsTheRoundfixReferenceIndex|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources|TestGlossary.*|TestCommandReferenceLinksResolve)$'` — passed, 48 tests.
+- `go test ./skills -run '^TestThePhaseReferenceDocumentsTheCommandAndTheRecord$' -count=1` — passed, 19 tests.
+- `git diff --check` — passed.
+
+One new diagnostic expectation initially used `load config`; the saved failing transcript and existing config-loader tests showed the established diagnostic is `parse config`. Corrected the new expectation and reran it successfully, then reran the focused implementation selection. No existing config diagnostic was changed.
+
+Scope: the Task file's `in_progress` status was pre-existing and remains untouched. No Task Graph, other Task file, authoring skill, `.roundfixrc.yml`, `internal/cli/cli_test.go`, or `.claude/agents/` file was edited. The Spec 0404 help-expectation file above is the only ordinary changed path beyond the listed interfaces and is required by Requirement 6. No commit, push, PR or Spec announcement was made. The Task's declared Verification commands and the repository Verification commands were not run; the Daemon owns them and Task settlement.
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261118T111508Z_d52e529984ea1f74/verification/batch-002-attempt-1.log`
+and the owning `TestRoundfixSkillEntryFileStaysWithinItsBudget` test. The
+added phase-command names put the Roundfix skill entry over its existing
+20,000-byte budget. Shortened its introductory prose and the phase row's
+purpose text while preserving both full command names and the reference's
+fallback workflow. No budget, assertion or verification configuration changed.
+
+Fresh focused evidence:
+
+- `make skills-sync` — succeeded.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` — succeeded; regenerated both version fields as `0.1.270` and recorded the new digest.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — succeeded after the version recorder.
+- `go test ./skills -run '^(TestRoundfixSkillEntryFileStaysWithinItsBudget|TestRoundfixSkillIndexLinksResolve|TestThePhaseReferenceDocumentsTheCommandAndTheRecord)$' -count=1` — passed, 25 tests, including both canonical and embedded budget checks.
+- A read-only byte comparison confirms the canonical and mirrored skill entry and phase reference match; each skill entry is 19,989 bytes. Both version fields are `0.1.270`.
+- `git diff --check` — passed after the feedback repair and Result update.
+
+This repair changes only the canonical Roundfix skill entry, its generated
+mirror and version record, and this Result. The sanctioned coverage recorder
+also ran and left its current record unchanged. Task status remains
+Daemon-owned. The declared Verification commands were not rerun; the Daemon
+owns the next full configured Verification sequence.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/phase_model_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T111508Z_d52e529984ea1f74`
+- Source commit: `c8b810e945b3989c8c352d40ea2a0f84272ac670`

@@ -5,20 +5,19 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.268
+  version: 0.1.270
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.268
+version: 0.1.270
 ---
 
 # Roundfix
 
-Use this skill when the user asks to resolve CodeRabbit comments, watch a pull
-request, run Roundfix until clean, clean up review bot feedback, execute a
-Spec's Task Graph, diagnose Roundfix runtime health, reclaim Run storage with
-the GC Command, archive a completed Spec, or when a Roundfix daemon assigns one
-bounded Batch of Review Issues or one Task. Use the Run Event Stream when a
-Supervisor or script needs JSONL progress for one explicit Run.
+Use this skill to resolve CodeRabbit feedback, watch a pull request, run
+Roundfix until clean, execute a Spec's Task Graph, diagnose runtime health,
+reclaim Run storage with the GC Command, archive a completed Spec, or handle
+one bounded daemon-assigned Batch of Review Issues or Task. Supervisors and
+scripts use the Run Event Stream for JSONL progress on one explicit Run.
 
 ## Modes
 
@@ -81,7 +80,7 @@ Each command has one reference, edited when its command changes. Read its row;
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
 | [implement](references/implement.md) | `implement` | Starting a Spec Run. |
 | [modes](references/modes.md) | — (the `--follow-up`, `--status`, `--unattended` and `--update` Skill Modes; each command they run lives in its own reference) | Running a Skill Mode. |
-| [phase](references/phase.md) | `phase` | Recording the phase a session starts. |
+| [phase](references/phase.md) | `phase`, `roundfix phase model`, `roundfix phase fallback` | Recording phases and deciding an Authoring Fallback. |
 | [profiles](references/profiles.md) | `profiles` | Selecting an Agent or managing Agent Selection Profiles. |
 | [reconcile](references/reconcile.md) | `reconcile` | Reconciling Run Worktrees. |
 | [release](references/release.md) | `release` | Planning a release. |

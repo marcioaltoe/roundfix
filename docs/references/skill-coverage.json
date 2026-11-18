@@ -474,8 +474,30 @@
       ]
     },
     {
+      "id": "command phase fallback",
+      "skills": [
+        ".agents/skills/roundfix/references/phase.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/phase.md",
+        "internal/cli/phase.go",
+        "internal/phaserecord/"
+      ]
+    },
+    {
+      "id": "command phase model",
+      "skills": [
+        ".agents/skills/roundfix/references/phase.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/phase.md",
+        "internal/cli/phase.go",
+        "internal/phaserecord/"
+      ]
+    },
+    {
       "id": "command phase start",
-      "review": "2026-11-16 — Spec 0398 task_02 adds a reader of phase entries to the package; the phase start command, its output and the format of the record do not change",
+      "review": "2026-11-18 — Spec 0405 task_02 adds model and fallback subcommands to phase help; phase start arguments, output, records and exit codes stay unchanged",
       "skills": [
         ".agents/skills/roundfix/references/phase.md"
       ],

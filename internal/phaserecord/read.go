@@ -26,7 +26,7 @@ type RecordedPhase struct {
 }
 
 // Phases returns phase entries at or after since, oldest first, counting invalid
-// lines. Prompt entries do not count. A missing directory is an empty record.
+// lines. Prompt and fallback entries do not count. A missing directory is an empty record.
 func Phases(homeDir string, since time.Time) (entries []RecordedPhase, skipped int, err error) {
 	dir := filepath.Join(homeDir, ".roundfix", "phase-record")
 	files, err := os.ReadDir(dir)

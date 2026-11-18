@@ -83,6 +83,15 @@ reads phase entries, while no command reads prompt entries or harness
 transcripts, prices tokens or computes a limit percentage. See
 [ADR-0418](0418-a-phase-entry-holds-the-model-and-reasoning-effort-that-ran-an-authoring-phase.md).
 
+**Amended by ADR-0428 (2026-11-17).** The Phase Record also holds
+fallback entries: the phase, Spec, repository and Repository Identity,
+harness session, declared model and effort, fallback model and effort, limit
+name and bounded limit line that caused an Authoring Fallback. A Spec keeps
+that fallback for later phases whose declared model matches the limited
+family, while the next Spec starts on its declared model. Phase-entry readers
+skip fallback entries without counting them as invalid; `phase start` stays
+unchanged. See [ADR-0428](0428-a-spec-whose-phase-fell-back-keeps-the-fallback-for-the-limited-model-until-the-spec-ends.md).
+
 ## Considered Options
 
 - **A record written only by a Run**, as the request asked. Rejected: it
