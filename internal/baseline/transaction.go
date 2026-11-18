@@ -1696,7 +1696,7 @@ func captureTransactionState(root *os.Root, relative string) (transactionFileSta
 	}
 	state := transactionFileState{
 		Exists: true,
-		Mode:   uint32(info.Mode()),
+		Mode:   preimageMode(info),
 		Bytes:  info.Size(),
 	}
 	switch {

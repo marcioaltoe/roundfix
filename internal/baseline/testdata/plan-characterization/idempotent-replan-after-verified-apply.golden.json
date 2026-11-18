@@ -429,7 +429,7 @@
           "path": "CLAUDE.md",
           "exists": true,
           "kind": "symlink",
-          "mode": 134218221,
+          "mode": 134217728,
           "linkTarget": "AGENTS.md",
           "bytes": 9
         },
@@ -1130,13 +1130,13 @@
         }
       ],
       "fileChanges": [],
-      "planDigest": "sha256:c7d7dd68e45bc47613e3b170efbada98fc8f599a2d7b6fa07769a05c72cbfbb3"
+      "planDigest": "sha256:fa242361337e1fab81b848f73ca9affb1ad2bb1a1dadde354ceba40e5f32b988"
     },
     "Result": {
       "schemaVersion": "roundfix/baseline-result/v1",
       "operation": "plan",
       "state": "ready",
-      "planDigest": "sha256:c7d7dd68e45bc47613e3b170efbada98fc8f599a2d7b6fa07769a05c72cbfbb3",
+      "planDigest": "sha256:fa242361337e1fab81b848f73ca9affb1ad2bb1a1dadde354ceba40e5f32b988",
       "verifiedPostimages": [],
       "warnings": [],
       "recommendations": [

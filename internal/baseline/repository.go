@@ -803,10 +803,22 @@ func preimageFromInfo(relative string, info fs.FileInfo, linkTarget string) Prei
 		Path:       relative,
 		Exists:     true,
 		Kind:       kind,
-		Mode:       uint32(info.Mode()),
+		Mode:       preimageMode(info),
 		LinkTarget: linkTarget,
 		Bytes:      info.Size(),
 	}
+}
+
+// preimageMode records the mode a plan binds. A symbolic link keeps only its
+// type bit: its permission bits are never consulted for access, and lstat
+// reports them differently by platform (always 0777 on Linux, the umask on
+// macOS), so recording them would make a portable plan's digest depend on
+// where it was built.
+func preimageMode(info fs.FileInfo) uint32 {
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return uint32(fs.ModeSymlink)
+	}
+	return uint32(info.Mode())
 }
 
 func isBoundedCarrierPath(relative string) bool {

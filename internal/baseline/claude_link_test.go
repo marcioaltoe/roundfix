@@ -3,11 +3,13 @@ package baseline
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestReadClaudeInstructionLinkClassifiesEveryShape(t *testing.T) {
@@ -203,5 +205,59 @@ func TestReadClaudeInstructionLinkPropagatesCancellationAndGitErrors(t *testing.
 				t.Fatalf("error = %v, want %v", err, want)
 			}
 		})
+	}
+}
+
+type symlinkModeFileInfo struct{ mode fs.FileMode }
+
+func (info symlinkModeFileInfo) Name() string       { return ClaudeInstructionLinkPath }
+func (info symlinkModeFileInfo) Size() int64        { return int64(len(ClaudeInstructionLinkTarget)) }
+func (info symlinkModeFileInfo) Mode() fs.FileMode  { return info.mode }
+func (info symlinkModeFileInfo) ModTime() time.Time { return time.Time{} }
+func (info symlinkModeFileInfo) IsDir() bool        { return false }
+func (info symlinkModeFileInfo) Sys() any           { return nil }
+
+// A plan is portable (ADR-0071): lstat reports a symbolic link's permission
+// bits as 0777 on Linux and from the umask on macOS, so the bound preimage
+// must not carry them, or the same repository plans to different digests.
+func TestSymbolicLinkPreimageModeIsPlatformIndependent(t *testing.T) {
+	t.Parallel()
+
+	want := uint32(fs.ModeSymlink)
+	for _, perm := range []fs.FileMode{0o777, 0o755, 0o700} {
+		info := symlinkModeFileInfo{mode: fs.ModeSymlink | perm}
+		if got := preimageFromInfo(ClaudeInstructionLinkPath, info, ClaudeInstructionLinkTarget).Mode; got != want {
+			t.Fatalf("preimage mode for link permissions %o = %d, want %d", perm, got, want)
+		}
+	}
+	regular := symlinkModeFileInfo{mode: 0o644}
+	if got := preimageMode(regular); got != uint32(0o644) {
+		t.Fatalf("regular preimage mode = %o, want 644", got)
+	}
+
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ClaudeInstructionLinkTarget), []byte("# Root instructions\n"), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+	if err := os.Symlink(ClaudeInstructionLinkTarget, filepath.Join(root, ClaudeInstructionLinkPath)); err != nil {
+		t.Fatalf("create link: %v", err)
+	}
+	anchored, err := os.OpenRoot(root)
+	if err != nil {
+		t.Fatalf("open root: %v", err)
+	}
+	defer anchored.Close()
+	state, err := captureTransactionState(anchored, ClaudeInstructionLinkPath)
+	if err != nil {
+		t.Fatalf("capture link state: %v", err)
+	}
+	if state.Kind != PreimageSymlink || state.Mode != want {
+		t.Fatalf("captured link state = kind %q mode %d, want symlink mode %d", state.Kind, state.Mode, want)
+	}
+	builder := inventoryBuilder{root: anchored, preimages: make(map[string]Preimage)}
+	builder.recordPath(ClaudeInstructionLinkPath)
+	preimage := builder.preimages[ClaudeInstructionLinkPath]
+	if preimage.Kind != PreimageSymlink || preimage.Mode != want || !transactionStateMatchesPreimage(state, preimage) {
+		t.Fatalf("inventoried link preimage = %+v, want symlink mode %d matching the transaction state %+v", preimage, want, state)
 	}
 }
