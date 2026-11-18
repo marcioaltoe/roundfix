@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0405-authoring-model-fallback
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -91,3 +91,73 @@ bullet through the Managed Refresh. No user-level file is read or written.
 - `_techspec.md` → Root instruction statement; API Contract 10; Testing Approach; Build Order 4; Risks & Considerations (other harnesses)
 - [`references/2026-11-18-root-statement-decision-and-measurement.md`](references/2026-11-18-root-statement-decision-and-measurement.md)
 - ADR-0431, ADR-0401, ADR-0186
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, setup-context-driven, roundfix, evidence-gate.
+
+Implemented the root statement exactly as API Contract 10 writes it, including
+line breaks. The template version rose from 1 to 2 and the root block version
+from 2 to 3. The sanctioned recorder selected module version 27 from 26.
+IDs, tokens, references, the empty root-block rules list, and all other module
+fields remain unchanged. Added the parallel root statement test using the
+existing temporary-repository and plan-postimage helpers.
+
+Focused evidence by acceptance criterion:
+
+1. Plan and formatter statement: the new test initially failed in all three
+   subtests against the original template. After regeneration,
+   `go test ./internal/baseline -run '^(TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel|TestTheBaselineSendsRepositoryRulesToTheSpecificRepositoryGuide)$' -count=1 -v`
+   exited 0. Each required subtest passed. The assertions count the complete
+   opening and closing sentences, normalized to single spaces, once in the
+   whole plan postimage and inside its root block, once in the formatter
+   golden, and in the scoped template bullet.
+2. Repository carriers: ran
+   `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`
+   as the final implementation step. It exited 0, verified the approved
+   postimages and changed only `AGENTS.md` and `docs/agents/setup-context.json`.
+   An identical reapply exited 0 with `File changes: 0` and
+   `Idempotence: verified`. A subsequent read-only text preview of the same
+   command without `--yes` exited 0 with `Baseline update: current` and
+   `File changes: 0`. Direct inspection confirmed both sentences occur once
+   inside the root block and that `CLAUDE.md` remains a symbolic link to
+   `AGENTS.md`. The update reports the two existing nested fixture/corpus
+   carrier warnings; neither carrier was changed by the update.
+3. Bounded regeneration and preservation: ran the sanctioned module recorder
+   `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+   (exit 0), then `make baseline-digests` (exit 0,
+   `"ok":true,"changed":true`), before the managed refresh. The generator
+   rewrote exactly the nine derived files measured in the Spec reference:
+   the formatter golden, its profile pin, three catalog records and four
+   plan-characterization goldens. A read-only comparison against `HEAD`
+   confirmed the template is byte-identical to the contract, only the two
+   version fields changed in the module, only the target template version
+   changed in the index, and all `AGENTS.md` bytes outside the existing
+   `root.spec-workflow` block are unchanged. The changed-file audit found
+   17 declared paths including this Task file, with no undeclared path.
+   Source Baselines, Setup Snapshots, other modules, other templates,
+   other profiles, other guides and `CLAUDE.md` have no diff.
+4. Negative coverage: three temporary `go test -overlay=<overlay.json>
+   ./internal/baseline -run '^TestTheSpecWorkflowRootBlockStatesHowAnAuthoringPhaseKeepsItsModel$' -count=1 -v`
+   probes independently removed the whole bullet, only `In Claude Code, `,
+   and only the closing sentence from the embedded template. Every probe
+   exited 1 and every required subtest reported `FAIL` in each case. Inspected
+   the transcripts: the diagnostics name missing complete sentences or the
+   missing/mis-scoped bullet. The overlays changed no repository file.
+
+All Go checks and managed refreshes used a disposable `HOME`, disabled Go
+user configuration, an existing module cache with `GOPROXY=off` and
+`GOSUMDB=off`, and disabled global/system Git configuration. No new test
+reads the real home. `gofmt -l` produced no output and `git diff --check`
+exited 0. On entry, the only changed path was this Task file's Daemon-owned
+status; that field remains `in_progress`.
+
+The declared Verification and repository Verification were not run; the
+Daemon owns those checks and Task settlement. No commit, push, pull request,
+other Task edit or Task Graph edit was made. No follow-up change is needed
+within this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T111508Z_d52e529984ea1f74`
+- Source commit: `a35e4ef628e2679bf5a836729d69dbdcc0eacc9f`

@@ -29,7 +29,7 @@
     },
     {
       "id": "template.root.spec-workflow",
-      "version": 1,
+      "version": 2,
       "kind": "root-block",
       "path": "root/spec-workflow.md",
       "tokens": ["reference.spec-routing", "reference.issue-tracker"]
