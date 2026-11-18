@@ -5,61 +5,132 @@
 package docscontract
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"roundfix/internal/config"
+	"roundfix/internal/gittest"
 )
 
 func TestTheRecommendedAuthoringDeclarationMatchesThisRepository(t *testing.T) {
 	t.Parallel()
 
 	root := baselineDocumentationRepoRoot()
-	t.Run("repository_config", func(t *testing.T) {
+
+	load := func(t *testing.T, root string) *config.AuthoringHarness {
+		t.Helper()
 		loaded, err := config.Load(config.LoadOptions{
-			HomeDir:                  t.TempDir(),
-			WorkDir:                  root,
-			Stderr:                   io.Discard,
-			WorktreeLocationOptional: true,
+			HomeDir: t.TempDir(), WorkDir: root, Stderr: io.Discard, WorktreeLocationOptional: true,
 		})
 		if err != nil {
 			t.Fatalf("load repository config: %v", err)
 		}
-
-		want := config.RecommendedAuthoringDeclaration()
-		got := loaded.Config.Skills.Authoring.Claude
-		if got == nil {
-			t.Fatal("skills.authoring.claude is missing")
+		return loaded.Config.Skills.Authoring.Claude
+	}
+	t.Run("repository_config", func(t *testing.T) {
+		if err := authoringRecommendationMismatch(load(t, root)); err != nil {
+			t.Fatal(err)
 		}
-		var researchGot *config.AuthoringEntry
-		if got.Research != nil {
-			researchGot = &got.Research.AuthoringEntry
+	})
+	fixture := func(t *testing.T, phase string, fallback *config.AuthoringFallback) string {
+		t.Helper()
+		content, err := os.ReadFile(filepath.Join(root, ".roundfixrc.yml"))
+		if err != nil {
+			t.Fatal(err)
 		}
-		entries := []struct {
-			key  string
-			got  *config.AuthoringEntry
-			want *config.AuthoringEntry
-		}{
-			{key: "idea", got: got.Idea, want: want.Idea},
-			{key: "prd", got: got.PRD, want: want.PRD},
-			{key: "techspec", got: got.TechSpec, want: want.TechSpec},
-			{key: "tasks", got: got.Tasks, want: want.Tasks},
-			{key: "research", got: researchGot, want: &want.Research.AuthoringEntry},
+		var document yaml.Node
+		if err := yaml.Unmarshal(content, &document); err != nil {
+			t.Fatal(err)
 		}
-		for _, entry := range entries {
-			if entry.got == nil {
-				t.Errorf("skills.authoring.claude.%s is missing", entry.key)
-				continue
+		node := document.Content[0]
+		for _, key := range []string{"skills", "authoring", "claude", phase} {
+			var child *yaml.Node
+			for i := 0; i < len(node.Content); i += 2 {
+				if node.Content[i].Value == key {
+					child = node.Content[i+1]
+					break
+				}
 			}
-			if entry.got.Model != entry.want.Model {
-				t.Errorf("skills.authoring.claude.%s.model = %q, want %q", entry.key, entry.got.Model, entry.want.Model)
+			if child == nil {
+				t.Fatalf("fixture lacks %s", key)
 			}
-			if entry.got.ReasoningEffort != entry.want.ReasoningEffort {
-				t.Errorf("skills.authoring.claude.%s.reasoning_effort = %q, want %q", entry.key, entry.got.ReasoningEffort, entry.want.ReasoningEffort)
+			node = child
+		}
+		// Drop any existing fallback so the fixture remains useful after adoption.
+		for i := 0; i < len(node.Content); i += 2 {
+			if node.Content[i].Value == "fallback" {
+				node.Content = append(node.Content[:i], node.Content[i+2:]...)
+				break
 			}
+		}
+		if fallback != nil {
+			var value yaml.Node
+			if err := value.Encode(fallback); err != nil {
+				t.Fatal(err)
+			}
+			node.Content = append(node.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "fallback"}, &value)
+		}
+		content, err = yaml.Marshal(&document)
+		if err != nil {
+			t.Fatal(err)
+		}
+		target := t.TempDir()
+		gittest.MarkRepository(t, target)
+		if err := os.WriteFile(filepath.Join(target, ".roundfixrc.yml"), content, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return target
+	}
+	phases := []struct {
+		key   string
+		entry *config.AuthoringEntry
+	}{
+		{"idea", config.RecommendedAuthoringDeclaration().Idea},
+		{"prd", config.RecommendedAuthoringDeclaration().PRD},
+		{"techspec", config.RecommendedAuthoringDeclaration().TechSpec},
+		{"tasks", config.RecommendedAuthoringDeclaration().Tasks},
+	}
+	t.Run("a_declared_fallback_that_differs_fails", func(t *testing.T) {
+		for _, phase := range phases {
+			for _, field := range []string{"model", "reasoning_effort"} {
+				t.Run(phase.key+"/"+field, func(t *testing.T) {
+					fallback := *phase.entry.Fallback
+					if field == "model" {
+						fallback.Model = "another-model"
+					} else {
+						fallback.ReasoningEffort = "low"
+					}
+					err := authoringRecommendationMismatch(load(t, fixture(t, phase.key, &fallback)))
+					if err == nil || !strings.Contains(err.Error(), "skills.authoring.claude."+phase.key+".fallback") {
+						t.Fatalf("contract error=%v; want the differing fallback", err)
+					}
+				})
+			}
+		}
+	})
+	t.Run("an_undeclared_fallback_passes", func(t *testing.T) {
+		for _, phase := range phases {
+			t.Run(phase.key, func(t *testing.T) {
+				if err := authoringRecommendationMismatch(load(t, fixture(t, phase.key, nil))); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+	})
+	t.Run("a_matching_declared_fallback_passes", func(t *testing.T) {
+		for _, phase := range phases {
+			t.Run(phase.key, func(t *testing.T) {
+				if err := authoringRecommendationMismatch(load(t, fixture(t, phase.key, phase.entry.Fallback))); err != nil {
+					t.Fatal(err)
+				}
+			})
 		}
 	})
 
@@ -77,6 +148,41 @@ func TestTheRecommendedAuthoringDeclarationMatchesThisRepository(t *testing.T) {
 			t.Fatalf("recommended declaration in %s = %q, want %q", path, got, want)
 		}
 	})
+}
+
+func authoringRecommendationMismatch(got *config.AuthoringHarness) error {
+	if got == nil {
+		return fmt.Errorf("skills.authoring.claude is missing")
+	}
+	want := config.RecommendedAuthoringDeclaration()
+	var researchGot *config.AuthoringEntry
+	if got.Research != nil {
+		researchGot = &got.Research.AuthoringEntry
+	}
+	entries := []struct {
+		key       string
+		got, want *config.AuthoringEntry
+	}{
+		{"idea", got.Idea, want.Idea}, {"prd", got.PRD, want.PRD},
+		{"techspec", got.TechSpec, want.TechSpec}, {"tasks", got.Tasks, want.Tasks},
+		{"research", researchGot, &want.Research.AuthoringEntry},
+	}
+	for _, entry := range entries {
+		path := "skills.authoring.claude." + entry.key
+		if entry.got == nil {
+			return fmt.Errorf("%s is missing", path)
+		}
+		if entry.got.Model != entry.want.Model {
+			return fmt.Errorf("%s.model = %q, want %q", path, entry.got.Model, entry.want.Model)
+		}
+		if entry.got.ReasoningEffort != entry.want.ReasoningEffort {
+			return fmt.Errorf("%s.reasoning_effort = %q, want %q", path, entry.got.ReasoningEffort, entry.want.ReasoningEffort)
+		}
+		if entry.got.Fallback != nil && !reflect.DeepEqual(entry.got.Fallback, entry.want.Fallback) {
+			return fmt.Errorf("%s.fallback = %+v, want %+v", path, entry.got.Fallback, entry.want.Fallback)
+		}
+	}
+	return nil
 }
 
 func firstYAMLBlockUnderHeading(content, heading string) string {

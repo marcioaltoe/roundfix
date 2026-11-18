@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 26,
+  "version": 27,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -16,7 +16,7 @@
   "rootBlocks": [
     {
       "id": "root.spec-workflow",
-      "version": 2,
+      "version": 3,
       "template": "template.root.spec-workflow",
       "rules": [],
       "references": [

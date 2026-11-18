@@ -23,9 +23,14 @@ type AuthoringHarness struct {
 	Tasks    *AuthoringEntry `yaml:"tasks"`
 	Research *ResearchEntry  `yaml:"research"`
 }
-type AuthoringEntry struct {
+type AuthoringFallback struct {
 	Model           string `yaml:"model"`
 	ReasoningEffort string `yaml:"reasoning_effort"`
+}
+type AuthoringEntry struct {
+	Model           string             `yaml:"model"`
+	ReasoningEffort string             `yaml:"reasoning_effort"`
+	Fallback        *AuthoringFallback `yaml:"fallback"`
 }
 type ResearchEntry struct {
 	AuthoringEntry `yaml:",inline"`
@@ -106,6 +111,8 @@ func validateAuthoringEntry(node *yaml.Node, path string, research bool) error {
 		return fmt.Errorf("%s must be a mapping", path)
 	}
 	declared := false
+	var fallback *yaml.Node
+	model := ""
 	for i := 0; i < len(node.Content); i += 2 {
 		key, value := node.Content[i].Value, node.Content[i+1]
 		raw := authoringNodeValue(value)
@@ -115,14 +122,20 @@ func validateAuthoringEntry(node *yaml.Node, path string, research bool) error {
 				return fmt.Errorf("%s.model %q is not a model name; use letters, digits and . _ : / @ [ ] - without spaces", path, raw)
 			}
 			declared = true
+			model = raw
 		case "reasoning_effort":
 			if value.Kind != yaml.ScalarNode || value.Tag != "!!str" || !slices.Contains([]string{"low", "medium", "high", "xhigh", "max"}, raw) {
 				return fmt.Errorf("%s.reasoning_effort %q is not supported for claude; expected low, medium, high, xhigh or max", path, raw)
 			}
 			declared = true
+		case "fallback":
+			if research {
+				return fmt.Errorf("%s.fallback is not a supported key; expected model, reasoning_effort or tools", path)
+			}
+			fallback = value
 		case "tools":
 			if !research {
-				return fmt.Errorf("%s.%s is not a supported key; expected model or reasoning_effort", path, key)
+				return fmt.Errorf("%s.%s is not a supported key; expected model, reasoning_effort or fallback", path, key)
 			}
 			if value.Kind != yaml.SequenceNode {
 				return invalidAuthoringTool(raw)
@@ -140,11 +153,16 @@ func validateAuthoringEntry(node *yaml.Node, path string, research bool) error {
 			}
 			declared = declared || len(value.Content) > 0
 		default:
-			expected := "model or reasoning_effort"
+			expected := "model, reasoning_effort or fallback"
 			if research {
 				expected = "model, reasoning_effort or tools"
 			}
 			return fmt.Errorf("%s.%s is not a supported key; expected %s", path, key, expected)
+		}
+	}
+	if fallback != nil {
+		if err := validateAuthoringFallback(fallback, path, model); err != nil {
+			return err
 		}
 	}
 	if !declared {
@@ -153,6 +171,45 @@ func validateAuthoringEntry(node *yaml.Node, path string, research bool) error {
 			expected = "model, reasoning_effort or tools"
 		}
 		return fmt.Errorf("%s declares nothing; set %s", path, expected)
+	}
+	return nil
+}
+
+func validateAuthoringFallback(node *yaml.Node, entryPath, model string) error {
+	path := entryPath + ".fallback"
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s must be a mapping", path)
+	}
+	for i := 0; i < len(node.Content); i += 2 {
+		key := node.Content[i].Value
+		if key != "model" && key != "reasoning_effort" {
+			return fmt.Errorf("%s.%s is not a supported key; expected model or reasoning_effort", path, key)
+		}
+	}
+	fallbackModel := ""
+	for i := 0; i < len(node.Content); i += 2 {
+		key, value := node.Content[i].Value, node.Content[i+1]
+		raw := authoringNodeValue(value)
+		switch key {
+		case "model":
+			if value.Kind != yaml.ScalarNode || value.Tag != "!!str" || !authoringModelName.MatchString(raw) {
+				return fmt.Errorf("%s.model %q is not a model name; use letters, digits and . _ : / @ [ ] - without spaces", path, raw)
+			}
+			fallbackModel = raw
+		case "reasoning_effort":
+			if value.Kind != yaml.ScalarNode || value.Tag != "!!str" || !slices.Contains([]string{"low", "medium", "high", "xhigh", "max"}, raw) {
+				return fmt.Errorf("%s.reasoning_effort %q is not supported for claude; expected low, medium, high, xhigh or max", path, raw)
+			}
+		}
+	}
+	if fallbackModel == "" {
+		return fmt.Errorf("%s declares no model; set model", path)
+	}
+	if model == "" {
+		return fmt.Errorf("%s needs %s.model", path, entryPath)
+	}
+	if strings.EqualFold(fallbackModel, model) {
+		return fmt.Errorf("%s.model %q is the declared model; a fallback must name another model", path, fallbackModel)
 	}
 	return nil
 }

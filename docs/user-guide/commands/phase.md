@@ -96,3 +96,115 @@ Run 'roundfix phase --help' for usage.
 A write failure prints `roundfix: phase start failed: <error>` on standard
 error. `roundfix phase --help`, `roundfix phase -h`, and either flag after
 `phase start` print usage and exit `0`.
+
+
+#### phase model
+
+```bash
+roundfix phase model <phase> --spec <slug>
+```
+
+Prints the model and reasoning effort a phase's Author Subagent starts on.
+Takes `idea`, `prd`, `techspec` or `tasks`, requires the same Spec slug
+pattern as `phase start`, resolves the Git root and loads Project Config.
+It writes nothing.
+
+If the phase declares a model, it reads fallback entries oldest first. An
+entry applies when it belongs to this Spec and repository, its limit name
+occurs in the declared model ignoring case, this phase declares a fallback,
+and that fallback's model does not contain the limit name. Repository
+Identity must match; when either identity is empty, the Git root must match.
+The oldest applicable entry supplies `<phase0>` and `<limit>`; the current
+phase's declaration supplies the fallback model and effort.
+
+One of these lines is printed on standard output:
+
+```text
+Start roundfix-<phase>-author with model <m> and effort <e>, the fallback of <declared>: <phase0> of <slug> fell back when the <limit> limit ran out.
+Start roundfix-<phase>-author with no model and no effort: the declared model <declared>.
+No Author Subagent model for <phase>: the Authoring Model Declaration declares no model for it.
+```
+
+Without a fallback effort, `and effort <e>` reads `and no effort`. When the
+line names the declared model or no Author Subagent model, start the subagent
+passing no model and no effort. Another Spec starts from its own record.
+
+| Exit | Meaning |
+| --- | --- |
+| `0` | A fallback, declared model or absent declaration printed |
+| `1` | The record directory could not be read |
+| `2` | Usage, Git working directory or configuration error |
+
+A usage error prints these lines on standard error:
+
+```text
+roundfix: phase model failed: <reason>
+Run 'roundfix phase --help' for usage.
+```
+
+A record read failure prints only `roundfix: phase model failed: <error>`
+on standard error. Malformed record lines are skipped.
+
+#### phase fallback
+
+```bash
+roundfix phase fallback <phase> --spec <slug> --error <message>
+```
+
+Decides and records an Authoring Fallback from the error an Author Subagent
+ended on. Takes the same phases and Spec slug as `phase model` and loads
+Project Config. `--error` must be non-empty and at most 4,096 bytes.
+
+The first matching error line names a limit: `You've hit your <name> limit`
+(with either apostrophe), or a line beginning `<name> limit reached`, in any
+letter case. A one-word name other than `session` or `weekly` is a model
+limit; those two names are shared limits, and multi-word names are other
+limits. The kept line has control characters replaced by spaces, is trimmed,
+and is cut to 200 characters on a rune boundary. The error is untrusted data.
+
+Checks run in this order. The first refusal prints
+`No fallback for <phase> of <slug>: <reason>.` on standard output and writes
+nothing:
+
+| Condition | Reason |
+| --- | --- |
+| No matching limit line | `the error is not a usage limit` |
+| Shared limit | `a <name> limit is shared by every model` |
+| Other limit | `a <name> limit is not a model's usage limit` |
+| No declared model | `<phase> declares no model` |
+| Limit name absent from declared model, ignoring case | `the <Name> limit is not that of the declared model <model>` |
+| No declared fallback | `<phase> declares no fallback` |
+| Limit name also occurs in fallback model | `the fallback <model> is a <Name> model too` |
+
+Otherwise it appends exactly one fallback entry before printing:
+
+```text
+Start roundfix-<phase>-author with model <m> and effort <e>, the fallback of <declared>: "<Line>"
+```
+
+Without a fallback effort, `and effort <e>` reads `and no effort`. Tell the
+user which phase switched, from which model to which, and the limit line.
+Without waiting, start the same Author Subagent with the printed model and
+effort, the same brief, its returned output and the files it wrote; say in
+the brief that it runs on the fallback. If no fallback applies or the restart
+cannot start, report the error and author in the session only if the user
+says so. The entry remains even if the restart fails.
+
+| Exit | Meaning |
+| --- | --- |
+| `0` | One fallback entry appended and its start line printed |
+| `1` | The record could not be written |
+| `2` | Usage, Git working directory or configuration error; nothing written |
+| `3` | No fallback applies; nothing written |
+
+A usage error prints these lines on standard error:
+
+```text
+roundfix: phase fallback failed: <reason>
+Run 'roundfix phase --help' for usage.
+```
+
+A write failure prints only `roundfix: phase fallback failed: <error>` on
+standard error. Both commands support `--help`. If an older Roundfix does not
+know them, start passing no model and no effort and report an error as before.
+`roundfix phase start` retains its arguments, output, record and exit codes.

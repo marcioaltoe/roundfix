@@ -985,6 +985,47 @@ Run Retention removes each day file dated before its cutoff, and a file whose na
 
 The record is the contract an outside reader uses: Roundfix reads no harness transcript, prices no token and reports no limit percentage.
 
+
+### Fallback entries
+
+`roundfix phase fallback <phase> --spec <slug> --error <message>` appends one
+`fallback` entry only when the declared model's own usage limit triggers an
+Authoring Fallback. Shared session and weekly limits and every other refusal
+write nothing. The entry stays even if restarting the Author Subagent fails.
+
+Its keys occur in this order, with empty values kept:
+
+| Key | Value |
+| --- | --- |
+| `schema` | `roundfix/phase-record/v1` |
+| `kind` | `fallback` |
+| `time` | UTC instant in RFC 3339 format |
+| `phase` | `idea`, `prd`, `techspec` or `tasks` |
+| `spec` | Spec folder slug |
+| `repository` | Git root |
+| `repository_id` | Repository Identity digest, or empty when unavailable |
+| `harness` | `claude`, or empty without a harness session |
+| `session` | `CLAUDE_CODE_SESSION_ID`, or empty |
+| `declared_model` | Phase's declared model |
+| `declared_effort` | Phase's declared reasoning effort, or empty |
+| `model` | Chosen fallback model |
+| `effort` | Fallback reasoning effort, or empty |
+| `limit` | Limit name as written in the error |
+| `message` | First matching limit line, trimmed, controls replaced by spaces, at most 200 characters |
+
+`roundfix phase model <phase> --spec <slug>` reads fallback entries oldest
+first and writes nothing. A later phase uses its own declared fallback only
+when its declared model contains the recorded limit name ignoring case, its
+fallback model does not contain that name, and the entry belongs to the same
+Spec and repository. Repository identities must match; when either is empty,
+the Git root must match. A new Spec starts on its declared model.
+
+Fallback entries share the day files, private permissions and retention of
+the other entries. Phase-entry readers skip them without counting them as
+invalid; malformed fallback lines count as skipped when fallback entries are
+read. The [phase command reference](commands/phase.md) gives the output lines,
+ordered refusals and exit codes. `phase start` keeps its existing contract.
+
 ## Command reference
 
 | Command | Purpose |
@@ -998,6 +1039,8 @@ The record is the contract an outside reader uses: Roundfix reads no harness tra
 | `release plan` | Classify committed release changes without mutating release state |
 | `follow-up` | List pending work in priority order, or show status (read-only) |
 | `phase start` | Record in the Phase Record the phase a session starts |
+| `phase model` | Print the model and effort a phase's Author Subagent starts on |
+| `phase fallback` | Decide and record an Authoring Fallback from an Author Subagent error |
 | `profiles` | Show, configure, and validate Agent Selection Profiles |
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |

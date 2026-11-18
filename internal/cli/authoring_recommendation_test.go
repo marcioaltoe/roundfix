@@ -18,15 +18,27 @@ const authoringRecommendationBlock = `  skills:
         idea:
           model: fable
           reasoning_effort: xhigh
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         prd:
           model: fable
           reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         techspec:
           model: fable
           reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
         tasks:
           model: opus
           reasoning_effort: high
+          fallback:
+            model: sonnet
+            reasoning_effort: high
         research:
           model: sonnet
           reasoning_effort: medium
@@ -202,4 +214,69 @@ func assertAuthoringRecommendationPosition(t *testing.T, output, preceding, pref
 		return
 	}
 	t.Fatalf("missing preceding %s in %s", preceding, output)
+}
+
+func TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks(t *testing.T) {
+	t.Parallel()
+	authoringRecommendationFixture(t, "undeclared")
+	configureAuthoringUpdateFixture(t)
+	var stdout, stderr bytes.Buffer
+	code := runCLI(t, []string{"update", "check"}, &stdout, &stderr)
+	if code != 0 || stderr.Len() != 0 || !strings.HasSuffix(stdout.String(), "\n") {
+		t.Fatalf("exit=%d stdout=%q stderr=%q", code, &stdout, &stderr)
+	}
+	lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
+	if len(lines) < 2 || lines[0] != "Roundfix 0.0.0-dev is a development build; no release comparison (update.mode notify)." || !strings.HasPrefix(lines[1], "Baseline:") {
+		t.Fatalf("unexpected version and Baseline lines: %q", stdout.String())
+	}
+	want := strings.Split(strings.TrimSuffix(authoringRecommendationUpdateLine+"\n"+authoringRecommendationBlock, "\n"), "\n")
+	if strings.HasPrefix(lines[1], "Baseline: plan ready ") {
+		want = append(want, "Next: apply it with the Roundfix skill's --update mode; update.mode notify applies nothing on its own.")
+	}
+	got := lines[2:]
+	if len(got) != len(want) {
+		t.Fatalf("transcript has %d lines, want %d: %q", len(got), len(want), stdout.String())
+	}
+	for i, line := range want {
+		if got[i] != line {
+			t.Errorf("transcript line %d=%q want=%q", i+1, got[i], line)
+		}
+	}
+}
+
+func TestAnAuthoringEntryAcceptsAFallback(t *testing.T) {
+	t.Parallel()
+	for _, phase := range []string{"idea", "prd", "techspec", "tasks"} {
+		for _, effort := range []string{"", ", reasoning_effort: high"} {
+			t.Run(phase+"/fallback"+effort, func(t *testing.T) {
+				_, root := withCLIWorkspace(t)
+				declaration := "skills:\n  authoring:\n    claude:\n"
+				for _, key := range []string{"idea", "prd", "techspec", "tasks"} {
+					declaration += "      " + key + ": {model: fable, reasoning_effort: xhigh}\n"
+				}
+				declaration += "      research: {model: sonnet, reasoning_effort: medium}\n"
+				writeAuthoringCommandFile(t, root, ".roundfixrc.yml", declaration)
+				var stdout, stderr bytes.Buffer
+				if code := runCLI(t, []string{"skills", "install", "--target", "project"}, &stdout, &stderr); code != 0 || stderr.Len() != 0 {
+					t.Fatalf("install without fallback: exit=%d stdout=%s stderr=%s", code, &stdout, &stderr)
+				}
+				skillsBefore := snapshotDoctorPath(t, filepath.Join(root, ".agents"))
+				claudeBefore := snapshotDoctorPath(t, filepath.Join(root, ".claude"))
+				declared := phase + ": {model: fable, reasoning_effort: xhigh"
+				withFallback := strings.Replace(declaration, declared, declared+", fallback: {model: opus"+effort+"}", 1)
+				writeAuthoringCommandFile(t, root, ".roundfixrc.yml", withFallback)
+				stdout.Reset()
+				stderr.Reset()
+				if code := runCLI(t, []string{"skills", "install", "--target", "project"}, &stdout, &stderr); code != 0 || stderr.Len() != 0 {
+					t.Fatalf("install with fallback: exit=%d stdout=%s stderr=%s", code, &stdout, &stderr)
+				}
+				if after := snapshotDoctorPath(t, filepath.Join(root, ".agents")); !reflect.DeepEqual(skillsBefore, after) {
+					t.Fatal("fallback changed the installed skills")
+				}
+				if after := snapshotDoctorPath(t, filepath.Join(root, ".claude")); !reflect.DeepEqual(claudeBefore, after) {
+					t.Fatal("fallback changed the subagents or skill links")
+				}
+			})
+		}
+	}
 }

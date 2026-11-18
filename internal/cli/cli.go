@@ -58,6 +58,8 @@ Usage:
   roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
   roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
+  roundfix phase model <phase> --spec <slug>
+  roundfix phase fallback <phase> --spec <slug> --error <message>
   roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reopen --spec <slug>
@@ -119,7 +121,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   deliver    Advance an ordered queue of Specs from Run to merge
   follow-up  List pending work in priority order, or show status
-  phase      Record the Supervisor Phase a session starts
+  phase      Record a Supervisor Phase, or decide an Authoring Fallback
   window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reopen     Return a stale completed QA gate to pending

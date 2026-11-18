@@ -8,6 +8,8 @@ superseded_by: null
 
 # Each authoring phase runs on the model its repository declares
 
+Amended by ADR-0427 (2026-11-17): the session starts an Author Subagent with the printed model and effort and switches to the declared fallback when the declared model reaches its usage limit.
+
 A repository declares in Project Config, per Agent harness, the model and
 reasoning effort of each Authoring Phase and of research sweeps. Roundfix
 ships no model name. Installation turns the declaration into a header in each
