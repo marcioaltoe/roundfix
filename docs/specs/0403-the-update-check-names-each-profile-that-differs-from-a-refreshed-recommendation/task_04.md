@@ -77,6 +77,11 @@ Transcript, the JSON member and every case that reports nothing.
    and the upgrade notice byte-identical (invariant 7): no change to
    `profiles_check.go`, `profiles_check_apply.go`, `doctor.go` or
    `upgrade.go`.
+7a. MUST re-record `docs/references/behavior-surfaces.json` after the last
+   edit of the Update Check's sources, with the `-record-skill-coverage` step
+   (`go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`),
+   so the `command update check` fingerprint is current and
+   `make verify-changed` passes.
 8. MUST change no Governed Path and no file outside the ones this Task
    declares.
 
@@ -105,6 +110,7 @@ Transcript, the JSON member and every case that reports nothing.
 - interface: `internal/cli/update_check.go`
 - interface: `internal/cli/update_check_test.go`
 - interface: `internal/cli/cli.go`
+- interface: `docs/references/behavior-surfaces.json`
 
 ## Consumers
 
