@@ -1,6 +1,0 @@
-Source: current Daemon assignment, audited head f182f643e073971937fbd118ad71e398e0864321
-command: make verify-changed
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Not executed by the child Agent.

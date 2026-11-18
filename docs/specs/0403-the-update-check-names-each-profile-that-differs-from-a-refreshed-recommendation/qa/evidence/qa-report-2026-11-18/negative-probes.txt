@@ -1,3 +1,0 @@
-pinned: named pinned_and_current_add_nothing case rejected mutation at its output assertion, exit 1.
-deviation: named transcript case rejected mutation at its output assertion, exit 1.
-empty: named no_profiles_keep_the_report_bytes case rejected mutation at its output assertion, exit 1.
