@@ -1,3 +1,0 @@
-Pull Request control evidence
-Prompt fact: no open Pull Request on target roundfix/deliver-0405-authoring-model-fallback-a15e0f24ca9a2979. The Run branch has no PR of its own. No lookup or mutation attempted.
-approval: implementation authorized by _authorization.md; no current-candidate acceptance obtained. checks/status: supplied make verify-changed passed, exit 0; remote required checks unavailable. unresolved review threads: no open PR, no PR thread evidence. Merge-Ready acceptance: none exists yet. review-artifact ancestry: no Review Source artifact for audited head a35e4ef628e2679bf5a836729d69dbdcc0eacc9f.

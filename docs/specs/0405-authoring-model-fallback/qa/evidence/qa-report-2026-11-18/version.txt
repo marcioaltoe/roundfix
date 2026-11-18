@@ -1,5 +1,0 @@
-command: ./bin/roundfix --version
-stdout:
-roundfix 0.147.1 (a35e4ef6-dirty, built 2026-11-18 10:40:44 -0300)
-stderr:
-exit: 0

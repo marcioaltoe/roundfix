@@ -1,1 +1,0 @@
-QA harness repairs only: canonicalize temporary paths through resolve() for macOS file policy; accept an empty stdout section when parsing Surface Transcript 8. Original focused failures are retained in T02-harness-attempt.txt and T08-harness-attempt.txt. Final sweep uses the corrected runner and complete conservative source inputs. No product source changed.

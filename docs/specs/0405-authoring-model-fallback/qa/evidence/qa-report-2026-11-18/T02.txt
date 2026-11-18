@@ -1,9 +1,0 @@
-QA row T02; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
-cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
-$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
-stdout:
-Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
-stderr:
-exit: 0
-
-Exact stdout/stderr/exit match; fallback appended.

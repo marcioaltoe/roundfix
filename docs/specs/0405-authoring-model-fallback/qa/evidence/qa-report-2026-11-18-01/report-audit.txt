@@ -1,5 +1,0 @@
-Results table contiguous: 22 rows; 15 carried passes preserved, 6 fresh passes, 1 pre-PR environment block.
-Every executed row has one typed YAML inputs block; all history-dependent rows declare commit_range.
-One frontmatter block; closed partial; exact typed counters; seeded auditor identity unchanged; no evidence_snapshots written.
-All 20 local links resolve; all 21 fresh evidence files are text and unignored.
-No tracked repository file changed. Untracked paths stay inside Spec qa/. No Task status, graph, config or source mutation.

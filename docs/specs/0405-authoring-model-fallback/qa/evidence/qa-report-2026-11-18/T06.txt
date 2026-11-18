@@ -1,9 +1,0 @@
-QA row T06; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
-cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
-$ ./bin/roundfix phase fallback techspec --spec 0412-example --error 'You'"'"'ve hit your weekly limit · resets Mon 12:00am'
-stdout:
-No fallback for techspec of 0412-example: a weekly limit is shared by every model.
-stderr:
-exit: 3
-
-Exact stdout/stderr/exit match under TechSpec wildcard rules; read/refusal day files unchanged.
