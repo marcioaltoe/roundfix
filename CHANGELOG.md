@@ -2,6 +2,38 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.148.0] - 2026-11-18
+
+### Release planning needs no manual classification for planning references or a release-preparation commit
+
+- **`roundfix release plan` counts `docs/references/` as planning evidence.** A planning change that commits a reference no longer forces a manual classification, so a Spec's Release Ceiling can answer the plan. A commit whose every changed file is in the `release_paths` of a delivered Spec with a ceiling is a **Release-Preparation Commit** and needs no release itself; the JSON marks it `releasePreparation: true`. The release guide keeps each repository's own publication trigger (a pushed tag or the merge of the version change). ADR-0412.
+
+### A Supervisor session ends only when the maintainer asks
+
+- **No phase of a Spec ends the session.** The authoring skills, the `--follow-up` and `--unattended` Skill Modes and the `autonomous-work` Baseline clause no longer tell a Supervisor to hand off and stop after an Authoring Phase or after a Spec's delivery and release; the session writes the Session Handoff and ends only when the user asks, nothing remains, or what remains waits on the user. `roundfix phase start` prints no Boundary Notice; the Phase Record keeps recording phases. ADR-0414.
+
+### Doctor and the Update Check recommend an Authoring Model Declaration
+
+- **An adopter whose authoring skills run without a declared model is told so.** When the authoring skills are installed and `.roundfixrc.yml` declares no `skills.authoring.claude`, `roundfix doctor` (`authoring-models: warn`) and `roundfix update check` (`authoringModels.state: undeclared`, with `installed` and `recommendation`) print the **Recommended Authoring Declaration** to paste: Idea Fable xhigh, PRD and TechSpec Fable high, Tasks Opus high, research Sonnet medium, each with a fallback. Nothing is written and no exit code changes. ADR-0415, ADR-0430.
+
+### The Update Check names each profile that differs from a refreshed recommendation
+
+- **The Recommended Profile is the 2026-11-17 snapshot.** `review` and `chore` move to `codex / gpt-6-luna / max`, `docs` to `codex / gpt-6.1-terra / high`; the other categories are unchanged. The Model Catalog follows the installed adapters (`gpt-6.1-terra`, the `fable` alias, Haiku 5.5).
+- **`roundfix update check` and the `--update` Skill Mode name each configured category that differs**, with `roundfix profiles check --apply --scope <user|project>`, and a pin to an older snapshot is reported with its date and the key to re-pin. JSON gains `recommendations`. ADR-0416.
+
+### A correction records its defect class, and a phase its authoring model
+
+- **`roundfix corrections declare` and `roundfix corrections report`.** Each Correction of a delivery (a fixed review finding, a repaired QA finding, a hand-made commit on the Item Branch) carries a declared Defect Class — `plan` (naming PRD, TechSpec or Tasks), `implementation`, `environment`, `operator` or `unclear` — or `not-a-correction`, with a reason; `roundfix review dispose` can declare it. With `delivery.require_defect_class: true` the Delivery Queue parks an undeclared Correction before its merge (`defect-class-undeclared`); the key is off by default. Each Authoring Phase entry of the Phase Record stores the model and effort that ran it (`roundfix phase start --model --effort --author-subagent`). The report counts Corrections per Spec and plan defects per authoring model beside the sample, and compares models only above 20 Specs each. ADR-0417 to ADR-0426.
+
+### An Authoring Phase falls back to another model when its quota runs out
+
+- **`skills.authoring.claude.<phase>.fallback`.** When an Author Subagent ends on its own model family's usage limit, `roundfix phase fallback` records it and prints the model and effort to restart on; the authoring skills restart the phase there and tell the user. Later phases declared on the exhausted model stay on the fallback for the rest of the Spec. `roundfix phase model` prints the model a phase starts on. A session or weekly limit still stops and reports. ADR-0427 to ADR-0429.
+- **The Baseline states how a phase keeps its model.** The root block of `AGENTS.md` (and `CLAUDE.md`, its link) now says, for Claude Code only, that a skill's `model`/`effort` header applies only when a person types `/skill`, so a phase goes to its Author Subagent. ADR-0431.
+
+### CLAUDE.md is always a link to AGENTS.md
+
+- **One root instruction file in every adopter.** Adoption writes `CLAUDE.md` as a link to `AGENTS.md`; `roundfix baseline update` converts a regular `CLAUDE.md` only when it holds nothing of its own, and otherwise names each passage to move to `docs/agents/specific-repository.md`; `roundfix doctor` gains a `baseline-claude-link` line that warns and never fails. A link's permission bits no longer enter a Baseline plan, so the Plan Digest is the same on Linux and macOS. ADR-0432, ADR-0433.
+
 ## [0.147.1] - 2026-11-17
 
 ### A repository's own rules go to the specific-repository guide, and Roundfix names the ones that do not
