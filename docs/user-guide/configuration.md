@@ -522,7 +522,7 @@ profiles:
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: "max"
     fallbacks:
       - runtime: codex
@@ -759,12 +759,13 @@ Built-in required profiles use these official identifiers:
   `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
 - `frontend`: preferred `claude / opus / high`, fallback
   `codex / gpt-6.1-sol / xhigh`.
-- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+- `review`: preferred `codex / gpt-6-luna / max`, fallback
   `codex / gpt-6.1-sol / high`.
 
-The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
-`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
-`claude-fable-5-1`, `haiku`, and `default` as Claude
+The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`,
+`gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`,
+and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
+`fable`, `haiku`, and `default` as Claude
 identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
 capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
@@ -833,7 +834,7 @@ load, proof, Session creation, or Run mutation. An explicitly empty
 multiple Task or QA categories, text and JSON output include a cross-category
 warning.
 
-The Recommended Profile shown by `profiles show` is dated `2026-09-30`.
+The Recommended Profile shown by `profiles show` is dated `2026-11-17`.
 Each of the ten categories has a Preferred Selection and Fallback Chain with
 a rationale for each selection. JSON schema `roundfix/profiles/v2` lists
 these rows in order with `preferred` and `fallback` roles, the selection,

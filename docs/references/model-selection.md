@@ -1,13 +1,84 @@
 # Model selection reference
 
-Updated 2026-09-30. This is advisory evidence for choosing a model; configured
-Agent Selection Profiles determine execution. No profile was changed by this
-refresh. API prices, subscription quota, runtime advertisement, and a successful
-ACP selection are different facts.
+This is advisory evidence for choosing a model; configured Agent Selection
+Profiles determine execution. API prices, subscription quota, runtime
+advertisement, and a successful ACP selection are different facts.
 
 ## Current shipped snapshot
 
-The binary's Recommended Profile is dated 2026-09-30. Each selection is shown
+Updated 2026-11-17.
+
+The binary's Recommended Profile is dated 2026-11-17. Each selection is shown
+as `runtime / model / effort`; the rationale is recorded beside it.
+
+| Agent Work Category | Preferred Selection | Preferred rationale | Fallback Selection | Fallback rationale |
+| --- | --- | --- | --- | --- |
+| `general` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `backend` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `frontend` | `claude / opus / high` | Design judgment; `opus` resolves to Opus 5.5. | `codex / gpt-6.1-sol / xhigh` | Changes runtime; the provider places connected visual work at extra-high effort. |
+| `data` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `infra` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `docs` | `codex / gpt-6.1-terra / high` | Clearer writing and more subscription usage suit documentation work. | `claude / sonnet / high` | Changes runtime; Sonnet 5.5 is the efficient Claude model. |
+| `test` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `chore` | `codex / gpt-6-luna / max` | The current fast Codex model handles bounded work at its highest supported effort. | `claude / sonnet / high` | Changes runtime; Sonnet 5.5 is the efficient Claude model. |
+| `qa` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
+| `review` | `codex / gpt-6-luna / max` | The current fast Codex model handles bounded work at its highest supported effort. | `codex / gpt-6.1-sol / high` | Stays on Codex, because every review selection must use the pre-PR review provider's runtime. |
+
+The maintainer approved this table on 2026-11-17; no selection uses `ultra`.
+OpenAI and Anthropic models run only through the `codex` and `claude`
+subscriptions, never through OpenRouter (ADR-0235).
+
+The light tier's default selection is `openrouter/deepseek/deepseek-v4.1-flash`
+with no reasoning effort. Every light model passes the subscription rule; the
+`openrouter/` prefix is the selection namespace.
+
+### Model Catalog and picker efforts
+
+The catalog values were read from `codex-acp` 2.7.0 and
+`claude-agent-acp` 0.107.3 on 2026-11-17. The Codex catalog, in order, is
+`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`,
+`gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna`. The Claude catalog, in
+order, is `opus`, `sonnet`, `fable`, `haiku`, and `default`. The `fable` alias
+resolves to Fable 5.2; `haiku` resolves to Haiku 5.5.
+
+The picker reasoning efforts are `low`, `medium`, `high`, `xhigh`, and `max`
+for Codex; Claude also offers `default`.
+
+The adapter floors are `codex-acp` 2.0.1 and `claude-agent-acp` 0.84.0.
+Baseline semantic analysis uses `gpt-6.1-sol` and then `gpt-5.6-sol`, both at
+`xhigh`.
+
+### Published evidence
+
+The 2026-11-17 review recorded Codex 0.169.0's model listing and the vendor
+releases below. The listing calls `gpt-6-luna` the current fast model and
+`gpt-5.6-luna` older; Luna accepts `max` but not `ultra`, and
+`gpt-6.1-terra` accepts `high`. Runtime advertisement establishes accepted
+identifiers and efforts, not successful live selection or Run performance.
+
+| Model | Released | Published evidence | Source |
+| --- | --- | --- | --- |
+| GPT-6.1 Terra (`gpt-6.1-terra`) | 2026-10-26 | OpenAI reports clearer writing, more subscription usage than Sol or Astra in Codex, and Terminal-Bench 4.0 50.3% at maximum effort; it still places the most complex coding work on Sol or Astra. | [OpenAI model release notes](https://help.openai.com/en/articles/9624314-model-release-notes), [Introducing GPT-6.1 Terra](https://openai.com/index/introducing-gpt-6-1-terra/) |
+| `gpt-6-luna` | 2026-09-22 | Codex lists it as the current fast, affordable model for easier work; the 2026-09-30 research recorded DeepSWE 66.6% at `max` and Terminal-Bench 4.0 12.6. | Codex 0.169.0 model listing, [DeepSWE](https://deepswe.datacurve.ai/), [Artificial Analysis](https://artificialanalysis.ai/evaluations/terminalbench-4-0) |
+| Claude Haiku 5.5 (`haiku`) | 2026-10-07 | Anthropic describes its fastest, cheapest small model and the first Haiku with adjustable effort; it remains a catalog option rather than a Recommended Profile selection. | [Introducing Claude Haiku 5.5](https://www.anthropic.com/claude-haiku-5-5) |
+| Claude Fable 5.2 (`fable`) | 2026-11-09 | The Claude adapter 0.107.3 advertises `fable`; Anthropic recommends Opus 5.5 for daily coding and knowledge work, so Fable stays outside Run categories. | [Introducing Claude Fable 5.2 and Mythos 5.2](https://www.anthropic.com/claude-fable-and-mythos-5-2) |
+
+Terra's writing and subscription evidence supports documentation work; Luna's
+current fast-model position supports bounded review and chores at its highest
+accepted effort. These are the reasons for the approved selections, not a
+claim of measured improvement in this repository's Runs. Implementation and
+QA keep Sol with Opus as fallback, and frontend keeps Opus with Sol at
+`xhigh` as fallback. The unchanged selections retain the earlier release
+evidence from [OpenAI for Sol](https://openai.com/index/introducing-gpt-6-1-sol/),
+[Anthropic for Opus](https://www.anthropic.com/claude-opus-5-5) and
+[Anthropic for Sonnet](https://www.anthropic.com/claude-sonnet-5-5); the dated
+figures are preserved below.
+
+## Historical sections — not current selection advice
+
+### Shipped snapshot of 2026-09-30
+
+The binary shipped this Recommended Profile on 2026-09-30. Each selection is shown
 as `runtime / model / effort`; the rationale is recorded beside it.
 
 | Agent Work Category | Preferred Selection | Preferred rationale | Fallback Selection | Fallback rationale |
@@ -22,25 +93,6 @@ as `runtime / model / effort`; the rationale is recorded beside it.
 | `chore` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `claude / sonnet / high` | Changes runtime; Sonnet 5.5 is the efficient Claude model. |
 | `qa` | `codex / gpt-6.1-sol / high` | The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer. | `claude / opus / high` | Changes runtime; `opus` resolves to Opus 5.5. |
 | `review` | `codex / gpt-5.6-luna / max` | Bounded work that blocks no other Task; about five minutes per session at a fraction of the price. | `codex / gpt-6.1-sol / high` | Stays on Codex, because every review selection must use the pre-PR review provider's runtime. |
-
-The light tier's default selection is `openrouter/deepseek/deepseek-v4.1-flash`
-with no reasoning effort. Every light model passes the subscription rule; the
-`openrouter/` prefix is the selection namespace.
-
-### Model Catalog and picker efforts
-
-The catalog and picker values were read from `codex-acp` 2.0.1 and
-`claude-agent-acp` 0.84.0 on 2026-09-30. The Codex catalog, in order, is
-`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`,
-`gpt-5.6-terra`, and `gpt-5.6-luna`. The Claude catalog, in order, is `opus`,
-`sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
-
-The picker reasoning efforts are `low`, `medium`, `high`, `xhigh`, and `max`
-for Codex; Claude also offers `default`.
-
-The adapter floors are `codex-acp` 2.0.1 and `claude-agent-acp` 0.84.0.
-Baseline semantic analysis uses `gpt-6.1-sol` and then `gpt-5.6-sol`, both at
-`xhigh`.
 
 ### Published evidence
 
@@ -70,8 +122,6 @@ documentation](https://code.claude.com/docs/en/model-config) says the alias
 Local measurement from 2026-09-15 to 2026-09-30 found that
 `gpt-5.6-sol`/`high` averaged 18.8 minutes per `backend` session and 15.1 per
 `qa` session; `gpt-5.6-luna`/`max` averaged about 5 minutes per `docs` session.
-
-## Historical sections — not current selection advice
 
 ## Current models, versions, and token prices
 

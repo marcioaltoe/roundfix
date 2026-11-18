@@ -85,7 +85,7 @@ one, it must be complete. Built-ins use official model identifiers:
   `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
 - `frontend`: preferred `claude / opus / high`, fallback
   `codex / gpt-6.1-sol / xhigh`.
-- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+- `review`: preferred `codex / gpt-6-luna / max`, fallback
   `codex / gpt-6.1-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
@@ -132,7 +132,7 @@ profiles:
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: "max"
     fallbacks:
       - runtime: codex
@@ -140,15 +140,16 @@ profiles:
         reasoning_effort: "high"
 ```
 
-The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
-`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official identifiers;
+The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`,
+`gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`,
+and `gpt-5.6-luna` as official identifiers;
 A valid identifier and an advisory
 recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
 as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
-advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`,
+advertises: `opus`, `sonnet`, `fable`, `haiku`,
 and `default`. The `opus` alias resolves to Opus 5.5.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
@@ -186,7 +187,7 @@ roundfix profiles show --category backend --json
 ```
 
 JSON uses schema `roundfix/profiles/v2`. Each Agent Work Category has a
-Recommended Profile dated 2026-09-30: its Preferred Selection at rank 1 with
+Recommended Profile dated 2026-11-17: its Preferred Selection at rank 1 with
 role `preferred`, followed by its Fallback Chain with role `fallback`.
 Each row includes the selection, source date, and rationale. The Recommended
 Profile never selects, routes, or writes User Config or Project Config.

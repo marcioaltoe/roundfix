@@ -11,8 +11,8 @@ func TestModelCatalogOpensWithTheCurrentModels(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"codex", []string{"gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}},
-		{"claude", []string{"opus", "sonnet", "claude-fable-5-1", "haiku", "default"}},
+		{"codex", []string{"gpt-6.1-sol", "gpt-6-astra", "gpt-6.1-terra", "gpt-6-sol", "gpt-6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"}},
+		{"claude", []string{"opus", "sonnet", "fable", "haiku", "default"}},
 	} {
 		t.Run(tt.runtime, func(t *testing.T) {
 			// Ignore transitional entries so task_03 can remove them independently.
@@ -37,7 +37,7 @@ func TestModelCatalogOpensWithTheCurrentModels(t *testing.T) {
 func TestModelCatalogOffersNoRetiredModel(t *testing.T) {
 	t.Parallel()
 	for _, runtime := range []string{"codex", "claude"} {
-		for _, retired := range []string{"gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark"} {
+		for _, retired := range []string{"gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark", "gpt-5.5", "claude-fable-5-1"} {
 			t.Run(runtime+"/"+retired, func(t *testing.T) {
 				for _, choice := range ModelCatalog(runtime) {
 					if choice.Value == retired || choice.Label == retired {

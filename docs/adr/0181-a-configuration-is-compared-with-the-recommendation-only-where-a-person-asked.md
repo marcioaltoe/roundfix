@@ -49,3 +49,11 @@ category with the Recommended Profile, under these rules:
   Roundfix, because profile keys are strict.
 - The first release with this rule cannot speak after an upgrade performed by
   an older executable. The notice starts with the upgrade after that one.
+
+**Amended by [ADR-0416](0416-the-update-check-names-each-configured-profile-that-differs-from-the-recommended-profile.md) (2026-11-17).**
+
+The Update Check compares too, naming a deviation declared against an older
+snapshot as pinned to an older snapshot with `profiles.<category>.deviation.from`
+as its re-pin key and `roundfix profiles check --apply --scope <user|project>`
+as its adopt command. The comparison stays read-only, offline and decisionless,
+and never runs when a Run starts.

@@ -62,51 +62,34 @@ defaults:
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
-# Model identifiers are the ones each ACP adapter advertises. The catalog in
-# internal/agent/catalog.go is picker metadata that must follow the adapter, and
-# it has drifted twice (2026-08-07 and 2026-09-30). Reasoning effort is a
-# separate adapter option. Snapshot and rationale:
-# docs/references/model-selection.md.
-#
-# ---------------------------------------------------------------------------
-# Revised 2026-09-30 (maintainer decision: adopt the current models directly,
-# fallbacks included, and revert if Runs get worse). Every tuple below was
-# proved through the installed adapters with `roundfix profiles configure`.
+# Revised 2026-11-17: the profiles follow the maintainer-approved Recommended
+# Profile. Model identifiers and reasoning efforts are adapter options; the
+# catalog in internal/agent/catalog.go follows the advertised identifiers.
+# Snapshot, published evidence and sources: docs/references/model-selection.md.
 #
 # IMPLEMENTATION (general, backend, data, qa, infra, test): codex
-# `gpt-6.1-sol`/high. OpenAI released it on 2026-09-29 as the Codex workhorse,
-# in the same quota band as `gpt-5.6-sol`. Published evidence is mixed (one
-# index up, one slightly down), so this is measured on the Runs themselves:
-# from 2026-09-15 to 09-30, `gpt-5.6-sol`/high averaged 18.8 minutes per
-# backend session and 15.1 per qa session.
+# `gpt-6.1-sol`/high, the coding workhorse; fallback claude `opus`/high
+# (Opus 5.5) changes runtime when Codex is unavailable.
 #
-# FRONTEND: claude `opus`/high. The alias resolves to Opus 5.5 since Claude
-# Code 2.1.280, so this tuple changed model without changing text.
+# FRONTEND: claude `opus`/high (Opus 5.5) for design judgment; fallback codex
+# `gpt-6.1-sol`/xhigh changes runtime with extra effort for visual work.
 #
-# REVIEW, DOCS, CHORE: codex `gpt-5.6-luna`/max, which averaged about 5 minutes
-# per session here. `gpt-6-luna` shows no published gain over it.
+# REVIEW: codex `gpt-6-luna`/max, the current fast model at its highest
+# supported effort for bounded review; fallback codex `gpt-6.1-sol`/high.
+# Every review selection must use the pre-PR review provider's runtime.
 #
-# FALLBACKS. A fallback exists for when a runtime is unavailable, so it
-# changes runtime: claude `opus` behind codex, codex `gpt-6.1-sol`/xhigh
-# behind claude, and claude `sonnet` (Sonnet 5.5) behind the luna categories.
-# `review` is the exception: every selection in it must use the runtime of
-# `pre_pr_review.provider`, so its fallback stays on codex.
+# DOCS: codex `gpt-6.1-terra`/high for clearer writing and more subscription
+# usage; fallback claude `sonnet`/high (Sonnet 5.5) changes runtime.
 #
-# NOT USED IN RUNS. `gpt-6-astra` and Claude Fable drain quota several times
-# faster and answer more slowly, and in a Run latency multiplies by turn
-# count. No `opencode` tuple is configured: no model it reaches beats the two
-# subscription runtimes on the published boards.
+# CHORE: codex `gpt-6-luna`/max for bounded work at its highest supported
+# effort; fallback claude `sonnet`/high (Sonnet 5.5) changes runtime.
 #
-# NEVER route a `gpt-*-sol` model through OpenRouter. Every one below is
-# `runtime: codex`, which is the GPT subscription. The `opencode` runtime can
-# reach the same models pay-per-use, which is billing for a model this
-# repository already has. Roundfix refuses it: OpenAI and Anthropic models run
-# only through the codex and claude subscriptions (ADR-0235).
+# NOT USED IN RUNS: `gpt-6-astra` and Claude Fable 5.2; the maintainer keeps
+# the coding categories on Sol and Opus. No selection uses `ultra`.
 #
-# Research and sources: the Secondbrain entry
-# `inbox/secondbrain/2026-09-30-modelos-de-codificacao-ago-set-2026-e-runtimes-cursor-grok.md`.
-# docs/references/model-selection.md states the same snapshot as the binary.
-# ---------------------------------------------------------------------------
+# NEVER route a `gpt-*` or Claude model through OpenRouter. OpenAI and
+# Anthropic models run only through the codex and claude subscriptions
+# (ADR-0235). No `opencode` tuple is configured.
 profiles:
   general:
     preferred:
@@ -156,7 +139,7 @@ profiles:
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: max
     fallbacks:
       - runtime: codex
@@ -174,8 +157,8 @@ profiles:
   docs:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
-      reasoning_effort: max
+      model: gpt-6.1-terra
+      reasoning_effort: high
     fallbacks:
       - runtime: claude
         model: sonnet
@@ -192,7 +175,7 @@ profiles:
   chore:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: max
     fallbacks:
       - runtime: claude
