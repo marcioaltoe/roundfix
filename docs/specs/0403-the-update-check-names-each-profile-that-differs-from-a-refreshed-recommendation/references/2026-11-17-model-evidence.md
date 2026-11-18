@@ -23,6 +23,17 @@ Two more entries, `gpt-reserve` and `codex-auto-review`, have `visibility: hide`
 
 `@agentclientprotocol/claude-agent-acp` 0.107.3 (`dist/session-model.js`) advertises the alias `fable` for the newest Fable and keeps the pinned id `claude-fable-5-2` or `claude-fable-5-1` only for a session resumed on that version ("A resumed Fable 5.1 session keeps `claude-fable-5-1` too, because Fable 5.2 is newer").
 
+### Claude selections proved on this machine
+
+The recommended Claude tuples were proved against the installed adapter, offline from any vendor page: `roundfix profiles validate` (Roundfix 0.147.1, `@agentclientprotocol/claude-agent-acp` 0.107.3, Claude Code subscription) on 2026-11-17 at about 07:15 BRT (10:15 UTC), in the Supervisor session of cycle BF, printed:
+
+| Runtime | Model | Effort | Result |
+| --- | --- | --- | --- |
+| `claude` | `opus` | `high` | `2. claude / opus / high — passed` |
+| `claude` | `sonnet` | `high` | `5. claude / sonnet / high — passed` |
+
+The adapter resolves the aliases `opus` and `sonnet` against its model list (`dist/session-config-options.js`, "A model takes an alias too, such as \"opus\" or \"sonnet\" for a full model id") and offers the effort levels Claude Code lists from `low` to `max` (`dist/session-effort.js`). These are the two Claude tuples the Recommended Profile uses: `opus`/`high` (preferred for `frontend`, fallback for the implementation categories) and `sonnet`/`high` (fallback for `docs` and `chore`).
+
 ## Vendor releases since the 2026-09-30 snapshot
 
 | Model | Released | Source and cited passage |
