@@ -262,6 +262,15 @@ func correctionReportText(s string) string {
 }
 func correctionReportOutput(s string, jsonOutput bool) string {
 	if !jsonOutput {
+		// Recorded values (a phase's model or effort among them) reach the
+		// reader's terminal: keep line breaks and turn every other control
+		// character into a space.
+		s = strings.Map(func(r rune) rune {
+			if r != '\n' && (unicode.IsControl(r) || r == '\u2028' || r == '\u2029') {
+				return ' '
+			}
+			return r
+		}, s)
 		return correctionReportRanking.ReplaceAllString(strings.ReplaceAll(s, "%", "[percent]"), "[omitted]")
 	}
 	s = strings.ReplaceAll(s, "%", `\u0025`)
