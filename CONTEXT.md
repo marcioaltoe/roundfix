@@ -15,6 +15,10 @@ or a profile-changing apply, named by its warning and owned by the repository
 to commit ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
 _Avoid_: Temporary copy, nested backup, automatic commit
 
+**Claude Instruction Link**:
+The root `CLAUDE.md` of an adopted repository, a relative symbolic link whose target is exactly `AGENTS.md`, created by the Baseline at adoption and restored in a Managed Refresh when nothing would be lost ([ADR-0432](docs/adr/0432-claude-md-is-always-a-symbolic-link-to-agents-md.md), [ADR-0433](docs/adr/0433-a-checkout-without-symbolic-links-keeps-the-link-git-records-for-claude-md.md)).
+_Avoid_: Claude Skill Link, separate instruction file, instruction copy
+
 **Claude Skill Link**:
 A repository-owned symbolic link under `.claude/skills` to the corresponding
 `.agents/skills/<name>` tree, restored when the repository already uses that
@@ -1502,7 +1506,7 @@ The byte range one setup-owned marker pair delimits inside an instruction carrie
 _Avoid_: Managed file, generated block, setup section
 
 **Managed Refresh**:
-The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
+The preservation mode that regenerates Managed Regions, requires no Source Baseline and no Decision Plan, and proves preservation on the plan's preimages. It may also replace the root `CLAUDE.md` with the Claude Instruction Link when the file holds nothing of its own, writing the root backup of a replaced regular file; every other byte outside Managed Regions stays identical ([ADR-0432](docs/adr/0432-claude-md-is-always-a-symbolic-link-to-agents-md.md)). It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
 _Avoid_: Baseline Readoption, reapply, overwrite
 
 **Unrecorded Managed Region**:
@@ -1510,7 +1514,7 @@ A Managed Region whose bytes are not the bytes the adopted Setup Manifest record
 _Avoid_: Hand-edited marker, corrupted block, drift
 
 **Misplaced Repository Rule**:
-A passage of an instruction carrier the Setup Manifest lists, outside every Managed Region and outside a block another tool delimits, or an Unrecorded Managed Region, which belongs in `docs/agents/specific-repository.md`. Roundfix names it and never moves it ([ADR-0411](docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md)).
+A passage of an instruction carrier the Setup Manifest lists, outside every Managed Region and outside a block another tool delimits, or an Unrecorded Managed Region, which belongs in `docs/agents/specific-repository.md`. The `@AGENTS.md` import line of a regular root `CLAUDE.md` and the bytes of an unlinked checkout are not a Misplaced Repository Rule; Roundfix names every other passage and never moves it ([ADR-0411](docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md)).
 _Avoid_: Damaged rule, automatic migration, repository extension
 
 **Baseline ADR**:

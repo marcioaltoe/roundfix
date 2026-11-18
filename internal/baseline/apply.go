@@ -324,12 +324,14 @@ func inspectApplyPreimage(
 func preimageMatchesPostimage(preimage Preimage, postimage Postimage) bool {
 	if preimage.Path != postimage.Path ||
 		preimage.Kind != postimage.Kind ||
-		preimage.Mode != postimage.Mode {
+		postimage.Kind != PreimageSymlink && preimage.Mode != postimage.Mode {
 		return false
 	}
 	switch postimage.Kind {
 	case PreimageMissing:
 		return !preimage.Exists
+	case PreimageSymlink:
+		return preimage.Exists && preimage.LinkTarget == string(postimage.Content)
 	case PreimageRegular:
 		return preimage.Exists &&
 			preimage.Bytes == int64(len(postimage.Content)) &&
@@ -527,8 +529,15 @@ func validatePlanApplyContract(document PlanDocument) error {
 		}
 	}
 	if document.PreservationMode == PreservationModeManagedRefresh {
-		if len(actualBackups) != 0 {
-			return errors.New("managed-refresh Baseline Plan must not contain root backups")
+		for source := range actualBackups {
+			if source != ClaudeInstructionLinkPath || !isClaudeInstructionLinkPostimage(postimages[source]) {
+				return errors.New("managed-refresh Baseline Plan must not contain other root backups")
+			}
+		}
+		if isClaudeInstructionLinkPostimage(postimages[ClaudeInstructionLinkPath]) && preimages[ClaudeInstructionLinkPath].Kind == PreimageRegular {
+			if _, exists := actualBackups[ClaudeInstructionLinkPath]; !exists {
+				return errors.New("CLAUDE.md instruction-link conversion has no immutable backup")
+			}
 		}
 	} else {
 		for source := range expectedBackups {
@@ -715,6 +724,14 @@ func expectedRootBackups(
 	}
 	var carriers []carrier
 	for _, carrierPath := range []string{"AGENTS.md", "CLAUDE.md"} {
+		if carrierPath == ClaudeInstructionLinkPath {
+			if _, changes := postimagesByPath[carrierPath]; !changes {
+				continue
+			}
+		}
+		if carrierPath == ClaudeInstructionLinkPath && isClaudeInstructionLinkPostimage(postimagesByPath[carrierPath]) && byPath[carrierPath].Kind == PreimageSymlink {
+			continue
+		}
 		preimage, ok := byPath[carrierPath]
 		if !ok || !preimage.Exists {
 			continue

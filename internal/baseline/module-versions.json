@@ -155,6 +155,10 @@
       {
         "version": 31,
         "digest": "sha256:fda4784228bbc196de0c02081bd123f58e33b2165dc1d1b4b7193a9521071db4"
+      },
+      {
+        "version": 32,
+        "digest": "sha256:3516168b9b725ea199cf91618ee479dbfe0cd835c0b62b677870277858245ac3"
       }
     ],
     "external-triage": [

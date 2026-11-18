@@ -23,3 +23,5 @@ weakening the invariant to a promise rather than a verified postimage was
 rejected because the backup is only redundant while the proof is mechanical.
 This narrows ADR-0070 to the adoption path that motivated it and does not
 supersede it: first adoption still backs up every root carrier it rewrites.
+
+**Amended by [ADR-0432](0432-claude-md-is-always-a-symbolic-link-to-agents-md.md) (2026-11-18).** A Managed Refresh may replace the root `CLAUDE.md`, and only that path, with the Claude Instruction Link when the file holds no passage of its own. The plan proves convertibility on the bound preimage through the shared reader instead of requiring unchanged bytes outside Managed Regions at that path, and writes the content-addressed root backup `CLAUDE.<digest>.md` for a replaced regular file.

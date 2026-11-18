@@ -4,10 +4,10 @@ description: Adopt, update, or verify a repository's Context-Driven Baseline thr
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.9
+  version: 0.0.10
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.9
+version: 0.0.10
 ---
 
 # Setup Context-Driven
@@ -21,6 +21,44 @@ setup engine or behavioral fallback.
 Read the durable operating contract before the first adoption or a recovery:
 `docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
 
+## Root instruction file
+
+`AGENTS.md` is the root instruction file; `CLAUDE.md` is always a relative
+symbolic link to `AGENTS.md`, with no repository option to keep a separate file.
+Adoption creates the link or replaces a regular file or a safe link elsewhere.
+A managed refresh creates an absent link and replaces a regular file or safe
+link elsewhere only when it holds no passage of its own. A replaced regular
+file gets the root backup `CLAUDE.<digest>.md`; a link's target stays untouched.
+
+When passages remain, the plan leaves `CLAUDE.md` unchanged and refreshes the
+rest. Text prints this warning; JSON carries its code, path and message in
+`warnings`:
+
+```text
+Warning: baseline.root.claude-link.withheld: CLAUDE.md: CLAUDE.md holds <n> passage[s] of its own (<path>:<start>-<end>[, ...]); move each into docs/agents/specific-repository.md, then run roundfix baseline update to replace it with a symbolic link to AGENTS.md
+```
+
+Use `1 passage` or `<n> passages`. For a link elsewhere the message begins
+`CLAUDE.md links to <target>, which holds`. When `AGENTS.md` is not a regular
+file, the same code instead says:
+
+```text
+AGENTS.md is not a regular file, so CLAUDE.md cannot link to it; make AGENTS.md the root instruction file, then run roundfix baseline update
+```
+
+An unlinked checkout holds exactly `AGENTS.md` as regular-file bytes while Git
+records mode `120000`. The plan leaves it unchanged and warns:
+
+```text
+Warning: baseline.root.claude-link.unlinked-checkout: CLAUDE.md: this checkout holds the symbolic link CLAUDE.md -> AGENTS.md as a regular file; run git config core.symlinks true, then check CLAUDE.md out again
+```
+
+Both warnings preserve the update's exit code. Move every passage into
+`docs/agents/specific-repository.md` before the next update converts the file.
+The command never moves a passage itself.
+
+When a plan warns `baseline.root.claude-link.withheld`, report each passage to the person and move it into `docs/agents/specific-repository.md` only with the person's approval; the next update then replaces `CLAUDE.md` with the link.
+
 ## Who starts this skill
 
 An Agent may start this skill itself when its dispatch trigger matches; its
@@ -32,8 +70,10 @@ repository's own instructions already authorize it.
 ## Boundaries
 
 Baseline owns declared root blocks, setup-owned guides, first-adoption
-root-instruction backups, and `docs/agents/setup-context.json`. It preserves
-repository-authored bytes outside managed boundaries.
+root-instruction backups, the Claude Instruction Link, and
+`docs/agents/setup-context.json`. Except for the approved conversion of
+`CLAUDE.md` described above, it preserves repository-authored bytes outside
+managed boundaries.
 
 Baseline never:
 
@@ -101,8 +141,9 @@ roundfix baseline update --repo . --yes --format json
 
 The command derives the current Baseline Profile and compatible decisions from
 the Setup Manifest. It asks no settled question and does not invoke semantic
-classification. It changes only Baseline-managed regions and the Repository
-Skill Set; every byte outside managed boundaries remains byte-identical.
+classification. It changes Baseline-managed regions, the Repository Skill Set and, when no
+passage would be lost, `CLAUDE.md` into the symbolic link. Every other byte
+outside managed boundaries remains byte-identical.
 
 Use `--confirm-plan <digest>` instead of `--yes` for a previously reviewed Plan
 Digest. A decision absent from the manifest exits `3` without writing unless

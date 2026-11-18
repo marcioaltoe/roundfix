@@ -100,3 +100,5 @@ never inspected.
 - An Unrecorded Managed Region is still refreshed as ADR-0145 decides. Its
   removed lines are now also named as a passage to move, before the refresh
   drops them.
+
+**Amended by [ADR-0432](0432-claude-md-is-always-a-symbolic-link-to-agents-md.md) (2026-11-18).** A regular root `CLAUDE.md` whose bytes are exactly `AGENTS.md`, with no newline, yields no Misplaced Repository Rule, nor does a passage whose trimmed text is exactly `@AGENTS.md`. Every other passage is still named and never moved.

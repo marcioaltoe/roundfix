@@ -648,7 +648,11 @@ func (transaction *fileTransaction) replacePostimage(ctx context.Context, index 
 	if !sameTransactionState(current, entry.Before) {
 		return fmt.Errorf("Baseline transaction preimage is stale at %q", entry.Path)
 	}
-	if err := validateMutationDestination(transaction.anchored, entry.Path); err != nil {
+	if isClaudeInstructionLinkPostimage(entry.After) {
+		if err := validatePathParents(transaction.anchored, entry.Path); err != nil {
+			return err
+		}
+	} else if err := validateMutationDestination(transaction.anchored, entry.Path); err != nil {
 		return err
 	}
 	transaction.journal.Phase = transactionJournalReplacing
@@ -968,7 +972,7 @@ func restoreTransactionPreimage(
 	if err := transaction.ensureParentDirectories(entry.Path); err != nil {
 		return err
 	}
-	if entry.After.Kind == PreimageSymlink && entry.Before.Kind == PreimageMissing {
+	if entry.After.Kind == PreimageSymlink && (entry.Before.Kind == PreimageMissing || isClaudeInstructionLinkPostimage(entry.After)) {
 		if err := validatePathParents(transaction.anchored, entry.Path); err != nil {
 			return err
 		}
@@ -976,14 +980,17 @@ func restoreTransactionPreimage(
 		if err != nil {
 			return err
 		}
-		if current.Kind != PreimageMissing && !postimageMatchesState(entry.After, current) {
+		if sameTransactionState(current, entry.Before) {
+			return nil
+		}
+		if !postimageMatchesState(entry.After, current) {
 			return fmt.Errorf("restore Baseline link %q: destination changed", entry.Path)
 		}
-		if err := transaction.anchored.Remove(entry.Path); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
+		if err := transaction.anchored.Remove(entry.Path); err != nil {
+			return fmt.Errorf("remove planned Baseline link %q: %w", entry.Path, err)
 		}
-		return transaction.syncRepositoryParent(entry.Path)
 	}
+
 	if err := validateMutationDestination(transaction.anchored, entry.Path); err != nil {
 		return fmt.Errorf("restore Baseline preimage %q: %w", entry.Path, err)
 	}
@@ -991,6 +998,23 @@ func restoreTransactionPreimage(
 	case PreimageMissing:
 		if err := transaction.anchored.Remove(entry.Path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("remove rolled-back Baseline path %q: %w", entry.Path, err)
+		}
+	case PreimageSymlink:
+		if !isClaudeInstructionLinkPostimage(entry.After) {
+			return fmt.Errorf("restore Baseline preimage %q: unsupported symbolic link", entry.Path)
+		}
+		temporary := transaction.destinationTemporaryPath(index, entry.Path, "restore")
+		if err := transaction.recordTemporaryPath(temporary); err != nil {
+			return err
+		}
+		if err := removeTransactionTemporary(transaction.anchored, temporary); err != nil {
+			return err
+		}
+		if err := transaction.anchored.Symlink(entry.Before.LinkTarget, temporary); err != nil {
+			return fmt.Errorf("create Baseline rollback link %q: %w", entry.Path, err)
+		}
+		if err := transaction.anchored.Rename(temporary, entry.Path); err != nil {
+			return fmt.Errorf("restore Baseline preimage %q: %w", entry.Path, err)
 		}
 	case PreimageRegular:
 		temporary := transaction.destinationTemporaryPath(index, entry.Path, "restore")
@@ -1383,7 +1407,8 @@ func validateTransactionJournal(journal transactionJournal) error {
 		if err := validateTransactionPostimage(entry.After); err != nil {
 			return err
 		}
-		if entry.After.Kind == PreimageSymlink && entry.Before.Kind != PreimageMissing {
+		if entry.After.Kind == PreimageSymlink && entry.Before.Kind != PreimageMissing &&
+			!(isClaudeInstructionLinkPostimage(entry.After) && (entry.Before.Kind == PreimageRegular || entry.Before.Kind == PreimageSymlink)) {
 			return fmt.Errorf("symbolic-link entry %q must have a missing preimage", entry.Path)
 		}
 		if err := validateTransactionFileState(entry.Before); err != nil {
@@ -1491,6 +1516,11 @@ func validateTransactionFileState(state transactionFileState) error {
 	return nil
 }
 
+func isClaudeInstructionLinkPostimage(postimage Postimage) bool {
+	return postimage.Path == ClaudeInstructionLinkPath && postimage.Kind == PreimageSymlink &&
+		postimage.Mode == 0 && postimage.ContentIdentity == "" && string(postimage.Content) == ClaudeInstructionLinkTarget
+}
+
 func validateTransactionPostimages(root *os.Root, postimages []Postimage) error {
 	for _, postimage := range postimages {
 		if err := validateTransactionPostimage(postimage); err != nil {
@@ -1499,8 +1529,10 @@ func validateTransactionPostimages(root *os.Root, postimages []Postimage) error 
 		if err := validatePathParents(root, postimage.Path); err != nil {
 			return fmt.Errorf("validate Baseline destination %q: %w", postimage.Path, err)
 		}
-		if err := validateMutationDestination(root, postimage.Path); err != nil {
-			return err
+		if !isClaudeInstructionLinkPostimage(postimage) {
+			if err := validateMutationDestination(root, postimage.Path); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -1607,10 +1639,10 @@ func captureTransactionEntries(
 	entries := make([]transactionJournalEntry, len(document.Postimages))
 	for index, postimage := range document.Postimages {
 		current := exactByPath[postimage.Path]
-		if current.Kind != PreimageMissing && current.Kind != PreimageRegular {
+		if current.Kind != PreimageMissing && current.Kind != PreimageRegular && !(current.Kind == PreimageSymlink && isClaudeInstructionLinkPostimage(postimage)) {
 			return nil, nil, nil, nil, fmt.Errorf("Baseline destination %q has unsafe preimage kind %q", postimage.Path, current.Kind)
 		}
-		if postimage.Kind == PreimageSymlink && current.Kind != PreimageMissing {
+		if postimage.Kind == PreimageSymlink && current.Kind != PreimageMissing && !isClaudeInstructionLinkPostimage(postimage) {
 			return nil, nil, nil, nil, fmt.Errorf("Baseline symbolic-link destination %q must be missing", postimage.Path)
 		}
 		entries[index] = transactionJournalEntry{
@@ -1664,7 +1696,7 @@ func captureTransactionState(root *os.Root, relative string) (transactionFileSta
 	}
 	state := transactionFileState{
 		Exists: true,
-		Mode:   uint32(info.Mode()),
+		Mode:   preimageMode(info),
 		Bytes:  info.Size(),
 	}
 	switch {

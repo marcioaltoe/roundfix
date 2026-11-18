@@ -285,7 +285,8 @@ func buildPlanWithCatalog(
 	request PlanRequest,
 	catalog *Catalog,
 ) (PlanOutcome, error) {
-	initial, err := InspectRepository(ctx, request.Repository, nil)
+	git := ExecGitRunner{}
+	initial, err := InspectRepository(ctx, request.Repository, git)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -498,7 +499,7 @@ func buildPlanWithCatalog(
 	if plannedDraft != nil {
 		mutablePaths = append(mutablePaths, plannedDraft.Path)
 	}
-	snapshot, err := inspectRepositorySnapshot(ctx, initial.Root, InventoryRequest{MutablePaths: mutablePaths}, nil)
+	snapshot, err := inspectRepositorySnapshot(ctx, initial.Root, InventoryRequest{MutablePaths: mutablePaths}, git)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -588,9 +589,9 @@ func buildPlanWithCatalog(
 	}
 	retention = append(retention, repositoryRules.Retention...)
 
-	postimages, ledger, err := assemblePostimages(
-		initial.Root,
-		snapshot,
+	postimages, ledger, claudeWarnings, err := assemblePostimages(
+		ctx, git, initial.Root,
+		&snapshot,
 		artifacts,
 		manifestBytes,
 		preservation,
@@ -623,6 +624,7 @@ func buildPlanWithCatalog(
 		return PlanOutcome{}, err
 	}
 	warnings := append(cloneFindings(preservation.Warnings), retainedReviewFindings...)
+	warnings = append(warnings, claudeWarnings...)
 	doc := PlanDocument{
 		SchemaVersion:  PlanSchemaVersion,
 		Repository:     initial.Identity,
@@ -655,8 +657,8 @@ func buildPlanWithCatalog(
 			return PlanOutcome{}, fmt.Errorf("serialize Setup Manifest: %w", err)
 		}
 		doc.SetupManifest = manifest
-		doc.Postimages, doc.ManagedEntries, err = assemblePostimages(
-			initial.Root, snapshot, artifacts, append(manifestBytes, '\n'),
+		doc.Postimages, doc.ManagedEntries, _, err = assemblePostimages(
+			ctx, git, initial.Root, &snapshot, artifacts, append(manifestBytes, '\n'),
 			preservation, repositoryPlan, repositoryRules, plannedDraft,
 		)
 		if err != nil {
@@ -2363,15 +2365,17 @@ func compactSetupManifestMethodArrays(data []byte) []byte {
 }
 
 func assemblePostimages(
+	ctx context.Context,
+	git GitRunner,
 	root string,
-	snapshot RepositorySnapshot,
+	snapshot *RepositorySnapshot,
 	artifacts []plannedArtifact,
 	manifestBytes []byte,
 	preservation RootPreservationPlan,
 	repositoryPlan specificRepositoryPlan,
 	repositoryRules repositoryRuleInventory,
 	profileDraft *plannedProfileDraft,
-) ([]Postimage, []ManagedEntry, error) {
+) ([]Postimage, []ManagedEntry, []Finding, error) {
 	byPath := make(map[string][]plannedArtifact)
 	for _, artifact := range artifacts {
 		byPath[artifact.Path] = append(byPath[artifact.Path], artifact)
@@ -2381,7 +2385,7 @@ func assemblePostimages(
 	for relative, grouped := range byPath {
 		current, err := readOptionalRegular(root, relative)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		content := string(current)
 		if preservationConsumesRootPath(preservation, relative) {
@@ -2402,15 +2406,67 @@ func assemblePostimages(
 			repositoryRules.ByPath[relative],
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		outputs[relative] = rendered
 	}
-	outputs[manifestPath] = append([]byte(nil), manifestBytes...)
+	link, err := ReadClaudeInstructionLink(ctx, root, git)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	_, writesAgents := outputs[ClaudeInstructionLinkTarget]
+	convertClaude := link.Convertible()
+	if preservation.Mode != PreservationModeManagedRefresh {
+		convertClaude = writesAgents && link.Shape != ClaudeInstructionLinkLinked && link.Shape != ClaudeInstructionLinkUnlinkedCheckout
+	}
+	var warnings []Finding
+	if !convertClaude {
+		if warning, ok := claudeInstructionLinkWarning(link); ok {
+			warnings = append(warnings, warning)
+		}
+	}
+	// An alias target remains in place; it needs no backup for replacing the link.
+	backups := make([]RootBackup, 0, len(preservation.Backups)+1)
 	for _, backup := range preservation.Backups {
+		if backup.CarrierPath == ClaudeInstructionLinkPath && (backup.SourcePath != ClaudeInstructionLinkPath || !convertClaude) {
+			continue
+		}
+		backups = append(backups, backup)
+	}
+	if convertClaude && preservation.Mode == PreservationModeManagedRefresh {
+		preimage := preimagesByPath(snapshot.Preimages)[ClaudeInstructionLinkPath]
+		if preimage.Kind == PreimageRegular {
+			content, err := readOptionalRegular(root, ClaudeInstructionLinkPath)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if planContentIdentity(content) != preimage.ContentIdentity {
+				return nil, nil, nil, errors.New("CLAUDE.md preimage changed during backup planning")
+			}
+			planned, findings, err := planRootBackups(root, []rootPreservationSource{{
+				carrierPath: ClaudeInstructionLinkPath, sourcePath: ClaudeInstructionLinkPath,
+				contentIdentity: preimage.ContentIdentity, content: content,
+			}})
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if len(findings) != 0 {
+				return nil, nil, nil, fmt.Errorf("plan CLAUDE.md root backup: %s: %s", findings[0].Code, findings[0].Message)
+			}
+			backups = append(backups, planned...)
+			for _, backup := range planned {
+				if _, exists := preimagesByPath(snapshot.Preimages)[backup.Path]; !exists {
+					snapshot.Preimages = append(snapshot.Preimages, backup.Preimage)
+				}
+			}
+			sort.Slice(snapshot.Preimages, func(i, j int) bool { return snapshot.Preimages[i].Path < snapshot.Preimages[j].Path })
+		}
+	}
+	outputs[manifestPath] = append([]byte(nil), manifestBytes...)
+	for _, backup := range backups {
 		source, err := readOptionalRegular(root, backup.SourcePath)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		if rendered, exists := outputs[backup.SourcePath]; exists &&
 			bytes.Equal(source, rendered) &&
@@ -2434,6 +2490,9 @@ func assemblePostimages(
 	for _, relative := range repositoryPlan.DeletePaths {
 		pathSet[relative] = struct{}{}
 	}
+	if convertClaude {
+		pathSet[ClaudeInstructionLinkPath] = struct{}{}
+	}
 	paths := sortedKeys(pathSet)
 	postimages := make([]Postimage, 0, len(paths))
 	ledger := make([]ManagedEntry, 0)
@@ -2446,6 +2505,9 @@ func assemblePostimages(
 				Content: content, ContentIdentity: planContentIdentity(content),
 			}
 		}
+		if relative == ClaudeInstructionLinkPath && convertClaude {
+			postimage = Postimage{Path: relative, Kind: PreimageSymlink, Content: []byte(ClaudeInstructionLinkTarget)}
+		}
 		postimages = append(postimages, postimage)
 		action := fileAction(
 			preimages[relative],
@@ -2453,6 +2515,9 @@ func assemblePostimages(
 			before,
 			postimage.ContentIdentity,
 		)
+		if relative == ClaudeInstructionLinkPath && convertClaude {
+			ledger = append(ledger, ManagedEntry{ID: "root.claude-instruction-link", Path: relative, Action: action, Kind: "link", BeforeIdentity: before})
+		}
 		grouped := byPath[relative]
 		for _, artifact := range grouped {
 			ledger = append(ledger, ManagedEntry{
@@ -2466,7 +2531,7 @@ func assemblePostimages(
 			len(repositoryRules.ByPath[relative]) != 0 {
 			blocks, err := parseRepositoryRuleBlocks(relative, content)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			for _, block := range blocks {
 				ledger = append(ledger, ManagedEntry{
@@ -2496,7 +2561,7 @@ func assemblePostimages(
 				ContentIdentity: postimage.ContentIdentity,
 			})
 		}
-		for _, backup := range preservation.Backups {
+		for _, backup := range backups {
 			if backup.Path == relative {
 				ledger = append(ledger, ManagedEntry{
 					ID: "backup:" + backup.SourcePath, Path: relative, Action: action, Kind: "backup",
@@ -2531,7 +2596,35 @@ func assemblePostimages(
 	for index := range ledger {
 		ledger[index].Ordinal = index
 	}
-	return postimages, ledger, nil
+	return postimages, ledger, warnings, nil
+}
+
+func claudeInstructionLinkWarning(link ClaudeInstructionLink) (Finding, bool) {
+	warning := Finding{Code: "baseline.root.claude-link.withheld", Path: ClaudeInstructionLinkPath}
+	switch link.Shape {
+	case ClaudeInstructionLinkLinked, ClaudeInstructionLinkAbsent:
+		return Finding{}, false
+	case ClaudeInstructionLinkUnlinkedCheckout:
+		warning.Code = "baseline.root.claude-link.unlinked-checkout"
+		warning.Message = "this checkout holds the symbolic link CLAUDE.md -> AGENTS.md as a regular file; run git config core.symlinks true, then check CLAUDE.md out again"
+	case ClaudeInstructionLinkAgentsNotRegular:
+		warning.Message = "AGENTS.md is not a regular file, so CLAUDE.md cannot link to it; make AGENTS.md the root instruction file, then run roundfix baseline update"
+	default:
+		locations := make([]string, 0, len(link.Passages))
+		for _, passage := range link.Passages {
+			locations = append(locations, fmt.Sprintf("%s:%d-%d", passage.Path, passage.StartLine, passage.EndLine))
+		}
+		prefix := "CLAUDE.md holds"
+		if link.Shape == ClaudeInstructionLinkElsewhere {
+			prefix = "CLAUDE.md links to " + link.Target + ", which holds"
+		}
+		plural := ""
+		if len(link.Passages) != 1 {
+			plural = "s"
+		}
+		warning.Message = fmt.Sprintf("%s %d passage%s of its own (%s); move each into docs/agents/specific-repository.md, then run roundfix baseline update to replace it with a symbolic link to AGENTS.md", prefix, len(link.Passages), plural, strings.Join(locations, ", "))
+	}
+	return warning, true
 }
 
 func reportRemovedManagedRegionLines(
@@ -2716,6 +2809,28 @@ func validateManagedRefreshPreservation(
 	preimagesByPath := preimagesByPath(preimages)
 	for _, postimage := range postimages {
 		preimage, bounded := preimagesByPath[postimage.Path]
+		if isClaudeInstructionLinkPostimage(postimage) {
+			anchored, err := os.OpenRoot(root)
+			if err != nil {
+				return err
+			}
+			current, readErr := captureTransactionState(anchored, postimage.Path)
+			closeErr := anchored.Close()
+			if err := errors.Join(readErr, closeErr); err != nil {
+				return err
+			}
+			if !bounded || !transactionStateMatchesPreimage(current, preimage) {
+				return fmt.Errorf("preimage %q changed during preservation validation", postimage.Path)
+			}
+			link, err := ReadClaudeInstructionLink(context.Background(), root, nil)
+			if err != nil {
+				return err
+			}
+			if !link.Convertible() {
+				return fmt.Errorf("CLAUDE.md preimage is not convertible to the instruction link")
+			}
+			continue
+		}
 		if postimage.Path == manifestPath || !bounded ||
 			!preimage.Exists || preimage.Kind != PreimageRegular {
 			continue
@@ -2766,7 +2881,7 @@ func fileAction(before Preimage, afterKind PreimageKind, beforeIdentity, afterId
 	if before.Exists && afterKind == PreimageMissing {
 		return "delete"
 	}
-	if beforeIdentity == afterIdentity {
+	if before.Kind == afterKind && beforeIdentity == afterIdentity && afterKind != PreimageSymlink {
 		return "unchanged"
 	}
 	return "update"
@@ -2804,7 +2919,8 @@ func deriveFileChanges(
 		}
 		before := preimageByPath[relative]
 		if before.Exists && before.Kind == postimage.Kind &&
-			before.ContentIdentity == postimage.ContentIdentity {
+			before.ContentIdentity == postimage.ContentIdentity &&
+			(postimage.Kind != PreimageSymlink || before.LinkTarget == string(postimage.Content)) {
 			continue
 		}
 		changes = append(changes, FileChange{

@@ -90,6 +90,10 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
 - `baseline-rules:` — after `skills:` and any `user-skills:` and
   `authoring-models:` lines, before residue. Names Misplaced Repository Rules
   without moving them. It never fails Doctor or changes its exit code.
+- `baseline-claude-link:` — immediately after `baseline-rules:` and before
+  residue, reports the Claude Instruction Link. It is `ok` for the symbolic
+  link to `AGENTS.md`, `warn` with the next action for another shape or read
+  error, and `skipped` without a Setup Manifest. It never fails Doctor.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage. A terminal Run whose recorded owner
   PID is alive with a different start identity adds nothing: its owner is gone
@@ -417,3 +421,27 @@ next action is `roundfix baseline update --decision repository.extension.enabled
 `DR-BASELINE-RULES-UNREAD` means an invalid manifest or unreadable carrier.
 Both codes warn and never fail Doctor. Roundfix moves nothing; a person or a
 supervised Agent moves a passage, with the person's approval for the Agent.
+
+#### Claude Instruction Link
+
+The offline check prints one line immediately after `baseline-rules:` and
+before the residue lines:
+
+```text
+baseline-claude-link: ok (CLAUDE.md is a symbolic link to AGENTS.md)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: CLAUDE.md is absent; next: run roundfix baseline update to create the symbolic link to AGENTS.md)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: CLAUDE.md is a regular file; next: run roundfix baseline update to replace it with a symbolic link to AGENTS.md)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: CLAUDE.md is a symbolic link to <target>; next: run roundfix baseline update to replace it with a symbolic link to AGENTS.md)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: CLAUDE.md is a regular file with <n> passage[s] of its own: <path>:<start>-<end>[, ...]; next: move each passage into docs/agents/specific-repository.md, then run roundfix baseline update)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: CLAUDE.md is a symbolic link to <target> with <n> passage[s] of its own: <path>:<start>-<end>[, ...]; next: move each passage into docs/agents/specific-repository.md, then run roundfix baseline update)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: AGENTS.md is not a regular file; next: make AGENTS.md the root instruction file, then run roundfix baseline update)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK-UNLINKED: CLAUDE.md is the symbolic link to AGENTS.md checked out as a regular file; next: run git config core.symlinks true, then check CLAUDE.md out again)
+baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK-UNREAD: <error>; next: re-run roundfix doctor after fixing CLAUDE.md)
+baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)
+```
+
+Use `1 passage` or `<n> passages`; locations are separated by `, `.
+`DR-BASELINE-CLAUDE-LINK` names a deviation and its next action;
+`DR-BASELINE-CLAUDE-LINK-UNLINKED` names a checkout without symbolic links;
+`DR-BASELINE-CLAUDE-LINK-UNREAD` reports a read error. Every code is advisory:
+the line never fails Doctor or changes its exit code, and writes nothing.
