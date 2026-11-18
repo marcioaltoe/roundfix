@@ -1,7 +1,0 @@
-$ ./bin/roundfix --version
-stdout:
-roundfix 0.0.0-dev (cdf12d37)
-
-stderr:
-
-exit: 0

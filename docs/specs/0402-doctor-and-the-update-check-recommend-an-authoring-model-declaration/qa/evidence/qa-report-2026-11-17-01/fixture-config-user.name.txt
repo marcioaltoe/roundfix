@@ -1,6 +1,0 @@
-$ git config user.name QA
-stdout:
-
-stderr:
-
-exit: 0

@@ -1,4 +1,0 @@
-make build: exit 0; details in build.txt.
-Daemon-supplied make verify-changed: pass (exit 0), audited head f2ea52308c584184440d174fd9236250bd2e00e4; diagnostics removed on success. Not rerun.
-./bin/roundfix --version: roundfix 0.0.0-dev (f2ea52308c584184440d174fd9236250bd2e00e4)
-Strict check: exit 0; see precondition.txt.

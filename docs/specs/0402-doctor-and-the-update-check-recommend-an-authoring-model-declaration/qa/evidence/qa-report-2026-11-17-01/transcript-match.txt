@@ -1,1 +1,0 @@
-Surface Transcript 1: stdout line-by-line with ... wildcards: pass; stderr empty: pass; exit 0: pass.

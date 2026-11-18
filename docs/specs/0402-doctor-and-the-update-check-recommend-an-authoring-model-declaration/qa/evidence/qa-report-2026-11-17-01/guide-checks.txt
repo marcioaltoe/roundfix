@@ -1,5 +1,0 @@
-.agents/skills/roundfix/references/setup.md == skills/roundfix/references/setup.md; phrase 'Recommended Authoring Declaration': pass
-.agents/skills/roundfix/references/modes.md == skills/roundfix/references/modes.md; phrase 'undeclared': pass
-docs/user-guide/commands/update.md: undeclared: pass
-docs/user-guide/commands/doctor.md: installed without an Authoring Model Declaration: pass
-Guide YAML equals RecommendedAuthoringYAML: named configuration_guide subtest above.

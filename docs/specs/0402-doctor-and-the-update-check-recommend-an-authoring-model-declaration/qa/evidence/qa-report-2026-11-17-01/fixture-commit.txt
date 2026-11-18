@@ -1,6 +1,0 @@
-$ git commit -qm fixture
-stdout:
-
-stderr:
-
-exit: 0

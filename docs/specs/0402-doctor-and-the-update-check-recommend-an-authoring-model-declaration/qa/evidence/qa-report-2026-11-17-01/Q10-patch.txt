@@ -1,9 +1,0 @@
---- internal/config/authoring_recommendation.go
-+++ internal/config/authoring_recommendation.go
-@@ -40,5 +40,6 @@
- 	} {
- 		fmt.Fprintf(&block, "      %s:\n        model: %s\n        reasoning_effort: %s\n", phase.key, phase.entry.Model, phase.entry.ReasoningEffort)
- 	}
-+	block.WriteString("        tools: [WebSearch]\n")
- 	return block.String()
- }

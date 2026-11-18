@@ -1,6 +1,0 @@
-$ go build -buildvcs=false -ldflags -X roundfix/internal/app.Version=0.0.0-dev -X roundfix/internal/app.BuildCommit=cdf12d37 -o ./bin/roundfix ./cmd/roundfix
-stdout:
-
-stderr:
-
-exit: 0

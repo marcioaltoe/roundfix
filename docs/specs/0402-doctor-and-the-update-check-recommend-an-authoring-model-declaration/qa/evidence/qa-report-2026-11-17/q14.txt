@@ -1,8 +1,0 @@
-Pull Request row; target branch roundfix/deliver-0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration-7b9ed25a1d111241.
-Environment fact from this QA assignment: no open Pull Request. No real gh command or network lookup ran.
-Approval: _authorization.md approved, granted 2026-11-17, implement/commit/push/pull_request/merge/release recorded in delivery-authority commit 62971267c32633d9cfa879d0093e9d7daa0fdc4a, before the Task commits. This QA session still performs none of those delivery mutations.
-Checks/status: Daemon make verify-changed passed (exit 0) at f2ea52308c584184440d174fd9236250bd2e00e4.
-Unresolved review threads: no Pull Request exists, so there are no Pull Request threads to resolve.
-Merge-Ready acceptance: absent; no equivalent acceptance exists yet.
-Candidate: audited f2ea52308c584184440d174fd9236250bd2e00e4 on the assigned Run branch; any Pull Request belongs to the target branch, never the Run branch.
-Unblocking: open the delivery Pull Request after the scope and toolchain issues are settled, then obtain its required checks/review and Merge-Ready acceptance.

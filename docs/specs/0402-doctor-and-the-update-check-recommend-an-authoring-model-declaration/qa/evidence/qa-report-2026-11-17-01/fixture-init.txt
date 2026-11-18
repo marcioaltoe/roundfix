@@ -1,6 +1,0 @@
-$ git init -q
-stdout:
-
-stderr:
-
-exit: 0

@@ -1,8 +1,0 @@
-Results table: 14 contiguous rows; 13 pass, 1 blocked environment, zero pending.
-Every executed row declares typed inputs; history and approval rows also declare commit_range.
-Auditor metadata and seeded mechanical skips/carry decisions preserved.
-50 report links resolve.
-All 72 report/evidence files are UTF-8 text, nonignored and scanned against the repository secret-pattern table.
-Every listed user-flow executable is inside this Run Worktree.
-Tracked diff is empty; audited HEAD and Run branch unchanged.
-No self-audit errors.

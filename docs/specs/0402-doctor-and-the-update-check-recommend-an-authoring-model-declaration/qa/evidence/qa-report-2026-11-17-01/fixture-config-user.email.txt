@@ -1,6 +1,0 @@
-$ git config user.email qa@example.invalid
-stdout:
-
-stderr:
-
-exit: 0
