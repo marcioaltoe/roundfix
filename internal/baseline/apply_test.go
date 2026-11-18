@@ -887,6 +887,17 @@ func jsonMarshalIndent(value any) ([]byte, error) {
 
 func assertAppliedPostimage(t *testing.T, repo string, postimage Postimage) {
 	t.Helper()
+	if postimage.Kind == PreimageSymlink {
+		info, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(postimage.Path)))
+		if err != nil || info.Mode()&os.ModeSymlink == 0 {
+			t.Fatalf("applied postimage %s is not a symbolic link: %v", postimage.Path, err)
+		}
+		target, err := os.Readlink(filepath.Join(repo, filepath.FromSlash(postimage.Path)))
+		if err != nil || target != string(postimage.Content) {
+			t.Fatalf("applied postimage %s target = %q, want %q: %v", postimage.Path, target, postimage.Content, err)
+		}
+		return
+	}
 	content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(postimage.Path)))
 	if err != nil {
 		t.Fatalf("read applied postimage %s: %v", postimage.Path, err)

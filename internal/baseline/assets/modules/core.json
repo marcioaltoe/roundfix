@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 31,
+  "version": 32,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -328,7 +328,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 17,
+      "version": 18,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [

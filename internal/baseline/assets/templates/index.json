@@ -136,7 +136,7 @@
     },
     {
       "id": "template.guide.agent-instructions",
-      "version": 4,
+      "version": 5,
       "kind": "guide",
       "path": "guides/agent-instructions.md",
       "tokens": ["artifact.rules", "verification.gate", "verification.incremental", "branch.prefix"]

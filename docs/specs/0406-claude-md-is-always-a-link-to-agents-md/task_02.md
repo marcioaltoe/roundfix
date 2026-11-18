@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0406-claude-md-is-always-a-link-to-agents-md
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -104,3 +104,38 @@ Adoption writes `CLAUDE.md` as a symbolic link to `AGENTS.md`, and a managed ref
 - `_prd.md` → Goals (first, second and fifth bullets); Core Features 2 and 5; Success Metrics 1, 2, 3 and 5; Decisions
 - `_techspec.md` → Plan and apply; invariants 5 to 8; API Contracts 1, 2 and 4; Testing Approach (Task 2); Risks & Considerations (derived churn, a host that cannot create links); Build Order 2
 - ADR-0432, ADR-0433, ADR-0100, ADR-0070, ADR-0071
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-testing, testing-boss, domain-modeling, tech-writer, setup-context-driven, roundfix, evidence-gate, systematic-debugging, no-workarounds, agentic-cli-design.
+
+Implemented the Task 02 slice. Plan assembly uses the shared reader and Git runner to add the exact instruction-link postimage, its managed entry, and create/update projection, or the complete withheld/unlinked-checkout warning. Adoption and convertible Managed Refresh preserve replaced regular files through the existing content-addressed backup planner. Replaced aliases leave their targets intact without a new backup. Apply verifies links by kind and target; the preservation proof binds its exception to the approved preimage and the reader's convertibility result. Transaction capture, journal validation, replacement, and rollback allow existing regular files or links only for the exact root instruction-link postimage.
+
+Acceptance evidence:
+
+- Adoption: all six named adoption cases in `TestBaselinePlansTheClaudeInstructionLink` passed. They assert exact postimages, managed entries, file changes, complete warnings, regular-file backup bytes, absence of alias backups, disk shape/mode preservation, and a current subsequent Managed Refresh after each conversion. The unlinked checkout is reproduced through Git with `core.symlinks=false` and is left unchanged.
+- Managed Refresh: all ten named refresh cases passed, including absent, empty, import-only, Managed-Region-only, copied-AGENTS, clean alias, withheld regular/alias passages, unlinked checkout, and the existing link. Convertible cases converge; withheld carriers retain their original bytes/modes and exact warning.
+- Rollback and stale approval: both required rollback cases reached the hook after the planned link existed and restored the original file bytes/mode or alias target. The stale-CLAUDE case rejects apply without repository changes. `TestApplyExactDigest` passed with the link-aware helper; its regular-file comparison is unchanged.
+- Guide and derived artifacts: added the exact API Contract 4 sentence without changing a clause; template version 4 -> 5 and guide version 17 -> 18. The sanctioned recorder selected core module version 32. `make baseline-digests` regenerated the declared formatter golden, Standard TypeScript profile pin, catalog records, and four plan goldens. `guide_states_the_rule` passes. The glossary amendment cites ADR-0432; ADR-0100 has the required dated amendment paragraph. Focused glossary contracts pass.
+- Negative probe: an isolated Go overlay removed only the instruction-link branch from `validateManagedRefreshPreservation`. `refresh_import_line_converted` then failed with `non-managed region digest mismatch at "CLAUDE.md"`, exit 1. The repository source was never changed for the probe.
+
+Focused commands and outcomes:
+
+- `go test ./internal/baseline -run '^(TestBaselinePlansTheClaudeInstructionLink|TestClaudeInstructionLinkRollbackRestoresTheFile|TestApplyExactDigest|TestEmptyReapply|TestImmutableRootBackup|TestManagedRootFreshPlan|TestTransactionStagesBeforeMutation|TestTransactionRollback|TestTransactionRecovery|TestTransactionFailureMatrix|TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage)$' -count=1 -timeout 8m` — exit 0.
+- After the final journal constraint and plan cleanup: `go test ./internal/baseline -run '^(TestBaselinePlansTheClaudeInstructionLink|TestClaudeInstructionLinkRollbackRestoresTheFile|TestApplyExactDigest|TestTransactionRecovery|TestTransactionWritesVerifiesAndRollsBackASymbolicLinkPostimage|TestManagedRootFreshPlan)$' -count=1 -timeout 6m` — exit 0.
+- `go test ./internal/baseline -run '^(TestManagedRefreshPreservesNonManagedRegionDigests|TestManagedRefreshApplyRejectsChangedNonManagedRegion|TestManagedRefreshPreservationAllowsNewManagedRootBlock|TestBaselinePlanCharacterization)$' -count=1 -timeout 5m` — exit 0; the exception does not weaken other carrier preservation and the regenerated plans match final code.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce)$' -count=1 -timeout 4m` — exit 0.
+- `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1` — exit 0; required sanctioned generation, before digest regeneration.
+- `make baseline-digests` — exit 0, `ok:true`, `changed:true`; only declared derived paths changed.
+- `go test -overlay /private/tmp/roundfix-task02-preservation-_mqn8g__/overlay.json ./internal/baseline -run '^TestBaselinePlansTheClaudeInstructionLink$/^refresh_import_line_converted$' -count=1 -timeout 3m` — expected exit 1 with the exact preservation mismatch above.
+- `git diff --check` — exit 0. The changed-path audit found no path outside this Task's declarations. The entry diff was only the Daemon-owned status change in this Task file.
+
+Final sanctioned repository refresh (the last implementation step):
+
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` — exit 0, approved postimages verified; changed exactly `docs/agents/agent-instructions.md` and `docs/agents/setup-context.json`. Approved digest: `sha256:f58fedd09cbaa711c9af85ae2d8d7a9aca4c4f6902387801137391b8300cc108`.
+- Repeating that sanctioned command — exit 0, `File changes: 0`, `Idempotence: verified`.
+- The unconfirmed text preview, `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --format text` — exit 0, `Baseline update: current`, `File changes: 0`, `Misplaced repository rules: 0`. The existing nested-carrier warnings name the formatter golden and Source Baseline AGENTS.md files; both stayed unchanged. This read-only text preview is distinct from the Daemon-owned JSON Verification command.
+
+Follow-up outside this slice: an extra original-plan reapply probe after adoption of an alias to `docs/claude-notes.md` was refused as stale at the existing `docs` directory. The required fresh Managed Refresh converges; directory-preimage reapply behavior was not changed here. Exact reapply assertions remain for the refresh fixtures.
+
+The full Baseline, CLI, and docscontract suites, the declared Verification commands, selected repository Verification, Task status, and settlement remain Daemon-owned and were not run or changed by this Agent. No commit, push, pull request, other Task edit, Task Graph edit, Source Baseline, Setup Snapshot, other profile, formatter golden AGENTS.md, repository-specific guide, Makefile, workflow, Go module, or lint configuration change was made.
