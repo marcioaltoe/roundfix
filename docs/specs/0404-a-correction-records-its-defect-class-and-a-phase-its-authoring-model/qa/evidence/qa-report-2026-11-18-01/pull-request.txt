@@ -1,7 +1,0 @@
-Prompt fact: no open Pull Request. This row uses the Spec target branch, never the Run branch.
-Approval equivalent: approved _authorization.md, granted 2026-11-17, explicitly grants delivery operations; no separate current-candidate review is claimed.
-Checks equivalent: Daemon supplied make verify-changed, pass, exit 0 at 6bd53345a7d597a9504ee9cc7f5f1cf2b40fd762. Not rerun.
-Unresolved threads: none, because no Pull Request exists.
-Merge-Ready acceptance: none yet.
-Review-artifact ancestry: no review artifact yet; claimed candidate is audited head 6bd53345a7d597a9504ee9cc7f5f1cf2b40fd762.
-Unblock: after the gate, the Supervisor obtains review and opens the authorized target-branch Pull Request, then observes its controls.

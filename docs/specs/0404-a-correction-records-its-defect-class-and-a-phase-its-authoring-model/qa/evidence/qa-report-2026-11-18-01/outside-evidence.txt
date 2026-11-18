@@ -1,7 +1,0 @@
-Outside-evidence row: published literature supplied as offline excerpts by the PRD, not the Spec study or synthetic measurements. No network lookup was performed, as Task 05 prohibits network.
-Moher, Schulz and Altman, The CONSORT statement, The Lancet 2001, checklist item 16; https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(00)04337-3/fulltext
-Quote: State the results in absolute numbers when feasible (eg, 10/20, not 50%).
-National Center for Health Statistics, Data Presentation Standards for Proportions, Series 2 No.175, 2017; https://www.cdc.gov/nchs/data/series/sr_02/sr02_175.pdf
-Quote: Estimates with either a denominator sample size or an effective denominator sample size (when applicable) less than 30 should be suppressed.
-Quote: When an estimate is flagged or suppressed, a footnote indicating the reason the estimate has been flagged or suppressed should be provided in the publication.
-Observed actual product output in report.txt: every rate consists of two counts, and each withheld comparison prints insufficient sample, its group sizes, and 20 each needed. NCHS uses 30 for a proportion; 20 per group is the maintainer decision for this report, not attributed to NCHS.

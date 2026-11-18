@@ -1,6 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T051745Z_d63008af9d14015a/bin/roundfix corrections declare --spec 0412-example --class implementation --reason 'The note was cut in the middle of a multi-byte character'
-cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-transcript-klw68wbq/repo
-stdout:
-Correction C1 of 0412-example: implementation; covers no Correction Sign.
-stderr:
-exit: 0

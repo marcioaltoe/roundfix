@@ -1,3 +1,0 @@
-package main
-import("fmt";"io/fs";"os";"path/filepath";"unicode/utf8";"roundfix/internal/secretscan")
-func main(){files,matches:=0,0;for _,root:=range os.Args[1:]{err:=filepath.WalkDir(root,func(path string,d fs.DirEntry,err error)error{if err!=nil{return err};if d.IsDir(){return nil};b,err:=os.ReadFile(path);if err!=nil{return err};files++;if !utf8.Valid(b){return fmt.Errorf("non-text evidence: %s",path)};for _,m:=range secretscan.ScanContent(path,b){fmt.Println(m.String());matches++};return nil});if err!=nil{fmt.Fprintln(os.Stderr,err);os.Exit(1)}};fmt.Printf("Scanned %d text files; Secret Matches: %d\n",files,matches);if matches>0{os.Exit(1)}}

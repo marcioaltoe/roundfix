@@ -1,4 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T090333Z_0670718a805c2150/bin/roundfix qa-report accept docs/specs/0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model/qa/qa-report-2026-11-18-01.md
-stdout:
-stderr:
-exit: 0

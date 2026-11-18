@@ -1,8 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T051745Z_d63008af9d14015a/bin/roundfix phase start prd --spec 0413-a-ledger-export --model claude-fable-5-2 --author-subagent
-cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-transcript-8d6gzo_g/repo
-stdout:
-Recorded prd of 0413-a-ledger-export for claude session 3f9a1c20: model claude-fable-5-2 (reported), effort high (environment), run by the Author Subagent
-stderr:
-exit: 0
-last phase line:
-{"schema":"roundfix/phase-record/v1","kind":"phase","time":"2026-11-18T08:52:18Z","phase":"prd","spec":"0413-a-ledger-export","repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/0404-transcript-8d6gzo_g/repo","harness":"claude","session":"3f9a1c20","boundary":false,"repository_id":"sha256:67a59f696991b24d55d12a4ac35b556757a8b0b60e09ae238ded8a72481a1070","model":"claude-fable-5-2","model_source":"reported","effort":"high","effort_source":"environment","runner":"author-subagent"}

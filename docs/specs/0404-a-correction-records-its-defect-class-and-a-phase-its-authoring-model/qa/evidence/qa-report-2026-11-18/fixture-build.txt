@@ -1,5 +1,0 @@
-command: go build -buildvcs=false -overlay '<temporary overlay>' -o bin/qa-fixture ./cmd/roundfix
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model-970ded9f97bf38b8-ab29ef09-52f005c8/run_20261118T051745Z_d63008af9d14015a
-stdout:
-stderr:
-exit: 0
