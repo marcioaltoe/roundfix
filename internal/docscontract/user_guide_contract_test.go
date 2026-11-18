@@ -21,6 +21,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/cli"
+	"roundfix/internal/correction"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
@@ -44,6 +45,13 @@ var glossaryClosedLists = []struct {
 	values     []string
 	exceptions []string
 }{
+	{term: "Defect Class", values: func() []string {
+		var values []string
+		for _, class := range correction.DefectClasses() {
+			values = append(values, string(class))
+		}
+		return values
+	}(), exceptions: []string{"not-a-correction"}},
 	{term: "Task Type", values: func() []string {
 		var values []string
 		for _, taskType := range spec.AllowedTaskTypes() {

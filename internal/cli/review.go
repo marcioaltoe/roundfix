@@ -23,6 +23,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/correction"
 	"roundfix/internal/phaserecord"
 	"roundfix/internal/preflight"
 	"roundfix/internal/runevent"
@@ -1022,10 +1023,12 @@ func matchingReviewFindingDispositions(
 }
 
 type reviewDisposeRequest struct {
-	findingID string
-	dismiss   bool
-	evidence  string
-	fixedBy   string
+	declaration correctionRequest
+	declares    bool
+	findingID   string
+	dismiss     bool
+	evidence    string
+	fixedBy     string
 }
 
 func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -1052,7 +1055,11 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		printReviewDisposeRefusal(fmt.Errorf("requires a git repository working tree: %w", err), stderr)
 		return exitPreflight
 	}
-	artifactDir, err := roundconfig.ValidateArtifactDirectory(loaded.Config.Defaults.ArtifactDir, gitState.Root, loaded.HomeDir)
+	resolveArtifacts := roundconfig.ValidateArtifactDirectory
+	if request.declares {
+		resolveArtifacts = roundconfig.ResolveArtifactDirectory
+	}
+	artifactDir, err := resolveArtifacts(loaded.Config.Defaults.ArtifactDir, gitState.Root, loaded.HomeDir)
 	if err != nil {
 		printReviewDisposeRefusal(err, stderr)
 		return exitPreflight
@@ -1138,6 +1145,35 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 		disposition.FixedBy = fixedBy
 	}
 
+	var prepared preparedCorrection
+	if request.declares {
+		declaration := request.declaration
+		if declaration.slug == "" {
+			if len(record.Specs) != 1 {
+				names := strings.Join(record.Specs, ", ")
+				if names == "" {
+					names = "none"
+				}
+				printReviewDisposeRefusal(fmt.Errorf("--spec is required; review record specs: %s", names), stderr)
+				return exitPreflight
+			}
+			declaration.slug = record.Specs[0]
+		}
+		if !phaseSpecSlug.MatchString(declaration.slug) {
+			printReviewDisposeRefusal(fmt.Errorf("invalid Spec slug %q; --spec must match ^[0-9]{4}(-[a-z0-9]+)+$", declaration.slug), stderr)
+			return exitPreflight
+		}
+		prepared, err = prepareCorrection(ctx, declaration, loaded, gitRunner)
+		if err != nil {
+			printReviewDisposeRefusal(err, stderr)
+			return correctionExit(err)
+		}
+		prepared.declaration.Signs = []correction.Sign{
+			{Kind: "finding", ID: finding.ID + "@" + record.HeadCommit},
+			{Kind: "commit", ID: disposition.FixedBy},
+		}
+		prepared.declaration.Harness, prepared.declaration.Session = harnessSession(environment.dependencies.getenv)
+	}
 	line, err := reserveReviewFindingDisposition(ctx, ledgerPath, record, finding, disposition)
 	if err != nil {
 		printReviewDisposeRefusal(err, stderr)
@@ -1146,6 +1182,23 @@ func runReviewDisposeCommand(ctx context.Context, args []string, stdout, stderr 
 	if _, err := stdout.Write(line); err != nil {
 		printReviewDisposeRefusal(fmt.Errorf("write disposition output: %w", err), stderr)
 		return exitPreflight
+	}
+	if request.declares {
+		result, err := appendCorrection(ctx, prepared, environment.dependencies.phaseNow())
+		if err != nil {
+			fmt.Fprintf(stderr, "roundfix: review dispose: disposition recorded but Correction could not be written: %v; declare it with roundfix corrections declare --spec %s --finding %s@%s --commit %s", err, prepared.slug, finding.ID, record.HeadCommit, disposition.FixedBy)
+			if request.declaration.id != "" {
+				fmt.Fprintf(stderr, " --correction %s", request.declaration.id)
+			} else {
+				fmt.Fprintf(stderr, " --class %s --reason %s", request.declaration.class, posixSingleQuote(request.declaration.reason))
+				if request.declaration.artifact != "" {
+					fmt.Fprintf(stderr, " --artifact %s", request.declaration.artifact)
+				}
+			}
+			fmt.Fprintln(stderr)
+			return exitRunFailed
+		}
+		fmt.Fprintln(stdout, result)
 	}
 	return exitOK
 }
@@ -1222,6 +1275,11 @@ func parseReviewDisposeCommand(args []string) (reviewDisposeRequest, error) {
 	flags.BoolVar(&request.dismiss, "dismiss", false, "Dismiss the finding")
 	flags.StringVar(&request.evidence, "evidence", "", "Evidence supporting dismissal")
 	flags.StringVar(&request.fixedBy, "fixed-by", "", "Commit that fixes the finding")
+	flags.StringVar(&request.declaration.class, "class", "", "Declared Defect Class")
+	flags.StringVar(&request.declaration.artifact, "artifact", "", "Plan artifact")
+	flags.StringVar(&request.declaration.reason, "reason", "", "Reason as data")
+	flags.StringVar(&request.declaration.id, "correction", "", "Existing Correction")
+	flags.StringVar(&request.declaration.slug, "spec", "", "Spec folder slug")
 	if err := flags.Parse(args[1:]); err != nil {
 		return request, validationError{message: err.Error()}
 	}
@@ -1232,6 +1290,46 @@ func parseReviewDisposeCommand(args []string) (reviewDisposeRequest, error) {
 	flags.Visit(func(flag *flag.Flag) {
 		set[flag.Name] = true
 	})
+	request.declaration.set = set
+	declarationFlag := func(name string) bool {
+		return name == "class" || name == "reason" || name == "artifact" || name == "correction" || name == "spec"
+	}
+	// Inspect the original argument order rather than flag.Visit's sorted order.
+	for index := 1; index < len(args); index++ {
+		arg := args[index]
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+		name := strings.SplitN(strings.TrimLeft(arg, "-"), "=", 2)[0]
+		// A string flag's value may itself look like a declaration flag.
+		if name != "dismiss" && !strings.Contains(arg, "=") {
+			index++
+		}
+		if declarationFlag(name) && set[name] {
+			request.declares = true
+			if request.dismiss {
+				return request, validationError{message: "--" + name + " cannot be combined with --dismiss"}
+			}
+		}
+	}
+	if request.declares {
+		if set["correction"] && (set["class"] || set["reason"] || set["artifact"]) {
+			return request, validationError{message: "--correction cannot be combined with --class, --reason or --artifact"}
+		}
+		if set["class"] != set["reason"] {
+			return request, validationError{message: "--class and --reason must be given together"}
+		}
+		if !set["class"] && !set["correction"] {
+			return request, validationError{message: "--spec and --artifact require --class or --correction"}
+		}
+		check := request.declaration
+		if !set["spec"] {
+			check.slug = "0000-review"
+		}
+		if err := check.validate(); err != nil {
+			return request, err
+		}
+	}
 	fixedForm := set["fixed-by"]
 	if request.dismiss && fixedForm {
 		return request, validationError{message: "both --dismiss and --fixed-by were provided"}

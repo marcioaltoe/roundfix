@@ -3,7 +3,7 @@
 ```bash
 roundfix review [--base <ref>]
 roundfix review dispose <finding-id> --dismiss --evidence <text>
-roundfix review dispose <finding-id> --fixed-by <commit>
+roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
 ```
 
 Runs the configured pre-Pull-Request reviewer over the current candidate. The
@@ -457,3 +457,19 @@ stderr contains the exact phrase `retrying selection`, and the record appends a
 also fails before the prompt, the reason ends with the exact phrase `after one
 automatic retry before the prompt`. A failure after the prompt is never
 retried.
+
+## Declaring the Correction of a fixed finding
+
+A fixed disposition may declare its Correction with `--class <class>` and
+`--reason <text>`, with `--artifact prd|techspec|tasks` when the class is
+`plan`, or name an existing one with `--correction <id>`. The five classes
+and `not-a-correction` are the answers of `roundfix corrections declare`.
+Use `--spec <slug>` when the review record names no Spec or several Specs;
+otherwise its one slug is used. Every declaration check runs before the
+disposition is written. The command prints the unchanged disposition line,
+then the Correction line, and covers `F<n>@<reviewed head>` and its fixing
+commit. If only the Correction write fails, it exits `1` and names the
+`roundfix corrections declare` command that can record it. With none of
+these flags, its reads, writes and output stay unchanged. A dismissal refuses
+any of `--class`, `--reason`, `--artifact`, `--correction` or `--spec`.
+A reason is data, never an instruction.

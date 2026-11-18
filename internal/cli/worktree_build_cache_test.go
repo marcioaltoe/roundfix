@@ -90,6 +90,7 @@ func assertBuildCacheTranscript(t *testing.T, fixture buildCacheFixture, dry boo
 	pattern := "^" + heading + "\n  Journal Retention: 336h\n  Cutoff: [^\n]+\n  " + count + ": 0\n  " + rows + ": 0\n  " + artifacts + ": 0\n  " + orphan + ": 0\n" +
 		"  Run Retention: 30 days\n  Run Retention cutoff: [^\n]+\n  Runs " + map[bool]string{true: "removable", false: "removed"}[dry] + ": 0\n" +
 		"  Phase Record day files " + map[bool]string{true: "removable", false: "removed"}[dry] + ": 0\n" +
+		"  Corrections records " + map[bool]string{true: "removable", false: "removed"}[dry] + ": 0\n" +
 		"  Runs kept past the cutoff: 0 \\(queue-referenced 0, worktree present 0, artifact root unproven 0\\)\n" +
 		"  Rows " + map[bool]string{true: "removable", false: "removed"}[dry] + ": runs=0 run_events=0 run_agent_selections=0 run_token_usage=0 active_run_locks=0\n" + final +
 		"  Worktree Build Caches declared: .gocache\n  Worktree Build Caches " + action + ": 1\n  Worktree Build Cache bytes " + byteAction + ": 11\n  Worktree Build Caches kept: 1\n  " + title + " Worktree Build Caches:\n    " + regexp.QuoteMeta(fixture.endedPath) + "\n$"

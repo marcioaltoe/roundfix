@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.261
+  version: 0.1.263
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.261
+version: 0.1.263
 ---
 
 # Roundfix
@@ -68,14 +68,14 @@ History Citations and the `git show history-full:<path>` restore command.
 
 <!-- roundfix:reference-index:begin -->
 
-Read the reference for the command family you need. Each command has exactly one
-reference file, and a change to a command edits that file; a row marked `—`
-covers a topic that spans commands and owns none.
+Each command has one reference, edited when its command changes. Read its row;
+`—` marks a topic across commands and owns none.
 
 | Reference | Commands covered | When to read |
 | --- | --- | --- |
 | [archive](references/archive.md) | `archive`, `cancel`, `history`, `supersede` | Archiving, cancelling, sanitizing history, or superseding a Spec. |
 | [baseline](references/baseline.md) | `baseline` | Adopting or updating the Context-Driven Baseline. |
+| [corrections](references/corrections.md) | `corrections` | Using `roundfix corrections declare`. |
 | [deliver](references/deliver.md) | `deliver`, `window` | Starting or monitoring delivery, or setting a Run Window. |
 | [events](references/events.md) | `events` | Reading JSONL progress for a Run. |
 | [follow-up](references/follow-up.md) | `follow-up` | Listing pending work in priority order, or the status of work in progress. |
@@ -152,11 +152,10 @@ Roundfix keeps lossless evidence while giving each reader a compact surface:
   instructions, the canonical implement-task skill path, the skill dispatch guide
   (`docs/agents/skill-dispatch.md`) when the repository has it, paths from the
   Task's `## Context` section, and sorted files changed by prior integrated Tasks.
-  Before editing, the Agent reads the guide and loads only the skills whose
-  triggers and activation bundles match its Task's type, declared paths and
-  requested work, skipping skills only a person can start. It writes the Loaded
-  Skill List in `## Result` on one `Skills loaded:` line; the Daemon never checks
-  the list. The QA gate loads only the QA activation's and its declared surfaces'
+  Before editing, the Agent reads that guide and loads only skills matching
+  its Task type, paths and work, including matching activation bundles and
+  skipping person-only skills. It records them on one `Skills loaded:` line in
+  `## Result`; the Daemon never checks it. The QA gate loads only the QA activation's and its declared surfaces'
   matching skills before building its matrix, without a list. The bundle never
   embeds full PRDs, TechSpecs, Skill documents, source files, or prior diffs.
   Task-authored Context entries are capped at 50 unique repository-relative

@@ -92,6 +92,17 @@ and never block the Run.
 
 ## Whole-Run retention
 
+Run Retention also removes whole corrections records under
+`corrections/<repository key>/<slug>.jsonl` in Roundfix Home, with or without
+a Run Database. The newest decodable declaration or signs line must be
+older than the cutoff; a file with no decodable line is judged by its
+modification time. A newer line keeps the whole file. An empty repository
+directory is removed too. The GC report prints `Corrections records removed: <n>`,
+or `Corrections records removable: <n>` in a dry run, immediately after the
+Phase Record day file count. A record removal error is reported without
+stopping compaction or the sweep record.
+
+
 `store.run_retention_days` is User Config only, accepts `7`, `15` or `30`,
 and defaults to `30`. A Project Config value is ignored with a warning.
 Run Retention removes terminal Runs completed before that window, including

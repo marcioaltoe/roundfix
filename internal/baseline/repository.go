@@ -214,6 +214,13 @@ func InspectRepository(ctx context.Context, workDir string, runner GitRunner) (R
 	return RepositoryInspection{Root: root, Identity: identity, Snapshot: snapshot}, nil
 }
 
+// InspectRepositoryIdentity returns the same lineage identity used by Baseline
+// inspection, without collecting a repository snapshot.
+func InspectRepositoryIdentity(ctx context.Context, workDir string, runner GitRunner) (RepositoryIdentity, error) {
+	_, identity, err := inspectRepositoryIdentity(ctx, workDir, runner)
+	return identity, err
+}
+
 func inspectRepositoryIdentity(ctx context.Context, workDir string, runner GitRunner) (string, RepositoryIdentity, error) {
 	if runner == nil {
 		runner = ExecGitRunner{}

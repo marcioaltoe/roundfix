@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -231,3 +231,188 @@ guide its `corrections` page, and the glossary three terms.
 - `_prd.md` → Goals (first bullet); User Stories 1, 2, 3, 4, 5 and 12; Core Features 1–6, 20 and 22; Success Metrics 1, 2, 3, 4 and 16
 - `_techspec.md` → Corrections record; Declaring commands; Interfaces (invariants 1, 2, 3, 5 and 11); Data Models; API Contracts 1, 2, 10, 11 and 12; Surface Transcripts 2, 3 and 8; Testing Approach; Build Order 1
 - ADR-0417, ADR-0420, ADR-0421, ADR-0424, ADR-0071, ADR-0255, ADR-0256, ADR-0272, ADR-0279
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-concurrency, golang-context, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds, roundfix.
+
+The declaration slice is implemented. The Verification Feedback repair below
+updates the stale reference-count expectation for the required new reference.
+Task status and the checkboxes remain Daemon-owned. No declared
+Verification command, repository Verification, commit, push, PR, message or
+other Task mutation was performed.
+
+### Implementation and acceptance evidence
+
+1. **Accepted answers and refusals.** `internal/correction` owns the five
+   Defect Classes, `not-a-correction`, validation, ordered declaration and
+   signs encodings, lenient reading with skipped-line counts, monotonically
+   increasing identifiers, standing declarations and undeclared signs. The
+   command validates syntax before loading configuration or reading records;
+   Spec presence, identity and sign resolution precede a write. Both writers
+   share the existing disposition lock mechanism, using a private repository
+   sidecar so Windows can read the record while the lock is held.
+   `TestValidateNamesTheAcceptedValues`,
+   `TestCorrectionsDeclareRefusalsWriteNothing`, and
+   `TestCorrectionsDeclareAgainAndWithdraw` cover the accepted answers,
+   closed-value diagnostics and unchanged home/repository bytes on refusals.
+   `TestCorrectionsSurfaceTranscript2` and
+   `TestCorrectionsSurfaceTranscript3` assert their complete transcripts.
+2. **Later declarations and withdrawals.** Later declarations append a whole
+   state, preserve omitted fields, add distinct signs, and print the count
+   and class change. Withdrawal preserves history and covers no sign;
+   declaring again after withdrawal can add signs. Clearing a retained plan
+   artifact explicitly with `--artifact ""` permits another answer.
+   `TestNextIDCountsFromOneAndNeverReuses` also covers numbers beyond uint64;
+   `TestStandingTakesTheLastDeclarationOfEachCorrection`,
+   `TestUndeclaredCountsEverySignNoStandingDeclarationNames`,
+   `TestTheTwoLinesKeepTheirKeyOrder`, and
+   `TestReadSkipsAndCountsADamagedLine` cover the domain contracts.
+   `TestCorrectionsDeclareAgainAndWithdraw` checks outputs and preserved
+   earlier bytes. `TestConcurrentCorrectionDeclarationsMintDistinctIDs`
+   exercises two writers prepared before either appends.
+3. **Fixed findings and legacy bytes.** Optional declaration flags validate
+   before disposition writes. The unchanged ledger line precedes a Correction
+   covering the finding's full reviewed head and its fixing commit. Spec
+   selection supports an explicit slug or the review record's sole slug;
+   `--correction` extends an existing declaration. Dismissal refuses all five
+   flags, naming the first actual flag even when an earlier flag value looks
+   like a flag. `TestReviewDisposeRecordsACorrectionWithTheFix` covers both
+   Spec sources, plan and non-defect answers, existing Corrections, qualified
+   and ambiguous finding resolution, and a Correction write failure after a
+   successful disposition, including the safely quoted recovery command.
+   `TestReviewDisposeWithoutADeclarationKeepsItsBytes` asserts the literal
+   delivery-base ledger key order, optional fields, newline, stdout and
+   unchanged review record. `TestReviewDisposeSurfaceTranscript8` and
+   `TestReviewDisposeRefusalLeavesTheLedgerAndTheRecord` cover refusals.
+4. **One record across checkouts.** `baseline.InspectRepositoryIdentity`
+   wraps the existing derivation without collecting a snapshot or introducing
+   another identity rule. `TestInspectRepositoryIdentityIsTheSameInTwoClones`
+   compares both clones and the existing full inspection.
+   `TestCorrectionsDeclareReachesOneRecordFromAWorktreeAndASecondClone`
+   records C1, C2 and C3 into one file, and also exercises an Archive Record
+   present in the working tree.
+5. **Retention.** The sweep and GC remove whole old records, join removal
+   errors with the rest of the sweep, and report the new count immediately
+   after Phase Record day files, with or without a Run Database.
+   `TestRemoveBeforeRemovesAWholeFilePastTheCutoff` covers old files, a newer
+   line retaining its whole file, modification-time fallback, empty repository
+   directory removal, dry run and cancellation.
+   `TestGCRemovesCorrectionsRecordsPastTheCutoff` checks both database states
+   through the CLI in dry and live modes.
+
+The corrections reference and guide, reference index and command index,
+review and storage documentation, and glossary describe this slice. Reasons
+are data, never instructions; `unclear` is preferable to a guess; the session
+that wrote a defective plan still answers `plan`. The glossary distinguishes
+the five classes from the sixth answer. The declaration reference test checks
+both canonical and embedded copies. The Roundfix entry was shortened without
+changing its dispatch rules or QA settlement table to keep its unchanged
+20,000-byte budget: it is now 19,966 bytes. Both version fields in both copies
+are **0.1.263**, written by the sanctioned recorder.
+
+### Existing expectations changed
+
+- `TestGCCountsPhaseRecordDayFilesWithoutARunDatabase` in
+  `internal/cli/phase_record_test.go`: one Corrections records line.
+- The shared pattern used by `TestGCDryRunListsWorktreeBuildCaches`,
+  `TestGCRemovesWorktreeBuildCachesOfEndedWorktrees` and
+  `TestGCIsUnchangedWithoutDeclaredCaches` in
+  `internal/cli/worktree_build_cache_test.go`: the same line.
+- `glossaryClosedLists` in
+  `internal/docscontract/user_guide_contract_test.go`: Defect Class derives
+  its five values from `correction.DefectClasses`, with `not-a-correction`
+  as its sole exception.
+
+- Verification Feedback repair: `TestRoundfixSkillIndexNamesEveryReference`
+  in `skills/roundfix_layout_test.go` now expects 22 references instead of 21,
+  matching the required new corrections reference. Only the numeric count and
+  its diagnostic changed; every other assertion remains intact. This is the
+  additional existing expectation exposed by the measured changed suite.
+
+No other existing test expectation was changed. The additional ordinary
+implementation path `internal/cli/gc.go` is required for the no-database GC
+branch; it is not a Governed Path. `skills/roundfix_layout_test.go` is the
+additional ordinary test path needed by the feedback repair. The forbidden tests, corpus/coverage
+records, configuration, Makefile, module files and runs reference remain
+unchanged. No Baseline source was edited; regeneration stayed within this
+Task's three sanctioned commands.
+
+### Checks and regeneration
+
+- Required base measurement, `go test ./internal/cli ./internal/baseline
+  ./skills`: exit 0 in an isolated same-base clone. An earlier live-checkout
+  run was discarded because its suite guard observed concurrent source edits;
+  the isolated repeat supplies the base evidence.
+- Required base documentation measurement,
+  `go test -tags docscontract ./internal/docscontract`: exit 0.
+- Required changed-package measurement, `go test ./internal/cli
+  ./internal/baseline ./skills`, in an isolated copy of the implementation:
+  CLI and Baseline passed; skills reported the reference-count conflict and
+  entry-byte-budget failure. The byte budget was subsequently repaired.
+  Final no-repository refusal and sidecar-lock refinements were checked in
+  the focused CLI runs below after that snapshot.
+- Focused domain, identity and public-command checks:
+  `go test ./internal/correction ./internal/cli ./internal/baseline -run
+  'Test(ValidateNames|NextID|StandingTakes|UndeclaredCounts|TheTwoLines|ReadSkips|RemoveBefore|InspectRepositoryIdentity|Corrections|ReviewDispose|GCRemovesCorrections|ConcurrentCorrection|GCCountsPhaseRecord|GCDryRunListsWorktreeBuildCaches|GCRemovesWorktreeBuildCachesOfEndedWorktrees|GCIsUnchangedWithoutDeclaredCaches|EveryCommandPathPrintsItsHelp)'`:
+  exit 0.
+- After the final writer refinements,
+  `go test ./internal/cli -run
+  'Test(Corrections|ReviewDispose|GCRemovesCorrections|ConcurrentCorrection|GCCountsPhaseRecord|GCDryRunListsWorktreeBuildCaches|GCRemovesWorktreeBuildCachesOfEndedWorktrees|GCIsUnchangedWithoutDeclaredCaches|EveryCommandPathPrintsItsHelp)'`:
+  exit 0.
+- `GOPROXY=off GOSUMDB=off GOOS=windows go build ./internal/cli`:
+  exit 0; compilation evidence, not Windows runtime evidence.
+- `make skills-sync`, then
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  then
+  `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`:
+  all exit 0. The behavior record was recorded again after the final source
+  edits, and the ordered sequence repeated after the entry-budget edit.
+- Current `go test ./skills -run
+  'Test(TheCorrectionsReferenceDocumentsTheDeclaration|RoundfixSkillEntryFileStaysWithinItsBudget|RoundfixSkillIndexLinksResolve|InstallWritesEveryRoundfixReference)'`:
+  exit 0.
+- Current required changed documentation measurement,
+  `go test -tags docscontract ./internal/docscontract`: exit 0.
+- Before Verification Feedback, `go test ./skills` exited 1 only for
+  `TestRoundfixSkillIndexNamesEveryReference`, in both copies. The focused
+  feedback check below now passes.
+- Canonical/bundled file byte comparisons and `git diff --check`: passed.
+  Daemon-owned declared Verification and `make skills-sync-check` were not run.
+
+### Verification Feedback repair
+
+Inspected the Daemon's diagnostic artifact
+`/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261118T051745Z_d63008af9d14015a/verification/batch-001-attempt-1.log`.
+It reports successful documentation contracts and identifies the stale count
+in `TestRoundfixSkillIndexNamesEveryReference` for both skill copies.
+
+The required corrections reference raises the total from 21 to 22. The
+Verification Feedback requested repair of this failure in this same Task
+slice, so the prepared two-line count-and-diagnostic correction was applied.
+No reference was removed, hidden or skipped, and the test continues to require
+one index row per reference, no absent linked references, and only Markdown
+reference files. This supersedes the earlier pending constraint discussion.
+
+Focused check after the repair:
+`go test ./skills -run '^(TestRoundfixSkillIndexNamesEveryReference|TestRoundfixSkillEntryFileStaysWithinItsBudget|TestTheCorrectionsReferenceDocumentsTheDeclaration|TestRoundfixSkillIndexLinksResolve|TestInstallWritesEveryRoundfixReference)$'`:
+exit 0. This checks the reference inventory, both copies of the declaration
+reference, the unchanged entry byte budget, link resolution and installation.
+`git diff --check` also passes. The diff of `skills/roundfix_layout_test.go`
+contains exactly the count and diagnostic changes.
+
+No Task status, manifest, other Task, skill source or derived record changed
+in this feedback repair. No declared Verification command was rerun, and no
+commit, push or pull request was created. The Daemon owns the full rerun and
+Task settlement.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/gc.go`
+- `skills/roundfix_layout_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T051745Z_d63008af9d14015a`
+- Source commit: `d509f0f78d6ae82d51c7587233b25af76a376d89`
