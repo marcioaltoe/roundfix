@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0405-authoring-model-fallback
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -84,3 +84,19 @@ change.
 - `_prd.md` → Goals (first and second bullets); User Stories 2, 3 and 6; Core Features 3, 4 and 7; Success Metrics 1 and 4
 - `_techspec.md` → Skill and guide texts; API Contracts 6 and 8; Build Order 3; Testing Approach
 - ADR-0427, ADR-0428, ADR-0401, ADR-0408, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, evidence-gate, systematic-debugging
+
+- Each authoring skill now selects the phase model and handles a limit through the fallback command, announces the switch, and restarts without waiting. The focused `go test ./skills -run '^TestTheAuthoringSkillsSwitchToTheDeclaredFallback$' -count=1` passed, covering all four phases and both copies, including the no-fallback and older-Roundfix instructions.
+- A comparison against HEAD confirmed that the other skill text and fix/refactor routes remain unchanged, apart from the sanctioned version fields; all four mirrors match their canonical files.
+- The Author Subagent glossary entry names the printed model and effort, and ADR-0401 carries the dated ADR-0427 amendment; both were inspected in the diff.
+- `make skills-sync`, the authorized skill-version recorder, and the authorized skill-coverage recorder each exited 0. The coverage recorder produced no changed record. The Daemon owns the declared Verification.
+
+- Verification feedback exposed an existing delegation assertion for the declared-model brief. The four bullets now state that path explicitly and use the same brief on fallback; mirrors and both sanctioned recorders were rerun successfully. Focused `go test ./skills -run '^TestTheAuthoringSkills(DelegateADeclaredPhase|SwitchToTheDeclaredFallback)$' -count=1` passed (146 tests and subtests). The Daemon owns the next full Verification attempt.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T111508Z_d52e529984ea1f74`
+- Source commit: `f7394c0a192e5a0ed3e83668bb1ae7f4bb72cc0a`
