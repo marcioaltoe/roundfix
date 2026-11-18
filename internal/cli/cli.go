@@ -5436,7 +5436,9 @@ Home without migrating, locking for writes, or changing any byte.
 
 Reports, read-only, whether a newer Roundfix release exists, the title of each
 release since the installed version, and this repository's Baseline plan with
-the installed binary. The release listing comes from the GitHub CLI and is
+the installed binary. It also names each configured Agent Selection Profile that differs
+from the Recommended Profile, with the command that adopts it.
+The release listing comes from the GitHub CLI and is
 cached for 24 hours in Roundfix Home; a lookup that fails is reported in one
 line. Every report exits 0. update.mode in Project Config or User Config
 selects notify (the default) or auto, which the Next: line names.

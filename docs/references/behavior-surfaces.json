@@ -58,7 +58,7 @@
     "command stop": "sha256:7066e60f3e2db5e40b4ab0ea3b1f8c439eadb63948122bb4c90be70be23c1992",
     "command storage report": "sha256:bb11fdf00ae56d1a44fd1f7addface275f647d4f3e00f8b258ad33d4bfe8ca45",
     "command supersede": "sha256:48b93164de71fe76e7bc50d25f43db0612942dece142700b257dd04e442e85f5",
-    "command update check": "sha256:c52faec77a62ab60b377ee1f4b3dd4e7034de4a628f85c05c464f5f46c7f74cf",
+    "command update check": "sha256:ea29ff66235e30a7bf0f5dc03b7431ba2122f67dd5aba87d36a9edcc5447353d",
     "command upgrade": "sha256:b2f07d005e73c047014bdce24c6faff49f5324df31919373401ff09daa044d1a",
     "command watch": "sha256:4a7067a335380564c050cb23751341098b057aa3cbca6e45bbd955593c2af16c",
     "command window clear": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",

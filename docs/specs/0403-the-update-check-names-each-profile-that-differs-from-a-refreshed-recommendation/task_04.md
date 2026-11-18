@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -125,3 +125,42 @@ Transcript, the JSON member and every case that reports nothing.
 - `_prd.md` → Goals (third bullet); Core Feature 3; Success Metrics 3 and 4; Non-Goals
 - `_techspec.md` → Update Check report; Interfaces (invariants 3 to 7); API Contracts 1, 2 and 3; Surface Transcript 1; Testing Approach (Task 4); Build Order 4
 - ADR-0416, ADR-0181, ADR-0371
+
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-error-handling, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, systematic-debugging, evidence-gate.
+
+Added the optional Update Check profile comparison, preserving the comparison's
+category order and reporting only `differs` rows. Older deviations receive
+`pinned_to_older_snapshot`, their deviation, a re-pin key and the source-specific
+adopt command. Text uses the existing profile formatter and collapses and bounds
+reasons to 300 characters; JSON keeps the original deviation reason. The member
+and lines follow authoring models and precede `next`/`Next:`. The comparison is
+omitted for an unread Project Config, a comparison error or no differing rows.
+The usage sentence and only its existing help expectation were updated.
+
+Focused evidence:
+
+- Before implementation, `go test -count=1 -timeout 5m ./internal/cli -run '^TestUpdateCheckNamesEachProfileThatDiffers$/transcript$'` exited 1 at the exact stdout assertion: both required `Profiles:` lines were absent, with exit 0 and empty stderr.
+- `go test -count=1 -timeout 5m -v ./internal/cli -run '^(TestUpdateCheckNamesEachProfileThatDiffers|TestUpdateCheckOmitsAnUnavailableProfileComparison)$'` exited 0. All ten command subtests and both unavailable-comparison subtests passed by name.
+- After the final fixture edits, `go test -count=1 -timeout 5m ./internal/cli -run '^(TestUpdateCheck|TestTheUpdateCheckNamesARepository)'` exited 0. This focused regression selection includes existing transcripts, help, release-cache behavior, authoring output and newer-Baseline reporting.
+- Three temporary Go overlays changed only the compiled builder, leaving repository source bytes untouched. Reporting current pins failed `pinned_and_current_add_nothing`; dropping deviation classification failed `transcript`; retaining an empty report failed `no_profiles_keep_the_report_bytes`. Each probe exited 1 at its intended full-output assertion, rather than a build or environment failure.
+- After the final Update Check edits, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0. Its generated diff changes only the `command update check` fingerprint.
+
+Acceptance evidence:
+
+- Each difference and older pin: `transcript` asserts the entire stdout, stderr and exit code for the committed Project Config fixture, with docs before review and no other category. `json` asserts every serialized field and its order, including placement after a present `authoringModels` member. Expectations read the shipped snapshot and recommended profiles from config constants/functions.
+- Quiet cases preserve bytes: `pinned_and_current_add_nothing`, `no_profiles_keep_the_report_bytes` and `newer_baseline_reports_no_member` assert the entire text and JSON reports, including omission of `recommendations`. The newer-Baseline fixture also carries a differing User Config profile to exercise the refusal guard. The unavailable-comparison test covers the explicit error branch.
+- `next`, exit and read-only behavior: every command case asserts exit 0 and its full report, `json` compares `next` with a run before profiles are configured, and `release_update_preserves_next` retains `apply` and its final text line. File/mode snapshots of the committed repository and isolated home remain unchanged across text, JSON and cached runs after priming the existing release cache. User Config scope and older User Config pins are covered separately; whitespace and a 301-character Unicode reason are covered too.
+- Surface Transcript 1: `TestUpdateCheckNamesEachProfileThatDiffers/transcript` passed with the complete controlled release and Baseline prefix and both required profile lines.
+
+The diff stays within this Task's declared paths. The existing profiles-check,
+apply, Doctor and upgrade implementations are unchanged. No follow-up work was
+identified. Task status remains Daemon-owned; declared Task Verification and
+repository Verification were not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T033001Z_a32a9a0e9d248cbd`
+- Source commit: `61d5d3b607d3ba7d6fb180833d8f42b9758c509f`
