@@ -27,3 +27,7 @@ A delivery Pull Request that falls behind a base branch requiring up-to-date bra
 ## Evidence
 
 The Quaestor's message above; not reproduced in Roundfix yet.
+
+## Decisions
+
+- 2026-11-18 (`/roundfix --follow-up`, AskUserQuestion): "Spec fix após a corretiva (Recommended)" — a fix Spec delivered right after the corrective qa-gate Spec; authorization "Mesmas do BE".

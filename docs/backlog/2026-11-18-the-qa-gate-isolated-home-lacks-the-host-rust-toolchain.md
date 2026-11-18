@@ -4,8 +4,6 @@ status: open
 created: 2026-11-18
 spec: null
 reason: null
-waiting_on: "the single release of the 0399-0406 queue (maintainer: Spec after the release)"
-since: 2026-11-18
 ---
 
 # The QA gate's isolated home lacks the host Rust toolchain, and the status view keeps a renamed Spec's phase
@@ -18,3 +16,4 @@ since: 2026-11-18
 ## Decisions
 
 - 2026-11-18: "Spec após a release"; authorization "Mesmas do BE (Recommended)" (to be recorded in the Spec's `_authorization.md`).
+- 2026-11-18 (`/roundfix --follow-up`): the single release v0.148.0 is out, so the wait ended; first in the delivery order.
