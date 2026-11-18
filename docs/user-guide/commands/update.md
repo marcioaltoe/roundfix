@@ -139,6 +139,30 @@ problem report without this block. With no declaration, problem or installed
 unpublished authoring skill, no text line or JSON member is added. Outside a
 Git repository or when Project Config was not read, neither is added.
 
+When Project Config was read and no newer Roundfix wrote the repository's
+Baseline, the check compares each configured Agent Selection Profile with the
+Recommended Profile from the running binary's snapshot. A category that
+differs without a Profile Deviation is named as:
+
+```text
+Profiles: <category> (<source>) differs from the Recommended Profile of <snapshot>: configured <profile>; recommended <profile>; adopt with roundfix profiles check --apply --scope <source>.
+```
+
+A category whose Profile Deviation was declared against an older snapshot is
+named as:
+
+```text
+Profiles: <category> (<source>) is pinned to an older snapshot (<from>: <reason>); recommended <profile> as of <snapshot>; re-pin with profiles.<category>.deviation.from: <snapshot> in <Project|User> Config, or adopt with roundfix profiles check --apply --scope <source>.
+```
+
+The comparison uses the running binary's snapshot, collapses whitespace in
+`<reason>` and limits it to 300 characters. A current category or one pinned
+to the shipped snapshot adds no `Profiles:` line. The comparison writes
+nothing and changes neither `next` nor the exit code. `--apply` adopts every
+differing category in its scope, including a category pinned to an older
+snapshot. When a newer Roundfix wrote the repository's Baseline, no profile
+comparison runs.
+
 When a newer Roundfix wrote this repository's Baseline, the check prints `roundfix: warning: <refusal>; Project Config not read` on stderr, reads no Project Config, and its Baseline line is `Baseline: failed:` followed by the refusal.
 
 Only when a release is newer or the Baseline has a plan, the last line names
@@ -178,6 +202,16 @@ document:
 | `authoringModels.next` | `roundfix skills install --target project` when a problem is fixable by installation; omitted otherwise |
 | `authoringModels.installed` | Installed authoring skills the repository does not publish, in phase order; present only when `undeclared` |
 | `authoringModels.recommendation` | Recommended Authoring Declaration as YAML starting at `skills:` and ending with a newline, with no `tools` key; present only when `undeclared` |
+| `recommendations` | Optional profile comparison, omitted when Project Config was not read, the comparison failed, or no category differs |
+| `recommendations.snapshot` | Snapshot from the running binary used for the comparison |
+| `recommendations.categories[].category` | Agent Work Category whose configured profile differs |
+| `recommendations.categories[].state` | `differs` or `pinned_to_older_snapshot` |
+| `recommendations.categories[].source` | `user` or `project`, the configuration source of the category |
+| `recommendations.categories[].configured` | Configured Profile with `preferred` and `fallbacks` |
+| `recommendations.categories[].recommended` | Recommended Profile with `preferred` and `fallbacks` |
+| `recommendations.categories[].deviation` | Profile Deviation, present only when `state` is `pinned_to_older_snapshot` |
+| `recommendations.categories[].repin` | Configuration key and snapshot that re-pin an older deviation, present only when `state` is `pinned_to_older_snapshot` |
+| `recommendations.categories[].adopt` | `roundfix profiles check --apply --scope <user|project>` for the category's source |
 | `next` | `apply` for a newer release or a `plan_ready` Baseline, otherwise `none` |
 
 A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.

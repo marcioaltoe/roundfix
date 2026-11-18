@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -123,3 +123,20 @@ ADR-0416. A test pins the skill text in both copies.
 - `_prd.md` → Goals (third and fourth bullets); Core Feature 4; Glossary
 - `_techspec.md` → Update Check report; API Contracts 1, 2 and 4; Testing Approach (Task 3); Build Order 3; Glossary
 - ADR-0416, ADR-0181, ADR-0371, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, ai-memory-handoff, systematic-debugging, tech-writer, domain-modeling, testing-boss, evidence-gate
+
+- The update command guide now documents both `Profiles:` forms, the read-only running-snapshot comparison, the Baseline refusal boundary, `--apply` scope behavior, and the `recommendations` JSON fields.
+- Both Roundfix skill copies now describe the `recommendations` rows, the post-upgrade JSON re-check, the one adopt/re-pin/keep choice, re-pin-before-adopt ordering, and the `update.mode: auto` report-only behavior. The setup reference names the text lines, JSON member, re-pin key and adopt command.
+- `CONTEXT.md` adds the Update Check comparison and ADR-0416 link; ADR-0181 carries the requested amendment paragraph. The new skill contract test checks canonical and embedded copies using `roundfixWhitespace`.
+- Sanctioned regeneration ran in order: `make skills-sync`; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (passed); `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (passed). The generated skill version and Behavior Surface records changed accordingly.
+- Focused check: `go test ./skills -run '^TestTheUpdateModeOffersTheProfileCommands$' -count=1` (passed; 3 tests).
+- The Task's declared `## Verification` commands were not run; the Daemon owns that verification and settlement.
+- Verification feedback diagnosis: the added profile-choice step shifted the existing `--update` `Preview`, `Apply` and `Report` contracts from items 3–5 and removed the expected `authoringModels.state` phrase from item 5. The repair keeps five numbered items, places the profile-choice question in item 1, and preserves the existing item contracts. After regeneration, the focused checks `TestTheUpdateModeAppliesOnlyThePlanItShowed`, `TestTheRoundfixSkillGathersDecisionsBeforeADelegatedPhase` and `TestTheUpdateModeOffersTheProfileCommands` passed together (`41 passed`).
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T011006Z_4382c58887862041`
+- Source commit: `34c7b4cc4c95e2fa57fb9490ebafeab800d2636f`

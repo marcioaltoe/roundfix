@@ -99,7 +99,7 @@
     "guide docs/user-guide/commands/stop.md": "sha256:49af0109d4ab0c31daf6ad1e26f8c12e4584f245d0cfb76d6d460d3ee06b6a94",
     "guide docs/user-guide/commands/storage-report.md": "sha256:ef49ea0282fe2a0a6c570ad5ea11e825f4f34f7df3fa11b849de846921199f73",
     "guide docs/user-guide/commands/supersede.md": "sha256:200fa30dfab0e06372da85c078fafc34101dee4fc8546d823fbc11217e8ec9f3",
-    "guide docs/user-guide/commands/update.md": "sha256:c67c52a578d24817c584b46ab38fb2b73ec6bf305ae52b2e07bd9613100de08a",
+    "guide docs/user-guide/commands/update.md": "sha256:dbfebd24b84985b0cfa4f066760079710d5a0b861830497fcabc2fc2cb5332cd",
     "guide docs/user-guide/commands/upgrade.md": "sha256:66d3f31d0c37925b377198a2d357db9ed57accc9a8cf9f1d7d02207094d50031",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",

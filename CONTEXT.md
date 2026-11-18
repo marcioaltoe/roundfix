@@ -1135,7 +1135,7 @@ The support command that checks or installs the latest released Roundfix binary 
 _Avoid_: Package manager update, version check only
 
 **Update Check**:
-The read-only report of `roundfix update check` that a session runs before its first task: the installed Roundfix against the latest published release, the titles of each newer release from its published notes, and the repository's Baseline plan with the installed binary. It reads the release listing at most once a day per machine, reports a lookup that fails in one line, and changes nothing ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md)).
+The read-only report of `roundfix update check` that a session runs before its first task: the installed Roundfix against the latest published release, the titles of each newer release from its published notes, the repository's Baseline plan with the installed binary, and each configured Agent Selection Profile that differs from the Recommended Profile, with `roundfix profiles check --apply --scope <user|project>` to adopt it ([ADR-0371](docs/adr/0371-a-session-starts-with-an-update-check-and-the-skill-applies-the-update.md), [ADR-0416](docs/adr/0416-the-update-check-names-each-configured-profile-that-differs-from-the-recommended-profile.md)). It reads the release listing at most once a day per machine, reports a lookup that fails in one line, and changes nothing.
 _Avoid_: Release note, version freshness line, upgrade check
 
 **Release Set**:
