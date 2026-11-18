@@ -3,7 +3,7 @@ package config
 // The dated Recommended Profile is advisory. Published evidence and sources
 // live in docs/references/model-selection.md.
 const (
-	ModelRecommendationSnapshotVersion = "2026-09-30"
+	ModelRecommendationSnapshotVersion = "2026-11-17"
 	ModelRecommendationSnapshotDate    = ModelRecommendationSnapshotVersion
 )
 
@@ -47,19 +47,37 @@ var recommendedProfilesByCategory = map[WorkCategory]recommendedProfileEntry{
 	},
 	CategoryReview: {
 		profile: AgentSelectionProfile{
-			Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-luna", ReasoningEffort: "max"},
+			Preferred: AgentSelection{Runtime: "codex", Model: "gpt-6-luna", ReasoningEffort: "max"},
 			Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}},
 		},
 		rationales: []string{
-			boundedWorkRationale,
+			fastWorkRationale,
 			"Stays on Codex, because every review selection must use the pre-PR review provider's runtime.",
 		},
 	},
-	CategoryDocs:  boundedWorkRecommendation(),
-	CategoryChore: boundedWorkRecommendation(),
+	CategoryDocs: {
+		profile: AgentSelectionProfile{
+			Preferred: AgentSelection{Runtime: "codex", Model: "gpt-6.1-terra", ReasoningEffort: "high"},
+			Fallbacks: []AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}},
+		},
+		rationales: []string{
+			"Clearer writing and more subscription usage suit documentation work.",
+			"Changes runtime; Sonnet 5.5 is the efficient Claude model.",
+		},
+	},
+	CategoryChore: {
+		profile: AgentSelectionProfile{
+			Preferred: AgentSelection{Runtime: "codex", Model: "gpt-6-luna", ReasoningEffort: "max"},
+			Fallbacks: []AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}},
+		},
+		rationales: []string{
+			fastWorkRationale,
+			"Changes runtime; Sonnet 5.5 is the efficient Claude model.",
+		},
+	},
 }
 
-const boundedWorkRationale = "Bounded work that blocks no other Task; about five minutes per session at a fraction of the price."
+const fastWorkRationale = "The current fast Codex model handles bounded work at its highest supported effort."
 
 func implementationRecommendation() recommendedProfileEntry {
 	return recommendedProfileEntry{
@@ -70,19 +88,6 @@ func implementationRecommendation() recommendedProfileEntry {
 		rationales: []string{
 			"The Codex workhorse since 2026-09-29, in the quota band of the model it replaces; adopted directly by the maintainer.",
 			"Changes runtime; opus resolves to Opus 5.5.",
-		},
-	}
-}
-
-func boundedWorkRecommendation() recommendedProfileEntry {
-	return recommendedProfileEntry{
-		profile: AgentSelectionProfile{
-			Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-luna", ReasoningEffort: "max"},
-			Fallbacks: []AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}},
-		},
-		rationales: []string{
-			boundedWorkRationale,
-			"Changes runtime; Sonnet 5.5 is the efficient Claude model.",
 		},
 	}
 }

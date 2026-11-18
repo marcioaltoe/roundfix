@@ -85,7 +85,7 @@ one, it must be complete. Built-ins use official model identifiers:
   `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
 - `frontend`: preferred `claude / opus / high`, fallback
   `codex / gpt-6.1-sol / xhigh`.
-- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+- `review`: preferred `codex / gpt-6-luna / max`, fallback
   `codex / gpt-6.1-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
@@ -132,7 +132,7 @@ profiles:
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: "max"
     fallbacks:
       - runtime: codex
@@ -187,7 +187,7 @@ roundfix profiles show --category backend --json
 ```
 
 JSON uses schema `roundfix/profiles/v2`. Each Agent Work Category has a
-Recommended Profile dated 2026-09-30: its Preferred Selection at rank 1 with
+Recommended Profile dated 2026-11-17: its Preferred Selection at rank 1 with
 role `preferred`, followed by its Fallback Chain with role `fallback`.
 Each row includes the selection, source date, and rationale. The Recommended
 Profile never selects, routes, or writes User Config or Project Config.

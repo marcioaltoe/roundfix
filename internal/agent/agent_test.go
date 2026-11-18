@@ -159,10 +159,10 @@ func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
 				{Label: "gpt-6-astra", Value: "gpt-6-astra", Description: "frontier model for the most demanding work; drains quota fastest"},
 				{Label: "gpt-6.1-terra", Value: "gpt-6.1-terra", Description: "fast, efficient writing model"},
 				{Label: "gpt-6-sol", Value: "gpt-6-sol", Description: "previous workhorse"},
-				{Label: "gpt-6-luna", Value: "gpt-6-luna", Description: "fast and affordable"},
+				{Label: "gpt-6-luna", Value: "gpt-6-luna", Description: "fast and affordable; built-in review default"},
 				{Label: "gpt-5.6-sol", Value: "gpt-5.6-sol", Description: "older workhorse"},
 				{Label: "gpt-5.6-terra", Value: "gpt-5.6-terra", Description: "older balanced model"},
-				{Label: "gpt-5.6-luna", Value: "gpt-5.6-luna", Description: "older fast model; built-in review default"},
+				{Label: "gpt-5.6-luna", Value: "gpt-5.6-luna", Description: "older fast model"},
 			},
 		},
 		{

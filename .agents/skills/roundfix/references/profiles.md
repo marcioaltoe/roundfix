@@ -12,7 +12,7 @@ Required built-ins:
   `codex / gpt-6.1-sol / high`, fallback `claude / opus / high`.
 - `frontend`: preferred `claude / opus / high`, fallback
   `codex / gpt-6.1-sol / xhigh`.
-- `review`: preferred `codex / gpt-5.6-luna / max`, fallback
+- `review`: preferred `codex / gpt-6-luna / max`, fallback
   `codex / gpt-6.1-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
@@ -80,7 +80,7 @@ profiles:
   review:
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
+      model: gpt-6-luna
       reasoning_effort: "max"
     fallbacks:
       - runtime: codex
@@ -100,7 +100,7 @@ roundfix profiles validate --json
 `profiles show` is read-only and returns `roundfix/profiles/v2` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
 the Recommended Profile. Each of the ten Agent Work Categories has one dated
-`2026-09-30`: its Preferred Selection at rank 1 with role `preferred`, then its
+`2026-11-17`: its Preferred Selection at rank 1 with role `preferred`, then its
 Fallback Chain with role `fallback`. Rows include the selection, source date,
 and rationale. Interactive configure prints the same advisory rows. The
 Recommended Profile never selects, routes, proves availability, or writes config.

@@ -103,10 +103,10 @@
     "guide docs/user-guide/commands/upgrade.md": "sha256:66d3f31d0c37925b377198a2d357db9ed57accc9a8cf9f1d7d02207094d50031",
     "guide docs/user-guide/commands/watch.md": "sha256:decc0d2e07e312f51ac71a6fd4870d02baa285f3dbaab4c1b9dc763281a4b039",
     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
-    "guide docs/user-guide/configuration.md": "sha256:a6328f5b80979d7b1920116d6f5842cfefe777cdb9607a62896b28ea3cd11a2e",
+    "guide docs/user-guide/configuration.md": "sha256:ef159aad116bdaed52e41ab7829c9f368384fefc8e94aba965e3e0c803868d0a",
     "guide docs/user-guide/context-driven-development.md": "sha256:7af1ba3a2b801cbe58bdb7c0e1d65d0b5264a10ffabbb8eed1944a5bf9511533",
     "guide docs/user-guide/release-runbook.md": "sha256:17b3c029c1ee5fc04ddc1b8fbccbdc82b517ab38d83d468bd907d714e0dd4bfe",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:b6be401ecef6c94df9d725cbd1da2d362c9b78f47a73766c142651f5582ca1b6",
-    "guide docs/user-guide/usage.md": "sha256:48f07a9a9442e6f59efd087ab15999ac0c6e22d0b5475149b1670389c6ee12aa"
+    "guide docs/user-guide/usage.md": "sha256:a1f9eef31cf72dcd494f8e40443e96b859187d9f8c763745ad24f535b6ee7096"
   }
 }

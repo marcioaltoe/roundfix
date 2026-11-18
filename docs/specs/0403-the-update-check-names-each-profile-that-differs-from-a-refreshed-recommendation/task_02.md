@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -131,3 +131,78 @@ test keeps this repository's profiles equal to the recommendation.
 - [`references/2026-11-17-maintainer-answers.md`](references/2026-11-17-maintainer-answers.md)
 - [`references/2026-11-17-model-evidence.md`](references/2026-11-17-model-evidence.md)
 - ADR-0180, ADR-0235, ADR-0256
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+Implemented this Task's snapshot, repository profiles, tests and documentation
+slice. Task status remains Daemon-owned. No other Task or Task Graph was
+edited, and no commit, push or Pull Request was performed.
+
+### Acceptance evidence
+
+- Approved table and built-ins: the snapshot is `2026-11-17`; `review` and
+  `chore` prefer `codex / gpt-6-luna / max`, while `docs` prefers
+  `codex / gpt-6.1-terra / high`. All fallbacks and other categories retain
+  the approved selections. Docs and chore have separate entries with
+  one-sentence rationales, and the old session measurement is absent from
+  recommendation rationales. The catalog's built-in review description now
+  belongs to `gpt-6-luna`. Focused recommendation, no-ultra, built-in,
+  recommendation-row, catalog-description and CLI JSON checks passed.
+- Model selection reference: its current section states the new date, every
+  category's selections and rationales, and the Terra, Luna, Haiku 5.5 and
+  Fable 5.2 evidence with release dates and sources. The old snapshot table
+  and session measurements are under the historical heading. Both affected
+  documentation contracts passed; the reference was checked against the
+  Spec's committed evidence without network access or a live runtime probe.
+- Guides and skill: both guides and both copies of the profiles reference
+  show the new review built-in, example and snapshot date. Sanctioned sync
+  and record commands passed, raising both Roundfix skill version fields
+  from `0.1.258` to `0.1.259`. The source and mirror `SKILL.md` and profiles
+  references are byte-identical. Behavior-surface regeneration changed only
+  the configuration and usage guide fingerprints.
+- Repository configuration: `TestRepositoryProfilesFollowTheRecommendedProfile`
+  copies this repository's config to a temporary marked repository, uses
+  `Load` with a temporary home (including strict Project Config profile
+  parsing), and checks each configured category's complete profile and
+  absence of a deviation in its own subtest. The focused run passed. A
+  separate read-only comparison confirmed that all bytes outside the
+  authorized comments and review/docs/chore profile blocks are unchanged;
+  the comments contain Fable 5.2 and neither the old Luna identifier nor
+  the old session measurement.
+
+### Focused checks
+
+The red starting point was
+`go test -count=1 ./internal/config -run '^TestRecommendedProfileCoversEveryWorkCategory$'`:
+it exited 1 with `snapshot = "2026-09-30", want 2026-11-17` before the
+production snapshot changed.
+
+After implementation, these focused commands exited 0:
+
+- `go test -count=1 ./internal/config -run '^(TestRecommendedProfileCoversEveryWorkCategory|TestRecommendedProfileUsesNoUltraEffort|TestRepositoryProfilesFollowTheRecommendedProfile|TestBuiltinProfilesAreTheRecommendedProfile|TestModelRecommendationsListTheRecommendedProfileInOrder)$'`
+- `go test -count=1 ./internal/agent -run '^TestModelCatalogsExposeOrderedPickerData$'`
+- `go test -count=1 ./internal/cli -run '^(TestProfilesShowPrintsTheRecommendedProfile|TestProfilesShowJSONIsSchemaV2WithoutBenchmarkFields)$'`
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestModelSelectionReferenceStatesTheShippedSnapshot|TestProfilesDocumentationContractMatchesPublicGuidance)$'`
+- `git diff --check`
+
+Sanctioned regeneration ran in the prescribed order, each exiting 0:
+
+1. `make skills-sync`
+2. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+3. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+
+Changed-path postflight covered tracked and untracked files: all 17 paths are
+listed by this Task, including this Result and the new repository profile
+test. The pre-existing change was the Daemon's `pending` to `in_progress`
+status update in this Task file, which was preserved.
+
+Declared Verification and repository Verification were not run; they remain
+for the Daemon. No follow-up outside this Task's slice was needed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T011006Z_4382c58887862041`
+- Source commit: `6add76a26725e523887e18543bff334b18cc6e31`

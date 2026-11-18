@@ -101,7 +101,7 @@ func TestProfilesShowJSONIsSchemaV2WithoutBenchmarkFields(t *testing.T) {
 	}
 	decoded := decodeProfilesShowResponse(t, stdout.String()).Profiles[0]
 	wantSelections := []profilesShowTestSelection{
-		{Runtime: "codex", Model: "gpt-5.6-luna", ReasoningEffort: "max"},
+		{Runtime: "codex", Model: "gpt-6.1-terra", ReasoningEffort: "high"},
 		{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"},
 	}
 	for i, row := range decoded.Recommendations {

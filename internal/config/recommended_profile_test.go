@@ -9,15 +9,19 @@ import (
 )
 
 func TestRecommendedProfileCoversEveryWorkCategory(t *testing.T) {
+	t.Parallel()
+	if config.ModelRecommendationSnapshotVersion != "2026-11-17" {
+		t.Fatalf("snapshot = %q, want 2026-11-17", config.ModelRecommendationSnapshotVersion)
+	}
 	implementation := config.AgentSelectionProfile{Preferred: config.AgentSelection{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}, Fallbacks: []config.AgentSelection{{Runtime: "claude", Model: "opus", ReasoningEffort: "high"}}}
-	bounded := config.AgentSelection{Runtime: "codex", Model: "gpt-5.6-luna", ReasoningEffort: "max"}
+	bounded := config.AgentSelection{Runtime: "codex", Model: "gpt-6-luna", ReasoningEffort: "max"}
 	want := map[config.WorkCategory]config.AgentSelectionProfile{
 		config.CategoryGeneral: implementation, config.CategoryBackend: implementation,
 		config.CategoryData: implementation, config.CategoryInfra: implementation,
 		config.CategoryTest: implementation, config.CategoryQA: implementation,
 		config.CategoryFrontend: {Preferred: config.AgentSelection{Runtime: "claude", Model: "opus", ReasoningEffort: "high"}, Fallbacks: []config.AgentSelection{{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "xhigh"}}},
 		config.CategoryReview:   {Preferred: bounded, Fallbacks: []config.AgentSelection{{Runtime: "codex", Model: "gpt-6.1-sol", ReasoningEffort: "high"}}},
-		config.CategoryDocs:     {Preferred: bounded, Fallbacks: []config.AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}}},
+		config.CategoryDocs:     {Preferred: config.AgentSelection{Runtime: "codex", Model: "gpt-6.1-terra", ReasoningEffort: "high"}, Fallbacks: []config.AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}}},
 		config.CategoryChore:    {Preferred: bounded, Fallbacks: []config.AgentSelection{{Runtime: "claude", Model: "sonnet", ReasoningEffort: "high"}}},
 	}
 	for _, category := range config.AllWorkCategories() {
@@ -99,5 +103,22 @@ func TestModelRecommendationsListTheRecommendedProfileInOrder(t *testing.T) {
 	}
 	if _, ok := config.ModelRecommendations("unknown"); ok {
 		t.Fatal("unknown category has rows")
+	}
+}
+
+func TestRecommendedProfileUsesNoUltraEffort(t *testing.T) {
+	t.Parallel()
+	for _, category := range config.AllWorkCategories() {
+		t.Run(string(category), func(t *testing.T) {
+			profile, ok := config.RecommendedProfile(category)
+			if !ok {
+				t.Fatal("missing Recommended Profile")
+			}
+			for i, selection := range append([]config.AgentSelection{profile.Preferred}, profile.Fallbacks...) {
+				if selection.ReasoningEffort == "ultra" {
+					t.Errorf("selection %d uses ultra: %+v", i, selection)
+				}
+			}
+		})
 	}
 }
