@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0403-the-update-check-names-each-profile-that-differs-from-a-refreshed-recommendation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -105,3 +105,95 @@ it names is in the catalog.
 - `_techspec.md` → Model Catalog; Interfaces (invariant 2); Testing Approach (Task 1); Build Order 1
 - [`references/2026-11-17-model-evidence.md`](references/2026-11-17-model-evidence.md)
 - ADR-0180, ADR-0235, ADR-0256
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, tech-writer, evidence-gate.
+
+### Implementation
+
+The Codex catalog adds `gpt-6.1-terra` after `gpt-6-astra`, with equal labels
+and values and the description "fast, efficient writing model". Claude now
+lists `opus`, `sonnet`, `fable`, `haiku`, `default`; `fable` is the Fable 5.2
+alias with the highest latency and quota cost, and `haiku` names Haiku 5.5 as
+the fastest and cheapest. The Claude comment records adapter 0.107.3 and
+2026-11-17. The three declared catalog tests follow these entries, and the
+retired-model cases now include `gpt-5.5` and `claude-fable-5-1`.
+
+The usage guide, configuration guide, canonical and mirrored `profiles`
+references, and model-selection catalog subsection describe the same ordered
+catalog. The model-selection subsection records `codex-acp` 2.7.0 and
+`claude-agent-acp` 0.107.3, read on 2026-11-17. The only change in
+`publicdocs_test.go` replaces the old identifier requirement with the literal
+backticked `fable` string.
+
+The picker efforts, Recommended Profile, its 2026-09-30 snapshot and adapter
+floors are preserved. The review-default description remains on
+`gpt-5.6-luna`; moving it belongs to Task 02.
+
+### Focused evidence
+
+Before the production and guide edits, after updating the declared test
+expectations:
+
+- `rtk proxy go test -count=1 ./internal/agent -run '^TestModelCatalog' -v`
+  exited 1: Codex lacked the new entry, Claude still offered the retired
+  Fable identifier, and both ordered-data cases rejected the old catalog.
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestProfilesDocumentationContractMatchesPublicGuidance$'`
+  exited 1 because usage was missing backticked `fable`.
+
+After the edits:
+
+- `rtk proxy go test -count=1 ./internal/agent -run '^TestModelCatalog' -v`
+  exited 0. The ordered-data and current-model cases passed for both
+  runtimes; `TestModelCatalogOffersNoRetiredModel/codex/gpt-5.5` and
+  `TestModelCatalogOffersNoRetiredModel/claude/claude-fable-5-1` passed by name.
+- `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestProfilesDocumentationContractMatchesPublicGuidance|TestTheSkillCoverageMapIsCurrent)$'`
+  exited 0.
+- `rtk proxy go test -count=1 ./skills -run '^(TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$'`
+  exited 0, checking mirror equality and the recorded owned-skill versions.
+- A read-only Python probe parsed both catalog lists through their `default`
+  entry in all five guide/reference files and confirmed identical order. It
+  also compared `internal/cli/cli.go` and
+  `internal/config/recommendations.go` byte-for-byte against HEAD, confirmed
+  the preserved snapshot and adapter floors, and checked that
+  `publicdocs_test.go` differs only by the authorized string replacement.
+  The final probe exited 0; its initial parsing included repeated alias
+  explanations and was narrowed to the actual list spans.
+
+### Sanctioned regeneration
+
+These commands ran in the authorized order, each exiting 0:
+
+1. `rtk proxy make skills-sync`
+2. `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+3. `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+
+The version recorder raised both Roundfix skill copies from `0.1.257` to
+`0.1.258` and appended the new digest to the owned-skill version record. The
+coverage recorder changed only the configuration and usage guide entries.
+No generated mirror, version field or record was edited by hand.
+
+### Acceptance evidence
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Current ordered catalogs | Both current-model and ordered-picker tests pass; Terra follows Astra and Claude offers `fable`. |
+| No retired catalog model | Retired-model tests pass, including both required named cases. |
+| Catalog guidance agrees | The docs contract and read-only list-order comparison pass for the guides, both skill references and model-selection subsection. |
+| Mirror and derived records are current | Authorized regeneration exited 0; focused mirror/version and coverage-record checks pass. |
+
+### Scope and settlement
+
+The initial worktree change was only this Task's Daemon-owned transition from
+`pending` to `in_progress`. The implementation is confined to this Task's
+declared interfaces and this Result. No Task status, other Task, or Task Graph
+manifest was edited. The declared Task Verification and repository
+Verification were not run; they remain Daemon-owned. No commit, push or pull
+request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261118T011006Z_4382c58887862041`
+- Source commit: `de17fe237e07b8eca7a6a9f4ae724283a3db1cd2`

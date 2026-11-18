@@ -140,15 +140,16 @@ profiles:
         reasoning_effort: "high"
 ```
 
-The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
-`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official identifiers;
+The Codex Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`,
+`gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`,
+and `gpt-5.6-luna` as official identifiers;
 A valid identifier and an advisory
 recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
 as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
-advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`,
+advertises: `opus`, `sonnet`, `fable`, `haiku`,
 and `default`. The `opus` alias resolves to Opus 5.5.
 
 When an adapter advertises an independent reasoning control, Roundfix treats

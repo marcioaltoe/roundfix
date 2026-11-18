@@ -17,9 +17,10 @@ Required built-ins:
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
-be complete. The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
-`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
-adapter advertises: `opus`, `sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
+be complete. The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`,
+`gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`,
+and `gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
+adapter advertises: `opus`, `sonnet`, `fable`, `haiku`, and `default`.
 The adapter advertises Opus 5.5 as `opus[1m]`; the capability parser removes the
 bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact

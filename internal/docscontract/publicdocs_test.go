@@ -579,7 +579,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
 			"sonnet",
-			"claude-fable-5-1",
+			"`fable`",
 			config.ModelRecommendationSnapshotVersion,
 			"Recommended Profile",
 			preferredText,

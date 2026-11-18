@@ -29,11 +29,12 @@ with no reasoning effort. Every light model passes the subscription rule; the
 
 ### Model Catalog and picker efforts
 
-The catalog and picker values were read from `codex-acp` 2.0.1 and
-`claude-agent-acp` 0.84.0 on 2026-09-30. The Codex catalog, in order, is
-`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`,
-`gpt-5.6-terra`, and `gpt-5.6-luna`. The Claude catalog, in order, is `opus`,
-`sonnet`, `claude-fable-5-1`, `haiku`, and `default`.
+The catalog values were read from `codex-acp` 2.7.0 and
+`claude-agent-acp` 0.107.3 on 2026-11-17. The Codex catalog, in order, is
+`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`,
+`gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna`. The Claude catalog, in
+order, is `opus`, `sonnet`, `fable`, `haiku`, and `default`. The `fable` alias
+resolves to Fable 5.2; `haiku` resolves to Haiku 5.5.
 
 The picker reasoning efforts are `low`, `medium`, `high`, `xhigh`, and `max`
 for Codex; Claude also offers `default`.

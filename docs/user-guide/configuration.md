@@ -762,9 +762,10 @@ Built-in required profiles use these official identifiers:
 - `review`: preferred `codex / gpt-5.6-luna / max`, fallback
   `codex / gpt-6.1-sol / high`.
 
-The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`,
-`gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
-`claude-fable-5-1`, `haiku`, and `default` as Claude
+The Model Catalog recognizes `gpt-6.1-sol`, `gpt-6-astra`,
+`gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`,
+and `gpt-5.6-luna` as official Codex identifiers, plus `opus`, `sonnet`,
+`fable`, `haiku`, and `default` as Claude
 identifiers. Those are the values the
 Claude adapter advertises, with the bracketed context suffix removed as the
 capability parser removes it — the adapter advertises Opus 5.5 as `opus[1m]`.
