@@ -1,0 +1,9 @@
+QA row T03; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
+$ ./bin/roundfix phase model prd --spec 0412-example
+stdout:
+Start roundfix-prd-author with model opus and effort xhigh, the fallback of fable: idea of 0412-example fell back when the Fable limit ran out.
+stderr:
+exit: 0
+
+Exact stdout/stderr/exit match under TechSpec wildcard rules; read/refusal day files unchanged.

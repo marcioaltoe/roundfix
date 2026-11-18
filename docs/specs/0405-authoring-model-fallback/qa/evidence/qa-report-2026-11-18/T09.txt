@@ -1,0 +1,49 @@
+QA row T09; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-tw475mku/repo
+$ ./bin/roundfix update check
+stdout:
+Roundfix 0.147.1: latest release not reached (offline QA cache; no release lookup); the session continues.
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+Authoring models: the authoring skills are installed without a declaration: write-idea, write-prd, write-techspec, write-tasks; add the Recommended Authoring Declaration below to .roundfixrc.yml, then apply with roundfix skills install --target project.
+  skills:
+    authoring:
+      claude:
+        idea:
+          model: fable
+          reasoning_effort: xhigh
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
+        prd:
+          model: fable
+          reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
+        techspec:
+          model: fable
+          reasoning_effort: high
+          fallback:
+            model: opus
+            reasoning_effort: xhigh
+        tasks:
+          model: opus
+          reasoning_effort: high
+          fallback:
+            model: sonnet
+            reasoning_effort: high
+        research:
+          model: sonnet
+          reasoning_effort: medium
+stderr:
+exit: 0
+
+Exact stdout/stderr/exit match under TechSpec wildcard rules; read/refusal day files unchanged.
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-tw475mku/repo
+$ ./bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.147.1","latest":"","state":"unknown","lookup":{"source":"cache","checkedAt":"2026-11-18T13:49:21Z","error":"offline QA cache; no release lookup"},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"authoringModels":{"state":"undeclared","harness":"claude","declared":[],"problems":[],"installed":["write-idea","write-prd","write-techspec","write-tasks"],"recommendation":"skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      techspec:\n        model: fable\n        reasoning_effort: high\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      tasks:\n        model: opus\n        reasoning_effort: high\n        fallback:\n          model: sonnet\n          reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n"},"next":"none"}
+stderr:
+exit: 0
+
+Independent JSON read confirms lookup.source=cache; network denied by process policy.

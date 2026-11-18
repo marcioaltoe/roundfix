@@ -1,0 +1,11 @@
+Source: Daemon QA prompt.
+Spec target branch: roundfix/deliver-0405-authoring-model-fallback-a15e0f24ca9a2979
+Run branch: roundfix/run-run_20261118T135757Z_2f6ad22d1af82e10 (never pushed, no Pull Request of its own)
+Open Pull Request: none.
+Approval: no current-candidate acceptance obtained.
+Checks and status: Daemon make verify-changed passed, exit 0; remote required checks unavailable before publication.
+Unresolved review threads: no Pull Request threads exist; no current-candidate Review Source evidence supplied.
+Merge-Ready acceptance: none supplied for audited head.
+Review-artifact ancestry: audited head 35cad72e18787b97af0b0bb327bfd703160d7d05 is known; no current-candidate review artifact supplied to bind to it.
+Unblocking: Supervisor follows pre-PR review/delivery sequence and obtains current-head acceptance, then observes the target branch Pull Request.
+No network lookup, commit, push, review call or Pull Request mutation was performed.

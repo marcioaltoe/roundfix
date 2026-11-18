@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0405-authoring-model-fallback
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,335 @@
+import os, sys, json, shutil, subprocess, tempfile, hashlib, re, tarfile, io
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[6]
+EVID=Path(__file__).resolve().parent
+WORK=ROOT/'bin/qa-0405-01'
+WORK.mkdir(parents=True,exist_ok=True)
+BASE='04e87591f6713eacab608be8748b19bfb7ae3fcc'
+SPEC='0405-authoring-model-fallback'
+REPORT=ROOT/f'docs/specs/{SPEC}/qa/qa-report-2026-11-18-01.md'
+REALHOME=Path.home()
+
+def bareenv(home):
+    e={k:v for k,v in os.environ.items() if k in ('PATH','TMPDIR','LANG','LC_ALL','RUSTUP_HOME','CARGO_HOME')}
+    e.update(HOME=str(home), XDG_CONFIG_HOME=str(home/'config'), XDG_CACHE_HOME=str(home/'cache'), XDG_DATA_HOME=str(home/'data'), GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null',GIT_TERMINAL_PROMPT='0',GOPROXY='off',GOSUMDB='off',GOTOOLCHAIN='local',CLAUDE_CODE_SESSION_ID='qa-0405-01')
+    return e
+
+def logrun(args,cwd,e,log,expected=None,policy=None):
+    cmd=list(map(str,args))
+    invoke=['/usr/bin/sandbox-exec','-f',str(policy),*cmd] if policy else cmd
+    r=subprocess.run(invoke,cwd=cwd,env=e,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    with (EVID/log).open('a') as f:
+        f.write('$ '+__import__('shlex').join(cmd)+'\nstdout:\n'+r.stdout+'stderr:\n'+r.stderr+'exit: '+str(r.returncode)+'\n')
+    if expected is not None: assert r.returncode==expected,(cmd,r.returncode,r.stdout,r.stderr)
+    return r
+
+def fresh(name):
+    return Path(tempfile.mkdtemp(prefix=name+'-',dir='/private/tmp')).resolve()
+
+def build():
+    home=fresh('qa0405build')
+    try:
+        cache=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+        e=bareenv(home);e['GOMODCACHE']=cache
+        logrun(['make','build'],ROOT,e,'build.txt',0)
+        logrun(['./bin/roundfix','--version'],ROOT,e,'version.txt',0)
+        # A strict check reads the repository and its Git metadata, offline.
+        logrun(['./bin/roundfix','spec','check',SPEC,'--strict'],ROOT,e,'spec-check.txt',0)
+        print('Build, binary identity and strict Spec precondition passed.')
+    finally: shutil.rmtree(home)
+
+
+
+CONFIG='''skills:
+  authoring:
+    claude:
+      idea:
+        model: fable
+        reasoning_effort: xhigh
+        fallback: {model: opus, reasoning_effort: xhigh}
+      prd:
+        model: fable
+        reasoning_effort: xhigh
+        fallback: {model: opus, reasoning_effort: xhigh}
+      techspec:
+        model: fable
+        reasoning_effort: xhigh
+        fallback: {model: opus, reasoning_effort: xhigh}
+      tasks:
+        model: opus
+        reasoning_effort: high
+        fallback: {model: sonnet, reasoning_effort: high}
+'''
+LIMIT="You've hit your Fable limit"
+
+def note(log,msg):
+    with (EVID/log).open('a') as f:f.write(msg+'\n')
+
+def finish(rid,status,detail):
+    t=REPORT.read_text();t=t.replace('| '+rid+' | pending |','| '+rid+' | '+status+' |')
+    start=t.index('### '+rid+'\n');end=t.find('\n### ',start+1)
+    if end<0:end=len(t)
+    chunk=t[start:end].replace('Status: pending.','Status: '+status+'. '+detail)
+    t=t[:start]+chunk+t[end:];REPORT.write_text(t)
+    print(rid+': '+status+' — '+detail,flush=True)
+
+class Fixture:
+    def __init__(self,name,config=CONFIG,binary=None):
+        self.root=fresh('qa0405'+name);self.home=self.root/'home';self.home.mkdir()
+        self.repo=self.root/'repo';self.repo.mkdir();self.log=name+'.txt'
+        self.e=bareenv(self.home)
+        for args in (['init','-q'],['config','user.name','QA Fixture'],['config','user.email','qa@fixture.invalid']):
+            logrun(['git',*args],self.repo,self.e,self.log,0)
+        (self.repo/'README.md').write_text(name+' fresh root\n')
+        logrun(['git','add','README.md'],self.repo,self.e,self.log,0)
+        logrun(['git','commit','-qm','fixture root'],self.repo,self.e,self.log,0)
+        (self.repo/'.roundfixrc.yml').write_text(config)
+        self.binary=binary or ROOT/'bin/roundfix'
+        (self.repo/'bin').mkdir();(self.repo/'bin/roundfix').symlink_to(self.binary)
+        self.policy=self.root/'cli.sb'
+        # Deny the real user home, all networking, and writes outside this fixture.
+        self.policy.write_text('(version 1)\n(allow default)\n(deny network*)\n(deny file-read* (subpath '+json.dumps(str(REALHOME))+'))\n(deny file-write*)\n(allow file-write* (subpath '+json.dumps(str(self.root))+'))\n(allow file-write* (literal "/dev/null"))\n')
+        self.e['PATH']='/usr/bin:/bin:/usr/sbin:/sbin'
+        note(self.log,'Policy: network denied; real HOME reads denied; writes limited to disposable fixture. No harness executable exposed on PATH.')
+    def call(self,args,expected=0):return logrun(['./bin/roundfix',*args],self.repo,self.e,self.log,expected,self.policy)
+    def snapshot(self):return {p.name:p.read_bytes() for p in (self.home/'.roundfix/phase-record').glob('*') if p.is_file()}
+    def cleanup(self):shutil.rmtree(self.root)
+
+def record():
+    f=Fixture('Q03-record')
+    try:
+        f.call(['phase','fallback','idea','--spec','0412-qa-record','--error',LIMIT])
+        snap=f.snapshot();lines=[line for data in snap.values() for line in data.splitlines()]
+        assert len(lines)==1,lines
+        entry=json.loads(lines[0]);keys=['schema','kind','time','phase','spec','repository','repository_id','harness','session','declared_model','declared_effort','model','effort','limit','message']
+        assert list(entry)==keys
+        want=dict(schema='roundfix/phase-record/v1',kind='fallback',phase='idea',spec='0412-qa-record',repository=str(f.repo),harness='claude',session='qa-0405-01',declared_model='fable',declared_effort='xhigh',model='opus',effort='xhigh',limit='Fable',message=LIMIT)
+        for k,v in want.items():assert entry[k]==v,(k,entry[k],v)
+        assert re.fullmatch('sha256:[0-9a-f]{64}',entry['repository_id'])
+        assert list(snap)==[entry['time'][:10]+'.jsonl']
+        assert f.snapshot()==snap
+        note(f.log,'Independent read: exactly one fallback entry; all 16 ordered keys and values match; UTC day filename matches entry time; repeated read is byte-identical.\n'+json.dumps(entry,ensure_ascii=False))
+        finish('Q03-record','pass','Exactly one ordered fallback entry independently decoded; repeated file reads preserve bytes. Refusal cases remain credited by carried Q03-refusals.')
+    finally:f.cleanup()
+
+def isolation():
+    f=Fixture('Q04-isolation');g=None
+    try:
+        f.call(['phase','fallback','idea','--spec','0412-qa-isolation','--error',LIMIT]);before=f.snapshot()
+        for phase,slug,want in [('prd','0412-qa-isolation','with model opus and effort xhigh'),('tasks','0412-qa-isolation','the declared model opus.'),('prd','0413-another','the declared model fable.'),('idea','0413-another','the declared model fable.')]:
+            r=f.call(['phase','model',phase,'--spec',slug]);assert want in r.stdout and not r.stderr
+            assert f.snapshot()==before
+        g=Fixture('Q04-other');g.e['HOME']=str(f.home)
+        # The other fixture policy must allow the shared scratch home for read-only model lookup.
+        r=g.call(['phase','model','prd','--spec','0412-qa-isolation']);assert 'the declared model fable.' in r.stdout
+        assert f.snapshot()==before
+        clone=f.root/'clone'
+        logrun(['git','clone','-q',str(f.repo),str(clone)],f.root,f.e,f.log,0)
+        (clone/'.roundfixrc.yml').write_text(CONFIG);(clone/'bin').mkdir();(clone/'bin/roundfix').symlink_to(f.binary)
+        r=logrun(['./bin/roundfix','phase','model','prd','--spec','0412-qa-isolation'],clone,f.e,f.log,0,f.policy)
+        assert 'with model opus and effort xhigh' in r.stdout and f.snapshot()==before
+        note(f.log,'Independent byte checks: all model reads preserve day files; unrelated committed repository stays declared; local clone shares root identity and retains fallback.\nOther repository command output: '+r.stdout)
+        # Keep other-repository observation in this row evidence without copying any earlier-run evidence.
+        note(f.log,'Separate repository observed declared fable; its fresh same-pass transcript is Q04-other.txt.')
+        finish('Q04-isolation','pass','Same Spec/model retains fallback; other model, next Spec, and unrelated repository stay declared; clone retains fallback; all reads preserve day files.')
+    finally:
+        if g:g.cleanup()
+        f.cleanup()
+
+def extract_base():
+    dest=WORK/'delivery-base';dest.mkdir()
+    home=fresh('qa0405basebuild')
+    try:
+        e=bareenv(home);e['GOMODCACHE']=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+        a=subprocess.run(['git','archive',BASE],cwd=ROOT,env=e,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=True)
+        with tarfile.open(fileobj=io.BytesIO(a.stdout)) as tar:tar.extractall(dest,filter='data')
+        logrun(['make','build','BUILD_COMMIT='+BASE[:8]],dest,e,'delivery-base-build.txt',0)
+        logrun(['./bin/roundfix','--version'],dest,e,'delivery-base-version.txt',0)
+        return dest
+    finally:shutil.rmtree(home)
+
+def installed(repo):
+    result={}
+    for folder in ('.agents','.claude'):
+        for p in (repo/folder).rglob('*'):
+            if p.is_symlink():result[p.relative_to(repo).as_posix()]=('link',os.readlink(p))
+            elif p.is_file():result[p.relative_to(repo).as_posix()]=('file',p.read_bytes())
+    return result
+
+def compat():
+    base=extract_base();plain='\n'.join(l for l in CONFIG.splitlines() if 'fallback:' not in l)+'\n'
+    f=Fixture('Q05-base',plain);g=Fixture('Q05-delivery-base',plain,binary=base/'bin/roundfix');h=Fixture('Q05-with-fallback')
+    try:
+        for fixture in (f,g,h):fixture.call(['skills','install','--target','project'])
+        a,b,c=installed(f.repo),installed(g.repo),installed(h.repo)
+        assert a==c,'fallback declaration changes installed bytes'
+        assert a.keys()==b.keys(),'installed path sets changed'
+        changes=[p for p in a if a[p]!=b[p]]
+        expected={'.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/phase.md','.agents/skills/roundfix/references/setup.md',*['.agents/skills/write-'+phase+'/SKILL.md' for phase in ['idea','prd','techspec','tasks']]}
+        assert set(changes)==expected,changes
+        agents=[p for p in a if p.startswith('.claude/agents/')]
+        assert len(agents)>=4 and all(a[p]==b[p] for p in agents)
+        note(f.log,'Identical current installs with/without fallback: '+str(len(a))+' paths.\nGenerated Author Subagents byte-identical to Delivery Base: '+str(len(agents))+'.\nDifferences restricted to the following seven shipped skill text/version files:')
+        import difflib
+        for path in sorted(changes):
+            # Prove every install delta is the shipped source delta (only header model/effort rendering can differ from source).
+            old=(base/path).read_text();new=(ROOT/path).read_text()
+            av=a[path][1].decode();bv=b[path][1].decode()
+            norm=lambda s:re.sub(r'(?m)^(model|effort):.*\n','',s)
+            assert norm(av)==norm(new) and norm(bv)==norm(old),path
+            note(f.log,path+'\n'+''.join(difflib.unified_diff(bv.splitlines(True),av.splitlines(True),fromfile='Delivery Base/'+path,tofile='audited/'+path)))
+        for args in [['phase','start','idea','--spec','0412-qa-start'],['phase','start','tasks','--spec','0412-qa-start','--model','opus','--effort','high','--author-subagent'],['phase','start','delivery','--spec','0412-qa-start'],['phase','start','idea'],['phase','start','invalid']]:
+            x=f.call(args,expected=None);y=g.call(args,expected=None)
+            assert (x.stdout,x.stderr,x.returncode)==(y.stdout,y.stderr,y.returncode),(args,x,y)
+            note(f.log,'Delivery Base stdout, stderr and exit match exactly for '+__import__('shlex').join(args))
+        note(f.log,'All undeclared skill resources, links and generated subagents are byte-identical. Every changed install file equals its shipped source after removing rendered primary model/effort headers. Full diffs above permit review of the intended text exception.')
+        finish('Q05-base','pass','Fresh Delivery Base and current installs match outside seven intended shipped text/version files; generated subagents and phase-start outputs/exits match; with/without fallback installs are identical.')
+    finally:
+        for fixture in (f,g,h):fixture.cleanup()
+
+def project_config():
+    home=fresh('qa0405config')
+    try:
+        e=bareenv(home)
+        r=logrun(['git','show',BASE+':.roundfixrc.yml'],ROOT,e,'Q11-config.txt',0)
+        current=(ROOT/'.roundfixrc.yml').read_bytes()
+        audited=subprocess.check_output(['git','show','35cad72e18787b97af0b0bb327bfd703160d7d05:.roundfixrc.yml'],cwd=ROOT,env=e)
+        assert current==audited==r.stdout.encode()
+        note('Q11-config.txt','Delivery Base, audited Git object and working file are byte-identical; sha256 '+hashlib.sha256(current).hexdigest())
+        finish('Q11-config','pass','Delivery Base, audited Git object and working Project Config are byte-identical.')
+    finally:shutil.rmtree(home)
+
+
+def root_sentences(path,log):
+    first="In Claude Code, a skill's `model` and `effort` header applies only when a person types the skill (`/skill`); a skill an Agent activates runs on the session's model (anthropics/claude-code#98898, measured 2026-11-14)."
+    last='This bullet does not apply to Codex or OpenCode, whose models come from the Agent Selection Profiles.'
+    text=path.read_text();normal=' '.join(text.split())
+    block=text.split('<!-- setup-context-driven:begin id=root.spec-workflow ',1)[1].split('<!-- setup-context-driven:end id=root.spec-workflow -->',1)[0]
+    for sentence in (first,last):
+        assert normal.count(sentence)==1,(path,sentence)
+        assert ' '.join(block.split()).count(sentence)==1
+    note(log,str(path)+': both exact scoped sentences occur once in the file and once inside root.spec-workflow.\n'+block)
+
+def tracked_snapshot(e):
+    files=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT,env=e).decode().split('\0')
+    return {name:('link',os.readlink(ROOT/name)) if (ROOT/name).is_symlink() else ('file',hashlib.sha256((ROOT/name).read_bytes()).hexdigest()) for name in files if name}
+
+def baseline():
+    f=Fixture('Q12-baseline','{}\n')
+    try:
+        # Project skill fixtures are permitted by Requirement 12; no user-level skill source is used.
+        shutil.copytree(ROOT/'.agents/skills',f.repo/'.agents/skills')
+        shutil.copyfile(ROOT/'skills-lock.json',f.repo/'skills-lock.json')
+        (f.repo/'Makefile').write_text('verify:\n\t@true\nverify-changed:\n\t@true\n')
+        (f.repo/'AGENTS.md').write_text('')
+        (f.repo/'CLAUDE.md').symlink_to('AGENTS.md')
+        decisions={k:v['value'] for k,v in json.loads((ROOT/'docs/agents/setup-context.json').read_text())['decisions'].items()}
+        decisions['secondbrain.enabled']=False
+        decisions['preservation.mode']='greenfield'
+        args=['baseline','plan','--profile','go-cli-tui','--format','json']
+        for k,v in decisions.items():
+            value=json.dumps(v) if isinstance(v,bool) else str(v)
+            args+=['--decision',k+'='+value]
+        before=tracked_snapshot(f.e)
+        result=f.call(args,expected=None)
+        assert result.returncode==0,(result.returncode,result.stdout[-4000:],result.stderr)
+        plan=json.loads(result.stdout)
+        note(f.log,'Plan top-level keys: '+', '.join(plan))
+        digest=plan['planDigest']
+        path=f.repo/'plan.json';path.write_text(result.stdout)
+        f.call(['baseline','apply','--plan',str(path),'--confirm-plan',digest,'--format','text'])
+        assert (f.repo/'CLAUDE.md').is_symlink() and os.readlink(f.repo/'CLAUDE.md')=='AGENTS.md'
+        root_sentences(f.repo/'AGENTS.md',f.log);root_sentences(f.repo/'CLAUDE.md',f.log)
+        snap=hashlib.sha256((f.repo/'AGENTS.md').read_bytes()).hexdigest()
+        update=f.call(['baseline','update','--no-skills','--no-history','--format','json'])
+        data=json.loads(update.stdout)
+        assert data['state']=='current',data
+        assert hashlib.sha256((f.repo/'AGENTS.md').read_bytes()).hexdigest()==snap
+        assert (ROOT/'CLAUDE.md').is_symlink()
+        root_sentences(ROOT/'AGENTS.md',f.log);root_sentences(ROOT/'CLAUDE.md',f.log)
+        assert tracked_snapshot(f.e)==before,'tracked files outside fixture changed'
+        note(f.log,'Independent update state: current; root bytes unchanged; fixture and repository CLAUDE.md remain links. All tracked repository files outside fixture unchanged. macOS sandbox denies every product write outside fixture and every read of real HOME; no user-level instruction file could be read or written.')
+        finish('Q12-baseline','pass','Fresh plan/apply and independent update report current; both root files contain each exact scoped sentence once, links survive, and writes remain confined to fixture/HOME.')
+    finally:f.cleanup()
+
+def static_rows():
+    note('V01.txt','Source: Daemon QA prompt at audited head 35cad72e18787b97af0b0bb327bfd703160d7d05.\nCommand: make verify-changed\nVerdict: pass\nExit: 0\nDiagnostics: removed on success\nNot executed by the QA Agent; recorded as supplied.')
+    finish('V01','pass','Daemon-supplied make verify-changed passed, exit 0; successful diagnostics removed. Not rerun.')
+    note('PR01.txt','Source: Daemon QA prompt.\nSpec target branch: roundfix/deliver-0405-authoring-model-fallback-a15e0f24ca9a2979\nRun branch: roundfix/run-run_20261118T135757Z_2f6ad22d1af82e10 (never pushed, no Pull Request of its own)\nOpen Pull Request: none.\nApproval: no current-candidate acceptance obtained.\nChecks and status: Daemon make verify-changed passed, exit 0; remote required checks unavailable before publication.\nUnresolved review threads: no Pull Request threads exist; no current-candidate Review Source evidence supplied.\nMerge-Ready acceptance: none supplied for audited head.\nReview-artifact ancestry: audited head 35cad72e18787b97af0b0bb327bfd703160d7d05 is known; no current-candidate review artifact supplied to bind to it.\nUnblocking: Supervisor follows pre-PR review/delivery sequence and obtains current-head acceptance, then observes the target branch Pull Request.\nNo network lookup, commit, push, review call or Pull Request mutation was performed.')
+    finish('PR01','blocked (environment: no open Pull Request)','Prompt supplies absence on the Spec target branch; approval and current-head Merge-Ready/review ancestry lack equivalent evidence. This pre-PR row alone permits a qualifying partial.')
+
+
+def closure():
+    home=fresh('qa0405closure')
+    try:
+        e=bareenv(home);e['GOMODCACHE']=subprocess.check_output(['go','env','GOMODCACHE'],text=True).strip()
+        # Only local Git object-store/worktree overrides, never actual user tool state.
+        gd=subprocess.check_output(['git','rev-parse','--absolute-git-dir'],cwd=ROOT,env=e,text=True).strip()
+        e['GIT_DIR']=str(Path(gd).resolve());e['GIT_WORK_TREE']=str(ROOT)
+        common=subprocess.check_output(['git','rev-parse','--path-format=absolute','--git-common-dir'],cwd=ROOT,env=e,text=True).strip()
+        policy=home/'closure.sb'
+        policy.write_text('(version 1)\n(allow default)\n(deny network*)\n(deny file-read* (subpath '+json.dumps(str(REALHOME))+'))\n(deny file-write*)\n(allow file-write* (subpath '+json.dumps(str(home))+'))\n(allow file-write* (literal "/dev/null"))\n')
+        # The repository's .git file names its parent checkout under the user home.
+        # Allow only that repository Git administration, never user tool state.
+        with policy.open('a') as pf:
+            for gitpath in {common,str(Path(common).resolve()),gd,str(Path(gd).resolve())}:
+                pf.write('(allow file-read* (subpath '+json.dumps(gitpath)+'))\n')
+        note('closure.txt','Harness correction: allow this repository Git administration named by its .git file; real user tool state and instruction files remain denied, as do network and worktree writes.')
+        note('closure.txt','Auxiliary qa-report acceptance remains unavailable under the self-imposed policy: parent Git path metadata denied. No further retry; independent structure/link checks below remain runnable.')
+        ar=logrun(['./bin/roundfix','archive',SPEC,'--plan','--offline'],ROOT,e,'closure.txt',None,policy)
+        note('closure.txt','Offline archive preview exit '+str(ar.returncode)+'. Preview only; no archive, judge, provider or network call.')
+        src=WORK/'secret-audit';src.mkdir(exist_ok=True)
+        shutil.copyfile(EVID/'secret-audit.go.txt',src/'main.go')
+        logrun(['go','build','-buildvcs=false','-o',str(WORK/'secretcheck'),str(src/'main.go')],ROOT,e,'secret-audit-build.txt',0)
+        # Remove local Git overrides from scanner environment; it reads files only.
+        e.pop('GIT_DIR');e.pop('GIT_WORK_TREE')
+        r=logrun([str(WORK/'secretcheck'),str(REPORT),str(EVID)],ROOT,e,'secret-audit.txt',0)
+        print(r.stdout.strip())
+        audit_report(e)
+    finally:shutil.rmtree(home)
+
+def audit_report(e):
+    t=REPORT.read_text();lines=t.splitlines();start=lines.index('## Results')+1
+    while not lines[start].startswith('| # |'):start+=1
+    end=start
+    while end<len(lines) and lines[end].startswith('|'):end+=1
+    rows=[line.split('|')[1:4] for line in lines[start+2:end]]
+    assert len(rows)==22,len(rows)
+    assert len({r[0].strip() for r in rows})==22
+    statuses=[r[1].strip() for r in rows]
+    assert sum(s.startswith('carried (') for s in statuses)==15
+    assert statuses.count('pass')==6
+    assert statuses.count('blocked (environment: no open Pull Request)')==1
+    assert all(s=='pass' or s.startswith('carried (') or s=='blocked (environment: no open Pull Request)' for s in statuses)
+    for rid in ['Q03-record','Q04-isolation','Q05-base','Q11-config','Q12-baseline','V01','PR01']:
+        chunk=t.split('### '+rid+'\n',1)[1].split('\n### ',1)[0]
+        assert '```yaml\ninputs:\n  - kind:' in chunk,rid
+    for rid in ['Q05-base','Q11-config','PR01']:
+        assert 'kind: commit_range' in t.split('### '+rid+'\n',1)[1].split('\n### ',1)[0]
+    assert t.count('\n---\n')==1
+    assert 'verdict: partial' in t and 'status: closed' in t and 'rows_blocked_environment: 1' in t
+    assert 'evidence_snapshots:' not in t
+    assert 'auditing_binary: "0.147.1 (35cad72e, built 2026-11-18 10:56:25 -0300)"' in t
+    assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in t
+    links=re.findall(r'\]\(([^)]+)\)',t)
+    local=[]
+    for target in links:
+        if re.match(r'^[a-z]+://',target):continue
+        p=(REPORT.parent/target.split('#')[0]).resolve()
+        assert p.is_file(),target
+        local.append(str(p.relative_to(ROOT)))
+    evidence=[str(p.relative_to(ROOT)) for p in EVID.rglob('*') if p.is_file()]
+    assert all(p.suffix=='.txt' for p in EVID.rglob('*') if p.is_file())
+    ignored=subprocess.run(['git','check-ignore','--stdin'],input='\n'.join([*local,*evidence,str(REPORT.relative_to(ROOT))])+'\n',cwd=ROOT,env=e,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    assert ignored.returncode==1 and not ignored.stdout,(ignored.returncode,ignored.stdout,ignored.stderr)
+    delta=subprocess.check_output(['git','diff','--name-only'],cwd=ROOT,env=e,text=True)
+    assert not delta,delta
+    new=subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=ROOT,env=e,text=True).splitlines()
+    assert all(p.startswith('docs/specs/'+SPEC+'/qa/') for p in new),new
+    report='Results table contiguous: 22 rows; 15 carried passes preserved, 6 fresh passes, 1 pre-PR environment block.\nEvery executed row has one typed YAML inputs block; all history-dependent rows declare commit_range.\nOne frontmatter block; closed partial; exact typed counters; seeded auditor identity unchanged; no evidence_snapshots written.\nAll '+str(len(local))+' local links resolve; all '+str(len(evidence))+' fresh evidence files are text and unignored.\nNo tracked repository file changed. Untracked paths stay inside Spec qa/. No Task status, graph, config or source mutation.\n'
+    (EVID/'report-audit.txt').write_text(report)
+    print(report,flush=True)
+
+if __name__=='__main__':
+    actions={'build':build,'record':record,'isolation':isolation,'compat':compat,'config':project_config,'baseline':baseline,'static':static_rows,'closure':closure}
+    for action in sys.argv[1:]:actions[action]()

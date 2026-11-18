@@ -1,0 +1,9 @@
+QA row T07; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
+$ ./bin/roundfix phase fallback tasks --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+No fallback for tasks of 0412-example: the Fable limit is not that of the declared model opus.
+stderr:
+exit: 3
+
+Exact stdout/stderr/exit match under TechSpec wildcard rules; read/refusal day files unchanged.

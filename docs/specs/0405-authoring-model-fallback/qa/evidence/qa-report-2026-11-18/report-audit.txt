@@ -1,0 +1,7 @@
+Rows: {"pass": 20, "fail": 1, "blocked (environment: no open Pull Request)": 1}
+Typed input blocks: 22/22
+Evidence links: 31; all present and unignored
+Tracked changes: none
+Untracked paths: QA report/evidence only
+Seeded auditor fields and mechanical tables preserved
+All foreground commands completed; no provider, harness or network execution

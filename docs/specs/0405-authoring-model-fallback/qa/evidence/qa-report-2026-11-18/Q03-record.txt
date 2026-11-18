@@ -1,0 +1,12 @@
+QA row Q03-record; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+{"schema": "roundfix/phase-record/v1", "kind": "fallback", "time": "2026-11-18T13:49:17Z", "phase": "idea", "spec": "0412-example", "repository": "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo", "repository_id": "sha256:6f3bd7262069778cfac2b22c1db2cdd2085478db3f6f340bb241ea4165d0b2b0", "harness": "claude", "session": "qa-0405-session", "declared_model": "fable", "declared_effort": "xhigh", "model": "opus", "effort": "xhigh", "limit": "Fable", "message": "You've hit your Fable limit · resets Nov 22 at 8pm"}
+Exactly one fallback entry and exact key order confirmed.
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
+$ ./bin/roundfix phase start idea --spec 0412-example --model opus --effort xhigh --author-subagent
+stdout:
+Recorded idea of 0412-example for claude session qa-0405-session: model opus (reported), effort xhigh (reported), run by the Author Subagent
+stderr:
+exit: 0
+
+Public phase start independently records the restarted model; no Agent was started.
+{"schema": "roundfix/phase-record/v1", "kind": "phase", "time": "2026-11-18T13:49:17Z", "phase": "idea", "spec": "0412-example", "repository": "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo", "harness": "claude", "session": "qa-0405-session", "boundary": false, "repository_id": "sha256:6f3bd7262069778cfac2b22c1db2cdd2085478db3f6f340bb241ea4165d0b2b0", "model": "opus", "model_source": "reported", "effort": "xhigh", "effort_source": "reported", "runner": "author-subagent"}

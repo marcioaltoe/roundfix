@@ -1,0 +1,13 @@
+QA row T08; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74/docs/specs/0405-authoring-model-fallback/qa/evidence/qa-report-2026-11-18/qa-runner.py.txt", line 45, in row
+    detail=fn() or 'The authored observable passed, including the independent persisted-state checks recorded in the transcript.'
+           ~~^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74/docs/specs/0405-authoring-model-fallback/qa/evidence/qa-report-2026-11-18/qa-runner.py.txt", line 103, in <lambda>
+    for n in range(1,9):row('T%02d'%n,lambda n=n:check_transcript(n,repo,home,env))
+                                                 ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74/docs/specs/0405-authoring-model-fallback/qa/evidence/qa-report-2026-11-18/qa-runner.py.txt", line 94, in check_transcript
+    command,raw=raw.split('\nstdout:\n',1);out,raw=raw.split('\nstderr:',1);err,exit_s=raw.rsplit('\nexit: ',1)
+                                           ^^^^^^^
+ValueError: not enough values to unpack (expected 2, got 1)
+

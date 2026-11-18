@@ -1,0 +1,9 @@
+QA row T04; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-yacw7gff/repo
+$ ./bin/roundfix phase model tasks --spec 0412-example
+stdout:
+Start roundfix-tasks-author with no model and no effort: the declared model opus.
+stderr:
+exit: 0
+
+Exact stdout/stderr/exit match under TechSpec wildcard rules; read/refusal day files unchanged.

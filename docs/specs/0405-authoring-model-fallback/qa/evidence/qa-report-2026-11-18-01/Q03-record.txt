@@ -1,0 +1,28 @@
+$ git init -q
+stdout:
+stderr:
+exit: 0
+$ git config user.name 'QA Fixture'
+stdout:
+stderr:
+exit: 0
+$ git config user.email qa@fixture.invalid
+stdout:
+stderr:
+exit: 0
+$ git add README.md
+stdout:
+stderr:
+exit: 0
+$ git commit -qm 'fixture root'
+stdout:
+stderr:
+exit: 0
+Policy: network denied; real HOME reads denied; writes limited to disposable fixture. No harness executable exposed on PATH.
+$ ./bin/roundfix phase fallback idea --spec 0412-qa-record --error 'You'"'"'ve hit your Fable limit'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit"
+stderr:
+exit: 0
+Independent read: exactly one fallback entry; all 16 ordered keys and values match; UTC day filename matches entry time; repeated read is byte-identical.
+{"schema": "roundfix/phase-record/v1", "kind": "fallback", "time": "2026-11-18T14:19:13Z", "phase": "idea", "spec": "0412-qa-record", "repository": "/private/tmp/qa0405Q03-record-up7lk4f2/repo", "repository_id": "sha256:59fe301ad026c2c9f9c83b7ef8620b893bf65b9a72b5673714d3b83bedb76709", "harness": "claude", "session": "qa-0405-01", "declared_model": "fable", "declared_effort": "xhigh", "model": "opus", "effort": "xhigh", "limit": "Fable", "message": "You've hit your Fable limit"}

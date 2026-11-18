@@ -1,0 +1,2 @@
+Source: git archive 04e87591f6713eacab608be8748b19bfb7ae3fcc, freshly extracted inside the Run.
+go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=04e87591" -o bin/roundfix ./cmd/roundfix

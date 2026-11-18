@@ -1,0 +1,315 @@
+QA row Q03-refusals; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-14gaq2vl/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-14gaq2vl/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-14gaq2vl/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-14gaq2vl/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-14gaq2vl/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'ordinary error'
+stdout:
+No fallback for idea of 0412-example: the error is not a usage limit.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_nucts58/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_nucts58/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_nucts58/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_nucts58/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_nucts58/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your session limit'
+stdout:
+No fallback for idea of 0412-example: a session limit is shared by every model.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xw73frf_/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xw73frf_/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xw73frf_/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xw73frf_/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xw73frf_/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your monthly spend limit'
+stdout:
+No fallback for idea of 0412-example: a monthly spend limit is not a model's usage limit.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-mrjld0at/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-mrjld0at/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-mrjld0at/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-mrjld0at/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-mrjld0at/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+No fallback for idea of 0412-example: idea declares no model.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-exrm4v7c/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-exrm4v7c/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-exrm4v7c/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-exrm4v7c/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-exrm4v7c/repo
+$ ./bin/roundfix phase fallback tasks --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+No fallback for tasks of 0412-example: the Fable limit is not that of the declared model opus.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-qrrcizi9/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-qrrcizi9/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-qrrcizi9/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-qrrcizi9/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-qrrcizi9/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+No fallback for idea of 0412-example: idea declares no fallback.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-3ss2y3r0/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-3ss2y3r0/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-3ss2y3r0/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-3ss2y3r0/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-3ss2y3r0/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+No fallback for idea of 0412-example: the fallback fable-next is a Fable model too.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback delivery --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+stderr:
+roundfix: phase fallback failed: phase "delivery" has no Author Subagent; use idea, prd, techspec or tasks
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 'bad slug' --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+stderr:
+roundfix: phase fallback failed: invalid Spec slug "bad slug"; --spec must match ^[0-9]{4}(-[a-z0-9]+)+$
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error ''
+stdout:
+stderr:
+roundfix: phase fallback failed: --error must be non-empty and at most 4096 bytes
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+stdout:
+stderr:
+roundfix: phase fallback failed: --error must be non-empty and at most 4096 bytes
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example
+stdout:
+stderr:
+roundfix: phase fallback failed: --error must be non-empty and at most 4096 bytes
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm' extra
+stdout:
+stderr:
+roundfix: phase fallback failed: unexpected argument "extra"
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+stderr:
+roundfix: phase fallback failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-bklhqgem/repo/.roundfixrc.yml": skills must be a mapping
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-nongit-ilvh3ywi
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+stderr:
+roundfix: phase fallback failed: phase fallback requires a git repository working tree
+Run 'roundfix phase --help' for usage.
+exit: 2
+
+All seven decision refusals plus usage/configuration/outside-Git refusals preserve existing day files or create none.

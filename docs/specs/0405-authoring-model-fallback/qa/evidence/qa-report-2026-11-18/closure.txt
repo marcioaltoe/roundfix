@@ -1,0 +1,24 @@
+Read-only gate closure checks; offline fresh HOME.
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74
+$ ./bin/roundfix qa-report accept docs/specs/0405-authoring-model-fallback/qa/qa-report-2026-11-18.md
+stdout:
+stderr:
+roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"
+exit: 1
+
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74
+$ ./bin/roundfix archive 0405-authoring-model-fallback --plan --offline
+stdout:
+stderr:
+Preflight failed
+
+Reason:
+  fatal: not a git repository: (null): exit status 128
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+exit: 2
+

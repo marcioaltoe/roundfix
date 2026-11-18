@@ -1,0 +1,296 @@
+QA row Q11-config; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74
+$ /usr/bin/git show 04e87591f6713eacab608be8748b19bfb7ae3fcc:.roundfixrc.yml
+stdout:
+# Roundfix config.
+# User Config: ~/.roundfix/config.yml
+# Project Config: <repo>/.roundfixrc.yml
+
+verification:
+  tools: [go, gofmt, git, make]
+
+delivery:
+  # ADR-0288: run the Linux Lane before publication.
+  # 2026-10-20: back on after `roundfix deliver lane --all` passed on main
+  # a0d3d843 (Specs 0282 and 0284; ADR-0294, ADR-0297). Off 2026-10-18 to
+  # 2026-10-20 while the container lacked an init, CI tools and history.
+  linux_lane: true
+  item_binary:
+    build: make build
+    path: bin/roundfix
+  derived_paths:
+    - paths:
+        - internal/baseline/module-versions.json
+        - internal/baseline/testdata/catalog.digest
+        - internal/baseline/testdata/catalog.normalized.json
+        - internal/baseline/testdata/catalog.diagnostics.golden.json
+        - internal/baseline/testdata/plan-characterization/*.golden.json
+      lines:
+        paths: [internal/baseline/assets/modules/*.json]
+        match: '^  "version": [0-9]+,$'
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
+    - paths:
+        - internal/baseline/assets/profiles/standard-typescript-monorepo.json
+      lines:
+        paths: [internal/baseline/assets/profiles/standard-typescript-monorepo.json]
+        match: '^    "goldenDigest": "[0-9a-f]+",$'
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
+    - paths:
+        - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/
+      regenerate: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 && make baseline-digests
+    - paths:
+        - docs/agents/setup-context.json
+        - docs/agents/
+      regenerate: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes --format text
+    - paths:
+        - skills/testdata/owned-skill-versions.json
+      lines:
+        paths: [.agents/skills/*/SKILL.md, skills/*/SKILL.md]
+        match: '^ *version: '
+      regenerate: go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+    - paths:
+        - docs/references/coverage-record.json
+      regenerate: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+    - paths: [docs/references/behavior-surfaces.json]
+      regenerate: go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+
+defaults:
+  # Keep false on purpose: this repository keeps the Agent sandbox. Setting it
+  # true selects the mode the Agent Session advertises (`agent-full-access` on
+  # codex-acp 2.x), and the QA gate drives browsers through the chrome-devtools
+  # MCP server.
+  agent_full_access: false
+  # Selective repository Verification for review Batches and Run QA gates.
+  # Use `make verify` for the complete gate on main and releases.
+  verification: make verify-changed
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
+  auto_commit: true
+# Revised 2026-11-17: the profiles follow the maintainer-approved Recommended
+# Profile. Model identifiers and reasoning efforts are adapter options; the
+# catalog in internal/agent/catalog.go follows the advertised identifiers.
+# Snapshot, published evidence and sources: docs/references/model-selection.md.
+#
+# IMPLEMENTATION (general, backend, data, qa, infra, test): codex
+# `gpt-6.1-sol`/high, the coding workhorse; fallback claude `opus`/high
+# (Opus 5.5) changes runtime when Codex is unavailable.
+#
+# FRONTEND: claude `opus`/high (Opus 5.5) for design judgment; fallback codex
+# `gpt-6.1-sol`/xhigh changes runtime with extra effort for visual work.
+#
+# REVIEW: codex `gpt-6-luna`/max, the current fast model at its highest
+# supported effort for bounded review; fallback codex `gpt-6.1-sol`/high.
+# Every review selection must use the pre-PR review provider's runtime.
+#
+# DOCS: codex `gpt-6.1-terra`/high for clearer writing and more subscription
+# usage; fallback claude `sonnet`/high (Sonnet 5.5) changes runtime.
+#
+# CHORE: codex `gpt-6-luna`/max for bounded work at its highest supported
+# effort; fallback claude `sonnet`/high (Sonnet 5.5) changes runtime.
+#
+# NOT USED IN RUNS: `gpt-6-astra` and Claude Fable 5.2; the maintainer keeps
+# the coding categories on Sol and Opus. No selection uses `ultra`.
+#
+# NEVER route a `gpt-*` or Claude model through OpenRouter. OpenAI and
+# Anthropic models run only through the codex and claude subscriptions
+# (ADR-0235). No `opencode` tuple is configured.
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  frontend:
+    preferred:
+      runtime: claude
+      model: opus
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: xhigh
+  data:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-6-luna
+      reasoning_effort: max
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: high
+  infra:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  docs:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-terra
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: sonnet
+        reasoning_effort: high
+  test:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  chore:
+    preferred:
+      runtime: codex
+      model: gpt-6-luna
+      reasoning_effort: max
+    fallbacks:
+      - runtime: claude
+        model: sonnet
+        reasoning_effort: high
+specs:
+  # Directory holding Spec folders; relative paths resolve against the repository root.
+  root: "docs/specs"
+worktree:
+  # Rebuildable output in ended worktrees, reported by Doctor and reclaimed by GC.
+  caches:
+    - .gocache
+  # The Makefile holds the same shared Go build cache to the same bound as GC.
+  shared_caches:
+    - path: "{tmpdir}/roundfix-go-build-{uid}"
+      kind: go-build
+      max_size_mb: 10240
+      idle: 2h
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
+  location: "~/.roundfix/worktrees"
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: 3
+  # Repository-relative untracked files copied into each Run Worktree.
+  # Empty copies no files.
+  copy: []
+  # Command run once after copy before Agent work; empty disables bootstrap.
+  # Empty here on purpose: this is a Go repository with no package manifest at
+  # the root, and a non-zero bootstrap exit fails the whole Run before any
+  # Agent work starts.
+  bootstrap: ""
+  # Maximum time allowed for each worktree bootstrap command.
+  bootstrap_timeout: 10m
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  # 7 days since 2026-10-08 (maintainer decision): run_events grew about 77 MB a day,
+  # and 14 days held 1.08 GB of the 1.1 GB Run Database.
+  journal_retention: 168h
+review_source:
+  name: coderabbit
+  # Roundfix publishes the review request after a Round's Final Push. Required
+  # here: .coderabbit.yaml disables automatic review, so with this false the
+  # Preflight coherence check refuses watch and resolve — a Run would wait for
+  # a review nobody asks for.
+  request_review: true
+  # false excludes CodeRabbit findings whose severity is nitpick. Re-enabled
+  # 2026-08-08: nitpicks were off because resolve ran on the codex quota, where
+  # a long tail of low-severity findings competed with implementation work for
+  # the same budget. Resolve now routes through `review`, which leads with the
+  # OpenCode subscription, so the tail costs subscription time rather than a
+  # quota the Task Graph also needs.
+  include_nitpicks: true
+watch:
+  until_clean: true
+  max_rounds: 2
+  poll_interval: 30s
+  review_timeout: 30m
+  check_grace_period: 5m
+  quiet_period: 30s
+  # auto_push runs only after no Unresolved Review Issues remain.
+  auto_push: true
+  # Leave empty to use the branch upstream detected by Preflight Validation.
+  push_remote: ""
+  push_branch: ""
+implement:
+  # auto_push runs only after a Clean spec Run and never creates pull requests.
+  auto_push: false
+notify:
+  # false disables notifications entirely.
+  enabled: true
+  # Shell command run on terminal outcome; empty uses the native desktop notification.
+  command: ""
+budget:
+  enabled: true
+  # Back to 2h on 2026-09-29 (maintainer approval). Spec 0177 renews the budget
+  # at each Task settlement, and no Wave 4 Run exceeded 62 minutes (44, 62 and
+  # 16 minutes measured). It had been raised to 4h on 2026-09-28, after serial
+  # Task Graphs stopped four Runs at BudgetExceeded before that renewal existed.
+  max_run_duration: 2h
+resolve:
+  # Review Issues handed to one Agent Batch. Raised from 3 on 2026-08-05: the
+  # 0012 review resolved 22 issues and the 0015 review 28, so a batch of 3 spent
+  # most of the Run on Batch turnover rather than on the fixes.
+  batch_size: 20
+
+skills:
+  authoring:
+    claude:
+      idea:
+        model: fable
+        reasoning_effort: xhigh
+      prd:
+        model: fable
+        reasoning_effort: high
+      techspec:
+        model: fable
+        reasoning_effort: high
+      tasks:
+        model: opus
+        reasoning_effort: high
+      research:
+        model: sonnet
+        reasoning_effort: medium
+        tools: [WebSearch, WebFetch, mcp__exa__web_search_exa, mcp__exa__web_fetch_exa]
+stderr:
+exit: 0
+
+Delivery Base and audited working-tree config byte-identical; sha256 a45aa216f047036e0403ab432928dfd22d8b1a50436b3231bf00e830f2b4fdc9
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0405-authoring-model-fallback-a15e0f24ca9a2979-233207a1-f280420e/run_20261118T111508Z_d52e529984ea1f74
+$ /usr/bin/git diff --name-only 04e87591f6713eacab608be8748b19bfb7ae3fcc a35e4ef628e2679bf5a836729d69dbdcc0eacc9f -- .roundfixrc.yml
+stdout:
+stderr:
+exit: 0
+
+Commit-range independent confirmation names no Project Config change.

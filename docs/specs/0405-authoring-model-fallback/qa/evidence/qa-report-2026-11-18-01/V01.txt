@@ -1,0 +1,6 @@
+Source: Daemon QA prompt at audited head 35cad72e18787b97af0b0bb327bfd703160d7d05.
+Command: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+Not executed by the QA Agent; recorded as supplied.

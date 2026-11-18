@@ -1,0 +1,257 @@
+QA row Q07-outside; build a35e4ef628e2679bf5a836729d69dbdcc0eacc9f
+Offline external source excerpts: docs/specs/0405-authoring-model-fallback/references/2026-11-17-harness-and-test-measurements.md
+Primary source pages recorded there: https://code.claude.com/docs/en/errors.md ; https://code.claude.com/docs/en/sub-agents.md ; https://code.claude.com/docs/en/model-config.md ; https://code.claude.com/docs/en/skills.md
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-806b1c59/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-806b1c59/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-806b1c59/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-806b1c59/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your session limit · resets 3:45pm'
+stdout:
+No fallback for idea of 0412-example: a session limit is shared by every model.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-65nxe9zm/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-65nxe9zm/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-65nxe9zm/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-65nxe9zm/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your weekly limit · resets Mon 12:00am'
+stdout:
+No fallback for idea of 0412-example: a weekly limit is shared by every model.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-weo5ra7l/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-weo5ra7l/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-weo5ra7l/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-weo5ra7l/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Opus limit · resets 3:45pm'
+stdout:
+Start roundfix-idea-author with model sonnet and effort xhigh, the fallback of opus: "You've hit your Opus limit · resets 3:45pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-weo5ra7l/repo
+$ ./bin/roundfix phase model idea --spec 0412-example
+stdout:
+Start roundfix-idea-author with model sonnet and effort xhigh, the fallback of opus: idea of 0412-example fell back when the Opus limit ran out.
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-hho3jxln/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-hho3jxln/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-hho3jxln/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-hho3jxln/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Sonnet limit · resets 3:45pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of sonnet: "You've hit your Sonnet limit · resets 3:45pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-hho3jxln/repo
+$ ./bin/roundfix phase model idea --spec 0412-example
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of sonnet: idea of 0412-example fell back when the Sonnet limit ran out.
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-acsfi2es/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-acsfi2es/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-acsfi2es/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-acsfi2es/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your monthly spend limit'
+stdout:
+No fallback for idea of 0412-example: a monthly spend limit is not a model's usage limit.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xvhx9904/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xvhx9904/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xvhx9904/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-xvhx9904/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your individual spend limit'
+stdout:
+No fallback for idea of 0412-example: a individual spend limit is not a model's usage limit.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-20s597sf/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-20s597sf/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-20s597sf/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-20s597sf/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your individual usage limit'
+stdout:
+No fallback for idea of 0412-example: a individual usage limit is not a model's usage limit.
+stderr:
+exit: 3
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-p6z_faic/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-p6z_faic/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-p6z_faic/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-p6z_faic/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'You'"'"'ve hit your Fable limit · resets Nov 22 at 8pm'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "You've hit your Fable limit · resets Nov 22 at 8pm"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-p6z_faic/repo
+$ ./bin/roundfix phase model idea --spec 0412-example
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: idea of 0412-example fell back when the Fable limit ran out.
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_qqxlp_r/repo
+$ /usr/bin/git init -q
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_qqxlp_r/repo
+$ /usr/bin/git add fixture.txt
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_qqxlp_r/repo
+$ /usr/bin/git -c user.name=QA -c user.email=qa@example.invalid commit -qm fixture
+stdout:
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_qqxlp_r/repo
+$ ./bin/roundfix phase fallback idea --spec 0412-example --error 'Fable limit reached · continuing on Fable 5.1 uses usage credits, and the prompt to confirm went unanswered · …'
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: "Fable limit reached · continuing on Fable 5.1 uses usage credits, and the prompt to confirm went unanswered · …"
+stderr:
+exit: 0
+
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0405-_qqxlp_r/repo
+$ ./bin/roundfix phase model idea --spec 0412-example
+stdout:
+Start roundfix-idea-author with model opus and effort xhigh, the fallback of fable: idea of 0412-example fell back when the Fable limit ran out.
+stderr:
+exit: 0
+
+All nine quoted/observed external message variants agree with the offline classification; no network lookup performed.
