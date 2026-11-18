@@ -1,0 +1,12 @@
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index 3de8f11..e506f9c 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -198,6 +198,7 @@ func doctorClaudeLinkResult(ctx context.Context, repositoryRoot string) CheckRes
+ 		result.Detail = "CLAUDE.md is absent"
+ 		result.NextAction = "run roundfix baseline update to create the symbolic link to AGENTS.md"
+ 	case baseline.ClaudeInstructionLinkFile, baseline.ClaudeInstructionLinkElsewhere:
++		result.Status = CheckStatusFailed
+ 		result.Detail = "CLAUDE.md is a regular file"
+ 		if link.Shape == baseline.ClaudeInstructionLinkElsewhere {
+ 			result.Detail = "CLAUDE.md is a symbolic link to " + link.Target

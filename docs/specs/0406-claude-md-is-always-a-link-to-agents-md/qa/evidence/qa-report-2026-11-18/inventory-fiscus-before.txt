@@ -1,0 +1,7 @@
+command: git status --porcelain
+cwd: /Users/marcio/srv/fiscus
+stdout:
+
+stderr:
+
+exit: 0

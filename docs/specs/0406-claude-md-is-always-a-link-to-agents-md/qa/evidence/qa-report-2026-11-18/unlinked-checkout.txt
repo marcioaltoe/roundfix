@@ -1,0 +1,7 @@
+command: git -c core.symlinks=false checkout -- CLAUDE.md
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-fixtures-2mobu0e4/adopted
+stdout:
+
+stderr:
+
+exit: 0

@@ -1,0 +1,24 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531/bin/roundfix-delivery-base baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-fixtures-2mobu0e4/adopted --no-skills --no-history --format text
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+Baseline update: plan ready
+Category: approval
+Result: managed-refresh plan is ready; repository bytes are unchanged
+Prior catalog: sha256:40885ab5cd59c578fa181ff22dabac8e4bba016a326f9a212e01f2fec4c7cbea
+Current catalog: sha256:5539e8d6ec67386c2742654d81027e8c5c159d3d618b7ec2f33bdacbe690b52c
+File changes: 2
+- update docs/agents/agent-instructions.md (1 managed entries)
+- update docs/agents/setup-context.json (1 managed entries)
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:97dba382601c5c7002a4f55c50507a9e7b978f367048b1eb634ebdd06197cc93
+Next action: review the plan and rerun with --confirm-plan sha256:97dba382601c5c7002a4f55c50507a9e7b978f367048b1eb634ebdd06197cc93, or use --yes to approve the digest computed in one invocation
+
+stderr:
+
+exit: 3

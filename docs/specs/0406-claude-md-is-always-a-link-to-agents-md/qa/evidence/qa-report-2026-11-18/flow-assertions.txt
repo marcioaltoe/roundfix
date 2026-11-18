@@ -1,0 +1,4 @@
+adoption target exactly AGENTS.md; backup bytes: ['CLAUDE.982b1b611f45082962893fa531f32916e8c325a1c64bad56b3a97c34b6501745.md']
+import converted; backup bytes: ['CLAUDE.336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49.md']
+absent link recreated
+full withheld warning matched; file bytes unchanged; exit equals linked exit 0

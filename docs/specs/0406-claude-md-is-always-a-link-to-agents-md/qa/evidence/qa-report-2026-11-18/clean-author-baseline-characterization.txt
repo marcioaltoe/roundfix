@@ -1,0 +1,24 @@
+command: go test -count=1 -timeout 10m -v -run ^TestBaselinePlanCharacterization$ ./internal/baseline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+=== RUN   TestBaselinePlanCharacterization
+=== PAUSE TestBaselinePlanCharacterization
+=== CONT  TestBaselinePlanCharacterization
+=== RUN   TestBaselinePlanCharacterization/clean-adoption
+=== RUN   TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply
+=== RUN   TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities
+=== RUN   TestBaselinePlanCharacterization/advisory-only-divergences
+=== RUN   TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests
+--- PASS: TestBaselinePlanCharacterization (1.34s)
+    --- PASS: TestBaselinePlanCharacterization/clean-adoption (0.07s)
+    --- PASS: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (0.55s)
+    --- PASS: TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities (0.05s)
+    --- PASS: TestBaselinePlanCharacterization/advisory-only-divergences (0.05s)
+    --- PASS: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (0.62s)
+PASS
+suiteguard: guard cost: measured 3298 paths; fingerprint took 685.036042ms before and 154.29575ms after
+ok  	roundfix/internal/baseline	2.487s
+
+stderr:
+
+exit: 0

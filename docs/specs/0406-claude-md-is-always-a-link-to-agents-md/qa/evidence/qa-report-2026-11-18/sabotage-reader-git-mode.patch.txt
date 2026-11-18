@@ -1,0 +1,13 @@
+diff --git a/internal/baseline/claude_link.go b/internal/baseline/claude_link.go
+index a841eca..857faab 100644
+--- a/internal/baseline/claude_link.go
++++ b/internal/baseline/claude_link.go
+@@ -97,6 +97,8 @@ func ReadClaudeInstructionLink(ctx context.Context, root string, git GitRunner)
+ 	}
+ 	link = ClaudeInstructionLink{Shape: shape, Target: target}
+ 	if shape == ClaudeInstructionLinkFile && string(content) == ClaudeInstructionLinkTarget {
++		link.Shape = ClaudeInstructionLinkUnlinkedCheckout
++		return link, nil
+ 		if git == nil {
+ 			git = ExecGitRunner{}
+ 		}

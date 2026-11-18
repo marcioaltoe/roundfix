@@ -1,0 +1,7 @@
+command: git status --porcelain
+cwd: /Users/marcio/srv/quaestor
+stdout:
+
+stderr:
+
+exit: 0

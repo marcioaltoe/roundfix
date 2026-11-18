@@ -1,0 +1,7 @@
+command: git status --porcelain
+cwd: /Users/marcio/dev/argus
+stdout:
+
+stderr:
+
+exit: 0

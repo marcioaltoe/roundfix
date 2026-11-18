@@ -1,0 +1,12 @@
+diff --git a/internal/baseline/transaction.go b/internal/baseline/transaction.go
+index a497077..4c7777b 100644
+--- a/internal/baseline/transaction.go
++++ b/internal/baseline/transaction.go
+@@ -969,6 +969,7 @@ func restoreTransactionPreimage(
+ 	index int,
+ 	entry transactionJournalEntry,
+ ) error {
++	if isClaudeInstructionLinkPostimage(entry.After) { return nil }
+ 	if err := transaction.ensureParentDirectories(entry.Path); err != nil {
+ 		return err
+ 	}

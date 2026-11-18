@@ -1,0 +1,8 @@
+command: git ls-files -s -- CLAUDE.md
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-fixtures-2mobu0e4/adopted
+stdout:
+120000 47dc3e3d863cfb5727b87d785d09abf9743c0a72 0	CLAUDE.md
+
+stderr:
+
+exit: 0

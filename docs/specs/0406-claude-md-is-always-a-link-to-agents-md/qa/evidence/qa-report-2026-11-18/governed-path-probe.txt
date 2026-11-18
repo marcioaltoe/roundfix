@@ -1,0 +1,28 @@
+command: go test -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-governed-6l_06ul3/overlay.json -count=1 -timeout 10m -v -run ^TestQA0406GovernedPaths$ ./internal/speccheck
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+=== RUN   TestQA0406GovernedPaths
+=== PAUSE TestQA0406GovernedPaths
+=== CONT  TestQA0406GovernedPaths
+    qa0406_probe_test.go:3: QA_GOVERNED .agents/skills/roundfix/SKILL.md
+    qa0406_probe_test.go:3: QA_GOVERNED .agents/skills/roundfix/references/baseline.md
+    qa0406_probe_test.go:3: QA_GOVERNED .agents/skills/roundfix/references/modes.md
+    qa0406_probe_test.go:3: QA_GOVERNED .agents/skills/roundfix/references/setup.md
+    qa0406_probe_test.go:3: QA_GOVERNED .agents/skills/setup-context-driven/SKILL.md
+    qa0406_probe_test.go:3: QA_GOVERNED docs/agents/agent-instructions.md
+    qa0406_probe_test.go:3: QA_GOVERNED docs/agents/setup-context.json
+    qa0406_probe_test.go:3: QA_GOVERNED internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+    qa0406_probe_test.go:3: QA_GOVERNED internal/baseline/assets/modules/core.json
+    qa0406_probe_test.go:3: QA_GOVERNED internal/baseline/assets/profiles/standard-typescript-monorepo.json
+    qa0406_probe_test.go:3: QA_GOVERNED internal/baseline/assets/templates/guides/agent-instructions.md
+    qa0406_probe_test.go:3: QA_GOVERNED internal/baseline/assets/templates/index.json
+    qa0406_probe_test.go:3: QA_GOVERNED skills/roundfix/SKILL.md
+    qa0406_probe_test.go:3: QA_GOVERNED skills/setup-context-driven/SKILL.md
+--- PASS: TestQA0406GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3386 paths; fingerprint took 634.949583ms before and 182.212541ms after
+ok  	roundfix/internal/speccheck	1.100s
+
+stderr:
+
+exit: 0

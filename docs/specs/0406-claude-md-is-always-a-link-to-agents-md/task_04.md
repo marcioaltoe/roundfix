@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0406-claude-md-is-always-a-link-to-agents-md
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

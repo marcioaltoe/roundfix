@@ -1,0 +1,33 @@
+diff --git a/internal/baseline/plan.go b/internal/baseline/plan.go
+index 5700a68..797bd0a 100644
+--- a/internal/baseline/plan.go
++++ b/internal/baseline/plan.go
+@@ -2809,28 +2809,6 @@ func validateManagedRefreshPreservation(
+ 	preimagesByPath := preimagesByPath(preimages)
+ 	for _, postimage := range postimages {
+ 		preimage, bounded := preimagesByPath[postimage.Path]
+-		if isClaudeInstructionLinkPostimage(postimage) {
+-			anchored, err := os.OpenRoot(root)
+-			if err != nil {
+-				return err
+-			}
+-			current, readErr := captureTransactionState(anchored, postimage.Path)
+-			closeErr := anchored.Close()
+-			if err := errors.Join(readErr, closeErr); err != nil {
+-				return err
+-			}
+-			if !bounded || !transactionStateMatchesPreimage(current, preimage) {
+-				return fmt.Errorf("preimage %q changed during preservation validation", postimage.Path)
+-			}
+-			link, err := ReadClaudeInstructionLink(context.Background(), root, nil)
+-			if err != nil {
+-				return err
+-			}
+-			if !link.Convertible() {
+-				return fmt.Errorf("CLAUDE.md preimage is not convertible to the instruction link")
+-			}
+-			continue
+-		}
+ 		if postimage.Path == manifestPath || !bounded ||
+ 			!preimage.Exists || preimage.Kind != PreimageRegular {
+ 			continue

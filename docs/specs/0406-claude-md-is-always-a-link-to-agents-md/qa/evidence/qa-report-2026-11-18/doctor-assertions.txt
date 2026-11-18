@@ -1,0 +1,1 @@
+Exact ok, passage warning and skipped lines matched. Each head exit matched Delivery Base exit. PATH only exposed system utilities; no real gh, ACP adapter, Agent executable or provider was reachable.

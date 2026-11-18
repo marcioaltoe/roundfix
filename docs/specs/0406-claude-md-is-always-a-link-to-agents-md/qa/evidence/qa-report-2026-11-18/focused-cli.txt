@@ -1,0 +1,106 @@
+command: go test -count=1 -timeout 20m -v -run TestDoctorReportsTheClaudeInstructionLink|TestBaselineUpdateWarnsAboutTheClaudeInstructionLink|TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink|Misplaced|BaselineRules ./internal/cli
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules
+=== PAUSE TestBaselineUpdateNamesMisplacedRepositoryRules
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== PAUSE TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== RUN   TestDoctorReportsMisplacedRepositoryRules
+=== PAUSE TestDoctorReportsMisplacedRepositoryRules
+=== RUN   TestDoctorReportsTheClaudeInstructionLink
+=== PAUSE TestDoctorReportsTheClaudeInstructionLink
+=== CONT  TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_text
+=== CONT  TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/empty_array
+=== CONT  TestDoctorReportsTheClaudeInstructionLink
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/ok
+=== CONT  TestDoctorReportsMisplacedRepositoryRules
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/ok
+=== CONT  TestBaselineUpdateNamesMisplacedRepositoryRules
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/absent
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/invalid_manifest
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_json
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_one_passage
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/regular_file
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/declared_decision_failure
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_text
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_two_passages
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_text
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/carrier_read_failure
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/link_elsewhere
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_json
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_json
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_extension_off
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/file_with_passages
+--- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures (7.36s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/empty_array (1.83s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/invalid_manifest (1.98s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/declared_decision_failure (1.79s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/carrier_read_failure (1.76s)
+=== CONT  TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+--- PASS: TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink (0.20s)
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/exit_code_unchanged
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/skipped
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/link_elsewhere_with_passages
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/agents_not_regular
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/unlinked_checkout
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/unread
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged
+--- PASS: TestDoctorReportsMisplacedRepositoryRules (14.75s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/ok (2.38s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_one_passage (2.42s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_two_passages (2.46s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_extension_off (1.40s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/skipped (1.83s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest (2.28s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code (1.98s)
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/skipped
+--- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink (14.99s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_text (2.19s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_json (1.84s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_text (2.28s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_json (2.20s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/exit_code_unchanged (6.47s)
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/after_baseline_rules_and_exit_code
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field
+--- PASS: TestDoctorReportsTheClaudeInstructionLink (16.48s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/ok (1.77s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/absent (2.03s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/regular_file (1.80s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/link_elsewhere (1.73s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/file_with_passages (1.36s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/link_elsewhere_with_passages (1.50s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/agents_not_regular (1.62s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/unlinked_checkout (1.41s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/unread (1.58s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/skipped (0.75s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/after_baseline_rules_and_exit_code (0.92s)
+--- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules (17.01s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text (2.42s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json (2.40s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_text (2.43s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_json (2.21s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json (2.36s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged (2.03s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged (1.62s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off (1.01s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field (0.54s)
+PASS
+suiteguard: guard cost: measured 3291 paths; fingerprint took 162.100167ms before and 635.747167ms after
+ok  	roundfix/internal/cli	18.276s
+
+stderr:
+
+exit: 0

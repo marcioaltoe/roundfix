@@ -1,0 +1,8 @@
+command: git rev-parse HEAD
+cwd: /Users/marcio/srv/indexus
+stdout:
+3e48f0d0551163604003c6b31836243e5890e793
+
+stderr:
+
+exit: 0

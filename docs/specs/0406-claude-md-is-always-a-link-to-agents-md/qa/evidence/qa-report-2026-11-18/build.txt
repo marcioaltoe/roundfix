@@ -1,0 +1,8 @@
+command: make build
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=37ab80d9-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-18 14:01:59 -0300'" -o bin/roundfix ./cmd/roundfix
+
+stderr:
+
+exit: 0

@@ -1,0 +1,364 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestReadClaudeInstructionLinkClassifiesEveryShape|TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest|TestBaselinePlansTheClaudeInstructionLink|TestClaudeInstructionLinkRollbackRestoresTheFile|TestApplyExactDigest|TestEveryBaselineModuleVersionIsRecorded)$ ./internal/baseline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+=== RUN   TestApplyExactDigest
+=== PAUSE TestApplyExactDigest
+=== RUN   TestBaselinePlansTheClaudeInstructionLink
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink
+=== RUN   TestClaudeInstructionLinkRollbackRestoresTheFile
+=== PAUSE TestClaudeInstructionLinkRollbackRestoresTheFile
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+=== CONT  TestApplyExactDigest
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/dot_slash_target
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/dot_slash_target
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/absent
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/absent
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/empty_file
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/empty_file
+=== CONT  TestClaudeInstructionLinkRollbackRestoresTheFile
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+=== RUN   TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/before_a_guide_managed_region
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/import_line
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/import_line
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/copy_of_agents
+=== CONT  TestBaselinePlansTheClaudeInstructionLink
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_absent
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_absent
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_file
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_file
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_preservation_file
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_preservation_file
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_import_line
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/before_a_guide_managed_region
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_import_line
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/copy_of_agents
+=== PAUSE TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_link_elsewhere
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_link_elsewhere
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/adoption_unlinked_checkout_left
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/adoption_unlinked_checkout_left
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_absent_created
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_absent_created
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_empty_file_converted
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/several_sections_after_one_managed_region
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/managed_regions_only
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/managed_regions_only
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/several_sections_after_one_managed_region
+=== RUN   TestClaudeInstructionLinkRollbackRestoresTheFile/link_elsewhere
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/digest_mismatch_region
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_empty_file_converted
+=== PAUSE TestClaudeInstructionLinkRollbackRestoresTheFile/link_elsewhere
+=== CONT  TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/digest_mismatch_region
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_import_line_converted
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unclosed_begin_stays_in_the_passage
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unclosed_begin_stays_in_the_passage
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/file_with_a_rule
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/first_line_is_cut_at_120_bytes
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/file_with_a_rule
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/first_line_is_cut_at_120_bytes
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/listed_digest_mismatch
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/clean_carrier
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/clean_carrier
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/import_line_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/import_line_claude_md
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlinked_checkout_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlinked_checkout_claude_md
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/regular_claude_md
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/regular_claude_md
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/specific_repository_is_not_read
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_import_line_converted
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/listed_digest_mismatch
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_managed_regions_only_converted
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_clean_file
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_clean_file
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_file_with_a_rule
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/specific_repository_is_not_read
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_file_with_a_rule
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/no_manifest
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_managed_regions_only_converted
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/no_manifest
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/invalid_manifest
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/invalid_manifest
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_copy_of_agents_converted
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_off
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_copy_of_agents_converted
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_off
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/unlinked_checkout
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_clean_file_converted
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_on
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/unlinked_checkout
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_on
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/reads_only
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/reads_only
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_splits_a_passage
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_clean_file_converted
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_splits_a_passage
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_file_with_a_rule_withheld
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_matches_only_the_same_name
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_file_with_a_rule_withheld
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_matches_only_the_same_name
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_file_with_a_rule_withheld
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/excluded_carriers_are_not_opened
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_file_with_a_rule_withheld
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/excluded_carriers_are_not_opened
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_missing
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_missing
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_link
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_link
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/absolute_link_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/absolute_link_is_an_error
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/reads_only
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/reads_only
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_unlinked_checkout_left
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_unlinked_checkout_left
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_carriers_are_not_read
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_carriers_are_not_read
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_regular_claude_md_is_read
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_an_import_line
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_regular_claude_md_is_read
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/refresh_link_kept
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_an_import_line
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_symbolic_link_claude_md_is_not_read
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/refresh_link_kept
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/stale_claude_md_refuses_apply
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_symbolic_link_claude_md_is_not_read
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_missing_agents_is_an_error
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/missing_listed_carrier
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/missing_listed_carrier
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/paths_then_lines
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_missing_agents_is_an_error
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/paths_then_lines
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/crlf_and_no_final_newline
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_linked_agents
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/stale_claude_md_refuses_apply
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_linked_agents
+=== RUN   TestBaselinePlansTheClaudeInstructionLink/guide_states_the_rule
+=== PAUSE TestBaselinePlansTheClaudeInstructionLink/guide_states_the_rule
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_untracked
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_untracked
+=== CONT  TestClaudeInstructionLinkRollbackRestoresTheFile/link_elsewhere
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_with_newline
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_with_newline
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/crlf_and_no_final_newline
+=== RUN   TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_string_is_not_true
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_copy_of_agents
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_copy_of_agents
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/import_beside_a_rule_is_a_passage
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/import_beside_a_rule_is_a_passage
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/foreign_block_splits_import_from_rule
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/foreign_block_splits_import_from_rule
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/unlisted_managed_region
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/unlisted_managed_region
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/duplicate_managed_region
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/duplicate_managed_region
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_directory
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_directory
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/claude_is_a_directory
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/claude_is_a_directory
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/escaping_link_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/escaping_link_is_an_error
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/missing_link_target_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/missing_link_target_is_an_error
+=== PAUSE TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_string_is_not_true
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_copy_of_agents_converted
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_directory_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_directory_is_an_error
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/indirect_escape_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/indirect_escape_is_an_error
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/cyclic_link_is_an_error
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/cyclic_link_is_an_error
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_link_kept
+--- PASS: TestApplyExactDigest (1.76s)
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/guide_states_the_rule
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/stale_claude_md_refuses_apply
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_absent
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_managed_regions_only_converted
+--- PASS: TestClaudeInstructionLinkRollbackRestoresTheFile (0.00s)
+    --- PASS: TestClaudeInstructionLinkRollbackRestoresTheFile/link_elsewhere (2.38s)
+    --- PASS: TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file (2.39s)
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_file_with_a_rule_withheld
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_import_line_converted
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_empty_file_converted
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_unlinked_checkout_left
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_absent_created
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_file_with_a_rule_withheld
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_unlinked_checkout_left
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_import_line
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_preservation_file
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_link_elsewhere
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_file
+=== CONT  TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_clean_file_converted
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/cyclic_link_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/indirect_escape_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_directory_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/missing_link_target_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/escaping_link_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/claude_is_a_directory
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_directory
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/duplicate_managed_region
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/unlisted_managed_region
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/foreign_block_splits_import_from_rule
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/import_beside_a_rule_is_a_passage
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_copy_of_agents
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_with_newline
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_untracked
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_linked_agents
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_missing_agents_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_an_import_line
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/reads_only
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/absolute_link_is_an_error
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_link
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_missing
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/unlinked_checkout
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_file_with_a_rule
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_clean_file
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/listed_digest_mismatch
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/file_with_a_rule
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/managed_regions_only
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/copy_of_agents
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/import_line
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/empty_file
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/absent
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/invalid_manifest
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/dot_slash_target
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_string_is_not_true
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/crlf_and_no_final_newline
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/paths_then_lines
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/missing_listed_carrier
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_symbolic_link_claude_md_is_not_read
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_regular_claude_md_is_read
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_carriers_are_not_read
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/excluded_carriers_are_not_opened
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_matches_only_the_same_name
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_splits_a_passage
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/reads_only
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_on
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_off
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/clean_carrier
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/no_manifest
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/specific_repository_is_not_read
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/regular_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlinked_checkout_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/import_line_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/digest_mismatch_region
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/first_line_is_cut_at_120_bytes
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unclosed_begin_stays_in_the_passage
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/several_sections_after_one_managed_region
+=== CONT  TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/before_a_guide_managed_region
+--- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape (0.00s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link (0.33s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/cyclic_link_is_an_error (0.35s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/indirect_escape_is_an_error (0.20s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_directory_is_an_error (0.11s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/missing_link_target_is_an_error (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/claude_is_a_directory (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/escaping_link_is_an_error (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_directory (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/duplicate_managed_region (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/unlisted_managed_region (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/foreign_block_splits_import_from_rule (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_copy_of_agents (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/import_beside_a_rule_is_a_passage (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_with_newline (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_linked_agents (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_untracked (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_with_missing_agents_is_an_error (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_an_import_line (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/absolute_link_is_an_error (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/reads_only (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_missing (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_is_a_link (0.02s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_file_with_a_rule (0.06s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/link_to_a_clean_file (0.06s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file (0.09s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/listed_digest_mismatch (0.04s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/file_with_a_rule (0.04s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/unlinked_checkout (0.11s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/managed_regions_only (0.04s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/copy_of_agents (0.04s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/import_line (0.04s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/empty_file (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/absent (0.03s)
+    --- PASS: TestReadClaudeInstructionLinkClassifiesEveryShape/dot_slash_target (0.02s)
+--- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/after_a_guide_managed_region (0.06s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/invalid_manifest (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_string_is_not_true (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/crlf_and_no_final_newline (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/paths_then_lines (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/missing_listed_carrier (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_symbolic_link_claude_md_is_not_read (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_regular_claude_md_is_read (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlisted_carriers_are_not_read (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_matches_only_the_same_name (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/excluded_carriers_are_not_opened (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/foreign_block_splits_a_passage (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_off (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/reads_only (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/extension_decision_on (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/no_manifest (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/specific_repository_is_not_read (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/clean_carrier (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/regular_claude_md (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unlinked_checkout_claude_md (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/symbolic_link_claude_md (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/import_line_claude_md (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/unclosed_begin_stays_in_the_passage (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/digest_mismatch_region (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/first_line_is_cut_at_120_bytes (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/marker_absent_region_is_not_an_entry (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/between_root_managed_regions_beside_a_foreign_block (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/several_sections_after_one_managed_region (0.00s)
+    --- PASS: TestMisplacedRepositoryRulesAreNamedFromTheSetupManifest/before_a_guide_managed_region (0.00s)
+--- PASS: TestBaselinePlansTheClaudeInstructionLink (0.00s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/guide_states_the_rule (0.00s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_link_kept (1.88s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_copy_of_agents_converted (2.55s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/stale_claude_md_refuses_apply (1.68s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_absent (2.10s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_file_with_a_rule_withheld (1.98s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_managed_regions_only_converted (2.51s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_import_line_converted (2.57s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_empty_file_converted (2.61s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_unlinked_checkout_left (2.10s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_file_with_a_rule_withheld (1.83s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_absent_created (2.44s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_unlinked_checkout_left (1.78s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_import_line (1.85s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_preservation_file (1.96s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_link_elsewhere (1.78s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/adoption_greenfield_file (1.75s)
+    --- PASS: TestBaselinePlansTheClaudeInstructionLink/refresh_link_to_clean_file_converted (1.91s)
+PASS
+suiteguard: guard cost: measured 3290 paths; fingerprint took 640.496125ms before and 158.556916ms after
+ok  	roundfix/internal/baseline	9.906s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,33 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531/bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-parity-4ilbjh9x/fixture --no-skills --no-history --format text
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+Baseline update: plan ready
+Category: approval
+Result: managed-refresh plan is ready; repository bytes are unchanged
+Prior catalog: sha256:40885ab5cd59c578fa181ff22dabac8e4bba016a326f9a212e01f2fec4c7cbea
+Current catalog: sha256:40885ab5cd59c578fa181ff22dabac8e4bba016a326f9a212e01f2fec4c7cbea
+File changes: 1
+- update docs/agents/go.md (1 managed entries)
+Unrecorded managed regions: 1
+- Path: docs/agents/go.md
+  Managed identity: guide.go
+  Reason: digest-mismatch
+  Removed lines:
+    # Earlier Go guidance
+Misplaced repository rules: 1
+- docs/agents/go.md:1-28 (managed identity guide.go): # Earlier Go guidance
+  Move to: docs/agents/specific-repository.md
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:bd34bbf2f7acdc5e9ab0d5c8c8e16c4b39773f7753d35f77dac879d0795e798b
+Next action: review the plan and rerun with --confirm-plan sha256:bd34bbf2f7acdc5e9ab0d5c8c8e16c4b39773f7753d35f77dac879d0795e798b, or use --yes to approve the digest computed in one invocation
+
+stderr:
+
+exit: 3

@@ -1,0 +1,13 @@
+diff --git a/internal/baseline/claude_link.go b/internal/baseline/claude_link.go
+index a841eca..6eecaa5 100644
+--- a/internal/baseline/claude_link.go
++++ b/internal/baseline/claude_link.go
+@@ -36,7 +36,7 @@ type ClaudeInstructionLink struct {
+ // Convertible reports whether replacing the carrier with the link loses no rule.
+ func (link ClaudeInstructionLink) Convertible() bool {
+ 	return link.Shape == ClaudeInstructionLinkAbsent ||
+-		(link.Shape == ClaudeInstructionLinkFile || link.Shape == ClaudeInstructionLinkElsewhere) && len(link.Passages) == 0
++		(link.Shape == ClaudeInstructionLinkFile || link.Shape == ClaudeInstructionLinkElsewhere) 
+ }
+ 
+ // ReadClaudeInstructionLink reads the root carrier without changing files or

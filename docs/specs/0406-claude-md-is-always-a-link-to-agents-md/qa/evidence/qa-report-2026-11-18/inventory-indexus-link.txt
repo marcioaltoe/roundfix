@@ -1,0 +1,8 @@
+command: ls -l CLAUDE.md
+cwd: /Users/marcio/srv/indexus
+stdout:
+lrwxr-xr-x@ 1 marcio  staff  9 Nov  6 18:13 CLAUDE.md -> AGENTS.md
+
+stderr:
+
+exit: 0

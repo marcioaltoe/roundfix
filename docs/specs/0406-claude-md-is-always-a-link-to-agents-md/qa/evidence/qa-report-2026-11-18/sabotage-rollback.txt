@@ -1,0 +1,21 @@
+command: go test -count=1 -timeout 10m -v -run ^TestClaudeInstructionLinkRollbackRestoresTheFile$/^regular_file$ ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-sabotage-d3vchch0/source
+stdout:
+=== RUN   TestClaudeInstructionLinkRollbackRestoresTheFile
+=== PAUSE TestClaudeInstructionLinkRollbackRestoresTheFile
+=== CONT  TestClaudeInstructionLinkRollbackRestoresTheFile
+=== RUN   TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+=== PAUSE TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+=== CONT  TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file
+    claude_link_plan_test.go:295: rollback changed CLAUDE.md: before={Path:CLAUDE.md Mode:-rw-r----- LinkTarget: Content:@AGENTS.md
+        } after={Path:CLAUDE.md Mode:Lrwxr-xr-x LinkTarget:AGENTS.md Content:}
+--- FAIL: TestClaudeInstructionLinkRollbackRestoresTheFile (0.00s)
+    --- FAIL: TestClaudeInstructionLinkRollbackRestoresTheFile/regular_file (0.89s)
+FAIL
+suiteguard: guard cost: measured 3282 paths; fingerprint took 216.824083ms before and 159.1825ms after
+FAIL	roundfix/internal/baseline	1.580s
+FAIL
+
+stderr:
+
+exit: 1

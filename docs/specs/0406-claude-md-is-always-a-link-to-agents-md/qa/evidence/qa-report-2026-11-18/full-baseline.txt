@@ -1,0 +1,32 @@
+command: go test -count=1 -timeout 30m ./internal/baseline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0406-claude-md-is-always-a-link-to-agents-md-626e4b1c5c4c0fed-dee35ac4-2cc9ff29/run_20261118T150422Z_374d063a7c5f0531
+stdout:
+--- FAIL: TestBaselinePlanCharacterization (3.15s)
+    --- FAIL: TestBaselinePlanCharacterization/clean-adoption (0.18s)
+        plan_characterization_test.go:132: shape "clean-adoption" changed at $.outcome.Plan.planDigest:
+            - want "sha256:ebb427bb2a0a7040c8e51509365a65e27dea42f45e7cdcf08e23364c50581a58"
+            + got  "sha256:5cf97e32ea2f57bd912f16decdc561213225bab643f1d6b61d62e0a56718a24e"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (1.33s)
+        plan_characterization_test.go:132: shape "idempotent-replan-after-verified-apply" changed at $.outcome.Plan.planDigest:
+            - want "sha256:c7d7dd68e45bc47613e3b170efbada98fc8f599a2d7b6fa07769a05c72cbfbb3"
+            + got  "sha256:b9551a1d2893a452f3e8f55b0ee795e6474b8916de7b7b4694728e07b9aac061"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/advisory-only-divergences (0.15s)
+        plan_characterization_test.go:132: shape "advisory-only-divergences" changed at $.outcome.Plan.planDigest:
+            - want "sha256:cc736d82a0f6708ad5348c71af144a8b5a69eff7f970bfee6c164d663fd78ab2"
+            + got  "sha256:9dddd3a80cfbe5007ed2daf62b67adc76f80786431178de0435e4ec5cee62285"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (1.34s)
+        plan_characterization_test.go:132: shape "same-baseline-changed-profile-and-catalog-digests" changed at $.outcome.Plan.planDigest:
+            - want "sha256:825474d7abc9a7bcca8767dc7fe9a227af7677aad8a9fea3c080829534d18f0d"
+            + got  "sha256:a71b20a5719273c8ce251a0655d70f1280f10b342010e2e83d4407ea52478371"
+            run 'make baseline-digests'
+FAIL
+suiteguard: guard cost: measured 3292 paths; fingerprint took 172.8265ms before and 760.311959ms after
+FAIL	roundfix/internal/baseline	101.671s
+FAIL
+
+stderr:
+
+exit: 1

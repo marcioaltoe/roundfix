@@ -1,0 +1,22 @@
+command: go test -count=1 -timeout 10m -v -run ^TestReadClaudeInstructionLinkClassifiesEveryShape$/^agents_bytes_tracked_as_a_file$ ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf0406-sabotage-i0edo9fm/source
+stdout:
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape
+=== RUN   TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+=== PAUSE TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+=== CONT  TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file
+    claude_link_test.go:161: Git calls = 0, want 1
+    claude_link_test.go:171: link = baseline.ClaudeInstructionLink{Shape:"unlinked-checkout", Target:"", Passages:[]baseline.MisplacedRepositoryRule(nil)}, want baseline.ClaudeInstructionLink{Shape:"file", Target:"", Passages:[]baseline.MisplacedRepositoryRule(nil)}
+    claude_link_test.go:174: Convertible = false, want true
+--- FAIL: TestReadClaudeInstructionLinkClassifiesEveryShape (0.00s)
+    --- FAIL: TestReadClaudeInstructionLinkClassifiesEveryShape/agents_bytes_tracked_as_a_file (0.03s)
+FAIL
+suiteguard: guard cost: measured 3282 paths; fingerprint took 179.0635ms before and 155.097917ms after
+FAIL	roundfix/internal/baseline	0.661s
+FAIL
+
+stderr:
+
+exit: 1

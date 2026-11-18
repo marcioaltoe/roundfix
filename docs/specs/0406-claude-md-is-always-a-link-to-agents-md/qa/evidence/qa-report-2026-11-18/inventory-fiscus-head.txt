@@ -1,0 +1,8 @@
+command: git rev-parse HEAD
+cwd: /Users/marcio/srv/fiscus
+stdout:
+88c171ac4eb07f9ae38a4116ad0be70139839e6a
+
+stderr:
+
+exit: 0
