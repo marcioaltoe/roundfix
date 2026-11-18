@@ -95,8 +95,49 @@ The `; apply with ...` clause appears only when installation can repair at
 least one problem. Links and files Roundfix did not generate need the user's
 correction. An applied declaration adds no text line. The comparison writes
 nothing, changes neither the report's `next` nor its exit code, and runs only
-when Project Config was read. Without declared keys or problems it adds no
-text line or JSON member.
+when Project Config was read.
+
+With no `skills.authoring.claude` and no inspection problem, an installed
+authoring skill the repository does not publish gets this line in the same
+position, followed by the Recommended Authoring Declaration:
+
+```text
+Authoring models: the authoring skills are installed without a declaration: write-idea, write-prd, write-techspec, write-tasks; add the Recommended Authoring Declaration below to .roundfixrc.yml, then apply with roundfix skills install --target project.
+  skills:
+    authoring:
+      claude:
+        idea:
+          model: fable
+          reasoning_effort: xhigh
+        prd:
+          model: fable
+          reasoning_effort: high
+        techspec:
+          model: fable
+          reasoning_effort: high
+        tasks:
+          model: opus
+          reasoning_effort: high
+        research:
+          model: sonnet
+          reasoning_effort: medium
+```
+
+The line names only installed authoring skills not published under
+`skills/<name>/SKILL.md`, in phase order; a published skill does not count.
+The JSON report sets `authoringModels.state` to `undeclared`, with empty
+`declared` and `problems` arrays, the `installed` names and the unindented
+YAML string in `recommendation`, ending with a newline. Its `next` member is
+omitted. Neither this report nor the Doctor warning changes an exit code or
+the Update Check's top-level `next`. The recommendation writes nothing.
+
+Review the block and add it to `.roundfixrc.yml`, then run the named install
+command yourself. If the file already has `skills:`, merge into that mapping
+rather than adding a duplicate key. The block omits `research.tools`, so it
+grants no network tools. A leftover generated file keeps the existing
+problem report without this block. With no declaration, problem or installed
+unpublished authoring skill, no text line or JSON member is added. Outside a
+Git repository or when Project Config was not read, neither is added.
 
 When a newer Roundfix wrote this repository's Baseline, the check prints `roundfix: warning: <refusal>; Project Config not read` on stderr, reads no Project Config, and its Baseline line is `Baseline: failed:` followed by the refusal.
 
@@ -129,12 +170,14 @@ document:
 | `userSkills[].remove` | Command that removes the copy, before the refresh advice in text reports |
 | `userSkills[].stale` | Whether the copy's comparable version is older than the binary; always present, including `false` |
 | `userSkills[].hidesDeclaredHeader` | `true` when Claude Code's user-level copy hides a declared phase's header, whatever its version; never true for a skill the repository publishes; omitted otherwise |
-| `authoringModels` | Present after `userSkills` when a key is declared or a problem exists; omitted when Project Config was not read |
-| `authoringModels.state` | `applied` or `unapplied` |
+| `authoringModels` | Present after `userSkills` when a key is declared, a problem exists, or an installed unpublished authoring skill has no declaration; omitted outside Git or when Project Config was not read |
+| `authoringModels.state` | `applied`, `unapplied`, or `undeclared` |
 | `authoringModels.harness` | `claude` |
-| `authoringModels.declared` | Declared keys in phase order, with `research` last; an empty array for leftover generated files without a declaration |
-| `authoringModels.problems` | Problem texts in report order; always an array, empty when applied |
+| `authoringModels.declared` | Declared keys in phase order, with `research` last; an empty array for leftover generated files or `undeclared` |
+| `authoringModels.problems` | Problem texts in report order; always an array, empty when `applied` or `undeclared` |
 | `authoringModels.next` | `roundfix skills install --target project` when a problem is fixable by installation; omitted otherwise |
+| `authoringModels.installed` | Installed authoring skills the repository does not publish, in phase order; present only when `undeclared` |
+| `authoringModels.recommendation` | Recommended Authoring Declaration as YAML starting at `skills:` and ending with a newline, with no `tools` key; present only when `undeclared` |
 | `next` | `apply` for a newer release or a `plan_ready` Baseline, otherwise `none` |
 
 A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.

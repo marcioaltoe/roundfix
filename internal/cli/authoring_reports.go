@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	roundconfig "roundfix/internal/config"
@@ -13,11 +15,13 @@ import (
 const authoringInstallAction = "roundfix skills install --target project"
 
 type updateCheckAuthoring struct {
-	State    string   `json:"state"`
-	Harness  string   `json:"harness"`
-	Declared []string `json:"declared"`
-	Problems []string `json:"problems"`
-	Next     string   `json:"next,omitempty"`
+	State          string   `json:"state"`
+	Harness        string   `json:"harness"`
+	Declared       []string `json:"declared"`
+	Problems       []string `json:"problems"`
+	Next           string   `json:"next,omitempty"`
+	Installed      []string `json:"installed,omitempty"`
+	Recommendation string   `json:"recommendation,omitempty"`
 }
 
 func authoringNext(state roundskills.AuthoringState) string {
@@ -37,12 +41,38 @@ func authoringProblemTexts(state roundskills.AuthoringState) []string {
 	return texts
 }
 
-func loadedAuthoringState(loaded roundconfig.Loaded) (roundskills.AuthoringState, bool) {
+// authoringReportState adds the installed, unpublished skills to the existing
+// inspection without changing what skills check reports.
+type authoringReportState struct {
+	roundskills.AuthoringState
+	Installed []string
+}
+
+func loadedAuthoringState(loaded roundconfig.Loaded) (authoringReportState, bool) {
 	if loaded.GitRoot == "" || loaded.RepositoryVersionErr != nil {
-		return roundskills.AuthoringState{}, false
+		return authoringReportState{}, false
 	}
-	state := roundskills.InspectAuthoring(loaded.GitRoot, authoringDeclaration(loaded.Config.Skills))
-	return state, len(state.Declared) > 0 || len(state.Problems) > 0
+	declaration := authoringDeclaration(loaded.Config.Skills)
+	state := authoringReportState{AuthoringState: roundskills.InspectAuthoring(loaded.GitRoot, declaration)}
+	if declaration == nil && len(state.Problems) == 0 {
+		state.Installed = installedUnpublishedAuthoringSkills(loaded.GitRoot)
+	}
+	return state, len(state.Declared) > 0 || len(state.Problems) > 0 || len(state.Installed) > 0
+}
+
+func installedUnpublishedAuthoringSkills(root string) []string {
+	var names []string
+	for _, phase := range roundskills.AuthoringPhases() {
+		info, err := os.Stat(filepath.Join(root, ".agents", "skills", phase.Skill, "SKILL.md"))
+		if err == nil && info.Mode().IsRegular() && !roundskills.PublishesAuthoringSkill(root, phase.Skill) {
+			names = append(names, phase.Skill)
+		}
+	}
+	return names
+}
+
+func authoringRecommendationLines(block string) []string {
+	return strings.Split(strings.TrimSuffix(block, "\n"), "\n")
 }
 
 func printSkillsAuthoringWarning(ctx context.Context, environment commandEnvironment, stderr io.Writer) []string {
@@ -73,12 +103,17 @@ func printSkillsAuthoringWarning(ctx context.Context, environment commandEnviron
 	return declaredAuthoringSkills(root, declaration)
 }
 
-func doctorAuthoringModelsResult(state roundskills.AuthoringState) CheckResult {
+func doctorAuthoringModelsResult(state authoringReportState) CheckResult {
 	result := CheckResult{Name: HealthCheckAuthoringModels, Status: CheckStatusOK, Detail: state.Harness + ": " + strings.Join(state.Declared, ", ") + " applied"}
 	if len(state.Problems) > 0 {
 		result.Status = CheckStatusWarn
-		result.Detail = "the installed files do not match the Authoring Model Declaration: " + strings.Join(authoringProblemTexts(state), "; ")
-		result.NextAction = authoringNext(state)
+		result.Detail = "the installed files do not match the Authoring Model Declaration: " + strings.Join(authoringProblemTexts(state.AuthoringState), "; ")
+		result.NextAction = authoringNext(state.AuthoringState)
+	} else if len(state.Installed) > 0 {
+		result.Status = CheckStatusWarn
+		result.Detail = "the authoring skills are installed without an Authoring Model Declaration: " + strings.Join(state.Installed, ", ")
+		result.NextAction = "add the Recommended Authoring Declaration below to .roundfixrc.yml, then run " + authoringInstallAction
+		result.Lines = authoringRecommendationLines(roundconfig.RecommendedAuthoringYAML())
 	}
 	return result
 }
@@ -88,15 +123,29 @@ func updateCheckAuthoringModels(loaded roundconfig.Loaded) *updateCheckAuthoring
 	if !report {
 		return nil
 	}
-	result := &updateCheckAuthoring{State: "applied", Harness: state.Harness, Declared: append([]string{}, state.Declared...), Problems: authoringProblemTexts(state), Next: authoringNext(state)}
+	result := &updateCheckAuthoring{State: "applied", Harness: state.Harness, Declared: append([]string{}, state.Declared...), Problems: authoringProblemTexts(state.AuthoringState), Next: authoringNext(state.AuthoringState)}
 	if len(state.Problems) > 0 {
 		result.State = "unapplied"
+	} else if len(state.Installed) > 0 {
+		result.State = "undeclared"
+		result.Installed = state.Installed
+		result.Recommendation = roundconfig.RecommendedAuthoringYAML()
 	}
 	return result
 }
 
 func printUpdateCheckAuthoringModels(stdout io.Writer, report *updateCheckAuthoring) {
-	if report == nil || report.State != "unapplied" {
+	if report == nil {
+		return
+	}
+	if report.State == "undeclared" {
+		fmt.Fprintf(stdout, "Authoring models: the authoring skills are installed without a declaration: %s; add the Recommended Authoring Declaration below to .roundfixrc.yml, then apply with %s.\n", strings.Join(report.Installed, ", "), authoringInstallAction)
+		for _, line := range authoringRecommendationLines(report.Recommendation) {
+			fmt.Fprintf(stdout, "  %s\n", line)
+		}
+		return
+	}
+	if report.State != "unapplied" {
 		return
 	}
 	fmt.Fprintf(stdout, "Authoring models: the installed files do not match the declaration: %s", strings.Join(report.Problems, "; "))

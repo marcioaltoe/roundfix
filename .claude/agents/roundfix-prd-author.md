@@ -2,7 +2,7 @@
 name: roundfix-prd-author
 description: Authors the PRD of one Spec with the write-prd skill, on the model this repository declares. Start it only when the write-prd skill hands it the phase.
 model: fable
-effort: xhigh
+effort: high
 ---
 
 <!-- roundfix:generated skills.authoring.claude.prd -->

@@ -1,7 +1,7 @@
 ---
 name: roundfix-tasks-author
 description: Authors the Task Graph of one Spec with the write-tasks skill, on the model this repository declares. Start it only when the write-tasks skill hands it the phase.
-model: fable
+model: opus
 effort: high
 ---
 

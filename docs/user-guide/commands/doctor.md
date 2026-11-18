@@ -5,7 +5,7 @@ roundfix doctor
 ```
 
 Read-only readiness report; mutates nothing and exits nonzero when any check
-fails. One stdout line per check with `ok`, `warn`, `failed`, or `skipped`; `residue:`
+fails. Each check starts with a stdout line with `ok`, `warn`, `failed`, or `skipped`; `residue:`
 and `storage:` also report `found` or `partial`. Failure and warning lines include
 `next: <action>` when a remediation is known. The checks:
 
@@ -176,8 +176,45 @@ The next action appears only when installation can repair at least one
 problem. A missing Claude Skill Link or a file Roundfix did not generate
 requires the user's correction and has no installation next action on its
 own. This line only reads files and never changes Doctor's exit code.
-It is absent when nothing is declared and no Roundfix-generated file remains,
-outside a Git repository, or when Project Config was not read.
+When no `skills.authoring.claude` is declared and the inspection finds no
+problem, an installed authoring skill the repository does not publish gets
+the Recommended Authoring Declaration instead:
+
+```text
+authoring-models: warn (the authoring skills are installed without an Authoring Model Declaration: write-idea, write-prd, write-techspec, write-tasks; next: add the Recommended Authoring Declaration below to .roundfixrc.yml, then run roundfix skills install --target project)
+  skills:
+    authoring:
+      claude:
+        idea:
+          model: fable
+          reasoning_effort: xhigh
+        prd:
+          model: fable
+          reasoning_effort: high
+        techspec:
+          model: fable
+          reasoning_effort: high
+        tasks:
+          model: opus
+          reasoning_effort: high
+        research:
+          model: sonnet
+          reasoning_effort: medium
+```
+
+The line names only installed authoring skills not published under
+`skills/<name>/SKILL.md`, in phase order. A published skill does not count.
+Each block line has two leading spaces and appears before the next check.
+Nothing is written and the warning never changes Doctor's exit code. Review
+the recommendation, add it to `.roundfixrc.yml`, then run the named install
+command yourself. If the file already has a `skills:` key, merge the block
+into that mapping rather than adding a duplicate key. The block supplies no
+`research.tools`; network tools remain the repository's choice.
+
+With no such installed skill and no declaration or problem, the line is
+absent. It is also absent outside a Git repository or when Project Config
+was not read. A leftover generated file keeps the problem report above,
+without a recommendation block.
 
 Doctor has no separate `agent:` or `model:` authority. The aggregate
 `profiles:` result is the Agent Selection Profile Readiness contract.

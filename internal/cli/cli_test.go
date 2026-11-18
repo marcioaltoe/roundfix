@@ -4867,7 +4867,7 @@ func TestHealthCheckerReportsCodexResult(t *testing.T) {
 
 func assertCheckResult(t *testing.T, got CheckResult, want CheckResult) {
 	t.Helper()
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected check result:\n got: %#v\nwant: %#v", got, want)
 	}
 }
