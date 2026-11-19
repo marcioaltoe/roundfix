@@ -1,0 +1,819 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release-1bd5863e2e564257-fd797c24-51e9d21b/run_20261119T183522Z_d4aebc152622951b/bin/roundfix release plan --from v0.140.0 --to HEAD --format json
+exit: 3
+stdout:
+{
+  "schemaVersion": "roundfix.release-plan/0.0.1",
+  "state": "manual_classification_required",
+  "base": {
+    "tag": "v0.140.0",
+    "version": "v0.140.0",
+    "commitSHA": "4c883bbab6a5d458b9a679f0d599647eb980e584"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "69ae9b561240cb4d6b1358f9278cfce36be25d3f"
+  },
+  "classification": {
+    "source": "mixed",
+    "impact": "minor",
+    "breaking": false,
+    "manualClassificationRequired": true,
+    "blockingCommits": [
+      "73421db24d576ee75f6f5dbbe31043b1d570f715",
+      "1a8e08b4f32cca7cd2f6a77a6e083bce02bd7b5a"
+    ]
+  },
+  "approval": {
+    "required": false,
+    "increment": "none"
+  },
+  "checks": {
+    "skills": {
+      "status": "ok",
+      "detail": "41 required: 12 Roundfix-owned, 29 external"
+    },
+    "baseline": {
+      "status": "current",
+      "detail": "the repository already matches the current Baseline catalog"
+    },
+    "skillCoverage": {
+      "status": "current",
+      "detail": "35 changed surface(s) since v0.140.0: 35 described, 0 reviewed, 0 uncovered",
+      "blocking": false
+    }
+  },
+  "changes": [
+    {
+      "commitSHA": "908cf59bd4a5fd2f853da6fd97767c8dec271398",
+      "subject": "feat: deliver 0380: One blocking message per sender goes first, and every direct question (#835)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "f4075a7dec86489234a5aaad074bd58193907a84",
+      "subject": "chore: release v0.141.0 (#836)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "4e945aead931997d97e5db319de5b43f53be59a2",
+      "subject": "fix: deliver 0381-a-conflicting-merge-of-the-default-branch-is-a-review-delta (#837)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "ea44d2c7c47fc502394615068852a79b6c0b6187",
+      "subject": "chore: release v0.141.1 (#838)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "726505caf337e5303768ede54eca6cc8adf617dc",
+      "subject": "feat: deliver 0382-an-older-roundfix-refuses-a-repository-a-newer-roundfix-wrote (#840)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "b8c9e14da8eafe72524040e2a1eb3c333abee49b",
+      "subject": "chore: release v0.142.0 (#841)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "d79b30b410a0a283671b5de75120e2ea8946be8c",
+      "subject": "docs: record that the delivery owner crashes when the gate waits for Machine Verification (#839)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "73421db24d576ee75f6f5dbbe31043b1d570f715",
+      "subject": "docs: plan 0383, 0384 and 0385 and add the ai-memory project marker (#842)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "805488c26763c607c5f6d00a0c3b8048517f5c61",
+      "subject": "docs: plan 0386 a message that asks for a completion notice receives one (#843)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "e09a75ffe4f36341d01fda74af3074eb0939b0da",
+      "subject": "docs: plan 0387 the techspec template states the ADR Alternatives instruction once (#844)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "3716431b3c1a50363226666bdf22c1e2aa823578",
+      "subject": "fix: deliver 0383-roundfix-reads-a-version-2-skills-lock-and-keeps-its-version (#845)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "3a9ca717111f6ac52d84b2668e99ac169e116960",
+      "subject": "chore: release v0.142.1 (#846)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "32b39e5403226cc3f56fa278db3ba158cd44d707",
+      "subject": "fix: deliver 0385-a-queue-item-stops-only-for-its-own-work (#847)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "2e99852c5bbe530d04a4d286dc5ee01a701f767a",
+      "subject": "docs: record the retry-after-conflict defects and the Homebrew tap idea in the backlog (#848)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "81726850a9a4073e0142fdbff3f72657fe4efdef",
+      "subject": "fix: deliver 0384-the-makefile-follows-the-go-build-cache-set-with-go-env (#849)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "6905bb068605dfca337513b56a6e74c9f6d9fa66",
+      "subject": "chore: release v0.142.2 (#850)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "9627a3605e441158e01b66d2711c1f271a01dad5",
+      "subject": "test: the baseline-digests probe writes only when the target runs go test (#851)",
+      "conventionalType": "test",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "c77241dcf1ecf7ba1ceaa2907ed9a802fe091f79",
+      "subject": "fix: deliver 0387-the-techspec-template-states-the-adr-alternatives-instruction-once (#852)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "d3513521c6b79e72331bc4754a87c68ad48c19d5",
+      "subject": "docs: record that Run and review sessions become stray ai-memory projects (#853)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "ee7026b2265f4430ff93c14a7e040a35e5cd2ef6",
+      "subject": "feat: deliver 0386-a-message-that-asks-for-a-completion-notice-receives-one (#854)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "777cd5217d21ec357c2d4cb9813a88dfb2d6237c",
+      "subject": "chore: release v0.143.0 (#855)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "4618121079cce3b0c6f91a53ca6bff35aa02c28e",
+      "subject": "docs: record that a retry refuses an item parked before it has a branch (#856)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "f953f77f8f11a003405bc0fbc3c62a80ece75b49",
+      "subject": "docs: record that a completion notice reads an adopted record as closed (#857)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "753ac77d48f5d5bece34dd9b168a838d7f23ea0e",
+      "subject": "docs: close the stray ai-memory projects entry: the cause is ai-memory routing (#858)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "a87773d4edc26951168cc4f8dfd61b310e8ef89f",
+      "subject": "docs: plan 0388 a completion notice skips a record the merge adopted (#859)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "f0574deb253b9772ab0af2ba8e41798cd52cfb3b",
+      "subject": "docs: plan 0389 a parked item always has a way back through a delivery retry (#860)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "e76727eae61d7376b2de532c5539428257242092",
+      "subject": "fix: deliver 0388-a-completion-notice-skips-a-record-the-merge-adopted (#861)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "2e7a2a7a32e748647ac950488e9fe481408cf9c6",
+      "subject": "chore: release v0.143.1 (#862)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "4cb2e08b6af1fd9e52a58d4b68857d7e71ce9675",
+      "subject": "docs: decline the Homebrew tap idea after the maintainer's study review (#863)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "089fb368d42d49936d1aceb41303caafc3e95c64",
+      "subject": "docs: plan 0390 a nested carrier Git does not list raises no conflict (#864)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "be732585ce22b2a2f08b86a6f54e85ceb0476f6d",
+      "subject": "fix: deliver 0389-a-parked-item-always-has-a-way-back-through-a-delivery-retry (#865)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "f24326dfd616d701ca37da5ff147b5dcabd00340",
+      "subject": "chore: release v0.143.2 (#866)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "bed34f370b99d1d560a8f857d4de51cbd8f3876c",
+      "subject": "fix: deliver 0390-a-nested-carrier-git-does-not-list-raises-no-conflict (#867)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "251ed81e81937353af9cdf4727599257c3900e8f",
+      "subject": "chore: release v0.143.3 (#868)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "f17949de1705c79a458134140b5c5e86eba5be2c",
+      "subject": "docs: plan 0391 the grouping bound becomes a criterion (#869)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "b7eda5031f27afbcdc8813c78ab185981be34bba",
+      "subject": "docs: plan 0392 each authoring phase runs on its declared model (#870)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "576ae51d9d4ae710e9e5ee4ca55a116e9b1404fe",
+      "subject": "docs: plan 0393 a feature is judged for the idea stage before its prd (#871)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "3bc58f41a3ad1b810afadee5b7c60fc24a93ebf1",
+      "subject": "fix: deliver 0391-the-grouping-bound-becomes-a-criterion (#872)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "4f8a5b7db8385f7b3745f63d6cb5668dd576f662",
+      "subject": "chore: release v0.143.4 (#873)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "e752e7dae9395eb693e2629e6ae589b4bef47ba2",
+      "subject": "docs: plan 0396 the verification probe prepares its tree as the daemon does (#874)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "3ffb53af68af5e38807a9d7d662544caed74d339",
+      "subject": "feat: deliver 0392-each-authoring-phase-runs-on-its-declared-model (#875)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "b3b85b7c35acaa3a1b2c2c9301639d6c50254196",
+      "subject": "chore: release v0.144.0 (#876)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "c86ea7f5a88845daef4459bce10d57b73891a2df",
+      "subject": "feat: deliver 0393-a-feature-is-judged-for-the-idea-stage-before-its-prd (#877)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "cdb20a3f8163257a5d2119475b2a3605d8b9c3dc",
+      "subject": "chore: release v0.145.0 (#878)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "a7ee5a41e0239191d407d8a360276f0ea1b0c9cb",
+      "subject": "docs: record the status queue table with forecasts as a backlog entry (#879)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "965cf5cb60b7d155164d83e5313475bf60abeed6",
+      "subject": "fix: deliver 0396-the-verification-probe-prepares-its-tree-as-the-daemon-does (#880)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "2caa1d17de80e3d4e057a4512b2694d6b63d17d0",
+      "subject": "chore: release v0.145.1 (#881)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "f4580437cd6f3c354c2524f7f2eca9c924446d64",
+      "subject": "docs: plan 0397 each phase of a spec is recorded and starts in a fresh session (#882)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "5b9dfd4b06127257bd3d1c304d9950b29c34c1a9",
+      "subject": "feat: deliver 0397-each-phase-of-a-spec-is-recorded-and-starts-in-a-fresh-session (#883)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "8189c25e5c11d25e8395c7a52d2288c210ad9f42",
+      "subject": "chore: release v0.146.0 (#884)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "71244939499f9bddf73ac0797657d262efb80bf0",
+      "subject": "docs: plan 0398 the status view shows the spec queue with forecasts (#885)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "5d4bc99967bebb93929cd5666875a50c54666887",
+      "subject": "docs: backlog the baseline adoption rule and the docs layout cleanup (#886)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "16428f6527f125b4628b87ab1ac738a3b4e4beff",
+      "subject": "feat: deliver 0398-the-status-view-shows-the-spec-queue-with-forecasts (#887)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "1fc00c9a1dc9f3240c834f80ac5421e80a9d48e0",
+      "subject": "chore: release v0.147.0 (#888)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "dde9f4a59fa92d6e2d3da63f3f49e1f5dded3efa",
+      "subject": "docs: plan 0399 adopters keep their own rules in the specific-repository guide (#889)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "379803c8f78cd110638e82621c3f1e497d902909",
+      "subject": "docs: plan 0400 planning references and release preparation need no manual classification (#890)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "286b83505397a6cd924b4b88aae4f40c8f31a71e",
+      "subject": "docs: plan 0401 the phase boundary follows only the release of a spec (#891)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "67ae4b159682e1c58e87623292be5403a208edac",
+      "subject": "fix: deliver 0399-adopters-keep-their-own-rules-in-the-specific-repository-guide (#892)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "bcd716df82a44478f71babbfa23b3ce5478511a1",
+      "subject": "chore: release v0.147.1 (#893)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "63a9f493c314e4fb0869800cdb4a6a8662adf3df",
+      "subject": "docs: amend plan 0401 so a supervisor session ends only when the maintainer asks (#894)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "209a16e9baec1607d507a1474985ef0375a6e586",
+      "subject": "docs: plan 0402 doctor and the update check recommend an authoring model declaration (#895)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "74d0e3a9cbd1524040a910bd2739ebb70210b59d",
+      "subject": "docs: plan 0403 the update check names each profile that differs from a refreshed recommendation (#896)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "a8236a87458c8bd1a9d57b07009155774f7cc10f",
+      "subject": "fix: deliver 0400-planning-references-and-release-preparation-need-no-manual-classification (#897)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "37df790f528cde678817730a05b3525bb08651d5",
+      "subject": "docs: plan 0404 a correction records its defect class and a phase its authoring model (#898)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "e83e3ea16c935bd53c07c5c7d414468942e8702a",
+      "subject": "fix: deliver 0401-a-supervisor-session-ends-only-when-the-maintainer-asks (#899)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "ebc82fca2253029e546951b14353afba1dbdf736",
+      "subject": "docs: plan 0405 an authoring phase falls back to another model when its quota runs out (#900)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "473bb40c4f52a15b70e80811cc7a83f69babdcca",
+      "subject": "docs: authorize 0402 to change the governed cli_test.go assertion helper (#901)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "62971267c32633d9cfa879d0093e9d7daa0fdc4a",
+      "subject": "docs: let 0402 task_01 change the governed cli_test.go assertion helper (#902)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "7b9bbe94d43ca2aaa03f07235c79b17decbdba59",
+      "subject": "fix: deliver 0402-doctor-and-the-update-check-recommend-an-authoring-model-declaration (#903)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "7bc0c6f0c15daaa94424c311de4a910d32a15f9f",
+      "subject": "docs: the 0403 QA keeps the host Rust toolchain in its fresh home (#904)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "eb88813593b627a831ed077d4864cdaaed3ec7f6",
+      "subject": "fix: deliver 0403: The Update Check names each profile that differs from a refreshed (#905)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "1a8a8d94b36bcd90cd283de094fcda7e2cdba3eb",
+      "subject": "docs: amend plan 0405 so the Baseline states how an authoring phase keeps its model (#906)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "d5894bba947058e0bd52db69728e0955e0566d3c",
+      "subject": "docs: backlog questioning blocking rules in the Idea and PRD stages and the QA home's Rust toolchain (#907)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "803693ff937b0434d11b331d0e9d2568d02c2d96",
+      "subject": "docs: plan 0406 CLAUDE.md is always a link to AGENTS.md (#908)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "04e87591f6713eacab608be8748b19bfb7ae3fcc",
+      "subject": "feat: deliver 0404-a-correction-records-its-defect-class-and-a-phase-its-authoring-model (#909)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "9b00d595073fdfd4d43833ab7da185ea71320057",
+      "subject": "feat: deliver 0405-authoring-model-fallback (#910)",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "59bba03668a361dde6aa00634becdc1f9f89987c",
+      "subject": "fix: deliver 0406-claude-md-is-always-a-link-to-agents-md (#911)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "02c41e4b651a1517a88faaed942939b1c9ffa8f0",
+      "subject": "chore: release v0.148.0 (#912)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "1a8e08b4f32cca7cd2f6a77a6e083bce02bd7b5a",
+      "subject": "chore: turn on the declared defect class and the authoring fallbacks in this repository (#913)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "5d3237bd5f6db3fde9cfeaf74de65b23d8f42f65",
+      "subject": "docs: adopt the follow-up decisions of 2026-11-18 into the backlog (#914)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "d1c43f9ef26c64bf75000c71699e8bdaae784cf6",
+      "subject": "docs: plan 0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date (#915)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "a6a4a15b78c2faeaf401f214dc16512fe0d1949f",
+      "subject": "docs: plan 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once (#916)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "e3636ec9af5a4ec6cd346b89802b67caaa351dac",
+      "subject": "fix: deliver 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once (#917)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "348962d2da564ab47970e4bd41c16dff0255ebfc",
+      "subject": "fix: deliver 0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date (#918)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "f33eb35fa25f8e388a9081846826c8a2932490a7",
+      "subject": "docs: plan 0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web (#919)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "145d6c7610b77c4345e8a4eb0922bbe3857b4623",
+      "subject": "chore: release v0.148.1 (#920)",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false,
+      "releasePreparation": true
+    },
+    {
+      "commitSHA": "0ea362442785e5f3683a197ca8909ef8a2b48bcb",
+      "subject": "docs: plan 0409-the-idea-and-prd-question-rules-that-block-the-goal (#921)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "2a9162edac15bbfd9ae06d01169e2c4aa2e04e42",
+      "subject": "docs: plan 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release (#922)",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "6cd5aa2ae800a3fb67f7ea75e6fa2e1cb34b6081",
+      "subject": "fix: deliver 0411: Adopting the recommendations works under load and gives the researcher (#923)",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "5642052f5af476fbb65d1fbf691bc973a771c29c",
+      "subject": "feat: the status view counts a Delivery Queue item's Tasks on its Item Branch",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "3cdb92f2f8f5e3208fcf605f762f71b5388c974d",
+      "subject": "feat: in an adopter, a change to the files Roundfix manages or to a CONTEXT.md needs no release",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "a05ceae91b2c44444ef026562399905ce1ffcba8",
+      "subject": "docs: add corrective task_04 to 0414 for QA finding F-01",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "54e8302d1ecc7be9cd52fc8b252f7ef405bb4510",
+      "subject": "docs: drop the vacuous format check from 0414 corrective task_04",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "69ae9b561240cb4d6b1358f9278cfce36be25d3f",
+      "subject": "feat: the worktree exclusion test gives the queue item its worktree",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": false
+    }
+  ]
+}
+
+stderr:

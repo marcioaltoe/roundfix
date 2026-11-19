@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestADeliveryItemCountsTasksOnItsItemBranch$/^an_archived_item_counts_the_source_revision$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-sab-e2mf_on8
+exit: 1
+stdout:
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+    follow_up_queue_test.go:664: rows=[{Row:1 Kind:delivery_queue Spec:0097-widget Ref: Title: Status:reviewing 0/2 Tasks TasksCompleted:0 TasksTotal:2 Note: Start:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:} End:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:}}], want "reviewing 3/3 Tasks"
+--- FAIL: TestADeliveryItemCountsTasksOnItsItemBranch (0.00s)
+    --- FAIL: TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision (0.14s)
+FAIL
+suiteguard: guard cost: measured 3319 paths; fingerprint took 156.517416ms before and 152.574541ms after
+FAIL	roundfix/internal/cli	0.885s
+FAIL
+
+stderr:

@@ -1,0 +1,260 @@
+[
+  {
+    "scenario": "running",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "running",
+      "tasks_completed": 1,
+      "tasks_total": 2
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "running 1/2 Tasks",
+      "tasks_completed": 1,
+      "tasks_total": 2,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  },
+  {
+    "scenario": "dirty-worktree",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "running",
+      "tasks_completed": 1,
+      "tasks_total": 2
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "running 1/2 Tasks",
+      "tasks_completed": 1,
+      "tasks_total": 2,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  },
+  {
+    "scenario": "archived",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "reviewing",
+      "tasks_completed": 3,
+      "tasks_total": 3
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "reviewing 3/3 Tasks",
+      "tasks_completed": 3,
+      "tasks_total": 3,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  },
+  {
+    "scenario": "no-branch",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "queued",
+      "tasks_completed": 0,
+      "tasks_total": 2
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "queued 0/2 Tasks",
+      "tasks_completed": 0,
+      "tasks_total": 2,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  },
+  {
+    "scenario": "missing-branch",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "queued",
+      "tasks_completed": 0,
+      "tasks_total": 2
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "queued 0/2 Tasks",
+      "tasks_completed": 0,
+      "tasks_total": 2,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  },
+  {
+    "scenario": "no-spec-on-branch",
+    "pending": {
+      "spec": "0097-widget",
+      "queue_position": 0,
+      "stage": "running",
+      "tasks_completed": 0,
+      "tasks_total": 2
+    },
+    "queue": {
+      "row": 1,
+      "kind": "delivery_queue",
+      "spec": "0097-widget",
+      "ref": "",
+      "title": "",
+      "status": "running 0/2 Tasks",
+      "tasks_completed": 0,
+      "tasks_total": 2,
+      "note": "",
+      "start": {
+        "state": "condition",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "next in the queue",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": ""
+      },
+      "end": {
+        "state": "none",
+        "actual": null,
+        "likely": null,
+        "limit": null,
+        "condition": "",
+        "likely_after_seconds": null,
+        "limit_after_seconds": null,
+        "reason": "not enough history (0 of 11)"
+      }
+    },
+    "text_confirmed": true,
+    "checkout_and_home_unchanged": true
+  }
+]

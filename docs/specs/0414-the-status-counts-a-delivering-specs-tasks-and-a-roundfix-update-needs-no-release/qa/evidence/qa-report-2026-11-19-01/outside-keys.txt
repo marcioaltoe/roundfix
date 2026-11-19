@@ -1,0 +1,22 @@
+{
+  "base_keys": [
+    "schemaVersion",
+    "state",
+    "base",
+    "target",
+    "classification",
+    "approval",
+    "checks",
+    "changes"
+  ],
+  "current_keys": [
+    "schemaVersion",
+    "state",
+    "base",
+    "target",
+    "classification",
+    "approval",
+    "checks",
+    "changes"
+  ]
+}

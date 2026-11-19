@@ -1,0 +1,27 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release-1bd5863e2e564257-fd797c24-51e9d21b/run_20261119T183522Z_d4aebc152622951b/bin/roundfix follow-up --status
+exit: 0
+stdout:
+Status for repo in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-public-status-sys83kbv/repo
+In progress: 1
+  queue 0 0097-widget running -
+Pending Specs: 1
+  0 0097-widget running 1/2 Tasks
+Spec queue: 1
+  #  Spec  Status             Start (-03)        End (-03)                     Note
+  1  0097  running 1/2 Tasks  next in the queue  not enough history (0 of 11)  -
+Forecast basis: not enough history, 0 of 11 delivered Specs.
+Next release: no unreleased changes
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 1
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1
+  git: checked 0
+  specs: checked 1
+  release-plan: checked 0
+  backlog: checked 0
+  phase-record: checked 0
+  delivery-history: checked 0
+
+stderr:

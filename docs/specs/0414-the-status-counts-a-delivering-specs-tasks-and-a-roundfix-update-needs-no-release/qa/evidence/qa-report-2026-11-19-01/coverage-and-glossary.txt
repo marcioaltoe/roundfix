@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 20m -tags docscontract -v -run ^(TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$ ./internal/docscontract
+exit: 0
+stdout:
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.08s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.446s
+
+stderr:

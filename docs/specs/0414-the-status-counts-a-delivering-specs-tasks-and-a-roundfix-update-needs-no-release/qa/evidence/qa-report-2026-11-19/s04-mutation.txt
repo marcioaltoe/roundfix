@@ -1,0 +1,13 @@
+diff --git a/internal/cli/follow_up_status.go b/internal/cli/follow_up_status.go
+index ddda686..ad4a1f6 100644
+--- a/internal/cli/follow_up_status.go
++++ b/internal/cli/follow_up_status.go
+@@ -241,7 +241,7 @@ func followUpPendingSpecs(loaded roundconfig.Loaded, progress followUpProgress)
+ 			var loadErr error
+ 			if item, found := queued[rows[index].Spec]; found {
+ 				archiveRoot := spec.ArchiveSpecRoot(root, root == filepath.Join(loaded.GitRoot, "docs", "specs"))
+-				graph, loadErr = followUpItemTaskGraph(nil, nil, loaded.GitRoot, root, archiveRoot, item)
++				_ = archiveRoot; _ = item; graph, loadErr = spec.Load(root, rows[index].Spec)
+ 			} else {
+ 				graph, loadErr = spec.Load(root, rows[index].Spec)
+ 			}

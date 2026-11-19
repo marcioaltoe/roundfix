@@ -1,0 +1,46 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAnAdopterManagedPathIsMaintenanceOnly$' ./internal/releaseplan
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release-1bd5863e2e564257-fd797c24-51e9d21b/run_20261119T151201Z_05140c8b41c958d4
+exit: 0
+stdout:
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly
+=== PAUSE TestAnAdopterManagedPathIsMaintenanceOnly
+=== CONT  TestAnAdopterManagedPathIsMaintenanceOnly
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/the_setup_manifest
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_recorded_guide
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/skills_lock
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_locked_skill_file
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_claude_skill_link
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/claude_md
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/specific_repository
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_generated_author_subagent
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/project_config
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_nested_context_md
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_unlocked_local_skill_crosses
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/context_map_crosses
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_unrecorded_guide_crosses
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_mixed_commit_crosses
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_empty_commit_still_crosses
+--- PASS: TestAnAdopterManagedPathIsMaintenanceOnly (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/the_setup_manifest (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_recorded_guide (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/skills_lock (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_locked_skill_file (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_claude_skill_link (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/claude_md (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/specific_repository (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_generated_author_subagent (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/project_config (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_nested_context_md (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_unlocked_local_skill_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/context_map_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_unrecorded_guide_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_mixed_commit_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_empty_commit_still_crosses (0.00s)
+PASS
+ok  	roundfix/internal/releaseplan	0.220s
+
+stderr:

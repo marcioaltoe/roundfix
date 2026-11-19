@@ -1,0 +1,46 @@
+command: go test -count=1 -timeout 20m -v -run ^(TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget|TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths|TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary)$ ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== PAUSE TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== PAUSE TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== PAUSE TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== CONT  TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== CONT  TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/the_fiscus_shape
+=== CONT  TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/roundfix_itself
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/adopter_test
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/setup_manifest
+--- PASS: TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary (0.00s)
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/skills_lock
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/claude_md_and_specific_repository
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/project_config_and_context
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/base_and_target
+--- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/roundfix_itself (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/adopter_test (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/setup_manifest (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/skills_lock (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/project_config_and_context (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/base_and_target (0.00s)
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/roundfix_itself
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_skill_removed_in_the_range
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_malformed_lock_makes_no_adopter
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/project_config_is_not_read
+--- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget (1.47s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/the_fiscus_shape (0.39s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/roundfix_itself (0.38s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_skill_removed_in_the_range (0.23s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_malformed_lock_makes_no_adopter (0.24s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/project_config_is_not_read (0.23s)
+PASS
+suiteguard: guard cost: measured 3431 paths; fingerprint took 156.850208ms before and 157.687875ms after
+ok  	roundfix/internal/cli	2.338s
+
+stderr:

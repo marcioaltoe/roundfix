@@ -1,0 +1,69 @@
+from qa import *
+summary={}
+def norm(s):return " ".join(s.split())
+t=(SPEC/"_techspec.md").read_text();context=(ROOT/"CONTEXT.md").read_text()
+phrases=re.findall(r'"([^"\n]+)"',t)
+guide=next(x for x in phrases if x.startswith("A Delivery Queue item's completed and total Tasks"))
+assert norm(guide) in norm((ROOT/"docs/user-guide/commands/follow-up.md").read_text())
+gloss=next(x for x in phrases if x.startswith("A Delivery Queue item's Tasks are counted"));assert norm(gloss) in norm(context)
+helptext=product(["release","plan","--help"],"release-help").stdout
+helpp=next(x for x in phrases if x.startswith("In an adopter, a repository whose skills-lock.json"));assert norm(helpp) in norm(helptext);assert "reads no Roundfix configuration" in helptext
+releasep=next(x for x in phrases if x.startswith("In an adopter, a repository whose `skills-lock.json`"))
+docs=[".agents/skills/roundfix/references/release.md","skills/roundfix/references/release.md","docs/user-guide/release-runbook.md","docs/user-guide/usage.md"]
+for p in docs:assert norm(releasep) in norm((ROOT/p).read_text()),p
+entry=next(x for x in phrases if x.startswith("A path whose change ships nothing"));assert norm(entry) in norm(context)
+assert context.index('**Release Plan**')<context.index('**Adopter Maintenance Path**')<context.index('**Release Plan Command**')
+assert 'docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-context-md-needs-no-release.md' in context
+assert '_Avoid_: Managed file, adopter-owned file, no-release path' in context
+reviews=[x for x in phrases if x.startswith('2026-11-19 — Spec 0414 task_01:')]
+coverage=(ROOT/'docs/references/skill-coverage.json').read_text()
+for p in reviews:assert p in coverage,p
+v=[]
+for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+    s=(ROOT/p).read_text();vs=re.findall(r'(?m)^\s*version: ([0-9.]+)$',s);assert len(vs)==2 and vs[0]==vs[1];v+=vs
+assert len(set(v))==1
+record=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())
+assert any(x['version']==v[0] for x in record['skills']['roundfix'])
+summary['document_checks']={'exact_contract_1_guide':True,'exact_contract_1_glossary':True,'exact_contract_2_help':True,'help_reads_no_config':True,'exact_contract_2_documents':docs,'exact_contract_2_glossary_and_placement':True,'two_exact_coverage_reviews':reviews,'roundfix_version':v[0],'version_record_matches_both_copies':True}
+# Read-only call paths are reviewed from full implementation text, then executable negative cases confirm them.
+queue=(ROOT/'internal/cli/follow_up_queue.go').read_text();fn=queue[queue.index('func followUpItemTaskGraph'):queue.index('func followUpHeldSpecNumbers')]
+managed=(ROOT/'internal/cli/releaseplan_managed_paths.go').read_text()
+for s in [fn,managed]:
+    assert not re.search(r'(?:os|ioutil)\.(?:WriteFile|ReadFile|OpenFile|Create|Mkdir|Remove|Rename|Chmod)',s)
+assert '.roundfixrc.yml' not in managed
+summary['reader_review']={'item_graph_git_commands':['rev-parse','show'],'item_graph_fallback':'spec.Load only for current Spec Root; branch and archive reads through Git reader; no item.Worktree access','managed_records_git_commands':['rev-parse','ls-tree','show'],'managed_file_reads':'committed skills-lock.json and docs/agents/setup-context.json only at target and base','writers':'none in reviewed call graph','runtime_confirmation':'named write-nothing, dirty-worktree, endpoint-record and invalid-project-config tests; public status file fingerprints'}
+(E/'contracts-audit.txt').write_text(json.dumps(summary,indent=2)+'\n')
+update('Q06','pass','Exact contract paragraphs, both Coverage Reviews, glossary placement/ADR-0447 and skill version '+v[0]+' confirmed by assertions against TechSpec and records; built help exercised. Call-path review finds only local Git object reads and current-root fallback. Named glossary/coverage tests passed. [Audit](evidence/qa-report-2026-11-19/contracts-audit.txt), [help](evidence/qa-report-2026-11-19/release-help.txt).')
+
+out=[];commits=git(['rev-list','--reverse',BASE+'..'+HEAD]).splitlines()
+for task,sha in zip(['task_01','task_02'],commits):
+    body=(SPEC/(task+'.md')).read_text()
+    declared=set(re.findall(r'(?m)^- (?:interface|creates|instruction): `([^`]+)`',body));declared.add(str((SPEC/(task+'.md')).relative_to(ROOT)))
+    changed=git(['diff-tree','--no-commit-id','--name-only','-r',sha]).splitlines()
+    extra=set(changed)-declared;assert not extra,(task,extra)
+    for p in changed:
+        assert p not in ['Makefile','go.mod','go.sum','skills-lock.json','.roundfixrc.yml','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json']
+        assert not p.startswith(('.github/workflows/','internal/baseline/','docs/agents/','docs/adr/'))
+        if p.startswith(('.agents/skills/','skills/')) and ('/SKILL.md' in p or '/references/' in p):assert p in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/release.md','skills/roundfix/SKILL.md','skills/roundfix/references/release.md'],p
+    out.append({'task':task,'commit':sha,'changed':changed,'outside_declarations':sorted(extra)})
+# The seeded mechanical audit grants task_02's 3 governed paths at the Delivery Base.
+auth=(SPEC/'_authorization.md').read_text();governed=['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/release.md','skills/roundfix/SKILL.md']
+for p in governed:assert '  - '+p+'\n' in auth
+out.append({'governed_paths':governed,'authorization_revision':BASE,'authorization_audit':'Daemon-seeded task_02 table: granted; no unlisted Task commit in range','frozen_record_unchanged':git(['diff',BASE,HEAD,'--',str((SPEC/'_authorization.md').relative_to(ROOT))])==''})
+def entries(s):return dict(re.findall(r'(?ms)^\*\*([^*]+)\*\*:\s*\n(.*?)(?=^\*\*[^*]+\*\*:|\Z)',s))
+revisions=[BASE,*commits];changes=[]
+for i in range(2):
+    old=entries(git(['show',revisions[i]+':CONTEXT.md']));new=entries(git(['show',revisions[i+1]+':CONTEXT.md']))
+    names=sorted(k for k in old.keys()|new.keys() if old.get(k)!=new.get(k));expected=['Spec Queue Table'] if i==0 else ['Adopter Maintenance Path']
+    # Insertion can move whitespace on the preceding entry; compare stripped content.
+    names=sorted(k for k in old.keys()|new.keys() if old.get(k,'').strip()!=new.get(k,'').strip())
+    assert names==expected,names;changes.append({'task':'task_0'+str(i+1),'glossary_entries':names})
+out.append({'glossary_changes':changes,'prd_declares':{'adds':'Adopter Maintenance Path','changes':'Spec Queue Table'}})
+for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+    old=git(['show',BASE+':'+p]);new=(ROOT/p).read_text()
+    section=lambda s:re.search(r'(?ms)^### QA settlement\n.*?(?=^#{1,3} |\Z)',s).group(0)
+    assert section(old).strip()==section(new).strip(),p
+out.append({'QA_settlement_sections':'unchanged','current_delta':git(['status','--porcelain','--untracked-files=all'])})
+(E/'history-scope-audit.txt').write_text(json.dumps(out,indent=2)+'\n')
+update('Q07','pass','Both actual Task commits stay within declarations; three governed paths match the frozen grant; no forbidden tooling/configuration/ADR or QA settlement change. Chronological glossary diff changes only Spec Queue Table, then adds Adopter Maintenance Path. [History audit](evidence/qa-report-2026-11-19/history-scope-audit.txt).')
+update('Q08','blocked (environment: no open Pull Request)','Pull Request absence supplied by the Daemon for the Spec target branch. Approved delivery authority: Spec _authorization.md at '+BASE+'. Checks: Daemon make verify-changed passed at '+HEAD+'. No unresolved threads because no Pull Request exists. No Merge-Ready acceptance exists yet. Candidate and review ancestry claim is exactly '+HEAD+'; no provider review is claimed. Open the Spec target branch Pull Request after configured review and recheck controls; Run branch has no Pull Request.')

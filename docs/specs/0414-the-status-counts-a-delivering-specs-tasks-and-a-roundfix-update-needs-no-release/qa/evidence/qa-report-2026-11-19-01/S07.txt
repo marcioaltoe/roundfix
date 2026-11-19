@@ -1,0 +1,15 @@
+command: go test -count=1 -timeout 20m -v -run ^TestAnAdopterManagedPathIsMaintenanceOnly$/^another_claude_agent_crosses$ ./internal/releaseplan
+exit: 1
+stdout:
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly
+=== PAUSE TestAnAdopterManagedPathIsMaintenanceOnly
+=== CONT  TestAnAdopterManagedPathIsMaintenanceOnly
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses
+    managed_test.go:45: changes = [{CommitSHA:change Subject:chore: maintain adopter ConventionalType:chore Breaking:false AutomaticImpact:none CrossesMaintenanceOnlyBoundary:false ReleasePreparation:false}], want crossing true
+--- FAIL: TestAnAdopterManagedPathIsMaintenanceOnly (0.00s)
+    --- FAIL: TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses (0.00s)
+FAIL
+FAIL	roundfix/internal/releaseplan	0.220s
+FAIL
+
+stderr:

@@ -1,0 +1,13 @@
+diff --git a/internal/releaseplan/managed.go b/internal/releaseplan/managed.go
+index 4c0cc38..9efd672 100644
+--- a/internal/releaseplan/managed.go
++++ b/internal/releaseplan/managed.go
+@@ -32,7 +32,7 @@ func (managed ManagedPaths) Contains(changedPath string) bool {
+ 	if path.Base(clean) == "CONTEXT.md" {
+ 		return true
+ 	}
+-	if path.Dir(clean) == ".claude/agents" && strings.HasPrefix(path.Base(clean), "roundfix-") && strings.HasSuffix(clean, ".md") {
++	if path.Dir(clean) == ".claude/agents" && strings.HasSuffix(clean, ".md") {
+ 		return true
+ 	}
+ 	for _, file := range managed.Files {

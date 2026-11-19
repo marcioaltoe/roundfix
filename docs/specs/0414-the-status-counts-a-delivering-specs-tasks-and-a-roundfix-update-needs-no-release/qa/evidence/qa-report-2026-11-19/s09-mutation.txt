@@ -1,0 +1,13 @@
+diff --git a/internal/cli/releaseplan_managed_paths.go b/internal/cli/releaseplan_managed_paths.go
+index a5a2e36..a6f04c5 100644
+--- a/internal/cli/releaseplan_managed_paths.go
++++ b/internal/cli/releaseplan_managed_paths.go
+@@ -21,7 +21,7 @@ func (source releasePlanGitSource) ManagedPaths(ctx context.Context, releaseRang
+ 		}
+ 	}
+ 	root = filepath.Clean(strings.TrimSpace(root))
+-	for index, revision := range []string{releaseRange.Target.CommitSHA, releaseRange.Base.CommitSHA} {
++	for index, revision := range []string{releaseRange.Target.CommitSHA} {
+ 		lock, err := source.managedRecord(ctx, root, revision, "skills-lock.json")
+ 		if err != nil {
+ 			return managed, err

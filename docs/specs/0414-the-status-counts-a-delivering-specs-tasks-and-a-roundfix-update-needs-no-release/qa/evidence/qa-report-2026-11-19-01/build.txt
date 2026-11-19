@@ -1,0 +1,4 @@
+make build in audited Run Worktree: exit 0
+go build -buildvcs=false -ldflags [Run identity] -o bin/roundfix ./cmd/roundfix
+Cache bound warned that remaining entries were not idle; build continued and succeeded.
+roundfix 0.148.1 (69ae9b56-dirty, built 2026-11-19 15:59:05 -0300)

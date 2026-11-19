@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 20m -v -run '^TestAnAdopterManagedPathIsMaintenanceOnly$/^not_an_adopter_changes_nothing$' ./internal/releaseplan
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-sab-yihyg7ks
+exit: 1
+stdout:
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly
+=== PAUSE TestAnAdopterManagedPathIsMaintenanceOnly
+=== CONT  TestAnAdopterManagedPathIsMaintenanceOnly
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing
+    managed_test.go:45: changes = [{CommitSHA:change Subject:chore: maintain adopter ConventionalType:chore Breaking:false AutomaticImpact:none CrossesMaintenanceOnlyBoundary:false ReleasePreparation:false}], want crossing true
+--- FAIL: TestAnAdopterManagedPathIsMaintenanceOnly (0.00s)
+    --- FAIL: TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing (0.00s)
+FAIL
+FAIL	roundfix/internal/releaseplan	0.191s
+FAIL
+
+stderr:

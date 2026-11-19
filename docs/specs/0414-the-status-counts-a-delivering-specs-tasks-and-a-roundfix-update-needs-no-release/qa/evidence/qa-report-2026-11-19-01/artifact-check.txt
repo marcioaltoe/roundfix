@@ -1,0 +1,3 @@
+Repository secretscan.ScanContent and text evidence validation
+exit: 0
+Scanned 85 files: zero secret matches; all evidence is text.

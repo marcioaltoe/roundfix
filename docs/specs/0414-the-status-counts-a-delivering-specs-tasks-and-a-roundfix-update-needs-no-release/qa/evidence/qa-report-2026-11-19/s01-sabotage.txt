@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 20m -v -run '^TestADeliveryItemCountsTasksOnItsItemBranch$/^a_running_item_counts_its_branch$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-sab-tx69ecut
+exit: 1
+stdout:
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+    follow_up_queue_test.go:664: rows=[{Row:1 Kind:delivery_queue Spec:0097-widget Ref: Title: Status:running 0/2 Tasks TasksCompleted:0 TasksTotal:2 Note: Start:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:} End:{State: Actual:<nil> Likely:<nil> Limit:<nil> Condition: LikelyAfterSeconds:<nil> LimitAfterSeconds:<nil> Reason:}}], want "running 1/2 Tasks"
+--- FAIL: TestADeliveryItemCountsTasksOnItsItemBranch (0.00s)
+    --- FAIL: TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch (0.09s)
+FAIL
+suiteguard: guard cost: measured 3319 paths; fingerprint took 167.434334ms before and 160.956584ms after
+FAIL	roundfix/internal/cli	0.894s
+FAIL
+
+stderr:

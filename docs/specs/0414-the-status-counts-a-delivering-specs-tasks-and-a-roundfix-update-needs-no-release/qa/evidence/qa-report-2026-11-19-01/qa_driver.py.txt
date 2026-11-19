@@ -1,0 +1,392 @@
+import os,sys,json,re,subprocess,tempfile,tarfile,io,shutil,contextlib
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[6]
+SPEC=ROOT/'docs/specs/0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release'
+EV=SPEC/'qa/evidence/qa-report-2026-11-19-01'
+REPORT=SPEC/'qa/qa-report-2026-11-19-01.md'
+HEAD='69ae9b561240cb4d6b1358f9278cfce36be25d3f'
+BASE='6cd5aa2ae800a3fb67f7ea75e6fa2e1cb34b6081'
+BIN=ROOT/'bin/roundfix'
+KEYS=['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']
+def run(args,cwd=ROOT,env=None,ok=None):
+ p=subprocess.run(args,cwd=cwd,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ if ok is not None and p.returncode not in ok: raise RuntimeError(f'{args}: exit {p.returncode}\n{p.stdout}\n{p.stderr}')
+ return p
+
+def logged(name,args,cwd=ROOT,env=None,ok=(0,)):
+ p=run(args,cwd,env)
+ (EV/(name+'.txt')).write_text('command: '+ ' '.join(map(str,args))+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ if p.returncode not in ok: raise RuntimeError(f'{name}: exit {p.returncode}; inspect evidence')
+ return p
+@contextlib.contextmanager
+def fresh():
+ m=run(['go','env','GOMODCACHE'],ok=(0,)).stdout.strip(); c=run(['go','env','GOCACHE'],ok=(0,)).stdout.strip()
+ with tempfile.TemporaryDirectory(prefix='q414-home-') as h,tempfile.TemporaryDirectory(prefix='q414-tmp-') as t:
+  e=os.environ.copy();e.update(HOME=h,TMPDIR=t,GOMODCACHE=m,GOCACHE=c,RUSTUP_HOME=e.get('RUSTUP_HOME',str(Path.home()/'.rustup')),CARGO_HOME=e.get('CARGO_HOME',str(Path.home()/'.cargo')),GOPROXY='off',GOSUMDB='off')
+  for k in KEYS: e.pop(k,None)
+  stub=Path(t)/'tools';stub.mkdir(); gh=stub/'gh';gh.write_text('#!/bin/sh\nexit 1\n');gh.chmod(0o755);e['PATH']=str(stub)+os.pathsep+e['PATH']
+  try: yield e
+  finally:
+   for d in [h,t]: subprocess.run(['chmod','-R','u+w',d],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+
+def settle(row,status,note):
+ t=REPORT.read_text(); t,n=re.subn(r'(?m)^\| '+row+r' \| pending \|', '| '+row+' | '+status+' |',t)
+ assert n==1,(row,n)
+ t=t.replace('<!-- '+row+' result -->',note)
+ REPORT.write_text(t); print(row,status,note,flush=True)
+
+def archive(rev,dest):
+ p=subprocess.run(['git','archive',rev],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ assert p.returncode==0
+ with tarfile.open(fileobj=io.BytesIO(p.stdout)) as tar: tar.extractall(dest,filter='data')
+ for a in [['init','-q'],['config','user.name','QA fixture'],['config','user.email','qa@example.invalid'],['add','.'],['commit','-qm','chore: seed QA fixture']]: run(['git',*a],dest,ok=(0,))
+
+def plan():
+ with fresh() as env:
+  version=logged('version',[str(BIN),'--version'],env=env).stdout.strip()
+  p=logged('precondition',[str(BIN),'spec','check',SPEC.name,'--strict'],env=env)
+ t=REPORT.read_text();t=t.replace('verdict: pending','verdict: pending\nbuild: "'+HEAD+'"\nuser_flow_binary: '+json.dumps(version)+'\nuser_flow_executables:\n  - bin/roundfix\n  - bin/qa0414-base/roundfix\n  - '+str((EV/'qa_driver.py.txt').relative_to(ROOT)))
+ rows=[('Q01','repository Verification'),('Q02','Requirement 2'),('Q03','Requirement 3'),('Q04','outside-evidence row; Requirement 4'),*[(f'S{i:02}','Requirement 5.'+str(i)) for i in range(1,12)],('Q05','Requirement 6'),('Q06','Requirement 3'),('Q07','Requirement 9'),('Q08','Pull Request row')]
+ table='| - | --- | --- |\n' + ''.join('| '+r+' | pending | '+s+' |\n' for r,s in rows)
+ t=t.replace('| - | --- | --- |\n',table,1)
+ t+='\n## Scope and environment\n\nAudited head `'+HEAD+'`; Delivery Base `'+BASE+'`. `make build` exited 0 in this Run, and the fresh-home strict Spec check exited 0 ([precondition](evidence/qa-report-2026-11-19-01/precondition.txt)). The report preserves its mechanical skips. Every prior row is re-observed. No Surface Transcript or frontend sweep is declared. The graph names task_03 as terminal QA over task_04 → task_02 → task_01.\n\nPublic commands use fresh HOME and TMPDIR; GOMODCACHE, GOCACHE, RUSTUP_HOME and CARGO_HOME retain toolchain locations. GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, CLAUDE_CODE_SESSION_ID and all Judge Key Variables are unset. A temporary gh exits 1 without output. GOPROXY and GOSUMDB keep builds offline. Tests retain the session HOME and TMPDIR. No network, provider, Agent, Run, real gh, ai-memory or other repository is used.\n'
+ for r,s in rows:
+  t+='\n### '+r+'\n\n```yaml\ninputs:\n  - kind: repository_path\n    ref: "**"\n'
+  if r.startswith('S') or r in ['Q04','Q05','Q07','Q08']:t+='  - kind: commit_range\n    ref: "'+BASE+'..'+HEAD+'"\n'
+  t+='```\n\nActor: maintainer. Entry: '+('Daemon gate result' if r=='Q01' else 'offline CLI/test or history inspection')+'. Expected: the named source passes its exact assertions. Confirmation: fresh command/test read and explicit exit status; read-only rows persist by Git/file-state comparison where relevant. Evidence and observed result: <!-- '+r+' result -->\n'
+ REPORT.write_text(t)
+ (EV/'build.txt').write_text('make build in audited Run Worktree: exit 0\ngo build -buildvcs=false -ldflags [Run identity] -o bin/roundfix ./cmd/roundfix\nCache bound warned that remaining entries were not idle; build continued and succeeded.\n'+version+'\n')
+ settle('Q01','pass','Daemon supplied `make verify-changed`: pass, exit 0 at the audited head; diagnostics removed on success. Recorded without rerunning.')
+
+def tests(row):
+ cases={
+ 'Q02': [('loader',['go','test','-count=1','-timeout','20m','-v','-run','^TestLoadAtReadsThroughTheGivenReader$','./internal/spec']),('queue',['go','test','-count=1','-timeout','20m','-v','-run','^(TestADeliveryItemCountsTasksOnItsItemBranch|TestTheQueueRowsComeInTableOrder|TestAQueueItemNamesItsWait|TestFollowUpStatusListsPendingSpecsInDeliveryOrder)$','./internal/cli']),('status-packages',['go','test','-count=1','-timeout','30m','./internal/spec','./internal/cli','./internal/daemon'])],
+ 'Q03': [('managed',['go','test','-count=1','-timeout','20m','-v','-run','^TestAnAdopterManagedPathIsMaintenanceOnly$','./internal/releaseplan']),('managed-cli',['go','test','-count=1','-timeout','20m','-v','-run','^(TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget|TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths|TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary)$','./internal/cli']),('release-docs',['go','test','-count=1','-timeout','20m','-v','-run','^TestTheReleaseDocumentsNameTheAdopterMaintenancePaths$','./skills']),('release-packages',['go','test','-count=1','-timeout','30m','./internal/releaseplan','./skills']),('skills-sync',['make','skills-sync-check']),('docscontract',['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract'])]}
+ links=[]
+ for n,cmd in cases[row]:
+  p=logged(n,cmd); print(n,'exit',p.returncode,flush=True);links.append('['+n+'](evidence/qa-report-2026-11-19-01/'+n+'.txt)')
+  if '-v' in cmd: assert '--- PASS:' in p.stdout and '--- FAIL:' not in p.stdout
+ settle(row,'pass','; '.join(links)+'. Every named test/subtest and whole package passed, exit 0; read-only suite guard passed.')
+
+def sabotage(i):
+ row=f'S{i:02}'
+ with tempfile.TemporaryDirectory(prefix='q414-mutation-') as tmp:
+  d=Path(tmp);archive(HEAD,d)
+  base='TestADeliveryItemCountsTasksOnItsItemBranch'
+  cases={1:('internal/cli/follow_up_queue.go','fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }','fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }; if item.SpecSlug != "" { return fallback() }','./internal/cli',base,'a_running_item_counts_its_branch'),2:('internal/cli/follow_up_queue.go','if err == nil && archived.Form == spec.ArchivedRecord {','if err == nil && archived.Form == spec.ArchivedRecord && item.SpecSlug == "" {','./internal/cli',base,'an_archived_item_counts_the_source_revision'),3:('internal/cli/follow_up_queue.go','fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }','if graph, err := spec.Load(filepath.Join(item.Worktree, "docs", "specs"), item.SpecSlug); err == nil { return graph, nil }; fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }','./internal/cli',base,'the_worktree_is_not_read'),4:('internal/cli/follow_up_status.go','graph, loadErr = followUpItemTaskGraph(nil, nil, loaded.GitRoot, root, archiveRoot, item)','_ = item; _ = archiveRoot; graph, loadErr = spec.Load(root, rows[index].Spec)','./internal/cli',base,'the_pending_specs_line_counts_the_same'),5:('internal/releaseplan/managed.go','if !managed.Adopter || clean == "" {','if clean == "" {','./internal/releaseplan','TestAnAdopterManagedPathIsMaintenanceOnly','not_an_adopter_changes_nothing'),6:('internal/releaseplan/managed.go','"docs/agents/specific-repository.md", ".roundfixrc.yml":','".roundfixrc.yml":','./internal/releaseplan','TestAnAdopterManagedPathIsMaintenanceOnly','specific_repository'),7:('internal/releaseplan/managed.go','strings.HasPrefix(path.Base(clean), "roundfix-") && ','','./internal/releaseplan','TestAnAdopterManagedPathIsMaintenanceOnly','another_claude_agent_crosses'),8:('internal/releaseplan/classifier.go','func crossesMaintenanceOnlyBoundaryWithManaged(paths []string, managed ManagedPaths) bool {\n\tif len(paths) == 0 {\n\t\treturn true','func crossesMaintenanceOnlyBoundaryWithManaged(paths []string, managed ManagedPaths) bool {\n\tif len(paths) == 0 {\n\t\treturn false','./internal/releaseplan','TestAnAdopterManagedPathIsMaintenanceOnly','an_empty_commit_still_crosses'),9:('internal/cli/releaseplan_managed_paths.go','[]string{releaseRange.Target.CommitSHA, releaseRange.Base.CommitSHA}','[]string{releaseRange.Target.CommitSHA}','./internal/cli','TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget','a_skill_removed_in_the_range'),10:('skills/roundfix/references/release.md',"Roundfix's own repository authors the `roundfix` skill",'', './skills','TestTheReleaseDocumentsNameTheAdopterMaintenancePaths','embedded/roundfix_itself'),11:('internal/cli/cli.go','a generated .claude/agents/roundfix-*.md','', './internal/cli','TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths','generated_subagents')}
+  f,old,new,pkg,test,sub=cases[i];p=d/f;text=p.read_text()
+  # The mirror document can wrap the requested sentence across lines.
+  if i==10:
+   match=re.search(r"Roundfix's\s+own\s+repository\s+authors\s+the\s+`roundfix`\s+skill",text);assert match;old=match.group()
+  assert text.count(old)==1,(i,text.count(old));p.write_text(text.replace(old,new))
+  (EV/(row+'-mutation.txt')).write_text('isolated git archive '+HEAD+'; initialized/staged/committed disposable Git repository\npath: '+f+'\nremoved:\n'+old+'\ninserted:\n'+new+'\n')
+  pattern='^'+test+'$/'+ '/'.join('^'+x+'$' for x in sub.split('/'))
+  result=logged(row,['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg],cwd=d,ok=(1,))
+  transcript=result.stdout+result.stderr; target=test+'/'+sub
+  assert '--- FAIL: '+target+' ' in transcript,(row,'missing named assertion failure')
+  assert '[build failed]' not in transcript and 'panic:' not in transcript,(row,'non-assertion failure')
+  if i==3: assert 'running 2/2 Tasks' in transcript
+  settle(row,'pass','Isolated compiling mutation was rejected at `'+target+'` (expected exit 1), on its assertion; [transcript](evidence/qa-report-2026-11-19-01/'+row+'.txt), [mutation](evidence/qa-report-2026-11-19-01/'+row+'-mutation.txt).')
+
+if __name__=='__main__':
+ mode=sys.argv[1]
+ if mode=='plan':plan()
+ elif mode=='tests':tests(sys.argv[2])
+ elif mode=='sabotage':sabotage(int(sys.argv[2]))
+
+def outside():
+ with tempfile.TemporaryDirectory(prefix='q414-base-') as bt,tempfile.TemporaryDirectory(prefix='q414-fiscus-') as ft:
+  source=Path(bt); archive(BASE,source)
+  basebin=ROOT/'bin/qa0414-base/roundfix'
+  e=os.environ.copy();e.update(GOPROXY='off',GOSUMDB='off')
+  logged('base-build',['make','build','BIN_DIR='+str(basebin.parent)],source,e)
+  f=Path(ft)
+  for args in [['init','-q'],['config','user.name','QA fixture'],['config','user.email','qa@example.invalid']]:run(['git',*args],f,ok=(0,))
+  skills=['roundfix','setup-context-driven','write-idea','write-prd','write-tasks','write-techspec']
+  guides=['agent-instructions','autonomous-work','backend','secondbrain']
+  manifest={'managedArtifacts':[{'path':x} for x in ['AGENTS.md',*['docs/agents/'+x+'.md' for x in guides]]]}
+  lock={'version':1,'skills':{x:{} for x in skills}}
+  def write(p,data):
+   p=f/p;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(data)
+  write('docs/agents/setup-context.json',json.dumps(manifest));write('skills-lock.json',json.dumps(lock))
+  for g in ['AGENTS.md',*['docs/agents/'+x+'.md' for x in guides]]:write(g,'Seed placeholder\n')
+  write('.agents/skills/revisao-tributaria-cadastro/SKILL.md','Repository local placeholder\n')
+  def commit(subject):
+   run(['git','add','.'],f,ok=(0,));run(['git','commit','-qm',subject],f,ok=(0,));return run(['git','rev-parse','HEAD'],f,ok=(0,)).stdout.strip()
+  commit('chore: seed adopter');run(['git','tag','v0.1.0'],f,ok=(0,))
+  paths=[[*['.agents/skills/'+x+'/SKILL.md' for x in skills],'AGENTS.md','docs/agents/agent-instructions.md','docs/agents/autonomous-work.md','docs/agents/setup-context.json','skills-lock.json'],[*['.agents/skills/'+x+'/SKILL.md' for x in skills[2:]],*['.claude/agents/roundfix-'+x+'-author.md' for x in ['idea','prd','tasks','techspec','research']],'.roundfixrc.yml','AGENTS.md',*['docs/agents/'+x+'.md' for x in guides],'docs/agents/specific-repository.md'],['packages/backend/src/contexts/tax/CONTEXT.md'],['CONTEXT-MAP.md','docs/agents/specific-repository.md',*['docs/user-guide/guide-'+str(i)+'.md' for i in range(1,7)],'packages/backend/.env.example']]
+  subjects=['chore: update the Roundfix skills and Baseline to 0.148.0','chore: adopt the Roundfix 0.148.0 recommendations','docs: plan Spec 0097','docs: plan Spec 0099']
+  shas=[]
+  for i,(ps,subject) in enumerate(zip(paths,subjects)):
+   for p in ps:
+    if p=='skills-lock.json':data=json.dumps(lock,indent=2)+'\n'
+    elif p=='docs/agents/setup-context.json':data=json.dumps(manifest,indent=2)+'\n'
+    elif p=='.roundfixrc.yml':data='# disposable QA fixture\n{}\n'
+    else:data='Placeholder change '+str(i+1)+'\n'
+    write(p,data)
+   shas.append(commit(subject))
+  (EV/'outside-fixture.txt').write_text('Offline path-shape reconstruction of operator-measured Fiscus commits 4b83839, ec8481d, f923d37, ad1381b, characterization section 2. Placeholder contents; not production repository execution.\n'+json.dumps(list(zip(shas,subjects,paths)),indent=2)+'\nLiterature quoted by supplied PRD/characterization, not fetched: googleapis/release-please#1875 https://github.com/googleapis/release-please/pull/1875\n"Idea is to exclude commits if all files in those commits are from specific paths."\n')
+  with fresh() as env:
+   logged('base-version',[str(basebin),'--version'],env=env)
+   old=logged('fiscus-base',[str(basebin),'release','plan','--from','v0.1.0','--format','json'],f,env,ok=(0,3))
+   new=logged('fiscus-current',[str(BIN),'release','plan','--from','v0.1.0','--format','json'],f,env,ok=(0,3))
+   a=json.loads(old.stdout);b=json.loads(new.stdout)
+   (EV/'outside-keys.txt').write_text(json.dumps({'base_keys':list(a),'current_keys':list(b)},indent=2))
+   assert a['classification']['blockingCommits']==shas,(a['classification'],shas)
+   assert b['classification']['blockingCommits']==[shas[3]],b['classification']
+   status_states={}
+   for label,exe in [('base',basebin),('current',BIN)]:
+    status=logged('follow-up-'+label,[str(exe),'follow-up','--status','--format','json'],f,env,ok=(0,3))
+    status_states[label]=json.loads(status.stdout)['release']['state']
+   assert status_states=={'base':'manual_classification_required','current':'manual_classification_required'},status_states
+   write('.agents/skills/revisao-tributaria-cadastro/SKILL.md','Changed local skill\n');local=commit('docs: update the repository local skill')
+   p=logged('local-skill-current',[str(BIN),'release','plan','--from','v0.1.0','--format','json'],f,env,ok=(0,3));obj=json.loads(p.stdout)
+   assert local in obj['classification']['blockingCommits']
+   tags=run(['git','tag','--list'],ok=(0,)).stdout.splitlines();stable=sorted([t for t in tags if re.fullmatch(r'v\d+\.\d+\.\d+',t)],key=lambda x:tuple(map(int,x[1:].split('.'))))
+   pairs=[]
+   for tag in ['v0.140.0','v0.147.0','v0.148.0']:
+    use=tag if tag in tags else stable[0]
+    left=logged('range-'+tag+'-base',[str(basebin),'release','plan','--from',use,'--to','HEAD','--format','json'],ROOT,env,ok=(0,3))
+    right=logged('range-'+tag+'-current',[str(BIN),'release','plan','--from',use,'--to','HEAD','--format','json'],ROOT,env,ok=(0,3))
+    def decision(s):
+     o=json.loads(s);return {'state':o['state'],'blockingCommits':o['classification'].get('blockingCommits'),'changes':[(x['commitSHA'],x['crossesMaintenanceOnlyBoundary']) for x in o['changes']]}
+    l=decision(left.stdout);r=decision(right.stdout);assert l==r,(tag,l,r);pairs.append({'requested':tag,'used':use,'equal':True,**r})
+   (EV/'outside-comparison.txt').write_text(json.dumps({'base_blocks':shas,'current_blocks':[shas[3]],'local_skill_blocks':local,'roundfix_ranges':pairs,'follow_up_release_states':status_states},indent=2))
+ settle('Q04','pass','Fresh Delivery Base build versus Run build: Fiscus-shaped range blocks four versus only its fourth commit; unlocked local skill also blocks. Each Roundfix tag range has identical state, blocking SHAs and every crossing flag. Both fresh-home `follow-up --status --format json` commands recorded the release state. [fixture and offline literature](evidence/qa-report-2026-11-19-01/outside-fixture.txt), [comparison](evidence/qa-report-2026-11-19-01/outside-comparison.txt); all raw CLI outputs are retained alongside these files.')
+
+def verification_tests():
+ logs=[]
+ for f in ['task_01.md','task_02.md']:
+  section=(SPEC/f).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+  commands=re.findall(r'^- `(.*?)` — expected:',section,re.M)
+  assert len(commands)==2,(f,len(commands))
+  for i,cmd in enumerate(commands):
+   # Named tests are already asserted individually by verbose commands; this also executes the authored combined verification.
+   n=f[:-3]+'-verification-'+str(i+1)
+   logged(n,['/bin/sh','-c',cmd]);logs.append(n)
+ settle('Q05','pass','Both authored Verification commands of task_01 and both of task_02 exited 0, including their exact pass-name guards, text searches and package checks. '+ '; '.join('['+n+'](evidence/qa-report-2026-11-19-01/'+n+'.txt)' for n in logs))
+
+def documents():
+ ts=(SPEC/'_techspec.md').read_text(); norm=lambda s:' '.join(s.split());notes=[]
+ guide=ts.split('this text, word for word: "',1)[1].split('"',1)[0]
+ sentence=ts.split('before its ADR links, the sentence "',1)[1].split('"',1)[0]
+ helptext=ts.split('this paragraph, word for word apart from line wrapping: "',1)[1].split('"',1)[0]
+ doctext=ts.split('this text, word for word apart from line wrapping: "',1)[1].split('"',1)[0]
+ definition=ts.split('with this definition: "',1)[1].split('"',1)[0]
+ for p,expected in [('docs/user-guide/commands/follow-up.md',guide),('CONTEXT.md',sentence),('CONTEXT.md',definition),*[(p,doctext) for p in ['.agents/skills/roundfix/references/release.md','skills/roundfix/references/release.md','docs/user-guide/release-runbook.md','docs/user-guide/usage.md']]]:
+  assert norm(expected) in norm((ROOT/p).read_text()),p;notes.append(p+': exact normalized contract found\n'+expected)
+ with fresh() as env:
+  p=logged('release-help',[str(BIN),'release','plan','--help'],env=env)
+  assert norm(helptext) in norm(p.stdout)
+  assert 'reads no Roundfix configuration' in norm(p.stdout)
+ notes.append('release plan help: full API Contract 2 paragraph matched; reads no Roundfix configuration')
+ context=(ROOT/'CONTEXT.md').read_text();entries=re.findall(r'^\*\*(.*?)\*\*:',context,re.M);assert entries[entries.index('Release Plan')+1]=='Adopter Maintenance Path'
+ adopter=context.split('**Adopter Maintenance Path**:',1)[1].split('\n**',1)[0];assert 'docs/adr/0447-' in adopter and '_Avoid_: Managed file, adopter-owned file, no-release path' in adopter
+ reviews=re.findall(r'with "(2026-11-19.*?)"',ts)
+ coverage=json.loads((ROOT/'docs/references/skill-coverage.json').read_text())
+ flat=json.dumps(coverage,ensure_ascii=False)
+ for text in reviews:
+  assert text in flat,text;notes.append('Coverage Review: '+text)
+ versions=[]
+ record=(ROOT/'skills/testdata/owned-skill-versions.json').read_text()
+ for p in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+  vs=re.findall(r'^\s*version: (\S+)',(ROOT/p).read_text(),re.M);assert len(vs)==2 and vs[0]==vs[1];assert vs[0] in record;versions.extend(vs);notes.append(p+': both version fields '+vs[0]+' recorded')
+ assert len(set(versions))==1
+ # Inspect the entire relevant functions, their transitive local readers and concrete Git arguments.
+ queue=(ROOT/'internal/cli/follow_up_queue.go').read_text().split('func followUpItemTaskGraph',1)[1].split('\nfunc ',1)[0]
+ managed=(ROOT/'internal/cli/releaseplan_managed_paths.go').read_text()
+ assert not re.search(r'\b(?:WriteFile|Mkdir|MkdirAll|Rename|Remove|RemoveAll|Create|OpenFile)\s*\(',queue+managed)
+ assert '.roundfixrc.yml' not in managed and not re.search(r'os\.(?:Read|Open)',managed)
+ notes.append('No writing/creating/renaming/removing calls in either reader. ManagedPaths calls managedRecord then source.git: rev-parse, ls-tree, show only, never working-tree reads or .roundfixrc.yml. followUpItemTaskGraph uses rev-parse/show and Spec Root fallback reads only; LoadAt/ReadArchivedSpecAt receive its Git reader.')
+ notes.extend(['followUpItemTaskGraph body:\nfunc followUpItemTaskGraph'+queue,'ManagedPaths/managedRecord source:\n'+managed])
+ (EV/'contract-searches.txt').write_text('\n\n'.join(notes))
+ logged('coverage-and-glossary',['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','-run','^(TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$','./internal/docscontract'])
+ logged('skill-versions',['go','test','-count=1','-timeout','20m','-v','-run','^TestEveryOwnedSkillVersionIsRecorded$','./skills'])
+ settle('Q06','pass','Exact whitespace-normalized API Contracts matched in help, guide, both skill references, runbook, usage, glossary and both Coverage Reviews. Adopter Maintenance Path follows Release Plan and cites ADR-0447. Both skill copies declare and record version '+versions[0]+'. Reader call inspection and focused contracts pass. [searches](evidence/qa-report-2026-11-19-01/contract-searches.txt), [help](evidence/qa-report-2026-11-19-01/release-help.txt), [contracts](evidence/qa-report-2026-11-19-01/coverage-and-glossary.txt), [versions](evidence/qa-report-2026-11-19-01/skill-versions.txt).')
+
+if __name__=='__main__':
+ if mode=='outside':outside()
+ elif mode=='verification-tests':verification_tests()
+ elif mode=='documents':documents()
+
+def audit():
+ task_commits={'task_01':'5642052f5af476fbb65d1fbf691bc973a771c29c','task_02':'3cdb92f2f8f5e3208fcf605f762f71b5388c974d','task_04':HEAD}
+ notes=[];allpaths=set()
+ for task,sha in task_commits.items():
+  tasktext=(SPEC/(task+'.md')).read_text()
+  declared=set(re.findall(r'^- (?:interface|creates|instruction): `?([^`\n]+)',tasktext,re.M))
+  declared.add(str((SPEC/(task+'.md')).relative_to(ROOT)))
+  changed=run(['git','diff-tree','--no-commit-id','--name-only','-r',sha],ok=(0,)).stdout.splitlines();allpaths.update(changed)
+  extra=set(changed)-declared;assert not extra,(task,extra)
+  notes.append(task+' '+sha+' all '+str(len(changed))+' paths declared:\n'+'\n'.join(changed))
+  diff=run(['git','show','--format=','--unified=3',sha],ok=(0,)).stdout
+  for p in changed:
+   forbidden=(p in ['Makefile','go.mod','go.sum','skills-lock.json','.roundfixrc.yml','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json'] or p.startswith(('.github/workflows/','internal/baseline/','docs/agents/','docs/adr/')))
+   assert not forbidden,(task,p)
+   if p.startswith(('.agents/skills/','skills/roundfix/')):assert p in ['.agents/skills/roundfix/SKILL.md','.agents/skills/roundfix/references/release.md','skills/roundfix/SKILL.md','skills/roundfix/references/release.md'],p
+  # Check the actual skill section before/after, not a diff-context phrase.
+  for p in changed:
+   if p.startswith(('.agents/skills/','skills/roundfix/')):
+    before=run(['git','show',sha+'^:'+p],ok=(0,)).stdout;after=run(['git','show',sha+':'+p],ok=(0,)).stdout
+    def section(t):
+     if '### QA settlement\n' not in t:return None
+     return t.split('### QA settlement\n',1)[1].split('\n### ',1)[0].split('\n## ',1)[0]
+    assert section(before)==section(after),p
+  before=run(['git','show',sha+'^:CONTEXT.md'],ok=(0,)).stdout;after=run(['git','show',sha+':CONTEXT.md'],ok=(0,)).stdout
+  def glossary(t):
+   m=list(re.finditer(r'^\*\*([^*]+)\*\*:',t,re.M));return {x.group(1):t[x.start():m[i+1].start() if i+1<len(m) else len(t)] for i,x in enumerate(m)}
+  a,b=glossary(before),glossary(after);different={x for x in set(a)|set(b) if a.get(x)!=b.get(x)}
+  # An inserted entry changes the preceding entry's trailing separator only; normalize it.
+  different={x for x in different if a.get(x,'').strip()!=b.get(x,'').strip()}
+  expected={'task_01':{'Spec Queue Table'},'task_02':{'Adopter Maintenance Path'},'task_04':set()}[task]
+  assert different==expected,(task,different)
+  notes.append(task+' glossary changes exactly: '+str(sorted(different)))
+ prd=(SPEC/'_prd.md').read_text();assert '- adds: **Adopter Maintenance Path**' in prd and '- changes: **Spec Queue Table**' in prd
+ auth=(SPEC/'_authorization.md').read_text();allowed=re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M)
+ # Compile a fresh governance probe using the repository's actual exported policy.
+ go='package main\nimport ("encoding/json"; "os"; "roundfix/internal/speccheck")\nfunc main(){ var paths []string; if err:=json.NewDecoder(os.Stdin).Decode(&paths);err!=nil{panic(err)}; var governed []string; for _,p:=range paths {if speccheck.GovernedPath(p){governed=append(governed,p)}}; json.NewEncoder(os.Stdout).Encode(governed) }\n'
+ source=EV/'governance.go.txt';source.write_text(go)
+ overlay=EV/'governance-overlay.txt';overlay.write_text(json.dumps({'Replace':{str(ROOT/'cmd/roundfix/main.go'):str(source)}}))
+ logged('governance-build',['go','build','-o','bin/qa0414-governance','-overlay',str(overlay),'./cmd/roundfix'])
+ p=subprocess.run([str(ROOT/'bin/qa0414-governance')],cwd=ROOT,input=json.dumps(sorted(allpaths)),text=True,capture_output=True)
+ assert p.returncode==0
+ governed=json.loads(p.stdout);assert set(governed)<=set(allowed),(governed,allowed)
+ notes.append('Actual speccheck.GovernedPath output: '+json.dumps(governed)+'\nAuthorization paths: '+json.dumps(allowed))
+ t=REPORT.read_text().replace('  - bin/qa0414-base/roundfix','  - bin/qa0414-base/roundfix\n  - bin/qa0414-governance');REPORT.write_text(t)
+ (EV/'scope-audit.txt').write_text('\n\n'.join(notes)+'\nNo forbidden path, Vendored Skill, other owned skill, ADR or QA settlement section changed in the Task commits. Planning/authoring commits are distinguished from Task commits.\n')
+ settle('Q07','pass','Each Task commit stays in its declarations, the actual GovernedPath detector returns only the three authorized paths, all prohibited paths and QA settlement sections are unchanged. PRD adds/changes declarations match exactly the two glossary edits (task_01 Spec Queue Table; task_02 Adopter Maintenance Path; task_04 none). [audit](evidence/qa-report-2026-11-19-01/scope-audit.txt).')
+
+def pull_request():
+ note='Pull Request is absent per the supplied target-branch fact; no lookup or real gh invocation. Approval: maintainer authority of 2026-11-19 in the Spec authorization (implement/commit/push/pull_request/merge/release, patch ceiling); current user authorizes this QA only, no separate review acceptance obtained. Checks: Daemon make verify-changed pass, exit 0, at '+HEAD+'. Unresolved threads: none because no Pull Request exists. Merge-Ready acceptance: none yet. Review-artifact ancestry: no accepted review artifact exists; claimed candidate is '+HEAD+'.'
+ (EV/'pull-request.txt').write_text(note+'\n')
+ settle('Q08','blocked (environment: no open Pull Request)',note+' [record](evidence/qa-report-2026-11-19-01/pull-request.txt).')
+
+if __name__=='__main__':
+ if mode=='audit':audit()
+ elif mode=='pull-request':pull_request()
+
+
+def ranges_only():
+ # Resume this pass after its fixture commands succeeded; preserve the initial refusal.
+ shutil.copyfile(EV/'range-v0.140.0-base.txt',EV/'range-initial-dirty-refusal.txt')
+ def obj(name):
+  raw=(EV/(name+'.txt')).read_text();return json.loads(raw.split('stdout:\n',1)[1].split('\nstderr:\n',1)[0])
+ old=obj('fiscus-base');new=obj('fiscus-current');local=obj('local-skill-current')
+ assert len(old['classification']['blockingCommits'])==4 and len(new['classification']['blockingCommits'])==1
+ states={label:obj('follow-up-'+label)['release']['state'] for label in ['base','current']}
+ assert states=={'base':'manual_classification_required','current':'manual_classification_required'},states
+ assert len(local['classification']['blockingCommits'])==2
+ tags=run(['git','tag','--list'],ok=(0,)).stdout.splitlines();stable=sorted([t for t in tags if re.fullmatch(r'v\d+\.\d+\.\d+',t)],key=lambda x:tuple(map(int,x[1:].split('.'))))
+ status=run(['git','--no-optional-locks','status','--porcelain=v1','--untracked-files=all'],ok=(0,)).stdout.splitlines()
+ qapath=str((SPEC/'qa').relative_to(ROOT))+'/'
+ assert status and all(line.startswith('?? '+qapath) for line in status),status
+ observed=[];pairs=[]
+ with fresh() as env,tempfile.TemporaryDirectory(prefix='q414-clean-ranges-',dir=ROOT.parent) as tmp:
+  saved=Path(tmp)/'qa';(SPEC/'qa').rename(saved)
+  try:
+   assert run(['git','--no-optional-locks','status','--porcelain=v1'],ok=(0,)).stdout=='', 'non-QA dirty input'
+   for tag in ['v0.140.0','v0.147.0','v0.148.0']:
+    use=tag if tag in tags else stable[0];pair=[]
+    for label,binary in [('base',ROOT/'bin/qa0414-base/roundfix'),('current',BIN)]:
+     args=[str(binary),'release','plan','--from',use,'--to','HEAD','--format','json'];p=run(args,env=env)
+     observed.append(('range-'+tag+'-'+label,args,p))
+     assert p.returncode in [0,3],p.stderr
+     o=json.loads(p.stdout);pair.append({'state':o['state'],'blockingCommits':o['classification'].get('blockingCommits'),'changes':[(x['commitSHA'],x['crossesMaintenanceOnlyBoundary']) for x in o['changes']]})
+    assert pair[0]==pair[1],tag;pairs.append({'requested':tag,'used':use,'equal':True,**pair[1]})
+  finally:saved.rename(SPEC/'qa')
+ for name,args,p in observed:(EV/(name+'.txt')).write_text('command: '+' '.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ (EV/'outside-comparison.txt').write_text(json.dumps({'base_blocks':old['classification']['blockingCommits'],'current_blocks':new['classification']['blockingCommits'],'local_skill_blocks':local['classification']['blockingCommits'],'roundfix_ranges':pairs,'follow_up_release_states':states},indent=2)+'\nThe initial range attempt correctly refused untracked QA artifacts. Only the qa directory was temporarily renamed outside the checkout and restored in finally. Clean git status was independently asserted before both binaries read this repository history; no status masking, configuration change or index mutation was used.\n')
+ settle('Q04','pass','Fresh Delivery Base and Run binaries block four versus one commit on the Fiscus-shaped range; an unlocked local skill still blocks. Both status commands report `manual_classification_required`. All three actual Roundfix tag ranges match in state, blocking SHAs and every crossing flag. [fixture/literature](evidence/qa-report-2026-11-19-01/outside-fixture.txt), [comparison](evidence/qa-report-2026-11-19-01/outside-comparison.txt), [initial QA-artifact refusal](evidence/qa-report-2026-11-19-01/range-initial-dirty-refusal.txt). QA artifacts were restored after the clean-checkout commands.')
+
+if __name__=='__main__' and mode=='ranges-only':ranges_only()
+
+def close_report():
+ t=REPORT.read_text()
+ rows=re.findall(r'^\| (Q\d+|S\d+) \| ([^|]+) \| ([^|]+) \|$',t,re.M)
+ assert len(rows)==19,len(rows)
+ assert not any(status.strip()=='pending' for _,status,_ in rows)
+ failed=[r for r,s,_ in rows if s.strip()=='fail'];blocked=[(r,s.strip()) for r,s,_ in rows if s.strip().startswith('blocked')]
+ env=sum('environment:' in s for _,s in blocked);finding=sum('finding:' in s for _,s in blocked);declared=sum('declared:' in s for _,s in blocked)
+ assert blocked==[('Q08','blocked (environment: no open Pull Request)')],blocked
+ assert not failed
+ t=t.replace('verdict: pending','verdict: partial\nspec: '+SPEC.name+'\ndate: 2026-11-19\nstatus: closed\nsurfaces: [backend, cli, docs]')
+ t=t.replace('rows_blocked_environment: 0','rows_blocked_environment: '+str(env))
+ t+='\n## Findings\n\nNo new finding. Previous F-01 is resolved by the corrected fixture at the audited head: this pass independently reproduced the positive test and the required worktree-first mutation; S03 fails on the expected `running 2/2 Tasks` assertion. No earlier Run evidence or executable was cited or replayed.\n\n## Blocked and skipped\n\nQ08 is the only blocked row: no open Pull Request exists. Authority and local checks are recorded; there is no Merge-Ready acceptance yet. There are no finding-blocked or declared-blocked rows, no skipped matrix row, and no unmeasured requirement. The seeded mechanical skip remains unchanged. The sandbox root symlink required escalated command execution from the physical Run worktree.\n'
+ REPORT.write_text(t)
+ with fresh() as product_env:
+  p=logged('archive-plan-offline',[str(BIN),'archive',SPEC.name,'--plan','--offline'],env=product_env,ok=(0,))
+ t=REPORT.read_text()
+ t+='\n## Outcome\n\nThe Item Branch count and adopter maintenance boundary satisfy their declared checks, all eleven sabotage probes fail at the named assertions, and the Task history stays in its authorized scope. The qualifying partial leaves only the pre-PR Pull Request row blocked; no archive, promotion, commit, push or Pull Request was performed. The [offline archive plan](evidence/qa-report-2026-11-19-01/archive-plan-offline.txt) records the proposed cut and reference handling, with judge keys unset and no network request.\n'
+ REPORT.write_text(t)
+ # Local report structure, links, retained evidence, and unchanged source tree.
+ lines=t.splitlines();start=lines.index('## Results');table=[]
+ for line in lines[start+2:]:
+  if not line:break
+  table.append(line)
+ assert len(table)==len(rows)+2,(len(table),len(rows))
+ assert '<!-- ' not in t
+ links=re.findall(r'\]\(([^)]+)\)',t)
+ for link in links:
+  if '://' not in link and not link.startswith('#'):
+   p=REPORT.parent/link;assert p.exists(),str(p)
+   ignored=run(['git','check-ignore','--no-index',str(p.relative_to(ROOT))])
+   assert ignored.returncode==1,(str(p),ignored.stdout)
+ for row,_,_ in rows:
+  part=t.split('### '+row+'\n',1)[1].split('\n### ',1)[0]
+  assert 'inputs:' in part and 'kind: repository_path' in part,row
+ assert 'evidence_snapshots' not in t
+ changed=run(['git','diff','--name-only'],ok=(0,)).stdout.splitlines()
+ assert all(x.startswith(str((SPEC/'qa').relative_to(ROOT))) for x in changed),changed
+ logged('diff-check',['git','diff','--check'])
+ summary={'rows':len(rows),'passed':sum(s.strip()=='pass' for _,s,_ in rows),'environment_blocked':env,'finding_blocked':finding,'declared_blocked':declared,'skipped':0,'pending':0,'verdict':'partial','links_checked':len(links)}
+ (EV/'self-audit.txt').write_text(json.dumps(summary,indent=2)+'\nAll local report links exist and are not ignored; Results table is contiguous; typed inputs exist for every row. No source file is changed.\n')
+ print(json.dumps(summary),flush=True)
+
+if __name__=='__main__' and mode=='close':close_report()
+
+def public_status():
+ import hashlib
+ seeder=r'''package main
+import("context";"os";"fmt";"roundfix/internal/store")
+func main(){ctx:=context.Background();s,e:=store.Open(ctx,os.Getenv("HOME"));if e!=nil{panic(e)};defer s.Close();q,found,e:=s.DeliveryQueue(ctx,os.Args[1]);if e!=nil{panic(e)};if !found{q,e=s.CreateDeliveryQueue(ctx,os.Args[1],[]string{"0097-widget"});if e!=nil{panic(e)}};i:=q.Items[0];i.Stage=store.DeliveryStage(os.Args[4]);i.Branch=os.Args[2];i.Worktree=os.Args[3];if e=s.UpdateDeliveryQueueItem(ctx,os.Args[1],i);e!=nil{panic(e)};fmt.Println("disposable queue persisted")}
+'''
+ src=EV/'status-seeder.go.txt';src.write_text(seeder);overlay=EV/'status-seeder-overlay.txt';overlay.write_text(json.dumps({'Replace':{str(ROOT/'cmd/roundfix/main.go'):str(src)}}))
+ logged('status-seeder-build',['go','build','-o','bin/qa0414-status-seeder','-overlay',str(overlay),'./cmd/roundfix'])
+ t=REPORT.read_text();t=t.replace('  - bin/qa0414-governance','  - bin/qa0414-governance\n  - bin/qa0414-status-seeder');REPORT.write_text(t)
+ with tempfile.TemporaryDirectory(prefix='q414-public-status-') as tmp,fresh() as env:
+  repo=(Path(tmp)/'repo');repo.mkdir();repo=repo.resolve();wt=Path(tmp)/'item'
+  for args in [['init','-q','--initial-branch=main'],['config','user.name','QA fixture'],['config','user.email','qa@example.invalid']]:run(['git',*args],repo,ok=(0,))
+  slug='0097-widget'
+  def write(root,p,text):
+   p=root/p;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+  def task(root,i,status):write(root,'docs/specs/'+slug+'/'+i+'.md','---\ntask: '+i+'\nspec: '+slug+'\nstatus: '+status+'\ntype: backend\n---\n\n# '+i+'\n\n## Verification\n\n- `true`\n')
+  write(repo,'.roundfixrc.yml','specs:\n  root: docs/specs\n')
+  write(repo,'docs/specs/'+slug+'/_prd.md','---\nstatus: active\n---\n\n# Widget\n')
+  write(repo,'docs/specs/'+slug+'/_tasks.md','---\nschema: spec-tasks/v1\ngraph:\n  nodes:\n    - id: task_01\n      file: task_01.md\n      needs: []\n    - id: task_02\n      file: task_02.md\n      needs: [task_01]\n---\n')
+  for i in ['task_01','task_02']:task(repo,i,'pending')
+  run(['git','add','.'],repo,ok=(0,));run(['git','commit','-qm','docs: plan widget'],repo,ok=(0,));run(['git','tag','v0.1.0'],repo,ok=(0,))
+  run(['git','worktree','add','-b','roundfix/deliver-widget',str(wt),'main'],repo,ok=(0,))
+  task(wt,'task_01','completed');run(['git','add','.'],wt,ok=(0,));run(['git','commit','-qm','fix: settle first task'],wt,ok=(0,));task(wt,'task_02','completed')
+  def snapshot():
+   result={}
+   for base in [repo,wt,Path(env['HOME'])]:
+    for p in base.rglob('*'):
+     if '.git' not in p.relative_to(base).parts and p.is_file() and not p.is_symlink():result[str(p)]=hashlib.sha256(p.read_bytes()).hexdigest()
+   return result
+  observed=[]
+  for name,branch,worktree,stage,count in [('running','roundfix/deliver-widget',str(wt),'running',1),('no-branch','','','queued',0),('missing-branch','roundfix/absent','','queued',0)]:
+   logged('status-'+name+'-seed',[str(ROOT/'bin/qa0414-status-seeder'),str(repo),branch,worktree,stage],repo,env)
+   before=snapshot()
+   first=logged('status-'+name+'-json',[str(BIN),'follow-up','--status','--format','json'],repo,env)
+   second=logged('status-'+name+'-text',[str(BIN),'follow-up','--status'],repo,env)
+   after=snapshot();assert before==after,(name,'read-only persistence changed')
+   obj=json.loads(first.stdout);queue=[x for x in obj['queue'] if x['spec']==slug];pending=[x for x in obj['pending_specs'] if x['spec']==slug]
+   assert len(queue)==1 and queue[0]['status']==f'{stage} {count}/2 Tasks',queue
+   assert len(pending)==1 and pending[0]['tasks_completed']==count and pending[0]['tasks_total']==2,pending
+   assert f'{stage} {count}/2 Tasks' in second.stdout,second.stdout
+   observed.append({'case':name,'queue_status':queue[0]['status'],'pending_completed':pending[0]['tasks_completed'],'pending_total':pending[0]['tasks_total'],'read_only_snapshot_equal':True,'independent_text_reopen_equal':True})
+  (EV/'public-status-summary.txt').write_text(json.dumps(observed,indent=2)+'\nRunning fixture records its item worktree with task_02 completed but uncommitted. The branch holds only task_01 completed; checkout holds both pending. JSON queue, Pending Specs, independent text and byte snapshots agree.\n')
+ t=REPORT.read_text();t=t.replace('Every named test/subtest and whole package passed, exit 0; read-only suite guard passed.','Every named test/subtest and whole package passed, exit 0; read-only suite guard passed. Built CLI independently confirmed running 1/2 Tasks despite uncommitted task_02 completion in the recorded item worktree, plus no-branch and missing-branch 0/2 fallbacks; JSON, Pending Specs, text reopen and repository/worktree/home byte snapshots agree ([public status](evidence/qa-report-2026-11-19-01/public-status-summary.txt)).',1);REPORT.write_text(t)
+ print('public status: running 1/2 and both 0/2 fallbacks, JSON/text, snapshots pass',flush=True)
+
+if __name__=='__main__' and mode=='public-status':public_status()

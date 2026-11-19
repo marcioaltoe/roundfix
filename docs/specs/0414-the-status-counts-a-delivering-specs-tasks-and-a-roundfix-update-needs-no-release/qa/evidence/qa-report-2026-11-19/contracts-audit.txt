@@ -1,0 +1,36 @@
+{
+  "document_checks": {
+    "exact_contract_1_guide": true,
+    "exact_contract_1_glossary": true,
+    "exact_contract_2_help": true,
+    "help_reads_no_config": true,
+    "exact_contract_2_documents": [
+      ".agents/skills/roundfix/references/release.md",
+      "skills/roundfix/references/release.md",
+      "docs/user-guide/release-runbook.md",
+      "docs/user-guide/usage.md"
+    ],
+    "exact_contract_2_glossary_and_placement": true,
+    "two_exact_coverage_reviews": [
+      "2026-11-19 \u2014 Spec 0414 task_01: a Delivery Queue item's Tasks are counted on its Item Branch instead of the Spec Root; no command, flag, field, output line or exit code changes, and the Roundfix follow-up reference relays the rows as the command gives them",
+      "2026-11-19 \u2014 Spec 0414 task_01: the guide states where a Delivery Queue item's Tasks are counted; the Roundfix follow-up reference does not restate how counts are read and needs no change"
+    ],
+    "roundfix_version": "0.1.278",
+    "version_record_matches_both_copies": true
+  },
+  "reader_review": {
+    "item_graph_git_commands": [
+      "rev-parse",
+      "show"
+    ],
+    "item_graph_fallback": "spec.Load only for current Spec Root; branch and archive reads through Git reader; no item.Worktree access",
+    "managed_records_git_commands": [
+      "rev-parse",
+      "ls-tree",
+      "show"
+    ],
+    "managed_file_reads": "committed skills-lock.json and docs/agents/setup-context.json only at target and base",
+    "writers": "none in reviewed call graph",
+    "runtime_confirmation": "named write-nothing, dirty-worktree, endpoint-record and invalid-project-config tests; public status file fingerprints"
+  }
+}

@@ -1,0 +1,6 @@
+isolated git archive 69ae9b561240cb4d6b1358f9278cfce36be25d3f; initialized/staged/committed disposable Git repository
+path: internal/cli/follow_up_queue.go
+removed:
+if err == nil && archived.Form == spec.ArchivedRecord {
+inserted:
+if err == nil && archived.Form == spec.ArchivedRecord && item.SpecSlug == "" {

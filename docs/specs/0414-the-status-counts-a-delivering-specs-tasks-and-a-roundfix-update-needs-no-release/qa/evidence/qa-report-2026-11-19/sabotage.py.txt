@@ -1,0 +1,40 @@
+from qa import *
+S=[
+("S01","internal/cli/follow_up_queue.go","TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch","./internal/cli"),
+("S02","internal/cli/follow_up_queue.go","TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision","./internal/cli"),
+("S03","internal/cli/follow_up_queue.go","TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read","./internal/cli"),
+("S04","internal/cli/follow_up_status.go","TestADeliveryItemCountsTasksOnItsItemBranch/the_pending_specs_line_counts_the_same","./internal/cli"),
+("S05","internal/releaseplan/managed.go","TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing","./internal/releaseplan"),
+("S06","internal/releaseplan/managed.go","TestAnAdopterManagedPathIsMaintenanceOnly/specific_repository","./internal/releaseplan"),
+("S07","internal/releaseplan/managed.go","TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses","./internal/releaseplan"),
+("S08","internal/releaseplan/classifier.go","TestAnAdopterManagedPathIsMaintenanceOnly/an_empty_commit_still_crosses","./internal/releaseplan"),
+("S09","internal/cli/releaseplan_managed_paths.go","TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_skill_removed_in_the_range","./internal/cli"),
+("S10","skills/roundfix/references/release.md","TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/roundfix_itself","./skills"),
+("S11","internal/cli/cli.go","TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents","./internal/cli")]
+for row,name,test,pkg in S[9:]:
+    print("START "+row+" "+test,flush=True)
+    with tempfile.TemporaryDirectory(prefix="q414-sab-") as d:
+        root=archive_copy(HEAD,d);p=root/name;before=p.read_text();s=before
+        if row=="S01":s=s.replace('fallback := func()', 'return spec.Load(specRoot, item.SpecSlug)\n\tfallback := func()',1)
+        if row=="S02":s=s.replace('if err == nil && archived.Form == spec.ArchivedRecord {','if false && err == nil && archived.Form == spec.ArchivedRecord {',1)
+        if row=="S03":s=s.replace('fallback := func()', 'if item.Worktree != "" { return spec.Load(filepath.Join(item.Worktree, "docs", "specs"), item.SpecSlug) }\n\tfallback := func()',1)
+        if row=="S04":s=s.replace('graph, loadErr = followUpItemTaskGraph(nil, nil, loaded.GitRoot, root, archiveRoot, item)','_ = archiveRoot; _ = item; graph, loadErr = spec.Load(root, rows[index].Spec)',1)
+        if row=="S05":s=s.replace('!managed.Adopter || clean == ""','clean == ""',1)
+        if row=="S06":s=s.replace('"docs/agents/specific-repository.md", ','',1)
+        if row=="S07":s=s.replace(' && strings.HasPrefix(path.Base(clean), "roundfix-")','',1)
+        if row=="S08":
+            pos=s.index('func crossesMaintenanceOnlyBoundaryWithManaged');s=s[:pos]+s[pos:].replace('if len(paths) == 0 {\n\t\treturn true','if len(paths) == 0 {\n\t\treturn false',1)
+        if row=="S09":s=s.replace('[]string{releaseRange.Target.CommitSHA, releaseRange.Base.CommitSHA}','[]string{releaseRange.Target.CommitSHA}',1)
+        if row=="S10":s,n=re.subn(r"Roundfix's\s+own\s+repository\s+authors\s+the\s+`roundfix`\s+skill",'',s,count=1);assert n==1
+        if row=="S11":s,n=re.subn(r'a\s+generated\s+\.claude/agents/roundfix-\*\.md','',s,count=1);assert n==1
+        assert before!=s,row+" mutation absent"
+        p.write_text(s)
+        diff=run(['git','diff','--',name],cwd=root).stdout
+        (E/(row.lower()+'-mutation.txt')).write_text(diff)
+        pattern='/'.join('^'+x+'$' for x in test.split('/'))
+        c=run(['go','test','-count=1','-timeout','20m','-v','-run',pattern,pkg],cwd=root,name=row.lower()+'-sabotage',expected=None)
+        observed=c.returncode!=0 and '--- FAIL: '+test+' ' in c.stdout and '[build failed]' not in c.stdout+c.stderr
+        diagnostic='\n'.join(x for x in c.stdout.splitlines() if '--- FAIL:' in x or '.go:' in x)
+        print(row+' exit='+str(c.returncode)+' detected='+str(observed)+'\n'+diagnostic,flush=True)
+        update(row,'pass' if observed else 'fail','Isolated mutation '+name+'; `'+test+'` '+('failed on its assertion as required' if observed else 'did not produce the required assertion failure')+'. [Mutation](evidence/qa-report-2026-11-19/'+row.lower()+'-mutation.txt), [full transcript](evidence/qa-report-2026-11-19/'+row.lower()+'-sabotage.txt).')
+        run(['chmod','-R','u+w',str(root)])

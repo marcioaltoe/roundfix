@@ -1,0 +1,61 @@
+from qa import *
+base=ROOT/"bin/qa-0414/base"
+archive_copy(BASE,base)
+print("Building fresh Delivery Base archive",flush=True)
+run(["make","build"],cwd=base,name="delivery-base-build")
+binbase=base/"bin/roundfix"
+product(["--version"],"delivery-base-version",binary=binbase)
+summary={"source":"Spec references/2026-11-19-characterization.md section 2, measured by operator from Fiscus ad1381b; placeholder path-shape reconstruction, not a live Fiscus run", "delivery_base":BASE,"audited_head":HEAD}
+with tempfile.TemporaryDirectory(prefix="q414-fiscus-") as d:
+    repo=Path(d).resolve();git(["init","-b","main"],repo);git(["remote","add","origin","git@github.com:qa/fiscus-shape.git"],repo)
+    def write(p,text):
+        file=repo/p;file.parent.mkdir(parents=True,exist_ok=True);file.write_text(text)
+    def commit(subject,paths):
+        for path in paths:write(path,subject+"\n")
+        git(["add","."],repo);git(["-c","core.hooksPath=/dev/null","commit","-m",subject],repo);return git(["rev-parse","HEAD"],repo)
+    skills=["roundfix","setup-context-driven","write-idea","write-prd","write-tasks","write-techspec"]
+    guides=["agent-instructions","autonomous-work","backend","secondbrain"]
+    manifest={"managedArtifacts":[{"path":p} for p in ["AGENTS.md",*["docs/agents/"+g+".md" for g in guides]]]}
+    lock={"version":1,"skills":{s:{} for s in skills}}
+    write("docs/agents/setup-context.json",json.dumps(manifest));write("skills-lock.json",json.dumps(lock));write(".agents/skills/revisao-tributaria-cadastro/SKILL.md","# Local skill\n")
+    for s in skills:write(".agents/skills/"+s+"/SKILL.md","# Installed skill\n")
+    commit("chore: seed path-shape fixture",["README.md"]);git(["tag","v0.1.0"],repo)
+    p1=[*[".agents/skills/"+s+"/SKILL.md" for s in skills],"AGENTS.md","docs/agents/agent-instructions.md","docs/agents/autonomous-work.md"]
+    commits=[commit("chore: update the Roundfix skills and Baseline to 0.148.0",p1)]
+    # The records also changed in this measured commit; preserve their valid content.
+    write("docs/agents/setup-context.json",json.dumps(manifest,indent=2));write("skills-lock.json",json.dumps(lock,indent=2));git(["add","."],repo);git(["-c","core.hooksPath=/dev/null","commit","--amend","--no-edit"],repo);commits[-1]=git(["rev-parse","HEAD"],repo)
+    p2=[*[".agents/skills/"+s+"/SKILL.md" for s in skills[2:]],*[".claude/agents/roundfix-"+s+"-author.md" for s in ["idea","prd","techspec","tasks","implement"]],".roundfixrc.yml","AGENTS.md",*["docs/agents/"+g+".md" for g in guides],"docs/agents/specific-repository.md"]
+    # Empty YAML is a valid product config, while its changed path still exercises the rule.
+    commits.append(commit("chore: adopt the Roundfix 0.148.0 recommendations",p2));write(".roundfixrc.yml","# disposable configuration\n");git(["add","."],repo);git(["-c","core.hooksPath=/dev/null","commit","--amend","--no-edit"],repo);commits[-1]=git(["rev-parse","HEAD"],repo)
+    commits.append(commit("docs: plan Spec 0097",["packages/backend/src/contexts/tax/CONTEXT.md"]))
+    p4=["CONTEXT-MAP.md","docs/agents/specific-repository.md",*["docs/user-guide/guide-"+str(i)+".md" for i in range(1,7)],"packages/backend/.env.example"]
+    commits.append(commit("docs: plan Spec 0099",p4))
+    summary["fixture_commits"]=[{"source":src,"sha":sha,"paths":git(["diff-tree","--no-commit-id","--name-only","-r",sha],repo).splitlines()} for src,sha in zip(["4b83839","ec8481d","f923d37","ad1381b"],commits)]
+    def plan(binary,label):return json.loads(product(["release","plan","--from","v0.1.0","--format","json"],label,cwd=repo,binary=binary,expected=(0,3)).stdout)
+    current=plan(None,"fiscus-current");old=plan(binbase,"fiscus-base")
+    assert old["classification"]["blockingCommits"]==commits,old
+    assert current["classification"]["blockingCommits"]==commits[-1:],current
+    summary["four_commit_blockers"]={"base":4,"current":1,"fourth_crossing_paths":["CONTEXT-MAP.md",*["docs/user-guide/guide-"+str(i)+".md" for i in range(1,7)],"packages/backend/.env.example"]}
+    for binary,label in [(None,"fiscus-status-current"),(binbase,"fiscus-status-base")]:
+        doc=json.loads(product(["follow-up","--status","--format","json"],label,cwd=repo,binary=binary).stdout)
+        summary[label]=doc["release"];assert doc["release"]["state"]=="manual_classification_required",doc["release"]
+    local=commit("docs: revise the repository local skill",[".agents/skills/revisao-tributaria-cadastro/SKILL.md"])
+    changed=plan(None,"fiscus-local-skill");assert local in changed["classification"]["blockingCommits"]
+    assert next(c for c in changed["changes"] if c["commitSHA"]==local)["crossesMaintenanceOnlyBoundary"]
+    summary["local_skill_blocker"]=local
+print("Fiscus shape: Delivery Base blocks 4; audited binary blocks 1; local skill remains crossing",flush=True)
+summary["roundfix_ranges"]=[]
+tags=git(["tag","--list","v*","--sort=version:refname"]).splitlines()
+stable=[t for t in tags if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",t)]
+for wanted in ["v0.140.0","v0.147.0","v0.148.0"]:
+    tag=wanted if wanted in tags else stable[0]
+    projections=[]
+    for binary,label in [(None,"current"),(binbase,"base")]:
+        doc=json.loads(product(["release","plan","--from",tag,"--to","HEAD","--format","json"],"roundfix-"+wanted+"-"+label,binary=binary,expected=(0,3)).stdout)
+        projections.append({"state":doc["state"],"blocking":doc["classification"].get("blockingCommits",[]),"crossings":{c["commitSHA"]:c["crossesMaintenanceOnlyBoundary"] for c in doc["changes"]}})
+    assert projections[0]==projections[1],wanted
+    summary["roundfix_ranges"].append({"requested":wanted,"used":tag,"equal":True,"state":projections[0]["state"],"blocking":projections[0]["blocking"],"commit_count":len(projections[0]["crossings"]),"crossing_count":sum(projections[0]["crossings"].values())})
+    print(wanted+" same state, blockers and crossing flags",flush=True)
+summary["literature"]={"source":"https://github.com/googleapis/release-please/pull/1875","offline_source":"references/2026-11-19-characterization.md section 4","quote":"Idea is to exclude commits if all files in those commits are from specific paths.","lookup":"No network lookup: task_03 and authorization prohibit network; quoted passage supplied in committed reference was checked offline."}
+(E/"outside-summary.txt").write_text(json.dumps(summary,indent=2)+"\n")
+update("Q05","pass","Operator-recorded external path shape reproduced locally: baseline 4 blockers, audited binary 1, unlocked local skill remains blocking; status states and three own-repository ranges compared. [Summary](evidence/qa-report-2026-11-19/outside-summary.txt). This is offline path-shape evidence, not a fresh Fiscus observation.")

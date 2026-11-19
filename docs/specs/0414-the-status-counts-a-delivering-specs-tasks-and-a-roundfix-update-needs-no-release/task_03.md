@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

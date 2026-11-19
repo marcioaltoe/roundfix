@@ -1,0 +1,75 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheReleaseDocumentsNameTheAdopterMaintenancePaths$ ./skills
+exit: 0
+stdout:
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== PAUSE TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== CONT  TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/base_and_target
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/roundfix_itself
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/adopter_test
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/setup_manifest
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/skills_lock
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/claude_md_and_specific_repository
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/generated_subagents
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/project_config_and_context
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/setup_manifest
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/skills_lock
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/claude_md_and_specific_repository
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/generated_subagents
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/project_config_and_context
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/base_and_target
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/roundfix_itself
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/adopter_test
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/skills_lock
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/claude_md_and_specific_repository
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/generated_subagents
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/project_config_and_context
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/base_and_target
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/roundfix_itself
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/adopter_test
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/setup_manifest
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/adopter_test
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/setup_manifest
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/skills_lock
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/claude_md_and_specific_repository
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/generated_subagents
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/project_config_and_context
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/base_and_target
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/roundfix_itself
+--- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/base_and_target (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/roundfix_itself (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/adopter_test (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/setup_manifest (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/skills_lock (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/generated_subagents (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/canonical/project_config_and_context (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/setup_manifest (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/skills_lock (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/generated_subagents (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/project_config_and_context (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/base_and_target (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/roundfix_itself (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/adopter_test (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/skills_lock (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/generated_subagents (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/project_config_and_context (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/base_and_target (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/roundfix_itself (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/adopter_test (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/runbook/setup_manifest (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/adopter_test (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/setup_manifest (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/skills_lock (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/generated_subagents (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/project_config_and_context (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/base_and_target (0.00s)
+    --- PASS: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/usage/roundfix_itself (0.00s)
+PASS
+ok  	roundfix/skills	0.290s
+
+stderr:

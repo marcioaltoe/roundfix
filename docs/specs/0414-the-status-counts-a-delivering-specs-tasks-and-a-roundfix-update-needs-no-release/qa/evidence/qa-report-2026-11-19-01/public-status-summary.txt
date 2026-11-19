@@ -1,0 +1,27 @@
+[
+  {
+    "case": "running",
+    "queue_status": "running 1/2 Tasks",
+    "pending_completed": 1,
+    "pending_total": 2,
+    "read_only_snapshot_equal": true,
+    "independent_text_reopen_equal": true
+  },
+  {
+    "case": "no-branch",
+    "queue_status": "queued 0/2 Tasks",
+    "pending_completed": 0,
+    "pending_total": 2,
+    "read_only_snapshot_equal": true,
+    "independent_text_reopen_equal": true
+  },
+  {
+    "case": "missing-branch",
+    "queue_status": "queued 0/2 Tasks",
+    "pending_completed": 0,
+    "pending_total": 2,
+    "read_only_snapshot_equal": true,
+    "independent_text_reopen_equal": true
+  }
+]
+Running fixture records its item worktree with task_02 completed but uncommitted. The branch holds only task_01 completed; checkout holds both pending. JSON queue, Pending Specs, independent text and byte snapshots agree.

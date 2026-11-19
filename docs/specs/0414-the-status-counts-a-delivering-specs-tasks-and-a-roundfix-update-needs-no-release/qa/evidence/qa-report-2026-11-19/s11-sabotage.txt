@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths$/^generated_subagents$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-sab-eyv5xwyl
+exit: 1
+stdout:
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== PAUSE TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== CONT  TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents
+    releaseplan_command_test.go:434: release plan help lacks "a generated .claude/agents/roundfix-*.md"
+--- FAIL: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths (0.00s)
+    --- FAIL: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents (0.00s)
+FAIL
+suiteguard: guard cost: measured 3319 paths; fingerprint took 504.004375ms before and 173.218625ms after
+FAIL	roundfix/internal/cli	1.111s
+FAIL
+
+stderr:

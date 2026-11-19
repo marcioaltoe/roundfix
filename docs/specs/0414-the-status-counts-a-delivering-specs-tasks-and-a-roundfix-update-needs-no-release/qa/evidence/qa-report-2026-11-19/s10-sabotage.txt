@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 20m -v -run '^TestTheReleaseDocumentsNameTheAdopterMaintenancePaths$/^embedded$/^roundfix_itself$' ./skills
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-sab-i8lslbpe
+exit: 1
+stdout:
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== PAUSE TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== CONT  TestTheReleaseDocumentsNameTheAdopterMaintenancePaths
+=== RUN   TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/roundfix_itself
+    release_adopter_maintenance_test.go:41: embedded lacks "Roundfix's own repository authors the `roundfix` skill and records none in its lock"
+--- FAIL: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths (0.00s)
+    --- FAIL: TestTheReleaseDocumentsNameTheAdopterMaintenancePaths/embedded/roundfix_itself (0.00s)
+FAIL
+FAIL	roundfix/skills	0.280s
+FAIL
+
+stderr:

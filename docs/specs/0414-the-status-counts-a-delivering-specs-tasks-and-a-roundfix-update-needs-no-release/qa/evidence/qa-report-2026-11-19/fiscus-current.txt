@@ -1,0 +1,83 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release-1bd5863e2e564257-fd797c24-51e9d21b/run_20261119T151201Z_05140c8b41c958d4/bin/roundfix release plan --from v0.1.0 --format json
+cwd: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/q414-fiscus-xgwlqpc6
+exit: 3
+stdout:
+{
+  "schemaVersion": "roundfix.release-plan/0.0.1",
+  "state": "manual_classification_required",
+  "base": {
+    "tag": "v0.1.0",
+    "version": "v0.1.0",
+    "commitSHA": "c051f69c276a895e0fafa3713103150fe22d3b6c"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d"
+  },
+  "classification": {
+    "source": "mixed",
+    "impact": "none",
+    "breaking": false,
+    "manualClassificationRequired": true,
+    "blockingCommits": [
+      "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d"
+    ]
+  },
+  "approval": {
+    "required": false,
+    "increment": "none"
+  },
+  "checks": {
+    "skills": {
+      "status": "failed",
+      "detail": "missing: archive-spec, brainstorming, business-analyst, evidence-gate, implement-task, qa-gate; unversioned: roundfix, setup-context-driven, write-idea, write-prd, write-tasks, write-techspec; DR-SKILL-LOCK-STALE: skills update would replace these Roundfix-owned skills with the copy their skills-lock.json entry pins: roundfix, setup-context-driven, write-idea, write-prd, write-tasks, write-techspec",
+      "nextAction": "complete the skills and guides check in the release runbook before the release Pull Request"
+    },
+    "baseline": {
+      "status": "failed",
+      "detail": "setup manifest is incompatible: manifest does not match the supported Setup Manifest schema",
+      "nextAction": "complete the skills and guides check in the release runbook before the release Pull Request"
+    },
+    "skillCoverage": {
+      "status": "not_declared",
+      "detail": "the repository has no Skill Coverage Map",
+      "blocking": false
+    }
+  },
+  "changes": [
+    {
+      "commitSHA": "49925405cdfaf7f037fa151ceeda5a4f58709816",
+      "subject": "chore: update the Roundfix skills and Baseline to 0.148.0",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "59e48540dd0d9d75f74b534b91945cd830105212",
+      "subject": "chore: adopt the Roundfix 0.148.0 recommendations",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "5eec9fdfc351c1f0f58e06f4bb720157c915b773",
+      "subject": "docs: plan Spec 0097",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d",
+      "subject": "docs: plan Spec 0099",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}
+
+stderr:

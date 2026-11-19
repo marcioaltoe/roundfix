@@ -1,0 +1,111 @@
+{
+  "source": "Operator external measurement in references/2026-11-19-characterization.md sections 2-4, reproduced as placeholder path shape; no live Fiscus lookup",
+  "fiscus": {
+    "old_blocking": [
+      "49925405cdfaf7f037fa151ceeda5a4f58709816",
+      "59e48540dd0d9d75f74b534b91945cd830105212",
+      "5eec9fdfc351c1f0f58e06f4bb720157c915b773",
+      "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d"
+    ],
+    "new_blocking": [
+      "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d"
+    ],
+    "local_skill_blocking": [
+      "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d",
+      "d1c99c44e637f8ad2c07fe7a06bdd9a9c66fe88e"
+    ],
+    "next_release_current": {
+      "state": "manual_classification_required",
+      "base": "v0.1.0",
+      "proposed_version": "",
+      "changes": [
+        {
+          "commit": "49925405cdfaf7f037fa151ceeda5a4f58709816",
+          "subject": "chore: update the Roundfix skills and Baseline to 0.148.0"
+        },
+        {
+          "commit": "59e48540dd0d9d75f74b534b91945cd830105212",
+          "subject": "chore: adopt the Roundfix 0.148.0 recommendations"
+        },
+        {
+          "commit": "5eec9fdfc351c1f0f58e06f4bb720157c915b773",
+          "subject": "docs: plan Spec 0097"
+        },
+        {
+          "commit": "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d",
+          "subject": "docs: plan Spec 0099"
+        }
+      ],
+      "reason": "1 commit(s) since v0.1.0 need a manual release classification"
+    },
+    "status_current": "manual_classification_required",
+    "status_base": "manual_classification_required",
+    "next_release_base": {
+      "state": "manual_classification_required",
+      "base": "v0.1.0",
+      "proposed_version": "",
+      "changes": [
+        {
+          "commit": "49925405cdfaf7f037fa151ceeda5a4f58709816",
+          "subject": "chore: update the Roundfix skills and Baseline to 0.148.0"
+        },
+        {
+          "commit": "59e48540dd0d9d75f74b534b91945cd830105212",
+          "subject": "chore: adopt the Roundfix 0.148.0 recommendations"
+        },
+        {
+          "commit": "5eec9fdfc351c1f0f58e06f4bb720157c915b773",
+          "subject": "docs: plan Spec 0097"
+        },
+        {
+          "commit": "00cf1fcfc66cd8628875bae983c7bc31dfbb5e3d",
+          "subject": "docs: plan Spec 0099"
+        }
+      ],
+      "reason": "4 commit(s) since v0.1.0 need a manual release classification"
+    }
+  },
+  "parity_deviation": "Own-history plan in audited checkout correctly refused untracked seeded QA report. Repeat same Git HEAD/tags in fresh local clean clone under bin/qa-0414/history; no ignore/configuration override and no report removal. Product binaries stay in their Run-local build paths.",
+  "roundfix_ranges": [
+    {
+      "requested": "v0.140.0",
+      "used": "v0.140.0",
+      "equal": true,
+      "state": "manual_classification_required",
+      "blocking": [
+        "73421db24d576ee75f6f5dbbe31043b1d570f715",
+        "1a8e08b4f32cca7cd2f6a77a6e083bce02bd7b5a"
+      ],
+      "commit_count": 91,
+      "crossing_count": 32
+    },
+    {
+      "requested": "v0.147.0",
+      "used": "v0.147.0",
+      "equal": true,
+      "state": "manual_classification_required",
+      "blocking": [
+        "1a8e08b4f32cca7cd2f6a77a6e083bce02bd7b5a"
+      ],
+      "commit_count": 37,
+      "crossing_count": 14
+    },
+    {
+      "requested": "v0.148.0",
+      "used": "v0.148.0",
+      "equal": true,
+      "state": "manual_classification_required",
+      "blocking": [
+        "1a8e08b4f32cca7cd2f6a77a6e083bce02bd7b5a"
+      ],
+      "commit_count": 13,
+      "crossing_count": 6
+    }
+  ],
+  "literature": {
+    "source": "https://github.com/googleapis/release-please/pull/1875",
+    "offline_source": "references/2026-11-19-characterization.md section 4",
+    "quote": "Idea is to exclude commits if all files in those commits are from specific paths.",
+    "lookup": "Supplied quotation checked offline; authorization/task prohibit network. Source passage exists locally, so no blocked outside-evidence lookup is invented."
+  }
+}

@@ -1,0 +1,6 @@
+isolated git archive 69ae9b561240cb4d6b1358f9278cfce36be25d3f; initialized/staged/committed disposable Git repository
+path: internal/cli/follow_up_status.go
+removed:
+graph, loadErr = followUpItemTaskGraph(nil, nil, loaded.GitRoot, root, archiveRoot, item)
+inserted:
+_ = item; _ = archiveRoot; graph, loadErr = spec.Load(root, rows[index].Spec)

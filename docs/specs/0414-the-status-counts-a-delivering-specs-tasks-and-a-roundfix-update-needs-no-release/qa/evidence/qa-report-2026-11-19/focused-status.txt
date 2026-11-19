@@ -1,0 +1,77 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestADeliveryItemCountsTasksOnItsItemBranch|TestTheQueueRowsComeInTableOrder|TestAQueueItemNamesItsWait|TestFollowUpStatusListsPendingSpecsInDeliveryOrder)$' ./internal/cli
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release-1bd5863e2e564257-fd797c24-51e9d21b/run_20261119T151201Z_05140c8b41c958d4
+exit: 0
+stdout:
+=== RUN   TestTheQueueRowsComeInTableOrder
+=== PAUSE TestTheQueueRowsComeInTableOrder
+=== RUN   TestAQueueItemNamesItsWait
+=== PAUSE TestAQueueItemNamesItsWait
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch
+=== RUN   TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== PAUSE TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== CONT  TestTheQueueRowsComeInTableOrder
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch
+=== CONT  TestFollowUpStatusListsPendingSpecsInDeliveryOrder
+=== CONT  TestAQueueItemNamesItsWait
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+=== RUN   TestAQueueItemNamesItsWait/run_slot
+=== PAUSE TestAQueueItemNamesItsWait/run_slot
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/an_item_without_a_branch_counts_the_spec_root
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/an_item_without_a_branch_counts_the_spec_root
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/a_missing_branch_counts_the_spec_root
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/a_missing_branch_counts_the_spec_root
+=== RUN   TestAQueueItemNamesItsWait/one_prerequisite
+=== PAUSE TestAQueueItemNamesItsWait/one_prerequisite
+=== RUN   TestAQueueItemNamesItsWait/two_prerequisites
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/a_branch_without_the_spec_counts_the_spec_root
+=== PAUSE TestAQueueItemNamesItsWait/two_prerequisites
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/a_branch_without_the_spec_counts_the_spec_root
+=== RUN   TestAQueueItemNamesItsWait/another_park
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read
+=== PAUSE TestAQueueItemNamesItsWait/another_park
+=== RUN   TestAQueueItemNamesItsWait/a_started_item_names_none
+=== PAUSE TestAQueueItemNamesItsWait/a_started_item_names_none
+=== CONT  TestAQueueItemNamesItsWait/run_slot
+=== CONT  TestAQueueItemNamesItsWait/another_park
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/the_pending_specs_line_counts_the_same
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/the_pending_specs_line_counts_the_same
+=== RUN   TestADeliveryItemCountsTasksOnItsItemBranch/the_rows_write_nothing
+=== PAUSE TestADeliveryItemCountsTasksOnItsItemBranch/the_rows_write_nothing
+=== CONT  TestAQueueItemNamesItsWait/two_prerequisites
+=== CONT  TestAQueueItemNamesItsWait/a_started_item_names_none
+=== CONT  TestAQueueItemNamesItsWait/one_prerequisite
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch
+--- PASS: TestTheQueueRowsComeInTableOrder (0.06s)
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/a_branch_without_the_spec_counts_the_spec_root
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/the_rows_write_nothing
+--- PASS: TestAQueueItemNamesItsWait (0.00s)
+    --- PASS: TestAQueueItemNamesItsWait/another_park (0.05s)
+    --- PASS: TestAQueueItemNamesItsWait/two_prerequisites (0.05s)
+    --- PASS: TestAQueueItemNamesItsWait/run_slot (0.05s)
+    --- PASS: TestAQueueItemNamesItsWait/one_prerequisite (0.04s)
+    --- PASS: TestAQueueItemNamesItsWait/a_started_item_names_none (0.05s)
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/the_pending_specs_line_counts_the_same
+--- PASS: TestFollowUpStatusListsPendingSpecsInDeliveryOrder (0.16s)
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/an_item_without_a_branch_counts_the_spec_root
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/a_missing_branch_counts_the_spec_root
+=== CONT  TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision
+--- PASS: TestADeliveryItemCountsTasksOnItsItemBranch (0.00s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/a_running_item_counts_its_branch (0.20s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/a_branch_without_the_spec_counts_the_spec_root (0.19s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/the_rows_write_nothing (0.19s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/the_pending_specs_line_counts_the_same (0.20s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/an_item_without_a_branch_counts_the_spec_root (0.07s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/a_missing_branch_counts_the_spec_root (0.07s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read (0.18s)
+    --- PASS: TestADeliveryItemCountsTasksOnItsItemBranch/an_archived_item_counts_the_source_revision (0.22s)
+PASS
+suiteguard: guard cost: measured 3327 paths; fingerprint took 149.544417ms before and 148.045916ms after
+ok  	roundfix/internal/cli	1.213s
+
+stderr:
