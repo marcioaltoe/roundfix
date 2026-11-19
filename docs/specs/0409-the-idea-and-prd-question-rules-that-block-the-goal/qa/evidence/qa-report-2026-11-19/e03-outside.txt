@@ -1,9 +1,0 @@
-Origin: published source not authored by this Spec
-Author/title: Fowler, Architecture Decision Record
-Date: 2026; read 2026-11-19
-URL: https://martinfowler.com/bliki/ArchitectureDecisionRecord.html
-Evidence boundary: quoted passages committed in PRD Acceptance evidence; no network lookup.
-Quoted passage: Once an ADR is accepted, it should never be reopened or changed - instead it should be superseded.
-Delivered clause 2: an ADR through the lifecycle of `docs/agents/docs-layout.md`
-Comparison: The change/retire answer delegates to the repository ADR lifecycle. The source's strict immutability challenges in-place keep annotations; accepted ADR-0437 explicitly records why the decision stands while a dated annotation is allowed.
-Result: pass

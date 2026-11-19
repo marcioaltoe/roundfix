@@ -1,6 +1,0 @@
-Results: 25 contiguous rows; 22 pass; 1 environment-blocked; 2 declared-blocked; 0 failed, skipped, pending or finding-blocked.
-Every row has typed inputs and observed evidence.
-All 38 local report links resolve and are not ignored.
-All 42 evidence artifacts are UTF-8 text and not ignored.
-Auditor fields unchanged; audited HEAD unchanged; worktree delta is QA report/evidence only.
-All Task Verification named pass lines confirmed.

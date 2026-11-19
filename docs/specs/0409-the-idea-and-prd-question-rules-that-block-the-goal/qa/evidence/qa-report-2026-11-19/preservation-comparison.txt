@@ -1,2 +1,0 @@
-Existing clauses preserved: 183; Source Baseline/Setup files byte-identical: 25; added force lines: ['\t\t"clause.spec.rule-challenge-01-ask":                           "stop-and-ask",', '\t\t"clause.spec.rule-challenge-02-answer":                        "mandatory",']
-PASS Delivery Base clause, snapshots and fixed-test preservation

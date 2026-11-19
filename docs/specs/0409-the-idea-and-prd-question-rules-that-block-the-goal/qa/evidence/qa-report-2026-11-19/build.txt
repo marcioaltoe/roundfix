@@ -1,6 +1,0 @@
-Command: make build
-Exit: 0
-Output observed in this Run:
-gocache-bound: removed 325 idle entries (415792633 bytes)
-gocache-bound: warning: cache exceeds bound with no other idle entries; build continues
-go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=0aa467e2-dirty -X roundfix/internal/app.BuildTime=2026-11-19 14:53:43 -0300" -o bin/roundfix ./cmd/roundfix

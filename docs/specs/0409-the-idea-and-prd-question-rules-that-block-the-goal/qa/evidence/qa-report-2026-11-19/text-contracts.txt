@@ -1,7 +1,0 @@
-Recorded version brainstorming: 0.0.5 (metadata and top-level, both copies)
-Recorded version write-idea: 0.0.17 (metadata and top-level, both copies)
-Recorded version write-prd: 0.0.28 (metadata and top-level, both copies)
-Recorded version write-techspec: 0.0.28 (metadata and top-level, both copies)
-Recorded version roundfix: 0.1.277 (metadata and top-level, both copies)
-API Contracts 1-9 exactly match all declared copies; mirrors identical; eight follow-up steps; TechSpec templates and every QA settlement section unchanged; accepted ADR-0436/0437; no production Go delta or command surface.
-PASS Exact API text, mirrors, versions and unchanged surfaces

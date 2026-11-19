@@ -1,7 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/bin/roundfix --version
-stdout:
-roundfix 0.148.2 (0aa467e2-dirty, built 2026-11-19 14:53:43 -0300)
-
-stderr:
-
-exit: 0
