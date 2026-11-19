@@ -1,8 +1,8 @@
 ---
 type: fix
-status: open
+status: promoted
 created: 2026-11-18
-spec: null
+spec: 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once
 reason: null
 ---
 
