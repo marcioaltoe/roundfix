@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.149.1] - 2026-11-19
+
+### The status counts a delivering Spec's Tasks, and a Roundfix update needs no release
+
+- **`roundfix follow-up --status` reads a queued item's Tasks on its Item Branch.** A Spec being delivered no longer shows `0/N Tasks` because its progress lives on the item branch; an archived item counts at the `source_revision` of its Archive Record, and with no readable branch the count falls back to the Spec Root as before. The status view still reads no file of another checkout.
+- **In an adopter, `roundfix release plan` treats Roundfix's own files as maintenance.** A commit that only changes what the Baseline and `skills install` manage (per the Setup Manifest and `skills-lock.json`), the generated `.claude/agents/roundfix-*.md`, `.roundfixrc.yml`, `CLAUDE.md`, `docs/agents/specific-repository.md` or any `CONTEXT.md` (an **Adopter Maintenance Path**) no longer asks for a manual release classification. A repository is an adopter when its `skills-lock.json` records the `roundfix` skill, so Roundfix's own classification is unchanged. ADR-0447. Reported from the Fiscus status.
+
 ## [0.149.0] - 2026-11-19
 
 ### The Idea and the PRD question the rules that block the goal
