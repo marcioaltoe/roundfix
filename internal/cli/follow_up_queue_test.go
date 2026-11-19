@@ -652,6 +652,7 @@ func TestADeliveryItemCountsTasksOnItsItemBranch(t *testing.T) {
 				case "the_worktree_is_not_read":
 					seeds[1].status = "completed"
 					writeImplementSpecAtRoot(t, branchRoot, slug, seeds)
+					item.Worktree = worktree
 				}
 			}
 			in.Progress.queue = store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}

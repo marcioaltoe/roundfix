@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -21,12 +21,12 @@ Corrective Task 1 of 2. The QA gate of 2026-11-19 (Run `run_20261119T151201Z_051
 
 ## Subtasks
 
-- [ ] Record the linked worktree as the queue item's `Worktree` in the fixture.
-- [ ] Run the subtests and the worktree-first mutation.
+- [x] Record the linked worktree as the queue item's `Worktree` in the fixture.
+- [x] Run the subtests and the worktree-first mutation.
 
 ## Acceptance Criteria
 
-- [ ] Every subtest of `TestADeliveryItemCountsTasksOnItsItemBranch` passes, and a reader that loads the item's worktree with `spec.Load` before Git makes `the_worktree_is_not_read` fail with `running 2/2 Tasks`.
+- [x] Every subtest of `TestADeliveryItemCountsTasksOnItsItemBranch` passes, and a reader that loads the item's worktree with `spec.Load` before Git makes `the_worktree_is_not_read` fail with `running 2/2 Tasks`.
 
 ## Context
 
@@ -46,3 +46,45 @@ Corrective Task 1 of 2. The QA gate of 2026-11-19 (Run `run_20261119T151201Z_051
 - QA Report of 2026-11-19 (Run `run_20261119T151201Z_05140c8b41c958d4`, commit `550d0ef2`) → F-01, row S03
 - task_01 → Requirement 5
 - task_03 → Requirement 5.3
+
+## Result
+
+Skills loaded: golang-testing, coding-guidelines, evidence-gate
+
+### What changed
+
+Only `internal/cli/follow_up_queue_test.go`, one line: in the `the_worktree_is_not_read` case of
+`TestADeliveryItemCountsTasksOnItsItemBranch`, the fixture now records the linked worktree it
+creates for the Item Branch as the queue item's `Worktree` (`item.Worktree = worktree`), right
+after writing the uncommitted `task_02` completed status into that worktree. The subtest now reads
+an item that names a worktree holding an uncommitted completed status, so a reader that loads that
+worktree with `spec.Load` before Git is caught. The eight subtests, their names and their expected
+counts are untouched, and no production file, other test, guide, glossary, record, skill, Makefile,
+workflow, `go.mod` or lint configuration was edited.
+
+### Focused-check evidence
+
+- `go test -count=1 -timeout 20m -v -run '^TestADeliveryItemCountsTasksOnItsItemBranch$' ./internal/cli`
+  → `ok roundfix/internal/cli`; all eight subtests report `--- PASS`
+  (`a_running_item_counts_its_branch`, `an_archived_item_counts_the_source_revision`,
+  `an_item_without_a_branch_counts_the_spec_root`, `a_missing_branch_counts_the_spec_root`,
+  `a_branch_without_the_spec_counts_the_spec_root`, `the_worktree_is_not_read`,
+  `the_pending_specs_line_counts_the_same`, `the_rows_write_nothing`).
+- Worktree-first mutation, applied through a `go test -overlay` copy of
+  `internal/cli/follow_up_queue.go` that writes nothing to the checkout: the subtest now fails —
+  `--- FAIL: TestADeliveryItemCountsTasksOnItsItemBranch/the_worktree_is_not_read`, with
+  `Status:running 2/2 Tasks ... want "running 1/2 Tasks"` (exit 1). Before this change the same
+  mutation survived because `item.Worktree` was empty, which is exactly finding F-01.
+
+### Acceptance criteria
+
+- [x] Every subtest of `TestADeliveryItemCountsTasksOnItsItemBranch` passes (first focused run),
+  and a reader that loads the item's worktree with `spec.Load` before Git makes
+  `the_worktree_is_not_read` fail with `running 2/2 Tasks` (second focused run).
+
+### Notes
+
+- The Daemon owns the declared `## Verification` command and Task status. I did not run the
+  declared pipeline verbatim or edit `status`; the two focused runs above are scoped reproductions
+  of its two halves and the Daemon runs the declared Verification at settlement.
+- No follow-ups discovered; the Task's slice is complete.
