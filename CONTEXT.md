@@ -1138,7 +1138,12 @@ _Avoid_: Waiting stage, admission reservation
 
 **Check Wait**:
 The bounded wait of a Delivery Queue item in `checking` for its Head Check Set and a mergeable state, and of its publication for an existing pull request to report the candidate head. Each wait lasts `delivery.check_timeout` (User Config, 60 minutes by default) from its own start, restarts once after a check re-run, and ends in a `checks-timeout` park that names the key, the duration and the members still pending ([ADR-0311](docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md), [ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).
+A `BEHIND` merge state ends it in a Base Update ([ADR-0435](docs/adr/0435-a-delivery-pull-request-behind-its-base-branch-is-brought-up-to-date-by-a-merge-of-the-default-branch.md)).
 _Avoid_: CI timeout, check deadline
+
+**Base Update**:
+The Queue Owner’s merge of the refreshed default branch into an item branch whose pull request GitHub reports `BEHIND`, made by the same merge as a derived merge and followed by the repository gate, the push and the current-head checks, never by the pre-PR review, the QA gate or the Run. One Queue Owner makes at most three per item before it parks `pull-request-behind` ([ADR-0435](docs/adr/0435-a-delivery-pull-request-behind-its-base-branch-is-brought-up-to-date-by-a-merge-of-the-default-branch.md)).
+_Avoid_: Branch update, rebase
 
 **Head Check Set**:
 What a Delivery Queue item in `checking` waits for before it merges: every check run and commit status listed for its pull request head, required or not, the latest Actions workflow run of each workflow file and event of the head commit, and each Expected Workflow. It is complete when it has a member, every member is completed and every Expected Workflow has a run; a member that ends other than `success`, `neutral` or `skipped` parks the item as `checks-failed`, naming the member and its link ([ADR-0369](docs/adr/0369-the-checking-stage-waits-for-the-head-check-set-and-parks-on-any-failed-check.md)).

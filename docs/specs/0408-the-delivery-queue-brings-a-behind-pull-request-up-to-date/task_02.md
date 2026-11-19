@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -75,3 +75,15 @@ The Roundfix skill's `deliver` reference and the user guide page for `deliver` d
 - `_prd.md` → Goals (third and fifth bullets); Core Feature 3; Glossary
 - `_techspec.md` → API Contract 2; API Contract 3; API Contract 4; Testing Approach (Task 2); Build Order 2; Glossary
 - ADR-0435, ADR-0192, ADR-0311
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, evidence-gate, systematic-debugging
+
+- The canonical deliver reference and user guide describe the BEHIND Base Update, its three-update bound, repeated and excluded stages, and the classified retry action; the mirror was regenerated from the canonical reference.
+- Added `BlockerPullRequestBehind` to the exactly-once action contract. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem$'` passed; the contract counts the classified sentence in each document. An independent sabotage was not run.
+- Added the Base Update glossary definition and linked Check Wait to it and ADR-0435; no other glossary entries were edited.
+- Ran `make skills-sync`, the required skill version recorder, `make skills-sync` and `make skills-sync-check` in order, all exiting successfully. The required Behavior Surface Record command then passed after the guide edits. `git diff --check` reported no whitespace errors.
+- The Daemon owns the declared Verification and Task status.
+
+- Verification feedback identified the Check Wait sentence appended to its `_Avoid_` line. Moved the sentence into the definition and preserved the original plain avoid list. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestGlossary'` passed; `git diff --check` reported no whitespace errors.
