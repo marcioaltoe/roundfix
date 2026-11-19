@@ -1,8 +1,8 @@
 ---
 type: refactor
-status: open
+status: promoted
 created: 2026-11-16
-spec: null
+spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
 reason: null
 ---
 
