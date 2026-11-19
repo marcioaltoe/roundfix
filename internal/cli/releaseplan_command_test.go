@@ -412,6 +412,31 @@ func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testi
 	}
 }
 
+func TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths(t *testing.T) {
+	t.Parallel()
+	var stdout, stderr bytes.Buffer
+	if code := runCLI(t, []string{"release", "plan", "--help"}, &stdout, &stderr); code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("help exit = %d stderr=%q", code, stderr.String())
+	}
+	help := strings.Join(strings.Fields(stdout.String()), " ")
+	for name, phrase := range map[string]string{
+		"adopter_test":                      "a repository whose skills-lock.json at the target records the roundfix skill",
+		"setup_manifest":                    "the Setup Manifest docs/agents/setup-context.json and every path it records",
+		"skills_lock":                       "skills-lock.json and every skill directory it records under .agents/skills/ and .claude/skills/",
+		"claude_md_and_specific_repository": "CLAUDE.md, docs/agents/specific-repository.md",
+		"generated_subagents":               "a generated .claude/agents/roundfix-*.md",
+		"project_config_and_context":        ".roundfixrc.yml and every CONTEXT.md",
+		"base_and_target":                   "the two records are read at the base and at the target",
+		"roundfix_itself":                   "Roundfix's own repository authors the roundfix skill and records none",
+	} {
+		t.Run(name, func(t *testing.T) {
+			if !strings.Contains(help, phrase) {
+				t.Errorf("release plan help lacks %q", phrase)
+			}
+		})
+	}
+}
+
 func TestReleasePlanReadOnlyPreservesRepositoryForOutcomes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

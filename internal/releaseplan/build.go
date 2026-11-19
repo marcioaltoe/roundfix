@@ -28,11 +28,18 @@ func Build(ctx context.Context, request Request, source GitSource) (Plan, error)
 	if err != nil {
 		return Plan{}, fmt.Errorf("load release commits: %w", err)
 	}
+	var managed ManagedPaths
+	if managedSource, ok := source.(ManagedPathSource); ok {
+		managed, err = managedSource.ManagedPaths(ctx, releaseRange)
+		if err != nil {
+			return Plan{}, fmt.Errorf("load managed release paths: %w", err)
+		}
+	}
 	grantSource, hasGrantSource := source.(ReleaseGrantSource)
 	var grants []ReleaseGrant
 	var releasePaths []string
 	grantsLoaded := false
-	if hasGrantSource && hasReleasePreparationCandidate(commits) {
+	if hasGrantSource && hasReleasePreparationCandidate(commits, managed) {
 		grants, err = grantSource.ReleaseGrants(ctx, releaseRange, commits)
 		if err != nil {
 			return Plan{}, fmt.Errorf("load release grants: %w", err)
@@ -50,6 +57,7 @@ func Build(ctx context.Context, request Request, source GitSource) (Plan, error)
 		ManualImpact: request.ManualImpact,
 		ManualReason: request.ManualReason,
 		ReleasePaths: releasePaths,
+		Managed:      managed,
 	})
 	if err != nil {
 		return Plan{}, fmt.Errorf("classify release changes: %w", err)
@@ -76,10 +84,10 @@ func Build(ctx context.Context, request Request, source GitSource) (Plan, error)
 	return plan, nil
 }
 
-func hasReleasePreparationCandidate(commits []Commit) bool {
+func hasReleasePreparationCandidate(commits []Commit, managed ManagedPaths) bool {
 	for _, commit := range commits {
 		evidence := ClassifyCommit(commit)
-		if evidence.AutomaticImpact == ImpactNone && evidence.CrossesMaintenanceOnlyBoundary {
+		if evidence.AutomaticImpact == ImpactNone && crossesMaintenanceOnlyBoundaryWithManaged(commit.ChangedPaths, managed) {
 			return true
 		}
 	}

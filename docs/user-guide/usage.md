@@ -379,6 +379,15 @@ with no automatic impact whose every changed path is a `release_paths` entry
 of a Spec the range delivers with a Release Ceiling, is maintenance-only too,
 and JSON marks it `releasePreparation: true`. A `refactor:` delivery that
 changes released code is a commit to classify by hand.
+In an adopter, a repository whose `skills-lock.json` at the target records the
+`roundfix` skill, an Adopter Maintenance Path is maintenance-only too: the Setup
+Manifest `docs/agents/setup-context.json` and every path it records,
+`skills-lock.json` and every skill directory it records under `.agents/skills/`
+and `.claude/skills/`, `CLAUDE.md`, `docs/agents/specific-repository.md`, a
+generated `.claude/agents/roundfix-*.md`, `.roundfixrc.yml` and every
+`CONTEXT.md`, the two records read at the base and at the target. Roundfix's own
+repository authors the `roundfix` skill and records none in its lock, so its
+skills and Baseline still set a release.
 
 The range plan's `skill-coverage` check reads the Skill Coverage Map and
 Behavior Surface Record from the base and target commits, including a past

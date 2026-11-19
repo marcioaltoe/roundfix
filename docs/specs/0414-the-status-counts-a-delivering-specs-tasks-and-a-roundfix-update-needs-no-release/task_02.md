@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -91,3 +91,78 @@ In an adopter, `roundfix release plan` asks for a classification by hand for eve
 - `_techspec.md` → Interfaces and invariants 3 to 5; API Contract 2; Coverage Map; Testing Approach; Build Order 2
 - ADR-0447; ADR-0412
 - [`references/2026-11-19-characterization.md`](references/2026-11-19-characterization.md), sections 2 and 3
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, no-workarounds, systematic-debugging.
+
+Implemented this Task's adopter maintenance boundary. `ClassifyChanges` and
+`Build`'s release-preparation pre-check use `ManagedPaths.Contains`, while
+`ClassifyCommit` keeps its signature and legacy classification. The optional
+`ManagedPathSource` reads the Setup Manifest and skill lock through Git objects
+at both endpoints, joins their recorded paths and skills, and identifies an
+adopter from the target lock alone. Missing or malformed records contribute
+nothing; Git failures retain `GitSourceError` and propagate through `Build`.
+No project configuration content is read.
+
+Acceptance evidence from focused checks:
+
+- Maintenance boundary: the 17 required subtests cover every positive path,
+  unlocked skills, other agents, `CONTEXT-MAP.md`, unrecorded guides, mixed
+  commits, a non-adopter and an empty commit. Additional checks cover invalid
+  paths and skill names, conventional and breaking subjects confined to
+  maintenance, unchanged `ClassifyCommit` behavior, and the Build pre-check
+  avoiding grant reads for managed maintenance.
+- Git source: the five required CLI scenarios assert exact blocking commit
+  SHAs and each commit's crossing flag. Additional tests join newly recorded
+  and retired guides and skills, overwrite the working-tree records to prove
+  they are ignored, reject absent/malformed/non-object lock records, and
+  exercise typed failures of `rev-parse`, `ls-tree` and `show`.
+- Public contract: the help and all four release documents hold API Contract
+  2 verbatim apart from wrapping. Eight separate phrase checks cover each
+  document and the help. The existing flags/defaults/states/read-only help
+  test is unchanged. `CONTEXT.md` gains only the Adopter Maintenance Path
+  entry immediately after Release Plan, with the exact definition, ADR-0447
+  link and `_Avoid_` line.
+- Generated records: `make skills-sync` updates the embedded reference and
+  skill. The sanctioned version recorder raised both Roundfix skill fields
+  from `0.1.276` to `0.1.278`; its append-only record also retains `0.1.277`,
+  allocated before the document check caught and corrected a hyphen wrapping
+  error. The Behavior Surface Record generator reports success and changes
+  only the release-plan help and the two edited guide digests. It is run
+  again after this Result as the final repository edit.
+
+Focused commands and outcomes:
+
+- Before the implementation,
+  `go test ./internal/cli -run '^TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget$/^the_fiscus_shape$' -count=1`
+  exited 1: all four commits blocked, instead of only the fourth. Before the
+  document addition, the canonical `adopter_test` phrase check exited 1 for
+  the missing paragraph.
+- `go test ./internal/releaseplan ./internal/cli -run 'Test(AnAdopter|Managed|InvalidManaged|BuildReadsManaged|TheReleasePlanReads|TheReleasePlanHelp|ReleasePlan|BuildLoadsRelease|BuildLooksFor|Classify)' -count=1`
+  exited 0 in both packages, including the original Fiscus regression.
+- `go test ./internal/releaseplan -run 'Test(MaintenanceOnly|ReleasePreparationCommitSetsNoImpact)$' -count=1`
+  exited 0; the existing maintenance and release-preparation tests are unchanged.
+- `go test ./skills -run 'Test(TheReleaseDocumentsNameTheAdopterMaintenancePaths|EveryOwnedSkillVersionIsRecorded|RoundfixSkillIndex|RoundfixSkillEntryFileStaysWithinItsBudget)' -count=1`
+  exited 0 after correcting wrapping. The first run exposed the broken
+  `skills-lock.json` word in all four document copies; no assertion was weakened.
+- `make skills-sync`,
+  `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`,
+  and a subsequent `make skills-sync` exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+  exited 0; this same sanctioned command is the final edit after this Result.
+- `git diff --check` exited 0. Scope inspection found only this Task's declared
+  paths; the Daemon-owned initial status change is preserved. No existing
+  releaseplan test file, other Task, Task Graph, status view, Baseline file,
+  other owned skill, Vendored Skill or prohibited record/configuration changed.
+
+The sandbox executor could not start because its configured writable root
+contains a symlink. Commands ran with approved escalation from the physical
+checkout. Declared Verification and repository Verification remain for the
+Daemon; Task status is untouched. No commit, push, pull request, ai-memory
+message or Spec event was issued. No follow-up work identified in this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T151201Z_05140c8b41c958d4`
+- Source commit: `6a5547beb2051fe1b48fa85c53ba0309f23d6486`

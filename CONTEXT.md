@@ -1190,6 +1190,11 @@ A read-only classification of committed changes between a base release and a tar
 The authorization records of the Specs a range delivers can answer its approval within their Release Ceilings ([ADR-0349](docs/adr/0349-a-spec-release-ceiling-answers-the-release-plan-approval.md)).
 _Avoid_: Release execution, automatic release, version guess
 
+**Adopter Maintenance Path**:
+A path whose change ships nothing in an adopter, a repository whose `skills-lock.json` at the target revision records the `roundfix` skill: the Setup Manifest and every path it records, `skills-lock.json` and every skill directory it records under `.agents/skills/` and `.claude/skills/`, `CLAUDE.md`, `docs/agents/specific-repository.md`, a generated `.claude/agents/roundfix-*.md`, `.roundfixrc.yml` and every `CONTEXT.md`. The Release Plan counts a commit confined to these paths and to planning evidence as maintenance-only, reading the two records at the range's base and target. Roundfix's own repository authors the `roundfix` skill and records none, so it has no Adopter Maintenance Path.
+([ADR-0447](docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-context-md-needs-no-release.md)).
+_Avoid_: Managed file, adopter-owned file, no-release path
+
 **Release Ceiling**:
 The highest impact (`patch`, `minor` or `major`) an approved Spec authorization record that grants `release` answers in the Release Plan without a second approval, together with its exact release paths ([ADR-0349](docs/adr/0349-a-spec-release-ceiling-answers-the-release-plan-approval.md)).
 _Avoid_: Release permission, automatic release approval
