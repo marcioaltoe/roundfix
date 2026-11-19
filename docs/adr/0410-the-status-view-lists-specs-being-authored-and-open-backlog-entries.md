@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-16T14:05:00Z
-updated_at: 2026-11-16T14:05:00Z
+updated_at: 2026-11-19T02:15:09Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -32,6 +32,8 @@ checkout's Spec folders and either a Spec folder there or a phase entry of an
 Authoring Phase in the last seven days of the Phase Record. The entry counts
 when its repository is the checkout or a working tree with the same `origin`
 remote. The row names the latest Authoring Phase recorded and when it began.
+
+**Amended by [ADR-0434](0434-a-renamed-spec-keeps-its-spec-number-and-is-one-row-of-the-spec-queue.md) (2026-11-18).** A phase entry for a slug whose folder is not under the Spec Root no longer counts when another slug of the same Spec Number has a folder there, an Archive Record, a Delivery Queue item or a later counted entry: that slug is a renamed Spec's earlier slug. The seven days, the repository match and the row a Spec folder makes still hold.
 
 **Open Backlog Entries.** Every open Backlog Entry is a row marked as not yet
 a Spec, a waiting one included, with its Waiting Declaration as its note and

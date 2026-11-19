@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -79,3 +79,24 @@ The status view of the Follow-up Command lists a Spec whose slug was renamed twi
 - `_techspec.md` → Interfaces; API Contract 1; Coverage Map; Testing Approach; Build Order 1
 - [`references/2026-11-18-characterization.md`](references/2026-11-18-characterization.md), section 2
 - ADR-0434, ADR-0410
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the Task 01 slice for Daemon Verification. Task status remains Daemon-owned.
+
+- Acceptance criterion 1: `followUpHeldSpecNumbers` groups the active Specs, skipped folders, all Delivery Queue items (including merged items), and accepted Archive Record names by the existing `specNumber` helper. An unreadable or missing Archive Root contributes nothing. `followUpRenamedSlug` suppresses a folder-less phase candidate when another slug holds its number or has a later counted entry; equal times prefer the greater slug. The new `TestARenamedSpecLeavesNoAuthoringRow` exercises all eight prescribed scenarios with exact ordered row-slug assertions.
+- Acceptance criterion 2: folder candidates retain their existing behavior. The `another_number_stays` and `the_old_folder_stays` subtests exercise the two controls. Each new scenario snapshots the temporary checkout and home before and after reading rows and asserts unchanged inputs. `followUpAuthoringPhases`, the status text and JSON types, sources, forecast code and other row kinds are unchanged.
+- Acceptance criterion 3: the guide, only the **Spec Queue Table** glossary entry, ADR-0410 and the two Coverage Review entries contain the exact API Contract 1 text. ADR-0410 has the prescribed notice immediately after its authoring paragraph, with an updated timestamp and unchanged Considered Options. The sanctioned recorder generated `docs/references/behavior-surfaces.json`; its only changed surface is the follow-up guide digest. The same recorder is run again after this Result as the final edit, after all guide changes.
+
+Focused implementation evidence:
+
+- Before changing the reader: `go test -count=1 -timeout 5m ./internal/cli -run '^TestARenamedSpecLeavesNoAuthoringRow$' -v` exited 1: seven rename scenarios exposed the extra old or new authoring row, while `another_number_stays` passed.
+- After changing the reader: `go test -count=1 -timeout 5m ./internal/cli -run '^(TestARenamedSpecLeavesNoAuthoringRow|TestASpecIsBeingAuthored|TestTheQueueRowsComeInTableOrder|TestQueueReadersSortEverySource|TestAnUnreadableSourceLeavesTheOtherRows)$' -v` exited 0. All eight new subtests and the existing focused controls passed.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs|TestGlossaryStatesEachRuleOnce|TestUserGuideLinksResolve|TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources)$'` exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 and regenerated the Behavior Surface Record through its sanctioned writer.
+- A read-only Python inspection compared the exact guide, glossary, amendment and review strings to API Contract 1; confirmed the amendment placement and ADR links; compared the remaining coverage map and glossary entries to HEAD; and confirmed all pre-existing tests, ADR options and the Daemon-owned status were preserved. All assertions passed. `git diff --check` exited 0.
+
+The declared Verification commands, repository Verification and full CLI suite were not run; the Daemon owns them. No skill, Baseline, Task Graph, other Task, dependency or tooling configuration changed. No follow-up work identified.
