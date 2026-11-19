@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -88,3 +88,68 @@ The Delivery Engine's checking stage learns the merge state `BEHIND`. Read at a 
 - `_techspec.md` → Checking stage; The count; Park Class; What the command engine already provides; Interfaces and invariants 1 to 7; API Contract 1; API Contract 2; Testing Approach (Task 1); Build Order 1
 - [`references/2026-11-18-behind-pull-request-characterization.md`](references/2026-11-18-behind-pull-request-characterization.md)
 - ADR-0435, ADR-0192, ADR-0369, ADR-0311
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate, golang-structs-interfaces.
+
+The checking stage now handles `BEHIND` after the unchanged `CONFLICTING` path. It uses the existing resolver, records only a different nonempty head, writes the exact Base Update log, and returns that head to `gating`. The Engine counts Base Updates by Spec slug, bounds them with `BaseUpdateLimit = 3`, and drops the count before every park. `BEHIND` remains pending when nothing merges and appears in its timeout blocker. `pull-request-behind` has the environment Park Class and the specified retry action. The policy-refusal path, Head Check Set evaluation and stale/outside-change recovery code are unchanged.
+
+Scope: production changes are confined to `internal/delivery/engine.go` and `internal/delivery/park_class.go`. Added the two declared test files and the single class-table row. The only pre-existing changed path was this Task file, whose Daemon-owned `status: in_progress` is preserved. No other Task, manifest, guide, skill, ADR or Governed Path was changed.
+
+### Focused checks
+
+- Before changing production code, `rtk proxy go test ./internal/delivery -run '^TestABehindPullRequestReturnsToTheGateWithTheMergedHead$' -count=1` exited 1 at the new stored-item assertion: stage `merging`, candidates `[candidate]`, resolver calls `[]`, one poll. This reproduced the missing Base Update.
+- Final positive check, exit 0 for both packages:
+
+  ```sh
+  rtk proxy go test ./internal/delivery ./internal/cli -run 'Test(ABehind|ABaseUpdate|AFourthBehind|TheBaseUpdate|AnOwnerWithoutABase|APolicyRefusalThatComesBack|AConflictingAndBehind|CheckingWaits|APolicyRefused|ASecondPolicy|ABlockedMerge|AnEmptyMerge|AConflictingPull|AnUnknownMergeable|ADerivedConflict|ASourceConflict|ALaggingPull|RetryResumesAResolved|ParkClasses|EveryBlocker|CommandDeliveryEngine(BringsABehindPullRequestUpToDate|RecordsThePullRequest))' -count=1 -v > /private/tmp/roundfix-0408-task01-focused.log
+  ```
+
+  The log includes every new test's pass line, both required no-op subtests, `TestParkClassesAndNextActions/pull-request-behind`, `TestEveryBlockerHasAParkClass`, the selected existing conflict/merge-state/policy regressions, both command-engine scenarios, and the Base Update owner line.
+- `rtk proxy git diff --check` exited 0. `rtk proxy gofmt -l` over all five changed Go files exited 0 with no output.
+
+### Evidence by acceptance criterion
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| A behind head is never merged; the updated head goes through gating and merges | `TestABehindPullRequestReturnsToTheGateWithTheMergedHead` asserts persisted stage/candidate history, resolver arguments and exact owner line. `TestABehindPullRequestIsMergedOnlyAtItsUpdatedHead` reports readiness by head, finishes persisted `merged`, and asserts one merge at `updated`, one gate/publication, and no review/Run/archive replay. |
+| Source conflicts park; no-op updates wait and time out with BEHIND | `TestABaseUpdateWithASourceConflictParksWithItsPaths` asserts persisted `pull-request-conflict: source.go` and conflict class. `TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean` covers both empty and unchanged returned heads and two polls before `merging`; `times_out_with_the_merge_state` asserts the exact 3s timeout blocker and four fake-clock polls without a candidate append. |
+| Fourth BEHIND parks with the exact blocker/class/action; any park resets the count | `TestAFourthBehindPullRequestParksPullRequestBehind` asserts three resolver calls, persisted park and exact action. `TestTheBaseUpdateCountStartsOverAfterAPark` resumes the same Engine at checking and observes the fourth resolver call and persisted `gating`. Additional `TestABaseUpdateErrorKeepsItsCauseAndAParkResetsTheBound` proves `%w` preserves the resolver error and that the Run's `delivery-error` park resets prior updates. The missing-resolver, policy-refusal recovery and CONFLICTING-precedence tests also pass. |
+| Strict local forge merges with the moved base file | `TestCommandDeliveryEngineBringsABehindPullRequestUpToDate` passes through the real constructor and child process, bare origin, separate clone moving main, gate command `true`, record publication and strict local gh. It asserts persisted `merged`, a two-parent newest candidate with moved main as second parent, the `Roundfix-Delivery: derived-merge` trailer, `moved.txt` in the final squash, the child's Base Update line and no refusal marker. A temporary overlay restoring the full pre-change BEHIND behavior made this test fail at persisted `parked` with `delivery-error: merge pull request: merge pull request: X Pull request #7 is not mergeable: the base branch policy prohibits the merge.` |
+| Existing delivery tests remain unchanged except the class-table row | The focused conflict, lagging-head, conflict-retry, BLOCKED/UNKNOWN/empty-state, policy-refusal, class-table and blocker-sweep tests pass. All existing delivery test files remain byte-identical except the declared class-table addition. The whole-package run belongs to the Daemon's declared Verification and was not run here. |
+| Removing each new guard makes a named test fail | Five temporary Go overlays independently removed the BEHIND path, counter increment, park reset, awaited-state pending guard and timeout suffix. Each exited 1 at its expected behavioral assertion as detailed below. |
+
+### Negative probes
+
+Each probe used `go test -overlay <temporary-overlay.json> <package> -run '^<named-test>$' -count=1` through a Python driver. The overlays replaced only the compiler's view of `engine.go`; repository source was not changed. The driver inspected both exit status and the named failing test. Temporary probe files were removed after execution.
+
+| Removed behavior | Named test and observed failure |
+| --- | --- |
+| BEHIND resolution path | `TestABehindPullRequestReturnsToTheGateWithTheMergedHead`: timeout park with unchanged candidate and zero resolver calls instead of gating. |
+| Counter increment | `TestAFourthBehindPullRequestParksPullRequestBehind`: fourth resolver call and fourth head recorded at gating instead of the bound park. |
+| Count reset in park | `TestTheBaseUpdateCountStartsOverAfterAPark`: retry parks immediately without a fourth resolver call. |
+| BEHIND in end-of-poll awaited states | `TestABaseUpdateWithNothingToMergeKeepsWaiting`: no-op cases reach merging after one poll; timeout case also reaches merging. |
+| BEHIND in timeout-state formatting | `TestABaseUpdateWithNothingToMergeKeepsWaiting/times_out_with_the_merge_state`: stored timeout omits `; merge state BEHIND`. |
+| Full pre-change BEHIND behavior, for command-engine reproduction | `TestCommandDeliveryEngineBringsABehindPullRequestUpToDate`: two policy refusals and the exact original delivery-error park quoted above. |
+
+An exploratory command-engine probe initially removed only the resolution path while retaining the new pending-state guard. It kept waiting and was explicitly stopped; its termination is not acceptance evidence. The corrected command probe removed the whole new BEHIND behavior and produced the behavioral failure recorded above. A final positive focused run followed the probes.
+
+The Task's declared Verification commands, the complete delivery package suite and repository Verification were not run; the Daemon owns them and Task settlement. No terminal Task verdict is claimed. Documentation/glossary/skill changes remain assigned to task_02. No additional follow-up was identified.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected the supplied Daemon artifact at `/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261119T035531Z_b63aa3cc448dbba2/verification/batch-001-attempt-1.log` and the Real-Time Budget detector. The supplied run passed `internal/delivery` but its overall `make verify-changed` failed because the new test file declared an inline short CheckTimeout without an existing file allowance. The fake clock prevented a wall-clock wait, but the detector also counts that constant field declaration.
+
+Reworked only `newBaseUpdateFixture` in the declared `internal/delivery/base_update_test.go`: it now composes the existing `newMergeStateFixture` engine, stored item, fake workflow and fake clock, then supplies its own resolver, forge callbacks and log. The shared fixture already owns the same three-second Check Wait and one-second polling interval. A checked interface assertion obtains its workflow for the unchanged gate/publication assertions; its fixed recovery head is replaced by this fixture's direct checking setup. Removed the duplicate Engine/timing construction and unused time import. No detector, ceiling, configuration, production code or behavioral assertion changed in this repair.
+
+Fresh focused evidence after the fixture change:
+
+- `rtk proxy go test ./internal/testfixture -run '^Test(EveryRealTimeBudgetIsWithinItsFileCeiling|RealTimeBudgetRuleRejectsSeededViolations)$' -count=1` exited 0, covering the reported contract and its seeded negative cases.
+- `rtk proxy go test ./internal/delivery -run 'Test(ABehind|ABaseUpdate|AFourthBehind|TheBaseUpdate|AnOwnerWithoutABase|APolicyRefusalThatComesBack|AConflictingAndBehind|CheckingWaits|APolicyRefused|ASecondPolicy|ABlockedMerge|AnEmptyMerge)' -count=1 -v` passed. The output at `/private/tmp/roundfix-0408-task01-repair-focused.log` contains all new Base Update tests, both required no-op subtests and the existing shared-fixture merge-state/policy tests, including the exact three-second BEHIND timeout assertion.
+- Repeated the five temporary-overlay negative probes against the revised fixture. Removing the BEHIND path, counter increment, park reset, awaited-state pending guard or timeout suffix still failed its respective named behavioral assertion. The driver checked the nonzero status, named failing test and expected persisted-state diagnostic for each; no source mutation remained.
+- `rtk proxy git diff --check` exited 0, and `rtk proxy gofmt -l internal/delivery/base_update_test.go` produced no output.
+
+This repair changes only the new delivery test fixture and this Result. The Task remains `in_progress`. The Agent did not rerun `make verify-changed`, either declared Verification command or repository Verification; the Daemon owns the next complete Verification sequence and settlement.
