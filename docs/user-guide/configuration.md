@@ -725,8 +725,12 @@ greater than zero and at most 10m in User Config or Project Config, with
 Project Config winning.
 
 Every profile-readiness consumer passes it: `profiles validate`, operational
-Preflight, pre-PR review, Doctor, Setup and `profiles configure`. Every
-configured tuple is still proven. The value reaches each attempt's setup and
+Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply`.
+`profiles configure` and `profiles check --apply` read the key from User Config
+and Project Config before they prove, with Project Config winning, even when
+another key of those files would stop loading, and an invalid value refuses
+the command before any proof.
+Every configured tuple is still proven. The value reaches each attempt's setup and
 close context; when a setup deadline expires, Roundfix stops the acpx command
 and closes the disposable Session. A setup timeout names its step as
 `profile proof step "<step>"`. If setup passes but close fails, the proof still

@@ -107,5 +107,7 @@ A proof whose setup times out is retried after 5 seconds and again after 10
 seconds. A proof timed out on 3 attempts is classified `temporary`; rerun the
 command when load drops because the configured profile was not shown to be
 wrong. If the machine needs more setup time, adjust
-`defaults.profile_proof_setup_timeout`.
+`defaults.profile_proof_setup_timeout`. `profiles configure` and `profiles check --apply`
+prove under the same key, read from User Config and Project Config with
+Project Config winning.
 

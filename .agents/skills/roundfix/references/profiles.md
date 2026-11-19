@@ -250,8 +250,13 @@ proof timed out on 3 attempts is classified `temporary`; adjust
 `defaults.profile_proof_setup_timeout` when a slow machine needs more setup
 time.
 
-`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup and
-`profiles configure` pass the value to each attempt's setup and close context.
+`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup,
+`profiles configure` and `profiles check --apply` pass the value to each
+attempt's setup and close context.
+`profiles configure` and `profiles check --apply` read the key from User Config
+and Project Config before they prove, with Project Config winning, even when
+another key of those files would stop loading, and an invalid value refuses
+the command before any proof.
 Every configured tuple is still proven. An expired setup deadline stops the
 acpx command and closes the disposable Session, naming the step as
 `profile proof step "<step>"`. If setup passes but close fails, the proof still

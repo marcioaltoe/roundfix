@@ -86,10 +86,17 @@ func writeProfilesConfiguration(ctx context.Context, req profilesConfigureReques
 	if err != nil {
 		return printProfilesConfigureError(req, result, err, stdout, stderr)
 	}
+	setupTimeout, err := roundconfig.ProfileProofSetupTimeout(loadOptions.HomeDir, loadOptions.WorkDir)
+	if err != nil {
+		return printProfilesConfigureError(req, result, err, stdout, stderr)
+	}
 	proofProfiles, proofCategories := profilesConfigureProofScope(result.Changes)
 	readiness := proveProfileSelections(
 		ctx,
-		roundconfig.Config{Profiles: proofProfiles},
+		roundconfig.Config{
+			Profiles: proofProfiles,
+			Defaults: roundconfig.Defaults{ProfileProofSetupTimeout: setupTimeout},
+		},
 		proofCategories,
 		workDir,
 		commandDependenciesForContext(ctx).newEngineCollaborators().runner,

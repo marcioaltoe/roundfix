@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -83,3 +83,35 @@ complexity: medium
 - `_techspec.md` → System Architecture 1 and 2; Interfaces; invariants 1-3; API Contract 1; API Contract 2; Surface Transcript 1; Surface Transcript 2; Testing Approach; Build Order 1
 - [`references/2026-11-18-characterization.md`](references/2026-11-18-characterization.md) sections 1 to 4
 - ADR-0298
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+Added the narrow deadline reader and passed its result through the shared profile-write proof configuration. It resolves User Config and the working directory's Git-root Project Config, decodes only the deadline, applies Project Config precedence and the existing range, and names unreadable or invalid YAML files in errors. Reader errors reach the existing configure error renderer before proof or persistence. No other configuration value was added to the proof, and `profiles_check_apply.go` is unchanged.
+
+| Acceptance criterion | Implementation and focused evidence |
+| --- | --- |
+| Both write commands carry the effective deadline for either scope | `TestProfileAdoptionPassesTheConfiguredSetupDeadline` covers all six required configure/check-apply cases and checks every recorded request. Before the production edit, its focused invocation failed all six cases because requests carried `0s`; after the edit it passed. |
+| Invalid deadlines and broken YAML refuse before proof; untouched invalid categories remain repairable | Both new configure transcript tests passed, asserting complete streams, exit 2, a proof runner forbidden to run, and no User Config written. The unchanged `TestProfilesConfigureProofScope` and `TestProfilesConfigureChangeSummary` passed, as did the focused existing configure/check tests. |
+| Reader agrees with Load wherever Load succeeds | `TestTheProofSetupDeadlineReaderAgreesWithLoad` passed its eight required cases plus maximum, negative, invalid unrelated default, and an out-of-range User Config overridden by valid Project Config. Each case uses a temporary home and repository, starts below the Git root, and checks `Load` with `WorktreeLocationOptional`. Unreadable User Config and Project Config checks also passed. |
+| Guides, mirror, version and Behavior Surface Record agree | Applied API Contract 2's exact sentences while preserving the other sentences. Ran the required generators in order; both skill copies are now `0.1.275`, the version recorder passed, the second sync and sync check passed, and the final coverage recorder passed. |
+
+Focused checks (all exit 0 after implementation; invoked through `rtk proxy`):
+
+- `go test -count=1 -run '^TestTheProofSetupDeadlineReaderAgreesWithLoad$' ./internal/config`
+- `go test -count=1 -run '^(TestProfileAdoptionPassesTheConfiguredSetupDeadline|TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript|TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig|TestProfilesConfigureProofScope|TestProfilesConfigureChangeSummary|TestProfileProofPassesTheConfiguredSetupDeadline|TestProfilesShowRefusesAnInvalidSetupDeadlineTranscript)$' ./internal/cli`
+- `go test -count=1 -run '^TestProfiles(Configure|Check)' ./internal/cli`
+- `go test -count=1 -run '^TestTheProofSetupDeadlineReader' ./internal/config` (after adding the unreadable-file and unrelated-default checks)
+- `git diff --check`
+
+Required regeneration, in execution order (all exit 0; invoked through `rtk proxy`):
+
+1. `make skills-sync`
+2. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+3. `make skills-sync`
+4. `make skills-sync-check`
+5. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+
+The coverage recorder ran after the last guide edit and all other regeneration. No mirror, version field or record was hand-edited. The changed-file audit found only this Task's declared paths and its Result; the pre-existing Task status change remains Daemon-owned. Declared Verification and repository Verification were not run; both remain with the Daemon. No commit, push, pull request, other Task, Task Graph, Baseline artifact, or QA-settlement edit. No follow-up work identified in this slice.
