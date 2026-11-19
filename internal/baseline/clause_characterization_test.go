@@ -327,6 +327,8 @@ func characterizedBaselineForce() map[string]string {
 		"clause.spec.verification-fails-before-the-change":            "mandatory",
 		"clause.spec.prohibit-tests-that-read-specs":                  "prohibited",
 		"clause.typescript.type-fixtures-from-the-schema":             "mandatory",
+		"clause.spec.rule-challenge-01-ask":                           "stop-and-ask",
+		"clause.spec.rule-challenge-02-answer":                        "mandatory",
 		"clause.spec.routing-01-large-initiative":                     "mandatory",
 		"clause.spec.routing-02-standard-feature":                     "mandatory",
 		"clause.spec.routing-03-refactor-bugfix":                      "mandatory",

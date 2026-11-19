@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0409-the-idea-and-prd-question-rules-that-block-the-goal
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -108,3 +108,13 @@ The Baseline's Spec workflow gains the rule `rule.spec.rule-challenge`, with two
 - `_techspec.md` → Rule Challenge rule; Derived Baseline files and Managed Refresh; Interfaces; Invariants 1-5, 9 and 10; API Contract 1; API Contract 2; Testing Approach; Build Order 1
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md), sections 2 and 3
 - ADR-0436, ADR-0437, ADR-0257, ADR-0186, ADR-0222
+
+## Result
+
+Skills loaded: implement-task, golang-testing, testing-boss, tech-writer, setup-context-driven, roundfix, evidence-gate
+
+- Added the Rule Challenge rule, its two clauses and the Spec routing guide ordering; the closed force list includes both clause IDs. Existing clause text and forces are unchanged in the module diff.
+- Rendering criterion: `go test ./internal/baseline -run '^TestTheSpecRoutingGuideRendersTheRuleChallengeClausesOnce$' -count=1` passed, covering the plan postimage, formatter golden and repository guide.
+- Phrase criterion: `go test ./internal/baseline -run '^TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses$' -count=1` passed, including the named phrase checks, rule structure, profile exclusions and record-name check.
+- Refresh criterion: the sanctioned module version recorder and `make baseline-digests` exited successfully; the Managed Refresh updated two files and its second run reported `File changes: 0`. The module and characterization diffs preserve the existing clauses and add only the two force entries.
+- The Daemon owns the declared Verification and Task status; neither was changed here.
