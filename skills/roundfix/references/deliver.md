@@ -323,6 +323,12 @@ on matching lines. The two version fields in each owned `SKILL.md` are
 line-scoped for the record command, so a derived merge can take the default
 branch's version lines before the command raises and records the next version.
 
+GitHub reports the merge state `BEHIND` when the base branch requires branches to be up to date and the item branch lacks one of its commits. A `BEHIND` merge state stops the check wait on its first read, and the owner makes a Base Update: it merges the refreshed default branch into the item branch by the same merge, commits a merge without conflict with the `Roundfix-Delivery: derived-merge` trailer, and returns the item to `gating`. The repository gate, push and current-head checks run again; the pre-PR review, the QA gate and the Run do not, because the item's own change does not move. A conflicted merge follows the two paragraphs above. When the item branch already holds the fetched default branch, the check wait goes on. One Queue Owner makes at most three Base Updates for an item, counting them in its memory and starting over when the item parks; behind a fourth time, the item parks `pull-request-behind: pull request #<n> is still behind its base branch after 3 Base Updates`. The owner log names each Base Update:
+
+```text
+roundfix: base update: Delivery Queue item <slug>: pull request #<n> was behind its base branch; merged the default branch at <head>
+```
+
 During `checking`, Roundfix waits for the head's Head Check Set: every check
 run and commit status the Pull Request lists for its head, required or not;
 the latest GitHub Actions workflow run of each workflow file and event whose
@@ -337,7 +343,7 @@ workflows have not registered yet is never taken for a head with nothing to
 wait for. A filtered workflow is never expected, but its run must complete
 once GitHub creates it. Check suites are not read. The item moves to
 `merging` only when the set has a member, every member is completed, and GitHub
-reports the merge state as neither `BLOCKED` nor `UNKNOWN`; a `CLEAN` merge
+reports the merge state as none of `BLOCKED`, `UNKNOWN` and `BEHIND`; a `CLEAN` merge
 state alone never merges.
 
 A member that ends `success`, `neutral` or `skipped` passes. A failed check
@@ -360,7 +366,7 @@ checks not settled within delivery.check_timeout <duration>; pending: <check>;
 <check>`, or with `; merge state <state>` in place of the pending list when
 only the merge state was awaited. If GitHub refuses the merge because
 `base branch policy prohibits the merge`, Roundfix returns to `checking` once
-for that head. A second refusal for the same head parks `delivery-error`.
+for that head, where a `BEHIND` merge state makes a Base Update. A second refusal for the same head parks `delivery-error`.
 
 Each Check Wait lasts User Config `delivery.check_timeout`, a Go duration
 greater than `0` and at most `24h`, default `60m`, from its own start; a re-run
@@ -467,7 +473,7 @@ before `Limits:`. Status and the Pending Question use the same Park Classes:
 | --- | --- |
 | `dependency` | `prerequisite-unmerged`; retry a parked prerequisite, or deliver/merge an external prerequisite and retry the dependent item |
 | `conflict` | `pull-request-conflict`; merge, resolve, commit, then retry; `numbered-file-collision`; renumber the plan, or deliver the earlier item and merge the default branch, then retry |
-| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`, `disk-full`; the QA partial prints carry-forward, repair, authorized override and retry |
+| `environment` | `linux-lane-container`, `qa-environment-partial`, `checks-timeout`, `pull-request-behind`, `item-worktree-missing`, `delivery-error`, `runtime-infrastructure`, `disk-full`; the QA partial prints carry-forward, repair, authorized override and retry |
 | `flaky-check` | `flaky-check`; fix or re-run the failing packages, then retry |
 | `finding` | `run-unresolved`, `review-findings`, `corrective-spec-required`, `gate-failed`, `checks-failed`, `revalidation-failed`, `archived-item-unproven`, `secret-found`, `defect-class-undeclared` |
 | `budget` | `run-budget-exceeded`, `queue-deadline` |
@@ -492,6 +498,7 @@ A `secret-found` park's next action is `in <worktree>, rewrite the item branch f
 A `review-stale` park's next action is `in <worktree>, merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry <slug>`.
 
 A `numbered-file-collision` park's next action is `in <worktree>, renumber the item's files the blocker names from its next free number, in the Task declarations on the item branch and in any file the branch holds, or deliver the earlier item it names first and merge the default branch into the item branch; then run roundfix deliver retry <slug>`.
+A `pull-request-behind` park's next action is `run roundfix deliver retry <slug> once the base branch stops moving; the retry resumes at checking, which merges the default branch into the item branch again`.
 
 A `run-unresolved` park names each Task the Run settled `failed`, with its
 reason cut to 300 characters, and the Tasks the Run skipped:

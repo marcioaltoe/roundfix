@@ -78,6 +78,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 	}{
 		{BlockerNumberedFileCollision, ParkClassConflict},
 		{BlockerDiskFull, ParkClassEnvironment},
+		{BlockerPullRequestBehind, ParkClassEnvironment},
 		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven

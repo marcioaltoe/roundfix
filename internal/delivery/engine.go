@@ -39,9 +39,13 @@ const (
 	BlockerRevalidationFailed     = "revalidation-failed"
 	BlockerFlakyCheck             = "flaky-check"
 	BlockerPullRequestConflict    = "pull-request-conflict"
+	BlockerPullRequestBehind      = "pull-request-behind"
 	BlockerPrerequisiteUnmerged   = "prerequisite-unmerged"
 	BlockerArchivedItemUnproven   = "archived-item-unproven"
 )
+
+// BaseUpdateLimit bounds the Base Updates one Engine makes for one item.
+const BaseUpdateLimit = 3
 
 const WarningLowDisk = "low-disk"
 
@@ -67,7 +71,7 @@ func checksTimeoutBlocker(timeout time.Duration, pending []string, mergeState st
 	if len(pending) > 0 {
 		return blocker + "; pending: " + strings.Join(pending, "; ")
 	}
-	if mergeState == "BLOCKED" || mergeState == "UNKNOWN" {
+	if mergeState == "BLOCKED" || mergeState == "UNKNOWN" || mergeState == "BEHIND" {
 		return blocker + "; merge state " + mergeState
 	}
 	return blocker
@@ -449,6 +453,7 @@ type Engine struct {
 
 	merges         MergeObserver
 	policyRefusals map[string]bool
+	baseUpdates    map[string]int
 
 	corrections    ReviewCorrectionProver
 	secretRewrites SecretRewriteProver
@@ -1787,6 +1792,30 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
 				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
 			}
+			if report.MergeState == "BEHIND" {
+				if engine.conflicts == nil {
+					return engine.park(ctx, gitRoot, item, fmt.Sprintf("%s: pull request #%s is behind its base branch", BlockerPullRequestBehind, item.PullRequestNumber))
+				}
+				if engine.baseUpdates[item.SpecSlug] >= BaseUpdateLimit {
+					return engine.park(ctx, gitRoot, item, fmt.Sprintf("%s: pull request #%s is still behind its base branch after %d Base Updates", BlockerPullRequestBehind, item.PullRequestNumber, BaseUpdateLimit))
+				}
+				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
+				if err != nil {
+					return fmt.Errorf("bring pull request up to date: %w", err)
+				}
+				if len(resolution.SourcePaths) > 0 {
+					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict+": "+strings.Join(resolution.SourcePaths, ", "))
+				}
+				if resolution.Head != "" && resolution.Head != head {
+					if engine.baseUpdates == nil {
+						engine.baseUpdates = make(map[string]int)
+					}
+					engine.baseUpdates[item.SpecSlug]++
+					fmt.Fprintf(engine.log, "roundfix: base update: Delivery Queue item %s: pull request #%s was behind its base branch; merged the default branch at %s\n", item.SpecSlug, item.PullRequestNumber, resolution.Head)
+					item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
+					return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+				}
+			}
 			pending := report.Mergeable == "UNKNOWN"
 			for _, check := range report.Checks {
 				switch strings.ToLower(strings.TrimSpace(check.Bucket)) {
@@ -1891,7 +1920,7 @@ func (engine *Engine) checkCandidate(ctx context.Context, gitRoot string, item *
 			if report.Mergeable == "UNKNOWN" {
 				awaitedMergeState = "UNKNOWN"
 			}
-			if awaitedMergeState == "BLOCKED" || awaitedMergeState == "UNKNOWN" {
+			if awaitedMergeState == "BLOCKED" || awaitedMergeState == "UNKNOWN" || awaitedMergeState == "BEHIND" {
 				pending = true
 			}
 			if !pending && len(set.Pending) == 0 {
@@ -2070,6 +2099,7 @@ func (engine *Engine) setStage(
 }
 
 func (engine *Engine) park(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, blocker string) error {
+	delete(engine.baseUpdates, item.SpecSlug)
 	item.Stage = store.DeliveryStageParked
 	item.Blocker = blocker
 	if err := engine.store.UpdateDeliveryQueueItem(ctx, gitRoot, *item); err != nil {

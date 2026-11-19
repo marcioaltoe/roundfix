@@ -51,6 +51,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 	case BlockerPullRequestConflict:
 		classification.Class = ParkClassConflict
 		classification.Next = "merge the default branch into the item branch in " + item.Worktree + ", resolve " + strings.TrimSpace(detail) + ", commit, then run roundfix deliver retry " + item.SpecSlug
+	case BlockerPullRequestBehind:
+		classification.Class = ParkClassEnvironment
+		classification.Next = "run roundfix deliver retry " + item.SpecSlug + " once the base branch stops moving; the retry resumes at checking, which merges the default branch into the item branch again"
 	case BlockerRuntimeInfrastructure:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "run roundfix deliver retry " + item.SpecSlug + "; a retry from runtime-infrastructure is not counted"
