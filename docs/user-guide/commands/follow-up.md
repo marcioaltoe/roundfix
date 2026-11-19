@@ -212,6 +212,22 @@ With at least one row that is not a Backlog Entry, one line under the table stat
 
 The status view computes the forecasts again on every call and stores none. When the Backlog Entries, the Phase Record or the delivery history cannot be read, the source `backlog`, `phase-record` or `delivery-history` is `unavailable` with its reason, the rows that remain are shown, no time that needed the missing source is shown, and the exit code stays `0`.
 
+## Open authoring questions and Delegated Decisions
+
+After `Waiting on the maintainer`, the status view prints the Authoring Question Preference in force and the Delegated Decisions of the active Specs:
+
+```text
+Open authoring questions: follow (Project Config)
+Delegated decisions: 1
+  0420-expired-imports 2026-11-20 prd: which failure behavior does an expired import have? -> retry automatically up to 3 times (answer: none yet)
+```
+
+The first line gives the value, `wait` or `follow`, and its source, `Project Config` or `default`. The command reads `authoring.open_questions` at the default branch head as the local refs hold it, the remote-tracking ref first. When the checkout's own Project Config gives another value, the line ends with `; this checkout's Project Config gives <value>, which counts only once the default branch holds it`. When no default branch head resolves, or its Project Config cannot be read, the value is `wait (default)` and the line ends with the reason.
+
+In JSON, `authoring_questions` carries the preference and `delegated_decisions` the entries.
+The authoring questions report carries these JSON fields: `preference`, `source`, `ref`, `checkout`, `detail`.
+`source` is `project-config` or `default`, `ref` is the ref the key was read at, `checkout` is the differing value of the checkout or empty, and `problem` is empty for an entry that was read.
+
 ## Text and JSON reports
 
 For an empty list with no work in progress, including when all items are held back, the list view prints:
@@ -240,7 +256,7 @@ For example:
 
 The status view reads `runs`, `delivery-queue`, `pull-requests`, `git`, `specs` and the Release Plan, and for the Spec queue `backlog`, `phase-record` and `delivery-history`; it never calls the judge. Its text sections are
 `In progress`, `Pending Specs`, `Spec queue`, `Next release`, `Blockers`, `Waiting on the
-maintainer` and `Sources`. When there is no release change it includes the
+maintainer`, `Open authoring questions` and `Sources`. When there is no release change it includes the
 line:
 
 ```text
@@ -261,7 +277,7 @@ version.
 Its JSON has `view: "status"`.
 The status report carries these JSON fields: `schema`, `view`, `state`,
 `repository`, `sources`, `in_progress`, `pending_specs`, `queue`, `forecast_basis`, `release`, `blockers`,
-`maintainer`.
+`maintainer`, `authoring_questions`.
 Each queue row carries these JSON fields: `row`, `kind`, `spec`, `ref`, `title`, `status`, `tasks_completed`, `tasks_total`, `note`, `start`, `end`.
 Each forecast cell carries these JSON fields: `state`, `actual`, `likely`, `limit`, `condition`, `likely_after_seconds`, `limit_after_seconds`, `reason`.
 The forecast basis carries these JSON fields: `delivered_specs`, `minimum`, `first_end`, `last_end`, `likely_percentile`, `limit_percentile`, `start_to_merge`, `start_gap`.
@@ -270,5 +286,5 @@ Each measure of the basis carries these JSON fields: `count`, `likely_seconds`, 
 For example:
 
 ```json
-{"schema":"roundfix/follow-up/v1","view":"status","state":"nothing_to_do","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"runs","state":"checked","count":0}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}},"pending_specs":[],"queue":[],"forecast_basis":{"delivered_specs":0,"minimum":11,"first_end":null,"last_end":null,"likely_percentile":50,"limit_percentile":85,"start_to_merge":{"count":0,"likely_seconds":null,"limit_seconds":null},"start_gap":{"count":0,"likely_seconds":null,"limit_seconds":null}},"release":{"state":"no_unreleased_changes","base":"","proposed_version":"","changes":[],"reason":null},"blockers":[],"maintainer":[]}
+{"schema":"roundfix/follow-up/v1","view":"status","state":"nothing_to_do","repository":{"root":"/work/app","namespace":"app"},"sources":[{"name":"runs","state":"checked","count":0}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{}},"pending_specs":[],"queue":[],"forecast_basis":{"delivered_specs":0,"minimum":11,"first_end":null,"last_end":null,"likely_percentile":50,"limit_percentile":85,"start_to_merge":{"count":0,"likely_seconds":null,"limit_seconds":null},"start_gap":{"count":0,"likely_seconds":null,"limit_seconds":null}},"release":{"state":"no_unreleased_changes","base":"","proposed_version":"","changes":[],"reason":null},"blockers":[],"maintainer":[],"authoring_questions":{"preference":"wait","source":"default","ref":"refs/heads/main","checkout":"","detail":""}}
 ```

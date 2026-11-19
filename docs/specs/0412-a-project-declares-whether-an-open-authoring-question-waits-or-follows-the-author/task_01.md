@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -104,3 +104,43 @@ Project Config gains the key `authoring.open_questions`, `wait` or `follow`, tha
 - `_techspec.md` → Preference key; Preference reader; Interfaces; Data Models, "The preference" and "The status fields"; Invariants 1, 2, 3 and 6; API Contract 1; API Contract 2; API Contract 11; API Contract 13; Testing Approach; Build Order 1
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md), section 1
 - ADR-0442, ADR-0423, ADR-0417, ADR-0392, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, knowledge-workspace, systematic-debugging, no-workarounds.
+
+Implemented only the preference and status-report slice. The pre-existing change was the Daemon's `status: in_progress`; it is preserved. No Task Graph, other Task, repository Project Config, Baseline source, ADR, dependency or verification configuration was changed.
+
+Acceptance evidence:
+
+- Project Config: added `Authoring`, the two preference constants, the strict overlay and the built-in undeclared `wait`. User Config is filtered before value validation with the exact once-per-load warning; malformed Project Config values retain their named diagnostic and parse prefix. Both init defaults omit the key. `go test ./internal/config -run '^TestTheAuthoringQuestionPreferenceIsAProjectConfigValue$' -count=1` exited 0, exercising all eleven required subtests through `Builtin`, `ResolveConfigProposal` and isolated `Load` calls. Before implementation, the focused `builtin_waits` invocation failed to compile on the missing types and field.
+- Default-branch status: added the local-object reader using the supplied Git runner, `ResolveDefaultBranchHead` and `DeliveryConfigAtCommit`; added `authoring_questions` immediately after `maintainer` and its text line immediately before `Sources:`. The seven required scenarios assert the entire preference line and all five JSON fields, including exit 0 on unreadable default config, checkout differences and remote-tracking precedence. `go test ./internal/cli -run '^TestTheStatusViewReportsTheAuthoringQuestionPreference$' -count=1` exited 0. The fixtures remove their seeded remote, use only local refs, reject unexpected commands through the injected runner, and fake forge access.
+- Documentation and existing transcripts: transcribed API Contracts 11 and 13 with exactly the task_01 exclusions; added only the requested docs-contract row. Updated the three existing pinned status expectations with the new line. `go test ./internal/cli -run '^(TestTheStatusViewShowsTheSpecQueueTable|TestTheStatusViewSurfaceTranscripts|TestFollowUpStatusNamesTheManualClassification|TestFollowUpStatusWritesNothing)$' -count=1` exited 0; the writes-nothing test is unchanged. After the last status-test edit and mirror sync, `go test -tags docscontract ./internal/cli -run '^(TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes|TestTheStatusViewReportsTheAuthoringQuestionPreference)$' -count=1` exited 0.
+
+Sanctioned regeneration:
+
+- `make skills-sync` exited 0.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` exited 0; it raised both Roundfix version fields from `0.1.278` to `0.1.279` and recorded the digest.
+- `make skills-sync` exited 0 again; byte comparisons confirmed that both modified Roundfix mirrors equal their canonical files.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0. It is invoked again after this Result as the final repository edit, preserving the required ordering after all user-guide changes. This is focused regeneration evidence, not a Daemon Verification verdict.
+
+A read-only scope comparison found every changed path declared by this Task; `git diff --check` exited 0. The final postflight also includes the generated Behavior Surface Record. No mirror, version field or derived record was hand-edited.
+
+Declared Verification, repository Verification and Task settlement remain with the Daemon. No commit, push, Pull Request or ai-memory message was made. Delegated Decision parsing, fields and rendering remain task_02's work; its future-facing guide text is retained exactly as requirement 8 directs.
+
+
+### Verification Feedback — attempt 1
+
+Inspected the Daemon diagnostic artifact at `/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261119T203521Z_1b24f6b82481f3c8/verification/batch-001-attempt-1.log` and the related JSON contract test. The failure was a stale assertion in `TestTheStatusJSONCarriesTheQueueAndTheBasis`: it required twelve top-level fields after this Task intentionally added the thirteenth, `authoring_questions`.
+
+- Reproduced with `go test ./internal/cli -run '^TestTheStatusJSONCarriesTheQueueAndTheBasis$' -count=1`, which exited 1 before the repair.
+- Updated that test's exact field count to thirteen and extended its field-order assertion to require `authoring_questions` after `maintainer`. Its existing queue, forecast, source and report assertions remain intact; no production behavior changed in this repair.
+- `go test ./internal/cli -run '^(TestTheStatusJSONCarriesTheQueueAndTheBasis|TestTheStatusViewReportsTheAuthoringQuestionPreference)$' -count=1` exited 0 after the repair. This covers the original failure and all seven preference scenarios together.
+- `git diff --check` exited 0. The sanctioned Behavior Surface recorder is invoked after this evidence update as the final repository edit, retaining requirement 10's ordering. No user-guide or skill source changed during the repair.
+
+The Daemon's declared Verification commands were not rerun, and its Task status remains unchanged. Full Verification and settlement remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T203521Z_1b24f6b82481f3c8`
+- Source commit: `7a715b5ecc8b03a819b4e3b34d9ba42b2d7b5c99`

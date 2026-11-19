@@ -1364,3 +1364,16 @@ Queue apply the same trim by themselves under a thirty-second budget; see
 The Queue Owner and `roundfix deliver status` read the key at the default branch head, preferring its remote-tracking ref and falling back to its local branch, rather than the Item Branch or the owner's working tree. With the key off or absent, the step records signs silently and cannot stop a merge. In User Config, the key is removed before validation, even if its value is invalid, with one warning: `config: delivery.require_defect_class in User Config is ignored; set delivery.require_defect_class in Project Config`. A non-boolean in Project Config is refused by name.
 
 A Roundfix older than the release that introduces this key refuses a Project Config that holds it. Turn it on only after every machine that runs Roundfix for the repository has upgraded to that release or later.
+
+## Open authoring questions
+
+`authoring.open_questions` is a Project Config value, `wait` when absent. It says what a session does when the author of a PRD, a TechSpec or a Task Graph ends its phase with a question that no source settles and nobody is present. With `wait`, the Spec waits for the user. With `follow`, the session adopts the option the author recommends and records it in the PRD as a Delegated Decision. A Reserved Question waits with either value; the [CONTEXT-driven workflow guide](context-driven-development.md) lists them.
+
+```yaml
+authoring:
+  open_questions: follow
+```
+
+`roundfix follow-up --status` reads the key at the default branch head, preferring its remote-tracking ref and falling back to its local branch, rather than the working tree or the current branch, and prints the value in force with its source. A value that the checkout gives and the default branch does not hold yet is named on the same line and changes nothing. Roundfix never writes the key. In User Config, the key is removed before validation, even if its value is invalid, with one warning: `config: authoring.open_questions in User Config is ignored; set authoring.open_questions in Project Config`. Any other value in Project Config is refused with `authoring.open_questions must be wait or follow`.
+
+A Roundfix older than the release that introduces this key refuses a Project Config that holds it. Declare it only after every machine that runs Roundfix for the repository has upgraded to that release or later.

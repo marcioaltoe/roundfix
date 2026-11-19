@@ -1365,6 +1365,10 @@
       {
         "version": "0.1.278",
         "digest": "84a5ccbfcca1c1a8744bc1dd58f1fc3eb5b76fb1e2e8345ab9b13e6dcbbb45dc"
+      },
+      {
+        "version": "0.1.279",
+        "digest": "31f751fa3d328fe246ee97f643fd97a81e8583cd2b3ae5843b47f84bb257fa52"
       }
     ],
     "setup-context-driven": [
