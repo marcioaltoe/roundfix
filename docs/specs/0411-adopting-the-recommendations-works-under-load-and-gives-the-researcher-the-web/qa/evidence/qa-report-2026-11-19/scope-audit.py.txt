@@ -1,0 +1,43 @@
+exec(open('/tmp/qa0411.py').read())
+logs=[];files=set()
+for task,commit in [('task_01','04ab4a47dab0081213f31d0bcf1d5e8f8e10a5a2'),('task_02',HEAD)]:
+    args=['git','diff-tree','--no-commit-id','--name-only','-r',commit];p=run(args);assert p.returncode==0
+    changed=p.stdout.splitlines();files.update(changed)
+    text=(SPEC/(task+'.md')).read_text();declared={str((SPEC/(task+'.md')).relative_to(ROOT))}
+    for section in ['Context','Recorded paths']:
+        m=re.search(r'^## '+section+r'\n(.*?)(?=^## |\Z)',text,re.M|re.S)
+        if m:
+            for line in m[1].splitlines():
+                x=re.match(r'^- (?:interface: |creates: |instruction: |deletes: )?`([^`]+)`',line)
+                if x:declared.add(x[1])
+    extras=set(changed)-declared;assert not extras,(task,extras)
+    logs.append(transcript(args,p)+'All changed paths declared, including assigned Task file; task_02 Recorded paths covers _techspec.md.')
+for f in files:
+    forbidden=f in ['Makefile','go.mod','go.sum','skills-lock.json','.roundfixrc.yml','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json','docs/references/skill-coverage.json','skills/authoring.go','internal/config/authoring.go','internal/agent/fallback.go'] or f.startswith(('.github/workflows/','internal/baselineacp/','internal/baseline/','docs/agents/'))
+    if f.startswith(('skills/roundfix/','.agents/skills/roundfix/')):forbidden |= f.split('roundfix/',1)[1] not in ['SKILL.md','references/profiles.md','references/setup.md','references/modes.md']
+    elif f.startswith('.agents/skills/'):forbidden=True
+    if f.startswith('docs/adr/'):forbidden |= not f.startswith('docs/adr/0415-')
+    assert not forbidden,f
+logs.append('No changed path is in Requirement 12 forbidden set; no other owned or Vendored Skill changed.')
+for f in files:
+    if f.startswith(('skills/','.agents/skills/')):
+        a=run(['git','show',BASE+':'+f]).stdout;b=(ROOT/f).read_text()
+        def section(s):
+            m=re.search(r'^### QA settlement\n.*?(?=^## |^### |\Z)',s,re.M|re.S)
+            return m[0] if m else ''
+        assert section(a)==section(b),f
+logs.append('Every changed skill keeps its QA settlement section byte-identical to Delivery Base.')
+paths=sorted(files)
+with tempfile.TemporaryDirectory(prefix='qa0411-governed-') as tmp:
+    tmp=pathlib.Path(tmp)
+    source=tmp/'audit_test.go'
+    source.write_text('package speccheck\nimport ("fmt";"testing")\nfunc TestQA0411GovernedAudit(t *testing.T) { for _, p := range []string{'+','.join(json.dumps(p) for p in paths)+'} { if GovernedPath(p) {fmt.Println("GOVERNED "+p)} } }\n')
+    overlay=tmp/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(ROOT/'internal/speccheck/qa0411_overlay_test.go'):str(source)}}))
+    args=['go','test','-overlay',str(overlay),'-count=1','-timeout','5m','-v','-run','^TestQA0411GovernedAudit$','./internal/speccheck']
+    p=run(args);assert p.returncode==0,p.stdout+p.stderr
+    governed=re.findall(r'^GOVERNED (.+)$',p.stdout,re.M)
+    auth=(SPEC/'_authorization.md').read_text();block=re.search(r'^paths:\n(.*?)(?=^\S)',auth,re.M|re.S)[1];granted=re.findall(r'^  - (.+)$',block,re.M)
+    assert set(governed)<=set(granted),(governed,granted)
+    logs.append(transcript(args,p)+'All five changed Governed Paths are exactly granted by _authorization.md paths. Authority record predates both Task commits and is unchanged throughout the range.')
+logs.append('Range: '+BASE+'..'+HEAD+'\nCurrent delta is reserved for QA report/evidence only; verified again at close.')
+pathlib.Path('/tmp/Q13.txt').write_text('\n'.join(logs));print('Scope audit PASS; governed paths:',len(governed),flush=True)

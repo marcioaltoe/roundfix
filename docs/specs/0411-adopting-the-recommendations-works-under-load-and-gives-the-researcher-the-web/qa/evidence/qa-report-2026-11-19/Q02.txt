@@ -1,0 +1,143 @@
+$ go test -count=1 -timeout 15m -v ./internal/config -run '^TestTheProofSetupDeadlineReaderAgreesWithLoad$'
+stdout:
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/built_in
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/built_in
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/user
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/user
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/project
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/project
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/another_key_load_refuses
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/another_key_load_refuses
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/above_ten_minutes
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/above_ten_minutes
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/not_a_duration
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/not_a_duration
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/another_default_load_refuses
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/another_default_load_refuses
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/maximum
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/maximum
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/negative
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/negative
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/project_overrides_out_of_range_user
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/project_overrides_out_of_range_user
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/built_in
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/above_ten_minutes
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/project_overrides_out_of_range_user
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/maximum
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/negative
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/another_default_load_refuses
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/another_key_load_refuses
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/not_a_duration
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/project
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/user
+--- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/built_in (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/above_ten_minutes (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/maximum (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/negative (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/project_overrides_out_of_range_user (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/zero (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/another_default_load_refuses (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/not_a_duration (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/another_key_load_refuses (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/project (0.00s)
+    --- PASS: TestTheProofSetupDeadlineReaderAgreesWithLoad/user (0.00s)
+PASS
+suiteguard: guard cost: measured 3304 paths; fingerprint took 652.36175ms before and 167.144583ms after
+ok  	roundfix/internal/config	1.070s
+stderr:
+exit: 0
+
+$ go test -count=1 -timeout 20m -v ./internal/cli -run '^(TestProfileAdoptionPassesTheConfiguredSetupDeadline|TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript|TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig|TestProfileProofPassesTheConfiguredSetupDeadline|TestProfilesConfigureProofScope|TestProfilesConfigureChangeSummary)$'
+stdout:
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline
+=== RUN   TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript
+=== PAUSE TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript
+=== RUN   TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig
+=== PAUSE TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig
+=== RUN   TestProfilesConfigureChangeSummary
+=== PAUSE TestProfilesConfigureChangeSummary
+=== RUN   TestProfilesConfigureProofScope
+=== PAUSE TestProfilesConfigureProofScope
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline
+=== CONT  TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig
+=== CONT  TestProfilesConfigureProofScope
+=== CONT  TestProfilesConfigureChangeSummary
+=== RUN   TestProfilesConfigureChangeSummary/added_category_agrees_in_text_and_machine_output
+=== CONT  TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+=== RUN   TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== PAUSE TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/built_in
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/built_in
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_scope_reads_user
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_scope_reads_user
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/user_scope_reads_project
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/user_scope_reads_project
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_wins
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_wins
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/project
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/project
+=== RUN   TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/user
+=== PAUSE TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/user
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline/built-in
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/built_in
+--- PASS: TestProfilesConfigureRefusesAnInvalidSetupDeadlineTranscript (0.00s)
+=== CONT  TestProfileProofPassesTheConfiguredSetupDeadline/project
+=== RUN   TestProfilesConfigureChangeSummary/replacement_excludes_untouched_categories
+--- PASS: TestProfilesConfigureNamesTheFileAndLineOfABrokenConfig (0.00s)
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_wins
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/user
+--- PASS: TestProfilesConfigureProofScope (0.00s)
+--- PASS: TestProfileProofPassesTheConfiguredSetupDeadline (0.00s)
+    --- PASS: TestProfileProofPassesTheConfiguredSetupDeadline/built-in (0.00s)
+    --- PASS: TestProfileProofPassesTheConfiguredSetupDeadline/project (0.00s)
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/project
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/user_scope_reads_project
+=== CONT  TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_scope_reads_user
+=== RUN   TestProfilesConfigureChangeSummary/declared_removals_include_present_and_absent_categories
+=== RUN   TestProfilesConfigureChangeSummary/dry_run_reports_the_same_change_and_preserves_bytes
+--- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_wins (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/built_in (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/user (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/check_apply/project (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/project_scope_reads_user (0.00s)
+    --- PASS: TestProfileAdoptionPassesTheConfiguredSetupDeadline/configure/user_scope_reads_project (0.00s)
+--- PASS: TestProfilesConfigureChangeSummary (0.01s)
+    --- PASS: TestProfilesConfigureChangeSummary/added_category_agrees_in_text_and_machine_output (0.00s)
+    --- PASS: TestProfilesConfigureChangeSummary/replacement_excludes_untouched_categories (0.00s)
+    --- PASS: TestProfilesConfigureChangeSummary/declared_removals_include_present_and_absent_categories (0.00s)
+    --- PASS: TestProfilesConfigureChangeSummary/dry_run_reports_the_same_change_and_preserves_bytes (0.00s)
+PASS
+suiteguard: guard cost: measured 3305 paths; fingerprint took 161.17425ms before and 158.930792ms after
+ok  	roundfix/internal/cli	0.778s
+stderr:
+exit: 0
+
+$ go test -count=1 -timeout 15m ./internal/config
+stdout:
+ok  	roundfix/internal/config	1.259s
+stderr:
+exit: 0
+
+$ go test -count=1 -timeout 30m ./internal/cli
+stdout:
+ok  	roundfix/internal/cli	313.051s
+stderr:
+exit: 0

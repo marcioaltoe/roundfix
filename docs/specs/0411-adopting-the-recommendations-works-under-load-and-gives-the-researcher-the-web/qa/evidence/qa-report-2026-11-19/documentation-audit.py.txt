@@ -1,0 +1,48 @@
+exec(open('/tmp/qa0411.py').read())
+def squash(s):return ' '.join(s.split())
+checks=[]
+def check(file,phrase):
+    text=(ROOT/file).read_text();ok=squash(phrase) in squash(text)
+    checks.append((file,phrase,ok));assert ok,(file,phrase)
+config='docs/user-guide/configuration.md'
+profiles=['.agents/skills/roundfix/references/profiles.md','skills/roundfix/references/profiles.md']
+sentence='`profiles configure` and `profiles check --apply` read the key from User Config and Project Config before they prove, with Project Config winning, even when another key of those files would stop loading, and an invalid value refuses the command before any proof.'
+check(config,'Every profile-readiness consumer passes it: `profiles validate`, operational Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply`.')
+for file in [config]+profiles:check(file,sentence)
+check('docs/user-guide/commands/profiles.md','`profiles configure` and `profiles check --apply` prove under the same key, read from User Config and Project Config with Project Config winning.')
+for file in profiles:check(file,"`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply` pass the value to each attempt's setup and close context.")
+check(config,'The block gives the Research Subagent the built-in web tools `WebSearch` and `WebFetch` and no MCP tool, because MCP tool names differ from one machine to another. A repository may add MCP tools that read to `research.tools`, or write `tools: []` to keep the Research Subagent off the network. A research entry without a `tools` key makes Doctor and the Update Check name the recommended tools; neither writes the file.')
+check('docs/user-guide/commands/doctor.md',"The block gives the Research Subagent `WebSearch` and `WebFetch`; a repository may add MCP tools that read, or write `tools: []` to keep it off the network.")
+check('docs/user-guide/commands/doctor.md',"The keys before `applied` are the declared ones. An empty list, `tools: []`, is the repository's choice and adds no warning, and a declared list is never compared with the recommendation. Nothing is written and the warning never changes Doctor's exit code.")
+check('docs/user-guide/commands/update.md','An applied declaration adds no text line, except the research tools line below.')
+check('docs/user-guide/commands/update.md','The block gives the Research Subagent `WebSearch` and `WebFetch` and no MCP tool.')
+check('docs/user-guide/commands/update.md','The JSON report adds `recommendedResearchTools`, the tools to add, and keeps `authoringModels.state` `applied`. An empty list, `tools: []`, and any declared list add neither. Neither changes an exit code or the top-level `next`, and nothing is written.')
+check('docs/user-guide/commands/update.md','| `authoringModels.recommendedResearchTools` | The research tools of the Recommended Authoring Declaration to add; present only when `applied` and the declared research entry has no `tools` key |')
+for prefix in ['.agents/skills/roundfix/references/','skills/roundfix/references/']:
+    check(prefix+'setup.md','The research entry also accepts `tools`, a list of `WebSearch`, `WebFetch` and MCP tool names beginning with `mcp__` that the Research Subagent receives after `Read, Grep, Glob`. The recommendation lists `WebSearch` and `WebFetch`, `tools: []` keeps the subagent off the network, and when the research entry has no `tools` key Doctor (`authoring-models: warn`) and the Update Check (`authoringModels.recommendedResearchTools`) name the tools to add; neither fails or writes.')
+    check(prefix+'modes.md','When it holds `recommendedResearchTools`, show the line the check prints and leave `.roundfixrc.yml` to the user as well.')
+check('CONTEXT.md','including the fallbacks of the four Authoring Phases and the research tools `WebSearch` and `WebFetch`,')
+adr='docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md'
+check(adr,'**Amended by [ADR-0441](0441-the-recommended-authoring-declaration-gives-the-research-subagent-the-built-in-web-tools.md) (2026-11-18).** The block lists `tools: [WebSearch, WebFetch]` under `research`, still with no MCP tool, and Doctor and the Update Check name those tools when a declared research entry has no `tools` key. The table, the configuration guide\'s block and the repository contract hold the tools too; the checks still never write and never fail.')
+check(adr,'ADR-0441 takes its built-in part: the block lists `WebSearch` and `WebFetch`, and MCP tools stay out.')
+old=run(['git','show',BASE+':'+adr]).stdout
+now=(ROOT/adr).read_text()
+a=re.search(r'^updated_at: (.+)$',old,re.M)[1];b=re.search(r'^updated_at: (.+)$',now,re.M)[1];assert b>a
+logs=['Fixed-string searches, whitespace normalized only.']
+logs += ['PASS '+f+'\n'+p for f,p,o in checks]
+logs+=['ADR-0415 updated_at advanced: '+a+' -> '+b]
+for name in ['profiles.md','setup.md','modes.md']:
+    assert (ROOT/'.agents/skills/roundfix/references'/name).read_bytes()==(ROOT/'skills/roundfix/references'/name).read_bytes()
+record=(ROOT/'skills/testdata/owned-skill-versions.json').read_text()
+for file in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+    v=re.search(r'^version: (.+)$',(ROOT/file).read_text(),re.M)[1];assert v in record;logs.append('Version recorded: '+file+' '+v)
+snap='internal/config/recommendations.go'
+a=run(['git','show',BASE+':'+snap]).stdout;b=(ROOT/snap).read_text()
+pattern=r'ModelRecommendationSnapshotVersion = "([^"]+)"'
+assert re.search(pattern,a)[1]==re.search(pattern,b)[1];logs.append('Snapshot unchanged from Delivery Base: '+re.search(pattern,b)[1])
+logs.append('Read-only function inspection: ProfileProofSetupTimeout calls resolveHomeDir, resolveWorkDir, FindGitRoot, os.ReadFile, yaml.NewDecoder/Decode and durationValue.UnmarshalYAML; helper chain performs path/stat/read operations and time.ParseDuration. authoringResearchToolsGap calls RecommendedAuthoringDeclaration, which copies structs/slices in memory. Neither chain calls file write/create/rename/remove. Public refusal rows confirm no User Config write; checks tests snapshot repository and home.')
+for file in ['internal/config/proof_setup_deadline.go','internal/cli/authoring_reports.go']:
+    s=(ROOT/file).read_text();logs.append('Inspected '+file+' from audited head')
+save('Q11.txt','\n\n'.join(logs)+'\n')
+status('Q11','pass','[Documentation searches, version record, read-only call-chain and snapshot audit](evidence/qa-report-2026-11-19/Q11.txt); the focused coverage-map test is recorded in Q05.')
+print('Q11 passed',len(checks),'exact documentation searches.')

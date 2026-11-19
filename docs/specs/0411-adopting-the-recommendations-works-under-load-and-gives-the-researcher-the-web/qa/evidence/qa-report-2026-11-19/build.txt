@@ -1,0 +1,9 @@
+Command: make build
+Exit: 0
+Built bin/roundfix from d9a980f3748a88fb2965d70ff30bbdea7720a3ea; build reported a nonfatal shared Go cache bound warning.
+$ ./bin/roundfix --version
+stdout:
+roundfix 0.148.0 (d9a980f3-dirty, built 2026-11-19 11:30:55 -0300)
+stderr:
+exit: 0
+Repository Verification: make verify-changed; Daemon-supplied pass, exit 0; not rerun.

@@ -1,0 +1,24 @@
+Archived audited head: d9a980f3748a88fb2965d70ff30bbdea7720a3ea
+Fresh Git fixture committed before sabotage. No regeneration or synchronization.
+Mutation in internal/config/proof_setup_deadline.go:
+OLD: if timeout <= 0 || timeout > MaxProfileProofSetupTimeout {
+NEW: if false && (timeout <= 0 || timeout > MaxProfileProofSetupTimeout) {
+$ go test -count=1 -timeout 5m -v -run '^TestTheProofSetupDeadlineReaderAgreesWithLoad$/^zero$' ./internal/config
+stdout:
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/zero
+    proof_setup_deadline_test.go:55: reader error = <nil>, want "defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m"
+--- FAIL: TestTheProofSetupDeadlineReaderAgreesWithLoad (0.00s)
+    --- FAIL: TestTheProofSetupDeadlineReaderAgreesWithLoad/zero (0.00s)
+FAIL
+suiteguard: guard cost: measured 3294 paths; fingerprint took 165.073333ms before and 161.229584ms after
+FAIL	roundfix/internal/config	0.575s
+FAIL
+stderr:
+exit: 1
+
+Named assertion rejected mutation: True

@@ -1,0 +1,86 @@
+Fixed-string searches, whitespace normalized only.
+
+PASS docs/user-guide/configuration.md
+Every profile-readiness consumer passes it: `profiles validate`, operational Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply`.
+
+PASS docs/user-guide/configuration.md
+`profiles configure` and `profiles check --apply` read the key from User Config and Project Config before they prove, with Project Config winning, even when another key of those files would stop loading, and an invalid value refuses the command before any proof.
+
+PASS .agents/skills/roundfix/references/profiles.md
+`profiles configure` and `profiles check --apply` read the key from User Config and Project Config before they prove, with Project Config winning, even when another key of those files would stop loading, and an invalid value refuses the command before any proof.
+
+PASS skills/roundfix/references/profiles.md
+`profiles configure` and `profiles check --apply` read the key from User Config and Project Config before they prove, with Project Config winning, even when another key of those files would stop loading, and an invalid value refuses the command before any proof.
+
+PASS docs/user-guide/commands/profiles.md
+`profiles configure` and `profiles check --apply` prove under the same key, read from User Config and Project Config with Project Config winning.
+
+PASS .agents/skills/roundfix/references/profiles.md
+`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply` pass the value to each attempt's setup and close context.
+
+PASS skills/roundfix/references/profiles.md
+`profiles validate`, operational Preflight, pre-PR review, Doctor, Setup, `profiles configure` and `profiles check --apply` pass the value to each attempt's setup and close context.
+
+PASS docs/user-guide/configuration.md
+The block gives the Research Subagent the built-in web tools `WebSearch` and `WebFetch` and no MCP tool, because MCP tool names differ from one machine to another. A repository may add MCP tools that read to `research.tools`, or write `tools: []` to keep the Research Subagent off the network. A research entry without a `tools` key makes Doctor and the Update Check name the recommended tools; neither writes the file.
+
+PASS docs/user-guide/commands/doctor.md
+The block gives the Research Subagent `WebSearch` and `WebFetch`; a repository may add MCP tools that read, or write `tools: []` to keep it off the network.
+
+PASS docs/user-guide/commands/doctor.md
+The keys before `applied` are the declared ones. An empty list, `tools: []`, is the repository's choice and adds no warning, and a declared list is never compared with the recommendation. Nothing is written and the warning never changes Doctor's exit code.
+
+PASS docs/user-guide/commands/update.md
+An applied declaration adds no text line, except the research tools line below.
+
+PASS docs/user-guide/commands/update.md
+The block gives the Research Subagent `WebSearch` and `WebFetch` and no MCP tool.
+
+PASS docs/user-guide/commands/update.md
+The JSON report adds `recommendedResearchTools`, the tools to add, and keeps `authoringModels.state` `applied`. An empty list, `tools: []`, and any declared list add neither. Neither changes an exit code or the top-level `next`, and nothing is written.
+
+PASS docs/user-guide/commands/update.md
+| `authoringModels.recommendedResearchTools` | The research tools of the Recommended Authoring Declaration to add; present only when `applied` and the declared research entry has no `tools` key |
+
+PASS .agents/skills/roundfix/references/setup.md
+The research entry also accepts `tools`, a list of `WebSearch`, `WebFetch` and MCP tool names beginning with `mcp__` that the Research Subagent receives after `Read, Grep, Glob`. The recommendation lists `WebSearch` and `WebFetch`, `tools: []` keeps the subagent off the network, and when the research entry has no `tools` key Doctor (`authoring-models: warn`) and the Update Check (`authoringModels.recommendedResearchTools`) name the tools to add; neither fails or writes.
+
+PASS .agents/skills/roundfix/references/modes.md
+When it holds `recommendedResearchTools`, show the line the check prints and leave `.roundfixrc.yml` to the user as well.
+
+PASS skills/roundfix/references/setup.md
+The research entry also accepts `tools`, a list of `WebSearch`, `WebFetch` and MCP tool names beginning with `mcp__` that the Research Subagent receives after `Read, Grep, Glob`. The recommendation lists `WebSearch` and `WebFetch`, `tools: []` keeps the subagent off the network, and when the research entry has no `tools` key Doctor (`authoring-models: warn`) and the Update Check (`authoringModels.recommendedResearchTools`) name the tools to add; neither fails or writes.
+
+PASS skills/roundfix/references/modes.md
+When it holds `recommendedResearchTools`, show the line the check prints and leave `.roundfixrc.yml` to the user as well.
+
+PASS CONTEXT.md
+including the fallbacks of the four Authoring Phases and the research tools `WebSearch` and `WebFetch`,
+
+PASS docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md
+**Amended by [ADR-0441](0441-the-recommended-authoring-declaration-gives-the-research-subagent-the-built-in-web-tools.md) (2026-11-18).** The block lists `tools: [WebSearch, WebFetch]` under `research`, still with no MCP tool, and Doctor and the Update Check name those tools when a declared research entry has no `tools` key. The table, the configuration guide's block and the repository contract hold the tools too; the checks still never write and never fail.
+
+PASS docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md
+ADR-0441 takes its built-in part: the block lists `WebSearch` and `WebFetch`, and MCP tools stay out.
+
+ADR-0415 updated_at advanced: 2026-11-17T13:30:00Z -> 2026-11-19T14:01:45Z
+
+Version recorded: .agents/skills/roundfix/SKILL.md 0.1.276
+
+Version recorded: skills/roundfix/SKILL.md 0.1.276
+
+Snapshot unchanged from Delivery Base: 2026-11-17
+
+Read-only function inspection: ProfileProofSetupTimeout calls resolveHomeDir, resolveWorkDir, FindGitRoot, os.ReadFile, yaml.NewDecoder/Decode and durationValue.UnmarshalYAML; helper chain performs path/stat/read operations and time.ParseDuration. authoringResearchToolsGap calls RecommendedAuthoringDeclaration, which copies structs/slices in memory. Neither chain calls file write/create/rename/remove. Public refusal rows confirm no User Config write; checks tests snapshot repository and home.
+
+Inspected internal/config/proof_setup_deadline.go from audited head
+
+Inspected internal/cli/authoring_reports.go from audited head
+
+PASS exact output block in docs/user-guide/commands/update.md
+Authoring models: research declares no tools, so the Research Subagent cannot read the web; add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then apply with roundfix skills install --target project.
+
+PASS exact output block in docs/user-guide/commands/doctor.md
+authoring-models: warn (claude: prd, research applied; research declares no tools, so the Research Subagent cannot read the web; next: add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then run roundfix skills install --target project)
+
+Latest Roundfix version-record entry equals both skill versions: 0.1.276.

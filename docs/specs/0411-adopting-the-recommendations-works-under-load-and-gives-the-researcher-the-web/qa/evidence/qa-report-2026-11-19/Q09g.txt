@@ -1,0 +1,19 @@
+Archived audited head: d9a980f3748a88fb2965d70ff30bbdea7720a3ea
+Fresh Git fixture committed before sabotage. No regeneration or synchronization.
+Mutation in internal/config/authoring_recommendation.go:
+OLD: Tools: []string{"WebSearch", "WebFetch"}
+NEW: Tools: []string{"WebSearch"}
+$ go test -count=1 -timeout 5m -v -run '^TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool$' ./skills
+stdout:
+=== RUN   TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool
+=== PAUSE TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool
+=== CONT  TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool
+    authoring_test.go:172: tools="tools: Read, Grep, Glob, WebSearch" want="tools: Read, Grep, Glob, WebSearch, WebFetch"
+--- FAIL: TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool (0.00s)
+FAIL
+FAIL	roundfix/skills	0.277s
+FAIL
+stderr:
+exit: 1
+
+Named assertion rejected mutation: True

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

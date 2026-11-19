@@ -1,0 +1,8 @@
+Pull Request row: blocked (environment: no open Pull Request)
+Cause: supplied Run prompt says none exists on the Spec target branch. The per-Run branch is never pushed and was not queried.
+Approval: recorded delivery authority _authorization.md is approved and grants implement, commit, push, pull_request, merge and release. The seeded audit identifies its revision as f33eb35fa25f8e388a9081846826c8a2932490a7.
+Checks/status: Daemon-supplied make verify-changed PASS, exit 0, at d9a980f3748a88fb2965d70ff30bbdea7720a3ea.
+Unresolved threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet; no Review Source acceptance exists for this candidate.
+Review-artifact ancestry: candidate under audit is d9a980f3748a88fb2965d70ff30bbdea7720a3ea; no separate review artifact exists yet.
+Unblocking action: Supervisor completes the configured pre-PR review and delivery, opens the Pull Request on the Spec target branch, and observes current-head checks and acceptance. This row alone never prevents a qualifying declared partial.

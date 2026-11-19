@@ -1,0 +1,60 @@
+import os, sys, json, subprocess, tempfile, pathlib, shutil, re, shlex, tarfile, io
+ROOT=pathlib.Path.cwd()
+SLUG="0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web"
+SPEC=ROOT/"docs/specs"/SLUG
+REPORT=SPEC/"qa/qa-report-2026-11-19.md"
+EVID=SPEC/"qa/evidence/qa-report-2026-11-19"
+HEAD="d9a980f3748a88fb2965d70ff30bbdea7720a3ea"
+BASE="f33eb35fa25f8e388a9081846826c8a2932490a7"
+BINARY=ROOT/"bin/roundfix"
+KEYS=["GH_TOKEN","GITHUB_TOKEN","TYPESAFE_API_KEY","CLAUDE_CODE_SESSION_ID","ROUNDFIX_OPENROUTER_JUDGE_API_KEY","ROUNDFIX_OPENROUTER_API_KEY","ROUNDFIX_TYPESAFE_API_KEY"]
+def cleanenv():
+    e=os.environ.copy()
+    for k in KEYS: e.pop(k,None)
+    e.update(GOPROXY="off",GOSUMDB="off")
+    return e
+
+def run(args,cwd=ROOT,env=None):
+    return subprocess.run(args,cwd=cwd,env=env or cleanenv(),stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+
+def save(name,text):
+    EVID.mkdir(parents=True,exist_ok=True)
+    (EVID/name).write_text(text)
+
+def transcript(args,p):
+    return "$ "+shlex.join(map(str,args))+"\nstdout:\n"+p.stdout+"stderr:\n"+p.stderr+"exit: "+str(p.returncode)+"\n"
+
+class ProductHome:
+    def __enter__(self):
+        self.temp=tempfile.TemporaryDirectory(prefix="qa0411-")
+        self.base=pathlib.Path(self.temp.name)
+        self.home=self.base/"home"; self.tmp=self.base/"tmp"; self.fake=self.base/"fake-bin"
+        for p in [self.home,self.tmp,self.fake]: p.mkdir()
+        gh=self.fake/"gh"; gh.write_text("#!/bin/sh\nexit 1\n"); gh.chmod(0o755)
+        self.env=cleanenv()
+        self.env.update(HOME=str(self.home),TMPDIR=str(self.tmp),GOMODCACHE=run(["go","env","GOMODCACHE"]).stdout.strip(),GOCACHE=run(["go","env","GOCACHE"]).stdout.strip(),RUSTUP_HOME=os.environ.get("RUSTUP_HOME",str(pathlib.Path.home()/".rustup")),CARGO_HOME=os.environ.get("CARGO_HOME",str(pathlib.Path.home()/".cargo")),PATH=str(self.fake)+os.pathsep+os.environ["PATH"])
+        return self
+    def repo(self,name):
+        repo=self.base/name; repo.mkdir()
+        assert run(["git","init","-q",str(repo)],env=self.env).returncode==0
+        return repo
+    def commit(self,repo):
+        p=run(["git","-c","core.hooksPath=/dev/null","-c","user.name=QA","-c","user.email=qa@example.invalid","-c","commit.gpgsign=false","commit","--allow-empty","-qm","QA fixture"],cwd=repo,env=self.env)
+        assert p.returncode==0,p.stderr
+    def product(self,args,cwd=ROOT):
+        return run([str(BINARY)]+args,cwd=cwd,env=self.env)
+    def __exit__(self,*args):
+        for root,dirs,files in os.walk(self.base):
+            pathlib.Path(root).chmod(0o700)
+            for f in files:
+                p=pathlib.Path(root)/f
+                if not p.is_symlink(): p.chmod(0o600)
+        self.temp.cleanup()
+
+def status(row,value,detail):
+    text=REPORT.read_text()
+    pattern=r"(?m)^(\| "+re.escape(row)+r" \| )pending( \|.*)$"
+    text,n=re.subn(pattern,lambda m:m[1]+value+m[2],text)
+    assert n==1,(row,n)
+    text+="\n### "+row+" result\n\n"+detail+"\n"
+    REPORT.write_text(text)

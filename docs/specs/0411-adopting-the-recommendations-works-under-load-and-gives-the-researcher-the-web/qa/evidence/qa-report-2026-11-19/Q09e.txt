@@ -1,0 +1,22 @@
+Archived audited head: d9a980f3748a88fb2965d70ff30bbdea7720a3ea
+Fresh Git fixture committed before sabotage. No regeneration or synchronization.
+Mutation in internal/cli/authoring_reports.go:
+OLD: return roundconfig.RecommendedAuthoringDeclaration().Research.Tools
+NEW: return nil
+$ go test -count=1 -timeout 5m -v -run '^TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone$/^no_tools_key$' ./internal/cli
+stdout:
+=== RUN   TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone
+=== PAUSE TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone
+=== CONT  TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone
+=== RUN   TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone/no_tools_key
+    authoring_research_tools_test.go:47: output after skills:="authoring-models: ok (claude: prd, research applied)\nbaseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\nbaseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\nresidue: ok (no process residue found)\nstorage: ok (no Run Database)\ncodex: ok\n" want prefix="authoring-models: warn (claude: prd, research applied; research declares no tools, so the Research Subagent cannot read the web; next: add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then run roundfix skills install --target project)\n"
+--- FAIL: TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone (0.01s)
+    --- FAIL: TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone/no_tools_key (0.01s)
+FAIL
+suiteguard: guard cost: measured 3294 paths; fingerprint took 164.002959ms before and 165.171959ms after
+FAIL	roundfix/internal/cli	0.797s
+FAIL
+stderr:
+exit: 1
+
+Named assertion rejected mutation: True

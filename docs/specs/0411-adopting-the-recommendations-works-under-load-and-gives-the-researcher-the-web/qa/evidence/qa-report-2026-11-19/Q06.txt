@@ -1,0 +1,60 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-lb6xc_rr/research/.agents/skills (43 file(s))
+Applied declared header: write-prd (model opus, effort xhigh)
+Generated subagent: .claude/agents/roundfix-prd-author.md
+Generated subagent: .claude/agents/roundfix-researcher.md
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.148.0","latest":"","state":"unknown","lookup":{"source":"network","checkedAt":"2026-11-19T14:32:58Z","error":"list releases: gh api repos/marcioaltoe/roundfix/releases?per_page=30 failed: exit status 1: "},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"authoringModels":{"state":"applied","harness":"claude","declared":["prd","research"],"problems":[],"recommendedResearchTools":["WebSearch","WebFetch"]},"next":"none"}
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix update check
+stdout:
+Roundfix 0.148.0: latest release not reached (list releases: gh api repos/marcioaltoe/roundfix/releases?per_page=30 failed: exit status 1:); the session continues.
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+Authoring models: research declares no tools, so the Research Subagent cannot read the web; add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then apply with roundfix skills install --target project.
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-lb6xc_rr/research/.agents/skills (43 file(s))
+Applied declared header: write-prd (model opus, effort xhigh)
+Generated subagent: .claude/agents/roundfix-prd-author.md
+Generated subagent: .claude/agents/roundfix-researcher.md
+Created Claude skill symlink: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-lb6xc_rr/research/.claude/skills/roundfix -> ../../.agents/skills/roundfix
+stderr:
+Project Claude skills directory detected.
+Create symlink /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-lb6xc_rr/research/.claude/skills/roundfix -> ../../.agents/skills/roundfix? [Y/n]: exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.148.0","latest":"","state":"unknown","lookup":{"source":"cache","checkedAt":"2026-11-19T14:32:58Z","error":"list releases: gh api repos/marcioaltoe/roundfix/releases?per_page=30 failed: exit status 1: "},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"authoringModels":{"state":"applied","harness":"claude","declared":["prd","research"],"problems":[]},"next":"none"}
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix update check
+stdout:
+Roundfix 0.148.0: latest release not reached (list releases: gh api repos/marcioaltoe/roundfix/releases?per_page=30 failed: exit status 1:); the session continues.
+Baseline: action_required: the repository has no Setup Manifest and cannot be updated
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix skills install --target project
+stdout:
+Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-lb6xc_rr/undeclared/.agents/skills (43 file(s))
+stderr:
+exit: 0
+
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix update check --format json
+stdout:
+{"schemaVersion":"roundfix/update-check/v1","mode":"notify","installed":"0.148.0","latest":"","state":"unknown","lookup":{"source":"cache","checkedAt":"2026-11-19T14:32:58Z","error":"list releases: gh api repos/marcioaltoe/roundfix/releases?per_page=30 failed: exit status 1: "},"releases":[],"releasesTruncated":false,"baseline":{"state":"action_required","fileChanges":0,"historyUnits":0,"skillChanges":0,"message":"the repository has no Setup Manifest and cannot be updated"},"authoringModels":{"state":"undeclared","harness":"claude","declared":[],"problems":[],"installed":["write-idea","write-prd","write-techspec","write-tasks"],"recommendation":"skills:\n  authoring:\n    claude:\n      idea:\n        model: fable\n        reasoning_effort: xhigh\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      prd:\n        model: fable\n        reasoning_effort: high\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      techspec:\n        model: fable\n        reasoning_effort: high\n        fallback:\n          model: opus\n          reasoning_effort: xhigh\n      tasks:\n        model: opus\n        reasoning_effort: high\n        fallback:\n          model: sonnet\n          reasoning_effort: high\n      research:\n        model: sonnet\n        reasoning_effort: medium\n        tools: [WebSearch, WebFetch]\n"},"next":"none"}
+stderr:
+exit: 0
+
+All eight commands exit 0. Exact applied authoringModels object and text match; explicit empty tools suppresses both; undeclared recommendation includes both tools. Checks preserve the config bytes.

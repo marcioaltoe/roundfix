@@ -1,0 +1,24 @@
+Archived audited head: d9a980f3748a88fb2965d70ff30bbdea7720a3ea
+Fresh Git fixture committed before sabotage. No regeneration or synchronization.
+Mutation in internal/config/proof_setup_deadline.go:
+OLD: paths = append(paths, filepath.Join(root, projectConfigName))
+NEW: paths = append([]string{filepath.Join(root, projectConfigName)}, paths...)
+$ go test -count=1 -timeout 5m -v -run '^TestTheProofSetupDeadlineReaderAgreesWithLoad$/^project_wins$' ./internal/config
+stdout:
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad
+=== RUN   TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+=== PAUSE TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+=== CONT  TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins
+    proof_setup_deadline_test.go:64: reader = 1m15s, <nil>; want 1m30s, nil
+--- FAIL: TestTheProofSetupDeadlineReaderAgreesWithLoad (0.00s)
+    --- FAIL: TestTheProofSetupDeadlineReaderAgreesWithLoad/project_wins (0.00s)
+FAIL
+suiteguard: guard cost: measured 3294 paths; fingerprint took 162.6295ms before and 157.332667ms after
+FAIL	roundfix/internal/config	0.574s
+FAIL
+stderr:
+exit: 1
+
+Named assertion rejected mutation: True

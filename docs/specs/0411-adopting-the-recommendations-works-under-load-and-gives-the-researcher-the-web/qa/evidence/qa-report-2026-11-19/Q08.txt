@@ -1,0 +1,6 @@
+PRD Unreachable Acceptance:
+criterion: on a loaded machine, an adopter adopts a Recommended Profile with profiles check --apply after raising defaults.profile_proof_setup_timeout
+reason: the QA gate may not start an Agent session or an ACP adapter, so it cannot time a real proof; the fake runner of Success Metric 1 records the deadline each proof receives
+satisfied-by: the next adoption by fiscus or fluxus after the release that carries this Spec
+
+Constraint confirmed against task_03 Overview and Requirements 7 and 14 and _authorization.md Limits. A live proof necessarily starts the forbidden Agent/ACP path; no such path was started. Q02 verifies the supplied timeout through the fake runner only.
