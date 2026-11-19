@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -63,3 +63,12 @@ The QA gates of Specs 0399 to 0402 ran test suites under a fresh `HOME` that hid
 - `_techspec.md` → API Contract 2; Coverage Map; Testing Approach; Build Order 2
 - [`references/2026-11-18-characterization.md`](references/2026-11-18-characterization.md), section 1
 - ADR-0080
+
+## Result
+
+Skills loaded: implement-task, golang-testing, testing-boss, tech-writer, evidence-gate
+
+- Added the exact fresh-home guidance to both owned skills before the specified headings, outside QA settlement. The focused `go test ./skills -run 'TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome' -count=1` passed, exercising both copies and every named guarantee.
+- The new contract checks each normalized sentence exactly once within its section and checks the QA settlement ordering. Individual sentence-removal sabotage was not run; the named subtests enforce the count directly.
+- Ran `make skills-sync`, the authorized owned-skill version recorder, and `make skills-sync` again; both `cmp` checks returned zero. The recorder added qa-gate 0.0.27 and write-tasks 0.0.40.
+- `make baseline-digests` was not run: this Task and its authorization explicitly prohibit changes to Baseline derived files and `internal/`. Declared Verification remains for the Daemon.
