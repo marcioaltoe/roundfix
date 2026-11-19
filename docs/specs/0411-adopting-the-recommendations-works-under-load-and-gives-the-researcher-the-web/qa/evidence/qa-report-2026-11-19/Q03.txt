@@ -1,8 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix profiles configure --scope user --file /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-9pyt04bn/fragment.yml --yes
-stdout:
-stderr:
-roundfix: profiles failed: defaults.profile_proof_setup_timeout must be greater than 0 and at most 10m
-Run 'roundfix profiles --help' for usage.
-exit: 2
-User Config absent after refusal: True
-Exact transcript match: True

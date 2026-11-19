@@ -1,9 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web-dfa3971c21343202-9df0a464-bbfab817/run_20261119T133858Z_eccbad318ef96ed1/bin/roundfix profiles configure --scope user --file /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-1f4r9t2x/fragment.yml --yes
-stdout:
-stderr:
-roundfix: profiles failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0411-1f4r9t2x/repo/.roundfixrc.yml": yaml: line 3: mapping values are not allowed in this context
-Run 'roundfix profiles --help' for usage.
-exit: 2
-User Config absent after refusal: True
-Exact transcript match: False
-Comparison correction: macOS resolves /var to /private/var; the authored <repository> placeholder matches the canonical repository path. Exact stderr, empty stdout, exit 2 and absent User Config all pass. No product rerun.

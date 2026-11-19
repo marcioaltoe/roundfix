@@ -1,9 +1,0 @@
-Outside evidence, checked offline.
-Source: references/2026-11-18-maintainer-answers.md, opening field reports. These are adopter observations transcribed by the operator, not measurements designed by this Spec.
-
-Origem: Marcio colou na sessão capturas das sessões do Fluxus e do Fiscus (18/11 ~22:55–23:06 BRT). O Fiscus registrou: "profiles check --apply e profiles configure ignoram esse prazo [defaults.profile_proof_setup_timeout], embora a referência diga que o configure o respeita"; carga da máquina 13–23, cada prova Codex ~45 s, estoura os 30 s padrão; o Fiscus editou o modelo no .roundfixrc.yml à mão e provou com profiles validate (que respeita). O Fluxus subiu o prazo para 3m temporariamente e a adoção por profiles check --apply estourou mesmo assim.
-
-Source: references/2026-11-18-characterization.md, section 5, published literature transcribed during planning.
-- Published evidence: the Claude Code tools reference, <https://code.claude.com/docs/en/tools>, read on 2026-11-18, says of a subagent definition: "`tools` only: the subagent gets only the listed tools." The subagent guide, <https://code.claude.com/docs/en/sub-agents>, says the field lists the "Tools the subagent can use" and "Inherits every tool available to subagents if omitted", and names `WebFetch` and `WebSearch` among the built-in tools a background subagent keeps. A generated file whose list is `Read, Grep, Glob` therefore cannot search or fetch the web.
-
-The recorded source states that explicit tools exclude unlisted capabilities. Q02 now records every configured proof deadline and Q05 verifies that the recommendation generates both web tools without shell/write tools. This supports the mechanism, not a timed adoption on a loaded machine. No network, Agent session or provider call was made.
