@@ -1,5 +1,6 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
+amended_by: [ADR-0278]
 created_at: 2026-08-12T12:41:53Z
 updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ

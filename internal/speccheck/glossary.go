@@ -98,24 +98,28 @@ func glossaryHorizon(repoRoot, prdPath string) contractHorizon {
 	return contractHorizon{held: true}
 }
 
-func glossaryFiles(repoRoot string) (map[string]bool, map[string]bool, error) {
-	files := map[string]bool{}
-	terms := map[string]bool{}
+// GlossaryFiles resolves the root glossary documents, maps, and map-linked
+// glossary files in deterministic resolver order. The consistency check uses
+// the same resolution, while maps themselves remain outside its definitions.
+func GlossaryFiles(repoRoot string) ([]string, error) {
+	files, linked := []string{}, []string{}
+	seen := map[string]bool{}
 	for _, name := range []string{"CONTEXT.md", "GLOSSARY.md", "CONTEXT-MAP.md", "GLOSSARY-MAP.md"} {
 		_, ok, err := receiptFilePath(repoRoot, name)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if !ok {
 			continue
 		}
+		files = append(files, name)
+		seen[name] = true
 		if name == "CONTEXT.md" || name == "GLOSSARY.md" {
-			files[name] = true
 			continue
 		}
 		content, err := os.ReadFile(filepath.Join(repoRoot, name))
 		if err != nil {
-			return nil, nil, fmt.Errorf("read glossary map: %w", err)
+			return nil, fmt.Errorf("read glossary map: %w", err)
 		}
 		for _, match := range glossaryMapLinkPattern.FindAllSubmatch(content, -1) {
 			target := ""
@@ -136,13 +140,34 @@ func glossaryFiles(repoRoot string) (map[string]bool, map[string]bool, error) {
 			}
 			_, ok, err := receiptFilePath(repoRoot, target)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if ok {
-				files[target] = true
+				linked = append(linked, target)
 			}
 		}
 	}
+	for _, file := range linked {
+		if !seen[file] {
+			files = append(files, file)
+			seen[file] = true
+		}
+	}
+	return files, nil
+}
+
+func glossaryFiles(repoRoot string) (map[string]bool, map[string]bool, error) {
+	resolved, err := GlossaryFiles(repoRoot)
+	if err != nil {
+		return nil, nil, err
+	}
+	files, terms := map[string]bool{}, map[string]bool{}
+	for _, file := range resolved {
+		if filepath.Base(file) == "CONTEXT.md" || filepath.Base(file) == "GLOSSARY.md" {
+			files[file] = true
+		}
+	}
+
 	for file := range files {
 		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(file)))
 		if err != nil {

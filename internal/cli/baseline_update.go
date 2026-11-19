@@ -97,6 +97,7 @@ type baselineUpdateSkillsDependencies struct {
 
 type baselineUpdateResult struct {
 	History                  baselineUpdateHistory                `json:"history"`
+	Documentation            baselineUpdateDocumentation          `json:"documentation"`
 	SchemaVersion            string                               `json:"schemaVersion"`
 	Operation                string                               `json:"operation"`
 	OK                       bool                                 `json:"ok"`
@@ -152,6 +153,15 @@ func runBaselineUpdateCommandWithSkillsStage(
 	environment commandEnvironment,
 	skillsStage baselineUpdateSkillsStage,
 ) int {
+	return runBaselineUpdateCommandWithStages(ctx, args, stdout, stderr, environment, baselineUpdateStages{skills: skillsStage, documentation: applyBaselineUpdateDocumentation})
+}
+
+type baselineUpdateStages struct {
+	skills        baselineUpdateSkillsStage
+	documentation func(context.Context, string, baselineDocumentationPlan) (baselineUpdateDocumentation, error)
+}
+
+func runBaselineUpdateCommandWithStages(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment, stages baselineUpdateStages) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline update"))
 		return exitOK
@@ -303,6 +313,16 @@ func runBaselineUpdateCommandWithSkillsStage(
 	if err != nil {
 		return writeBaselineUpdateOperationFailure(result, err, jsonOutput, stdout, stderr)
 	}
+	documentationRoot, err := gitOutput(ctx, request.repo, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return writeBaselineUpdateOperationFailure(result, err, jsonOutput, stdout, stderr)
+	}
+	documentationPlan, err := planBaselineUpdateDocumentation(documentationRoot)
+	if err != nil {
+		return writeBaselineUpdateFailure(result, err, "documentation", "restore .secondbrain-export and docs/adr with git restore, then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+	}
+	result.Documentation = documentationPlan.Report
+	result.PlanDigest = documentationPlan.digest(result.PlanDigest)
 	var retiredDeletions []baseline.InstalledRetiredSkill
 	if !request.skipSkills {
 		result.Skills.Retired, err = baseline.InstalledRetiredSkills(request.repo)
@@ -318,6 +338,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 	}
 	result.CurrentCatalog = plan.Catalog
 	result.FileChanges = append(result.FileChanges, plan.FileChanges...)
+	result.FileChanges = append(result.FileChanges, documentationPlan.FileChanges...)
 	result.UnrecordedManagedRegions = append(
 		result.UnrecordedManagedRegions,
 		plan.UnrecordedManagedRegions...,
@@ -363,6 +384,12 @@ func runBaselineUpdateCommandWithSkillsStage(
 				result.State = "plan_ready"
 				result.Category = "approval"
 				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d history unit(s) pending sanitize", len(historyPlan.selected))
+				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
+				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
+			}
+			if documentationPlan.Report.Status == "pending" {
+				result.State, result.Category = "plan_ready", "approval"
+				result.Message = fmt.Sprintf("guidance matches the current Baseline catalog; %d documentation change(s) pending", len(documentationPlan.FileChanges))
 				result.NextAction = "review the plan and rerun with --confirm-plan " + result.PlanDigest + ", or use --yes to approve the digest computed in one invocation"
 				return writeBaselineUpdateOutcome(result, exitUnverified, jsonOutput, stdout, stderr)
 			}
@@ -425,10 +452,15 @@ func runBaselineUpdateCommandWithSkillsStage(
 		result.State = "failed"
 		return writeBaselineUpdateFailure(result, err, "history", "restore the History Root with git restore --staged --worktree -- "+historyPlan.historyRoot+" docs/references and git clean -fd -- "+historyPlan.historyRoot+" docs/references, then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
 	}
+	result.Documentation, err = stages.documentation(ctx, documentationRoot, documentationPlan)
+	if err != nil {
+		result.State = "failed"
+		return writeBaselineUpdateFailure(result, err, "documentation", "restore .secondbrain-export and docs/adr with git restore, then rerun roundfix baseline update", exitRunFailed, jsonOutput, stdout, stderr)
+	}
 	if request.skipSkills {
 		result.Skills.Status = baselineUpdateSkillsSkipped
 	} else {
-		skillsResult, skillsErr := skillsStage(ctx, baselineUpdateSkillsRequest{
+		skillsResult, skillsErr := stages.skills(ctx, baselineUpdateSkillsRequest{
 			environment: environment,
 			stderr:      stderr,
 			Repository:  request.repo,
@@ -527,6 +559,7 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 func newBaselineUpdateResult() baselineUpdateResult {
 	return baselineUpdateResult{
 		History:            newBaselineUpdateHistory("current"),
+		Documentation:      newBaselineUpdateDocumentation(),
 		SchemaVersion:      baselineUpdateResultSchema,
 		Operation:          "update",
 		FileChanges:        []baseline.FileChange{},
@@ -1023,6 +1056,7 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	if result.PlanDigest != "" {
 		printBaselineUpdateHistory(stdout, result.History)
+		printBaselineUpdateDocumentation(stdout, result.Documentation)
 		fmt.Fprintf(stdout, "Plan Digest: %s\n", result.PlanDigest)
 	}
 	if result.ApprovedPlanDigest != "" {
@@ -1036,6 +1070,7 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	if result.PlanDigest == "" {
 		printBaselineUpdateHistory(stdout, result.History)
+		printBaselineUpdateDocumentation(stdout, result.Documentation)
 	}
 	if result.NextAction != "" {
 		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)

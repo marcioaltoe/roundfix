@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: [ADR-0400]
 created_at: 2026-10-01T00:00:00Z
 updated_at: 2026-11-14T10:00:00Z
 deprecated_at: null

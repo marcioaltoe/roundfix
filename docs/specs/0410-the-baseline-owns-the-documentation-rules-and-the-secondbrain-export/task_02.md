@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -122,3 +122,133 @@ complexity: high
 - `_prd.md` → Goals; User Stories 1, 2, 4, 7 and 12; Core Features 1, 2, 4, 5, 8, 16 and 18; Success Metric 2; Success Metric 3; Success Metric 5
 - `_techspec.md` → ADR header and the lesson form; Export list; Documentation part of the update; Release Plan; Interfaces; Invariants 1-9; Data Models; API Contract 10; API Contract 13; API Contract 17; API Contract 19; API Contract 20; Testing Approach; Build Order 2
 - ADR-0438, ADR-0439, ADR-0254, ADR-0282, ADR-0412
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, roundfix, setup-context-driven, evidence-gate, systematic-debugging, no-workarounds, golang-safety.
+
+Implemented this Task's documentation part beside history, outside the guidance plan and Setup Manifest. Its pending files participate in the Plan Digest and `fileChanges`; one confirmation applies guidance, history, then documentation. The result includes all documentation arrays and the prescribed text, state, refusal and failure forms. `--no-history` and `--no-skills` leave this part active.
+
+The ADR functions read metadata, recognize the four notice forms outside code, and insert or replace the Amendment List line without YAML encoding. They preserve manually listed identifiers, numeric order, CRLF and every other byte. The caller filters self-notices and retired ADRs. The export planner is pure and handles creation, conversion, marker replacement, every specified refusal, losses and repository-owned bytes. The release classifier adds only `.secondbrain-export` and `docs/lessons/` to the maintenance boundary.
+
+Shared facts seam for task_03: `gatherDocumentationFacts(root)` in `internal/cli/baseline_update_documentation.go` reads repository configuration without a user home and returns the Setup Manifest modules, local Spec Root and History Root, export facts (including immediate docs entries), and every ADR's path, retirement classification, header, notices and original bytes. ADR discovery includes nested directories. `speccheck.GlossaryFiles` supplies deterministic root/map/link resolution; the consistency check retains its original definition files and excludes the map documents from definitions.
+
+### Acceptance evidence
+
+1. Export planning and confirmed apply: the named command subtests `plan_names_the_list_and_the_losses`, `text_section`, `json_member`, `digest_moves_only_when_pending`, `plan_ready_message`, `file_changes`, `confirmed_apply`, `second_run_current`, `secondbrain_off`, `marker_refused_rest_applies`, `no_history_does_not_skip` and `apply_failure` passed in focused runs. They exercise real adopted temporary repositories, a temporary home, exact kept bytes, process/other losses, refusal with another header applied, populated and empty JSON arrays, digest sensitivity, and both skip flags. The failure seam reaches the real write boundary and returns category `documentation`, the prescribed restore action and exit 1 without depending on mode bits.
+2. Amendment Lists: `fills_amendment_lists` and `fill_beside_history_unit` passed. The fixtures cover each notice form with one/two identifiers, linked identifiers, fenced/inline code, self-notices, retirement, nested ADRs, legacy headers, CRLF, exact other-byte preservation, a second current run, and a history unit appending lineage to the same successor. Pure reader/notice/writer cases also passed in focused subsets.
+3. Release boundary: all three subtests of `TestMaintenanceOnlyCountsLessonsAndTheExportList` passed across focused subsets. Lessons and the export list stay inside the boundary; an additional product-code path crosses it.
+4. This repository: the required Managed Refresh ran twice under a newly created temporary HOME with explicit existing Go caches and `GOPROXY=off`, `GOSUMDB=off`. Run 1 exited 0, reported 73 file changes, converted `.secondbrain-export` and filled 72 ADR headers. Run 2 exited 0 with `File changes: 0` and `Documentation: current`. A read-only text preview under that same fresh home exited 0 with `Baseline update: current`, `File changes: 0` and `Documentation: current`.
+
+No Knowledge Mark was assigned. The preview reports 373 of 376 ADRs unmarked; marking them, the final repository-owned export lines and the three new notices remain task_05's slice.
+
+### Focused checks
+
+The following focused commands exited 0; they are implementation checks, not the Daemon's declared Verification:
+
+- `go test ./internal/cli -run '^TestBaselineUpdateDocumentationPart/(plan_names_the_list_and_the_losses|confirmed_apply|fills_amendment_lists|fill_beside_history_unit|apply_failure)$' -count=1 -v`
+- `go test ./internal/cli -run '^TestBaselineUpdateDocumentationPart/(text_section|json_member|digest_moves_only_when_pending|plan_ready_message|file_changes|second_run_current|secondbrain_off|marker_refused_rest_applies|no_history_does_not_skip|apply_failure)$' -count=1 -v`
+- After the shared facts reader's final edit: `go test ./internal/cli -run '^TestBaselineUpdateDocumentationPart$/(plan_names_the_list_and_the_losses|fills_amendment_lists|fill_beside_history_unit|apply_failure)$' -count=1 -v`.
+- After strengthening the nested-ADR and pending-digest fixtures: `go test ./internal/cli -run '^TestBaselineUpdateDocumentationPart$/(fills_amendment_lists|digest_moves_only_when_pending)$' -count=1 -v`.
+- `go test ./internal/spec ./internal/baseline ./internal/releaseplan -run '^(TestReadADRHeader|TestADRAmendmentNotices|TestWithADRAmendedBy|TestPlanExportList|TestMaintenanceOnlyCountsLessonsAndTheExportList)/(mark_true|crlf|ascending_once|convert_reports_losses|apply_then_plan_unchanged|with_another_path)$' -count=1`
+- The complementary pure-function subset also exited 0, covering every other required reader, notice, writer, planner and maintenance subtest. Two early selection probes reported no tests and were not counted as behavior evidence.
+- `go test ./internal/speccheck -run '^TestGlossary(ReadsMappedAndRenamedGlossaries|DefinitionFormsAreRead)$' -count=1 -v`
+- `go test ./internal/cli -run '^(TestUpdateCheckSummarizesTheBaselinePreview|TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary|TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths)$' -count=1 -v`
+- Existing focused update/history cases `TestBaselineUpdatePlansPendingHistoryWithoutWrites`, `TestBaselineUpdateAppliesManifestPlanAndReportsJSON` and `TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest` exited 0.
+
+Initial command-fixture failures were traced to passing preservation mode as a decision instead of the separate request field, and expecting a loss for a docs child the fixture had not created. Both fixture causes were corrected before the successful focused runs; no assertion was weakened.
+
+### Generated artifacts and final refresh
+
+- Inserted the prescribed baseline/release reference paragraphs, release guide/help sentence, and `### Documentation part` reference subsection.
+- `make skills-sync` exited 0; it was run again after version recording. The three canonical/mirrored Roundfix files compare byte-identically.
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` exited 0 and raised both version fields in both Roundfix copies from `0.1.278` to `0.1.279`; the record was generated, not hand-edited.
+- After the last guide edit, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0. Its generated diff holds only the release-help fingerprint and the three edited user-guide fingerprints.
+- Final implementation step: `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text`, repeated until the second run reported zero changes. The following read-only preview used the same command without `--yes` and reported current.
+- A byte audit against the saved pre-refresh snapshot verified all 72 ADR edits change only the Amendment List line, preserving every other byte and `updated_at`. The export conversion removed only the reported `CONTEXT.md`, `docs/`, `README.md` and `AGENTS.md` includes; every kept byte matches the snapshot.
+- The final path audit accounted for 96 changed files: the Task's declared files and the 72 ADRs written by the Managed Refresh. No other Task, `_tasks.md`, Baseline asset, managed guide, configuration, dependency or unrelated skill changed. The Daemon records the generated ADR paths.
+- `git diff --check` exited 0. Refresh stdout/stderr, the ADR preimages and byte/path audit are under `/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-task02-evidence-566e0orb/`.
+
+Task status and checkboxes remain unchanged. Declared Verification, repository Verification and terminal settlement remain with the Daemon. No commit, push, Pull Request or cross-project message was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/adr/0011-acp-runtimes-run-batches-with-full-access.md`
+- `docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md`
+- `docs/adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md`
+- `docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md`
+- `docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md`
+- `docs/adr/0092-triage-intent-lives-in-a-typed-backlog.md`
+- `docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md`
+- `docs/adr/0100-a-managed-refresh-proves-preservation-instead-of-backing-it-up.md`
+- `docs/adr/0103-an-applied-refresh-republishes-the-setup-manifest.md`
+- `docs/adr/0104-a-spec-accepts-on-evidence-it-did-not-author.md`
+- `docs/adr/0120-retired-documentation-lives-under-one-history-root.md`
+- `docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md`
+- `docs/adr/0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md`
+- `docs/adr/0167-the-pre-pr-pull-request-row-never-decides-a-qualifying-partial.md`
+- `docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md`
+- `docs/adr/0170-a-task-already-completed-on-its-target-is-nothing-to-carry.md`
+- `docs/adr/0181-a-configuration-is-compared-with-the-recommendation-only-where-a-person-asked.md`
+- `docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md`
+- `docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md`
+- `docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md`
+- `docs/adr/0208-work-items-that-share-a-context-share-a-spec.md`
+- `docs/adr/0212-a-merged-spec-supersedes-its-runs-spec-directory-work-and-declared-leftovers.md`
+- `docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md`
+- `docs/adr/0224-this-repository-holds-its-upstream-skills-to-the-snapshot-and-the-lock-not-to-a-pinned-digest.md`
+- `docs/adr/0227-a-review-through-claude-keeps-its-verdict-and-fits-its-window.md`
+- `docs/adr/0229-an-operator-archive-resumes-any-park-from-the-run-start.md`
+- `docs/adr/0231-the-jev-ceiling-is-a-user-config-value.md`
+- `docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md`
+- `docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md`
+- `docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md`
+- `docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md`
+- `docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md`
+- `docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md`
+- `docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md`
+- `docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md`
+- `docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md`
+- `docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md`
+- `docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md`
+- `docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md`
+- `docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md`
+- `docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md`
+- `docs/adr/0276-a-row-the-authorization-keeps-offline-qualifies-and-a-byte-invariant-compares-with-the-delivery-base.md`
+- `docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md`
+- `docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md`
+- `docs/adr/0281-a-test-replaces-an-executable-it-rebuilds-instead-of-writing-into-it.md`
+- `docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md`
+- `docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md`
+- `docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md`
+- `docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md`
+- `docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md`
+- `docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md`
+- `docs/adr/0294-the-linux-lane-runs-like-ci.md`
+- `docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md`
+- `docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md`
+- `docs/adr/0327-gc-trims-a-declared-shared-build-cache.md`
+- `docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md`
+- `docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md`
+- `docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md`
+- `docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md`
+- `docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md`
+- `docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md`
+- `docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md`
+- `docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md`
+- `docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md`
+- `docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md`
+- `docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md`
+- `docs/adr/0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md`
+- `docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md`
+- `docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md`
+- `docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md`
+- `docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md`
+- `docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T213428Z_8e0d266520442009`
+- Source commit: `e2de5d6e92845b3f198e426a2c6ef1987b557716`
