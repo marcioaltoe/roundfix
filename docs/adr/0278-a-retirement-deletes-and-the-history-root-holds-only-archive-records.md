@@ -1,6 +1,7 @@
 ---
 status: accepted
-amended_by: [ADR-0282, ADR-0299]
+knowledge: true
+amended_by: [ADR-0282, ADR-0299, ADR-0440]
 created_at: 2026-10-16T00:00:00Z
 updated_at: 2026-10-20T09:00:00Z
 deprecated_at: null
@@ -62,6 +63,8 @@ are removed in the same plan instead.
 **Lessons leave before the text.** A Finding that closes with a lesson its ADR,
 Archive Record or reference does not already state is captured as one pending
 Secondbrain Inbox Entry, its source pinned as `<repository>@<commit>:<path>`.
+
+**Amended by [ADR-0440](0440-a-lesson-learned-is-written-only-when-a-test-holds-and-leaves-when-a-rule-states-it.md) (2026-11-19).** A lesson is no longer sent as a message: it is written as a Lesson Learned under `docs/lessons/` when its test holds, and a Lesson Learned joins what a retirement deletes once an ADR, a guide or a skill states it.
 
 Industry ADR practice keeps superseded ADRs in the log and OpenSpec keeps each
 completed change folder. The decision keeps what that practice protects, the

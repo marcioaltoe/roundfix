@@ -1,5 +1,6 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
+knowledge: true
 created_at: 2026-09-24T00:00:00Z
 updated_at: 2026-10-14T23:51:38Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ

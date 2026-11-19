@@ -1,5 +1,6 @@
 ---
 status: accepted
+knowledge: true
 amended_by: [ADR-0231, ADR-0239, ADR-0404]
 created_at: 2026-09-30T00:00:00Z
 updated_at: 2026-11-14T15:00:00Z

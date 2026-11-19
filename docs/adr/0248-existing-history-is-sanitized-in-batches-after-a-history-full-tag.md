@@ -1,6 +1,7 @@
 ---
 status: accepted
-amended_by: [ADR-0278]
+knowledge: false
+amended_by: [ADR-0278, ADR-0438]
 created_at: 2026-10-07T00:00:00Z
 updated_at: 2026-10-16T00:00:00Z
 deprecated_at: null
@@ -62,6 +63,8 @@ repository's corpus holds no legacy folder once the last batch merges. The
 Secondbrain export keeps its exclusions while any legacy folder remains, and
 mirrors `docs/` whole once none does. A documentation contract holds both
 directions.
+
+**Amended by [ADR-0438](0438-a-repository-publishes-a-standard-export-list-the-baseline-keeps-and-varies-it-only-in-its-own-lines.md) (2026-11-19).** The export no longer mirrors `docs/` whole: the Baseline keeps a Standard Export List that names knowledge and never the History Root, and the documentation contract holds that this repository exports no process path.
 
 Two alternatives were rejected. One commit converting all 223 folders would
 make a 58 MB diff no person can review and a single revert the only way back.

@@ -1,5 +1,6 @@
 ---
 status: accepted # proposed | accepted | rejected | deprecated | superseded
+knowledge: true
 amended_by: [ADR-0406]
 created_at: 2026-08-26T00:00:00Z
 updated_at: 2026-11-15T11:56:04Z
