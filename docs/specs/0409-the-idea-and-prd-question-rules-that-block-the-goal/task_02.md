@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0409-the-idea-and-prd-question-rules-that-block-the-goal
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -70,3 +70,13 @@ The four skills that shape a goal, `brainstorming`, `write-idea`, `write-prd` an
 - `_prd.md` → Goals (first and fourth bullets); User Stories 1, 2, 3, 6, 7, 8 and 9; Core Features 2, 3, 4, 5, 6, 8, 9, 10, 11, 12 and 14; Success Metric 2
 - `_techspec.md` → Skill section and stage paragraphs; Invariants 6 and 8; API Contract 3; API Contract 4; API Contract 5; Testing Approach; Build Order 2
 - ADR-0436, ADR-0437, ADR-0320, ADR-0403
+
+
+## Result
+
+Skills loaded: implement-task, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging
+
+- Added the shared Rule Challenge text, stage paragraphs and four pointers; the focused `go test ./skills -run '^TestTheAuthoringSkillsPutARuleChallengeToTheUser$' -count=1` passed, covering both copies, section position, guarantees, stage text, pointers and byte equality of the canonical core.
+- The contract uses `assertIdeaStageSkillPhrases` for each named guarantee in each copy; deliberate removal probes were not run, so their failure behavior remains for verification.
+- Ran `make skills-sync`, the required `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (exit 0), and `make skills-sync` again. A byte comparison found each of the four mirrors identical to its source. The full skills suite and declared Verification are left to the Daemon.
+- The first focused run exposed an assertion counting inline pointers as headings; the assertion was corrected to check heading lines and the focused rerun exited 0.

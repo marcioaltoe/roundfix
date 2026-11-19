@@ -87,6 +87,10 @@
       {
         "version": "0.0.4",
         "digest": "2140cdd430d1392df03edf4d75f4994b44bcc600149880235776ea747adbb603"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "4480417f93677bbd2035c5092d8b4950db393b36065e7a07d89c14487bcbe6a4"
       }
     ],
     "business-analyst": [
@@ -1449,6 +1453,10 @@
       {
         "version": "0.0.15",
         "digest": "adf2cc6d3229adfd742eb1f63f5143d5d3e9b4925bd89757c1f036fcd729ba4e"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "e1c245ee77ef920af58ed2ccbe6962a42529477c33040d59752fba2e2f7029b3"
       }
     ],
     "write-prd": [
@@ -1551,6 +1559,10 @@
       {
         "version": "0.0.26",
         "digest": "2eb606ce54ef91a655eba8147a41219522a1e928b2c4e132bdf64016008199b8"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "ba1b294a7ce5845b975c8289a71a5d9c0149c5dcd9c091ba865c382eeec72782"
       }
     ],
     "write-tasks": [
@@ -1811,6 +1823,10 @@
       {
         "version": "0.0.27",
         "digest": "af84a76ce22f406f178dffc3422fd139cb30de33737669ccdfc5b584ed7bff24"
+      },
+      {
+        "version": "0.0.28",
+        "digest": "2f895c11ac83006740dcb8985af13b9a81ea0032f1459e45e954c075ba4916cd"
       }
     ]
   }

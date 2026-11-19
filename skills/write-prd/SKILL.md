@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.26
+  version: 0.0.27
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.26
+version: 0.0.27
 ---
 
 # Write PRD
@@ -21,7 +21,7 @@ Produce `docs/specs/<feature-slug>/_prd.md` — the product definition the rest 
 
 If `docs/specs/<slug>/_idea.md` exists (produced by `write-idea`), it **is** the exploration: read it first, and treat its research, scoring, trade-off insights, chosen direction, and Out of Scope list as answered ground truth. Clarify only what the idea left open.
 
-Copy its `## Idea-stage judgment` section into the PRD unchanged.
+Copy its `## Idea-stage judgment` section into the PRD unchanged, and its `## Rule challenges` records as `## Rule Challenge` below says.
 
 ## Size triage first
 
@@ -81,6 +81,25 @@ When `roundfix spec judge` prints a suggested pair, answer each suggested pair
 by adopting the open source within the bound or by stating in the report why it
 stays apart. A suggestion never gates, and no suggestion does not mean that
 nothing fits; still inspect the open sources that share the context.
+
+## Rule Challenge
+
+A rule guides the solution and never bounds the goal in silence. A rule is a decision the repository recorded: an accepted ADR, a Normative Clause of a guide under `docs/agents/`, a definition in `CONTEXT.md`, or a document under `docs/references/` that the repository treats as binding. A rule blocks the goal when the solution you would recommend, or a part the goal needs, cannot exist without contradicting it, or when it stops you from stating the problem. Extra work, taste and friction are not a block.
+
+When a rule blocks the goal, neither drop or narrow the solution nor contradict the rule: put a Rule Challenge to the user, one question per rule, through the structured question tool the session exposes. Name the rule and where it lives, what it imposes, up to three things it prevents for this goal, and your reading of why the rule exists and whether it looks out of date or badly written. Offer keep, change and retire, each with its consequence, the recommended one first and labeled `(Recommended)`. The rule binds until the user answers: asking changes nothing, and a recommendation, silence, a dismissal or a timeout is never an answer.
+
+- Ask no Rule Challenge about a change the user already decided, because the request asks for it or it follows from an answer of the user that the artifact records. Name that request or answer where the artifact records the change.
+- Ask none about a rule that carries a Kept Line, a line `Kept (YYYY-MM-DD): <what was asked>; <why it stays>.` after its text, unless the question names a fact the earlier one did not have. Record that fact as `new fact`.
+- Ask at most three in one Authoring Phase or brainstorming session. When more rules block, ask about the three that prevent the most and list the others, which keep binding, in the artifact's open questions.
+- Never answer for the user. An Author Subagent returns the question, with its options and the one it recommends, to the session that started it. When no person is present, write no artifact for this phase: the Spec waits as a Backlog Entry that holds the whole question in the record form with `answer: waiting`, names the Spec folder when one exists, and carries `waiting_on`, naming the Rule Challenge, and `since` in its frontmatter.
+
+What follows the answer:
+
+- Change or retire: the PRD states the change of the rule as a requirement, and a Task of the same Spec changes the rule together with the work that depended on it. An ADR changes through the lifecycle of `docs/agents/docs-layout.md`.
+- Keep: the solution stays inside the rule, and the PRD requires a Task to add the Kept Line after the rule's text. The line names no Spec.
+- A rule inside `setup-context-driven` markers changes only in the Baseline, and its Kept Line goes in `docs/agents/specific-repository.md`, under a heading of its own, naming the rule. On change or retire, a repository that does not own the Baseline sends the user's decision as one ai-memory message to the Baseline's owner, obeys the rule until the Baseline changes, and records the message and the scope it left out.
+
+In this stage, read every ADR and rule the Project Constraints snapshot will list as an obligation and as a candidate: one that blocks a goal becomes a Rule Challenge before the snapshot is written. Copy the `## Rule challenges` records of `_idea.md` into the PRD unchanged and add the ones this stage asks, in the fielded form the template shows; the section reads `None.` when no rule blocked the goal. A change or retire answer becomes a Core Feature that states the change of the rule, and a keep answer a Core Feature that requires the Kept Line.
 
 ## Declared model
 
