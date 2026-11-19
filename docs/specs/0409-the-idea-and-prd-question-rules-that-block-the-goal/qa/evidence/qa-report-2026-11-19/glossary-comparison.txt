@@ -1,0 +1,2 @@
+PRD adds only Rule Challenge and Kept Line; TechSpec adds none; removing exact API Contract 8 restores Delivery Base CONTEXT bytes; named glossary test passes.
+PASS Glossary declaration and exact additions

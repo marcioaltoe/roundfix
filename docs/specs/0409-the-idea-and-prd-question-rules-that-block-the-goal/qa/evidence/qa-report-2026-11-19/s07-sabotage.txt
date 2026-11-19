@@ -1,0 +1,20 @@
+Mutation: .agents/skills/write-idea/SKILL.md
+Target: TestTheAuthoringSkillsPutARuleChallengeToTheUser/the_core_text_is_shared
+Exactly one changed path; no synchronization or regeneration.
+$ go test -count=1 -timeout 20m -v -run ^TestTheAuthoringSkillsPutARuleChallengeToTheUser$/^the_core_text_is_shared$ ./skills
+stdout:
+=== RUN   TestTheAuthoringSkillsPutARuleChallengeToTheUser
+=== PAUSE TestTheAuthoringSkillsPutARuleChallengeToTheUser
+=== CONT  TestTheAuthoringSkillsPutARuleChallengeToTheUser
+=== RUN   TestTheAuthoringSkillsPutARuleChallengeToTheUser/the_core_text_is_shared
+    rule_challenge_authoring_test.go:130: write-idea: core differs
+--- FAIL: TestTheAuthoringSkillsPutARuleChallengeToTheUser (0.00s)
+    --- FAIL: TestTheAuthoringSkillsPutARuleChallengeToTheUser/the_core_text_is_shared (0.00s)
+FAIL
+FAIL	roundfix/skills	0.303s
+FAIL
+
+stderr:
+
+exit: 1
+Named assertion rejected sabotage: True

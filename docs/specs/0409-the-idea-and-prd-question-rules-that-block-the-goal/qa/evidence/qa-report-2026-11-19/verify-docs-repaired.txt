@@ -1,0 +1,91 @@
+$ make verify-docs GO=python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go SHELL=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/make-shell.py.txt
+stdout:
+python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=0aa467e2-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-19 15:01:07 -0300'" -o bin/roundfix ./cmd/roundfix
+python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	13.476s
+python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows)$' ./...
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	1.151s
+ok  	roundfix/internal/app	0.586s
+ok  	roundfix/internal/authorization	1.112s
+ok  	roundfix/internal/baseline	79.978s
+ok  	roundfix/internal/baselineacp	0.639s
+ok  	roundfix/internal/childexit	0.186s [no tests to run]
+ok  	roundfix/internal/cli	1.423s
+ok  	roundfix/internal/codex	0.670s
+ok  	roundfix/internal/config	1.239s
+ok  	roundfix/internal/corebudget	0.205s [no tests to run]
+ok  	roundfix/internal/correction	0.196s [no tests to run]
+ok  	roundfix/internal/daemon	1.295s
+ok  	roundfix/internal/delivery	0.786s [no tests to run]
+ok  	roundfix/internal/docscontract	0.626s
+ok  	roundfix/internal/gittest	1.045s
+ok  	roundfix/internal/judge	0.262s [no tests to run]
+ok  	roundfix/internal/lighttier	0.249s [no tests to run]
+ok  	roundfix/internal/mdtree	0.182s [no tests to run]
+ok  	roundfix/internal/notify	0.535s
+ok  	roundfix/internal/openrouterkey	0.179s [no tests to run]
+ok  	roundfix/internal/phaserecord	0.182s [no tests to run]
+ok  	roundfix/internal/preflight	0.974s
+ok  	roundfix/internal/queueforecast	0.179s [no tests to run]
+ok  	roundfix/internal/releaseplan	0.492s
+ok  	roundfix/internal/reviewsource	0.538s
+ok  	roundfix/internal/reviewsource/coderabbit	0.603s
+ok  	roundfix/internal/rounds	0.493s
+ok  	roundfix/internal/runcause	0.244s [no tests to run]
+ok  	roundfix/internal/runevent	0.484s
+ok  	roundfix/internal/secretscan	0.183s [no tests to run]
+ok  	roundfix/internal/sharedcache	0.190s [no tests to run]
+ok  	roundfix/internal/skillcoverage	0.205s [no tests to run]
+ok  	roundfix/internal/skillhash	0.462s
+ok  	roundfix/internal/spec	1.129s
+ok  	roundfix/internal/specaudit	1.241s
+ok  	roundfix/internal/speccheck	2.516s
+ok  	roundfix/internal/store	1.332s
+ok  	roundfix/internal/suiteguard	1.138s
+ok  	roundfix/internal/suiteguardcontract	0.400s [no tests to run]
+ok  	roundfix/internal/testfixture	0.212s [no tests to run]
+ok  	roundfix/internal/testwait	0.203s [no tests to run]
+ok  	roundfix/internal/tui	0.739s
+ok  	roundfix/internal/verifyselect	26.695s
+ok  	roundfix/internal/watch	0.729s
+ok  	roundfix/internal/worktree	1.649s
+ok  	roundfix/skills	36.894s
+python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	6.187s
+bin/roundfix spec check
+Spec 0409-the-idea-and-prd-question-rules-that-block-the-goal
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/_techspec.md Vocabulary Contract
+Spec 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/_techspec.md Vocabulary Contract
+Spec 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release/references/_index.md
+
+stderr:
+QA toolchain: go run -buildvcs=false ./cmd/gocache-bound -dir /Volumes/Brain-SSD/cache/go-build -max-mb 10240 -idle 2h
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 1169 idle entries (264859613 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 24559922769 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+QA toolchain: go build -buildvcs=false -ldflags -X 'roundfix/internal/app.BuildCommit=0aa467e2-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-19 15:01:07 -0300' -o bin/roundfix ./cmd/roundfix
+QA toolchain: go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+QA toolchain: go test -timeout=40m -count=1 -tags repocontract -run ^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows)$ ./...
+QA toolchain: go test -timeout=40m -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run ^TestCheckCorpusBudget$
+
+exit: 0

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0409-the-idea-and-prd-question-rules-that-block-the-goal
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

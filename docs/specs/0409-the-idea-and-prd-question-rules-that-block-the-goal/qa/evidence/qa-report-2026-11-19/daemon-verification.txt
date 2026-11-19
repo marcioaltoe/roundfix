@@ -1,0 +1,6 @@
+Source: Daemon-supplied Repository Verification fact for audited head 0aa467e25a1ed81359b5d1082efb6629bc08171d
+Command: make verify-changed
+Verdict: pass
+Exit: 0
+Diagnostics: removed on success
+Not rerun by QA Agent.

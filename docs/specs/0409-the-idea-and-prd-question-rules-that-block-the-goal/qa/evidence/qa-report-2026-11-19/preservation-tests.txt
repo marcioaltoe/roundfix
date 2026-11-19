@@ -1,0 +1,151 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestInstructionHierarchyRendersActivePointersOnce|TestTheGlossaryClausesCarryTheirForceAndText|TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall|TestShippedGuidanceCitesNoRepositoryRecord|TestNoTwoBaselineClausesShareText|TestTheRouteClausesJudgeAFeatureForTheIdeaStage)$ ./internal/baseline
+stdout:
+=== RUN   TestShippedGuidanceCitesNoRepositoryRecord
+=== PAUSE TestShippedGuidanceCitesNoRepositoryRecord
+=== RUN   TestNoTwoBaselineClausesShareText
+=== PAUSE TestNoTwoBaselineClausesShareText
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText
+=== PAUSE TestTheGlossaryClausesCarryTheirForceAndText
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage
+=== PAUSE TestTheRouteClausesJudgeAFeatureForTheIdeaStage
+=== RUN   TestInstructionHierarchyRendersActivePointersOnce
+=== PAUSE TestInstructionHierarchyRendersActivePointersOnce
+=== RUN   TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== PAUSE TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== CONT  TestShippedGuidanceCitesNoRepositoryRecord
+=== CONT  TestTheRouteClausesJudgeAFeatureForTheIdeaStage
+=== CONT  TestTheGlossaryClausesCarryTheirForceAndText
+=== CONT  TestInstructionHierarchyRendersActivePointersOnce
+=== CONT  TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract
+=== RUN   TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route
+--- PASS: TestTheGlossaryClausesCarryTheirForceAndText (0.02s)
+    --- PASS: TestTheGlossaryClausesCarryTheirForceAndText/clause.context.read-domain-contract (0.00s)
+    --- PASS: TestTheGlossaryClausesCarryTheirForceAndText/clause.domain.glossary-currency (0.00s)
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route/Standard_TypeScript_golden
+=== CONT  TestNoTwoBaselineClausesShareText
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria/Standard_TypeScript_golden
+--- PASS: TestTheAskUserClauseAllowsThreeIndependentQuestionsPerCall (0.02s)
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice
+--- PASS: TestShippedGuidanceCitesNoRepositoryRecord (0.02s)
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice/repository_guide
+--- PASS: TestNoTwoBaselineClausesShareText (0.00s)
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained/repository_guide
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained/Standard_TypeScript_golden
+=== RUN   TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained/repository_guide
+--- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage (0.03s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/large_initiative_route/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/feature_takes_indicated_route/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_three_criteria/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judge_recorded_item_or_session_request/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer/repository_guide (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/agent_answers_when_judge_does_not_answer/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/verdict_rules/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/indicated_starts_idea/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/undecided_is_user's_choice/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/not_indicated_continues_to_prd/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/record_judgment/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/judgment_never_refuses/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/unattended_indicated_or_undecided_waits/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/fix_or_refactor_never_judged/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route/repository_guide (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/standard_feature_route/Standard_TypeScript_golden (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/idea_judgment_chooses_route/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/surface_transcript_assertion/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_first_sentence_retained/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_techspec_exception_retained/repository_guide (0.00s)
+    --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained/Standard_TypeScript_golden (0.00s)
+        --- PASS: TestTheRouteClausesJudgeAFeatureForTheIdeaStage/invariant_surface_transcript_retained/repository_guide (0.00s)
+--- PASS: TestInstructionHierarchyRendersActivePointersOnce (0.05s)
+PASS
+suiteguard: guard cost: measured 3355 paths; fingerprint took 178.226208ms before and 164.643458ms after
+ok  	roundfix/internal/baseline	0.541s
+
+stderr:
+
+exit: 0

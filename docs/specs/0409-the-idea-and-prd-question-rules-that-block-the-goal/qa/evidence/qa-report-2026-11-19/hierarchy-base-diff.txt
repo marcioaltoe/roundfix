@@ -1,0 +1,6 @@
+$ git diff abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8 0aa467e25a1ed81359b5d1082efb6629bc08171d -- docs/agents/agent-instructions.md internal/baseline/assets/modules/core.json
+stdout:
+
+stderr:
+
+exit: 0

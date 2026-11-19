@@ -1,0 +1,10 @@
+Origin: published source not authored by this Spec
+Author/title: Shadewright, Amending accepted ADRs
+Date: 2026; read 2026-11-19
+URL: https://shadewright.io/adr/0021-amending-accepted-adrs/
+Evidence boundary: quoted passages committed in PRD Acceptance evidence; no network lookup.
+Quoted passage: Every amendment gets a dated entry
+Delivered clause 2: Kept (YYYY-MM-DD): <what was asked>; <why it stays>.
+Delivered clause 2: a rule keeps every Kept Line, the newest last
+Comparison: The dated Kept Line captures what was asked and why the decision remains; lines accumulate in chronological order. A keep annotation reconfirms a rule rather than changing its substantive decision.
+Result: pass

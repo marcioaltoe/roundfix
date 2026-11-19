@@ -1,0 +1,20 @@
+Mutation: .agents/skills/write-prd/references/prd-template.md
+Target: TestTheTemplatesCarryTheRuleChallengeRecord/prd/fields
+Exactly one changed path; no synchronization or regeneration.
+$ go test -count=1 -timeout 20m -v -run ^TestTheTemplatesCarryTheRuleChallengeRecord$/^prd$/^fields$ ./skills
+stdout:
+=== RUN   TestTheTemplatesCarryTheRuleChallengeRecord
+=== PAUSE TestTheTemplatesCarryTheRuleChallengeRecord
+=== CONT  TestTheTemplatesCarryTheRuleChallengeRecord
+=== RUN   TestTheTemplatesCarryTheRuleChallengeRecord/prd/fields
+    rule_challenge_record_test.go:34: ../.agents/skills/write-prd/references/prd-template.md: phrase "new fact: only when the rule already carried a Kept Line" occurs 0 times; want once
+--- FAIL: TestTheTemplatesCarryTheRuleChallengeRecord (0.00s)
+    --- FAIL: TestTheTemplatesCarryTheRuleChallengeRecord/prd/fields (0.00s)
+FAIL
+FAIL	roundfix/skills	0.303s
+FAIL
+
+stderr:
+
+exit: 1
+Named assertion rejected sabotage: True

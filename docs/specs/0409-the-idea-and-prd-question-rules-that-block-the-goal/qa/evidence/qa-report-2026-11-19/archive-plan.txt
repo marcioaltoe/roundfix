@@ -1,0 +1,16 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/bin/roundfix archive 0409-the-idea-and-prd-question-rules-that-block-the-goal --plan --offline
+stdout:
+archive plan for 0409-the-idea-and-prd-question-rules-that-block-the-goal: removes 55 file(s) (366790 bytes) and writes docs/history/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal.md
+core 10 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-19.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md
+evidence 40 file(s) (117141 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 38822 bytes: no advice (offline)
+candidate references/2026-11-18-idea-and-prd-question-rules-that-block-the-goal.md 2517 bytes: no advice (offline)
+candidate references/2026-11-18-maintainer-answers.md 2647 bytes: no advice (offline)
+candidate references/2026-11-18-rules-named-in-recent-plans.md 2611 bytes: no advice (offline)
+candidate references/2026-11-19-prototype-and-governed-paths.md 8969 bytes: no advice (offline)
+promote with: roundfix archive 0409-the-idea-and-prd-question-rules-that-block-the-goal --promote <path>
+
+stderr:
+
+exit: 0

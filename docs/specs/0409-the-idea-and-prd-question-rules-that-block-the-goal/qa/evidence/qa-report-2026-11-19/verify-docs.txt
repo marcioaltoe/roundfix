@@ -1,0 +1,14 @@
+$ make verify-docs GO=python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go BIN=python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt product
+stdout:
+QA toolchain: go run -buildvcs=false ./cmd/gocache-bound -dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-go-build-501 -max-mb 2048 -idle 2h
+python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=0aa467e2-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-19 15:00:08 -0300'" -o python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt product ./cmd/roundfix
+QA toolchain: go build -buildvcs=false -ldflags -X 'roundfix/internal/app.BuildCommit=0aa467e2-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-19 15:00:08 -0300' -o python3 /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt product ./cmd/roundfix
+
+stderr:
+gocache: warning: GOCACHE set with go env (QA toolchain: go env GOCACHE
+/Volumes/Brain-SSD/cache/go-build) is not a writable directory; using /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-go-build-501 with a 2048 MiB default bound
+main module (roundfix) does not contain package roundfix/docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt
+package product is not in std (/usr/local/go/src/product)
+make: *** [build] Error 1
+
+exit: 2

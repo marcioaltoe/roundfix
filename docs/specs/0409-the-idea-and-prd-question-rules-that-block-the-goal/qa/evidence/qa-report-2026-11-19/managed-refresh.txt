@@ -1,0 +1,101 @@
+delivery-base: archive of abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8, fresh initialized and committed Git repository. Before phrase counts: [0, 0, 0, 0]
+
+delivery-base refresh 1
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/bin/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:40885ab5cd59c578fa181ff22dabac8e4bba016a326f9a212e01f2fec4c7cbea
+Current catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+File changes: 2
+- update docs/agents/setup-context.json (1 managed entries)
+- update docs/agents/spec-routing.md (1 managed entries)
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:bdef5a4c9893cb654551d005a9fd950e041e85132b0fd8b208707bb2118b8319
+Approved Plan Digest: sha256:bdef5a4c9893cb654551d005a9fd950e041e85132b0fd8b208707bb2118b8319
+
+stderr:
+
+exit: 0
+
+Independent file reread: phrases once; full clauses ordered after last route and before first constraints: [5693, 6551, 8574, 10455]
+
+delivery-base refresh 2
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/bin/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+Current catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:a17a3f7879788657326fb1f82603a57ad25bd7d287930b28ac819f1ac32ee27a
+Approved Plan Digest: sha256:a17a3f7879788657326fb1f82603a57ad25bd7d287930b28ac819f1ac32ee27a
+
+stderr:
+
+exit: 0
+
+Independent file reread: phrases once; full clauses ordered after last route and before first constraints: [5693, 6551, 8574, 10455]
+
+audited-head: archive of 0aa467e25a1ed81359b5d1082efb6629bc08171d, fresh initialized and committed Git repository. Before phrase counts: [1, 1, 1, 1]
+
+audited-head refresh 1
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0409-the-idea-and-prd-question-rules-that-block-the-goal-932c016238df8fc9-b441d569-adb89538/run_20261119T165437Z_cce98d78771e9d86/bin/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+Current catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:9b2c844f55b5bca6a59a903e519ae069ba39c3390b83cbe7c2cfe19028524c52
+Approved Plan Digest: sha256:9b2c844f55b5bca6a59a903e519ae069ba39c3390b83cbe7c2cfe19028524c52
+
+stderr:
+
+exit: 0
+
+Independent file reread: phrases once; full clauses ordered after last route and before first constraints: [5693, 6551, 8574, 10455]

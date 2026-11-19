@@ -1,0 +1,167 @@
+$ git diff-tree --no-commit-id --name-only -r 45f7e86330d936289827b4804df55e919f541429
+stdout:
+docs/agents/setup-context.json
+docs/agents/spec-routing.md
+docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_01.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+internal/baseline/assets/modules/spec-workflow.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/clause_characterization_test.go
+internal/baseline/module-versions.json
+internal/baseline/rule_challenge_clauses_test.go
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+
+stderr:
+
+exit: 0
+
+task_01 docs/agents/setup-context.json declared=True governed=True granted=True
+task_01 docs/agents/spec-routing.md declared=True governed=True granted=True
+task_01 docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_01.md declared=True governed=False granted=False
+task_01 internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md declared=True governed=True granted=True
+task_01 internal/baseline/assets/modules/spec-workflow.json declared=True governed=True granted=True
+task_01 internal/baseline/assets/profiles/standard-typescript-monorepo.json declared=True governed=True granted=True
+task_01 internal/baseline/clause_characterization_test.go declared=True governed=False granted=False
+task_01 internal/baseline/module-versions.json declared=True governed=False granted=False
+task_01 internal/baseline/rule_challenge_clauses_test.go declared=True governed=False granted=False
+task_01 internal/baseline/testdata/catalog.diagnostics.golden.json declared=True governed=False granted=False
+task_01 internal/baseline/testdata/catalog.digest declared=True governed=False granted=False
+task_01 internal/baseline/testdata/catalog.normalized.json declared=True governed=False granted=False
+task_01 internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json declared=True governed=False granted=False
+task_01 internal/baseline/testdata/plan-characterization/clean-adoption.golden.json declared=True governed=False granted=False
+task_01 internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json declared=True governed=False granted=False
+task_01 internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json declared=True governed=False granted=False
+$ git merge-base --is-ancestor abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8 abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8
+stdout:
+
+stderr:
+
+exit: 0
+
+$ git diff-tree --no-commit-id --name-only -r 882e0303ef1e14944368899f15f366b90920fdf7
+stdout:
+.agents/skills/brainstorming/SKILL.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-techspec/SKILL.md
+docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_02.md
+skills/brainstorming/SKILL.md
+skills/rule_challenge_authoring_test.go
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-prd/SKILL.md
+skills/write-techspec/SKILL.md
+
+stderr:
+
+exit: 0
+
+task_02 .agents/skills/brainstorming/SKILL.md declared=True governed=True granted=True
+task_02 .agents/skills/write-idea/SKILL.md declared=True governed=True granted=True
+task_02 .agents/skills/write-prd/SKILL.md declared=True governed=True granted=True
+task_02 .agents/skills/write-techspec/SKILL.md declared=True governed=True granted=True
+task_02 docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_02.md declared=True governed=False granted=False
+task_02 skills/brainstorming/SKILL.md declared=True governed=True granted=True
+task_02 skills/rule_challenge_authoring_test.go declared=True governed=False granted=False
+task_02 skills/testdata/owned-skill-versions.json declared=True governed=False granted=False
+task_02 skills/write-idea/SKILL.md declared=True governed=True granted=True
+task_02 skills/write-prd/SKILL.md declared=True governed=True granted=True
+task_02 skills/write-techspec/SKILL.md declared=True governed=True granted=True
+$ git merge-base --is-ancestor abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8 45f7e86330d936289827b4804df55e919f541429
+stdout:
+
+stderr:
+
+exit: 0
+
+$ git diff-tree --no-commit-id --name-only -r 0aa467e25a1ed81359b5d1082efb6629bc08171d
+stdout:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/modes.md
+.agents/skills/write-idea/SKILL.md
+.agents/skills/write-idea/references/idea-template.md
+.agents/skills/write-prd/SKILL.md
+.agents/skills/write-prd/references/prd-template.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_03.md
+docs/user-guide/context-driven-development.md
+skills/roundfix/SKILL.md
+skills/roundfix/references/modes.md
+skills/rule_challenge_record_test.go
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+skills/write-idea/references/idea-template.md
+skills/write-prd/SKILL.md
+skills/write-prd/references/prd-template.md
+
+stderr:
+
+exit: 0
+
+task_03 .agents/skills/roundfix/SKILL.md declared=True governed=True granted=True
+task_03 .agents/skills/roundfix/references/modes.md declared=True governed=True granted=True
+task_03 .agents/skills/write-idea/SKILL.md declared=True governed=True granted=True
+task_03 .agents/skills/write-idea/references/idea-template.md declared=True governed=True granted=True
+task_03 .agents/skills/write-prd/SKILL.md declared=True governed=True granted=True
+task_03 .agents/skills/write-prd/references/prd-template.md declared=True governed=True granted=True
+task_03 CONTEXT.md declared=True governed=False granted=False
+task_03 docs/references/behavior-surfaces.json declared=True governed=False granted=False
+task_03 docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/task_03.md declared=True governed=False granted=False
+task_03 docs/user-guide/context-driven-development.md declared=True governed=False granted=False
+task_03 skills/roundfix/SKILL.md declared=True governed=True granted=True
+task_03 skills/roundfix/references/modes.md declared=True governed=False granted=False
+task_03 skills/rule_challenge_record_test.go declared=True governed=False granted=False
+task_03 skills/testdata/owned-skill-versions.json declared=True governed=False granted=False
+task_03 skills/write-idea/SKILL.md declared=True governed=True granted=True
+task_03 skills/write-idea/references/idea-template.md declared=True governed=False granted=False
+task_03 skills/write-prd/SKILL.md declared=True governed=True granted=True
+task_03 skills/write-prd/references/prd-template.md declared=True governed=True granted=True
+$ git merge-base --is-ancestor abe2ebe16b78bfe1315b7f6d5ea96c5cec0f61c8 882e0303ef1e14944368899f15f366b90920fdf7
+stdout:
+
+stderr:
+
+exit: 0
+
+$ git status --porcelain --untracked-files=all
+stdout:
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/baseline-named.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/baseline-package.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/build.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/cli-baseline.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/daemon-verification.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/docs-named.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/docs-package.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/glossary-comparison.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/glossary-phrases.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/hierarchy-base-diff.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/make-shell.py.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/managed-refresh.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/precondition.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/preservation-comparison.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/preservation-tests.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/qa-driver.py.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/skills-named.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/skills-package.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/skills-sync-check.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/text-contracts.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/verify-docs-repaired.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/verify-docs.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/version-after-docs.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/version-final.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/evidence/qa-report-2026-11-19/version.txt
+?? docs/specs/0409-the-idea-and-prd-question-rules-that-block-the-goal/qa/qa-report-2026-11-19.md
+
+stderr:
+
+exit: 0
+
+Governed changed paths: 19; bounded grant paths: 19; every Task commit listed in seeded mechanical authorization table. No additional grant/shape detector was rerun.
+Declared-vs-actual, grant ancestry, unchanged forbidden paths and settlement errors: []

@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 20m -tags docscontract -v -run ^TestGlossaryPhrasesAreDefinedTerms$ ./internal/docscontract
+stdout:
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.05s)
+PASS
+ok  	roundfix/internal/docscontract	0.292s
+
+stderr:
+
+exit: 0

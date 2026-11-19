@@ -1,0 +1,20 @@
+Mutation: .agents/skills/roundfix/references/modes.md
+Target: TestTheSkillModesNeverAnswerARuleChallenge/unattended
+Exactly one changed path; no synchronization or regeneration.
+$ go test -count=1 -timeout 20m -v -run ^TestTheSkillModesNeverAnswerARuleChallenge$/^unattended$ ./skills
+stdout:
+=== RUN   TestTheSkillModesNeverAnswerARuleChallenge
+=== PAUSE TestTheSkillModesNeverAnswerARuleChallenge
+=== CONT  TestTheSkillModesNeverAnswerARuleChallenge
+=== RUN   TestTheSkillModesNeverAnswerARuleChallenge/unattended
+    rule_challenge_record_test.go:46: ../.agents/skills/roundfix/references/modes.md: phrase "A Rule Challenge is the user's too: this mode asks it and never answers it." occurs 0 times; want once
+--- FAIL: TestTheSkillModesNeverAnswerARuleChallenge (0.00s)
+    --- FAIL: TestTheSkillModesNeverAnswerARuleChallenge/unattended (0.00s)
+FAIL
+FAIL	roundfix/skills	0.304s
+FAIL
+
+stderr:
+
+exit: 1
+Named assertion rejected sabotage: True

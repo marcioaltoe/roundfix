@@ -1,0 +1,21 @@
+Mutation: internal/baseline/assets/modules/spec-workflow.json
+Target: TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses/ask/implementation_guard_rail
+Exactly one changed path; no synchronization or regeneration.
+$ go test -count=1 -timeout 20m -v -run ^TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses$/^ask$/^implementation_guard_rail$ ./internal/baseline
+stdout:
+=== RUN   TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses
+=== PAUSE TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses
+=== CONT  TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses
+=== RUN   TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses/ask/implementation_guard_rail
+    rule_challenge_clauses_test.go:154: phrase "In a Run, in a Task and in the QA gate a rule is a guard-rail: flag a conflict there and ask no Rule Challenge." occurs 0 times
+--- FAIL: TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses (0.00s)
+    --- FAIL: TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses/ask/implementation_guard_rail (0.00s)
+FAIL
+suiteguard: guard cost: measured 3337 paths; fingerprint took 175.903334ms before and 156.651416ms after
+FAIL	roundfix/internal/baseline	0.650s
+FAIL
+
+stderr:
+
+exit: 1
+Named assertion rejected sabotage: True

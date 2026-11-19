@@ -1,0 +1,7 @@
+$ go test -count=1 -timeout 40m -run Baseline|GuidanceComposition|SetupManifest ./internal/cli
+stdout:
+ok  	roundfix/internal/cli	67.473s
+
+stderr:
+
+exit: 0
