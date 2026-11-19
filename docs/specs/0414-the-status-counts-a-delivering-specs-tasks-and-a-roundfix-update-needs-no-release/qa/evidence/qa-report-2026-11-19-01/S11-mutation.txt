@@ -1,6 +1,0 @@
-isolated git archive 69ae9b561240cb4d6b1358f9278cfce36be25d3f; initialized/staged/committed disposable Git repository
-path: internal/cli/cli.go
-removed:
-a generated .claude/agents/roundfix-*.md
-inserted:
-

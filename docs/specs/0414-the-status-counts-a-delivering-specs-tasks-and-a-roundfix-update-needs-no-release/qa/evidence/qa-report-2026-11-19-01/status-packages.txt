@@ -1,8 +1,0 @@
-command: go test -count=1 -timeout 30m ./internal/spec ./internal/cli ./internal/daemon
-exit: 0
-stdout:
-ok  	roundfix/internal/spec	88.105s
-ok  	roundfix/internal/cli	351.033s
-ok  	roundfix/internal/daemon	88.320s
-
-stderr:

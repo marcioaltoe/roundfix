@@ -1,3 +1,0 @@
-package main
-import("context";"os";"fmt";"roundfix/internal/store")
-func main(){ctx:=context.Background();s,e:=store.Open(ctx,os.Getenv("HOME"));if e!=nil{panic(e)};defer s.Close();q,found,e:=s.DeliveryQueue(ctx,os.Args[1]);if e!=nil{panic(e)};if !found{q,e=s.CreateDeliveryQueue(ctx,os.Args[1],[]string{"0097-widget"});if e!=nil{panic(e)}};i:=q.Items[0];i.Stage=store.DeliveryStage(os.Args[4]);i.Branch=os.Args[2];i.Worktree=os.Args[3];if e=s.UpdateDeliveryQueueItem(ctx,os.Args[1],i);e!=nil{panic(e)};fmt.Println("disposable queue persisted")}

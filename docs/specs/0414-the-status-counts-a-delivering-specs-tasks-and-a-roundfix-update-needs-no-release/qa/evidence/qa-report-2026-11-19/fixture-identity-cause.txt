@@ -1,2 +1,0 @@
-Initial full CLI run failed only TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration at follow_up_waiting_test.go:65; observed fixture head 676c7f4 vs expected 76cb09c. The QA driver had injected GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL, GIT_COMMITTER_NAME, GIT_COMMITTER_EMAIL and GIT_CONFIG_GLOBAL/GIT_CONFIG_NOSYSTEM. Removing those QA overrides for the diagnostic preserves the session test environment and restores fixture identity. Diagnostic exit: 0
-No product or assertion change. Full CLI suite will be rerun once with corrected environment; initial transcript retained.

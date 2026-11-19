@@ -1,9 +1,0 @@
-command: /bin/sh -c tr -s '[:space:]' ' ' < docs/user-guide/commands/follow-up.md | grep -qF -- "are counted on its Item Branch as Git holds it: the Spec folder at the branch head or, once the branch holds the Spec's Archive Record" || { echo 'follow-up guide lacks the sentence' >&2; exit 1; }; tr -s '[:space:]' ' ' < docs/user-guide/commands/follow-up.md | grep -qF -- "and no file of the item's worktree is read." || { echo 'follow-up guide lacks the worktree clause' >&2; exit 1; }; grep -F -- '**Spec Queue Table**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Spec Queue Table\*\*(:| —( |$))' || { echo 'glossary lacks the entry' >&2; exit 1; }; tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "A Delivery Queue item's Tasks are counted on its Item Branch as Git holds it" || { echo 'glossary entry lacks the sentence' >&2; exit 1; }; grep -qF -- 'Spec 0414 task_01: a Delivery Queue item' docs/references/skill-coverage.json || { echo 'coverage map lacks the review' >&2; exit 1; }; go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract && go test -count=1 -timeout 30m ./internal/spec ./internal/cli ./internal/daemon
-exit: 0
-stdout:
-ok  	roundfix/internal/docscontract	10.063s
-ok  	roundfix/internal/spec	75.982s
-ok  	roundfix/internal/cli	339.655s
-ok  	roundfix/internal/daemon	86.782s
-
-stderr:

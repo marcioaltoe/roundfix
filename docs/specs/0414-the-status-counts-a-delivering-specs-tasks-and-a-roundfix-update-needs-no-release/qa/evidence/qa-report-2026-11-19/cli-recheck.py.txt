@@ -1,9 +1,0 @@
-from qa import *
-e=ENV.copy()
-for k in ['GIT_AUTHOR_NAME','GIT_AUTHOR_EMAIL','GIT_COMMITTER_NAME','GIT_COMMITTER_EMAIL','GIT_CONFIG_GLOBAL','GIT_CONFIG_NOSYSTEM']:
-    if k in os.environ:e[k]=os.environ[k]
-    else:e.pop(k,None)
-print('START full CLI with session Git identity, HOME and TMPDIR',flush=True)
-c=run(['go','test','-count=1','-timeout','30m','./internal/cli'],env=e,name='package-cli-correct-environment',expected=None)
-print('Full CLI exit '+str(c.returncode),flush=True);print(c.stdout[-4000:]+c.stderr[-4000:],flush=True)
-update('Q04','pass' if c.returncode==0 else 'fail','All full package checks passed with the corrected session test environment. The initial CLI attempt failed only its fixed fixture hash because the QA driver injected Git author variables; focused diagnosis removed those overrides and passed, then this complete CLI run confirmed the correction. Original failed transcript is retained, not credited as a product failure or an environment block. [Initial packages](evidence/qa-report-2026-11-19/packages-status.txt), [cause](evidence/qa-report-2026-11-19/fixture-identity-cause.txt), [focused diagnosis](evidence/qa-report-2026-11-19/fixture-identity-diagnosis.txt), [full corrected CLI](evidence/qa-report-2026-11-19/package-cli-correct-environment.txt), [release/skills packages](evidence/qa-report-2026-11-19/packages-release.txt), [skill sync](evidence/qa-report-2026-11-19/skills-sync.txt), [documentation](evidence/qa-report-2026-11-19/docscontract.txt), [glossary and coverage](evidence/qa-report-2026-11-19/focused-docs-records.txt).')

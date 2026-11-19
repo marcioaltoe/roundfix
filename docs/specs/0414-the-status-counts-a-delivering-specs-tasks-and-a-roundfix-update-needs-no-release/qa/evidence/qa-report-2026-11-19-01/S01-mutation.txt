@@ -1,6 +1,0 @@
-isolated git archive 69ae9b561240cb4d6b1358f9278cfce36be25d3f; initialized/staged/committed disposable Git repository
-path: internal/cli/follow_up_queue.go
-removed:
-fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }
-inserted:
-fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }; if item.SpecSlug != "" { return fallback() }

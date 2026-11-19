@@ -1,7 +1,0 @@
-isolated git archive 69ae9b561240cb4d6b1358f9278cfce36be25d3f; initialized/staged/committed disposable Git repository
-path: skills/roundfix/references/release.md
-removed:
-Roundfix's own
-repository authors the `roundfix` skill
-inserted:
-
