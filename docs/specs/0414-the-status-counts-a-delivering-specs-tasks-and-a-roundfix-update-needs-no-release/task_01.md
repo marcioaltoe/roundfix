@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0414-the-status-counts-a-delivering-specs-tasks-and-a-roundfix-update-needs-no-release
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -84,3 +84,42 @@ complexity: medium
 - `_prd.md` → Goals (first bullet); Core Features 1, 2 and 4; Success Metric 1; Skills; Glossary; Decisions
 - `_techspec.md` → Interfaces and invariants 1 and 2; API Contract 1; Coverage Map; Testing Approach; Build Order 1
 - [`references/2026-11-19-characterization.md`](references/2026-11-19-characterization.md), section 1
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-cli, golang-context, golang-error-handling, golang-safety, golang-testing, testing-boss, systematic-debugging, no-workarounds, tech-writer, evidence-gate.
+
+The Task Graph loader now accepts a reader through `spec.LoadAt`; `Load` and `LoadForRecovery` keep their disk readers and their existing error and recovery behavior. Both status counts use the same Delivery Queue reader: resolve the local Item Branch to a commit, load its graph through `git show`, recover an archived graph from the record's `source` at `source_revision`, and otherwise use the checkout's Spec Root. External roots also fall back. No item worktree files are opened and no new output fields or sources are added.
+
+The guide paragraph, the Spec Queue Table definition and exactly the two prescribed Coverage Reviews now contain API Contract 1 verbatim. The Behavior Surface Record was regenerated only through the sanctioned recorder; its diff contains only the follow-up guide fingerprint. The recorder is run again after this Result as the final edit required by Requirement 9.
+
+### Acceptance evidence
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Running and archived items count their Item Branch in both views | All eight subtests of `TestADeliveryItemCountsTasksOnItsItemBranch` passed in a focused run. Both views show 1/2 for the running item and 3/3 for the archived source revision with its appended corrective Task. Each fixture starts with two pending Tasks committed on main and uses a linked Item Branch worktree. |
+| Fallbacks, uncommitted statuses and read-only behavior | The same test covers no branch, a missing branch and a branch holding neither folder nor record (0/2), leaves Task 02 completed but uncommitted (still 1/2), and compares snapshots of the checkout and home before and after both readers. `TestItemTaskGraphFallsBackForExternalRoots` passed for each external root and refuses any Git call in those cases. Existing table-order, wait, pending-order, no-write, no-judge and message-refusal checks passed unchanged. |
+| Loader compatibility and map-backed reads | All three `TestLoadAtReadsThroughTheGivenReader` subtests passed. Graph comparison checks ID, File, Status, Type and Needs after removing the disk fixture, proving the reader supplies every file. Absent paths wrap `os.ErrNotExist`; typed errors identify the absent PRD or Task. Existing recovery, stale-gate refusal and typed-validation checks passed. |
+| Prescribed documentation and current record | A read-only Python comparison against API Contract 1 confirmed exact text and insertion positions; comparison with HEAD confirmed that only the Spec Queue Table glossary entry and the two prescribed review values changed. Focused glossary phrase, accepted-ADR and rule-uniqueness checks passed. The sanctioned Behavior Surface recorder exited 0 after the final guide edit. |
+
+### Focused checks
+
+Commands below ran through `rtk proxy`:
+
+- Before the implementation, `go test -count=1 -timeout 5m ./internal/cli -run '^TestADeliveryItemCountsTasksOnItsItemBranch$/a_running_item_counts_its_branch$'` exited 1: the unchanged reader reported `running 0/2 Tasks`, while the branch held 1/2.
+- `go test -count=1 -timeout 5m ./internal/spec -run '^(TestLoadAtReadsThroughTheGivenReader|TestLoadForRecovery|TestLoadStillRefusesAStaleGate|TestLoadReturnsTypedValidationErrors)$'` exited 0.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^(TestADeliveryItemCountsTasksOnItsItemBranch|TestItemTaskGraphFallsBackForExternalRoots)$'` exited 0.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^(TestTheQueueRowsComeInTableOrder|TestAQueueItemNamesItsWait|TestFollowUpStatusListsPendingSpecsInDeliveryOrder|TestFollowUpStatusWritesNothing|TestFollowUpStatusNeverAsksTheJudge|TestFollowUpStatusRefusesMessages)$'` exited 0.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|StatesEachRuleOnce)$'` exited 0.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0; it is the required implementation recorder, not the declared Verification suite.
+- `git diff --check` exited 0 before this Result was appended; the final read-only postflight repeats the whitespace check and confirms the changed-path boundary.
+
+The first combined count test run exposed an unset fixture `specs.root`; the fixture now explicitly configures `docs/specs`, and the focused count runs above passed afterward.
+
+The Daemon-owned `status: in_progress` remains unchanged by this Agent. The Task Graph manifest, every other Task and all prohibited files remain untouched. No commit, push or pull request was made. Declared Task Verification and repository Verification were not run; their execution and Task settlement remain with the Daemon. No follow-up work was added to this slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T151201Z_05140c8b41c958d4`
+- Source commit: `ce6522d8463e7a41a44e8f0dc8a5061616718f0a`

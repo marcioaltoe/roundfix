@@ -586,3 +586,118 @@ func TestQueueReadersSortEverySource(t *testing.T) {
 		t.Fatal("reader sorted caller-owned inputs")
 	}
 }
+
+func TestADeliveryItemCountsTasksOnItsItemBranch(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{
+		"a_running_item_counts_its_branch",
+		"an_archived_item_counts_the_source_revision",
+		"an_item_without_a_branch_counts_the_spec_root",
+		"a_missing_branch_counts_the_spec_root",
+		"a_branch_without_the_spec_counts_the_spec_root",
+		"the_worktree_is_not_read",
+		"the_pending_specs_line_counts_the_same",
+		"the_rows_write_nothing",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			now := time.Date(2026, 11, 19, 15, 0, 0, 0, time.UTC)
+			in := newFollowUpReadInput(t, now)
+			const slug = "0097-widget"
+			in.Loaded.Config.Specs.Root = "docs/specs"
+			seeds := []implementSeed{{id: "task_01", status: "pending"}, {id: "task_02", status: "pending", needs: []string{"task_01"}}}
+			writeImplementSpecAtRoot(t, in.SpecRoot, slug, seeds)
+			gitImplement(t, in.Loaded.GitRoot, "add", ".")
+			gitImplement(t, in.Loaded.GitRoot, "commit", "-m", "docs: plan widget")
+			item := store.DeliveryQueueItem{SpecSlug: slug, Position: 1, Stage: store.DeliveryStageRunning, Branch: "roundfix/deliver-widget"}
+			wantCompleted, wantTotal := 1, 2
+			switch name {
+			case "an_item_without_a_branch_counts_the_spec_root":
+				item.Branch = ""
+				item.Stage = store.DeliveryStageQueued
+				wantCompleted = 0
+			case "a_missing_branch_counts_the_spec_root":
+				item.Stage = store.DeliveryStageQueued
+				wantCompleted = 0
+			default:
+				worktree := filepath.Join(t.TempDir(), "item")
+				gitImplement(t, in.Loaded.GitRoot, "worktree", "add", "-b", item.Branch, worktree, "main")
+				branchRoot := filepath.Join(worktree, "docs", "specs")
+				seeds[0].status = "completed"
+				if name == "an_archived_item_counts_the_source_revision" {
+					seeds[1].status = "completed"
+					seeds = append(seeds, implementSeed{id: "task_03", status: "completed", needs: []string{"task_02"}})
+					item.Stage = store.DeliveryStageReviewing
+					wantCompleted, wantTotal = 3, 3
+				}
+				writeImplementSpecAtRoot(t, branchRoot, slug, seeds)
+				gitImplement(t, worktree, "add", ".")
+				gitImplement(t, worktree, "commit", "-m", "fix: settle widget tasks")
+				switch name {
+				case "an_archived_item_counts_the_source_revision":
+					revision := strings.TrimSpace(gitImplementOutput(t, worktree, "rev-parse", "HEAD"))
+					record := spec.ArchiveRecord{Spec: slug, Title: "Widget", Created: "2026-11-19", Archived: "2026-11-19", Disposition: spec.ArchiveNoQA, Source: "docs/specs/" + slug, SourceRevision: revision, Outcome: "Widget delivered."}
+					data, err := spec.RenderArchiveRecord(record)
+					if err != nil {
+						t.Fatal(err)
+					}
+					followUpWrite(t, worktree, "docs/history/specs/"+slug+".md", string(data))
+					gitImplement(t, worktree, "rm", "-r", "docs/specs/"+slug)
+					gitImplement(t, worktree, "add", ".")
+					gitImplement(t, worktree, "commit", "-m", "docs: archive widget")
+				case "a_branch_without_the_spec_counts_the_spec_root":
+					gitImplement(t, worktree, "rm", "-r", "docs/specs/"+slug)
+					gitImplement(t, worktree, "commit", "-m", "docs: remove widget")
+					wantCompleted = 0
+				case "the_worktree_is_not_read":
+					seeds[1].status = "completed"
+					writeImplementSpecAtRoot(t, branchRoot, slug, seeds)
+				}
+			}
+			in.Progress.queue = store.DeliveryQueue{Items: []store.DeliveryQueueItem{item}}
+			in.Progress.DeliveryQueue = []followUpQueueItem{{Spec: slug, Position: item.Position, Stage: string(item.Stage)}}
+			followUpQueueDiscover(t, &in)
+			before := followUpSnapshot(t, in.Loaded.GitRoot, in.Loaded.HomeDir)
+			rows, _, _ := followUpQueueRows(in)
+			wantStatus := fmt.Sprintf("%s %d/%d Tasks", item.Stage, wantCompleted, wantTotal)
+			if len(rows) != 1 || rows[0].Status != wantStatus || rows[0].TasksCompleted != wantCompleted || rows[0].TasksTotal != wantTotal {
+				t.Fatalf("rows=%+v, want %q", rows, wantStatus)
+			}
+			pending, source := followUpPendingSpecs(in.Loaded, in.Progress)
+			if len(pending) != 1 || pending[0].TasksCompleted != wantCompleted || pending[0].TasksTotal != wantTotal || source.State != "checked" {
+				t.Fatalf("pending=%+v source=%+v, want %d/%d Tasks", pending, source, wantCompleted, wantTotal)
+			}
+			if after := followUpSnapshot(t, in.Loaded.GitRoot, in.Loaded.HomeDir); !reflect.DeepEqual(before, after) {
+				t.Fatal("Task count readers changed the checkout or home")
+			}
+		})
+	}
+}
+
+func TestItemTaskGraphFallsBackForExternalRoots(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"spec_root", "archive_root"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			in := newFollowUpReadInput(t, time.Date(2026, 11, 19, 15, 0, 0, 0, time.UTC))
+			if name == "spec_root" {
+				in.SpecRoot = t.TempDir()
+			} else {
+				in.ArchiveRoot = t.TempDir()
+			}
+			const slug = "0097-widget"
+			writeImplementSpecAtRoot(t, in.SpecRoot, slug, []implementSeed{{id: "task_01", status: "pending"}, {id: "task_02", status: "pending"}})
+			git := followUpReadGit(func(context.Context, string, ...string) (string, error) {
+				t.Fatal("an external root must fall back without reading Git")
+				return "", nil
+			})
+			graph, err := followUpItemTaskGraph(t.Context(), git, in.Loaded.GitRoot, in.SpecRoot, in.ArchiveRoot, store.DeliveryQueueItem{SpecSlug: slug, Branch: "roundfix/deliver-widget"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(graph.Tasks) != 2 || graph.Tasks[0].Status != spec.StatusPending || graph.Tasks[1].Status != spec.StatusPending {
+				t.Fatalf("fallback graph=%+v", graph)
+			}
+		})
+	}
+}

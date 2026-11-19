@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"roundfix/internal/queueforecast"
 	"roundfix/internal/releaseplan"
 	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 type followUpPendingSpec struct {
@@ -218,9 +220,9 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 func followUpPendingSpecs(loaded roundconfig.Loaded, progress followUpProgress) ([]followUpPendingSpec, followUpSource) {
 	rows := []followUpPendingSpec{}
 	root, active, err := readFollowUpSpecs(loaded)
-	queued := make(map[string]bool)
+	queued := make(map[string]store.DeliveryQueueItem)
 	for _, item := range progress.queue.Items {
-		queued[item.SpecSlug] = true
+		queued[item.SpecSlug] = item
 	}
 	queue := append([]followUpQueueItem{}, progress.DeliveryQueue...)
 	sort.Slice(queue, func(i, j int) bool { return queue[i].Position < queue[j].Position })
@@ -229,13 +231,20 @@ func followUpPendingSpecs(loaded roundconfig.Loaded, progress followUpProgress) 
 		rows = append(rows, followUpPendingSpec{Spec: item.Spec, QueuePosition: &position, Stage: &stage})
 	}
 	for _, item := range active {
-		if !queued[item.Slug] {
+		if _, found := queued[item.Slug]; !found {
 			rows = append(rows, followUpPendingSpec{Spec: item.Slug})
 		}
 	}
 	if err == nil {
 		for index := range rows {
-			graph, loadErr := spec.Load(root, rows[index].Spec)
+			var graph *spec.Graph
+			var loadErr error
+			if item, found := queued[rows[index].Spec]; found {
+				archiveRoot := spec.ArchiveSpecRoot(root, root == filepath.Join(loaded.GitRoot, "docs", "specs"))
+				graph, loadErr = followUpItemTaskGraph(nil, nil, loaded.GitRoot, root, archiveRoot, item)
+			} else {
+				graph, loadErr = spec.Load(root, rows[index].Spec)
+			}
 			if loadErr != nil {
 				err = errors.Join(err, loadErr)
 				continue
