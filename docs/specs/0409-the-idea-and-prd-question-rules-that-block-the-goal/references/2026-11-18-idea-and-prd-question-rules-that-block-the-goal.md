@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-11-18
-spec: null
+spec: 0409-the-idea-and-prd-question-rules-that-block-the-goal
 reason: null
 ---
 
