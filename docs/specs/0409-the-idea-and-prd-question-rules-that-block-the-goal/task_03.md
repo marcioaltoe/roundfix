@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0409-the-idea-and-prd-question-rules-that-block-the-goal
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -77,3 +77,11 @@ The Idea template and the PRD template gain the `## Rule challenges` section, wi
 - `_prd.md` → Goals (second and fourth bullets); User Stories 4, 6 and 7; Core Features 7, 9, 10, 14 and 15; Success Metric 2; Success Metric 3; Glossary
 - `_techspec.md` → Record section; Modes reference; Glossary, user guide and decision records; Data Models; Invariants 7 and 8; API Contract 6; API Contract 7; API Contract 8; API Contract 9; Testing Approach; Build Order 2; Build Order 3
 - ADR-0436, ADR-0437, ADR-0403, ADR-0353
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, evidence-gate.
+
+- Both template copies have the prescribed record, fields, empty case, phase and placement. The focused `go test ./skills -run '^(TestTheTemplatesCarryTheRuleChallengeRecord|TestTheSkillModesNeverAnswerARuleChallenge)$' -count=1` passed (12 tests and subtests).
+- Both modes copies have the prescribed waiting text; the focused tests above check the phrases and placement in step 5. The existing eight-step contract is left for Daemon Verification.
+- The glossary and guide contain the prescribed text. `make skills-sync`, the required owned-skill version recorder, and a second `make skills-sync` succeeded. The Behavior Surface Record recorder is invoked after this entry; documentation contracts are left for Daemon Verification.

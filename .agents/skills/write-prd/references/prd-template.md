@@ -103,6 +103,24 @@ type: feat # Delivery Type: feat | fix | perf | refactor; a feature Spec writes 
 - stage: not run
 - shape: not applicable
 
+## Rule challenges
+
+<!-- One record per Rule Challenge, in this fielded form, or the single entry `None.` when no rule blocked the goal.
+     rule: the ADR, clause, definition or document, and its path.
+     prevents: up to three things, for this goal.
+     asked: the date and the phase: brainstorming, idea, prd or techspec.
+     answer: keep | change | retire | waiting, then a dash, the user's words in quotes and the date of the answer.
+     effect: what the Spec does with the answer; for a rule the Baseline owns, the message sent and the scope left out.
+     new fact: only when the rule already carried a Kept Line; what this question knows that the earlier one did not.
+     Leave a blank line between two records. -->
+
+- rule: ADR-NNNN, `docs/adr/NNNN-<slug>.md`
+- imposes: <what the rule requires>
+- prevents: <what it prevents for this goal>
+- asked: YYYY-MM-DD, prd
+- answer: change — "<the user's words>", YYYY-MM-DD
+- effect: <the requirement that states the change, and the Task that makes it>
+
 ## Glossary
 
 <!-- Use `adds: **<term>**`, `changes: **<term>**`, or `not a term: **<phrase>** — <reason>`. Write `None.` when there are no entries. -->

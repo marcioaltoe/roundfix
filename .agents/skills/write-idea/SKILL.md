@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.16
+  version: 0.0.17
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.16
+version: 0.0.17
 ---
 
 # Write Idea
