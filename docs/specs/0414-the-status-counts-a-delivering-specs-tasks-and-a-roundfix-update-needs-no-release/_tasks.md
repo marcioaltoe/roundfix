@@ -12,6 +12,9 @@ graph:
       needs: [task_01]
     - id: task_03
       file: task_03.md
+      needs: [task_04]
+    - id: task_04
+      file: task_04.md
       needs: [task_02]
 ---
 
@@ -21,9 +24,12 @@ graph:
 | ------- | ---------------------------------------------------------------------------------- | ------- | ---------- | ------- |
 | task_01 | The status view counts a Delivery Queue item's Tasks on its Item Branch            | backend | medium     | —       |
 | task_02 | In an adopter, a change to the files Roundfix manages or to a CONTEXT.md needs no release | backend | high       | task_01 |
-| task_03 | Run the final QA gate                                                              | qa      | high       | task_02 |
+| task_03 | Run the final QA gate                                                              | qa      | high       | task_04 |
+| task_04 | The worktree exclusion test gives the queue item its worktree                      | backend | low        | task_02 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_04 · 4 → task_03
+
+task_04 is corrective Task 1 of 2, added on 2026-11-19 for finding F-01 of the QA Report of that day; the QA gate now needs it.
 
 The graph follows `_techspec.md` → Build Order. The two implementation Tasks share no component, but both edit `CONTEXT.md` and re-record `docs/references/behavior-surfaces.json`, so they run in series under the Wave collision rule: task_01 changes the status view's counts and the Task Graph loader with the `follow-up` guide, the Spec Queue Table entry and the Coverage Review; task_02 changes the Release Plan's boundary with the help, the release documents, the Roundfix skill version and the Adopter Maintenance Path entry. Each runs the suites that consume its changed contracts in its own Verification, so no separate Integration Checkpoint is needed.
 
