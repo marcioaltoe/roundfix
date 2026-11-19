@@ -42,6 +42,7 @@ func ClassifyChanges(request ClassifyRequest) (ClassificationResult, error) {
 
 	for _, commit := range request.Commits {
 		evidence := ClassifyCommit(commit)
+		evidence.CrossesMaintenanceOnlyBoundary = crossesMaintenanceOnlyBoundaryWithManaged(commit.ChangedPaths, request.Managed)
 		if evidence.AutomaticImpact == ImpactNone && evidence.CrossesMaintenanceOnlyBoundary && onlyReleasePaths(commit.ChangedPaths, request.ReleasePaths) {
 			evidence.ReleasePreparation = true
 			evidence.CrossesMaintenanceOnlyBoundary = false
@@ -203,11 +204,15 @@ func hasBreakingFooter(body string) bool {
 }
 
 func crossesMaintenanceOnlyBoundary(paths []string) bool {
+	return crossesMaintenanceOnlyBoundaryWithManaged(paths, ManagedPaths{})
+}
+
+func crossesMaintenanceOnlyBoundaryWithManaged(paths []string, managed ManagedPaths) bool {
 	if len(paths) == 0 {
 		return true
 	}
 	for _, changedPath := range paths {
-		if !MaintenanceOnly(changedPath) {
+		if !MaintenanceOnly(changedPath) && !managed.Contains(changedPath) {
 			return true
 		}
 	}

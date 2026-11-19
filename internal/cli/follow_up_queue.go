@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -82,10 +83,17 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		}
 	}
 	seen := map[string]bool{}
-	addSpec := func(slug, kind, status, note string, parked bool, wait string) {
+	addSpec := func(slug, kind, status, note string, parked bool, wait string, item *store.DeliveryQueueItem) {
 		row := followUpQueueRow{Spec: slug, Kind: kind, Status: status, Note: followUpQueueText(note)}
 		if kind != "authoring" {
-			if graph, err := spec.Load(in.SpecRoot, slug); err == nil {
+			var graph *spec.Graph
+			var err error
+			if item != nil {
+				graph, err = followUpItemTaskGraph(in.Context, in.Git, in.Loaded.GitRoot, in.SpecRoot, in.ArchiveRoot, *item)
+			} else {
+				graph, err = spec.Load(in.SpecRoot, slug)
+			}
+			if err == nil {
 				row.TasksTotal = len(graph.Tasks)
 				for _, task := range graph.Tasks {
 					if task.Status == spec.StatusCompleted {
@@ -116,13 +124,13 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		if starts[item.SpecSlug].IsZero() {
 			wait = followUpQueueWait(item)
 		}
-		addSpec(item.SpecSlug, "delivery_queue", string(item.Stage), note, parked, wait)
+		addSpec(item.SpecSlug, "delivery_queue", string(item.Stage), note, parked, wait, &item)
 	}
 	active := append([]spec.Spec(nil), in.Active...)
 	sort.Slice(active, func(i, j int) bool { return active[i].Slug < active[j].Slug })
 	for _, item := range active {
 		if !seen[item.Slug] {
-			addSpec(item.Slug, "planned", "not queued", "", false, "")
+			addSpec(item.Slug, "planned", "not queued", "", false, "", nil)
 		}
 	}
 	phases, _, phaseErr := phaserecord.Phases(in.Loaded.HomeDir, in.Now.AddDate(0, 0, -7))
@@ -169,7 +177,7 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 			status = "authoring: " + string(phase.Phase)
 			note = string(phase.Phase) + " since " + phase.Time.In(zone).Format("01-02 15:04")
 		}
-		addSpec(slug, "authoring", status, note, false, "")
+		addSpec(slug, "authoring", status, note, false, "", nil)
 	}
 	backlog, backlogErr := readFollowUpQueueBacklog(in.Loaded.GitRoot)
 	if backlogErr == nil {
@@ -179,6 +187,65 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		rows[i].Row = i + 1
 	}
 	return rows, forecasts, []followUpSource{followUpSourceResult("backlog", len(backlog), backlogErr), phaseSource}
+}
+
+// followUpItemTaskGraph reads committed Task progress without opening the item's
+// worktree. An unreadable branch or graph falls back to the checkout's Spec Root.
+func followUpItemTaskGraph(ctx context.Context, git preflight.GitRunner,
+	gitRoot, specRoot, archiveRoot string, item store.DeliveryQueueItem) (*spec.Graph, error) {
+	fallback := func() (*spec.Graph, error) { return spec.Load(specRoot, item.SpecSlug) }
+	if item.Branch == "" {
+		return fallback()
+	}
+	relativeRoot := func(root string) (string, bool) {
+		if !filepath.IsAbs(root) {
+			root = filepath.Join(gitRoot, root)
+		}
+		relative, err := filepath.Rel(gitRoot, root)
+		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			return "", false
+		}
+		return filepath.ToSlash(relative), true
+	}
+	specPath, specInside := relativeRoot(specRoot)
+	archivePath, archiveInside := relativeRoot(archiveRoot)
+	if !specInside || !archiveInside {
+		return fallback()
+	}
+	if git == nil {
+		git = preflight.ExecGitRunner{}
+	}
+	if ctx == nil {
+		ctx = context.TODO()
+	}
+	revision, err := git.RunGit(ctx, gitRoot, "rev-parse", "--verify", "refs/heads/"+item.Branch+"^{commit}")
+	if err != nil {
+		return fallback()
+	}
+	revision = strings.TrimSpace(revision)
+	readAt := func(revision string) func(string) ([]byte, error) {
+		return func(file string) ([]byte, error) {
+			content, err := git.RunGit(ctx, gitRoot, "show", revision+":"+filepath.ToSlash(file))
+			if err != nil {
+				// git show has no typed missing-path error. These reads are best
+				// effort; an unavailable object is absent from this count source.
+				return nil, fmt.Errorf("read Item Branch path %q: %w", file, errors.Join(os.ErrNotExist, err))
+			}
+			return []byte(content), nil
+		}
+	}
+	read := readAt(revision)
+	if graph, err := spec.LoadAt(specPath, item.SpecSlug, read); err == nil {
+		return graph, nil
+	}
+	archived, err := spec.ReadArchivedSpecAt(archivePath, item.SpecSlug, read)
+	if err == nil && archived.Form == spec.ArchivedRecord {
+		record := archived.Record
+		if graph, err := spec.LoadAt(path.Dir(record.Source), path.Base(record.Source), readAt(record.SourceRevision)); err == nil {
+			return graph, nil
+		}
+	}
+	return fallback()
 }
 
 func followUpHeldSpecNumbers(in followUpQueueInput) map[string]map[string]bool {

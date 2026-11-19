@@ -538,7 +538,13 @@ func ListActiveDetailed(specsRoot string) ([]Spec, []SkippedSpec, error) {
 // Spec Root, returning the Tasks in deterministic topological order. Every
 // validation failure is a typed error naming the offending Task or check.
 func Load(specsRoot string, slug string) (*Graph, error) {
-	graph, err := LoadForRecovery(specsRoot, slug)
+	return LoadAt(specsRoot, slug, os.ReadFile)
+}
+
+// LoadAt behaves like Load but reads every file through read, which returns
+// an error wrapping os.ErrNotExist for an absent path.
+func LoadAt(specsRoot string, slug string, read func(string) ([]byte, error)) (*Graph, error) {
+	graph, err := loadAtForRecovery(specsRoot, slug, read)
 	if err != nil {
 		return nil, err
 	}
@@ -549,14 +555,18 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 // Graph alongside StaleGateError so recovery callers can locate the QA Task.
 // Every other validation failure returns a nil Graph.
 func LoadForRecovery(specsRoot string, slug string) (*Graph, error) {
+	return loadAtForRecovery(specsRoot, slug, os.ReadFile)
+}
+
+func loadAtForRecovery(specsRoot string, slug string, read func(string) ([]byte, error)) (*Graph, error) {
 	root := filepath.Clean(specsRoot)
 	dir := filepath.Join(root, slug)
-	if err := requireActive(slug, dir); err != nil {
+	if err := requireActive(slug, dir, read); err != nil {
 		return nil, err
 	}
 
 	manifestPath := filepath.Join(dir, "_tasks.md")
-	nodes, projections, hasProjections, qa, requires, err := loadManifestNodes(manifestPath)
+	nodes, projections, hasProjections, qa, requires, err := loadManifestNodesAt(manifestPath, read)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +579,7 @@ func LoadForRecovery(specsRoot string, slug string) (*Graph, error) {
 	tasks := make([]Task, 0, len(nodes))
 	for _, index := range order {
 		node := nodes[index]
-		task, err := loadTask(dir, slug, node)
+		task, err := loadTask(dir, slug, node, read)
 		if err != nil {
 			return nil, err
 		}
@@ -633,9 +643,9 @@ func prdReadSkipReason(err error) string {
 	return fmt.Sprintf("read _prd.md: %v", err)
 }
 
-func requireActive(slug string, dir string) error {
+func requireActive(slug string, dir string, read func(string) ([]byte, error)) error {
 	prdPath := filepath.Join(dir, "_prd.md")
-	content, err := os.ReadFile(prdPath)
+	content, err := read(prdPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return SpecNotFoundError{Slug: slug, Dir: dir}
 	}
@@ -685,7 +695,11 @@ func prdStatus(content []byte) (string, error) {
 }
 
 func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, []string, error) {
-	content, err := os.ReadFile(manifestPath)
+	return loadManifestNodesAt(manifestPath, os.ReadFile)
+}
+
+func loadManifestNodesAt(manifestPath string, read func(string) ([]byte, error)) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, []string, error) {
+	content, err := read(manifestPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil, false, qaDeclaration{}, nil, ManifestError{Path: manifestPath, Reason: missingManifestReason}
 	}
@@ -1034,9 +1048,9 @@ func topologicalOrder(nodes []manifestNode) ([]int, error) {
 	return order, nil
 }
 
-func loadTask(dir string, slug string, node manifestNode) (Task, error) {
+func loadTask(dir string, slug string, node manifestNode, read func(string) ([]byte, error)) (Task, error) {
 	path := filepath.Join(dir, node.File)
-	content, err := os.ReadFile(path)
+	content, err := read(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return Task{}, MissingTaskFileError{TaskID: node.ID, Path: path}
 	}

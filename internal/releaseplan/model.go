@@ -175,6 +175,7 @@ type ClassifyRequest struct {
 	ManualImpact Impact
 	ManualReason string
 	ReleasePaths []string // release_paths of granted records the range delivers
+	Managed      ManagedPaths
 }
 
 // ClassificationResult carries the aggregate classification and all commit
