@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.26
+  version: 0.0.27
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.26
+version: 0.0.27
 ---
 
 # QA Gate
@@ -59,6 +59,14 @@ of a command that prints the environment, including `env`, `printenv`, `set`,
 a secret-shaped sample into evidence. Record a Secret Match by path, line and
 kind only, and never reload a shell profile to obtain a key. The Daemon
 refuses to commit a QA Report whose files match a Secret Pattern.
+
+### A fresh home keeps the host toolchains
+
+A test-suite run, the repository Verification and every other command that does not run the built product keep the session's own `HOME` and `TMPDIR`, unless the `qa` Task requires otherwise. A row that runs the built product gives it a fresh temporary `HOME` when the Task asks for one, so that the product never reads the user's own configuration.
+
+Whenever a command runs under a fresh `HOME`, read the locations of the toolchains and caches the repository's stacks use before `HOME` changes, and pass them to that command unchanged: the fresh home hides the user's configuration, never the installed toolchains. For Go, pass `GOMODCACHE` and `GOCACHE` as `go env` prints them. For Rust, pass `RUSTUP_HOME` and `CARGO_HOME`, their values or `$HOME/.rustup` and `$HOME/.cargo` when they are unset. For another stack, pass the variables that locate its installed toolchain. The command uses those toolchains and never installs, updates or removes one. A requirement that forbids reading the real home directory still lets the gate pass these locations, unless it names them. Create the fresh home outside the checkout and remove it afterwards.
+
+A command that fails only because a fresh `HOME` hid a toolchain is a gate error, never an environment block: run it again with the toolchain locations and record that result.
 
 ### Evidence links resolve in the committed tree
 

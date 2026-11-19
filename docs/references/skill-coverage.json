@@ -416,7 +416,8 @@
         "internal/cli/follow_up_queue.go",
         "internal/cli/follow_up_status.go",
         "internal/queueforecast/"
-      ]
+      ],
+      "review": "2026-11-18 — Spec 0407 task_01: a phase entry for a renamed Spec's earlier slug no longer makes a row of the Spec queue; no command, flag, field, output line or exit code changes, and the Roundfix follow-up reference relays the rows as the command gives them"
     },
     {
       "id": "command gc",
@@ -1037,7 +1038,8 @@
       ],
       "sources": [
         "docs/user-guide/commands/follow-up.md"
-      ]
+      ],
+      "review": "2026-11-18 — Spec 0407 task_01: the guide states that a renamed Spec keeps its Spec Number and is one row; the Roundfix follow-up reference relays the rows as the command gives them and needs no change"
     },
     {
       "id": "guide docs/user-guide/commands/gc.md",

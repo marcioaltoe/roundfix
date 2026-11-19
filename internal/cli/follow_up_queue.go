@@ -131,6 +131,7 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		phases = nil
 	}
 	latest := followUpAuthoringPhases(in, phases)
+	held := followUpHeldSpecNumbers(in)
 	candidates := map[string]bool{}
 	for _, folder := range in.Skipped {
 		candidates[filepath.Base(filepath.Clean(folder.Dir))] = true
@@ -149,9 +150,9 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		if _, err := os.Lstat(spec.ArchiveRecordPath(in.ArchiveRoot, slug)); !errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		if _, recorded := latest[slug]; !recorded {
-			info, err := os.Stat(filepath.Join(in.SpecRoot, slug))
-			if err != nil || !info.IsDir() {
+		if info, err := os.Stat(filepath.Join(in.SpecRoot, slug)); err != nil || !info.IsDir() {
+			entry, recorded := latest[slug]
+			if !recorded || followUpRenamedSlug(slug, entry, held, latest) {
 				continue
 			}
 		}
@@ -178,6 +179,56 @@ func followUpQueueRows(in followUpQueueInput) ([]followUpQueueRow, []queueforeca
 		rows[i].Row = i + 1
 	}
 	return rows, forecasts, []followUpSource{followUpSourceResult("backlog", len(backlog), backlogErr), phaseSource}
+}
+
+func followUpHeldSpecNumbers(in followUpQueueInput) map[string]map[string]bool {
+	held := map[string]map[string]bool{}
+	hold := func(slug string) {
+		if number, ok := specNumber(slug); ok {
+			if held[number] == nil {
+				held[number] = map[string]bool{}
+			}
+			held[number][slug] = true
+		}
+	}
+	for _, item := range in.Active {
+		hold(item.Slug)
+	}
+	for _, folder := range in.Skipped {
+		hold(filepath.Base(filepath.Clean(folder.Dir)))
+	}
+	for _, item := range in.Progress.queue.Items {
+		hold(item.SpecSlug)
+	}
+	if entries, err := os.ReadDir(in.ArchiveRoot); err == nil {
+		for _, entry := range entries {
+			if spec.IsArchiveRecordName(entry.Name()) {
+				hold(strings.TrimSuffix(entry.Name(), ".md"))
+			}
+		}
+	}
+	return held
+}
+
+func followUpRenamedSlug(slug string, entry phaserecord.RecordedPhase,
+	held map[string]map[string]bool, latest map[string]phaserecord.RecordedPhase) bool {
+	number, ok := specNumber(slug)
+	if !ok {
+		return false
+	}
+	for other := range held[number] {
+		if other != slug {
+			return true
+		}
+	}
+	for other, phase := range latest {
+		if otherNumber, ok := specNumber(other); ok && otherNumber == number && other != slug {
+			if phase.Time.After(entry.Time) || (phase.Time.Equal(entry.Time) && other > slug) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func followUpSpecNumber(slug string) string {

@@ -232,6 +232,55 @@ func TestASpecIsBeingAuthored(t *testing.T) {
 	}
 }
 
+func TestARenamedSpecLeavesNoAuthoringRow(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 11, 18, 17, 0, 0, 0, time.UTC)
+	for _, name := range []string{"renamed_to_a_planned_spec", "renamed_to_an_idea_folder", "renamed_to_a_queue_item", "renamed_to_a_merged_queue_item", "renamed_to_an_archive_record", "renamed_while_authoring", "another_number_stays", "the_old_folder_stays"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			in := newFollowUpReadInput(t, now)
+			followUpQueuePhase(t, in, now.Add(-2*time.Hour), "tasks", "0401-old-slug", in.Loaded.GitRoot)
+			want := []string{"0401-new-slug"}
+			switch name {
+			case "renamed_to_a_planned_spec":
+				followUpWrite(t, in.SpecRoot, "0401-new-slug/_prd.md", "---\nstatus: active\n---\n# Widget\n")
+			case "renamed_to_an_idea_folder":
+				followUpWrite(t, in.SpecRoot, "0401-new-slug/_idea.md", "# Widget\n")
+			case "renamed_to_a_queue_item":
+				in.Progress.queue = store.DeliveryQueue{Items: []store.DeliveryQueueItem{{SpecSlug: "0401-new-slug", Stage: store.DeliveryStageQueued}}}
+			case "renamed_to_a_merged_queue_item":
+				in.Progress.queue = store.DeliveryQueue{Items: []store.DeliveryQueueItem{{SpecSlug: "0401-new-slug", Stage: store.DeliveryStageMerged}}}
+				want = []string{}
+			case "renamed_to_an_archive_record":
+				followUpArchiveFixture(t, in, "0401-new-slug", spec.ArchiveNoQA)
+				want = []string{}
+			case "renamed_while_authoring":
+				followUpQueuePhase(t, in, now.Add(-time.Hour), "tasks", "0401-new-slug", in.Loaded.GitRoot)
+			case "another_number_stays":
+				followUpQueuePhase(t, in, now.Add(-time.Hour), "tasks", "0402-other", in.Loaded.GitRoot)
+				want = []string{"0401-old-slug", "0402-other"}
+			case "the_old_folder_stays":
+				mustMkdir(t, filepath.Join(in.SpecRoot, "0401-old-slug"))
+				followUpQueuePhase(t, in, now.Add(-time.Hour), "tasks", "0401-new-slug", in.Loaded.GitRoot)
+				want = []string{"0401-old-slug"}
+			}
+			followUpQueueDiscover(t, &in)
+			before := followUpSnapshot(t, in.Loaded.GitRoot, in.Loaded.HomeDir)
+			rows, _, _ := followUpQueueRows(in)
+			got := make([]string, 0, len(rows))
+			for _, row := range rows {
+				got = append(got, row.Spec)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("row slugs=%q want=%q", got, want)
+			}
+			if after := followUpSnapshot(t, in.Loaded.GitRoot, in.Loaded.HomeDir); !reflect.DeepEqual(before, after) {
+				t.Fatal("row reader changed inputs")
+			}
+		})
+	}
+}
+
 func TestTheNoteIsOneLineOfRepositoryText(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 11, 16, 17, 0, 0, 0, time.UTC)

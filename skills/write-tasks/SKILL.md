@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.39
+  version: 0.0.40
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.39
+version: 0.0.40
 ---
 
 # Write Tasks
@@ -333,6 +333,10 @@ The next check reports no `SC-QA-VERIFICATION-AUTHORED`.
 What the gate must prove belongs in its Requirements.
 `roundfix spec check --run-verification` reports the command `not probed` with
 reason `qa_gate`, so it needs no failure before the work.
+
+## QA environment
+
+Write a `qa` Task so that the gate keeps the toolchains the repository's stacks install under the home directory. Test-suite runs and the repository Verification keep the session's own `HOME` and `TMPDIR`; only a row that runs the built product needs a fresh temporary `HOME`, so that the product never reads the user's own configuration. Every command under a fresh `HOME` receives the locations of those toolchains and caches, read before `HOME` changes and passed unchanged, as the qa-gate skill's section "A fresh home keeps the host toolchains" lists them: for Go, `GOMODCACHE` and `GOCACHE`; for Rust, `RUSTUP_HOME` and `CARGO_HOME`. A requirement that forbids reading the real home directory names these locations as its exception. A suite runs under a fresh `HOME` only when the Task states why, and then it keeps the same locations.
 
 ## Verification paths
 

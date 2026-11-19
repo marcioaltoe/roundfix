@@ -223,6 +223,10 @@
       {
         "version": "0.0.26",
         "digest": "dc1a3e99f0bd685a8f46df1ba0e246e48e3c9fdfff450b31df8e1179c7ec4b9b"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "499208ed8705c46506a5a6307ca9ac9ec943701a92763d4b73eecea21a50a1c9"
       }
     ],
     "roundfix": [
@@ -1685,6 +1689,10 @@
       {
         "version": "0.0.39",
         "digest": "b033a917cc168466521768d0ddc857797862093299c571ce9e64af0364ee6b10"
+      },
+      {
+        "version": "0.0.40",
+        "digest": "77de6209a6e3a54788fff9fc34fef84a99628cf4b7d688ef66c5c2bc2725930a"
       }
     ],
     "write-techspec": [
