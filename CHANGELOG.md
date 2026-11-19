@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.149.0] - 2026-11-19
+
+### The Idea and the PRD question the rules that block the goal
+
+- **Rule Challenge.** In brainstorming, the Idea and the PRD, an accepted ADR, a Normative Clause, a glossary definition or a binding reference that blocks the goal is put to the user with three answers: keep, change or retire. The rule binds until the user answers; a recommendation, silence, a dismissal or a timeout is never an answer. At most three Rule Challenges per Authoring Phase; the TechSpec asks one before a design takes what an accepted ADR rejected. The Idea and the PRD record each under `## Rule challenges`. A new Baseline rule carries the clauses to every adopter at its next `roundfix baseline update`. ADR-0436.
+- **Kept Line.** A kept rule gains `Kept (YYYY-MM-DD): <what was asked>; <why it stays>.` after its text and is asked about again only with a new fact; a change or retirement is a requirement of the same Spec. With nobody present, only that Spec waits as a Backlog Entry with a Waiting Declaration. A rule inside a Managed Region changes only in the Baseline: the decision goes to the Baseline's owner as one ai-memory message. ADR-0437.
+
 ## [0.148.2] - 2026-11-19
 
 ### Adopting the recommendations works under load and gives the researcher the web
