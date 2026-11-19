@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

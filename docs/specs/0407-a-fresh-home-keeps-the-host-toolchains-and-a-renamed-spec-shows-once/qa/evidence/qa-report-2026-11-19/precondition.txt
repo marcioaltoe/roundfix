@@ -1,0 +1,21 @@
+$ ./bin/roundfix --version
+stdout:
+roundfix 0.148.0 (c08fb493-dirty, built 2026-11-19 00:11:38 -0300)
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix spec check 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once --strict
+stdout:
+Spec 0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once/_techspec.md Vocabulary Contract
+
+stderr:
+
+exit: 0

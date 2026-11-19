@@ -1,0 +1,8 @@
+Pull Request row
+Environment: no open Pull Request (authoritative Run assignment).
+Approval: operative approved _authorization.md at a6a4a15b78c2faeaf401f214dc16512fe0d1949f grants implement/commit/push/pull_request/merge/release; applies to Spec 0407 and exact four governed paths. This gate performs none of those delivery mutations.
+Checks: Daemon make verify-changed pass, exit 0, at c08fb4937da67c3ad344d790a8622b1a8b90ce79; diagnostics removed on success.
+Unresolved threads: none, because no Pull Request exists.
+Merge-Ready acceptance: not established; no Pull Request exists and no Merge-Ready claim is made.
+Review-artifact ancestry: candidate audited head c08fb4937da67c3ad344d790a8622b1a8b90ce79; no PR review artifact exists yet.
+Unblocking action: Supervisor creates the Spec-target-branch Pull Request after QA/review/archive, then observes approval, required checks, unresolved threads and Merge-Ready for that head. No lookup on the never-pushed Run branch.

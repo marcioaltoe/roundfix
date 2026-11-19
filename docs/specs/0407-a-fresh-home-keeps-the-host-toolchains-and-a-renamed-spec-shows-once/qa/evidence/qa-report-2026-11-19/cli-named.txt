@@ -1,0 +1,109 @@
+$ go test -count=1 -timeout 20m -v -run ^(TestARenamedSpecLeavesNoAuthoringRow|TestASpecIsBeingAuthored|TestTheQueueRowsComeInTableOrder)$ ./internal/cli
+stdout:
+=== RUN   TestTheQueueRowsComeInTableOrder
+=== PAUSE TestTheQueueRowsComeInTableOrder
+=== RUN   TestASpecIsBeingAuthored
+=== PAUSE TestASpecIsBeingAuthored
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow
+=== CONT  TestTheQueueRowsComeInTableOrder
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow
+=== CONT  TestASpecIsBeingAuthored
+=== RUN   TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_planned_spec
+=== PAUSE TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_planned_spec
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_idea_folder
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_idea_folder
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_queue_item
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_queue_item
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== RUN   TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+=== PAUSE TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_while_authoring
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_while_authoring
+=== RUN   TestASpecIsBeingAuthored/another_remote
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/another_number_stays
+=== PAUSE TestASpecIsBeingAuthored/another_remote
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/another_number_stays
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_planned_spec
+=== RUN   TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== PAUSE TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== RUN   TestASpecIsBeingAuthored/older_than_seven_days
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+=== PAUSE TestASpecIsBeingAuthored/older_than_seven_days
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_queue_item
+=== RUN   TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== PAUSE TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== RUN   TestASpecIsBeingAuthored/an_archive_record
+=== PAUSE TestASpecIsBeingAuthored/an_archive_record
+=== RUN   TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== PAUSE TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== RUN   TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== PAUSE TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== RUN   TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+=== PAUSE TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+=== RUN   TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== PAUSE TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== RUN   TestASpecIsBeingAuthored/no_origin_asks_none
+=== PAUSE TestASpecIsBeingAuthored/no_origin_asks_none
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/another_number_stays
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_while_authoring
+--- PASS: TestTheQueueRowsComeInTableOrder (0.06s)
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_idea_folder
+=== CONT  TestASpecIsBeingAuthored/a_folder_without_a_prd
+=== CONT  TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase
+=== CONT  TestASpecIsBeingAuthored/no_origin_asks_none
+=== CONT  TestASpecIsBeingAuthored/at_most_eight_other_directories
+=== CONT  TestASpecIsBeingAuthored/the_latest_phase_and_its_time
+--- PASS: TestARenamedSpecLeavesNoAuthoringRow (0.00s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_queue_item (0.05s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item (0.05s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_planned_spec (0.06s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record (0.06s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/another_number_stays (0.05s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays (0.06s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_idea_folder (0.05s)
+    --- PASS: TestARenamedSpecLeavesNoAuthoringRow/renamed_while_authoring (0.06s)
+=== CONT  TestASpecIsBeingAuthored/a_directory_that_no_longer_exists
+=== CONT  TestASpecIsBeingAuthored/with_a_prd_it_is_planned
+=== CONT  TestASpecIsBeingAuthored/an_archive_record
+=== CONT  TestASpecIsBeingAuthored/another_remote
+=== CONT  TestASpecIsBeingAuthored/older_than_seven_days
+=== CONT  TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin
+=== CONT  TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout
+--- PASS: TestASpecIsBeingAuthored (0.00s)
+    --- PASS: TestASpecIsBeingAuthored/a_folder_without_a_prd (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/a_phase_that_is_no_authoring_phase (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/the_latest_phase_and_its_time (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/a_directory_that_no_longer_exists (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/an_archive_record (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/with_a_prd_it_is_planned (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/another_remote (0.08s)
+    --- PASS: TestASpecIsBeingAuthored/older_than_seven_days (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/a_checkout_recorded_through_a_symbolic_link (0.06s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_the_checkout (0.05s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_a_linked_worktree (0.08s)
+    --- PASS: TestASpecIsBeingAuthored/an_entry_recorded_in_a_clone_of_the_same_origin (0.08s)
+    --- PASS: TestASpecIsBeingAuthored/no_origin_asks_none (0.25s)
+    --- PASS: TestASpecIsBeingAuthored/at_most_eight_other_directories (0.29s)
+PASS
+suiteguard: guard cost: measured 3307 paths; fingerprint took 159.080209ms before and 149.718083ms after
+ok  	roundfix/internal/cli	1.138s
+
+stderr:
+
+exit: 0

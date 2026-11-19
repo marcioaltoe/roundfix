@@ -1,0 +1,26 @@
+Fresh independent git archive c08fb4937da67c3ad344d790a8622b1a8b90ce79; fresh committed Git fixture.
+Mutation path: internal/cli/follow_up_queue.go
+Replace:
+if entries, err := os.ReadDir(in.ArchiveRoot); err == nil {
+With:
+if entries, err := os.ReadDir(filepath.Join(in.ArchiveRoot, "qa-missing")); err == nil {
+No regeneration or synchronization.
+$ go test -count=1 -timeout 20m -v -run ^TestARenamedSpecLeavesNoAuthoringRow$/^renamed_to_an_archive_record$ ./internal/cli
+stdout:
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record
+    follow_up_queue_test.go:275: row slugs=["0401-old-slug"] want=[]
+--- FAIL: TestARenamedSpecLeavesNoAuthoringRow (0.00s)
+    --- FAIL: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_an_archive_record (0.04s)
+FAIL
+suiteguard: guard cost: measured 3297 paths; fingerprint took 139.192208ms before and 140.749333ms after
+FAIL	roundfix/internal/cli	0.763s
+FAIL
+
+stderr:
+
+exit: 1

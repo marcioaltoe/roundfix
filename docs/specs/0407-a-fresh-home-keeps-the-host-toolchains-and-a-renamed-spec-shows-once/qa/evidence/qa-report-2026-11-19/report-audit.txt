@@ -1,0 +1,7 @@
+Report audit: one frontmatter; seeded auditor identities unchanged; 14 contiguous result rows; every row has typed inputs; no pending row; all 32 local links present and unignored; evidence is text; tracked source unchanged; git diff --check passed.
+$ git diff --check
+stdout:
+
+stderr:
+
+exit: 0

@@ -1,0 +1,11 @@
+Fresh make build in this Run Worktree: exit 0.
+Observed compiler command: go build -buildvcs=false -ldflags "-X roundfix/internal/app.BuildCommit=c08fb493-dirty -X roundfix/internal/app.BuildTime=<build time in binary version>" -o bin/roundfix ./cmd/roundfix
+Build cache bound warning: cache above bound, no entry idle for the configured interval; build continued and succeeded. No cache location or environment values recorded.
+$ ./bin/roundfix --version
+stdout:
+roundfix 0.148.0 (c08fb493-dirty, built 2026-11-19 00:11:38 -0300)
+
+stderr:
+
+exit: 0
+

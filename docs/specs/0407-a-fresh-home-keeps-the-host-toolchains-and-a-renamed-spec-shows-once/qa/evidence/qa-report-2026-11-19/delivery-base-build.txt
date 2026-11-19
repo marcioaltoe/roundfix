@@ -1,0 +1,9 @@
+Source: git archive a6a4a15b78c2faeaf401f214dc16512fe0d1949f; committed fresh offline scratch repository. Output executable is inside this Run Worktree.
+$ make build BIN_DIR=./bin APP=roundfix-delivery-base BUILD_COMMIT=a6a4a15b
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=a6a4a15b' -X 'roundfix/internal/app.BuildTime=2026-11-19 00:19:31 -0300'" -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0407-a-fresh-home-keeps-the-host-toolchains-and-a-renamed-spec-shows-once-f6eb8922afa468d9-20954e65-483efafe/run_20261119T021148Z_b76519f82c7c8104/bin/roundfix-delivery-base ./cmd/roundfix
+
+stderr:
+gocache-bound: warning: <GOCACHE> holds 17488442572 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+
+exit: 0

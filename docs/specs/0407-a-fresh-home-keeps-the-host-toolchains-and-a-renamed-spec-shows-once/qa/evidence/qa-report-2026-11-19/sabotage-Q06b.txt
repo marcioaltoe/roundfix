@@ -1,0 +1,29 @@
+Fresh independent git archive c08fb4937da67c3ad344d790a8622b1a8b90ce79; fresh committed Git fixture.
+Mutation path: internal/cli/follow_up_queue.go
+Replace:
+for _, item := range in.Progress.queue.Items {
+		hold(item.SpecSlug)
+With:
+for _, item := range in.Progress.queue.Items {
+		if item.Stage == store.DeliveryStageMerged { continue }
+		hold(item.SpecSlug)
+No regeneration or synchronization.
+$ go test -count=1 -timeout 20m -v -run ^TestARenamedSpecLeavesNoAuthoringRow$/^renamed_to_a_merged_queue_item$ ./internal/cli
+stdout:
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item
+    follow_up_queue_test.go:275: row slugs=["0401-old-slug"] want=[]
+--- FAIL: TestARenamedSpecLeavesNoAuthoringRow (0.00s)
+    --- FAIL: TestARenamedSpecLeavesNoAuthoringRow/renamed_to_a_merged_queue_item (0.05s)
+FAIL
+suiteguard: guard cost: measured 3297 paths; fingerprint took 194.647667ms before and 185.701042ms after
+FAIL	roundfix/internal/cli	0.896s
+FAIL
+
+stderr:
+
+exit: 1

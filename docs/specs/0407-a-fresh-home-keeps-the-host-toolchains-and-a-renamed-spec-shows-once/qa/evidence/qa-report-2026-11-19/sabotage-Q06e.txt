@@ -1,0 +1,26 @@
+Fresh independent git archive c08fb4937da67c3ad344d790a8622b1a8b90ce79; fresh committed Git fixture.
+Mutation path: internal/cli/follow_up_queue.go
+Replace:
+if info, err := os.Stat(filepath.Join(in.SpecRoot, slug)); err != nil || !info.IsDir() {
+With:
+if info, err := os.Stat(filepath.Join(in.SpecRoot, slug)); err != nil || !info.IsDir() || info.IsDir() {
+No regeneration or synchronization.
+$ go test -count=1 -timeout 20m -v -run ^TestARenamedSpecLeavesNoAuthoringRow$/^the_old_folder_stays$ ./internal/cli
+stdout:
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow
+=== RUN   TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+=== PAUSE TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+=== CONT  TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays
+    follow_up_queue_test.go:275: row slugs=[] want=["0401-old-slug"]
+--- FAIL: TestARenamedSpecLeavesNoAuthoringRow (0.00s)
+    --- FAIL: TestARenamedSpecLeavesNoAuthoringRow/the_old_folder_stays (0.04s)
+FAIL
+suiteguard: guard cost: measured 3297 paths; fingerprint took 149.665708ms before and 143.518709ms after
+FAIL	roundfix/internal/cli	0.792s
+FAIL
+
+stderr:
+
+exit: 1

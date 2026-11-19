@@ -1,0 +1,99 @@
+Binary: delivery-base
+$ ./bin/roundfix-delivery-base --version
+stdout:
+roundfix 0.148.0 (a6a4a15b, built 2026-11-19 00:19:31 -0300)
+
+stderr:
+
+exit: 0
+$ ./bin/roundfix-delivery-base phase start tasks --spec 0401-the-old-slug
+stdout:
+Recorded tasks of 0401-the-old-slug without a harness session: the environment names none
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix-delivery-base follow-up --status --format json
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"<public-fixture>","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"unavailable","count":0,"detail":"gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1"},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"unavailable","count":0,"detail":"Task Graph manifest \"<public-fixture>/docs/specs/0401-the-new-slug/_tasks.md\": file does not exist; run the write-tasks workflow to create the Task Graph"},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"phase-record","state":"checked","count":1,"detail":""},{"name":"delivery-history","state":"checked","count":0,"detail":""}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"master","head":"9682f9b","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[{"spec":"0401-the-new-slug","queue_position":null,"stage":null,"tasks_completed":0,"tasks_total":0}],"queue":[{"row":1,"kind":"planned","spec":"0401-the-new-slug","ref":"","title":"","status":"not queued 0/0 Tasks","tasks_completed":0,"tasks_total":0,"note":"","start":{"state":"condition","actual":null,"likely":null,"limit":null,"condition":"after it is queued","likely_after_seconds":null,"limit_after_seconds":null,"reason":""},"end":{"state":"none","actual":null,"likely":null,"limit":null,"condition":"","likely_after_seconds":null,"limit_after_seconds":null,"reason":"not enough history (0 of 11)"}},{"row":2,"kind":"authoring","spec":"0401-the-old-slug","ref":"","title":"","status":"authoring: tasks","tasks_completed":0,"tasks_total":0,"note":"tasks since 11-19 00:19","start":{"state":"condition","actual":null,"likely":null,"limit":null,"condition":"after its plan is merged","likely_after_seconds":null,"limit_after_seconds":null,"reason":""},"end":{"state":"none","actual":null,"likely":null,"limit":null,"condition":"","likely_after_seconds":null,"limit_after_seconds":null,"reason":"not enough history (0 of 11)"}}],"forecast_basis":{"delivered_specs":0,"minimum":11,"first_end":null,"last_end":null,"likely_percentile":50,"limit_percentile":85,"start_to_merge":{"count":0,"likely_seconds":null,"limit_seconds":null},"start_gap":{"count":0,"likely_seconds":null,"limit_seconds":null}},"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix-delivery-base follow-up --status
+stdout:
+Status for widget in <public-fixture>
+In progress: 0
+Pending Specs: 1
+  - 0401-the-new-slug not queued 0/0 Tasks
+Spec queue: 2
+  #  Spec  Status                Start (-03)               End (-03)                     Note
+  1  0401  not queued 0/0 Tasks  after it is queued        not enough history (0 of 11)  -
+  2  0401  authoring: tasks      after its plan is merged  not enough history (0 of 11)  tasks since 11-19 00:19
+Forecast basis: not enough history, 0 of 11 delivered Specs.
+Next release: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1
+  git: checked 0
+  specs: unavailable: Task Graph manifest "<public-fixture>/docs/specs/0401-the-new-slug/_tasks.md": file does not exist; run the write-tasks workflow to create the Task Graph
+  release-plan: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+  backlog: checked 0
+  phase-record: checked 1
+  delivery-history: checked 0
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix-delivery-base phase start prd --spec 0402-other
+stdout:
+Recorded prd of 0402-other without a harness session: the environment names none
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix-delivery-base follow-up --status --format json
+stdout:
+{"schema":"roundfix/follow-up/v1","view":"status","state":"work_found","repository":{"root":"<public-fixture>","namespace":"widget"},"sources":[{"name":"runs","state":"checked","count":0,"detail":""},{"name":"delivery-queue","state":"checked","count":0,"detail":""},{"name":"pull-requests","state":"unavailable","count":0,"detail":"gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1"},{"name":"git","state":"checked","count":0,"detail":""},{"name":"specs","state":"unavailable","count":0,"detail":"Task Graph manifest \"<public-fixture>/docs/specs/0401-the-new-slug/_tasks.md\": file does not exist; run the write-tasks workflow to create the Task Graph"},{"name":"release-plan","state":"unavailable","count":0,"detail":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},{"name":"backlog","state":"checked","count":0,"detail":""},{"name":"phase-record","state":"checked","count":2,"detail":""},{"name":"delivery-history","state":"checked","count":0,"detail":""}],"in_progress":{"runs":[],"delivery_queue":[],"pull_requests":[],"git":{"branch":"master","head":"9682f9b","upstream":"","unpushed_commits":0,"changed_paths":[]}},"pending_specs":[{"spec":"0401-the-new-slug","queue_position":null,"stage":null,"tasks_completed":0,"tasks_total":0}],"queue":[{"row":1,"kind":"planned","spec":"0401-the-new-slug","ref":"","title":"","status":"not queued 0/0 Tasks","tasks_completed":0,"tasks_total":0,"note":"","start":{"state":"condition","actual":null,"likely":null,"limit":null,"condition":"after it is queued","likely_after_seconds":null,"limit_after_seconds":null,"reason":""},"end":{"state":"none","actual":null,"likely":null,"limit":null,"condition":"","likely_after_seconds":null,"limit_after_seconds":null,"reason":"not enough history (0 of 11)"}},{"row":2,"kind":"authoring","spec":"0401-the-old-slug","ref":"","title":"","status":"authoring: tasks","tasks_completed":0,"tasks_total":0,"note":"tasks since 11-19 00:19","start":{"state":"condition","actual":null,"likely":null,"limit":null,"condition":"after its plan is merged","likely_after_seconds":null,"limit_after_seconds":null,"reason":""},"end":{"state":"none","actual":null,"likely":null,"limit":null,"condition":"","likely_after_seconds":null,"limit_after_seconds":null,"reason":"not enough history (0 of 11)"}},{"row":3,"kind":"authoring","spec":"0402-other","ref":"","title":"","status":"authoring: prd","tasks_completed":0,"tasks_total":0,"note":"prd since 11-19 00:19","start":{"state":"condition","actual":null,"likely":null,"limit":null,"condition":"after its plan is merged","likely_after_seconds":null,"limit_after_seconds":null,"reason":""},"end":{"state":"none","actual":null,"likely":null,"limit":null,"condition":"","likely_after_seconds":null,"limit_after_seconds":null,"reason":"not enough history (0 of 11)"}}],"forecast_basis":{"delivered_specs":0,"minimum":11,"first_end":null,"last_end":null,"likely_percentile":50,"limit_percentile":85,"start_to_merge":{"count":0,"likely_seconds":null,"limit_seconds":null},"start_gap":{"count":0,"likely_seconds":null,"limit_seconds":null}},"release":{"state":"unavailable","base":"","proposed_version":"","changes":[],"reason":"resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag"},"blockers":[],"maintainer":[]}
+
+stderr:
+
+exit: 0
+
+$ ./bin/roundfix-delivery-base follow-up --status
+stdout:
+Status for widget in <public-fixture>
+In progress: 0
+Pending Specs: 1
+  - 0401-the-new-slug not queued 0/0 Tasks
+Spec queue: 3
+  #  Spec  Status                Start (-03)               End (-03)                     Note
+  1  0401  not queued 0/0 Tasks  after it is queued        not enough history (0 of 11)  -
+  2  0401  authoring: tasks      after its plan is merged  not enough history (0 of 11)  tasks since 11-19 00:19
+  3  0402  authoring: prd        after its plan is merged  not enough history (0 of 11)  prd since 11-19 00:19
+Forecast basis: not enough history, 0 of 11 delivered Specs.
+Next release: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+Blockers: 0
+Waiting on the maintainer: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1
+  git: checked 0
+  specs: unavailable: Task Graph manifest "<public-fixture>/docs/specs/0401-the-new-slug/_tasks.md": file does not exist; run the write-tasks workflow to create the Task Graph
+  release-plan: unavailable: resolve release range: find latest stable release tag: no stable release tag; create or pass a stable vMAJOR.MINOR.PATCH base tag
+  backlog: checked 0
+  phase-record: checked 2
+  delivery-history: checked 0
+
+stderr:
+
+exit: 0
+

@@ -1,0 +1,49 @@
+{
+  "candidate": {
+    "raw_headers": [
+      "  #  Spec  Status                Start (-03)         End (-03)                     Note",
+      "  #  Spec  Status                Start (-03)               End (-03)                     Note"
+    ],
+    "normalized_headers": [
+      "# Spec Status Start (-03) End (-03) Note",
+      "# Spec Status Start (-03) End (-03) Note"
+    ],
+    "forecasts": [
+      "Forecast basis: not enough history, 0 of 11 delivered Specs.",
+      "Forecast basis: not enough history, 0 of 11 delivered Specs."
+    ],
+    "codes": [
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  "delivery-base": {
+    "raw_headers": [
+      "  #  Spec  Status                Start (-03)               End (-03)                     Note",
+      "  #  Spec  Status                Start (-03)               End (-03)                     Note"
+    ],
+    "normalized_headers": [
+      "# Spec Status Start (-03) End (-03) Note",
+      "# Spec Status Start (-03) End (-03) Note"
+    ],
+    "forecasts": [
+      "Forecast basis: not enough history, 0 of 11 delivered Specs.",
+      "Forecast basis: not enough history, 0 of 11 delivered Specs."
+    ],
+    "codes": [
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0"
+    ]
+  }
+}
+Candidate JSON asserts one 0401 row and text has exactly one numbered 0401 row. Base JSON asserts stale old-slug authoring row. Both assert second Spec Number remains. Initial comparison rejected raw padding, which is data-dependent; column labels match after whitespace normalization and raw headers remain above. No product failure.

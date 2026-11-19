@@ -1,0 +1,27 @@
+Fresh independent git archive c08fb4937da67c3ad344d790a8622b1a8b90ce79; fresh committed Git fixture.
+Mutation path: skills/qa-gate/SKILL.md
+Replace:
+A command that fails only because a fresh `HOME` hid a toolchain is a gate error, never an environment block: run it again with the toolchain locations and record that result.
+With:
+
+No regeneration or synchronization.
+$ go test -count=1 -timeout 20m -v -run ^TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome$/^embedded$/^qa\-gate$/^a_hidden_toolchain_is_no_environment_block$ ./skills
+stdout:
+=== RUN   TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome
+=== PAUSE TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome
+=== CONT  TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome
+=== RUN   TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded
+=== RUN   TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded/qa-gate
+=== RUN   TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded/qa-gate/a_hidden_toolchain_is_no_environment_block
+    qa_fresh_home_test.go:58: phrase count = 0, want 1: A command that fails only because a fresh `HOME` hid a toolchain is a gate error, never an environment block: run it again with the toolchain locations and record that result.
+--- FAIL: TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome (0.00s)
+    --- FAIL: TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded (0.00s)
+        --- FAIL: TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded/qa-gate (0.00s)
+            --- FAIL: TestTheQASkillsKeepTheHostToolchainsUnderAFreshHome/embedded/qa-gate/a_hidden_toolchain_is_no_environment_block (0.00s)
+FAIL
+FAIL	roundfix/skills	0.305s
+FAIL
+
+stderr:
+
+exit: 1
