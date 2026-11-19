@@ -104,7 +104,7 @@ func TestTheStatusViewReportsTheAuthoringQuestionPreference(t *testing.T) {
 							lines = append(lines, line)
 						}
 					}
-					if !reflect.DeepEqual(lines, []string{tc.line}) || !strings.Contains(out.String(), tc.line+"\nSources:\n") {
+					if !reflect.DeepEqual(lines, []string{tc.line}) || !strings.Contains(out.String(), tc.line+"\nDelegated decisions: 0\nSources:\n") {
 						t.Errorf("text=%s\nwant line=%s", out.String(), tc.line)
 					}
 				} else {

@@ -65,6 +65,17 @@ func detectClarificationRecord(result *Result, repoRoot, prdPath string) error {
 		addSkip(result, CodeDecisionsUnrecorded, horizon.missing)
 		return nil
 	}
+	for _, entry := range DelegatedDecisions(content) {
+		if entry.Problem == "" {
+			continue
+		}
+		result.Findings = append(result.Findings, Finding{
+			Code: CodeDecisionsUnrecorded, Severity: SeverityGap,
+			Summary: display + " has a Delegated Decision that cannot be read: " + entry.Problem,
+			Where:   []Location{{Path: display, Line: entry.Line}},
+			Fix:     `Write the entry as - delegated: YYYY-MM-DD, <prd|techspec|tasks> followed by the lines - question:, - options:, - adopted: <option> — <reason>, - under: and - answer:, each indented two spaces, following the write-prd rule "Clarification Record".`,
+		})
+	}
 	inSection := false
 	heading := 1
 	for index, line := range strings.Split(string(content), "\n") {

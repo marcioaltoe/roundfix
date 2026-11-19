@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -119,3 +119,43 @@ A **Delegated Decision** gets its fixed form in the PRD's `## Decisions` section
 - `_prd.md` → Goals (third and fourth bullets); User Stories 4, 6 and 7; Core Features 10, 11, 12 and 13; Success Metric 3; Success Metric 4; Success Metric 8
 - `_techspec.md` → Delegated Decision reader and Clarification Record check; Delegated Decision list; Interfaces; Data Models, "The status fields" and "The entry"; Invariants 2, 4, 5 and 6; API Contract 2; API Contract 3; API Contract 8; API Contract 9; API Contract 11; API Contract 13; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Testing Approach; Build Order 2
 - ADR-0442, ADR-0280, ADR-0256
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented this Task's parser, Clarification Record finding, read-only status list, documentation and contract tests. Task status remains Daemon-owned. The pre-existing change was this Task file's `in_progress` status; no other prior implementation changes were present.
+
+Acceptance-criterion evidence:
+
+- Entry reader: `DelegatedDecisions` reads only unfenced entries under `## Decisions`, preserves head lines, consumes contiguous field lines, retains all seven values for readable entries and returns the first specified problem. The required parsing and problem subtests pass. Additional focused cases cover leap dates, dated grants, kept answers, invalid grant/answer dates, empty reasons, missing-field precedence, field termination, malformed heads and fenced headings. The first focused check failed to compile because the parser/types did not yet exist; the same seam passes after implementation.
+- Clarification Record: the parser runs inside the existing horizon and adds one gap per unreadable entry, with the exact summary, head location and fix. Findings are collected before the existing answer/route scan can return. The required detector subtests pass across PRD, TechSpec, Tasks and all stages, including promotion to error, a readable entry beside the autonomous route, a delegated-only PRD still lacking its record and a pre-horizon PRD. Existing clarification tests remain unchanged and pass in the focused run; `coherence.go` and corpus pins are untouched.
+- Status: the document always emits an array under `delegated_decisions`, ordered by slug and line, and the text block follows the preference line. The required seven list cases and three full stdout/stderr/exit-code transcripts pass through the command entry point. They cover answered and unreadable entries, missing PRDs, archives and zero rows. Unreadable PRDs discovered as skipped Specs contribute their errors to the `specs` source; an additional command check proves multiple PRD errors and an existing Spec-load error all survive together on one detail line. The existing pinned status assertions and read-only check pass. The authoring-preference file changes only at its authorized position assertion.
+- Documentation: API Contracts 8, 9, 11 and 13 were copied into the canonical guide/template, command references and user guides. The guide/template test checks both copies, all nineteen named phrase cases, the last heading and template placement; it passes. The CLI documentation contract passes with only the requested new struct row. Generated versions are `write-prd` 0.0.29 and `roundfix` 0.1.280 in both version fields and both copies. Mirror inspection confirms all seven touched pairs match.
+
+Focused checks performed (each exited 0 after implementation):
+
+- `go test ./internal/speccheck -run 'TestDelegated|TestADelegated|TestTheClarificationRecordCheck|TestClarificationRecord' -count=1`.
+- `go test ./internal/cli -run 'TestTheStatusViewListsTheDelegated|TestTheStatusViewAuthoringSurface|TestTheStatusViewKeepsEveryUnreadablePRD' -count=1`.
+- `go test -count=1 -tags docscontract ./internal/cli -run 'TestTheFollowUpGuidesNameTheJSONFieldsAndMessageTypes|TestTheStatusViewReportsTheAuthoringQuestionPreference|TestTheStatusViewShowsTheSpecQueueTable|TestTheStatusViewSurfaceTranscripts|TestFollowUpStatusNamesTheManualClassification|TestFollowUpStatusWritesNothing'`.
+- `go test ./skills -run '^TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm$' -count=1`.
+- `git diff --check` through `rtk proxy`; a read-only path audit found all 28 changed paths declared by this Task, seven matching skill mirrors and exactly the authorized authoring assertion change.
+
+Required regeneration performed successfully: `make skills-sync`, `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`, then `make skills-sync` again. After the last user-guide edit, `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 and changed only the two edited guide fingerprints. That recorder is rerun after this Result so it is the Task's final edit.
+
+The configured symlinked writable root prevented sandbox initialization; shell operations used approved escalation against the physical checkout. No declared Verification script, full package suite, repository Verification, commit, push, PR, Task Graph edit, other Task edit or ai-memory message was performed. The Daemon retains Verification and settlement. No follow-up work was identified outside this slice.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at `/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261119T225751Z_f76a39bd50d6a83d/verification/batch-001-attempt-1.log`. It identifies `TestTheStatusJSONCarriesTheQueueAndTheBasis`: its exact top-level count still expected 13 fields, although this Task adds the fourteenth field, `delegated_decisions`. This JSON pin was omitted from the initial assertion updates.
+
+Updated only that test's expected count from 13 to 14 and appended `delegated_decisions` after `authoring_questions` in its expected field order. Both assertions remain strict; production code and all other assertions are unchanged by this repair.
+
+Focused evidence: `go test -count=1 ./internal/cli -run '^TestTheStatusJSONCarriesTheQueueAndTheBasis$'` exited 0; `rtk proxy git diff --check` exited 0. The task-required Behavior Surface Record recorder runs again after this Result update as the final edit. No user-guide or skill content changed in this repair, so no additional skill-version bump is needed. Task status, the Task Graph and other Task files remain untouched. The Daemon's declared Verification sequence was not rerun by the Agent; its rerun and settlement remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T225751Z_f76a39bd50d6a83d`
+- Source commit: `1c077c9b0ba460f206e82625d1cfc3ec79d37661`

@@ -75,19 +75,20 @@ type followUpForecastBasis struct {
 }
 
 type followUpStatusDocument struct {
-	Schema             string                     `json:"schema"`
-	View               string                     `json:"view"`
-	State              string                     `json:"state"`
-	Repository         followUpRepository         `json:"repository"`
-	Sources            []followUpSource           `json:"sources"`
-	InProgress         followUpProgress           `json:"in_progress"`
-	PendingSpecs       []followUpPendingSpec      `json:"pending_specs"`
-	Queue              []followUpQueueRow         `json:"queue"`
-	ForecastBasis      followUpForecastBasis      `json:"forecast_basis"`
-	Release            followUpRelease            `json:"release"`
-	Blockers           []followUpBlocker          `json:"blockers"`
-	Maintainer         []followUpMaintainer       `json:"maintainer"`
-	AuthoringQuestions followUpAuthoringQuestions `json:"authoring_questions"`
+	Schema             string                      `json:"schema"`
+	View               string                      `json:"view"`
+	State              string                      `json:"state"`
+	Repository         followUpRepository          `json:"repository"`
+	Sources            []followUpSource            `json:"sources"`
+	InProgress         followUpProgress            `json:"in_progress"`
+	PendingSpecs       []followUpPendingSpec       `json:"pending_specs"`
+	Queue              []followUpQueueRow          `json:"queue"`
+	ForecastBasis      followUpForecastBasis       `json:"forecast_basis"`
+	Release            followUpRelease             `json:"release"`
+	Blockers           []followUpBlocker           `json:"blockers"`
+	Maintainer         []followUpMaintainer        `json:"maintainer"`
+	AuthoringQuestions followUpAuthoringQuestions  `json:"authoring_questions"`
+	DelegatedDecisions []followUpDelegatedDecision `json:"delegated_decisions"`
 	now                time.Time
 	zone               *time.Location
 }
@@ -193,6 +194,20 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 	input.Runs = progress.historyRuns
 	history, historySource := deliveryHistoryFromTimes(input, historyGit.read, historyGit.err)
 	active, skipped, _ := spec.ListActiveDetailed(root.Path)
+	var delegatedErr error
+	doc.DelegatedDecisions, delegatedErr = readFollowUpDelegatedDecisions(root.Path, active, skipped)
+	if delegatedErr != nil {
+		for i, source := range doc.Sources {
+			if source.Name != "specs" {
+				continue
+			}
+			detail := strings.ReplaceAll(delegatedErr.Error(), "\n", "; ")
+			if source.Detail != "" {
+				detail = source.Detail + "; " + detail
+			}
+			doc.Sources[i] = followUpSource{Name: "specs", State: "unavailable", Detail: detail}
+		}
+	}
 	rows, forecastRows, queueSources := followUpQueueRows(followUpQueueInput{Context: ctx, Loaded: loaded, SpecRoot: root.Path, ArchiveRoot: input.ArchiveRoot, Progress: progress, Active: active, Skipped: skipped, History: history, Now: now, Zone: zone, Origin: &origin})
 	basis := queueforecast.NewBasis(history)
 	forecasts := queueforecast.Forecast(basis, forecastRows, now)
@@ -332,6 +347,7 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 		fmt.Fprintf(&out, "; %s", doc.AuthoringQuestions.Detail)
 	}
 	out.WriteByte('\n')
+	out.WriteString(renderFollowUpDelegatedDecisions(doc.DelegatedDecisions))
 	out.WriteString("Sources:\n")
 	for _, source := range doc.Sources {
 		fmt.Fprintf(&out, "  %s: %s", source.Name, source.State)
