@@ -1,8 +1,0 @@
-Whole CLI package; fresh HOME/TMPDIR, host GOMODCACHE/GOCACHE/RUSTUP_HOME/CARGO_HOME preserved.
-$ go test -count=1 -timeout 30m ./internal/cli
-stdout:
-ok  	roundfix/internal/cli	281.352s
-
-stderr:
-
-exit: 0

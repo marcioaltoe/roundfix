@@ -1,4 +1,0 @@
-Mirror equality, section uniqueness and placement: pass
-qa-gate: 0.0.27,0.0.27
-write-tasks: 0.0.40,0.0.40
-Recorded versions independently asserted by TestEveryOwnedSkillVersionIsRecorded.
