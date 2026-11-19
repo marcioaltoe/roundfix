@@ -90,10 +90,14 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
 - `baseline-rules:` — after `skills:` and any `user-skills:` and
   `authoring-models:` lines, before residue. Names Misplaced Repository Rules
   without moving them. It never fails Doctor or changes its exit code.
-- `baseline-claude-link:` — immediately after `baseline-rules:` and before
-  residue, reports the Claude Instruction Link. It is `ok` for the symbolic
-  link to `AGENTS.md`, `warn` with the next action for another shape or read
+- `baseline-claude-link:` — immediately after `baseline-rules:`, reports the
+  Claude Instruction Link. It is `ok` for the symbolic link to `AGENTS.md`, `warn` with the next action for another shape or read
   error, and `skipped` without a Setup Manifest. It never fails Doctor.
+- `baseline-export:` — after `baseline-claude-link:`, compares the Standard
+  Export List with the update's plan and reads the repository's own lines.
+  It is skipped when the Secondbrain is turned off in the Setup Manifest.
+- `baseline-docs:` — after `baseline-export:` and before `residue:`, checks
+  the documentation layout, ADR headers and Lesson Learned form.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage. A terminal Run whose recorded owner
   PID is alive with a different start identity adds nothing: its owner is gone
@@ -383,6 +387,18 @@ Child diagnostics are not forwarded, protecting credentials and identity values.
 | `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |
 | `DR-DISK-LOW` | warn | Less than 10,240 MiB free where worktrees, a Shared Build Cache or the temporary directory live; `roundfix gc`, then free space on that filesystem. |
 | `DR-DISK-UNREAD` | warn | The free space could not be read; check the path, then re-run `roundfix doctor`. |
+| `DR-EXPORT-LIST-MISSING` | warn | No Standard Export List; run `roundfix baseline update`. |
+| `DR-EXPORT-LIST-STALE` | warn | The standard list differs from the update's plan; run `roundfix baseline update`. |
+| `DR-EXPORT-MARKER` | warn | Missing, repeated or reversed markers; restore the pair or delete both, then run `roundfix baseline update`. |
+| `DR-EXPORT-PROCESS-PATH` | warn | An own line publishes process; remove that line. |
+| `DR-EXPORT-REASON-MISSING` | warn | An own line lacks a reason; add a comment directly above it. |
+| `DR-EXPORT-ADR-UNMARKED` | warn | ADRs carry no Knowledge Mark and are not exported; review and mark each by the Secondbrain guide's test, then run `roundfix baseline update`. |
+| `DR-EXPORT-UNREAD` | warn | A read failed; fix the Setup Manifest or named file, then re-run `roundfix doctor`. |
+| `DR-DOCS-REQUIRED-MISSING` | warn | README or glossary missing; create the missing document. |
+| `DR-DOCS-OUTSIDE-LAYOUT` | warn | A path is outside the named layout; move its content or name its path and job in `docs/agents/specific-repository.md`. |
+| `DR-DOCS-ADR-RETIRED` | warn | A rejected, deprecated or superseded ADR remains; `roundfix baseline update` applies the retirement rules. |
+| `DR-DOCS-ADR-AMENDMENT-UNLISTED` | warn | A body notice names an ADR the Amendment List lacks; run `roundfix baseline update`. |
+| `DR-DOCS-LESSON-FORM` | warn | A lesson departs from its form; edit its name, header, title or labelled lines as reported. |
 
 An offline machine with otherwise ready checks prints warnings and exits `0`:
 
@@ -459,3 +475,102 @@ Use `1 passage` or `<n> passages`; locations are separated by `, `.
 `DR-BASELINE-CLAUDE-LINK-UNLINKED` names a checkout without symbolic links;
 `DR-BASELINE-CLAUDE-LINK-UNREAD` reports a read error. Every code is advisory:
 the line never fails Doctor or changes its exit code, and writes nothing.
+
+#### Documentation rules
+
+Both checks warn and neither changes the exit code. They only read files.
+Without a Setup Manifest, both print:
+
+```text
+baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)
+baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)
+```
+
+With the Secondbrain turned off, only the export check is skipped:
+
+```text
+baseline-export: skipped (the Secondbrain is turned off in the Setup Manifest)
+```
+
+Conforming documentation prints:
+
+```text
+baseline-export: ok (the Standard Export List is current; <n> line(s) of the repository's own)
+baseline-docs: ok (the documentation follows the docs-layout guide)
+```
+
+Departures print these headers, followed by indented lines:
+
+```text
+baseline-export: warn (<n> departure(s) from the export rules; next: run roundfix baseline update, then edit the repository's own lines)
+baseline-docs: warn (<n> departure(s) from the documentation rules; next: see each line; roundfix baseline update fills an Amendment List and removes a retired ADR)
+```
+
+The export lines are:
+
+```text
+DR-EXPORT-LIST-MISSING: .secondbrain-export has no Standard Export List
+DR-EXPORT-LIST-STALE: the Standard Export List differs from what roundfix baseline update would write: <a> line(s) to add, <r> to remove
+DR-EXPORT-MARKER: <refusal>; restore the pair of markers or delete both
+DR-EXPORT-PROCESS-PATH: .secondbrain-export:<line>: <entry> publishes process; remove the line
+DR-EXPORT-REASON-MISSING: .secondbrain-export:<line>: <entry> has no reason; add a comment line directly above it
+DR-EXPORT-ADR-UNMARKED: <n> of <m> ADR(s) carry no Knowledge Mark and are not exported
+```
+
+`<refusal>` names the missing or repeated marker, or says the end marker
+comes before the begin marker. The update's plan determines whether the
+Standard Export List is missing, stale or refused. An entry outside the
+markers is a nonblank line that is not a comment. Its reason is the nearest
+comment above it without a blank line between; one comment can cover several
+entries, and a marker is not a reason. A proposed ADR is not reported.
+
+A read error prints:
+
+```text
+baseline-export: warn (DR-EXPORT-UNREAD: <error>; next: re-run roundfix doctor after fixing the Setup Manifest)
+```
+
+The documentation lines are:
+
+```text
+DR-DOCS-REQUIRED-MISSING: README.md is missing
+DR-DOCS-REQUIRED-MISSING: the glossary is missing
+DR-DOCS-OUTSIDE-LAYOUT: <path>: a folder the docs-layout guide does not name; move its content or name it in docs/agents/specific-repository.md
+DR-DOCS-OUTSIDE-LAYOUT: <path>: a file directly under docs/ the docs-layout guide does not name; move its content or name it in docs/agents/specific-repository.md
+DR-DOCS-OUTSIDE-LAYOUT: <path>: a reference document at the root the docs-layout guide does not name; move its content or name it in docs/agents/specific-repository.md
+DR-DOCS-ADR-RETIRED: <path>: a <status> ADR is still in the tree
+DR-DOCS-ADR-AMENDMENT-UNLISTED: <path>: the body names <identifiers> and amended_by does not
+DR-DOCS-LESSON-FORM: <path>: <problem>
+```
+
+`<status>` is `rejected`, `deprecated` or `superseded`; a proposed ADR is
+never retired. `<identifiers>` lists notices absent from `amended_by`.
+A lesson's `<problem>` is one of:
+
+```text
+the name is not YYYY-MM-DD-<kebab-slug>.md
+the header has no created date
+the title line is missing
+the line "<label>:" is missing
+the line "<label>:" is empty
+the line "<label>:" is out of order
+```
+
+The name and `created` must hold valid dates. A lesson has one `# ` title
+and each of `Context`, `Tried`, `Went wrong`, `Cause`, `Solved by`,
+`Applies when`, `Does not apply when` and `Links` once, in order, as
+`- <label>: <text>`.
+
+The named folders under `docs/` are `_inbox`, `adr`, `agents`, `backlog`,
+`design`, `findings`, `handoffs`, `history`, `lessons`, `references`,
+`user-guide` and `workflow`, plus the first folder of the Spec Root and
+History Root under `docs/`. `docs/README.md` is allowed. A root `.md` file
+is a reference document only when its stem contains capitals, digits,
+hyphens and underscores. The named stems are `README`, `AGENTS`, `CLAUDE`,
+`CONTEXT`, `CONTEXT-MAP`, `GLOSSARY`, `GLOSSARY-MAP`, `CHANGELOG`,
+`CONTRIBUTING`, `LICENSE`, `LICENCE`, `SECURITY`, `CODE_OF_CONDUCT`,
+`SUPPORT` and `DESIGN`. A path contained in
+`docs/agents/specific-repository.md` is not reported as outside the layout.
+
+Each code prints at most 20 departure lines, followed by `<code>: <n> more`
+when any remain. The header counts every departure, including those omitted.

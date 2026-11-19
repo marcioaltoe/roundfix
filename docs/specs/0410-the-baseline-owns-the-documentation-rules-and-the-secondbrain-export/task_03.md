@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -83,3 +83,30 @@ complexity: high
 - `_prd.md` → Goals; User Stories 3 and 11; Core Features 3, 10, 11, 15 and 17; Success Metric 4
 - `_techspec.md` → ADR header and the lesson form; Export list; Doctor checks; Interfaces; Invariant 10; Data Models; API Contract 11; API Contract 12; API Contract 18; API Contract 20; Testing Approach; Build Order 3
 - ADR-0220, ADR-0411, ADR-0122, ADR-0438, ADR-0439, ADR-0440
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented this Task's slice; settlement and declared Verification remain with the Daemon.
+
+- Acceptance criterion 1: added the pure lesson-form, layout and export-variation readers and the two advisory Doctor checks. Doctor calls the existing documentation-facts gatherer and export planner without changing either. The command-entry tests assert whole diagnostic lines, warning headers and next actions for all eleven departure codes and the read error, both successful and skipped details, repository-guide exceptions, proposed ADRs (including legacy status), and unchanged exits. Repository and temporary-home snapshots assert no writes. The cap case seeds two interleaved codes with 23 departures each and asserts 20 full lines plus a separate `3 more` line per code, while the header still counts all 46 departures.
+- Acceptance criterion 2: appended `baseline-export` and `baseline-docs` immediately after `baseline-claude-link`, and registered their names in health results. Updated existing pinned report fixtures, counts and header ordering only for the added checks and their indented details. Focused existing Doctor tests continue to assert the other report text and independent failures.
+- Acceptance criterion 3: inserted API Contract 18's paragraph into the canonical setup reference and synchronized its mirror. The Doctor guide describes the checks, every departure code and read error, exact line forms, repairs, layout exceptions and cap. Both Roundfix SKILL.md copies changed only in generated version fields, from `0.1.279` to `0.1.280`; the version recorder added its digest, and the coverage recorder updated only the Doctor guide's Behavior Surface Record entry.
+
+Focused implementation evidence:
+
+- Before implementation, `rtk proxy go test ./internal/spec ./internal/baseline -run 'Test(LessonLearnedProblems|DocsLayoutDepartures|ExportVariationDepartures)/valid' -count=1` exited 1 with the new APIs undefined, establishing the starting gap.
+- `rtk proxy go test ./internal/spec ./internal/baseline -run 'Test(LessonLearnedProblems|DocsLayoutDepartures|ExportVariationDepartures)/' -count=1` exited 0 for both packages after the final helper edits. It exercised all requested subtests and additional invalid-created-date and duplicate-label cases.
+- `rtk proxy go test ./internal/cli -run '^TestDoctorReportsTheDocumentationRules/' -count=1 -timeout 5m` exited 0 after the final code edits, including a comment that mentions a marker without creating a Standard Export List.
+- `rtk proxy go test ./internal/cli -run '^(TestDoctorReportsTheDocumentationRules|TestDoctorReportsMisplacedRepositoryRules|TestDoctorReportsTheClaudeInstructionLink|TestRunDoctor.*|TestDoctor.*Readiness.*)$' -count=1 -timeout 5m` exited 0 after the final code edits. Initial runs exposed a malformed positive lesson fixture, absent-root handling and old ordering assertions that assumed no warning-detail lines; the fixture, missing-manifest skip and header-order expectations were corrected, retaining the warning diagnostics.
+- Required generation: `rtk proxy make skills-sync` and `rtk proxy go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` exited 0. `rtk proxy go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` exited 0 and was run again after the final guide formatting edit.
+- Read-only scope and content assertions found all 21 changed paths declared by this Task, equal setup-reference mirrors, SKILL.md differences confined to version fields, the prescribed reference and guide sentences, and every documented Doctor code. `rtk proxy git diff --check` exited 0.
+
+The pre-existing Task status edit was preserved. No Task status, Task Graph, other Task, Task 02-created file, Baseline source or generated Baseline artifact was changed by this turn. The declared Verification commands, repository Verification and incremental Verification were not run. No commit, push, Pull Request or cross-project message was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T213428Z_8e0d266520442009`
+- Source commit: `4c649e2b0c7a9bd3e825e878dfd68f3363414d5a`
