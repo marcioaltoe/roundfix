@@ -301,6 +301,10 @@
       {
         "version": 27,
         "digest": "sha256:4d7936aaaf182eadc0b69ed0b1f8fc0a2d6fe3ebfbd93bf733bb04ebc981379a"
+      },
+      {
+        "version": 28,
+        "digest": "sha256:3edcb9c8cc33a04001b27177d9c491285cd1ff87daab7dec788bf2f5c28cc6f2"
       }
     ],
     "tui-surface": [

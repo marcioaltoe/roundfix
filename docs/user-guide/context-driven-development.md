@@ -54,6 +54,18 @@ entirely. The routing rules live in
 `write-tasks`, so implementation always executes from a Task Graph rather than an
 ad-hoc plan.
 
+### Rule Challenges
+
+In brainstorming, the Idea and the PRD, a recorded decision guides the solution and never bounds the goal in silence. When an accepted ADR, a Normative Clause of a guide, a glossary definition or a binding document under `docs/references/` blocks the goal, the author puts a Rule Challenge to the user: it names the rule, what the rule imposes and up to three things it prevents for this goal, and offers keep, change and retire. The rule binds until the user answers, and a recommendation, silence, a dismissal or a timeout is never an answer.
+
+| Answer | What follows |
+| --- | --- |
+| keep | The solution stays inside the rule, and a Task of the Spec adds a Kept Line after the rule's text: `Kept (YYYY-MM-DD): <what was asked>; <why it stays>.` The rule is asked about again only with a new fact. |
+| change | The PRD states the change of the rule as a requirement, and a Task of the same Spec changes the rule together with the work that depended on it. |
+| retire | The PRD states the retirement as a requirement, and a Task of the same Spec removes the rule as the retirement rule below says. |
+
+The Idea and the PRD record each question under `## Rule challenges`, and write `None.` there when no rule blocked the goal. An author asks at most three Rule Challenges in one Authoring Phase or brainstorming session, and the TechSpec author asks one before a design takes what an accepted ADR rejected. With nobody present to answer, only that Spec waits, as a Backlog Entry with a Waiting Declaration, and other work goes on. A rule inside a Managed Region changes only in the Baseline: the user's decision goes to the Baseline's owner as one ai-memory message, and the rule stays in force until the Baseline changes. In a Run, in a Task and in the QA gate a rule is a guard-rail, and no Rule Challenge is asked there ([ADR-0436](../adr/0436-an-authoring-phase-questions-a-rule-that-blocks-the-goal-and-the-rule-binds-until-the-user-answers.md), [ADR-0437](../adr/0437-a-rule-the-user-keeps-carries-a-kept-line-and-is-asked-about-again-only-with-a-new-fact.md)).
+
 ### Spec Event Announcements
 
 A user who follows Specs on a board, a tracker or an assistant can have the

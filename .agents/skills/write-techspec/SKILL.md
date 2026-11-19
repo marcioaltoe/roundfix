@@ -5,10 +5,10 @@ argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bug
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.0.27
+  version: 0.0.28
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.27
+version: 0.0.28
 ---
 
 # Write TechSpec
@@ -24,7 +24,7 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
 
 ## Ground rules
 
-- **Read first**: `CONTEXT.md` (use the glossary vocabulary in every interface and component name), existing `docs/adr/` (respect prior decisions or challenge them explicitly — never contradict one silently), and the full PRD.
+- **Read first**: `CONTEXT.md` (use the glossary vocabulary in every interface and component name), existing `docs/adr/` (respect prior decisions or challenge them explicitly — never contradict one silently, and ask the user first as `## Rule Challenge` below says), and the full PRD.
 - **Decide, then write.** Settle decisions during clarification, record the significant ones as ADRs, then write the finished document. No outline-approval rounds.
 - **YAGNI.** Do not propose new packages, layers, or directories when the feature fits as an addition to an existing module. Every new structural element must earn its place against a stated alternative.
 - **Reference, don't duplicate.** Point at PRD sections by name ("covers User Stories 3–5"); repeating business context here creates two copies that drift.
@@ -62,6 +62,25 @@ stays apart. A suggestion never gates, and no suggestion does not mean that
 nothing fits; still inspect the open sources that share the context. A refactor
 or bug fix answering a Finding or Backlog Entry looks for the others that share
 its context before it mints its minimal PRD.
+
+## Rule Challenge
+
+A rule guides the solution and never bounds the goal in silence. A rule is a decision the repository recorded: an accepted ADR, a Normative Clause of a guide under `docs/agents/`, a definition in `CONTEXT.md`, or a document under `docs/references/` that the repository treats as binding. A rule blocks the goal when the solution you would recommend, or a part the goal needs, cannot exist without contradicting it, or when it stops you from stating the problem. Extra work, taste and friction are not a block.
+
+When a rule blocks the goal, neither drop or narrow the solution nor contradict the rule: put a Rule Challenge to the user, one question per rule, through the structured question tool the session exposes. Name the rule and where it lives, what it imposes, up to three things it prevents for this goal, and your reading of why the rule exists and whether it looks out of date or badly written. Offer keep, change and retire, each with its consequence, the recommended one first and labeled `(Recommended)`. The rule binds until the user answers: asking changes nothing, and a recommendation, silence, a dismissal or a timeout is never an answer.
+
+- Ask no Rule Challenge about a change the user already decided, because the request asks for it or it follows from an answer of the user that the artifact records. Name that request or answer where the artifact records the change.
+- Ask none about a rule that carries a Kept Line, a line `Kept (YYYY-MM-DD): <what was asked>; <why it stays>.` after its text, unless the question names a fact the earlier one did not have. Record that fact as `new fact`.
+- Ask at most three in one Authoring Phase or brainstorming session. When more rules block, ask about the three that prevent the most and list the others, which keep binding, in the artifact's open questions.
+- Never answer for the user. An Author Subagent returns the question, with its options and the one it recommends, to the session that started it. When no person is present, write no artifact for this phase: the Spec waits as a Backlog Entry that holds the whole question in the record form with `answer: waiting`, names the Spec folder when one exists, and carries `waiting_on`, naming the Rule Challenge, and `since` in its frontmatter.
+
+What follows the answer:
+
+- Change or retire: the PRD states the change of the rule as a requirement, and a Task of the same Spec changes the rule together with the work that depended on it. An ADR changes through the lifecycle of `docs/agents/docs-layout.md`.
+- Keep: the solution stays inside the rule, and the PRD requires a Task to add the Kept Line after the rule's text. The line names no Spec.
+- A rule inside `setup-context-driven` markers changes only in the Baseline, and its Kept Line goes in `docs/agents/specific-repository.md`, under a heading of its own, naming the rule. On change or retire, a repository that does not own the Baseline sends the user's decision as one ai-memory message to the Baseline's owner, obeys the rule until the Baseline changes, and records the message and the scope it left out.
+
+In this stage the question has a narrower trigger: ask it before the design takes what an accepted ADR rejected, or otherwise contradicts its decision, when neither the request, the PRD's `## Rule challenges` section nor another recorded answer of the user decides it. Record it in the PRD's `## Rule challenges` section with the phase `techspec`, adding the section to a minimal PRD, which otherwise omits it, and end that ADR's line under `## ADR Alternatives` with `Rule Challenge of YYYY-MM-DD: <answer>`. An amendment or a successor the user already decided needs no question; the line names where the user decided.
 
 ## Declared model
 
@@ -173,7 +192,7 @@ structure; whether a proof is right stays with the reader.
 - Rejected alternatives. Under `## ADR Alternatives`, write one line
   `- ADR-NNNN: <relation>` for each ADR the Active ADR obligations rows list:
   how the design relates to the alternatives that ADR rejected. When the design
-  takes a rejected alternative, say so and supersede or amend the ADR.
+  takes a rejected alternative, say so and supersede or amend the ADR, after the Rule Challenge when the user has not decided it.
   `SC-ADR-ALTERNATIVES-UNRELATED` reports a listed ADR without its line.
   For an ADR the Spec lists only to record why it does not apply, begin the relation with `not applicable`, or with `não se aplica` in a Spec written in Portuguese: the ADR stays listed, and `SC-ADR-RELATED` does not ask for the ADRs that cite only it. The check reads these tokens without regard to case and also accepts `nao se aplica` without the accent; any other wording, such as `não se aplicam` or `n/a`, counts as an applied ADR.
 - Coverage Cross-Read. Before `write-tasks`, read each PRD user story, Core
