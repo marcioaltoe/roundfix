@@ -2,6 +2,17 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.148.1] - 2026-11-19
+
+### The Delivery Queue brings a behind pull request up to date
+
+- **A base branch that requires up-to-date branches no longer parks the item.** When GitHub reports the merge state `BEHIND`, the Queue Owner makes a Base Update: it merges the refreshed default branch into the item branch (a `Roundfix-Delivery: derived-merge` commit) and returns the item to `gating`, so the repository gate, push and current-head checks run again while the pre-PR review, the QA gate and the Run do not. One owner makes at most three Base Updates per item; behind a fourth time the item parks `pull-request-behind`, whose next action is `roundfix deliver retry <slug>` once the base stops moving. A conflicted merge parks as before. Reported by quaestor.
+
+### A fresh home keeps the host toolchains, and a renamed Spec shows once
+
+- **The QA gate passes the installed toolchains into a fresh `HOME`.** The `qa-gate` and `write-tasks` skills say that a command run under a fresh `HOME` receives the toolchain and cache locations of the repository's stacks unchanged (Go `GOMODCACHE`/`GOCACHE`, Rust `RUSTUP_HOME`/`CARGO_HOME`, or the equivalent of another stack), and that a failure caused only by a hidden toolchain is a gate error to rerun, never an environment block. Test suites and the repository Verification keep the session's own home.
+- **`roundfix follow-up --status` shows a renamed Spec in one row.** The Spec queue identifies a Spec by its Spec Number, so a phase recorded under an earlier slug no longer leaves a second row. ADR-0434 amends ADR-0410.
+
 ## [0.148.0] - 2026-11-18
 
 ### Release planning needs no manual classification for planning references or a release-preparation commit
