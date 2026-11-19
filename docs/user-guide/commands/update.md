@@ -91,11 +91,11 @@ Authoring models: the installed files do not match the declaration: <problem>; a
 For an authoring skill the repository publishes, the declaration counts as
 applied when the installed skill holds no model and no effort.
 
-The `; apply with ...` clause appears only when installation can repair at
-least one problem. Links and files Roundfix did not generate need the user's
-correction. An applied declaration adds no text line. The comparison writes
-nothing, changes neither the report's `next` nor its exit code, and runs only
-when Project Config was read.
+The `; apply with ...` clause appears only when installation can repair at least
+one problem. Links and files Roundfix did not generate need the user's
+correction. An applied declaration adds no text line, except the research tools
+line below. The comparison writes nothing, changes neither the report's `next`
+nor its exit code, and runs only when Project Config was read.
 
 With no `skills.authoring.claude` and no inspection problem, an installed
 authoring skill the repository does not publish gets this line in the same
@@ -133,6 +133,7 @@ Authoring models: the authoring skills are installed without a declaration: writ
         research:
           model: sonnet
           reasoning_effort: medium
+          tools: [WebSearch, WebFetch]
 ```
 
 The line names only installed authoring skills not published under
@@ -145,11 +146,24 @@ the Update Check's top-level `next`. The recommendation writes nothing.
 
 Review the block and add it to `.roundfixrc.yml`, then run the named install
 command yourself. If the file already has `skills:`, merge into that mapping
-rather than adding a duplicate key. The block omits `research.tools`, so it
-grants no network tools. A leftover generated file keeps the existing
-problem report without this block. With no declaration, problem or installed
-unpublished authoring skill, no text line or JSON member is added. Outside a
-Git repository or when Project Config was not read, neither is added.
+rather than adding a duplicate key. The block gives the Research Subagent
+`WebSearch` and `WebFetch` and no MCP tool. A leftover generated file keeps the
+existing problem report without this block. With no declaration, problem or
+installed unpublished authoring skill, no text line or JSON member is added.
+Outside a Git repository or when Project Config was not read, neither is added.
+
+When `skills.authoring.claude.research` is declared without a `tools` key and
+the inspection finds no problem, the check prints this line in the same
+position:
+
+```text
+Authoring models: research declares no tools, so the Research Subagent cannot read the web; add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then apply with roundfix skills install --target project.
+```
+
+The JSON report adds `recommendedResearchTools`, the tools to add, and keeps
+`authoringModels.state` `applied`. An empty list, `tools: []`, and any declared
+list add neither. Neither changes an exit code or the top-level `next`, and
+nothing is written.
 
 When Project Config was read and no newer Roundfix wrote the repository's
 Baseline, the check compares each configured Agent Selection Profile with the
@@ -213,7 +227,8 @@ document:
 | `authoringModels.problems` | Problem texts in report order; always an array, empty when `applied` or `undeclared` |
 | `authoringModels.next` | `roundfix skills install --target project` when a problem is fixable by installation; omitted otherwise |
 | `authoringModels.installed` | Installed authoring skills the repository does not publish, in phase order; present only when `undeclared` |
-| `authoringModels.recommendation` | Recommended Authoring Declaration as YAML starting at `skills:` and ending with a newline, with no `tools` key; present only when `undeclared` |
+| `authoringModels.recommendation` | Recommended Authoring Declaration as YAML starting at `skills:` and ending with a newline, with `tools: [WebSearch, WebFetch]` under `research`; present only when `undeclared` |
+| `authoringModels.recommendedResearchTools` | The research tools of the Recommended Authoring Declaration to add; present only when `applied` and the declared research entry has no `tools` key |
 | `recommendations` | Optional profile comparison, omitted when Project Config was not read, the comparison failed, or no category differs |
 | `recommendations.snapshot` | Snapshot from the running binary used for the comparison |
 | `recommendations.categories[].category` | Agent Work Category whose configured profile differs |

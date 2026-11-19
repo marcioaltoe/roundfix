@@ -15,13 +15,14 @@ import (
 const authoringInstallAction = "roundfix skills install --target project"
 
 type updateCheckAuthoring struct {
-	State          string   `json:"state"`
-	Harness        string   `json:"harness"`
-	Declared       []string `json:"declared"`
-	Problems       []string `json:"problems"`
-	Next           string   `json:"next,omitempty"`
-	Installed      []string `json:"installed,omitempty"`
-	Recommendation string   `json:"recommendation,omitempty"`
+	State                    string   `json:"state"`
+	Harness                  string   `json:"harness"`
+	Declared                 []string `json:"declared"`
+	Problems                 []string `json:"problems"`
+	Next                     string   `json:"next,omitempty"`
+	Installed                []string `json:"installed,omitempty"`
+	Recommendation           string   `json:"recommendation,omitempty"`
+	RecommendedResearchTools []string `json:"recommendedResearchTools,omitempty"`
 }
 
 func authoringNext(state roundskills.AuthoringState) string {
@@ -41,11 +42,12 @@ func authoringProblemTexts(state roundskills.AuthoringState) []string {
 	return texts
 }
 
-// authoringReportState adds the installed, unpublished skills to the existing
-// inspection without changing what skills check reports.
+// authoringReportState adds installed, unpublished skills and recommended
+// research tools to the inspection without changing what skills check reports.
 type authoringReportState struct {
 	roundskills.AuthoringState
-	Installed []string
+	Installed                []string
+	RecommendedResearchTools []string
 }
 
 func loadedAuthoringState(loaded roundconfig.Loaded) (authoringReportState, bool) {
@@ -53,11 +55,24 @@ func loadedAuthoringState(loaded roundconfig.Loaded) (authoringReportState, bool
 		return authoringReportState{}, false
 	}
 	declaration := authoringDeclaration(loaded.Config.Skills)
-	state := authoringReportState{AuthoringState: roundskills.InspectAuthoring(loaded.GitRoot, declaration)}
+	state := authoringReportState{
+		AuthoringState:           roundskills.InspectAuthoring(loaded.GitRoot, declaration),
+		RecommendedResearchTools: authoringResearchToolsGap(loaded.Config.Skills.Authoring.Claude),
+	}
 	if declaration == nil && len(state.Problems) == 0 {
 		state.Installed = installedUnpublishedAuthoringSkills(loaded.GitRoot)
 	}
 	return state, len(state.Declared) > 0 || len(state.Problems) > 0 || len(state.Installed) > 0
+}
+
+// authoringResearchToolsGap returns the research tools of the Recommended
+// Authoring Declaration when the declared research entry has no tools key;
+// nil otherwise. An empty list is a declared choice.
+func authoringResearchToolsGap(declared *roundconfig.AuthoringHarness) []string {
+	if declared == nil || declared.Research == nil || declared.Research.Tools != nil {
+		return nil
+	}
+	return roundconfig.RecommendedAuthoringDeclaration().Research.Tools
 }
 
 func installedUnpublishedAuthoringSkills(root string) []string {
@@ -114,6 +129,10 @@ func doctorAuthoringModelsResult(state authoringReportState) CheckResult {
 		result.Detail = "the authoring skills are installed without an Authoring Model Declaration: " + strings.Join(state.Installed, ", ")
 		result.NextAction = "add the Recommended Authoring Declaration below to .roundfixrc.yml, then run " + authoringInstallAction
 		result.Lines = authoringRecommendationLines(roundconfig.RecommendedAuthoringYAML())
+	} else if len(state.RecommendedResearchTools) > 0 {
+		result.Status = CheckStatusWarn
+		result.Detail += "; research declares no tools, so the Research Subagent cannot read the web"
+		result.NextAction = "add tools: [" + strings.Join(state.RecommendedResearchTools, ", ") + "] under skills.authoring.claude.research in .roundfixrc.yml, then run " + authoringInstallAction
 	}
 	return result
 }
@@ -130,6 +149,8 @@ func updateCheckAuthoringModels(loaded roundconfig.Loaded) *updateCheckAuthoring
 		result.State = "undeclared"
 		result.Installed = state.Installed
 		result.Recommendation = roundconfig.RecommendedAuthoringYAML()
+	} else {
+		result.RecommendedResearchTools = state.RecommendedResearchTools
 	}
 	return result
 }
@@ -146,6 +167,9 @@ func printUpdateCheckAuthoringModels(stdout io.Writer, report *updateCheckAuthor
 		return
 	}
 	if report.State != "unapplied" {
+		if len(report.RecommendedResearchTools) > 0 {
+			fmt.Fprintf(stdout, "Authoring models: research declares no tools, so the Research Subagent cannot read the web; add tools: [%s] under skills.authoring.claude.research in .roundfixrc.yml, then apply with %s.\n", strings.Join(report.RecommendedResearchTools, ", "), authoringInstallAction)
+		}
 		return
 	}
 	fmt.Fprintf(stdout, "Authoring models: the installed files do not match the declaration: %s", strings.Join(report.Problems, "; "))

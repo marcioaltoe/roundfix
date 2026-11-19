@@ -216,16 +216,30 @@ authoring-models: warn (the authoring skills are installed without an Authoring 
         research:
           model: sonnet
           reasoning_effort: medium
+          tools: [WebSearch, WebFetch]
 ```
 
 The line names only installed authoring skills not published under
-`skills/<name>/SKILL.md`, in phase order. A published skill does not count.
-Each block line has two leading spaces and appears before the next check.
-Nothing is written and the warning never changes Doctor's exit code. Review
-the recommendation, add it to `.roundfixrc.yml`, then run the named install
-command yourself. If the file already has a `skills:` key, merge the block
-into that mapping rather than adding a duplicate key. The block supplies no
-`research.tools`; network tools remain the repository's choice.
+`skills/<name>/SKILL.md`, in phase order. A published skill does not count. Each
+block line has two leading spaces and appears before the next check. Nothing is
+written and the warning never changes Doctor's exit code. Review the
+recommendation, add it to `.roundfixrc.yml`, then run the named install command
+yourself. If the file already has a `skills:` key, merge the block into that
+mapping rather than adding a duplicate key. The block gives the Research
+Subagent `WebSearch` and `WebFetch`; a repository may add MCP tools that read,
+or write `tools: []` to keep it off the network.
+
+When `skills.authoring.claude.research` is declared without a `tools` key and
+the inspection finds no problem, the line names the recommended research tools:
+
+```text
+authoring-models: warn (claude: prd, research applied; research declares no tools, so the Research Subagent cannot read the web; next: add tools: [WebSearch, WebFetch] under skills.authoring.claude.research in .roundfixrc.yml, then run roundfix skills install --target project)
+```
+
+The keys before `applied` are the declared ones. An empty list, `tools: []`, is
+the repository's choice and adds no warning, and a declared list is never
+compared with the recommendation. Nothing is written and the warning never
+changes Doctor's exit code.
 
 With no such installed skill and no declaration or problem, the line is
 absent. It is also absent outside a Git repository or when Project Config

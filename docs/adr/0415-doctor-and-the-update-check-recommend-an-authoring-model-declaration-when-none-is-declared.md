@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-11-17T13:30:00Z
-updated_at: 2026-11-17T13:30:00Z
+updated_at: 2026-11-19T14:01:45Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -22,6 +22,12 @@ includes `opus`/`xhigh` fallbacks for `idea`, `prd` and `techspec`, and a
 `sonnet`/`high` fallback for `tasks`. The configuration guide matches the full
 rendering; the repository contract compares a fallback only where Project
 Config declares one. This repository declares its fallbacks after the release.
+
+**Amended by [ADR-0441](0441-the-recommended-authoring-declaration-gives-the-research-subagent-the-built-in-web-tools.md) (2026-11-18).** The block lists `tools: [WebSearch, WebFetch]` under `research`, still with no
+MCP tool, and Doctor and the Update Check name those tools when a declared
+research entry has no `tools` key. The table, the configuration guide's block
+and the repository contract hold the tools too; the checks still never write and
+never fail.
 
 ## Context
 
@@ -95,7 +101,8 @@ recommendation in the same change, or the contract run stops it.
   `make verify` and the release plan read those checks.
 - **The repository's `research.tools` in the block.** Rejected: this
   repository lists MCP tools of its own machine, and ADR-0402 leaves the
-  network to each repository.
+  network to each repository. ADR-0441 takes its built-in part: the block
+  lists `WebSearch` and `WebFetch`, and MCP tools stay out.
 - **The same warning in `roundfix skills check`.** Rejected: the maintainer
   named Doctor and the Update Check, and `skills check` runs inside
   installation flows, where a block of text would repeat on every install.
