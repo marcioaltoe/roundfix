@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -90,3 +90,17 @@ The two moments of a lesson reach the skills that run them: `archive-spec` reads
 - `_prd.md` → Goals; User Stories 6, 8, 9 and 13; Core Features 7, 13, 14, 16 and 20; Success Metric 7; Success Metric 8
 - `_techspec.md` → Skills, guides and glossary; API Contract 14; API Contract 15; API Contract 16; API Contract 17; API Contract 18; API Contract 19; API Contract 20; Testing Approach; Build Order 4
 - ADR-0440, ADR-0417, ADR-0420, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, tech-writer, golang-testing, testing-boss
+
+- Added the archive and correction Lesson Learned steps, and pinned their required phrases and those of the baseline, setup and release references in both skill copies. `go test ./skills -run '^TestTheSkillsCarryTheDocumentationSteps$'` passed (26 subtests).
+- Added the documentation preview, export-loss question and ADR marking paragraph to `--update`. A focused comparison against the delivery-base section after removing the three additions confirmed the original text is preserved; the contract test checks five numbered steps in both copies.
+- Added the knowledge publishing subsection, export example and lesson form to the user guide. A focused placement check confirmed it precedes Spec Event Announcements.
+- Ran `make skills-sync`, the specified owned-skill version recorder, and the specified behavior-surface recorder; each exited successfully. The changed-path review found only paths declared for this Task. Daemon Verification remains outstanding.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T213428Z_8e0d266520442009`
+- Source commit: `208793ec404ce350501bcb7da7b14db2bb0ee693`
