@@ -39,6 +39,7 @@ const recommendedAuthoringYAML = `skills:
       research:
         model: sonnet
         reasoning_effort: medium
+        tools: [WebSearch, WebFetch]
 `
 
 func TestRecommendedAuthoringDeclarationRendersValidProjectConfig(t *testing.T) {
@@ -60,7 +61,7 @@ func TestRecommendedAuthoringDeclarationRendersValidProjectConfig(t *testing.T) 
 		}
 		want := RecommendedAuthoringDeclaration()
 		got := loaded.Config.Skills.Authoring.Claude
-		if loaded.ProjectConfigPath != path || !reflect.DeepEqual(got, &want) || len(got.Research.Tools) != 0 {
+		if loaded.ProjectConfigPath != path || !reflect.DeepEqual(got, &want) || !reflect.DeepEqual(got.Research.Tools, []string{"WebSearch", "WebFetch"}) {
 			t.Fatalf("loaded=%+v declaration=%+v want=%+v", loaded, got, want)
 		}
 	})
@@ -71,7 +72,8 @@ func TestRecommendedAuthoringDeclarationRendersValidProjectConfig(t *testing.T) 
 			entry.Model = "changed"
 			entry.ReasoningEffort = "low"
 		}
-		changed.Research.Tools = []string{"WebSearch"}
+		changed.Research.Tools[0] = "mcp__changed__read"
+		changed.Research.Tools = append(changed.Research.Tools, "mcp__extra__read")
 		if got := RecommendedAuthoringDeclaration(); !reflect.DeepEqual(got, want) {
 			t.Fatalf("mutated recommendation: got=%+v want=%+v", got, want)
 		}

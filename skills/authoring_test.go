@@ -151,6 +151,34 @@ func TestGeneratedSubagentsMatchTheirContract(t *testing.T) {
 	}
 }
 
+func TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool(t *testing.T) {
+	t.Parallel()
+	loaded, err := config.ResolveConfigProposal(nil, []byte(config.RecommendedAuthoringYAML()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := loaded.Skills.Authoring.Claude.Research
+	_, generated, err := GeneratedSubagent("claude", "research", AuthoringEntry{Model: entry.Model, Effort: entry.ReasoningEffort, Tools: entry.Tools})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var toolsLine string
+	for _, line := range strings.Split(string(generated), "\n") {
+		if strings.HasPrefix(line, "tools:") {
+			toolsLine = line
+		}
+	}
+	if want := "tools: Read, Grep, Glob, WebSearch, WebFetch"; toolsLine != want {
+		t.Fatalf("tools=%q want=%q", toolsLine, want)
+	}
+	for _, tool := range strings.Split(strings.TrimPrefix(toolsLine, "tools: "), ", ") {
+		switch tool {
+		case "Bash", "Write", "Edit", "NotebookEdit", "PowerShell", "Agent":
+			t.Fatalf("recommended research subagent holds prohibited tool %s", tool)
+		}
+	}
+}
+
 func TestTheResearchSubagentNeverHoldsAShellOrAWriteTool(t *testing.T) {
 	t.Parallel()
 	tools := []string{"WebSearch", "WebFetch", "mcp__kb__read", "mcp__search.*", "Bash", "Write", "Edit", "NotebookEdit", "PowerShell", "Agent"}

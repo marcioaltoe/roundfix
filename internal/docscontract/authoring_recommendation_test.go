@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -134,6 +135,32 @@ func TestTheRecommendedAuthoringDeclarationMatchesThisRepository(t *testing.T) {
 		}
 	})
 
+	t.Run("a_research_entry_without_a_recommended_tool_fails", func(t *testing.T) {
+		for _, tc := range []struct {
+			name  string
+			tools []string
+		}{
+			{"nil", nil},
+			{"empty", []string{}},
+			{"search_only", []string{"WebSearch"}},
+			{"fetch_and_mcp", []string{"WebFetch", "mcp__kb__read"}},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				declaration := config.RecommendedAuthoringDeclaration()
+				declaration.Research.Tools = tc.tools
+				err := authoringRecommendationMismatch(&declaration)
+				if err == nil || !strings.Contains(err.Error(), "skills.authoring.claude.research.tools") {
+					t.Fatalf("contract error=%v; want the missing recommended research tool", err)
+				}
+			})
+		}
+		declaration := config.RecommendedAuthoringDeclaration()
+		declaration.Research.Tools = append(declaration.Research.Tools, "mcp__kb__read")
+		if err := authoringRecommendationMismatch(&declaration); err != nil {
+			t.Fatalf("additional research tool: %v", err)
+		}
+	})
+
 	t.Run("configuration_guide", func(t *testing.T) {
 		path := filepath.Join(root, "docs", "user-guide", "configuration.md")
 		content, err := os.ReadFile(path)
@@ -180,6 +207,11 @@ func authoringRecommendationMismatch(got *config.AuthoringHarness) error {
 		}
 		if entry.got.Fallback != nil && !reflect.DeepEqual(entry.got.Fallback, entry.want.Fallback) {
 			return fmt.Errorf("%s.fallback = %+v, want %+v", path, entry.got.Fallback, entry.want.Fallback)
+		}
+	}
+	for _, tool := range want.Research.Tools {
+		if !slices.Contains(got.Research.Tools, tool) {
+			return fmt.Errorf("skills.authoring.claude.research.tools lacks recommended tool %q", tool)
 		}
 	}
 	return nil

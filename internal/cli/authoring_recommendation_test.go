@@ -42,6 +42,7 @@ const authoringRecommendationBlock = `  skills:
         research:
           model: sonnet
           reasoning_effort: medium
+          tools: [WebSearch, WebFetch]
 `
 
 const authoringRecommendationDoctorLine = "authoring-models: warn (the authoring skills are installed without an Authoring Model Declaration: write-idea, write-prd, write-techspec, write-tasks; next: add the Recommended Authoring Declaration below to .roundfixrc.yml, then run roundfix skills install --target project)"

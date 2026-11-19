@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -97,3 +97,46 @@ The Recommended Authoring Declaration lists `tools: [WebSearch, WebFetch]` under
 - `_techspec.md` → System Architecture 3 and 4; Interfaces; invariants 4 and 5; Data Models; API Contract 3; API Contract 4; API Contract 5; Testing Approach; Build Order 2; Glossary
 - [`references/2026-11-18-characterization.md`](references/2026-11-18-characterization.md) sections 5 to 8
 - ADR-0441, ADR-0415, ADR-0402
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-safety, golang-structs-interfaces, golang-testing, golang-error-handling, testing-boss, systematic-debugging, no-workarounds, tech-writer, domain-modeling, evidence-gate.
+
+Implemented this Task's recommendation and report slice. Status and authored Verification remain Daemon-owned.
+
+- Acceptance criterion 1: the recommendation now owns and defensively copies `WebSearch` and `WebFetch`, and renders their list immediately after research's effort. The new generator test loads that rendering as Project Config and asserts exactly `tools: Read, Grep, Glob, WebSearch, WebFetch`, excluding every named shell/write/delegation tool. The existing restriction test and production generator are unchanged.
+- Acceptance criterion 2: the reports read the loaded configuration to distinguish an absent `tools` key from an explicit list. The new five-case CLI test asserts exact Doctor placement, Update Check JSON and text, unchanged top-level `next`, inspection-problem precedence, zero exit codes and no changes to either fixture tree. Explicit empty, web and MCP-only lists retain their existing reports.
+- Acceptance criterion 3: the repository contract requires every recommended research tool, accepts additional tools, and tests nil, empty and incomplete lists. This repository already declares both recommended tools; `.roundfixrc.yml` was not edited. The configuration guide's block matches the renderer.
+- Acceptance criterion 4: applied API Contract 5 to the three guides, canonical setup/modes references, only the Recommended Authoring Declaration glossary entry, and ADR-0415's amendment and considered option. The update mode retains its existing state guidance and no-publication sentence. The sanctioned commands synchronized both mirrors, recorded Roundfix version `0.1.276` above `0.1.275`, and refreshed the Behavior Surface Record after the last guide edit.
+
+Focused evidence:
+
+- Before production edits, `go test -count=1 -timeout 5m ./internal/cli -run '^TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone$'` exited 1: `no_tools_key` observed `authoring-models: ok` instead of the required warning. The other four cases did not fail.
+- Before production edits, `go test -count=1 -timeout 5m ./skills -run '^TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool$'` exited 1: generated tools were only `Read, Grep, Glob`.
+- After implementation, `go test -count=1 -timeout 5m ./internal/config -run '^TestRecommendedAuthoringDeclarationRendersValidProjectConfig$'` exited 0, covering exact rendering, Project Config loading and mutation of a returned tools slice.
+- `go test -count=1 -timeout 5m ./skills -run '^(TestTheRecommendedResearchSubagentReadsTheWebAndHoldsNoShellOrWriteTool|TestTheResearchSubagentNeverHoldsAShellOrAWriteTool|TestGeneratedSubagentsMatchTheirContract)$'` exited 0.
+- `go test -count=1 -timeout 5m ./internal/cli -run '^(TestTheChecksNameTheRecommendedResearchToolsWhenResearchDeclaresNone|TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared|TestDoctorReportsTheAuthoringModels|TestUpdateCheckReportsTheAuthoringModels|TestRunDoctorRealRepositoryCheckDoesNotMutateState|TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration|TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks)$'` exited 0, including all five new report cases.
+- After regeneration, `go test -count=1 -timeout 5m ./internal/cli -run 'Authoring|TestRunDoctorRealRepositoryCheckDoesNotMutateState|TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration|TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks'` exited 0.
+- `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^TestTheRecommendedAuthoringDeclarationMatchesThisRepository$'` exited 0. After the final guide edits and regeneration, `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestTheRecommendedAuthoringDeclarationMatchesThisRepository|TestGlossaryPhrasesAreDefinedTerms|TestGlossaryLinksNameAcceptedADRs)$'` also exited 0.
+- Required regeneration ran in order, each exiting 0: `make skills-sync`; `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`; `make skills-sync`; `make skills-sync-check`; then `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` as the final regeneration after the last guide edit. No mirror, version field or derived record was hand-edited.
+- `git diff --check` exited 0. Focused commands ran through `rtk proxy` in the physical Run checkout after the sandbox rejected its symlinked writable root.
+
+No follow-up implementation was added. The declared Verification and repository gates were not run; the Daemon owns them. No status field, Task Graph manifest, other Task, generator, tool validator, authoring conversion, configuration or QA settlement section was edited. No commit, push or pull request was made.
+
+
+### Verification feedback repair — attempt 1
+
+Inspected both supplied diagnostic artifacts, `batch-002-attempt-1.log` and `batch-002-attempt-1-settlement-spec-consistency.log`. The documentation Verification reached the corpus contracts; both failures originated in the same stale receipt in this Spec's TechSpec, API Contract 5. Its guide-edit instruction quoted the old applied-declaration sentence as if it were current source evidence, after this Task had replaced that sentence as required.
+
+Changed only that TechSpec instruction to identify the applied-declaration sentence descriptively, retaining the required replacement verbatim. This adds `_techspec.md` to the Task's changed paths solely for the receipt repair. No guide, runtime behavior, detector, test expectation, skill or generated record changed during this repair; the recorded guide fingerprints remain applicable.
+
+Focused check: `go test -count=1 -timeout 5m -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$'` exited 0. `git diff --check` exited 0. The checks ran through `rtk proxy` in the physical Run checkout.
+
+The Agent did not rerun the declared Verification or settlement command. Task status remains `in_progress`; the Daemon owns the full rerun and settlement. No commit, push or pull request was made.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `docs/specs/0411-adopting-the-recommendations-works-under-load-and-gives-the-researcher-the-web/_techspec.md`

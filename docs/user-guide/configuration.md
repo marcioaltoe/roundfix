@@ -141,14 +141,15 @@ skills:
       research:
         model: sonnet
         reasoning_effort: medium
+        tools: [WebSearch, WebFetch]
 ```
 
-The repository can add this option under `research`:
-
-```yaml
-research:
-  tools: [WebSearch, WebFetch]
-```
+The block gives the Research Subagent the built-in web tools `WebSearch` and
+`WebFetch` and no MCP tool, because MCP tool names differ from one machine to
+another. A repository may add MCP tools that read to `research.tools`, or write
+`tools: []` to keep the Research Subagent off the network. A research entry
+without a `tools` key makes Doctor and the Update Check name the recommended
+tools; neither writes the file.
 
 If the file already holds `skills:`, take the lines under it and merge them
 there.
