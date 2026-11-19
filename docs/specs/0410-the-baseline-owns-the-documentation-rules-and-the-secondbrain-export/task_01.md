@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -145,3 +145,19 @@ The Baseline's docs-layout rule gains the Amendment List, the exception to the l
 - `_techspec.md` → Baseline text; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 5; API Contract 6; API Contract 7; API Contract 8; API Contract 9; API Contract 21; Testing Approach; Build Order 1
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md), sections 2, 3 and 4
 - ADR-0438, ADR-0439, ADR-0440, ADR-0186, ADR-0222, ADR-0257
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, golang-testing, testing-boss, tech-writer, roundfix, setup-context-driven, evidence-gate.
+
+- Rendering: the module rules and guide entries were updated, derived files regenerated, and the focused new clause and rendering tests passed (45 tests and subtests). The plan, formatter golden and repository guide renderings were checked.
+- Guarantees: named phrase and structural subtests pass in the focused test run; an initial rendering test failure exposed the disabled Secondbrain decision and was corrected before the passing run.
+- Retention and size: the focused existing clause-force, placement, retirement, size and ADR lifecycle tests passed (17 tests and subtests). The version recorder and `make baseline-digests` succeeded. The second Managed Refresh reported `File changes: 0`.
+- Glossary: the five prescribed entries and Managed Refresh sentence were added; `go test -tags docscontract ./internal/docscontract -run 'Glossary' -count=1` passed (42 tests and subtests).
+
+Daemon Verification was not run in this turn. The task file was already modified at the start of the prior turn; its status remains Daemon-owned.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261119T202339Z_d7348376c214f0d5`
+- Source commit: `49ecc756df71a198a8d941faaf8d788df46042e8`

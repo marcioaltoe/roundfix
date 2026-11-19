@@ -18,9 +18,11 @@ superseded_by: null # null or ADR-NNNN
 <One to three sentences describing the context, decision, and reason.>
 ```
 
+An accepted ADR that a later accepted ADR changes in part, without replacing it, stays `accepted`. In the change that adds the later ADR, its header gains `amended_by: [ADR-NNNN]`, and its body gains, after the text that changed, a dated notice that begins `Amended by ADR-NNNN (YYYY-MM-DD)` and says what changed. `roundfix baseline update` fills the list from the notices an ADR already carries.
+
 - **mandatory**: For an ADR that carries lifecycle frontmatter, only `accepted` is active. Treat `proposed`, `rejected`, `deprecated`, and `superseded` ADRs as inactive.
 
-- **mandatory**: Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata.
+- **mandatory**: Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata. The one exception is a header field that a guide of this repository defines for existing ADRs, such as `amended_by`: it is written into them and changes no other line, and a header that holds no lifecycle field leaves its ADR a legacy ADR.
 
 - **mandatory**: Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:
 
@@ -120,7 +122,7 @@ Keep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status
 
 - **mandatory**: Keep evidence and intent distinct in both directions: a finding records what happened and is never a commitment; it is evidence-backed, immutable history. A backlog entry records what to do next and is never evidence. A finding may spawn a backlog entry; a backlog entry needs no finding. A `feat` entry is upstream raw material that the spec pipeline may consume, never the `write-idea` artifact itself.
 
-- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder.
+- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts of the product, such as an interface, API or data design, and never a decision or a plan, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/lessons/` for Lessons Learned, `docs/references/` for external pointers and durable project reference documents, including one that would otherwise sit at the repository root, the `DESIGN.md` design contract excepted, and `docs/user-guide/` for human documentation. A folder under `docs/` or a reference document at the root that this clause does not name is a variation: name its path and its job in `docs/agents/specific-repository.md`, or move its content to the directory whose job it is. `roundfix doctor` reports one that is neither. Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder.
 
 - **mandatory**: Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`.
 
@@ -178,13 +180,33 @@ members:
   - YYYY-MM-DD-<finding-slug>.md
 ```
 
-- **mandatory**: A retirement deletes the file. A Finding, Rollup or Backlog Entry with a terminal status (`deferred` included), a handoff on the user's explicit confirmation, a finished Review Artifact, a rejected or deprecated ADR, and a superseded ADR once an accepted successor names it with its date are deleted in the change that records the disposition. Git keeps the text. A Spec that absorbs a source adopts it and its Archive Record names it; any other retirement names its reason in the commit. A citation of a deleted file becomes the Git Locator `roundfix spec check` prints. The runtime's `roundfix history sanitize` removes what an earlier layout left.
+- **mandatory**: A retirement deletes the file. A Finding, Rollup or Backlog Entry with a terminal status (`deferred` included), a handoff on the user's explicit confirmation, a finished Review Artifact, a rejected or deprecated ADR, a superseded ADR once an accepted successor names it with its date, and a Lesson Learned once an accepted ADR, a guide or a skill states what it teaches are deleted in the change that records the disposition. Git keeps the text. A Spec that absorbs a source adopts it and its Archive Record names it; any other retirement names its reason in the commit. A citation of a deleted file becomes the Git Locator `roundfix spec check` prints. The runtime's `roundfix history sanitize` removes what an earlier layout left.
 
 - **mandatory**: Triage resolves one pending cross-project message into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the boundary between evidence and intent: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the message's provenance: the sending project, the message id and its date.
 
 - **mandatory**: When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the cross-project continuity rule's concern, not this one's.
 
 - **mandatory**: Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its message into that entry, which cites the message's provenance.
+
+- **mandatory**: A Lesson Learned records something this repository tried, what went wrong, why, and what solved it. It is one file, `docs/lessons/YYYY-MM-DD-<kebab-slug>.md`, in this complete copyable form; keep each label as written and write the rest in the language of the repository's documentation:
+
+```markdown
+---
+created: YYYY-MM-DD
+---
+# <The lesson in one line>
+
+- Context: <the work it happened in>
+- Tried: <what was tried>
+- Went wrong: <what was observed>
+- Cause: <the proven cause>
+- Solved by: <what solved it>
+- Applies when: <when a reader should use this lesson>
+- Does not apply when: <what looks alike and is different>
+- Links: <the Finding, Spec, Pull Request or commit that holds the evidence>
+```
+
+- **mandatory**: Write a Lesson Learned only when every part of this test holds: something was tried, it went wrong, the cause is proven, something solved it, and no accepted ADR, reference document or glossary entry already states it. Otherwise write nothing. Apply the test at two moments: when a Finding closes, in the change that answers it or retires it, and when a Spec that needed a correction, a failed QA or a retry is archived. Write the file in that change, so the Pull Request that carries it shows the lesson to a person, who may delete it.
 
 <!-- setup-context-driven:end id=guide.docs-layout -->
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
