@@ -1,0 +1,69 @@
+source head: 33cc2fd47ff0d34a6901110c6fd16acf0d574fb8
+fresh git archive, git init/add/commit before mutation; no regeneration or synchronization
+mutation:
+--- internal/delivery/engine.go
++++ internal/delivery/engine.go
+@@ -1773,25 +1773,6 @@
+ 				fmt.Fprintf(engine.log, "roundfix: checks: Delivery Queue item %s: merge state %s\n", item.SpecSlug, report.MergeState)
+ 				lastMergeState = report.MergeState
+ 			}
+-			if report.Mergeable == "CONFLICTING" {
+-				fmt.Fprintf(engine.log, "roundfix: conflict: Delivery Queue item %s: candidate %s\n", item.SpecSlug, head)
+-				if engine.conflicts == nil {
+-					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+-				}
+-				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
+-				if err != nil {
+-					return fmt.Errorf("resolve pull request conflict: %w", err)
+-				}
+-				if len(resolution.SourcePaths) > 0 {
+-					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict+": "+strings.Join(resolution.SourcePaths, ", "))
+-				}
+-				if resolution.Head == "" || resolution.Head == head {
+-					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
+-				}
+-				fmt.Fprintf(engine.log, "roundfix: derived merge: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(resolution.Regenerated, ", "))
+-				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
+-				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+-			}
+ 			if report.MergeState == "BEHIND" {
+ 				if engine.conflicts == nil {
+ 					return engine.park(ctx, gitRoot, item, fmt.Sprintf("%s: pull request #%s is behind its base branch", BlockerPullRequestBehind, item.PullRequestNumber))
+@@ -1815,6 +1796,25 @@
+ 					item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
+ 					return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+ 				}
++			}
++			if report.Mergeable == "CONFLICTING" {
++				fmt.Fprintf(engine.log, "roundfix: conflict: Delivery Queue item %s: candidate %s\n", item.SpecSlug, head)
++				if engine.conflicts == nil {
++					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
++				}
++				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
++				if err != nil {
++					return fmt.Errorf("resolve pull request conflict: %w", err)
++				}
++				if len(resolution.SourcePaths) > 0 {
++					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict+": "+strings.Join(resolution.SourcePaths, ", "))
++				}
++				if resolution.Head == "" || resolution.Head == head {
++					return engine.park(ctx, gitRoot, item, BlockerPullRequestConflict)
++				}
++				fmt.Fprintf(engine.log, "roundfix: derived merge: Delivery Queue item %s: %s\n", item.SpecSlug, strings.Join(resolution.Regenerated, ", "))
++				item.CandidateCommits = append(item.CandidateCommits, resolution.Head)
++				return engine.setStage(ctx, gitRoot, item, store.DeliveryStageGating)
+ 			}
+ 			pending := report.Mergeable == "UNKNOWN"
+ 			for _, check := range report.Checks {
+
+command: go test -count=1 -timeout 20m -v -run ^TestAConflictingAndBehindPullRequestTakesTheConflictPath$ ./internal/delivery
+exit: 1
+=== RUN   TestAConflictingAndBehindPullRequestTakesTheConflictPath
+=== PAUSE TestAConflictingAndBehindPullRequestTakesTheConflictPath
+=== CONT  TestAConflictingAndBehindPullRequestTakesTheConflictPath
+    base_update_test.go:277: item={SpecSlug:example Position:0 Stage:gating Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID:run-original CandidateCommits:[candidate conflict-merge] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:} calls=[{/worktrees/example example candidate}] log="roundfix: checks: Delivery Queue item example: merge state BEHIND\nroundfix: base update: Delivery Queue item example: pull request #1 was behind its base branch; merged the default branch at conflict-merge\n"
+--- FAIL: TestAConflictingAndBehindPullRequestTakesTheConflictPath (0.01s)
+FAIL
+suiteguard: guard cost: measured 3287 paths; fingerprint took 174.197666ms before and 150.921125ms after
+FAIL	roundfix/internal/delivery	0.631s
+FAIL

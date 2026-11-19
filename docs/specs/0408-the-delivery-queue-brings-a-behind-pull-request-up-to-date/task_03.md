@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

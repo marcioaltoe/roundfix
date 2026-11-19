@@ -1,0 +1,69 @@
+import pathlib,re,subprocess,json,tempfile,sys
+ROOT=pathlib.Path.cwd(); SLUG="0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date"; SPEC=ROOT/'docs/specs'/SLUG; E=SPEC/'qa/evidence/qa-report-2026-11-19'; QA=SPEC/'qa/qa-report-2026-11-19.md'; BASE='e3636ec9af5a4ec6cd346b89802b67caaa351dac'; HEAD='33cc2fd47ff0d34a6901110c6fd16acf0d574fb8'
+def git(*a): return subprocess.check_output(['git',*a],text=True).strip()
+def record(row,status,detail):
+ s=QA.read_text();s,n=re.subn(r'(?m)^\| '+row+r' \| [^|]* \|','| '+row+' | '+status+' |',s,count=1);assert n==1;QA.write_text(s+'\n## '+row+' evidence\n\n'+detail+'\n')
+logs=['audited head: '+git('rev-parse','HEAD'),'range: '+BASE+'..'+HEAD];assert git('rev-parse','HEAD')==HEAD
+changed=[]
+for task,commit in [('task_01','675b68e4'),('task_02','33cc2fd4')]:
+ paths=git('diff-tree','--no-commit-id','--name-only','-r',commit).splitlines()
+ text=(SPEC/(task+'.md')).read_text(); declared=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',text,re.M));declared.add('docs/specs/'+SLUG+'/'+task+'.md')
+ if '## Recorded paths' in text: declared.update(re.findall(r'`([^`]+)`',text.split('## Recorded paths',1)[1].split('\n## ',1)[0]))
+ assert set(paths)<=declared,(task,set(paths)-declared)
+ logs+=['command: git diff-tree --no-commit-id --name-only -r '+commit,*paths,task+': all changed files declared; assigned task Result/status path allowed']
+ changed+=paths
+for p in changed:
+ forbidden=p in ['Makefile','go.mod','go.sum','skills-lock.json','.roundfixrc.yml','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/coverage-record.json'] or p.startswith(('.github/workflows/','internal/baseline/','docs/adr/')) or (p.startswith('internal/cli/') and p!='internal/cli/deliver_base_update_test.go') or (p.startswith('.agents/skills/') and not p.startswith('.agents/skills/roundfix/')) or (p.startswith('skills/') and '/SKILL.md' in p and not p.startswith('skills/roundfix/'))
+ assert not forbidden,p
+logs+=['forbidden-path sweep: no changes']
+for p in changed:
+ if p.endswith('SKILL.md'):
+  before=git('show',BASE+':'+p);after=git('show',HEAD+':'+p)
+  def settlement(s): return s.split('### QA settlement\n',1)[1].split('\n## ',1)[0]
+  assert settlement(before)==settlement(after),p
+logs+=['QA settlement sections: byte-identical']
+authpath='docs/specs/'+SLUG+'/_authorization.md'; auth=git('show',BASE+':'+authpath); assert auth==git('show',HEAD+':'+authpath)
+granted=set(re.findall(r'^  - (.+)$',auth.split('paths:\n',1)[1].split('operations:',1)[0],re.M));assert len(granted)==3
+logs+=['authorization present before both Tasks: '+BASE,'authorization unchanged in range','bounded paths: '+', '.join(sorted(granted))]
+# Use the real repository classifier through an ephemeral compiler overlay.
+source='package speccheck\nimport "testing"\nfunc TestQA0408ChangedPathAuthority(t *testing.T) { t.Parallel()\n'
+for p in sorted(set(changed)):
+ source+='t.Logf("%s governed=%v", '+json.dumps(p)+', GovernedPath('+json.dumps(p)+'))\n'
+ source+='if GovernedPath('+json.dumps(p)+') != '+str(p in granted).lower()+' { t.Errorf("unexpected classification: %s", '+json.dumps(p)+') }\n'
+source+='}\n'; fixture=E/'scope-classifier.go.txt';fixture.write_text(source)
+with tempfile.TemporaryDirectory() as td:
+ overlay=pathlib.Path(td)/'overlay.json';overlay.write_text(json.dumps({'Replace':{str(ROOT/'internal/speccheck/qa_0408_scope_test.go'):str(fixture)}}))
+ cmd=['go','test','-count=1','-timeout','20m','-v','-overlay',str(overlay),'-run','^TestQA0408ChangedPathAuthority$','./internal/speccheck']
+ p=subprocess.run(cmd,stdin=subprocess.DEVNULL,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ logs+=['command: '+' '.join(cmd),'exit: '+str(p.returncode),p.stdout];assert p.returncode==0,p.stdout
+# No tracked delta, no source changes during QA.
+assert not git('diff','HEAD','--name-only')
+logs+=['tracked worktree delta: empty; QA output only is untracked']
+(E/'scope-audit.txt').write_text('\n'.join(logs))
+record('R16','pass','History audit of each Task with `git diff-tree --no-commit-id --name-only -r` found only its declared paths plus its assigned Task artifact. The real `speccheck.GovernedPath` classified exactly the three pre-authorized skill paths; the base authorization predates both Tasks and is unchanged. All forbidden paths and QA settlement sections are unchanged; tracked worktree delta is empty. The seeded mechanical authorization table already covers Task 02; this declared audit additionally checks the actual path lists for both Tasks. [Commands, paths and classifier output](evidence/qa-report-2026-11-19/scope-audit.txt); [ephemeral overlay source](evidence/qa-report-2026-11-19/scope-classifier.go.txt).')
+# Exact documentation paragraph and old-wording sweep, with executable contract corroboration from R05.
+tech=(SPEC/'_techspec.md').read_text(); paragraph=re.search(r'A new paragraph right before that one: "(.*?)", followed',tech).group(1)
+phrases=[paragraph,'GitHub reports the merge state as none of `BLOCKED`, `UNKNOWN` and `BEHIND`','Roundfix returns to `checking` once for that head, where a `BEHIND` merge state makes a Base Update.','A second refusal for the same head parks `delivery-error`.','roundfix: base update: Delivery Queue item <slug>: pull request #<n> was behind its base branch; merged the default branch at <head>']
+checks=[]
+for file in ['docs/user-guide/commands/deliver.md','.agents/skills/roundfix/references/deliver.md','skills/roundfix/references/deliver.md']:
+ text=' '.join((ROOT/file).read_text().split())
+ for phrase in phrases: assert ' '.join(phrase.split()) in text,(file,phrase)
+ checks+=[file+': all API Contract 3 paragraph and sentence checks pass; second refusal retained']
+for tree in ['docs/user-guide','.agents/skills/roundfix','CONTEXT.md']:
+ path=ROOT/tree
+ for file in ([path] if path.is_file() else path.rglob('*.md')):
+  text=' '.join(file.read_text().split())
+  assert 'GitHub reports the merge state as neither `BLOCKED` nor `UNKNOWN`' not in text,file
+checks+=['stale neither-BLOCKED-nor-UNKNOWN-alone sweep: no matches in docs/user-guide, .agents/skills/roundfix or CONTEXT.md']
+def entries(text):
+ parts=re.split(r'(?m)^\*\*([^*]+)\*\*:\n',text)
+ return {parts[i]:parts[i+1].strip() for i in range(1,len(parts),2)}
+a=entries(git('show',BASE+':CONTEXT.md')); b=entries((ROOT/'CONTEXT.md').read_text());delta={key for key in a.keys()|b.keys() if a.get(key)!=b.get(key)};assert delta=={'Base Update','Check Wait'},delta
+for file in ['_prd.md','_techspec.md']:
+ text=(SPEC/file).read_text();assert '- adds: **Base Update**' in text and '- changes: **Check Wait**' in text
+checks+=['PRD and TechSpec: adds Base Update; changes Check Wait','Task 02 history changes only those two glossary entries','current Roundfix skill version: 0.1.274 in canonical and mirror; R05 verifies its record']
+p=subprocess.run(['go','test','-count=1','-timeout','20m','-v','-tags','docscontract','-run','^TestGlossaryPhrasesAreDefinedTerms$','./internal/docscontract'],stdin=subprocess.DEVNULL,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+checks+=['command: go test -count=1 -timeout 20m -v -tags docscontract -run ^TestGlossaryPhrasesAreDefinedTerms$ ./internal/docscontract','exit: '+str(p.returncode),p.stdout];assert p.returncode==0,p.stdout
+(E/'documentation-and-glossary.txt').write_text('\n'.join(checks))
+record('R15','pass','PRD and TechSpec declare `adds: Base Update` and `changes: Check Wait`. An entry-by-entry comparison of CONTEXT.md against the delivery base proves Task 02 changed precisely those two entries. `TestGlossaryPhrasesAreDefinedTerms` passes. Each document contains the entire exact API Contract 3 paragraph, the new settled-state clause, owner line and retained second-refusal sentence; the required stale-wording search returns no matches. R05 supplies executable documentation contracts, mirror and version-record confirmation, so this row does not rest on reading a file alone. [Assertions and fresh glossary test](evidence/qa-report-2026-11-19/documentation-and-glossary.txt).')
+print('Scope, documentation and glossary audit passed.',flush=True)

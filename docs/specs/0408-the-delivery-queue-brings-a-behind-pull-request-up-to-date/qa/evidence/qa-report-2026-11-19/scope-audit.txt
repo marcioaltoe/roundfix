@@ -1,0 +1,54 @@
+audited head: 33cc2fd47ff0d34a6901110c6fd16acf0d574fb8
+range: e3636ec9af5a4ec6cd346b89802b67caaa351dac..33cc2fd47ff0d34a6901110c6fd16acf0d574fb8
+command: git diff-tree --no-commit-id --name-only -r 675b68e4
+docs/specs/0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date/task_01.md
+internal/cli/deliver_base_update_test.go
+internal/delivery/base_update_test.go
+internal/delivery/engine.go
+internal/delivery/park_class.go
+internal/delivery/park_class_test.go
+task_01: all changed files declared; assigned task Result/status path allowed
+command: git diff-tree --no-commit-id --name-only -r 33cc2fd4
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/specs/0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date/task_02.md
+docs/user-guide/commands/deliver.md
+internal/docscontract/command_documentation_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+task_02: all changed files declared; assigned task Result/status path allowed
+forbidden-path sweep: no changes
+QA settlement sections: byte-identical
+authorization present before both Tasks: e3636ec9af5a4ec6cd346b89802b67caaa351dac
+authorization unchanged in range
+bounded paths: .agents/skills/roundfix/SKILL.md, .agents/skills/roundfix/references/deliver.md, skills/roundfix/SKILL.md
+command: go test -count=1 -timeout 20m -v -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmpukwp_dy8/overlay.json -run ^TestQA0408ChangedPathAuthority$ ./internal/speccheck
+exit: 0
+=== RUN   TestQA0408ChangedPathAuthority
+=== PAUSE TestQA0408ChangedPathAuthority
+=== CONT  TestQA0408ChangedPathAuthority
+    qa_0408_scope_test.go:4: .agents/skills/roundfix/SKILL.md governed=true
+    qa_0408_scope_test.go:6: .agents/skills/roundfix/references/deliver.md governed=true
+    qa_0408_scope_test.go:8: CONTEXT.md governed=false
+    qa_0408_scope_test.go:10: docs/references/behavior-surfaces.json governed=false
+    qa_0408_scope_test.go:12: docs/specs/0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date/task_01.md governed=false
+    qa_0408_scope_test.go:14: docs/specs/0408-the-delivery-queue-brings-a-behind-pull-request-up-to-date/task_02.md governed=false
+    qa_0408_scope_test.go:16: docs/user-guide/commands/deliver.md governed=false
+    qa_0408_scope_test.go:18: internal/cli/deliver_base_update_test.go governed=false
+    qa_0408_scope_test.go:20: internal/delivery/base_update_test.go governed=false
+    qa_0408_scope_test.go:22: internal/delivery/engine.go governed=false
+    qa_0408_scope_test.go:24: internal/delivery/park_class.go governed=false
+    qa_0408_scope_test.go:26: internal/delivery/park_class_test.go governed=false
+    qa_0408_scope_test.go:28: internal/docscontract/command_documentation_test.go governed=false
+    qa_0408_scope_test.go:30: skills/roundfix/SKILL.md governed=true
+    qa_0408_scope_test.go:32: skills/roundfix/references/deliver.md governed=false
+    qa_0408_scope_test.go:34: skills/testdata/owned-skill-versions.json governed=false
+--- PASS: TestQA0408ChangedPathAuthority (0.00s)
+PASS
+suiteguard: guard cost: measured 3307 paths; fingerprint took 169.096084ms before and 145.0265ms after
+ok  	roundfix/internal/speccheck	0.628s
+
+tracked worktree delta: empty; QA output only is untracked

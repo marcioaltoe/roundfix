@@ -1,0 +1,26 @@
+source head: 33cc2fd47ff0d34a6901110c6fd16acf0d574fb8
+fresh git archive, git init/add/commit before mutation; no regeneration or synchronization
+mutation:
+--- internal/delivery/engine.go
++++ internal/delivery/engine.go
+@@ -1796,7 +1796,7 @@
+ 				if engine.conflicts == nil {
+ 					return engine.park(ctx, gitRoot, item, fmt.Sprintf("%s: pull request #%s is behind its base branch", BlockerPullRequestBehind, item.PullRequestNumber))
+ 				}
+-				if engine.baseUpdates[item.SpecSlug] >= BaseUpdateLimit {
++				if false {
+ 					return engine.park(ctx, gitRoot, item, fmt.Sprintf("%s: pull request #%s is still behind its base branch after %d Base Updates", BlockerPullRequestBehind, item.PullRequestNumber, BaseUpdateLimit))
+ 				}
+ 				resolution, err := engine.conflicts.ResolveConflict(ctx, workDir, item.SpecSlug, head)
+
+command: go test -count=1 -timeout 20m -v -run ^TestAFourthBehindPullRequestParksPullRequestBehind$ ./internal/delivery
+exit: 1
+=== RUN   TestAFourthBehindPullRequestParksPullRequestBehind
+=== PAUSE TestAFourthBehindPullRequestParksPullRequestBehind
+=== CONT  TestAFourthBehindPullRequestParksPullRequestBehind
+    base_update_test.go:220: item={SpecSlug:example Position:0 Stage:gating Blocker: Branch:roundfix/deliver-example Worktree:/worktrees/example WorktreeProvisioned:false RunID:run-original CandidateCommits:[candidate updated-1 updated-2 updated-3 updated-4] PullRequestNumber:1 MergeCommit: RetryCount:0 Warning:} park={Class:unclassified Next:resolve the blocker, then run roundfix deliver retry example} calls=[{/worktrees/example example candidate} {/worktrees/example example updated-1} {/worktrees/example example updated-2} {/worktrees/example example updated-3}]
+--- FAIL: TestAFourthBehindPullRequestParksPullRequestBehind (0.01s)
+FAIL
+suiteguard: guard cost: measured 3287 paths; fingerprint took 173.297375ms before and 149.61575ms after
+FAIL	roundfix/internal/delivery	0.628s
+FAIL

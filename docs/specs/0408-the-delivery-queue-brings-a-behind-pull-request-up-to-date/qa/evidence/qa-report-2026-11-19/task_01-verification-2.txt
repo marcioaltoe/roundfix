@@ -1,0 +1,21 @@
+command: /bin/sh -c out="$(go test -count=1 -timeout 20m -v -run '^TestCommandDeliveryEngineBringsABehindPullRequestUpToDate$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; printf '%s\n' "$out" | grep -q -- '--- PASS: TestCommandDeliveryEngineBringsABehindPullRequestUpToDate ' || { echo 'missing pass: TestCommandDeliveryEngineBringsABehindPullRequestUpToDate' >&2; exit 1; }; printf '%s\n' "$out" | grep -q 'roundfix: base update: Delivery Queue item ' || { echo 'missing Base Update log line' >&2; exit 1; }; printf '%s
+' "$out"
+exit: 0
+=== RUN   TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+=== PAUSE TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+=== CONT  TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+    deliver_base_update_test.go:41: isolated forge scenario: === RUN   TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+        === PAUSE TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+        === CONT  TestCommandDeliveryEngineBringsABehindPullRequestUpToDate
+        roundfix: Delivery Queue item 0001-widget-flow: recorded pull request 7 in its Archive Record
+        roundfix: checks: Delivery Queue item 0001-widget-flow: merge state BEHIND
+        roundfix: base update: Delivery Queue item 0001-widget-flow: pull request #7 was behind its base branch; merged the default branch at 2023ec8bdca15ddbc1caaf601dad0b3f1e49347e
+        roundfix: checks: Delivery Queue item 0001-widget-flow: merge state CLEAN
+        roundfix: checks: Delivery Queue item 0001-widget-flow: 1 check(s) completed for 2023ec8bdca15ddbc1caaf601dad0b3f1e49347e
+        --- PASS: TestCommandDeliveryEngineBringsABehindPullRequestUpToDate (1.93s)
+        PASS
+        suiteguard: guard cost: measured 3295 paths; fingerprint took 144.682541ms before and 144.770792ms after
+--- PASS: TestCommandDeliveryEngineBringsABehindPullRequestUpToDate (2.23s)
+PASS
+suiteguard: guard cost: measured 3295 paths; fingerprint took 160.664ms before and 144.388625ms after
+ok  	roundfix/internal/cli	3.009s
