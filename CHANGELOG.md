@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.148.2] - 2026-11-19
+
+### Adopting the recommendations works under load and gives the researcher the web
+
+- **A profile write proves under the configured setup deadline.** `roundfix profiles configure` and `roundfix profiles check --apply` now prove the new profile under `defaults.profile_proof_setup_timeout`, as `profiles validate`, Doctor and the preflight already did, instead of a fixed 30 s; a busy machine no longer forces editing `.roundfixrc.yml` by hand. When the other scope's config file does not parse, `configure` refuses and names the file and the YAML line. Reported by the Fiscus and Fluxus sessions.
+- **The Recommended Authoring Declaration gives the Research Subagent `WebSearch` and `WebFetch`.** The generated `roundfix-researcher` can now read the web it is asked to read. When `skills.authoring.claude.research` is declared without a `tools` key, `roundfix doctor` (`authoring-models: warn`) and `roundfix update check` (`authoringModels.recommendedResearchTools`) name the tools to add; `tools: []` keeps the subagent off the network on purpose. Nothing is written and no exit code changes. ADR-0441. Reported by conexus.
+
 ## [0.148.1] - 2026-11-19
 
 ### The Delivery Queue brings a behind pull request up to date
