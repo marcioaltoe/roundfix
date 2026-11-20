@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -103,3 +103,37 @@ This Task delivers the whole fix of `_techspec.md` → Build Order 1 in one chan
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/2026-11-20-request-and-characterization.md`](references/2026-11-20-request-and-characterization.md), sections 2, 3, 5 and 6
 - ADR-0448, ADR-0191, ADR-0222, ADR-0241, ADR-0067
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, setup-context-driven, roundfix, evidence-gate.
+
+Implemented the assigned slice:
+
+- Acceptance criterion 1: catalog validation checks each activation against its owner's transitive dependencies, tolerates cycles during traversal, and excludes sibling modules. Unknown owners and bundles retain their existing diagnostics. The new diagnostic keeps activation order and then bundle order through the catalog's final diagnostic sort. The copied-catalog tests exercise the required four cases plus unknown bundles, cycles and diagnostic ordering.
+- Acceptance criterion 2: the dispatch witness reads backticked names from the rendered guide independently of the catalog validator and `profileNamedSkills`. All 17 module closures and all five built-in profiles were exercised. The built-in required-skill counts remain 41, 105, 38, 34 and 95, with `solid` only in the two TypeScript profiles.
+- Acceptance criterion 3: the repository-profile fixture uses `InitCustomProfile` and the eight specified modules without `frontend`. It requires `solid`, compares its complete restore contract with the TypeScript Setup Snapshot, and reaches `restore.source-dir-invalid` after selecting `solid`. Before the source change, this regression failed with `TypeScript profile without frontend does not require solid`; after the change it passed.
+- Acceptance criterion 4: `Catalog.RequiredSkills` provides a sorted unique union, a non-nil empty list, repeated-input handling, independent returned lists and `*UnknownModuleError` without partial results. Both restore profile readers and Doctor call it. Doctor filters owned names afterwards; the prior missing-module messages remain. Existing selected Doctor, update-preview, restore and `skills check` tests were left unchanged and passed in focused checks.
+- Acceptance criterion 5: the sanctioned commands below ran in order. The module recorder wrote TypeScript's next version and its record; `make baseline-digests` rewrote exactly the two catalog identity records and four declared plan goldens; Managed Refresh updated only `catalogDigest` and `roundfixVersion` in the Setup Manifest. `TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent` passed in the focused CLI selection.
+- Acceptance criterion 6: through `domain-modeling`, only the Skill Activation definition gained the exact specified sentence and ADR-0448 link. Only the `command doctor` review value changed in the Skill Coverage Map, to the exact required text. Its owning coverage contract passed.
+
+Sanctioned regeneration, each exit 0, in this order:
+
+1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1`
+2. `make baseline-digests` — reported `ok: true`, `changed: true`, and the six declared derived paths.
+3. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` — reported `Baseline update: verified`, one changed file (`docs/agents/setup-context.json`), and skills skipped. The two existing nested-carrier warnings named unchanged embedded fixtures.
+
+Focused checks, each exit 0:
+
+- `go test ./internal/baseline -run '^(TestRequiredSkills|TestAnActivationOwnerRequiresEverySkillOfItsBundle|TestTheRequiredSkillsCoverTheRenderedDispatch|TestARepositoryProfileWithoutFrontendRequiresSolid|TestSkillSnapshotProfileKeepsEveryBuiltInProfile|TestSkillSnapshotProfileResolvesARepositoryProfile|TestEveryModuleRequiresEverySkillItDispatches)$' -count=1 -v` — all seven selected tests and their subtests passed.
+- `go test ./internal/cli -run '^(TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest|TestResolveExternalSkillRequirementUnreadableManifest|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestSkillsCheckNamesAMissingRequiredSkill|TestBaselineSkillsRestoreCommand|TestBaselineSkillsRestoreAcceptsARepositoryProfile|TestDoctorChecksAnExternalSkillOnlyForPresence|TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness)$' -count=1` — selected existing command regressions passed, including the unknown-module Doctor case and current-repository transcript.
+- `go test ./internal/docscontract -tags docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -count=1` — the coverage map contract passed without rewriting it.
+- `rtk proxy git diff --check` — no whitespace errors.
+- Read-only Python/Git scope audit — all 18 changed or untracked paths are declared by this Task; JSON and text comparisons against HEAD confirm the exact TypeScript source edit, two manifest fields, one glossary sentence and one coverage review. Neither restore nor Doctor retains a direct module `requiredSkills` reader. The only pre-existing changed path was this Task file, whose Daemon-owned status remains `in_progress`.
+
+The declared Verification commands and repository-wide gates were not run; the Daemon owns Verification and settlement. No other Task or Task Graph was edited. No commit, push, pull request, ai-memory message or Spec Event Announcement was performed.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T152507Z_c7ef9204d7320067`
+- Source commit: `508e9e7746144022883614cbba917223d1b100fd`

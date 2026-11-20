@@ -180,6 +180,10 @@ func loadCatalog(assetsFS fs.FS, regenerating bool) (*Catalog, error) {
 			if left.Code != right.Code {
 				return left.Code < right.Code
 			}
+			// Activation requirement diagnostics follow activation and bundle order.
+			if left.Code == "catalog.skill.activation.skill.unrequired" {
+				return false
+			}
 			if left.Path != right.Path {
 				return left.Path < right.Path
 			}
@@ -201,6 +205,29 @@ func (c *Catalog) ProfileIDs() []string {
 // ModuleIDs returns the embedded module IDs in lexical order.
 func (c *Catalog) ModuleIDs() []string {
 	return sortedKeys(c.modules)
+}
+
+// UnknownModuleError reports a module that the catalog does not hold.
+type UnknownModuleError struct{ ModuleID string }
+
+func (err *UnknownModuleError) Error() string {
+	return fmt.Sprintf("unknown Baseline module %q", err.ModuleID)
+}
+
+// RequiredSkills returns the sorted union of the given modules' required
+// skills, without repeats. It does not add modules' dependencies implicitly.
+func (catalog *Catalog) RequiredSkills(moduleIDs []string) ([]string, error) {
+	required := make(map[string]struct{})
+	for _, moduleID := range moduleIDs {
+		module, ok := catalog.modules[moduleID]
+		if !ok {
+			return nil, &UnknownModuleError{ModuleID: moduleID}
+		}
+		for _, name := range stringsOrEmpty(module["requiredSkills"]) {
+			required[name] = struct{}{}
+		}
+	}
+	return sortedKeys(required), nil
 }
 
 // DecisionIDs returns the embedded decision IDs in lexical order.
