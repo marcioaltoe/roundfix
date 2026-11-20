@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"roundfix/internal/spec"
 )
@@ -219,4 +220,143 @@ func TestTheStatusViewKeepsEveryUnreadablePRDInTheSpecsSource(t *testing.T) {
 		}
 	}
 	t.Fatal("missing specs source")
+}
+
+// TestTheStatusViewPrintsRepositoryTextAsOneTerminalSafeLine pins finding F1:
+// every value this Spec added to the text of `roundfix follow-up --status`
+// leaves the terminal on one line with no control character, while the JSON
+// document keeps the raw repository text.
+func TestTheStatusViewPrintsRepositoryTextAsOneTerminalSafeLine(t *testing.T) {
+	t.Parallel()
+	const slug = "0001-expired-imports"
+	const question = "which failure behavior does an expired import have?"
+
+	t.Run("an_ansi_escape_in_the_question", func(t *testing.T) {
+		t.Parallel()
+		now := time.Date(2026, 11, 19, 20, 0, 0, 0, time.UTC)
+		f, in := newStatusQueueFixture(t, now)
+		gitImplement(t, f.repo, "remote", "remove", "origin")
+		const rawQuestion = "which \x1b[31mfailure\x1b[0m behavior?"
+		const rawAdopted = "retry\x1b[2J automatically — it preserves the sync retry behavior"
+		entry := strings.Replace(statusDelegatedEntry, question, rawQuestion, 1)
+		entry = strings.Replace(entry, "retry automatically up to 3 times —", "retry\x1b[2J automatically —", 1)
+		statusDelegatedSpec(t, in.SpecRoot, slug, entry)
+		followUpCommitAt(t, f.repo, now.Add(-time.Hour), "docs: plan imports")
+		gitImplement(t, f.repo, "tag", "v0.4.1")
+		out, stderr, code := followUpRunCLI(t, "--status")
+		if code != 0 || stderr != "" {
+			t.Fatalf("exit=%d stderr=%q stdout=%s", code, stderr, out)
+		}
+		const wantBlock = "Delegated decisions: 1\n  0001-expired-imports 2026-11-20 prd: which  [31mfailure [0m behavior? -> retry [2J automatically (answer: none yet)\n"
+		start, end := strings.Index(out, "Delegated decisions:"), strings.Index(out, "Sources:\n")
+		if start < 0 || end < start || out[start:end] != wantBlock {
+			t.Fatalf("stdout=%s\nwant block=%s", out, wantBlock)
+		}
+		if strings.ContainsRune(out, '\x1b') {
+			t.Fatalf("escape reached stdout: %q", out)
+		}
+		raw, stderr, code := followUpRunCLI(t, "--status", "--format", "json")
+		if code != 0 || stderr != "" {
+			t.Fatalf("JSON exit=%d stderr=%q", code, stderr)
+		}
+		var doc followUpStatusDocument
+		if err := json.Unmarshal([]byte(raw), &doc); err != nil {
+			t.Fatal(err)
+		}
+		if len(doc.DelegatedDecisions) != 1 || doc.DelegatedDecisions[0].Question != rawQuestion || doc.DelegatedDecisions[0].Adopted != rawAdopted {
+			t.Fatalf("rows=%+v", doc.DelegatedDecisions)
+		}
+	})
+
+	t.Run("a_carriage_return_in_the_question", func(t *testing.T) {
+		t.Parallel()
+		now := time.Date(2026, 11, 19, 20, 0, 0, 0, time.UTC)
+		f, in := newStatusQueueFixture(t, now)
+		gitImplement(t, f.repo, "remote", "remove", "origin")
+		const rawQuestion = "which failure\r  0002-forged 2026-11-20 prd: forged -> yes (answer: none yet)"
+		entry := strings.Replace(statusDelegatedEntry, question, rawQuestion, 1)
+		statusDelegatedSpec(t, in.SpecRoot, slug, entry)
+		followUpCommitAt(t, f.repo, now.Add(-time.Hour), "docs: plan imports")
+		gitImplement(t, f.repo, "tag", "v0.4.1")
+		out, stderr, code := followUpRunCLI(t, "--status")
+		if code != 0 || stderr != "" {
+			t.Fatalf("exit=%d stderr=%q stdout=%s", code, stderr, out)
+		}
+		const wantBlock = "Delegated decisions: 1\n  0001-expired-imports 2026-11-20 prd: which failure   0002-forged 2026-11-20 prd: forged -> yes (answer: none yet) -> retry automatically up to 3 times (answer: none yet)\n"
+		start, end := strings.Index(out, "Delegated decisions:"), strings.Index(out, "Sources:\n")
+		if start < 0 || end < start || out[start:end] != wantBlock {
+			t.Fatalf("stdout=%s\nwant block=%s", out, wantBlock)
+		}
+		if strings.ContainsRune(out, '\r') {
+			t.Fatalf("carriage return reached stdout: %q", out)
+		}
+		raw, stderr, code := followUpRunCLI(t, "--status", "--format", "json")
+		if code != 0 || stderr != "" {
+			t.Fatalf("JSON exit=%d stderr=%q", code, stderr)
+		}
+		var doc followUpStatusDocument
+		if err := json.Unmarshal([]byte(raw), &doc); err != nil {
+			t.Fatal(err)
+		}
+		if len(doc.DelegatedDecisions) != 1 || doc.DelegatedDecisions[0].Question != rawQuestion {
+			t.Fatalf("rows=%+v", doc.DelegatedDecisions)
+		}
+	})
+
+	t.Run("a_newline_in_the_question", func(t *testing.T) {
+		t.Parallel()
+		row := statusDelegatedRow(slug)
+		row.Question = "first\nDelegated decisions: 9"
+		row.Adopted = "retry\x1b[2J — it preserves the sync retry behavior"
+		got := renderFollowUpDelegatedDecisions([]followUpDelegatedDecision{row})
+		const want = "Delegated decisions: 1\n  0001-expired-imports 2026-11-20 prd: first Delegated decisions: 9 -> retry [2J (answer: none yet)\n"
+		if got != want {
+			t.Fatalf("got=%q want=%q", got, want)
+		}
+	})
+
+	t.Run("a_normal_entry_is_unchanged", func(t *testing.T) {
+		t.Parallel()
+		got := renderFollowUpDelegatedDecisions([]followUpDelegatedDecision{statusDelegatedRow(slug)})
+		const want = "Delegated decisions: 1\n  0001-expired-imports 2026-11-20 prd: which failure behavior does an expired import have? -> retry automatically up to 3 times (answer: none yet)\n"
+		if got != want {
+			t.Fatalf("got=%q want=%q", got, want)
+		}
+		long := statusDelegatedRow(slug)
+		long.Question = strings.Repeat("é", 300)
+		out := renderFollowUpDelegatedDecisions([]followUpDelegatedDecision{long})
+		if !strings.Contains(out, strings.Repeat("é", 300)) || strings.Contains(out, "…") {
+			t.Fatalf("long question was cut: %q", out)
+		}
+	})
+
+	t.Run("the_preference_line_and_the_specs_source_are_one_line", func(t *testing.T) {
+		t.Parallel()
+		doc := followUpStatusDocument{
+			AuthoringQuestions: followUpAuthoringQuestions{
+				Preference: "wait",
+				Source:     "default",
+				Checkout:   "fol\x1b[2Jlow",
+				Detail:     "the default branch's Project Config was not read: bad\nOpen authoring questions: follow (Project Config)\x1b[0m",
+			},
+			Sources: []followUpSource{{Name: "specs", State: "unavailable", Detail: "read PRD for Spec 0001-x\x1b[31m: denied\r\nforged"}},
+		}
+		out := renderFollowUpStatusText(doc)
+		const wantLine = "Open authoring questions: wait (default); this checkout's Project Config gives fol [2Jlow, which counts only once the default branch holds it; the default branch's Project Config was not read: bad Open authoring questions: follow (Project Config) [0m"
+		var lines []string
+		for _, line := range strings.Split(out, "\n") {
+			if strings.HasPrefix(line, "Open authoring questions:") {
+				lines = append(lines, line)
+			}
+		}
+		if !reflect.DeepEqual(lines, []string{wantLine}) {
+			t.Fatalf("preference lines=%q\nstdout=%s", lines, out)
+		}
+		if !strings.Contains(out, "  specs: unavailable: read PRD for Spec 0001-x [31m: denied forged\n") {
+			t.Fatalf("source line missing: %s", out)
+		}
+		if strings.ContainsFunc(out, func(r rune) bool { return r != '\n' && unicode.IsControl(r) }) {
+			t.Fatalf("control character reached the text: %q", out)
+		}
+	})
 }

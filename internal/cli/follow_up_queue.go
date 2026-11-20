@@ -328,17 +328,23 @@ func followUpQueueWait(item store.DeliveryQueueItem) string {
 	return ""
 }
 
-func followUpQueueText(value string) string {
+// followUpTerminalText folds repository text onto one terminal-safe line. It
+// folds \r\n, \r and \n to one space, then turns every control character (C0,
+// DEL, C1, so ESC and CSI sequences lose their introducer) and every line or
+// paragraph separator into a space. Unlike followUpQueueText it does not cut
+// the text, so a long question is still printed whole.
+func followUpTerminalText(value string) string {
 	value = strings.NewReplacer("\r\n", " ", "\r", " ", "\n", " ").Replace(value)
-	// Repository text reaches a terminal: every control character (C0, DEL,
-	// C1, so ESC and CSI sequences lose their introducer) and every line or
-	// paragraph separator becomes a space before the text is cut.
-	value = strings.Map(func(r rune) rune {
+	return strings.Map(func(r rune) rune {
 		if unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp) {
 			return ' '
 		}
 		return r
 	}, value)
+}
+
+func followUpQueueText(value string) string {
+	value = followUpTerminalText(value)
 	runes := []rune(value)
 	if len(runes) > 120 {
 		return string(runes[:119]) + "…"

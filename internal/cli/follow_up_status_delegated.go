@@ -63,12 +63,12 @@ func renderFollowUpDelegatedDecisions(rows []followUpDelegatedDecision) string {
 	fmt.Fprintf(&out, "Delegated decisions: %d\n", len(rows))
 	for _, row := range rows {
 		if row.Problem != "" {
-			fmt.Fprintf(&out, "  %s line %d: unreadable: %s\n", row.Spec, row.Line, row.Problem)
+			fmt.Fprintf(&out, "  %s line %d: unreadable: %s\n", followUpTerminalText(row.Spec), row.Line, followUpTerminalText(row.Problem))
 			continue
 		}
 		option, _, _ := strings.Cut(row.Adopted, " — ")
 		answer, _, _ := strings.Cut(row.Answer, " — ")
-		fmt.Fprintf(&out, "  %s %s %s: %s -> %s (answer: %s)\n", row.Spec, row.Date, row.Phase, row.Question, option, answer)
+		fmt.Fprintf(&out, "  %s %s %s: %s -> %s (answer: %s)\n", followUpTerminalText(row.Spec), followUpTerminalText(row.Date), followUpTerminalText(row.Phase), followUpTerminalText(row.Question), followUpTerminalText(option), followUpTerminalText(answer))
 	}
 	return out.String()
 }

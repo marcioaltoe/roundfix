@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -63,3 +63,28 @@ The status view already has the rule for repository text: `followUpQueueText` in
 - Pre-PR review of 2026-11-19 (artifact `043751504adb2ac5`, head `b38daf3d`) → F1
 - `_techspec.md` → API Contract 2; Invariant 2
 - task_02 → the Delegated Decisions block; task_01 → the `Open authoring questions` line
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, evidence-gate
+
+### Implementation
+
+- `internal/cli/follow_up_queue.go`: added `followUpTerminalText(value string) string`, which does exactly the folding and mapping `followUpQueueText` did — `\r\n`, `\r` and `\n` to one space, then every C0/DEL/C1 control character and every line or paragraph separator (`Zl`, `Zp`) to a space — with no cut. `followUpQueueText` now returns `followUpTerminalText(value)` cut at 120 characters as before, so its output is unchanged.
+- `internal/cli/follow_up_status_delegated.go`: `renderFollowUpDelegatedDecisions` passes the Spec, date, phase, question, option, answer and problem through `followUpTerminalText`; the option and answer are still taken before the first ` — ` and both line forms of API Contract 2 are kept.
+- `internal/cli/follow_up_status.go`: `renderFollowUpStatusText` passes the preference, the checkout value and the `Open authoring questions` detail, plus the detail of each `Sources:` line, through `followUpTerminalText`. A value with no control character, line break or separator prints unchanged.
+- `internal/cli/follow_up_status_delegated_test.go`: added `TestTheStatusViewPrintsRepositoryTextAsOneTerminalSafeLine` with the five required subtests (`an_ansi_escape_in_the_question`, `a_carriage_return_in_the_question`, `a_newline_in_the_question`, `a_normal_entry_is_unchanged`, `the_preference_line_and_the_specs_source_are_one_line`).
+- `followUpDelegatedDecision`, `followUpAuthoringQuestions`, `followUpSource` and the JSON document are untouched, so `--format json` keeps the raw question, option and detail.
+
+### Focused checks
+
+- `go build ./...` — exit 0.
+- `go test -count=1 -run '^TestTheStatusViewPrintsRepositoryTextAsOneTerminalSafeLine$' -v ./internal/cli` — PASS; all five subtests print `--- PASS`.
+- `go test -count=1 -run '^(TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs|TestTheStatusViewAuthoringSurfaceTranscripts|TestTheStatusViewKeepsEveryUnreadablePRDInTheSpecsSource|TestTheStatusViewReportsTheAuthoringQuestionPreference|TestTheNoteIsOneLineOfRepositoryText|TestAnUnreadableSourceLeavesTheOtherRows|TestTheQueueRowsComeInTableOrder)$' ./internal/cli` — ok, no regression in the existing status/queue text.
+- `gofmt -l` on the four changed files — no output.
+- `go test -count=1 -timeout 40m ./internal/cli` — full package run recorded after handback.
+
+### Acceptance criteria
+
+- An ANSI escape, a carriage return or a newline in a Delegated Decision, the preference line or a source detail comes out of the text of the status view as spaces on one line, and the JSON keeps the raw text — covered by the `an_ansi_escape_in_the_question`, `a_carriage_return_in_the_question` and `the_preference_line_and_the_specs_source_are_one_line` subtests, which assert the exact one-line block and no raw `0x1b`/`\r`/control rune on stdout while the JSON row keeps the raw strings.
+- A normal entry prints exactly as before, a long question is not cut, and every output of `followUpQueueText` is unchanged — covered by `a_normal_entry_is_unchanged` (a 300-character `é` question prints whole, with no `…`) and by the unchanged `TestTheNoteIsOneLineOfRepositoryText` cases (`line_breaks_become_spaces`, `control_characters_never_reach_the_terminal`, `a_long_waiting_declaration_is_cut`).

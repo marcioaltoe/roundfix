@@ -339,12 +339,12 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 	if doc.AuthoringQuestions.Source == "project-config" {
 		source = "Project Config"
 	}
-	fmt.Fprintf(&out, "Open authoring questions: %s (%s)", doc.AuthoringQuestions.Preference, source)
+	fmt.Fprintf(&out, "Open authoring questions: %s (%s)", followUpTerminalText(doc.AuthoringQuestions.Preference), source)
 	if doc.AuthoringQuestions.Checkout != "" {
-		fmt.Fprintf(&out, "; this checkout's Project Config gives %s, which counts only once the default branch holds it", doc.AuthoringQuestions.Checkout)
+		fmt.Fprintf(&out, "; this checkout's Project Config gives %s, which counts only once the default branch holds it", followUpTerminalText(doc.AuthoringQuestions.Checkout))
 	}
 	if doc.AuthoringQuestions.Detail != "" {
-		fmt.Fprintf(&out, "; %s", doc.AuthoringQuestions.Detail)
+		fmt.Fprintf(&out, "; %s", followUpTerminalText(doc.AuthoringQuestions.Detail))
 	}
 	out.WriteByte('\n')
 	out.WriteString(renderFollowUpDelegatedDecisions(doc.DelegatedDecisions))
@@ -355,7 +355,7 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 			fmt.Fprintf(&out, " %d", source.Count)
 		}
 		if source.Detail != "" {
-			fmt.Fprintf(&out, ": %s", source.Detail)
+			fmt.Fprintf(&out, ": %s", followUpTerminalText(source.Detail))
 		}
 		out.WriteByte('\n')
 	}
