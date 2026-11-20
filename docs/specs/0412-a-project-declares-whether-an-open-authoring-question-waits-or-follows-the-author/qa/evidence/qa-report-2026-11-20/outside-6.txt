@@ -1,6 +1,0 @@
-Source: Apache Software Foundation, Decision-Making
-Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
-- The Apache Software Foundation, "Decision-Making" (https://community.apache.org/committers/decisionMaking.html): "Silence indicates consent, and after that time has passed, you can assume that nobody objects, and proceed with your plan." and "Sometimes lazy consensus is not appropriate." It supports proceeding without an explicit approval when the plan is announced and open to objection, and challenges the default: this Spec follows only where a project chose it.
-
-Comparison: The exception to lazy consensus supports reserving some questions and requiring the project to choose follow before silence can permit adopted details.
-Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.

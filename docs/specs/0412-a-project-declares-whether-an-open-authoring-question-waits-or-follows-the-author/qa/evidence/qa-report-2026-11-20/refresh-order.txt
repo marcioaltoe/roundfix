@@ -1,1 +1,0 @@
-Both full guidance clauses occur exactly once and before the first full Project Constraints clause in the refreshed Delivery Base guide, after whitespace normalization.

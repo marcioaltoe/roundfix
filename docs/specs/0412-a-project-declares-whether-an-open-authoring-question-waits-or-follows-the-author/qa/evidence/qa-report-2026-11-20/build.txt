@@ -1,3 +1,0 @@
-make build: exit 0
-go build -buildvcs=false -ldflags <build identity> -o bin/roundfix ./cmd/roundfix
-Build cache bound warned that active entries exceeded its bound; build completed.

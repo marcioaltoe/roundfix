@@ -1,3 +1,0 @@
-gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 5761 idle entries (3023057128 bytes)
-gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 24142368699 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=f416d013-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-19 22:54:19 -0300'" -o bin/roundfix ./cmd/roundfix

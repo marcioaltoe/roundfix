@@ -1,8 +1,0 @@
-Source: AG2, Approval Required
-URL: https://docs.ag2.ai/docs/user-guide/tools/approval_required/
-Read and rechecked by the authors: 2026-11-19
-Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
-Passage: an unanswered approval is not an approval
-Comparison: The default wait and the present-user rule preserve the source principle: an unanswered question grants nothing. Follow is an explicit project or prior-flow choice and never substitutes for an authorization.
-Observed contract assertions: True
-Result: pass

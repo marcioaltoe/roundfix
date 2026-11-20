@@ -1,8 +1,0 @@
-Source: Appelo, 2011, The Seven Levels of Authority
-URL: https://www.informit.com/articles/article.aspx?p=1675546&seqNum=3
-Read and rechecked by the authors: 2026-11-19
-Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
-Passage: You let the team decide. And afterwards you inquire about their motivations
-Comparison: Level 6 delegates the choice and requires the chooser to explain it. The five-field entry retains the question, all options, adopted choice and reason, grant and later answer; the rule requires a report and the status list. This supports visible delegation, without proving that a live session follows the rule.
-Observed contract assertions: True
-Result: pass

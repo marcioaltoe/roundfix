@@ -1,3 +1,0 @@
-Criterion: Success Metrics 9 and 10 hold at the cycle closes after the release and over the first 20 Delegated Decisions.
-Reachability audit: the authored QA Task forbids starting a live Agent session, asking a person a question, calling a provider or judge, or reaching the network. The first criterion requires a live absent-user authoring flow after release. The second requires cycle-close and first-20-decision observations after release. This pre-release offline Run cannot lawfully produce either observation. No substitute is credited and no declaration is wrong.
-Satisfied-by remains unproven: post-release cycle-close operator counts

@@ -1,8 +1,0 @@
-Pull Request row
-Environment fact supplied by Daemon: no open Pull Request
-Approval/delivery authority: approved _authorization.md at Delivery Base 96eca968cafc2a9df0c7b188738c0f3a06541346 grants the delivery operations; the Agent performs none. This is recorded authority, not a new review approval.
-Checks/status: Daemon make verify-changed at f416d013b510329d1062c401c359d60f86864bce passed, exit 0, diagnostics removed on success.
-Unresolved threads: none because no Pull Request exists.
-Merge-Ready acceptance: none yet; it is unavailable before the Pull Request and its review.
-Candidate/review ancestry: claimed candidate is f416d013b510329d1062c401c359d60f86864bce; no current-candidate review artifact or Merge-Ready acceptance is asserted.
-Result: blocked (environment: no open Pull Request)

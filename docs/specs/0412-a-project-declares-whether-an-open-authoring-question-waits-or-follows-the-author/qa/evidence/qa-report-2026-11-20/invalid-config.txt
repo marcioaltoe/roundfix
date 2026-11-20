@@ -1,7 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b/bin/roundfix follow-up --status
-cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/public-repo
-stdout:
-stderr:
-roundfix: follow-up failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/public-repo/.roundfixrc.yml": authoring.open_questions must be wait or follow
-Run 'roundfix follow-up --help' for usage.
-exit: 2

@@ -1,6 +1,0 @@
-Source: Bezos, 2015 shareholder letter, filed 2016
-Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
-- Jeff Bezos, letter to shareholders for 2015, filed 2016 (https://www.sec.gov/Archives/edgar/data/1018724/000119312516530910/d168744dex991.htm): "Type 2 decisions can and should be made quickly by high judgment individuals or small groups." It supports the line of Core Feature 8 between what can be undone, which may be delegated, and scope, spend, data and authority, which may not.
-
-Comparison: Reversible detail decisions can be delegated; reserved scope, spend, outside data and authority remain held for the user.
-Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.

@@ -1,6 +1,0 @@
-Source: AG2, Approval Required
-Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
-- AG2, "Approval Required" (https://docs.ag2.ai/docs/user-guide/tools/approval_required/): "an unanswered approval is not an approval". It supports the default of Core Feature 4 and Core Feature 2, and it is the position a following project departs from.
-
-Comparison: Default wait and asking a present user preserve the rule that unanswered approval conveys no approval. Following requires a separately declared delegation.
-Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.
