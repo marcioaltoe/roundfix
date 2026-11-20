@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -121,3 +121,11 @@ complexity: high
 - `_techspec.md` → Skill section, record form and references; Glossary, user guide and decision records; Invariants 11 and 12; API Contract 6; API Contract 7; API Contract 10; API Contract 12; API Contract 13; API Contract 14; Testing Approach; Build Order 4
 - `_prd.md` → Decisions, the Delegated Decision of 2026-11-19 of the `tasks` phase: how is step 3 of the Build Order cut into Tasks?
 - ADR-0442, ADR-0280, ADR-0320, ADR-0401, ADR-0403, ADR-0436, ADR-0353, ADR-0257
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, roundfix, setup-context-driven
+
+- The shared authoring section and stage paragraphs are in both copies; the modes reference covers unattended, follow-up and status, and the Rule Challenge heading expectation is updated. The two new contract tests passed in focused runs (25 and 13 subtests respectively); the focused Rule Challenge test passed (25 subtests). Both sync runs and the owned-skill version recorder succeeded.
+- The glossary entries and revisions, guide subsection and ADR-0280 notice are in place. This tree has no ADR Knowledge Marks, so no Knowledge Mark header was added. Four focused glossary contract tests passed; the Behavior Surface Record recorder succeeded. Managed Refresh reported `File changes: 0` and two nested-carrier warnings.
+- Daemon Verification and repository-wide checks remain with the Daemon.

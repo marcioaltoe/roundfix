@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-10-16T00:00:00Z
-updated_at: 2026-10-16T00:00:00Z
+updated_at: 2026-11-19T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -42,6 +42,8 @@ after the commit that adds its guide to the `write-prd` skill: a PRD already
 approved cannot be asked again who answered it, and inventing a date would
 record a falsehood. The check reads the shape of the record, never whether a
 person was really present.
+
+**Amended by [ADR-0442](0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md) (2026-11-19).** The Clarification Record gains a third entry, the Delegated Decision: an option a session adopted with nobody present. It counts as neither a dated answer nor the autonomous-route line, the two forms and their rule above still hold, and the same check reports an entry it cannot read.
 
 **The glossary is held to its own rule.** A Repository Contract Test reads
 `CONTEXT.md` and fails when a capitalized phrase in a definition is neither a

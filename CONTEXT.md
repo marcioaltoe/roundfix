@@ -198,7 +198,7 @@ The destination-project act that converts one pending Cross-project Message into
 _Avoid_: Capture, import, synchronization
 
 **Follow-up Command**:
-The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the Spec Queue Table, the next release and what waits on the maintainer. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md), [ADR-0410](docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md)).
+The read-only `roundfix follow-up` command that holds Waiting Items back unless `--all` is given and lists a repository's other Follow-up Items in Follow-up Priority order beside its work in progress, names each source it checked or missed, reports `nothing_to_do` when it finds neither, and with `--status` shows the work in progress, the pending Specs in delivery order, the Spec Queue Table, the next release, what waits on the maintainer, the Authoring Question Preference in force and the Delegated Decisions of the active Specs. It never writes, and the judge never changes its exit code ([ADR-0319](docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md), [ADR-0353](docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md), [ADR-0410](docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md, [ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md))).
 _Avoid_: Triage command, dashboard, inbox sync
 
 **Follow-up Item**:
@@ -1701,8 +1701,24 @@ actual QA and Task evidence while retaining non-QA completion, source integrity
 and separate delivery gates.
 _Avoid_: QA pass, QA bypass, Implement Clean
 
+**Open Authoring Question**:
+A question the author of a PRD, a TechSpec or a Task Graph needs answered to finish its Authoring Phase and that no source settles: neither the request, the brief, the approved Idea, a recorded answer of the user nor another source of the repository. The author states it with two or three options and the recommended one, and says whether it is a Reserved Question. A present user is asked; with nobody present its Spec waits, as a Backlog Entry with a Waiting Declaration, unless the Authoring Question Preference or the user's answer before the flow says follow and the question is not reserved ([ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
+_Avoid_: Pending decision, author doubt, blocker question
+
+**Authoring Question Preference**:
+The Project Config value `authoring.open_questions`, `wait` or `follow`, that says what a session does with an Open Authoring Question when nobody is present: the Spec waits, or the session adopts the option the author recommends as a Delegated Decision. An absent value means `wait`, a value in User Config is ignored, the value counts as the default branch head holds it in the local refs, and no command writes it. The status view of the Follow-up Command reports the value in force and its source ([ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
+_Avoid_: Autonomy level, unattended setting, auto mode
+
+**Reserved Question**:
+An Open Authoring Question that always waits for the user, whatever the Authoring Question Preference: the Idea stage and the choice an Idea Stage Judgment leaves to the user, a Rule Challenge, every authorization, a recommended option that adds scope, spends, sends data outside or contradicts a recorded answer of the user, a question without two or three options and a recommended one, and a question the author or the session cannot classify ([ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
+_Avoid_: Boundary question, escalation, blocked question
+
+**Delegated Decision**:
+The recommended option of an Open Authoring Question that a session adopted with nobody present, under the Authoring Question Preference or the user's answer before the flow. It is an entry of the Clarification Record that holds its date, phase, question, options, adopted option, grant and the user's later answer, and it is never a dated answer of a person. The status view of the Follow-up Command lists the entries of every active Spec, and the user's later answer wins ([ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
+_Avoid_: Auto-answer, default answer, proxy answer
+
 **Clarification Record**:
-The `## Decisions` section of a PRD that says who settled its questions: one dated line for each question a person answered, or the autonomous-route line naming the source of the author's decisions ([ADR-0280](docs/adr/0280-a-guide-task-records-its-own-surface-fingerprint-a-prd-records-who-decided-and-the-glossary-is-held-to-its-own-rule.md)).
+The `## Decisions` section of a PRD that says who settled its questions: one dated line for each question a person answered, the autonomous-route line naming the source of the author's decisions, and one entry for each Delegated Decision, which counts as neither of the two ([ADR-0280](docs/adr/0280-a-guide-task-records-its-own-surface-fingerprint-a-prd-records-who-decided-and-the-glossary-is-held-to-its-own-rule.md, [ADR-0442](docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md))).
 _Avoid_: Interview transcript, assumed approval, unrecorded clarification
 
 **Glossary Declaration**:

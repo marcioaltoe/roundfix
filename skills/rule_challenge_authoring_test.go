@@ -16,6 +16,9 @@ func TestTheAuthoringSkillsPutARuleChallengeToTheUser(t *testing.T) {
 			if skill == "brainstorming" {
 				next = "## Idea-stage judgment"
 			}
+			if skill == "write-prd" || skill == "write-techspec" {
+				next = "## Open authoring questions"
+			}
 			assertIdeaStageSkillPhrases(t, skill, "SKILL.md", "## Rule Challenge A rule guides the solution and never bounds the goal in silence.")
 			for _, root := range []string{filepath.Join("..", ".agents", "skills"), "."} {
 				data, err := os.ReadFile(filepath.Join(root, skill, "SKILL.md"))

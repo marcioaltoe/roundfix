@@ -5,10 +5,10 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.0.29
+  version: 0.0.30
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.29
+version: 0.0.30
 ---
 
 # Write PRD
@@ -100,6 +100,30 @@ What follows the answer:
 - A rule inside `setup-context-driven` markers changes only in the Baseline, and its Kept Line goes in `docs/agents/specific-repository.md`, under a heading of its own, naming the rule. On change or retire, a repository that does not own the Baseline sends the user's decision as one ai-memory message to the Baseline's owner, obeys the rule until the Baseline changes, and records the message and the scope it left out.
 
 In this stage, read every ADR and rule the Project Constraints snapshot will list as an obligation and as a candidate: one that blocks a goal becomes a Rule Challenge before the snapshot is written. Copy the `## Rule challenges` records of `_idea.md` into the PRD unchanged and add the ones this stage asks, in the fielded form the template shows; the section reads `None.` when no rule blocked the goal. A change or retire answer becomes a Core Feature that states the change of the rule, and a keep answer a Core Feature that requires the Kept Line.
+
+## Open authoring questions
+
+An Open Authoring Question is a question this phase needs answered and that no source settles: neither the request, the brief, the approved Idea, a recorded answer of the user nor another source of the repository. A question that a source settles is not one: settle it from that source.
+
+State each one as the stop-and-ask clause of `docs/agents/agent-instructions.md` says: what was found, two or three options with the consequence of each, and the recommended one first with its reason. Then say whether it is a Reserved Question and why. A Reserved Question always waits for the user:
+
+- the Idea stage, and the choice an Idea-stage judgment leaves to the user;
+- a Rule Challenge;
+- every authorization: a commit, a push, a Pull Request, a merge, a release, a Governed Path, a destructive Git operation, a database statement and any other action a stop-and-ask clause holds for express authority;
+- a recommended option that adds a goal, a Core Feature, a source or a surface that the request, the approved Idea and the PRD do not hold, removes one of their Non-Goals or contradicts a recorded answer of the user; that needs a paid service, a paid plan or a quota the repository does not already use; or that sends repository or client content to a service or a person the repository does not already send it to;
+- a question without two or three options and a recommended one, and a question you cannot classify.
+
+Who answers:
+
+- The user, when present. Ask through the structured question tool the session exposes; a question the user can see waits for the user, and the recommended option, silence, a dismissal or a timeout adopts nothing. The user is absent only when the brief that started the session says so, the user said so, or the session runs as a continuation that the `unattended` Skill Mode armed.
+- The session, when the user is absent, following is in force and the question is not reserved. It adopts the option the author recommended, as a Delegated Decision. Following is in force when `roundfix follow-up --status` reports `follow` as the Authoring Question Preference, or when the Spec's `_authorization.md` quotes the user's answer, given before the flow, that the session follows the author. Never write the preference into Project Config.
+- Nobody, in every other case: the Spec waits. Write no artifact for this phase. An open Backlog Entry names the Spec folder when one exists, holds the whole question with its options and the recommended one, and carries `waiting_on`, naming the Open Authoring Question and the phase, and `since` in its frontmatter. When the user answers, record the answer as a dated line of the PRD's `## Decisions`, let the Spec adopt the entry and resume the phase.
+
+When a session started you as an Author Subagent, return each Open Authoring Question with its options, the one you recommend and whether it is reserved, and never adopt the option you recommend yourself. The session checks your statement against the list above before it adopts, and when either of you reads the question as reserved or cannot tell, the Spec waits. A session that authors the phase itself makes both reads.
+
+Record each Delegated Decision in the PRD's `## Decisions` in the same change that takes it, in the form the Clarification Record guide of `write-prd` gives, never as a dated answer of a person and never under the autonomous-route line, and list it in the report. The Spec then goes on through authoring and delivery inside the authorization it already holds, and the user's later answer wins: write it into the entry while no Run and no delivery of the Spec has started; after that, a changed answer becomes a correction of the Spec in delivery or a Backlog Entry that quotes the user and names the entry.
+
+In this stage, settle from the sources everything they settle and name that route in the Clarification Record; only what is left is an Open Authoring Question. A Delegated Decision of this stage carries the phase `prd`, in the form [references/clarification-record.md](references/clarification-record.md) shows.
 
 ## Declared model
 
