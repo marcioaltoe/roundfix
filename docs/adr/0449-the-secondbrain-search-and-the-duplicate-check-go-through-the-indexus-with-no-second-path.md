@@ -41,11 +41,11 @@ adopter's update accounts every clause it held. Roundfix's code never calls
 the Indexus and adds neither a Baseline decision nor a Doctor check for it:
 the session provides the tool and its reach.
 
-This decision takes effect with the release that carries it. The change waits
-in an open Pull Request until the project that owns the Secondbrain reports
-that the Indexus is superior in the uses the maintainer named. That project
-removes the earlier command from the machines after the release, not as part
-of this repository's change.
+This decision takes effect with the release that carries it. On 2026-11-20
+the Indexus project's side-by-side test found the Indexus superior in every
+use the maintainer named, and the maintainer decided to remove the earlier
+command at once. The project that owns the Secondbrain removes it from the
+machines after the release, not as part of this repository's change.
 
 ## Considered Options
 
