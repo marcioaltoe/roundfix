@@ -252,6 +252,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"flow-permissions: skipped (no harness files in this repository)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -276,6 +277,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"flow-permissions: skipped (no harness files in this repository)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -300,6 +302,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"flow-permissions: skipped (no harness files in this repository)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -824,10 +827,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 19 || lines[2] != test.wantLine {
+			if len(lines) != 20 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", HealthCheckBaselineRules, HealthCheckClaudeLink, HealthCheckBaselineExport, HealthCheckBaselineDocs, "residue", "storage", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", HealthCheckBaselineRules, HealthCheckClaudeLink, HealthCheckBaselineExport, HealthCheckBaselineDocs, HealthCheckFlowPermissions, "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1267,7 +1270,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 19 || lines[11] != test.wantLine {
+			if len(lines) != 20 || lines[11] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 11", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
@@ -1513,6 +1516,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 		"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 		"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+		"flow-permissions: skipped (outside a Git repository)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"codex: ok\n"
@@ -1622,6 +1626,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		"baseline-docs: warn (2 departure(s) from the documentation rules; next: see each line; roundfix baseline update fills an Amendment List and removes a retired ADR)\n" +
 		"  DR-DOCS-REQUIRED-MISSING: README.md is missing\n" +
 		"  DR-DOCS-REQUIRED-MISSING: the glossary is missing\n" +
+		"flow-permissions: skipped (no harness files in this repository)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"verification-capacity: ok (runs.max_verifying 1; 0 held, 0 waiting)\n" +

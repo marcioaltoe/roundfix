@@ -18,6 +18,8 @@ type governedPathSetEntry struct {
 // requires the same code review as changing GovernedPath. Each entry carries
 // the universal tooling-authority clause that puts its kind in the set.
 var governedPathSet = []governedPathSetEntry{
+	{kind: "harness permission file", clause: toolingAuthorityClause,
+		pattern: regexp.MustCompile(`(^|/)\.claude/settings(\.local)?\.json$|(^|/)\.codex/(rules/.*|config\.toml)$|(^|/)opencode\.jsonc?$`)},
 	{
 		kind:    "linter configuration and scripts",
 		clause:  toolingAuthorityClause,

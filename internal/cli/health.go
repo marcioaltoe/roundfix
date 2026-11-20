@@ -26,6 +26,7 @@ const (
 	HealthCheckClaudeLink           = "baseline-claude-link"
 	HealthCheckBaselineExport       = "baseline-export"
 	HealthCheckBaselineDocs         = "baseline-docs"
+	HealthCheckFlowPermissions      = "flow-permissions"
 	HealthCheckNode                 = "node"
 	HealthCheckACPX                 = "acpx"
 	HealthCheckAdapter              = "adapter"

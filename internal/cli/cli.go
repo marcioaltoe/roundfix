@@ -5374,6 +5374,7 @@ The baseline-rules: line names each passage outside a Managed Region that belong
 in docs/agents/specific-repository.md, moves none, and never fails Doctor.
 The baseline-claude-link: line reports whether CLAUDE.md is a symbolic link to
 AGENTS.md and never fails Doctor.
+The flow-permissions: line reports whether the Flow Command List is applied and current for each Agent harness this repository holds, and never fails Doctor.
 `
 	case "migrate":
 		return `Usage:
@@ -5453,6 +5454,7 @@ Reports, read-only, whether a newer Roundfix release exists, the title of each
 release since the installed version, and this repository's Baseline plan with
 the installed binary. It also names each configured Agent Selection Profile that differs
 from the Recommended Profile, with the command that adopts it.
+It also reports each Agent harness where this repository applied the Flow Command List, and whether that list is current.
 The release listing comes from the GitHub CLI and is
 cached for 24 hours in Roundfix Home; a lookup that fails is reported in one
 line. Every report exits 0. update.mode in Project Config or User Config

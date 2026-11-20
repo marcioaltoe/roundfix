@@ -134,7 +134,7 @@ A repair a QA gate's own Task file instructs it to make, as opposed to a finding
 _Avoid_: Auto-fix, gate edit, remediation
 
 **Governed Path**:
-A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
+A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. Each Harness Permission File is governed too, because it decides which commands an Agent session runs without asking. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
 
 **Delivery Base**:
@@ -158,7 +158,7 @@ A rule beside the Flow Command List that keeps one option of a listed read asked
 _Avoid_: deny rule, option filter
 
 **Harness Permission File**:
-A file of the repository from which an Agent harness learns which commands a session may run without asking: `.claude/settings.json` or `.claude/settings.local.json` for Claude Code, a file under `.codex/rules/` or `.codex/config.toml` for Codex, and `opencode.json` or `opencode.jsonc` for OpenCode. `roundfix permissions` writes only `.claude/settings.json` and `.codex/rules/roundfix-flow.rules`, and opens no file under the user's home directory.
+A file of the repository from which an Agent harness learns which commands a session may run without asking: `.claude/settings.json` or `.claude/settings.local.json` for Claude Code, a file under `.codex/rules/` or `.codex/config.toml` for Codex, and `opencode.json` or `opencode.jsonc` for OpenCode. `roundfix permissions` writes only `.claude/settings.json` and `.codex/rules/roundfix-flow.rules`, and opens no file under the user's home directory. Each one is a Governed Path.
 _Avoid_: settings file, rules file, harness config
 
 **Undocumented CLI Surface**:

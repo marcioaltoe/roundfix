@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -102,3 +102,55 @@ This Task makes a project whose applied list fell behind hear about it, and make
 - `_prd.md` → Goals 3 and 5; User Stories 8, 10 and 11; Core Features 11, 12, 13, 15 and 16; Success Metric 6; Success Metric 7; Success Metric 8; Success Metric 9; Success Metric 10; User Experience; Glossary
 - `_techspec.md` → The two reports; The governed set; Interfaces; Invariant 1; Data Models (States, the governed set); API Contract 5; API Contract 7; Testing Approach; Build Order 3
 - ADR-0130, ADR-0444, ADR-0256
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented the assigned report and governed-path slice. The initial tree held no Flow Command List consumer in Doctor or Update Check; the only pre-existing changed path was this Task file. Its Daemon-owned `in_progress` status is retained.
+
+### Acceptance evidence
+
+- Doctor reads each present harness's existing preview, prints the required state and counts, selects the first harness needing attention, and gives behind precedence for its warning code. It follows `baseline-export` and `baseline-docs` and precedes `residue`. All required `TestDoctorReportsFlowPermissions` subtests passed through CLI dispatch with temporary repositories and existing readiness fakes. Additional cases cover Codex current, mixed current/not-applied lists, missing Guard Entries, and a target linked outside the repository. Repository and isolated-home snapshots remain identical. An initial outside-Git fixture expected exit zero incorrectly: the existing `skills:` check fails outside Git. Correcting that new fixture's expectation preserved the existing product contract; the new line stays skipped.
+- Update Check adds optional `flowPermissions` objects and the three text forms after recommendations and before `Next:`. All eight required `TestUpdateCheckReportsFlowPermissions` subtests passed, including explicit zero counts and empty current `next` in JSON, omitted empty parts, Codex additions/removals, unreadable files for all three harnesses, unchanged top-level `next` for both `none` and `apply`, unchanged exits, and unchanged repository/home snapshots. The release-available case uses a fresh isolated cache and never reaches the forge.
+- The governed set gains exactly one pattern and retains every prior entry and the tooling-authority clause. Focused `TestGovernedPath` cases passed for all six root paths, nested Claude settings, the look-alike and the Author Subagent. The six new `TestGovernedSetOnlyGrows/harness_permission_file_*` cases passed with the existing `repocontract` tag and tooling-authority checks. The full historical loop remains for Daemon Verification.
+- The import-boundary test parses production Go imports under `internal/` and `cmd/`, regardless of build tags. Both `this_repository` and `planted_baseline_import_is_reported` passed, naming the planted Baseline file while accepting the command and reports. Both reports' snapshot assertions passed without applying a plan.
+- Canonical skill references were edited first and mirrored with `make skills-sync`. The required owned-version recorder advanced both Roundfix version fields from `0.1.282` to `0.1.283` and recorded the digest. All five new skill-report subtests passed for both copies. The three guide pages, two help texts, and only the two specified glossary entries carry the required wording. The Doctor coverage row names its new source; the existing Update Check source row already covers that report. The required Behavior Surface recorder ran after the final guide/help/skill edit and exited zero.
+
+### Focused checks and required recorders
+
+All commands below exited zero; `rtk proxy` preserved raw output for Go checks.
+
+- `go test ./internal/cli -run '^Test(DoctorReportsFlowPermissions|UpdateCheckReportsFlowPermissions)$' -count=1 -v`
+- `go test ./internal/cli -run '^Test(DoctorReportsFlowPermissions|UpdateCheckReportsFlowPermissions|RunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts|RunDoctorDerivesExternalSkillRequirementFromSetupManifest|DoctorReportsTheClaudeInstructionLink|UpdateCheckTranscripts)$' -count=1`
+- `go test ./internal/cli -run '^Test(DoctorReportsMisplacedRepositoryRules|DoctorReportsTheDocumentationRules|RunDoctorAdapterReadinessReportsRequiredProfileRuntimes|RunDoctorRepositorySkillReadiness|RunDoctorMissingRepositoryRoot|RunDoctorRealRepositoryCheckDoesNotMutateState)$' -count=1`
+- `go test ./internal/speccheck -run '^TestGovernedPath$/(Claude_Code|Codex_|OpenCode_|nested_Claude|settings_look|Author_Subagent)' -count=1`
+- `go test -tags repocontract ./internal/speccheck -run '^TestGovernedSetOnlyGrows$/harness_permission_file_' -count=1`
+- `go test ./internal/flowpermissions -run '^TestOnlyTheCommandAndTheReportsUseTheList$/(this_repository|planted_baseline_import_is_reported)$' -count=1 -v`
+- `go test ./skills -run '^TestTheRoundfixSkillNamesTheFlowPermissionsReports$' -count=1 -v`
+- `go test -tags docscontract ./internal/docscontract -run '^Test(GlossaryPhrasesAreDefinedTerms|OwnedSkillsNameOnlyListedOrExcludedCommands)$' -count=1`
+- `make skills-sync`
+- `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`
+- `git diff --check` and a changed-path audit: only this Task, its declared source/guide/skill/record paths, and `internal/cli/doctor_documentation_test.go`, the existing Spec 0410 report-order test explicitly covered by Requirement 2. No prohibited path changed.
+
+The shell executor rejected the configured symlinked writable root even with the physical worktree as cwd; task commands used approved escalation. No change to executor configuration was made. Declared Verification, selected repository Verification and incremental Verification were not run; the Daemon owns them and Task settlement. No commit, push, Pull Request, other Task, Task Graph, repository Harness Permission File, Baseline asset or agent-guide mutation was made. No follow-up implementation was added.
+
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact `batch-004-attempt-1.log`. Its failures were the four help variants under `TestUpdateCheckUsage`: the pinned help transcript omitted the Flow Command List sentence required by Requirement 5 and already present in the command help. Updated only that expectation in `internal/cli/update_check_test.go`, as Requirement 6 requires. The full exact-output assertions, usage-error checks and no-side-effect assertions remain intact.
+
+Focused evidence: `go test ./internal/cli -run '^TestUpdateCheckUsage$' -count=1 -v` exited zero, with all nine subtests passing, including `help`, `group_help`, `short_help` and `short_group_help`. `git diff --check` exited zero. This repair changes no production code, guide, help source, skill or generated record, so the existing recorder evidence remains applicable. The declared Verification was not rerun; Task status and settlement remain Daemon-owned.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/cli/doctor_documentation_test.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T033653Z_96d2b5330174b3f3`
+- Source commit: `df1529f9e2845738434bff1d4a99ccdb1b250426`

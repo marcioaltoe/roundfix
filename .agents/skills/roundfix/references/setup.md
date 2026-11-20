@@ -335,6 +335,8 @@ A recommendation, silence or a missing answer is never that yes.
 When a listed command is still asked about, tell the user that a harness applies a project's allow rules only after the folder is trusted there.
 The list is not a security boundary.
 
+`roundfix doctor` reports where each harness stands on its `flow-permissions:` line, and `roundfix update check` names each harness whose applied list is behind or not readable. Neither of them applies the list.
+
 ## Update check
 
 `roundfix update check [--refresh] [--format <text|json>]` is the read-only Update Check a session runs before its first task, as the Baseline's agent instructions say. It compares the installed Roundfix with the latest published release, lists the `### ` titles of each newer release's notes, newest first, and summarizes this repository's `roundfix baseline update` preview with the installed binary. The release listing is one `gh api` call cached for 24 hours in `~/.roundfix/update-check.json` and shared by every repository on the machine; `--refresh` reads it now, and a failed lookup is one line ending `the session continues.` and is cached for the same 24 hours. Every report exits `0`; a usage error or an invalid configuration exits `2`. `update.mode` (Project Config over User Config) selects `notify`, the default, or `auto`; the `Next:` line names the `--update` Skill Mode when a release is newer or the Baseline has a plan. JSON uses `roundfix/update-check/v1` with `state` (`update_available`, `current`, `unknown` or `development`), `next` (`apply` or `none`), `releases`, `lookup` and `baseline`.

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"roundfix/internal/app"
+	"roundfix/internal/flowpermissions"
 	"roundfix/internal/gittest"
 )
 
@@ -409,6 +410,7 @@ Reports, read-only, whether a newer Roundfix release exists, the title of each
 release since the installed version, and this repository's Baseline plan with
 the installed binary. It also names each configured Agent Selection Profile that differs
 from the Recommended Profile, with the command that adopts it.
+It also reports each Agent harness where this repository applied the Flow Command List, and whether that list is current.
 The release listing comes from the GitHub CLI and is
 cached for 24 hours in Roundfix Home; a lookup that fails is reported in one
 line. Every report exits 0. update.mode in Project Config or User Config
@@ -601,5 +603,123 @@ func assertUpdateCheckLookup(t *testing.T, output, source string, failed bool) {
 	}
 	if failed && (report.State != "unknown" || report.Latest != "" || len(report.Releases) != 0 || report.Next != "none") {
 		t.Fatalf("failed report = %+v", report)
+	}
+}
+
+func TestUpdateCheckReportsFlowPermissions(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name     string
+		fixtures []string
+		want     []updateCheckFlowPermission
+		lines    []string
+	}{
+		{name: "left_out_when_not_applied", fixtures: []string{"claude_not_applied", "codex_not_applied", "opencode_not_needed"}},
+		{name: "left_out_without_harness_files"},
+		{name: "current_text_and_json", fixtures: []string{"claude_current", "codex_current"}, want: []updateCheckFlowPermission{{Harness: flowpermissions.Claude, State: flowpermissions.Current}, {Harness: flowpermissions.Codex, State: flowpermissions.Current}}, lines: []string{"Flow permissions: claude current", "Flow permissions: codex current"}},
+		{name: "behind_text_and_json", fixtures: []string{"claude_behind"}, want: []updateCheckFlowPermission{{Harness: flowpermissions.Claude, State: flowpermissions.Behind, Add: 2, Next: "roundfix permissions --harness claude"}}, lines: []string{"Flow permissions: claude behind, 2 to add, 0 to remove — roundfix permissions --harness claude"}},
+		{name: "unreadable_text_and_json", fixtures: []string{"claude_unreadable", "codex_unreadable", "opencode_unreadable"}, want: []updateCheckFlowPermission{
+			{Harness: flowpermissions.Claude, State: flowpermissions.Unreadable, Next: "roundfix permissions --harness claude"},
+			{Harness: flowpermissions.Codex, State: flowpermissions.Unreadable, Next: "roundfix permissions --harness codex"},
+			{Harness: flowpermissions.OpenCode, State: flowpermissions.Unreadable, Next: "roundfix permissions --harness opencode"},
+		}, lines: []string{"Flow permissions: claude not readable — roundfix permissions --harness claude", "Flow permissions: codex not readable — roundfix permissions --harness codex", "Flow permissions: opencode not readable — roundfix permissions --harness opencode"}},
+		{name: "codex_behind", fixtures: []string{"codex_behind"}, want: []updateCheckFlowPermission{{Harness: flowpermissions.Codex, State: flowpermissions.Behind, Add: 1, Remove: 1, Next: "roundfix permissions --harness codex"}}, lines: []string{"Flow permissions: codex behind, 1 to add, 1 to remove — roundfix permissions --harness codex"}},
+		{name: "next_and_exit_unchanged", fixtures: []string{"claude_behind"}, want: []updateCheckFlowPermission{{Harness: flowpermissions.Claude, State: flowpermissions.Behind, Add: 2, Next: "roundfix permissions --harness claude"}}, lines: []string{"Flow permissions: claude behind, 2 to add, 0 to remove — roundfix permissions --harness claude"}},
+		{name: "writes_nothing", fixtures: []string{"claude_behind", "opencode_own_rules"}, want: []updateCheckFlowPermission{{Harness: flowpermissions.Claude, State: flowpermissions.Behind, Add: 2, Next: "roundfix permissions --harness claude"}}, lines: []string{"Flow permissions: claude behind, 2 to add, 0 to remove — roundfix permissions --harness claude"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			home, repository := permissionsWorkspace(t)
+			configureUpdateCheckTest(t, "0.0.0-dev", func(context.Context) ([]app.Release, error) {
+				t.Fatal("development report reached the forge")
+				return nil, nil
+			})
+			var original updateCheckReport
+			if err := json.Unmarshal([]byte(runUpdateCheckTest(t, "update", "check", "--format", "json")), &original); err != nil {
+				t.Fatal(err)
+			}
+			for _, fixture := range tc.fixtures {
+				writeFlowReportFixture(t, repository, fixture)
+			}
+			if tc.name == "next_and_exit_unchanged" {
+				// A fresh cache keeps the release-available check read-only too.
+				writeUpdateCheckCache(filepath.Join(home, ".roundfix", updateCheckCacheFile), updateCheckCache{SchemaVersion: updateCheckCacheSchema, CheckedAt: updateCheckTestTime(), Releases: []app.Release{{Version: "99.0.0", Titles: []string{"Fixture release"}}}})
+			}
+			before, homeBefore := snapshotDoctorPath(t, repository), snapshotDoctorPath(t, home)
+			output := runUpdateCheckTest(t, "update", "check", "--format", "json")
+			var report updateCheckReport
+			if err := json.Unmarshal([]byte(output), &report); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(report.FlowPermissions, tc.want) {
+				t.Fatalf("parts=%+v want=%+v JSON=%s", report.FlowPermissions, tc.want, output)
+			}
+			var fields map[string]json.RawMessage
+			if err := json.Unmarshal([]byte(output), &fields); err != nil {
+				t.Fatal(err)
+			}
+			if _, present := fields["flowPermissions"]; present != (len(tc.want) > 0) {
+				t.Fatalf("unexpected optional field: %s", output)
+			}
+			// The current object's empty next and zero counts remain explicit in JSON.
+			if len(tc.want) > 0 {
+				var parts []map[string]json.RawMessage
+				if err := json.Unmarshal(fields["flowPermissions"], &parts); err != nil {
+					t.Fatal(err)
+				}
+				for _, part := range parts {
+					for _, key := range []string{"harness", "state", "add", "remove", "next"} {
+						if _, ok := part[key]; !ok {
+							t.Fatalf("missing %s in %s", key, output)
+						}
+					}
+				}
+			}
+			text := runUpdateCheckTest(t, "update", "check")
+			var actual []string
+			for _, line := range strings.Split(text, "\n") {
+				if strings.HasPrefix(line, "Flow permissions:") {
+					actual = append(actual, line)
+				}
+			}
+			if !reflect.DeepEqual(actual, tc.lines) {
+				t.Fatalf("lines=%q want=%q in %s", actual, tc.lines, text)
+			}
+			if len(actual) > 0 {
+				first, last := strings.Index(text, actual[0]), strings.Index(text, actual[len(actual)-1])
+				if next := strings.Index(text, "Next:"); next >= 0 && next < last {
+					t.Fatalf("permissions after Next: %s", text)
+				}
+				for _, prefix := range []string{"Baseline:", "Profiles:", "Authoring models:"} {
+					if strings.LastIndex(text, prefix) > first {
+						t.Fatalf("permissions before %s: %s", prefix, text)
+					}
+				}
+			}
+			if report.Next != original.Next || report.State != original.State {
+				t.Fatalf("advice changed next/state: before=%+v after=%+v", original, report)
+			}
+			if tc.name == "next_and_exit_unchanged" {
+				if report.Next != "none" {
+					t.Fatalf("permissions alone changed next: %s", output)
+				}
+				configureUpdateCheckTest(t, "1.0.0", func(context.Context) ([]app.Release, error) { t.Fatal("fresh cache was ignored"); return nil, nil })
+				available := runUpdateCheckTest(t, "update", "check", "--format", "json")
+				var released updateCheckReport
+				if err := json.Unmarshal([]byte(available), &released); err != nil {
+					t.Fatal(err)
+				}
+				if released.Next != "apply" || released.State != "update_available" || !reflect.DeepEqual(released.FlowPermissions, tc.want) {
+					t.Fatalf("advice changed release next/state: %s", available)
+				}
+				availableText := runUpdateCheckTest(t, "update", "check")
+				if strings.Index(availableText, "Flow permissions:") > strings.Index(availableText, "Next:") || !strings.Contains(availableText, "Next: apply it") {
+					t.Fatalf("permissions must precede the existing Next line: %s", availableText)
+				}
+			}
+			if !reflect.DeepEqual(before, snapshotDoctorPath(t, repository)) || !reflect.DeepEqual(homeBefore, snapshotDoctorPath(t, home)) {
+				t.Fatal("Update Check wrote files")
+			}
+		})
 	}
 }

@@ -135,6 +135,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, doctorBaselineRulesResult(repositoryRoot))
 	results = append(results, doctorClaudeLinkResult(ctx, repositoryRoot))
 	results = append(results, doctorDocumentationResults(repositoryRoot)...)
+	results = append(results, doctorFlowPermissionsResult(repositoryRoot))
 	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, dependencies.storage(ctx, loaded)...)
 	if dependencies.diskSpace != nil {

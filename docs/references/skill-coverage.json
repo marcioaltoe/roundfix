@@ -379,6 +379,7 @@
       "sources": [
         "docs/user-guide/commands/doctor.md",
         "internal/cli/doctor.go",
+        "internal/cli/doctor_flow_permissions.go",
         "internal/cli/doctor_storage.go",
         "internal/cli/worktree_build_cache.go"
       ],

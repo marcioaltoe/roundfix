@@ -212,7 +212,7 @@ func TestDoctorReportsTheDocumentationRules(t *testing.T) {
 			}
 			// The second check follows all details of the first and precedes residue.
 			residue := slices.Index(lines, "residue: ok (no process residue found)")
-			if residue < end || strings.Count(stdout.String(), "baseline-export:") != 1 || strings.Count(stdout.String(), "baseline-docs:") != 1 {
+			if residue < end+2 || !strings.HasPrefix(lines[residue-1], "flow-permissions:") || strings.Count(stdout.String(), "baseline-export:") != 1 || strings.Count(stdout.String(), "baseline-docs:") != 1 {
 				t.Fatalf("duplicate or unordered checks:\n%s", stdout.String())
 			}
 			if !reflect.DeepEqual(snapshotDoctorPath(t, repository), before) || !reflect.DeepEqual(snapshotDoctorPath(t, home), homeBefore) {

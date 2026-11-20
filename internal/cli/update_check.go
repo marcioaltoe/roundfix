@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"roundfix/internal/app"
+	"roundfix/internal/flowpermissions"
 	roundskills "roundfix/skills"
 )
 
@@ -62,6 +63,14 @@ type updateCheckBaseline struct {
 	Message      string `json:"message"`
 }
 
+type updateCheckFlowPermission struct {
+	Harness flowpermissions.Harness `json:"harness"`
+	State   flowpermissions.State   `json:"state"`
+	Add     int                     `json:"add"`
+	Remove  int                     `json:"remove"`
+	Next    string                  `json:"next"`
+}
+
 type updateCheckReport struct {
 	SchemaVersion     string                           `json:"schemaVersion"`
 	Mode              string                           `json:"mode"`
@@ -75,6 +84,7 @@ type updateCheckReport struct {
 	UserSkills        []roundskills.StaleUserSkillCopy `json:"userSkills,omitempty"`
 	AuthoringModels   *updateCheckAuthoring            `json:"authoringModels,omitempty"`
 	Recommendations   *updateCheckRecommendations      `json:"recommendations,omitempty"`
+	FlowPermissions   []updateCheckFlowPermission      `json:"flowPermissions,omitempty"`
 	Next              string                           `json:"next"`
 }
 
@@ -116,6 +126,16 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	report.UserSkills = reportedUserSkillCopies(ctx, loaded.HomeDir, loadedDeclaredAuthoringSkills(loaded))
 	report.AuthoringModels = updateCheckAuthoringModels(loaded)
 	report.Recommendations = updateCheckProfileRecommendations(loaded)
+	for _, plan := range flowPermissionPlans(loaded.GitRoot) {
+		switch plan.State {
+		case flowpermissions.Current, flowpermissions.Behind, flowpermissions.Unreadable:
+			part := updateCheckFlowPermission{Harness: plan.Harness, State: plan.State, Add: len(plan.Add) + len(plan.AddGuards), Remove: len(plan.Remove)}
+			if plan.State != flowpermissions.Current {
+				part.Next = permissionsPreviewCommand(plan)
+			}
+			report.FlowPermissions = append(report.FlowPermissions, part)
+		}
+	}
 	if report.State == "update_available" || report.Baseline.State == "plan_ready" {
 		report.Next = "apply"
 	}
@@ -348,6 +368,16 @@ func printUpdateCheckReport(stdout io.Writer, report updateCheckReport) {
 	printUpdateCheckUserSkills(stdout, report.UserSkills)
 	printUpdateCheckAuthoringModels(stdout, report.AuthoringModels)
 	printUpdateCheckRecommendations(stdout, report.Recommendations)
+	for _, part := range report.FlowPermissions {
+		switch part.State {
+		case flowpermissions.Current:
+			fmt.Fprintf(stdout, "Flow permissions: %s current\n", part.Harness)
+		case flowpermissions.Behind:
+			fmt.Fprintf(stdout, "Flow permissions: %s behind, %d to add, %d to remove — %s\n", part.Harness, part.Add, part.Remove, part.Next)
+		case flowpermissions.Unreadable:
+			fmt.Fprintf(stdout, "Flow permissions: %s not readable — %s\n", part.Harness, part.Next)
+		}
+	}
 	if report.Next == "apply" {
 		if report.Mode == "auto" {
 			fmt.Fprintln(stdout, "Next: update.mode auto: apply it now with the Roundfix skill's --update mode.")

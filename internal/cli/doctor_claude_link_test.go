@@ -88,7 +88,7 @@ func TestDoctorReportsTheClaudeInstructionLink(t *testing.T) {
 			lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
 			lines = slices.DeleteFunc(lines, func(line string) bool { return strings.HasPrefix(line, "  DR-") })
 			position := slices.Index(lines, want)
-			if position < 1 || position+3 >= len(lines) || !strings.HasPrefix(lines[position-1], "baseline-rules:") || !strings.HasPrefix(lines[position+1], "baseline-export:") || !strings.HasPrefix(lines[position+2], "baseline-docs:") || !strings.HasPrefix(lines[position+3], "residue:") || strings.Count(stdout.String(), "baseline-claude-link:") != 1 {
+			if position < 1 || position+4 >= len(lines) || !strings.HasPrefix(lines[position-1], "baseline-rules:") || !strings.HasPrefix(lines[position+1], "baseline-export:") || !strings.HasPrefix(lines[position+2], "baseline-docs:") || !strings.HasPrefix(lines[position+3], "flow-permissions:") || !strings.HasPrefix(lines[position+4], "residue:") || strings.Count(stdout.String(), "baseline-claude-link:") != 1 {
 				t.Fatalf("missing single ordered whole line %q:\n%s", want, stdout.String())
 			}
 			if after := snapshotDoctorPath(t, repository); !reflect.DeepEqual(after, before) {
