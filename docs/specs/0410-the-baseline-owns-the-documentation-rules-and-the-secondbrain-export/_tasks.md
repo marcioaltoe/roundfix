@@ -21,6 +21,9 @@ graph:
       needs: [task_04]
     - id: task_06
       file: task_06.md
+      needs: [task_07]
+    - id: task_07
+      file: task_07.md
       needs: [task_05]
 ---
 
@@ -33,9 +36,12 @@ graph:
 | task_03 | The Doctor Command reports what departs from the documentation rules                               | backend | high       | task_02 |
 | task_04 | The skills ask the Lesson Learned question and the update marks the existing ADRs                  | docs    | medium     | task_03 |
 | task_05 | This repository marks its decisions and publishes only its README, its user guide and its lessons   | docs    | high       | task_04 |
-| task_06 | Run the final QA gate                                                                              | qa      | high       | task_05 |
+| task_06 | Run the final QA gate                                                                              | qa      | high       | task_07 |
+| task_07 | An ADR whose header already lists itself loses only its own identifier                             | backend | low        | task_05 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_07 · 7 → task_06
+
+task_07 is corrective Task 1 of 2, added on 2026-11-19 for finding F1 of the pre-PR review of that day (artifact `81eee2e07bb96026`, head `d8506932`); the QA gate now needs it.
 
 The graph follows `_techspec.md` → Build Order, one Task per step. task_01 is step 1: the seven clause texts in three modules, the closed list of clause forces, the three tests that pin the changed text, the clause tests, the regeneration and the Managed Refresh, with the glossary entries the later Tasks use. task_02 is step 2, the documentation part of the update with the Release Plan rule that keeps the commit of an update from asking for a release. task_03 is step 3, the two Doctor checks. task_04 is step 4, the steps of the skills, the user-guide subsection and the contract test that pins every sentence the skills gained in this Spec. task_05 is step 5, this repository's marks, notices and export file. task_06 is the gate.
 

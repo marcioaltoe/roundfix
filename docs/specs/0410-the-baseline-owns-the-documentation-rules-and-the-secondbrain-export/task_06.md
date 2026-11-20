@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -132,3 +132,9 @@ A command that fails only because a fresh `HOME` hid a toolchain is a gate error
 - [`references/2026-11-18-mirrored-documentation-measurement.md`](references/2026-11-18-mirrored-documentation-measurement.md)
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md)
 - ADR-0438, ADR-0439, ADR-0440
+
+## Invalidation
+
+- Date: `2026-11-20`
+- QA Report: `qa/qa-report-2026-11-19.md`
+- Dependencies not completed: `task_07`
