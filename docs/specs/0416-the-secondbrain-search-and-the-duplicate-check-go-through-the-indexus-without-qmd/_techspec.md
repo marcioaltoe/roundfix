@@ -210,6 +210,7 @@ Deviations from the PRD:
 - ADR-0258: not applicable — no retirement is written; no file is deleted.
 - ADR-0338: not applicable — the follow-up mode and its handoff are not changed.
 - ADR-0342: not applicable — the settlement Verification is used as it is.
+- ADR-0448: not applicable — no Skill Activation, bundle or required skill of a module changes.
 - ADR-0349: not applicable — the authorization record grants no `release` and carries no Release Ceiling.
 - ADR-0364: not applicable — no required skill is added or checked.
 - ADR-0380: not applicable — no skill is replaced or retired.

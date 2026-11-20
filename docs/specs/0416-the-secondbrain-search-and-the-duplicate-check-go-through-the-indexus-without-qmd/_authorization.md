@@ -16,6 +16,13 @@ operations:
   - commit
   - push
   - pull_request
+  - merge
+  - release
+release_ceiling: patch
+release_paths:
+  - CHANGELOG.md
+  - dist/npm/roundfix/package.json
+  - internal/app/version.go
 ---
 
 # Approved authority for Spec 0416
@@ -31,12 +38,11 @@ Two decisions of the maintainer of 2026-11-20, each delivered as a `DECISÃO DE 
 
 The first decision names the two things this Spec changes, the Secondbrain guide of the Baseline and `write-idea`. The second lets the work reach an open Pull Request before the test's result. Together they grant `implement`, `commit`, `push` and `pull_request`.
 
-## What is not granted
+## The widening of 2026-11-20
 
-- `merge`. The Pull Request stays open until the Secondbrain's project tells this project the result of the Indexus test. The maintainer's first decision then authorizes the replacement with no new request, and the operator records the notice and widens this record in a change of its own, on the target's ancestry, before the merge.
-- `release`. The record carries no Release Ceiling and no release paths. The version that carries this Spec is decided when the notice arrives.
+The Indexus test ended and the maintainer decided the replacement goes ahead now, without waiting for the wiki's access list. ai-memory message `01a1f993-7830-7362-b8dc-49813553eab8`, popped by the Supervisor session at 12:29 BRT (15:29 UTC), copied whole in section 10 of the reference file. Its answer, verbatim: "Superior; remover já". Its scope names this repository's part: "Roundfix faz o merge da 0416 e solta a versão de correção (release patch) com o guia e o write-idea só com Indexus". It also records that the maintainer accepts that, until the wiki's classification ends, project Agents go without the wiki, which lives in the personal acervo.
 
-Because the record grants no `merge`, the Delivery Queue does not deliver this Spec; `roundfix deliver start` requires it.
+This change, on the default branch before the consuming delivery, widens the grant to `merge` and `release` at a `patch` Release Ceiling, with the three version-only release paths. The governed paths, the sanctioned regeneration and the limits below are unchanged.
 
 ## How the governed set was measured
 

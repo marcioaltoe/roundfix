@@ -118,3 +118,20 @@ Recorded by the author of the TechSpec on 2026-11-20. The session that started t
 > (3) The Legal acervo leaves the reach of every key except the Fiscus. Projects must not search law in the Indexus, and legal questions go to the Fiscus. Check whether the Baseline's Secondbrain guide today tells sessions to search law (for example `qmd -c leis` or the `leis` collection). If it does, the reworded clause must send legal questions to the Fiscus instead of the Indexus. If it does not, add nothing and note it as out of scope. The guide must not tell a project to search law in the Indexus.
 
 What the TechSpec takes from it: the condition of the merge in its risks, the sentence of the search clause about an answer without a `wiki` result, the sentence about a `wiki` result's `caminho`, and nothing about law, because neither the guide nor `write-idea` names law, a legal collection or the Fiscus (characterization, section 7).
+
+## 10. Jarvis → Roundfix, message `01a1f993-7830-7362-b8dc-49813553eab8` — DECISÃO DE MARCIO: the replacement goes ahead now
+
+Popped by the Supervisor session on 2026-11-20 at 12:29 BRT (15:29 UTC). Copied whole:
+
+> Do Jarvis, 20/11/2026 ~14:40 BRT. Vale para Secondbrain (coordena), Indexus, Roundfix, skills, Fiscus, Pantheon e Hermes.
+>
+> DECISÃO DE MARCIO
+> pedido: resultado da 1ª rodada do teste (Indexus, msg 01a1f991-93ff) e o item 6(b) dele
+> pergunta: Com o Indexus superior em todos os conjuntos (diretas 13x11, reformuladas 15x10, Jarvis 13x8, base legal 24x5, consultas reais 12x7 com 45 empates; 1 a 6 s contra 30 a 86 s), a remoção do qmd pode começar?
+> resposta: "Superior; remover já".
+> alcance (leitura do Jarvis): executar já a eliminação pré-autorizada na DECISÃO 01a1f952, sem esperar a classificação da wiki. Aceito por Marcio: até a classificação terminar, os agentes de projeto ficam sem a wiki (que está no acervo Pessoal). Ordem:
+> (a) referências: skills faz o merge do PR #174 e atualiza a cópia no vault e a referência do Jarvis; Roundfix faz o merge da 0416 e solta a versão de correção (release patch) com o guia e o write-idea só com Indexus; Secondbrain publica o branch refactor/aposentar-qmd (contrato, skills secondbrain, knowledge-workspace do Hermes e whatsapp, prompts do Hermes); Fiscus troca as referências próprias (docs/agents/specific-repository.md e a skill revisao-tributaria-cadastro); o Jarvis troca as instruções globais (seção do Indexus, sem qmd de reserva).
+> (b) remoção: o Secondbrain coordena e faz no mini (qmd-refresh e qmd mcp do Hermes, serviços, jobs, índices e binário; o "qmd update" do github-repo-inventory e do wiki-lint). No MacBook, a sessão skills faz (o qmd update travado há horas, jobs, índices e binário). Índices arquivados por 14 dias (até 04/12/2026) antes de apagar.
+> (c) o Legal em paralelo pelo qmd -c leis acaba junto.
+> Cada um manda ao Jarvis uma linha quando terminar a sua parte.
+> quando: 20/11/2026 14:38 BRT
