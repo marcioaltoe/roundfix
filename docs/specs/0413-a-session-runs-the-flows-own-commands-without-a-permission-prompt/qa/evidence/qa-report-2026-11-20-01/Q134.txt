@@ -1,0 +1,50 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-iv2q8j_u
+stdout:
+stderr:
+exit: 0
+$ git add -A
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-iv2q8j_u
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm 'audited fixture'
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-iv2q8j_u
+stdout:
+stderr:
+exit: 0
+Fresh mutation, no regeneration:
+--- internal/flowpermissions/claude_settings.go
++++ internal/flowpermissions/claude_settings.go
+@@ -203,6 +203,10 @@
+ 		}
+ 	}
+ 	result := applySettingsEdits(data, edits)
++ var decoded any
++ if err := json.Unmarshal(result, &decoded); err != nil { return nil, err }
++ result, err = json.MarshalIndent(decoded, "", "  ")
++ if err != nil { return nil, err }
+ 	allow, ask, err := ReadClaudeSettings(result)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("validate edited settings: %w", err)
+
+$ go test -count=1 -timeout 40m -v -run '^TestEditClaudeSettings$/tab_indentation_kept$' ./internal/flowpermissions
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-iv2q8j_u
+stdout:
+=== RUN   TestEditClaudeSettings
+=== PAUSE TestEditClaudeSettings
+=== CONT  TestEditClaudeSettings
+=== RUN   TestEditClaudeSettings/tab_indentation_kept
+    claude_settings_test.go:30: edit: <nil>
+        got  "{\n  \"permissions\": {\n    \"allow\": [\n      \"user\",\n      \"new\"\n    ],\n    \"ask\": [\n      \"user-ask\",\n      \"guard\"\n    ]\n  }\n}"
+        want "{\n\t\"permissions\": {\n\t\t\"allow\": [\n\t\t\t\"user\",\n\t\t\t\"new\"\n\t\t],\n\t\t\"ask\": [\"user-ask\", \"guard\"]\n\t}\n}"
+--- FAIL: TestEditClaudeSettings (0.00s)
+    --- FAIL: TestEditClaudeSettings/tab_indentation_kept (0.00s)
+FAIL
+FAIL	roundfix/internal/flowpermissions	0.203s
+FAIL
+stderr:
+exit: 1
+Expected-negative evidence: package compiled; named assertion(s) failed. Mutation detected.
+ASSERTIONS PASSED

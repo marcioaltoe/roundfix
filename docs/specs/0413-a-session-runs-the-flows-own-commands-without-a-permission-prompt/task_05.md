@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

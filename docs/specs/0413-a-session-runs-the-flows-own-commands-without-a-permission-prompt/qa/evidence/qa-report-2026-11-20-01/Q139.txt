@@ -1,0 +1,49 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-ixwhh59k
+stdout:
+stderr:
+exit: 0
+$ git add -A
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-ixwhh59k
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm 'audited fixture'
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-ixwhh59k
+stdout:
+stderr:
+exit: 0
+Fresh mutation, no regeneration:
+--- internal/cli/permissions.go
++++ internal/cli/permissions.go
+@@ -314,6 +314,7 @@
+ 		}
+ 	}
+ 	for _, ex := range exclusions {
++ if len(ex.Words)>1 && strings.HasPrefix(ex.Words[1], "-") { continue }
+ 		if _, ok := commands[ex.Reason]; !ok && (len(reasons) == 0 || reasons[0] != ex.Reason) {
+ 			reasons = append(reasons, ex.Reason)
+ 		}
+
+$ go test -count=1 -timeout 40m -v -run '^TestPermissionsTextPreviewNamesEveryExclusion$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-ixwhh59k
+stdout:
+=== RUN   TestPermissionsTextPreviewNamesEveryExclusion
+=== PAUSE TestPermissionsTextPreviewNamesEveryExclusion
+=== CONT  TestPermissionsTextPreviewNamesEveryExclusion
+=== RUN   TestPermissionsTextPreviewNamesEveryExclusion/claude
+    permissions_test.go:398: JSON names "git -C", text preview does not
+=== RUN   TestPermissionsTextPreviewNamesEveryExclusion/codex
+    permissions_test.go:398: JSON names "git -C", text preview does not
+--- FAIL: TestPermissionsTextPreviewNamesEveryExclusion (0.06s)
+    --- FAIL: TestPermissionsTextPreviewNamesEveryExclusion/claude (0.03s)
+    --- FAIL: TestPermissionsTextPreviewNamesEveryExclusion/codex (0.03s)
+FAIL
+suiteguard: guard cost: measured 3375 paths; fingerprint took 556.015792ms before and 250.244875ms after
+FAIL	roundfix/internal/cli	1.324s
+FAIL
+stderr:
+exit: 1
+Expected-negative evidence: package compiled; named assertion(s) failed. Mutation detected.
+ASSERTIONS PASSED

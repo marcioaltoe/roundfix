@@ -1,0 +1,46 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-uy5v4aaf
+stdout:
+stderr:
+exit: 0
+$ git add -A
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-uy5v4aaf
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm 'audited fixture'
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-uy5v4aaf
+stdout:
+stderr:
+exit: 0
+Fresh mutation, no regeneration:
+--- internal/flowpermissions/plan.go
++++ internal/flowpermissions/plan.go
+@@ -258,7 +258,7 @@
+ 	if digest == "" {
+ 		return result.Plan, ErrNotWritable
+ 	}
+-	if result.Digest != digest {
++	if false {
+ 		return result.Plan, ErrPreviewChanged
+ 	}
+ 	if err := checkTarget(repoRoot, result.File); err != nil {
+
+$ go test -count=1 -timeout 40m -v -run '^TestApply$/stale_digest_writes_nothing$' ./internal/flowpermissions
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-uy5v4aaf
+stdout:
+=== RUN   TestApply
+=== PAUSE TestApply
+=== CONT  TestApply
+=== RUN   TestApply/stale_digest_writes_nothing
+    plan_test.go:306: stale apply: <nil>
+--- FAIL: TestApply (0.00s)
+    --- FAIL: TestApply/stale_digest_writes_nothing (0.00s)
+FAIL
+FAIL	roundfix/internal/flowpermissions	0.206s
+FAIL
+stderr:
+exit: 1
+Expected-negative evidence: package compiled; named assertion(s) failed. Mutation detected.
+ASSERTIONS PASSED

@@ -1,0 +1,52 @@
+$ go test -count=1 -timeout 20m -v -run '^TestOnlyTheCommandAndTheReportsUseTheList$' ./internal/flowpermissions
+stdout:
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+--- PASS: TestOnlyTheCommandAndTheReportsUseTheList (0.00s)
+    --- PASS: TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported (0.00s)
+    --- PASS: TestOnlyTheCommandAndTheReportsUseTheList/this_repository (0.03s)
+PASS
+ok  	roundfix/internal/flowpermissions	0.111s
+
+stderr:
+
+exit: 0
+
+$ go test -count=1 -timeout 40m -v -run '^TestPermissionsCommand$/home_files_untouched$|^TestDoctorReportsFlowPermissions$/writes_nothing$|^TestUpdateCheckReportsFlowPermissions$/writes_nothing$' ./internal/cli
+stdout:
+=== RUN   TestDoctorReportsFlowPermissions
+=== PAUSE TestDoctorReportsFlowPermissions
+=== RUN   TestPermissionsCommand
+=== PAUSE TestPermissionsCommand
+=== RUN   TestUpdateCheckReportsFlowPermissions
+=== PAUSE TestUpdateCheckReportsFlowPermissions
+=== CONT  TestDoctorReportsFlowPermissions
+=== CONT  TestUpdateCheckReportsFlowPermissions
+=== CONT  TestPermissionsCommand
+=== RUN   TestPermissionsCommand/home_files_untouched
+=== RUN   TestDoctorReportsFlowPermissions/writes_nothing
+=== PAUSE TestDoctorReportsFlowPermissions/writes_nothing
+=== RUN   TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== PAUSE TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== CONT  TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== CONT  TestDoctorReportsFlowPermissions/writes_nothing
+--- PASS: TestPermissionsCommand (0.04s)
+    --- PASS: TestPermissionsCommand/home_files_untouched (0.04s)
+--- PASS: TestDoctorReportsFlowPermissions (0.00s)
+    --- PASS: TestDoctorReportsFlowPermissions/writes_nothing (0.04s)
+--- PASS: TestUpdateCheckReportsFlowPermissions (0.00s)
+    --- PASS: TestUpdateCheckReportsFlowPermissions/writes_nothing (0.07s)
+PASS
+suiteguard: guard cost: measured 3401 paths; fingerprint took 280.258167ms before and 282.977625ms after
+ok  	roundfix/internal/cli	1.013s
+
+stderr:
+
+exit: 0

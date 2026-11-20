@@ -1,0 +1,667 @@
+import contextlib, hashlib, io, json, os, pathlib, re, shlex, shutil, subprocess, sys, tarfile, tempfile, traceback
+ROOT = pathlib.Path.cwd().resolve()
+SLUG = '0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt'
+SPEC = ROOT/'docs/specs'/SLUG
+REPORT = SPEC/'qa/qa-report-2026-11-20.md'
+EVIDENCE = SPEC/'qa/evidence/qa-report-2026-11-20'
+HEAD = 'df1529f9e2845738434bff1d4a99ccdb1b250426'
+BASE = '416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff'
+BINARY = ROOT/'bin/roundfix'
+KEYS = {'GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID','ROUNDFIX_OPENROUTER_JUDGE_API_KEY'}
+KEYS.update(x['key_variable'] for x in json.loads((ROOT/'internal/judge/questions.json').read_text())['transports'])
+TOOLCHAINS = {}
+def host_env():
+    e=os.environ.copy()
+    for k in KEYS: e.pop(k,None)
+    e['GOPROXY']='off'; e['GOSUMDB']='off'
+    return e
+
+def run(args, cwd=ROOT, env=None):
+    return subprocess.run([str(x) for x in args],cwd=cwd,env=env or host_env(),stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+
+def transcript(args,p):
+    words=[str(x) for x in args]
+    if words and words[0]==str(BINARY): words[0]='./bin/roundfix'
+    return '$ '+shlex.join(words)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr+'\nexit: '+str(p.returncode)+'\n'
+
+def save(name,content):
+    p=EVIDENCE/name
+    ck=run(['git','check-ignore','--',str(p.relative_to(ROOT))])
+    assert ck.returncode==1, 'ignored evidence '+name
+    p.write_text(content)
+    return p
+
+def record(row,status,detail):
+    s=REPORT.read_text()
+    s,n=re.subn(r'(?m)^\| '+re.escape(row)+r' \| [^|]+ \|',lambda m:'| '+row+' | '+status+' |',s)
+    assert n==1,(row,n)
+    tag='### '+row+' evidence\n'
+    start=s.index(tag)+len(tag)
+    end=s.find('\n### ', start)
+    if end<0: end=s.find('\n## ',start)
+    if end<0: end=len(s)
+    part=s[start:end]
+    if '\nObservation: pending.' in part: part=part.replace('\nObservation: pending.','\n'+detail)
+    else: part+='\n'+detail+'\n'
+    REPORT.write_text(s[:start]+part+s[end:])
+    print(row+': '+status,flush=True)
+
+@contextlib.contextmanager
+def product_env():
+    global TOOLCHAINS
+    if not TOOLCHAINS:
+        for k in ('GOMODCACHE','GOCACHE'):
+            p=run(['go','env',k]); assert p.returncode==0; TOOLCHAINS[k]=p.stdout.strip()
+        TOOLCHAINS['RUSTUP_HOME']=os.environ.get('RUSTUP_HOME',os.path.join(os.environ['HOME'],'.rustup'))
+        TOOLCHAINS['CARGO_HOME']=os.environ.get('CARGO_HOME',os.path.join(os.environ['HOME'],'.cargo'))
+    with tempfile.TemporaryDirectory(prefix='qa0413-',dir='/private/tmp') as td:
+        t=pathlib.Path(td); h=t/'home'; tmp=t/'tmp'; fake=t/'fakebin'
+        for d in (h,tmp,fake): d.mkdir()
+        gh=fake/'gh'; gh.write_text('#!/bin/sh\nexit 1\n'); gh.chmod(0o755)
+        e=host_env(); e.update(TOOLCHAINS); e['HOME']=str(h); e['TMPDIR']=str(tmp); e['PATH']=str(fake)+os.pathsep+e['PATH']; e['GIT_CONFIG_NOSYSTEM']='1'; e['GIT_CONFIG_GLOBAL']=os.devnull
+        try: yield t,e
+        finally:
+            for p in t.rglob('*'):
+                if not p.is_symlink():
+                    try: p.chmod(p.stat().st_mode | 0o700)
+                    except FileNotFoundError: pass
+
+def make_repo(path,e):
+    path.mkdir(parents=True,exist_ok=True)
+    for args in (['git','init','-q'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','-q','--allow-empty','-m','QA fixture']):
+        p=run(args,path,e); assert p.returncode==0,p.stderr
+    return path
+
+def cli(args,cwd,e): return run([BINARY]+args,cwd,e)
+
+def precondition():
+    p=run(['make','build']); save('build.txt',transcript(['make','build'],p)); print('make build exit',p.returncode,flush=True); assert p.returncode==0
+    with product_env() as (t,e):
+        p=cli(['--version'],ROOT,e); save('version.txt',transcript([BINARY,'--version'],p)); assert p.returncode==0
+        print(p.stdout.strip(),flush=True)
+        p=cli(['spec','check',SLUG,'--strict'],ROOT,e)
+        save('precondition.txt',transcript([BINARY,'spec','check',SLUG,'--strict'],p)); print(p.stdout+p.stderr,flush=True); assert p.returncode==0
+
+if __name__=='__main__':
+    if sys.argv[1]=='precondition': precondition()
+
+def init_report():
+    rows=[]
+    def add(i,prov,refs,plan,history=False): rows.append((i,prov,refs,plan,history))
+    fp=['internal/flowpermissions/**']; cl=['internal/cli/**']; dc=['internal/docscontract/**']; sk=['skills/**','.agents/skills/roundfix/**']
+    add('Q01','repository Verification', ['Makefile'], 'Record Daemon-supplied make verify-changed pass, exit 0; confirm make build and local binary identity.')
+    add('Q02','task_05 Requirement 2',fp+dc+sk,'Verbose list, forbidden-rule, Guard Entry, Codex and retired tests; owned-command contracts; whole flowpermissions package.')
+    add('Q03','task_05 Requirement 3',fp,'Verbose settings, OpenCode, plan and apply tests; record every named case, including link pass/skip.')
+    for n in range(1,5): add('Q04'+str(n),'task_05 Requirement 14; Surface Transcript '+str(n),fp+cl,'Reproduce Surface Transcript '+str(n)+' with the built binary, compare stdout/stderr separately, exact exit, ellipses and angle placeholders only.')
+    add('Q04T','task_05 Requirement 14',cl,'Run PermissionsSurfaceTranscripts, PermissionsCommand and root-help tests verbosely.')
+    add('Q05','task_05 Requirements 3 and 14',fp+cl,'Claude JSON preview/apply/current/removal/stale digest and invalid-argument public journeys; strict JSON, tabs, no final newline, byte restoration.')
+    add('Q06','task_05 Requirements 2 and 14',fp+cl,'Codex public preview/apply/removal, preserve default.rules, independently inspect blocks and exclusions.')
+    add('Q07','task_05 Requirements 2 and 3',fp+[str((SPEC/'references/2026-11-19-harness-rule-measurements.md').relative_to(ROOT))],'Measure five short-option patterns and Codex filename/form offline; state real-session limits.')
+    add('Q08','task_05 Requirements 3 and 14',fp+cl,'Public outside-directory-link refusal and unreadable-comment file; unchanged target and no outside write.')
+    add('Q09','task_05 Requirement 9',cl+fp,'Verbose Doctor/UpdateCheck reports with fakes; broad Doctor|UpdateCheck|Permissions tests; never fails, exit/order, next warnings.')
+    add('Q10','task_05 Requirement 10',fp+cl,'Both import-boundary subtests and home-files-untouched/report writes_nothing subtests.')
+    add('Q11','task_05 Requirement 11',['internal/speccheck/**'],'Verbose governed-path cases, historical set-growth cases, full speccheck with and without repocontract.',True)
+    add('Q12','task_05 Requirement 12',sk+dc+['CONTEXT.md','docs/references/skill-coverage.json','docs/references/behavior-surfaces.json','internal/spec/**'],'Skill sentence tests, version record, whole skills/docscontract suites, sync check, command/coverage/glossary and coverage-equivalence tests.')
+    for n in range(1,9): add('Q13'+str(n),'task_05 Requirement 13',fp+cl+dc+sk+['internal/speccheck/**'],'Sabotage '+str(n)+' on an independent git-archive copy; require the named assertion failure, no generation or synchronization.')
+    add('Q14','task_05 Requirement 14',[str((SPEC/('task_%02d.md'%n)).relative_to(ROOT)) for n in range(1,5)]+fp+cl+dc+sk+['internal/speccheck/**'],'Execute each task_01–task_04 Verification command, including expected named-pass checks and Windows package builds.',True)
+    add('Q15','task_05 Requirements 12 and 14',fp+cl+dc+sk+['docs/user-guide/**','CONTEXT.md','docs/adr/0444*','docs/adr/0445*','docs/adr/0446*'],'Search actual JSON renderings, exclusions, warnings, guides, skill copies, help sentences, ADR marks and unchanged existing CLI/config contracts.',True)
+    for n in range(1,5): add('Q16'+str(n),'outside-evidence row; published source '+str(n),[str((SPEC/'_prd.md').relative_to(ROOT)),str((SPEC/'references/2026-11-19-harness-rule-measurements.md').relative_to(ROOT))],'Compare the dated, committed external-source quotation with fresh public-flow output; no lookup.')
+    criteria=re.findall(r'^- criterion: (.+)$',(SPEC/'_prd.md').read_text(),re.M)
+    for n,c in enumerate(criteria,1): add('Q17'+str(n),'PRD Unreachable Acceptance: '+c,[str((SPEC/'_prd.md').relative_to(ROOT)),str((SPEC/'_authorization.md').relative_to(ROOT))],'Prove matching pre-run constraint and record exact operator satisfied-by action; no harness starts.')
+    add('Q18','task_05 Requirement 12',['CONTEXT.md',str((SPEC/'_prd.md').relative_to(ROOT)),str((SPEC/'_techspec.md').relative_to(ROOT))],'Check four glossary additions, exact placement/definitions, only Governed Path sentence changed, no other entry changed; glossary contract.',True)
+    add('Q19','task_05 Requirement 19',[str(SPEC.relative_to(ROOT))+'/**','internal/speccheck/governed.go'],'Audit actual task commit paths against Context/Recorded paths, frozen grant, protected paths, ADRs and QA settlement sections.',True)
+    add('Q20','Pull Request row',[str((SPEC/'_authorization.md').relative_to(ROOT))],'Record no open Pull Request; delivery authority, Daemon verification, no unresolved threads, no Merge-Ready acceptance and exact candidate head.',True)
+    s=REPORT.read_text()
+    version=(EVIDENCE/'version.txt').read_text().split('stdout:\n',1)[1].split('\nstderr:',1)[0].strip()
+    extra='\nspec: '+SLUG+'\ndate: 2026-11-20\nbuild: "'+HEAD+'"\nstatus: in-progress\nsurfaces: [cli, docs]\nuser_flow_binary: '+json.dumps(version)+'\nuser_flow_executables:\n  - bin/roundfix\n  - '+str((EVIDENCE/'gate.py.txt').relative_to(ROOT))+'\n'
+    pos=s.index('\n---',4); s=s[:pos]+extra+s[pos:]
+    tab='| - | --- | --- |\n'
+    s=s.replace(tab,tab+''.join('| '+i+' | pending | '+prov.replace('|','\\|')+' |\n' for i,prov,_,_,_ in rows),1)
+    s+='\n## Scope and environment\n\nFull authored offline matrix at '+HEAD+'. All four dependencies are completed. The strict Spec check exited 0 with no findings; its missing-artifact skips are preserved in [precondition](evidence/qa-report-2026-11-20/precondition.txt). No carried rows were seeded. The three unreachable criteria remain separate. No frontend is declared. Product commands use the absolute path of this Run’s bin/roundfix (rendered as ./bin/roundfix in logs) from temporary fixture repositories; no PATH Roundfix is used. The build’s dirty marker is caused by QA report/evidence additions, with implementation sources unchanged. Darwin arm64 host; link capabilities will be measured. The executor rejects the configured symlinked writable root, so approved escalated commands use the same physical Run checkout. This is an executor parity gap, not evidence for interactive permission removal.\n\nEach product execution uses a fresh HOME and TMPDIR outside the checkout, preserved GOMODCACHE/GOCACHE/RUSTUP_HOME/CARGO_HOME locations, and an inert gh first on PATH; credentials GH_TOKEN, GITHUB_TOKEN, TYPESAFE_API_KEY, CLAUDE_CODE_SESSION_ID and all Judge Key Variables are unset. Tests and make retain the host HOME/TMPDIR; GOPROXY and GOSUMDB keep dependency resolution offline. No environment values or environment dumps are recorded. No harness, Run, provider, reviewer, network lookup or message is started. Test output is buffered outside the checkout and retained only after the suite exits.\n\n## Static gate\n\nDaemon-supplied `make verify-changed`: pass, exit 0, at the audited head; diagnostics removed on success. Not rerun by this Agent. `make build`: exit 0; [build](evidence/qa-report-2026-11-20/build.txt), [binary identity](evidence/qa-report-2026-11-20/version.txt).\n\n## Row evidence\n'
+    for i,prov,refs,plan,hist in rows:
+        s+='\n### '+i+' evidence\n\n```yaml\ninputs:\n'
+        for ref in refs: s+='  - kind: repository_path\n    ref: '+ref+'\n'
+        if hist:s+='  - kind: commit_range\n    ref: '+BASE+'..'+HEAD+'\n'
+        s+='```\n\nPlan: '+plan+'\n\nObservation: pending.\n'
+    REPORT.write_text(s)
+    save('matrix-plan.txt','Coverage: declared Requirements 2, 3, 9, 10, 11, 12, 13, 14 and 19; repository Verification; four Surface Transcripts; four outside-evidence sources; three declared criteria; Pull Request row.\n'+ '\n'.join(i+' | '+p+' | '+plan for i,p,_,plan,_ in rows)+'\n')
+    record('Q01','pass','Observed: Daemon-supplied repository Verification passed (exit 0); make build passed. [Build](evidence/qa-report-2026-11-20/build.txt) and [version](evidence/qa-report-2026-11-20/version.txt) identify this Run’s binary; no repository Verification rerun.')
+
+def test_commands(row,commands):
+    lines=[]; failed=[]
+    for args in commands:
+        p=run(args); lines.append(transcript(args,p)); print(row,shlex.join(args),'exit',p.returncode,flush=True)
+        if p.returncode: failed.append(shlex.join(args))
+    save(row+'-tests.txt','\n'.join(lines))
+    record(row,'fail' if failed else 'pass','Observed: '+('failed commands: '+', '.join(failed) if failed else 'every listed command exited 0.')+' Full stdout, stderr, exits and named subtests: ['+row+' tests](evidence/qa-report-2026-11-20/'+row+'-tests.txt).')
+    return not failed
+
+def go(pkg,pattern=None,tags=None,verbose=True,timeout='20m'):
+    a=['go','test','-count=1','-timeout',timeout]
+    if tags:a+=['-tags',tags]
+    if verbose:a+=['-v']
+    if pattern:a+=['-run',pattern]
+    return a+[pkg]
+
+def tests(group):
+    if group=='core':
+        test_commands('Q02',[go('./internal/flowpermissions','^(TestFlowCommandList|TestRenderingsHoldNoForbiddenRule|TestGuardEntriesMatchTheirOption|TestCodexRulesFile|TestRetiredSetKeepsEveryReleasedEntry)$'),go('./internal/docscontract','^(TestOwnedSkillsNameOnlyListedOrExcludedCommands|TestAnUnlistedSkillCommandIsReported)$','docscontract'),go('./internal/flowpermissions',verbose=False)])
+        test_commands('Q03',[go('./internal/flowpermissions','^(TestEditClaudeSettings|TestReadOpenCode|TestPlan|TestApply)$')])
+        test_commands('Q04T',[go('./internal/cli','^(TestPermissionsSurfaceTranscripts|TestPermissionsCommand|TestRootHelpNamesThePermissionsCommand)$',timeout='40m')])
+    elif group=='reports':
+        test_commands('Q09',[go('./internal/cli','^(TestDoctorReportsFlowPermissions|TestUpdateCheckReportsFlowPermissions)$',timeout='40m'),go('./internal/cli','Doctor|UpdateCheck|Permissions',verbose=False,timeout='40m')])
+        test_commands('Q10',[go('./internal/flowpermissions','^TestOnlyTheCommandAndTheReportsUseTheList$'),go('./internal/cli','^TestPermissionsCommand$/home_files_untouched$|^TestDoctorReportsFlowPermissions$/writes_nothing$|^TestUpdateCheckReportsFlowPermissions$/writes_nothing$',timeout='40m')])
+    elif group=='governed':
+        test_commands('Q11',[go('./internal/speccheck','^TestGovernedPath$'),go('./internal/speccheck','^TestGovernedSetOnlyGrows$','repocontract'),go('./internal/speccheck',verbose=False),go('./internal/speccheck',tags='repocontract',verbose=False)])
+    elif group=='docs':
+        test_commands('Q12',[go('./skills','^(TestTheRoundfixSkillDescribesFlowPermissions|TestTheRoundfixSkillNamesTheFlowPermissionsReports|TestEveryOwnedSkillVersionIsRecorded)$'),go('./skills',verbose=False),['make','skills-sync-check'],go('./internal/docscontract',tags='docscontract',verbose=False),go('./internal/docscontract','^(TestEveryCommandIsNamedInTheRoundfixSkill|TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$','docscontract'),go('./internal/spec','^TestCoverageEquivalence$',verbose=False)])
+    elif group=='verification':
+        logs=[]; failed=[]
+        for n in range(1,5):
+            body=(SPEC/('task_%02d.md'%n)).read_text().split('## Verification\n',1)[1].split('\n## ',1)[0]
+            for j,line in enumerate(body.splitlines(),1):
+                if not line.startswith('- `'):continue
+                command=line[3:line.rfind('` — expected:')]
+                assert command and '-record-' not in command
+                p=run(['/bin/zsh','-c',command]); logs.append('task_%02d line %d\n$ %s\nstdout:\n%s\nstderr:\n%s\nexit: %d\n'%(n,j,command,p.stdout,p.stderr,p.returncode)); print('task_%02d verification line %d exit %d'%(n,j,p.returncode),flush=True)
+                if p.returncode:failed.append('task_%02d line %d'%(n,j))
+        save('Q14-verification.txt','\n'.join(logs))
+        record('Q14','fail' if failed else 'pass','Observed: '+('Failures: '+', '.join(failed) if failed else 'all 12 task_01–task_04 authored commands exited 0, including named-subtest assertions and both Windows package builds.')+' [Exact commands and results](evidence/qa-report-2026-11-20/Q14-verification.txt). Named test transcripts are also retained in Q02/Q03/Q04T/Q09/Q10/Q11/Q12.')
+
+if __name__=='__main__':
+    if sys.argv[1]=='init':init_report()
+    elif sys.argv[1]=='tests':tests(sys.argv[2])
+
+def flow(row,fn):
+    logs=[]; artifacts={}
+    try:
+        with product_env() as (t,e):
+            # A separate temporary home contains user-owned files as a non-mutation canary.
+            home=pathlib.Path(e['HOME'])
+            (home/'.claude').mkdir(); (home/'.claude/settings.json').write_text('{"model":"home-only"}\n')
+            (home/'.codex/rules').mkdir(parents=True); (home/'.codex/rules/default.rules').write_text('# home-only\n')
+            initial={str(p.relative_to(home)):p.read_bytes() for p in home.rglob('*') if p.is_file()}
+            fn(t,e,logs,artifacts)
+            final={str(p.relative_to(home)):p.read_bytes() for p in home.rglob('*') if p.is_file()}
+            assert final==initial,'temporary home was changed'
+            logs.append('Independent temporary-home snapshot unchanged.\n')
+        status='pass'; observation='all expected outputs, independent file/state checks and exits matched.'
+    except Exception as ex:
+        logs.append(traceback.format_exc()); status='fail'; observation=str(ex)
+    for name,content in artifacts.items():
+        save(name,content.decode() if isinstance(content,bytes) else content)
+    save(row+'-flow.txt','\n'.join(logs))
+    record(row,status,'Observed: '+observation+' [Full flow transcript](evidence/qa-report-2026-11-20/'+row+'-flow.txt).')
+
+def call(args,repo,e,logs,expected=0):
+    p=cli(args,repo,e); logs.append(transcript([BINARY]+args,p)); assert p.returncode==expected,(args,p.returncode,p.stderr)
+    return p
+
+def plan(h,repo,e,logs,remove=False):
+    args=['permissions','--harness',h,'--format','json']+(['--remove'] if remove else [])
+    p=call(args,repo,e,logs)
+    j=json.loads(p.stdout); assert j['schemaVersion']=='roundfix/flow-permissions/v1'
+    return j['harnesses'][0],p.stdout
+
+def match_transcript(pattern,actual):
+    regex=''
+    for line in pattern.splitlines():
+        if line=='...':regex+='(?:[^\n]*\n)*'
+        else:
+            parts=re.split(r'(<[^>]+>)',line)
+            regex+=''.join('[^\n]+' if x.startswith('<') and x.endswith('>') else re.escape(x) for x in parts)+'\n'
+    assert re.fullmatch(regex,actual), 'transcript mismatch\nexpected:\n'+pattern+'\nactual:\n'+actual
+
+def surface(n):
+    def work(t,e,logs,artifacts):
+        repo=make_repo(t/'repo',e)
+        blocks=re.findall(r'```transcript\n(.*?)```',(SPEC/'_techspec.md').read_text(),re.S)
+        block=blocks[n-1]
+        command,rest=block.split('\n   stdout:\n') if '\n   stdout:\n' in block else block.split('\nstdout:\n')
+        # Markdown indentation belongs to the fence, not the command's output.
+        lines=block.splitlines(); normalized='\n'.join(x[3:] if x.startswith('   ') else x for x in lines)+'\n'
+        command,rest=normalized.split('\nstdout:\n',1)
+        expected_out,rest=rest.split('stderr:\n',1)
+        expected_err,exitstr=rest.rsplit('exit: ',1)
+        args=shlex.split(command.removeprefix('$ '))[1:]
+        p=call(args,repo,e,logs,int(exitstr.strip()))
+        match_transcript(expected_out,p.stdout); match_transcript(expected_err,p.stderr)
+        assert not (repo/'.claude').exists() and not (repo/'.codex').exists()
+        logs.append('Surface Transcript '+str(n)+': stdout and stderr independently matched, exact exit. Only version/digest placeholders and explicit ellipses varied.\n')
+    flow('Q04'+str(n),work)
+
+def claude_flow(t,e,logs,artifacts):
+    repo=make_repo(t/'repo',e); target=repo/'.claude/settings.json';target.parent.mkdir()
+    before=b'{\n\t"permissions": {\n\t\t"allow": [\n\t\t\t"Bash(make test)"\n\t\t],\n\t\t"ask": [\n\t\t\t"Bash(rm *)"\n\t\t]\n\t},\n\t"model": "qa-model"\n}'
+    target.write_bytes(before);(t/'before.json').write_bytes(before);artifacts['claude-before.json']=before
+    j,raw=plan('claude',repo,e,logs);artifacts['claude-preview.json']=raw
+    assert j['state']=='not_applied' and re.fullmatch('[a-f0-9]{12}',j['digest']) and j['digest'] in j['next']
+    assert target.read_bytes()==before
+    n,m=len(j['add']),len(j['addGuards']);logs.append('Preview measured add='+str(n)+', addGuards='+str(m)+'; no counts fixed in the probe.\n')
+    p=call(['permissions','--harness','claude','--apply',j['digest']],repo,e,logs)
+    assert 'Wrote %d entries and %d Guard Entries to .claude/settings.json.'%(n,m) in p.stdout
+    applied=target.read_bytes();artifacts['claude-applied.json']=applied;obj=json.loads(applied)
+    assert obj['permissions']['allow']==['Bash(make test)']+j['add']
+    assert obj['permissions']['ask']==['Bash(rm *)']+j['addGuards']
+    assert obj['model']=='qa-model' and not applied.endswith(b'\n')
+    for line in applied.splitlines():
+        if line.strip().startswith(b'"') or line.strip() in (b'],',b']',b'},'):
+            assert line.startswith(b'\t'),'tab indentation lost'
+    again,_=plan('claude',repo,e,logs);assert again['state']=='current' and again['digest']=='' and again['next']==''
+    p=call(['permissions','--harness','claude'],repo,e,logs);assert 'Nothing to write: the file holds the installed list.' in p.stdout
+    p=call(['permissions','--harness','claude','--remove'],repo,e,logs)
+    remove,_=plan('claude',repo,e,logs,True)
+    assert all(x in p.stdout for x in j['add']+j['addGuards'])
+    assert remove['digest'] in p.stdout and len(remove['remove'])==n+m
+    call(['permissions','--harness','claude','--remove','--apply',remove['digest']],repo,e,logs)
+    assert target.read_bytes()==(t/'before.json').read_bytes(),'removal did not restore first bytes'
+    artifacts['claude-restored.json']=target.read_bytes()
+    stale,_=plan('claude',repo,e,logs)
+    changed=before.replace(b'qa-model',b'qb-model');target.write_bytes(changed)
+    p=call(['permissions','--harness','claude','--apply',stale['digest']],repo,e,logs,3)
+    assert not p.stdout and p.stderr=='The preview changed since digest '+stale['digest']+' was printed. Nothing was written.\nRun the preview again: roundfix permissions --harness claude\n'
+    assert target.read_bytes()==changed
+    for args in (['permissions','--apply','x'],['permissions','--harness','opencode','--apply','x'],['permissions','--harness','vim'],['permissions','--format','yaml']):call(args,repo,e,logs,2)
+    outside=t/'not-git';outside.mkdir();call(['permissions','--harness','claude'],outside,e,logs,2)
+    logs.append('Strict JSON and exact lists confirmed; tabs and no final newline preserved; apply/removal restored the byte snapshot; stale/invalid commands preserved the changed file.\n')
+
+def codex_flow(t,e,logs,artifacts):
+    repo=make_repo(t/'repo',e);rules=repo/'.codex/rules';rules.mkdir(parents=True)
+    own=rules/'default.rules';before=b'prefix_rule(pattern = ["git", "log"], decision = "prompt")\n';own.write_bytes(before)
+    p=call(['permissions','--harness','codex'],repo,e,logs)
+    for text in ['.codex/rules/roundfix-flow.rules','No option of a listed read can be kept asked about in Codex.','In Codex an allowed command runs outside the sandbox with nobody asked.','Codex rules match the start of a command, so a listed read runs with any option: git show --output=<file> would write that file.','The rules apply only after you trust this project in Codex.']:assert text in p.stdout,text
+    j,raw=plan('codex',repo,e,logs);artifacts['codex-preview.json']=raw
+    assert not j['addGuards']
+    call(['permissions','--harness','codex','--apply',j['digest']],repo,e,logs)
+    target=rules/'roundfix-flow.rules';data=target.read_text();artifacts['codex-written.rules.txt']=data
+    assert '# To remove it: roundfix permissions --harness codex --remove\n' in data
+    patterns=re.findall(r'    pattern = (.*),\n',data)
+    assert len(patterns)==4 and data.count('prefix_rule(')==4 and data.count('decision = "allow",')==4
+    decoded=[json.loads(x) for x in patterns];entries=[]
+    for words in decoded:
+        if isinstance(words[-1],list):entries+=[' '.join(words[:-1]+[x]) for x in words[-1]]
+        else:entries+=[' '.join(words)]
+    assert sorted(entries)==sorted(j['add'])
+    for excluded in ('permissions','baseline','profiles','release','skills','push','merge','auth'):assert '"'+excluded+'"' not in data,excluded
+    assert own.read_bytes()==before
+    current,_=plan('codex',repo,e,logs);assert current['state']=='current' and not current['digest']
+    p=call(['permissions','--harness','codex','--remove'],repo,e,logs);rem,_=plan('codex',repo,e,logs,True);assert rem['digest'] in p.stdout
+    call(['permissions','--harness','codex','--remove','--apply',rem['digest']],repo,e,logs)
+    assert not target.exists() and own.read_bytes()==before and rules.is_dir()
+    logs.append('Independent JSON parsing of prefix patterns read back every previewed entry; '+str(len(entries))+' entries in four allow blocks. Default rules unchanged; removal deletes only Roundfix file and keeps directory.\n')
+
+def refusal_flow(t,e,logs,artifacts):
+    repo=make_repo(t/'repo',e);out=t/'outside';out.mkdir();(out/'sentinel.txt').write_text('untouched\n')
+    j,_=plan('claude',repo,e,logs)
+    (repo/'.claude').symlink_to(out,target_is_directory=True)
+    # A valid preview precedes the replacement with an outside-directory link.
+    p=call(['permissions','--harness','claude','--apply',j['digest']],repo,e,logs,1)
+    assert p.stderr=='.claude/settings.json leaves the repository through a link. Nothing was written.\n'
+    assert not p.stdout and sorted(x.name for x in out.iterdir())==['sentinel.txt'] and (out/'sentinel.txt').read_text()=='untouched\n'
+    logs.append('Darwin arm64: external directory link created successfully; no skip. Preview digest='+repr(j['digest'])+'; valid pre-link digest is passed exactly as previewed, and boundary refusal precedes digest comparison.\n')
+    broken=make_repo(t/'broken',e);target=broken/'.claude/settings.json';target.parent.mkdir();before=b'{\n // comment\n "permissions": {}\n}\n';target.write_bytes(before)
+    p=call(['permissions','--harness','claude'],broken,e,logs);assert 'State: not readable: ' in p.stdout and '--apply ' not in p.stdout
+    j,_=plan('claude',broken,e,logs);assert j['state']=='unreadable' and not j['digest']
+    p=call(['permissions','--harness','claude','--apply','000000000000'],broken,e,logs,1)
+    assert re.fullmatch(r'\.claude/settings\.json cannot be read as Claude Code documents it: .+\. Nothing was written\.\n',p.stderr) and not p.stdout
+    assert target.read_bytes()==before
+    logs.append('Comment file has no digest; write rejected before digest comparison; original bytes unchanged.\n')
+
+def products():
+    for n in range(1,5):surface(n)
+    flow('Q05',claude_flow);flow('Q06',codex_flow);flow('Q08',refusal_flow)
+
+if __name__=='__main__' and sys.argv[1]=='products':products()
+
+if __name__=='__main__' and sys.argv[1]=='refusals':flow('Q08',refusal_flow)
+
+def sabotages():
+    cases=[
+      ('internal/flowpermissions/list.go','\t\t{Words: []string{"roundfix", "spec"}},\n','',go('./internal/docscontract','^TestOwnedSkillsNameOnlyListedOrExcludedCommands$','docscontract'),'TestOwnedSkillsNameOnlyListedOrExcludedCommands','roundfix spec'),
+      ('internal/flowpermissions/list.go','entries: []Entry{','entries: []Entry{\n        {Words: []string{"python3", "-c"}},',go('./internal/flowpermissions','^TestRenderingsHoldNoForbiddenRule$/^claude$'),'TestRenderingsHoldNoForbiddenRule/claude','python3 -c'),
+      ('internal/flowpermissions/list.go','Bash(gh api* -X*)','Bash(gh api -X*)',go('./internal/flowpermissions','^TestGuardEntriesMatchTheirOption$/^after_another_argument$'),'TestGuardEntriesMatchTheirOption/after_another_argument','-X'),
+      ('internal/flowpermissions/claude_settings.go','result := applySettingsEdits(data, edits)','result := applySettingsEdits(data, edits)\n    var decoded any\n    if err := json.Unmarshal(result, &decoded); err != nil { return nil, err }\n    result, err = json.MarshalIndent(decoded, "", "  ")\n    if err != nil { return nil, err }',go('./internal/flowpermissions','^TestEditClaudeSettings$/^tab_indentation_kept$'),'TestEditClaudeSettings/tab_indentation_kept',''),
+      ('internal/flowpermissions/plan.go','if result.Digest != digest {','if false {',go('./internal/flowpermissions','^TestApply$/^stale_digest_writes_nothing$'),'TestApply/stale_digest_writes_nothing',''),
+      ('internal/speccheck/governed.go','|(^|/)opencode\\.jsonc?$','',go('./internal/speccheck','^TestGovernedPath$/^OpenCode_configuration$'),'TestGovernedPath/OpenCode_configuration',''),
+      ('internal/cli/doctor_flow_permissions.go','result.Status = CheckStatusWarn','result.Status = CheckStatusFailed',go('./internal/cli','^TestDoctorReportsFlowPermissions$/^never_fails$',timeout='40m'),'TestDoctorReportsFlowPermissions/never_fails',''),
+      ('skills/roundfix/references/setup.md','A recommendation, silence or a missing answer is never that yes.','',go('./skills','^TestTheRoundfixSkillDescribesFlowPermissions$/^silence_is_never_that_yes$'),'TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes','')
+    ]
+    for n,(path,old,new,args,target,diagnostic) in enumerate(cases,1):
+        row='Q13'+str(n); logs=[]
+        try:
+            with tempfile.TemporaryDirectory(prefix='qa0413-sabotage-',dir='/private/tmp') as td:
+                scratch=pathlib.Path(td)/'repo';scratch.mkdir()
+                archive=subprocess.run(['git','archive',HEAD],cwd=ROOT,env=host_env(),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                assert archive.returncode==0
+                with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tf:tf.extractall(scratch,filter='tar')
+                ge=host_env();ge['GIT_CONFIG_NOSYSTEM']='1';ge['GIT_CONFIG_GLOBAL']=os.devnull
+                make_repo(scratch,ge)
+                p=run(['git','add','--all'],scratch,ge); assert p.returncode==0
+                p=run(['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','commit','-qm','audited head fixture'],scratch,ge); assert p.returncode==0,p.stderr
+                f=scratch/path;s=f.read_text();assert s.count(old)==1,(path,s.count(old));f.write_text(s.replace(old,new))
+                diff=run(['git','diff','--',path],scratch,ge);logs.append('Independent git archive of '+HEAD+'; initialized/staged/committed before sabotage. No regeneration or synchronization.\n'+diff.stdout)
+                p=run(args,scratch);logs.append(transcript(args,p))
+                assert p.returncode!=0,'sabotage survived: selected test passed'
+                assert '--- FAIL: '+target+' ' in p.stdout+p.stderr,'failed outside named assertion'
+                assert '[build failed]' not in p.stdout+p.stderr,'mutation did not compile'
+                assert not diagnostic or diagnostic in p.stdout+p.stderr,'required diagnostic absent'
+                logs.append('Expected named assertion failure observed; package compiled; sabotage detected.\n')
+            status='pass';obs='the independent sabotage compiled and failed at '+target+' as required.'
+        except Exception as ex:
+            logs.append(traceback.format_exc());status='fail';obs=str(ex)
+        save(row+'-sabotage.txt','\n'.join(logs))
+        record(row,status,'Observed: '+obs+' [Mutation and complete failing transcript](evidence/qa-report-2026-11-20/'+row+'-sabotage.txt).')
+
+if __name__=='__main__' and sys.argv[1]=='sabotages':sabotages()
+
+def simple(row,fn,name):
+    logs=[]
+    try:fn(logs);status='pass';message='all stated comparisons matched.'
+    except Exception as ex:logs.append(traceback.format_exc());status='fail';message=str(ex)
+    save(name,'\n'.join(logs)+'\n')
+    record(row,status,'Observed: '+message+' [Audit evidence](evidence/qa-report-2026-11-20/'+name+').')
+
+def offline_measure(logs):
+    claude=json.loads((EVIDENCE/'claude-preview.json').read_text())['harnesses'][0]
+    required=['Bash(gh api* -X*)','Bash(gh api* -F*)','Bash(gh api* -f*)','Bash(git grep* -O*)','Bash(git archive* -o*)']
+    for x in required:assert x in claude['addGuards'];logs.append('Measured in public JSON addGuards: '+x)
+    q02=(EVIDENCE/'Q02-tests.txt').read_text()
+    for name in ('short_option_form','after_another_argument','right_after_the_command'):
+        assert '--- PASS: TestGuardEntriesMatchTheirOption/'+name+' ' in q02
+        logs.append('PASS TestGuardEntriesMatchTheirOption/'+name+'; tests every rule with * interpreted as any text.')
+    data=(EVIDENCE/'codex-written.rules.txt').read_text();codex=json.loads((EVIDENCE/'codex-preview.json').read_text())['harnesses'][0]
+    assert codex['file']=='.codex/rules/roundfix-flow.rules'
+    assert data.count('prefix_rule(')==4 and data.count('decision = "allow",')==4
+    assert '--- PASS: TestCodexRulesFile/reads_back_every_entry ' in q02
+    measurement=(SPEC/'references/2026-11-19-harness-rule-measurements.md').read_text()
+    assert 'the documentation names the folder and the `.rules` extension' in measurement
+    logs.append('Measured actual file .codex/rules/roundfix-flow.rules; extension/folder match the recorded documentation; four allow blocks have the independently measured alternatives/prefix form. TestCodexRulesFile/reads_back_every_entry passed.')
+    logs.append('Unmeasured: Claude Code real-session matching of the five short-option rules (first Unreachable Acceptance); Codex real-session loading under this filename (second Unreachable Acceptance). No claude, codex or opencode was executed. The documentation comparison uses the committed 2026-11-19 record, not a new lookup or a new session measurement.')
+
+def source_rows():
+    sources=[
+      ('Claude Code permissions documentation','2026-11-19','Rules are evaluated in order: deny, then ask, then allow.','ask'),
+      ('Claude Code sub-agents documentation','2026-11-19',"Each inherits the parent conversation's permission rules",'shared'),
+      ('Codex rules documentation','2026-11-19','Run the command outside the sandbox without prompting.','sandbox'),
+      ('Pillar Security, GitPwned: Allowlist to RCE, published 2026-07-20','2026-11-19',"Command-name allowlists don't work for commands with complex option semantics.",'guards')]
+    prd=(SPEC/'_prd.md').read_text();claude=json.loads((EVIDENCE/'claude-preview.json').read_text())['harnesses'][0]
+    applied=json.loads((EVIDENCE/'claude-applied.json').read_text());codexflow=(EVIDENCE/'Q06-flow.txt').read_text()
+    for n,(title,date,quote,kind) in enumerate(sources,1):
+        def compare(logs):
+            assert quote in prd
+            logs.append('Source: '+title+'; read '+date+'. External author; passage preserved in _prd.md Acceptance evidence. Offline comparison only, no lookup.\nRecorded passage: '+quote)
+            if kind=='ask':
+                assert all(g in applied['permissions']['ask'] for g in claude['addGuards'])
+                logs.append('Fresh CLI apply placed all '+str(len(claude['addGuards']))+' Guard Entries under permissions.ask beside the allow entries. The recorded deny/ask/allow order explains ask precedence; real-session behavior remains Q171.')
+            elif kind=='shared':
+                assert claude['file']=='.claude/settings.json' and applied['permissions']['allow'][1:]==claude['add']
+                logs.append('Fresh CLI apply wrote the project shared settings target, not settings.local.json or a home file. That is the parent project rule set whose inheritance the external documentation describes. No subagent was started; Q171 carries the interactive limit.')
+            elif kind=='sandbox':
+                assert 'In Codex an allowed command runs outside the sandbox with nobody asked.' in codexflow
+                logs.append('Fresh public Codex preview prints the corresponding outside-sandbox warning verbatim. No session loading is claimed; Q172 carries that limit.')
+            else:
+                for words in ('git show','git diff','git grep','git archive','gh api'):
+                    found=[g for g in claude['addGuards'] if g.startswith('Bash('+words)]
+                    assert found;logs.append(words+': '+', '.join(found))
+                logs.append('Fresh Claude apply places these dangerous-option guards in ask; Codex preview explicitly states it can write no guard. This compares implemented mitigation and disclosed limit with an external challenge rather than treating the Spec premise as proof.')
+        simple('Q16'+str(n),compare,'Q16'+str(n)+'-outside.txt')
+
+def declared_rows():
+    prd=(SPEC/'_prd.md').read_text();decl=re.findall(r'^- criterion: (.+)\n  reason: (.+)\n  satisfied-by: (.+)$',prd,re.M)
+    for n,(criterion,reason,action) in enumerate(decl,1):
+        text='Pre-run declaration: '+criterion+'\nReason: '+reason+'\nObserved constraint: '+('Spec authorization forbids any QA/test from starting the real harness or an interactive session; this offline gate starts none and has no trusted interactive session.' if n<3 else 'This is the implementation-day gate; no post-release application/30-day observation window exists. No clock-duration assertion or observation count is fabricated.')+'\nTo satisfy: '+action+'\n'
+        save('Q17'+str(n)+'-declaration.txt',text)
+        record('Q17'+str(n),'blocked (declared: '+criterion+')','Observed: '+reason+' Required operator evidence: '+action+' [Declaration and constraint](evidence/qa-report-2026-11-20/Q17'+str(n)+'-declaration.txt).')
+
+def glossary(logs):
+    current=(ROOT/'CONTEXT.md').read_text();before=run(['git','show',BASE+':CONTEXT.md']);assert before.returncode==0
+    prd=(SPEC/'_prd.md').read_text();tech=(SPEC/'_techspec.md').read_text()
+    assert tech.split('## Glossary\n',1)[1].split('\n## ',1)[0].strip()=='None.'
+    terms=['Flow Command List','Named Exclusion','Guard Entry','Harness Permission File']
+    for term in terms:assert '- adds: **'+term+'**' in prd
+    assert '- changes: **Governed Path**' in prd
+    block=current[current.index('**Flow Command List**:\n'):current.index('**Undocumented CLI Surface**:\n')]
+    assert re.findall(r'^\*\*([^*]+)\*\*:',block,re.M)==terms
+    prefix=current[:current.index('**Flow Command List**:\n')];assert prefix.rstrip().endswith('_Avoid_: Unauthorized edit, inferred path, ordinary path')
+    task=(SPEC/'task_03.md').read_text()
+    for term in terms:
+        match=re.search(r'- \*\*'+re.escape(term)+r'\*\*: "([^"]*(?:`[^`]*`[^\"]*)*)" `_Avoid_:',task)
+        # Task definitions are quoted prose; no inner double quotes occur.
+        if not match:match=re.search(r'- \*\*'+re.escape(term)+r'\*\*: "(.+)" `_Avoid_:',task)
+        assert match,term
+        definition=match.group(1)
+        if term=='Harness Permission File':definition+=' Each one is a Governed Path.'
+        assert '**'+term+'**:\n'+definition+'\n' in block,term
+        logs.append('Exact definition and placement: '+term)
+    sentence='Each Harness Permission File is governed too, because it decides which commands an Agent session runs without asking. '
+    reconstructed=current.replace(block,'').replace(sentence,'')
+    assert reconstructed==before.stdout,'other glossary bytes changed'
+    q=(EVIDENCE/'Q12-tests.txt').read_text();assert '--- PASS: TestGlossaryPhrasesAreDefinedTerms ' in q
+    logs.append('PRD: adds four terms and changes Governed Path; TechSpec: None. Removing exactly the four new blocks and the single Governed Path sentence reproduces the entire Delivery Base CONTEXT.md byte-for-byte. Glossary test passed.')
+
+def scope_audit(logs):
+    commits=run(['git','rev-list','--reverse',BASE+'..'+HEAD]);assert commits.returncode==0
+    commitlist=commits.stdout.splitlines();assert len(commitlist)==4
+    allchanged=set();violations=[]
+    source=(ROOT/'internal/speccheck/governed.go').read_text()
+    patterns=[re.compile(p) for p in re.findall(r'regexp.MustCompile\(\s*`([^`]+)`',source)]
+    exact=re.search(r'paths: exactGovernedPaths\((.*?)\n\s*\),',source,re.S).group(1)
+    exact=set(re.findall(r'"([^"]+)"',exact))
+    auth=(SPEC/'_authorization.md').read_text();grant=set(re.findall(r'^  - (.+)$',auth.split('\npaths:\n',1)[1].split('\noperations:',1)[0],re.M))
+    frozen=run(['git','show',BASE+':'+str((SPEC/'_authorization.md').relative_to(ROOT))]);assert frozen.returncode==0 and frozen.stdout==auth
+    logs.append('Authorization record is byte-identical to Delivery Base; status approved and operative before every task commit. Mechanical audit already names task_03 and task_04 with granted outcomes; this row independently audits path scope for all four Tasks.')
+    governed=set()
+    for n,commit in enumerate(commitlist,1):
+        task=SPEC/('task_%02d.md'%n);content=task.read_text()
+        context=content.split('## Context\n',1)[1].split('\n## ',1)[0]
+        declared=set(re.findall(r'^- (?:instruction|creates|interface): `([^`]+)`',context,re.M))
+        recorded=set(re.findall(r'^- `([^`]+)`',content.split('## Recorded paths\n',1)[1],re.M)) if '## Recorded paths\n' in content else set()
+        allowed=declared|recorded|{str(task.relative_to(ROOT))}
+        p=run(['git','diff-tree','--no-commit-id','--name-only','-r',commit]);assert p.returncode==0
+        paths=p.stdout.splitlines();allchanged.update(paths)
+        logs.append('task_%02d %s\n%s'%(n,commit,'\n'.join('  '+x for x in paths)))
+        if recorded:logs.append('Recorded paths counted as declared: '+', '.join(sorted(recorded)))
+        for path in paths:
+            if path not in allowed:violations.append('undeclared '+path)
+            if path in exact or any(r.search(path) for r in patterns):
+                governed.add(path)
+                if path not in grant:violations.append('governed outside grant '+path)
+        assert str(task.relative_to(ROOT)) in paths
+    protected={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','AGENTS.md','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','internal/cli/cli_test.go','docs/references/coverage-record.json','opencode.json','opencode.jsonc'}
+    permitted_skill={'SKILL.md','references/setup.md','references/modes.md'}
+    for path in sorted(allchanged):
+        if path in protected or path.startswith(('docs/agents/','internal/baseline/assets/','.github/workflows/','.claude/','.codex/')):violations.append('protected path '+path)
+        if path.startswith('.agents/skills/') and path.removeprefix('.agents/skills/roundfix/') not in permitted_skill:violations.append('other canonical skill '+path)
+        if path.startswith('skills/') and '/' in path[7:] and not path.startswith(('skills/testdata/','skills/roundfix/')):violations.append('other mirrored skill '+path)
+        if path.startswith('skills/roundfix/') and path.removeprefix('skills/roundfix/') not in permitted_skill:violations.append('other roundfix file '+path)
+        if path.startswith('docs/adr/') and not re.match(r'docs/adr/044[456]-',path):violations.append('other accepted ADR '+path)
+    for path in ('.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md'):
+        old=run(['git','show',BASE+':'+path]).stdout;new=(ROOT/path).read_text()
+        def settlement(s):return s.split('### QA settlement\n',1)[1].split('\n##',1)[0]
+        assert settlement(old)==settlement(new),'QA settlement changed'
+    # All tracked non-QA worktree bytes must remain the audited head.
+    p=run(['git','diff','--name-only',HEAD]);assert p.returncode==0 and not p.stdout,p.stdout
+    logs.append('Changed governed paths: '+', '.join(sorted(governed)))
+    logs.append('Total distinct Task-range paths: '+str(len(allchanged))+'. No protected path, other skill, accepted ADR outside 0444–0446, or QA settlement section changed. No tracked worktree implementation delta.')
+    assert not violations,'; '.join(violations)
+
+
+def content_audit(logs):
+    mismatches=[]
+    j=json.loads((EVIDENCE/'claude-preview.json').read_text())['harnesses'][0];c=json.loads((EVIDENCE/'codex-preview.json').read_text())['harnesses'][0]
+    forbidden={'bash','sh','zsh','python','python3','node','go','make','npm','bun','npx'}
+    def words(rule):return rule[5:-1].removesuffix(' *').split() if rule.startswith('Bash(') else rule.split()
+    for label,entries in [('claude',j['add']),('codex',c['add'])]:
+        for entry in entries:
+            w=words(entry);assert w[0] not in forbidden and not any('*' in x for x in w)
+            for ex in j['exclusions']:assert w[:len(ex['command'].split())]!=ex['command'].split()
+        logs.append(label+': checked '+str(len(entries))+' actual preview renderings against forbidden first words, wildcard command/subcommand and every Named Exclusion.')
+    assert len(j['exclusions'])==16
+    for h,row in [('claude','Q042'),('codex','Q06')]:
+        text=(EVIDENCE/(row+'-flow.txt')).read_text()
+        for phrase in ['Left out, and still asked about:','the command that applies this list','the Roundfix skill tells a session to ask you first','they change the repository or its configuration','it changes your credentials','It is not a security boundary: a roundfix command runs what this repository declares.']:assert phrase in text,(h,phrase)
+    for harness,row in [('claude','Q042'),('codex','Q06')]:
+        output=(EVIDENCE/(row+'-flow.txt')).read_text()
+        block=output.split('Left out, and still asked about:\n',1)[1].split('  A commit, a push, a merge and a Pull Request',1)[0]
+        shown={}
+        for line in block.splitlines():
+            commands,reason=line.strip().split(': ',1)
+            parts=commands.split(', ');program=parts[0].split()[0]
+            for k,command in enumerate(parts):shown[command if k==0 else program+' '+command]=reason
+        for exclusion in j['exclusions']:
+            command=exclusion['command'];reason=exclusion['reason']
+            if shown.get(command)!=reason:
+                mismatches.append(harness+' text preview omits Named Exclusion '+command+' ('+reason+')')
+        logs.append(harness+' text/JSON comparison: JSON '+str(len(j['exclusions']))+' exclusions; text '+str(len(shown))+'; absent: '+', '.join(x['command'] for x in j['exclusions'] if x['command'] not in shown))
+    logs.append('Both writable-harness text previews carry all reason groups and the boundary warning. JSON contains all exclusions with nonempty reasons, including git -C; the per-entry comparison above records missing text entries. OpenCode and removal follow their separately specified report/removal transcripts.')
+    phrases=[
+      ('references/setup.md','Run `roundfix permissions` to see the Flow Command List for each harness this repository holds; it writes nothing.'),
+      ('references/setup.md','Before applying, show the preview and put one question to the user; apply only on that answer, with `--apply <digest>`, in every permission mode.'),
+      ('references/setup.md','Never apply or remove the list on your own, and never from a Run.'),
+      ('references/setup.md','A recommendation, silence or a missing answer is never that yes.'),
+      ('references/setup.md',"When a listed command is still asked about, tell the user that a harness applies a project's allow rules only after the folder is trusted there."),
+      ('references/setup.md','The list is not a security boundary.'),
+      ('references/setup.md','`roundfix doctor` reports where each harness stands on its `flow-permissions:` line, and `roundfix update check` names each harness whose applied list is behind or not readable. Neither of them applies the list.'),
+      ('references/modes.md','When `flowPermissions` names a harness that is `behind` or `unreadable`, name its `next` command, and never apply it unasked.'),
+      ('SKILL.md','installing skills, or showing the Flow Command List with `roundfix permissions`.')]
+    normalized=lambda s:' '.join(s.split())
+    for rel,phrase in phrases:
+        for root in ('.agents/skills/roundfix','skills/roundfix'):assert normalized(phrase) in normalized((ROOT/root/rel).read_text()),(root,phrase)
+        logs.append('Both skill copies: '+phrase)
+    for rel in ('SKILL.md','references/setup.md','references/modes.md'):
+        assert (ROOT/'.agents/skills/roundfix'/rel).read_bytes()==(ROOT/'skills/roundfix'/rel).read_bytes();logs.append('Byte-identical canonical/mirror: '+rel)
+    versions=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())['skills']['roundfix']
+    for root in ('.agents/skills/roundfix','skills/roundfix'):
+        v=re.findall(r'^version: (.+)$',(ROOT/root/'SKILL.md').read_text(),re.M)[0];assert any(x['version']==v for x in versions);logs.append(root+' SKILL.md declares recorded version '+v)
+    required={
+      'docs/user-guide/commands/permissions.md':['It is not a security boundary.','The rules apply only after you trust this folder in Claude Code.','These ask in every permission mode, a session that skips prompts included.','In Codex an allowed command runs outside the sandbox with nobody asked.','No option of a listed read can be kept asked about in Codex.','Roundfix writes nothing for OpenCode.','There is no flag that writes without a digest.','Named Exclusion','Guard Entry'],
+      'docs/user-guide/commands.md':['(commands/permissions.md)'],
+      'docs/user-guide/usage.md':["Show the Flow Command List for an Agent harness, and write it only with a preview's digest"],
+      'docs/user-guide/commands/doctor.md':['flow-permissions:','DR-FLOW-PERMISSIONS-BEHIND','DR-FLOW-PERMISSIONS-UNREADABLE','It warns when a harness is behind or not readable and never fails Doctor.'],
+      'docs/user-guide/commands/update.md':['flowPermissions','The update check never applies the Flow Command List.'],
+      'docs/user-guide/configuration.md':['No Project Config key records the Flow Command List: the Harness Permission File itself is the record','Each Harness Permission File is a Governed Path, so a Task that changes one needs a grant that names it.'],
+      'internal/cli/cli.go':['The flow-permissions: line reports whether the Flow Command List is applied and current for each Agent harness this repository holds, and never fails Doctor.','It also reports each Agent harness where this repository applied the Flow Command List, and whether that list is current.']}
+    for file,lines in required.items():
+        text=normalized((ROOT/file).read_text())
+        for phrase in lines:assert normalized(phrase) in text,(file,phrase)
+        logs.append(file+': every required phrase present; guide commands followed via Q041–Q08; report behavior checked via entry-point tests Q09.')
+    for n in (444,445,446):
+        path=next((ROOT/'docs/adr').glob('%04d-*'%n));text=path.read_text();assert '\nstatus: accepted\n' in text and re.search(r'^knowledge: (true|false)$',text,re.M)
+        logs.append(path.name+': accepted; '+re.search(r'^knowledge: .+$',text,re.M).group(0))
+    diff=run(['git','diff','--unified=0',BASE+'..'+HEAD,'--','internal/cli/cli.go']);assert diff.returncode==0
+    removed=[x for x in diff.stdout.splitlines() if x.startswith('-') and not x.startswith('---')];assert not removed
+    changed=run(['git','diff','--name-only',BASE+'..'+HEAD]).stdout.splitlines()
+    assert not any(x.startswith('internal/config/') for x in changed) and '.roundfixrc.yml' not in changed
+    assert all(x in {'internal/cli/cli.go','internal/cli/doctor.go','internal/cli/doctor_flow_permissions.go','internal/cli/health.go','internal/cli/permissions.go','internal/cli/update_check.go'} or x.endswith('_test.go') for x in changed if x.startswith('internal/cli/'))
+    logs.append('Existing root CLI registration/help has additions only: permissions command/usage/help and mandated report help sentences. No existing dispatch/flag removed or renamed. No Project Config source/file changed. Q09 verifies unchanged report exit/next; existing command tests and Daemon Verification passed.\n'+diff.stdout)
+    assert not mismatches,'; '.join(mismatches)
+
+
+def pull_request():
+    text='Pull Request row: environment supplied in QA assignment: no open Pull Request.\nApproval: approved Spec _authorization.md, frozen at '+BASE+', records delivery authority and operations.\nChecks/status: Daemon make verify-changed passed exit 0 at '+HEAD+'; focused and authored checks are in this report.\nUnresolved threads: none, because no Pull Request exists.\nMerge-Ready acceptance: none yet; no provider/reviewer called by this QA Task.\nCandidate/review-artifact ancestry: claimed candidate is '+HEAD+'; all fresh evidence uses this worktree at that head; no current-candidate review artifact exists yet.\nUnblock: Supervisor continues the authorized pre-PR review/delivery workflow and observes checks, review acceptance and ancestry for that candidate. No network lookup or PR mutation was attempted.\n'
+    save('Q20-pr-controls.txt',text)
+    record('Q20','blocked (environment: no open Pull Request)','Observed: supplied environment has no open Pull Request. Approved frozen delivery authority and Daemon verification provide pre-PR controls; there are no unresolved threads. Merge-Ready acceptance and a current-candidate review artifact do not exist yet. Claimed candidate: '+HEAD+'. [Control-by-control record](evidence/qa-report-2026-11-20/Q20-pr-controls.txt).')
+
+def audit():
+    simple('Q07',offline_measure,'Q07-offline-measurement.txt')
+    source_rows();declared_rows();simple('Q15',content_audit,'Q15-content-audit.txt');simple('Q18',glossary,'Q18-glossary-audit.txt');simple('Q19',scope_audit,'Q19-history-audit.txt');pull_request()
+
+if __name__=='__main__' and sys.argv[1]=='audit':audit()
+
+def archive_outcome():
+    with product_env() as (t,e):
+        args=['archive',SLUG,'--plan','--offline']
+        p=cli(args,ROOT,e)
+        save('archive-plan.txt',transcript([BINARY]+args,p))
+        print(p.stdout+p.stderr,flush=True);print('archive plan exit',p.returncode,flush=True)
+    return p.returncode
+
+if __name__=='__main__' and sys.argv[1]=='outcome':archive_outcome()
+
+def close_report():
+    s=REPORT.read_text();assert '| pending |' not in s
+    s=s.replace('verdict: pending','verdict: fail',1).replace('status: in-progress','status: closed',1).replace('rows_blocked_environment: 0','rows_blocked_environment: 1',1).replace('rows_blocked_declared: 0','rows_blocked_declared: 3',1)
+    s=s.replace('Plan: Verbose settings, OpenCode, plan and apply tests; record every named case, including link pass/skip.','Plan: Verbose settings, OpenCode, plan and apply tests; record every named case, including link pass/skip.\n\nLink results: `TestApply/link_outside_the_repository_is_refused` and `TestApply/directory_link_outside_the_repository_is_refused` both passed on Darwin arm64; neither skipped.')
+    s=s.replace('Plan: Verbose Doctor/UpdateCheck reports with fakes; broad Doctor|UpdateCheck|Permissions tests; never fails, exit/order, next warnings.','Plan: Verbose Doctor/UpdateCheck reports with fakes; broad Doctor|UpdateCheck|Permissions tests; never fails, exit/order, next warnings.\n\nEntry-point evidence: the named report tests drive CLI dispatch with temporary repository/readiness/release fakes, not the public Doctor/update binary paths that reach external services. `never_fails`, `exit_unchanged`, `after_the_baseline_checks_before_residue` and both `writes_nothing` cases passed. Each behind/unreadable warning assertion names its `roundfix permissions --harness <name>` next command.')
+    s=s.replace('Plan: Skill sentence tests, version record, whole skills/docscontract suites, sync check, command/coverage/glossary and coverage-equivalence tests.','Plan: Skill sentence tests, version record, whole skills/docscontract suites, sync check, command/coverage/glossary and coverage-equivalence tests.\n\nBoth canonical and mirrored Roundfix SKILL.md declare version `0.1.283`; the owned-skill record holds it. All three changed skill files match their mirrors byte-for-byte. Q15 records these successful comparisons independently of its disclosure failure.')
+    s+='''
+## Findings
+
+### F-01 — Text previews omit the git -C Named Exclusion
+
+Impact: Friction. New finding; no earlier QA report exists for this Spec. Affected row: Q15 (fail). Other rows reach independent observables and are not finding-blocked.
+
+The maintainer reviewing the text preview sees 15 Named Exclusions while the same public JSON preview contains 16. Both Claude Code and Codex omit `git -C`, whose recorded reason is `they change the repository or its configuration`. The user can still apply the list, but cannot review the complete catalog of exclusions in the default text format.
+
+Expected: task_01 Requirement 2 explicitly classifies `git -C` as a Named Exclusion; task_03 Requirement 2 generates the exclusion block from `Exclusions()`; task_05 Requirement 15 requires the previews to name the exclusions with their reasons. Actual: `printPermissionsExclusions` skips any entry whose second word begins with a hyphen (`internal/cli/permissions.go`, lines 307–312), silently dropping this catalog entry. The Task Result's explanation that JSON retains it does not change the authored text-preview requirement.
+
+Reproduction: build this head with `make build`; in an initialized temporary repository run this worktree's `./bin/roundfix permissions --harness claude`, then the same command with `--format json`. Compare the `Left out, and still asked about:` block with `harnesses[0].exclusions`. Repeat with `--harness codex`. JSON names `git -C`; both text blocks omit it. [Claude text](evidence/qa-report-2026-11-20/Q042-flow.txt), [Claude JSON](evidence/qa-report-2026-11-20/claude-preview.json), [Codex text](evidence/qa-report-2026-11-20/Q06-flow.txt), [Codex JSON](evidence/qa-report-2026-11-20/codex-preview.json), and [independent per-entry comparison](evidence/qa-report-2026-11-20/Q15-content-audit.txt) preserve the observed outputs.
+
+Required correction: include this Named Exclusion and its reason in both text previews, and make a text/JSON parity assertion reject future silent omissions. The existing transcript and package tests passed without detecting this mismatch. QA changed no product source or test.
+
+## Blocked and skipped
+
+Q171 and Q172 are blocked by the exact pre-run interactive-session criteria and the authorization's ban on starting real harnesses. The operator must perform and retain the declared trusted-folder walks after release, including the short-option Guard Entry in Claude Code and the actual `.codex/rules/roundfix-flow.rules` load in Codex. The offline pattern/file-format measurements do not prove either interactive outcome.
+
+Q173 is blocked by the exact pre-run 30-day criterion. The operator must count the declared reports after a consenting repository has used the released list for that window. No post-release period or observation count was invented.
+
+Q20 is environment-blocked solely because no Pull Request exists. Its record names approved delivery authority, the passing Daemon gate, absence of review threads, the audited candidate and the missing Merge-Ready acceptance/current-candidate review artifact. No equivalent acceptance is claimed. There are no finding-blocked or skipped matrix rows. The seeded Mechanical skips remain unchanged; they describe detector availability and are not skipped user-flow rows.
+
+## Coverage
+
+There are 36 matrix rows: 31 pass, 1 fail, 1 blocked by environment, and 3 blocked by declarations. Pending, finding-blocked and skipped rows: 0. Impact counts: 1 Friction; 0 Blocks-Completion, Data-Loss, Trust-Damage or Cosmetic findings.
+
+Declared coverage sources are task_05 Requirements 2, 3, 9, 10, 11, 12, 13, 14 and 19. Each is named in its rows' provenance. The non-waivable repository Verification, four outside-evidence rows, Pull Request row, three exact Unreachable Acceptance criteria and all four Surface Transcripts have separate provenance. All runnable sources were exercised, and the only product mismatch is F-01. The matrix does not substitute the broader PRD stories for these authored coverage sources.
+
+All other execution obligations were also performed: Requirement 1 in the build/static gate; 4 in Q041–Q044/Q04T; 5 in Q05; 6 in Q06; 7 in Q07; 8 in Q08; 15 in Q15; 16 in Q161–Q164; 17 in Q171–Q173; 18 in Q18; 20 in Q20; and 21 in the offline archive plan and Outcome. Q14 executed all 12 authored task_01–task_04 Verification commands successfully. Q02/Q03/Q04T/Q09/Q10/Q11/Q12 preserve the requested verbose named-subtest evidence and full package outcomes. All eight independent sabotage copies compiled and failed on the exact required assertion; no regeneration or synchronization ran in them.
+
+High-risk probes cover byte preservation, strict JSON, idempotence/current state, exact removal, stale digest, malformed input, outside-Git use, external links, temporary-home non-mutation, report exits/order/no writes, forbidden commands, Guard Entries, list/import boundaries and governed-path growth. The history audit compared all 53 changed Task-range paths, recognized the recorded Doctor documentation-test path and verified the exact six granted Governed Paths. No protected tooling, other skill, unrelated accepted ADR, Project Config key, repository harness file or QA settlement section changed. The glossary comparison removed only the four prescribed additions and one Governed Path sentence to reproduce the Delivery Base bytes.
+
+Four outside-evidence comparisons used the external authors' dated passages already committed in the Spec, paired with fresh public output. They are not network lookups or fresh harness measurements. The PRD declares CLI and docs only; no frontend sweep applies. The no-harness/no-home/no-network boundaries were preserved. Preview/apply/remove actions were limited to disposable repositories.
+
+## Outcome
+
+The built command previews and writes the closed list against a digest, preserves existing Claude settings through an exact removal round trip, writes and removes only its own Codex file, and refuses stale digests, unreadable files and external links in the observed offline journeys. The gate fails because the default text previews omit one declared Named Exclusion; the two interactive walks and 30-day observation remain unproven, and no pre-PR review acceptance exists yet. The required [offline archive plan](evidence/qa-report-2026-11-20/archive-plan.txt) exited 0 with the judge skipped and named `_idea.md`, the harness measurements, maintainer answers and flow-command research as candidates; it performed no archive or promotion. The harness-format research is a candidate for durable review when the corrected Spec is archived; no earlier-run evidence or reusable-knowledge promotion is claimed by this QA Task.
+
+## Final verdict
+
+Fail: correct F-01's missing `git -C` text disclosure before rerunning the gate. Results: 31 pass, 1 fail, 1 environment-blocked, 3 declared-blocked; no skipped or finding-blocked rows. Daemon repository Verification and every authored implementation Verification command passed, but they do not waive the failed user-facing requirement.
+'''
+    REPORT.write_text(s)
+    self_audit()
+
+def self_audit():
+    s=REPORT.read_text();front=s.split('---',2)[1];table=s.split('## Results\n',1)[1].split('\n\n',2)
+    lines=s.splitlines();start=lines.index('| # | Status | Provenance |');i=start+2;rows=[]
+    while i<len(lines) and lines[i].startswith('|'):
+        cells=[c.strip() for c in lines[i].split('|')[1:-1]];assert len(cells)==3
+        rows.append(cells);i+=1
+    assert len(rows)==36 and len({r[0] for r in rows})==36
+    expected={'pass':31,'fail':1,'blocked (environment: no open Pull Request)':1}
+    assert sum(r[1]=='pass' for r in rows)==31 and sum(r[1]=='fail' for r in rows)==1
+    assert sum(r[1].startswith('blocked (declared: ') for r in rows)==3
+    assert sum(r[1].startswith('blocked (environment: ') for r in rows)==1
+    assert all(r[1]!='pending' for r in rows)
+    for row,_,_ in rows:
+        section=s.split('### '+row+' evidence\n',1)[1].split('\n### ',1)[0].split('\n## ',1)[0]
+        assert 'inputs:\n' in section and 'kind: repository_path' in section,row
+    assert s.count('\nverdict:')==1 and 'verdict: fail' in front and 'status: closed' in front
+    assert 'evidence_snapshots:' not in s
+    assert 'auditing_binary: "0.150.0 (416e16dd, built 2026-11-20 00:35:18 -0300)"' in front
+    assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in front
+    refs=re.findall(r'\]\(([^)]+)\)',s)
+    for ref in refs:
+        if '://' in ref or ref.startswith('#'):continue
+        p=(REPORT.parent/ref.split('#')[0]).resolve();assert p.is_file(),ref
+        ck=run(['git','check-ignore','--',str(p.relative_to(ROOT))]);assert ck.returncode==1,ref
+    for executable in (BINARY,EVIDENCE/'gate.py.txt'):
+        assert executable.is_file() and executable.is_relative_to(ROOT)
+    p=run(['git','diff','--exit-code',HEAD]);assert p.returncode==0,'tracked implementation changed'
+    p=run(['git','diff','--check']);assert p.returncode==0,p.stdout+p.stderr
+    p=run(['git','status','--short']);assert p.returncode==0
+    logs=['Report structural audit: PASS','36 contiguous three-column Results rows; exact status counts; every row has typed inputs; seeded auditor identity and Mechanical skips preserved; no evidence_snapshots; all '+str(len(refs))+' local links resolve to nonignored files; all listed executables are inside this Run; implementation tracked diff empty; git diff --check passed.','Untracked QA report/evidence only:\n'+p.stdout]
+    save('report-self-audit.txt','\n'.join(logs)+'\n')
+    print('\n'.join(logs),flush=True)
+
+if __name__=='__main__' and sys.argv[1]=='close':close_report()
+if __name__=='__main__' and sys.argv[1]=='self-audit':self_audit()

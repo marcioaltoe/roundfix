@@ -1,0 +1,45 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-_kvoe89h
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm fixture --allow-empty
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-_kvoe89h
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --help
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-_kvoe89h
+stdout:
+Usage:
+  roundfix permissions [--harness <claude|codex|opencode>] [--remove] [--apply <digest>] [--format <text|json>]
+
+Shows the Flow Command List in the rule syntax of an Agent harness and writes
+it into this repository's permission file for that harness only when it is
+given the digest a preview printed. The list holds the roundfix subcommands
+the owned skills name and the Git and GitHub reads they name. It is not a
+security boundary. With no --harness it previews every harness whose files
+this repository holds. Nothing under your home directory is read or written.
+
+Options:
+  --harness  The harness: claude, codex or opencode (reported, never written)
+  --remove   Preview, and with --apply perform, the removal of what Roundfix wrote
+  --apply    Write exactly what the preview with this digest showed
+  --format   Output format: text (default) or json
+
+Exit codes:
+  0  a preview was printed, or the plan was written, or nothing needed writing
+  1  the permission file could not be read as the harness documents it, or not written
+  2  invalid input
+  3  the preview changed since the digest was printed; nothing was written
+stderr:
+exit: 0
+Transcript matching: separate stdout/stderr; exit exact; ... and <placeholder> rules satisfied.
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-_kvoe89h
+stdout:
+No harness files in this repository. Name one with --harness.
+stderr:
+exit: 0
+ASSERTIONS PASSED

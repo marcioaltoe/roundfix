@@ -1,0 +1,11 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(make test)"
+		],
+		"ask": [
+			"Bash(rm *)"
+		]
+	},
+	"model": "qa-model"
+}

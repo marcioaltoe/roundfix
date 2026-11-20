@@ -1,0 +1,36 @@
+Independent git archive of df1529f9e2845738434bff1d4a99ccdb1b250426; initialized/staged/committed before sabotage. No regeneration or synchronization.
+diff --git a/internal/speccheck/governed.go b/internal/speccheck/governed.go
+index d8bf161..3d57ed7 100644
+--- a/internal/speccheck/governed.go
++++ b/internal/speccheck/governed.go
+@@ -19,7 +19,7 @@ type governedPathSetEntry struct {
+ // the universal tooling-authority clause that puts its kind in the set.
+ var governedPathSet = []governedPathSetEntry{
+ 	{kind: "harness permission file", clause: toolingAuthorityClause,
+-		pattern: regexp.MustCompile(`(^|/)\.claude/settings(\.local)?\.json$|(^|/)\.codex/(rules/.*|config\.toml)$|(^|/)opencode\.jsonc?$`)},
++		pattern: regexp.MustCompile(`(^|/)\.claude/settings(\.local)?\.json$|(^|/)\.codex/(rules/.*|config\.toml)$`)},
+ 	{
+ 		kind:    "linter configuration and scripts",
+ 		clause:  toolingAuthorityClause,
+
+$ go test -count=1 -timeout 20m -v -run '^TestGovernedPath$/^OpenCode_configuration$' ./internal/speccheck
+stdout:
+=== RUN   TestGovernedPath
+=== PAUSE TestGovernedPath
+=== CONT  TestGovernedPath
+=== RUN   TestGovernedPath/OpenCode_configuration
+=== PAUSE TestGovernedPath/OpenCode_configuration
+=== CONT  TestGovernedPath/OpenCode_configuration
+    governed_test.go:52: GovernedPath("opencode.json") = false, want true
+--- FAIL: TestGovernedPath (0.00s)
+    --- FAIL: TestGovernedPath/OpenCode_configuration (0.00s)
+FAIL
+suiteguard: guard cost: measured 3374 paths; fingerprint took 284.009875ms before and 305.181ms after
+FAIL	roundfix/internal/speccheck	0.902s
+FAIL
+
+stderr:
+
+exit: 1
+
+Expected named assertion failure observed; package compiled; sabotage detected.

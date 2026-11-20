@@ -1,0 +1,47 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-d3sz3u2l
+stdout:
+stderr:
+exit: 0
+$ git add -A
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-d3sz3u2l
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm 'audited fixture'
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-d3sz3u2l
+stdout:
+stderr:
+exit: 0
+Fresh mutation, no regeneration:
+--- internal/flowpermissions/list.go
++++ internal/flowpermissions/list.go
+@@ -107,7 +107,7 @@
+ 		{Entry: Entry{Words: []string{"git", "show"}}, Option: "--output", ClaudeRule: "Bash(git show *--output*)"},
+ 		{Entry: Entry{Words: []string{"git", "show"}}, Option: "--ext-diff", ClaudeRule: "Bash(git show *--ext-diff*)"},
+ 		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "--method", ClaudeRule: "Bash(gh api *--method*)"},
+-		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "-X", ClaudeRule: "Bash(gh api* -X*)"},
++		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "-X", ClaudeRule: "Bash(gh api -X*)"},
+ 		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "--field", ClaudeRule: "Bash(gh api *--field*)"},
+ 		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "-F", ClaudeRule: "Bash(gh api* -F*)"},
+ 		{Entry: Entry{Words: []string{"gh", "api"}}, Option: "--raw-field", ClaudeRule: "Bash(gh api *--raw-field*)"},
+
+$ go test -count=1 -timeout 40m -v -run '^TestGuardEntriesMatchTheirOption$/after_another_argument$' ./internal/flowpermissions
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-sabotage-d3sz3u2l
+stdout:
+=== RUN   TestGuardEntriesMatchTheirOption
+=== PAUSE TestGuardEntriesMatchTheirOption
+=== CONT  TestGuardEntriesMatchTheirOption
+    render_test.go:188: guard rule = "Bash(gh api -X*)", want "Bash(gh api* -X*)"
+=== RUN   TestGuardEntriesMatchTheirOption/after_another_argument
+    render_test.go:215: "Bash(gh api -X*)" did not match "gh api HEAD -X value"
+--- FAIL: TestGuardEntriesMatchTheirOption (0.00s)
+    --- FAIL: TestGuardEntriesMatchTheirOption/after_another_argument (0.00s)
+FAIL
+FAIL	roundfix/internal/flowpermissions	0.215s
+FAIL
+stderr:
+exit: 1
+Expected-negative evidence: package compiled; named assertion(s) failed. Mutation detected.
+ASSERTIONS PASSED

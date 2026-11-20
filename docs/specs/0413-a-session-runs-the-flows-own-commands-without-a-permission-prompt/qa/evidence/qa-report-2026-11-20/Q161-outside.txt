@@ -1,0 +1,3 @@
+Source: Claude Code permissions documentation; read 2026-11-19. External author; passage preserved in _prd.md Acceptance evidence. Offline comparison only, no lookup.
+Recorded passage: Rules are evaluated in order: deny, then ask, then allow.
+Fresh CLI apply placed all 19 Guard Entries under permissions.ask beside the allow entries. The recorded deny/ask/allow order explains ask precedence; real-session behavior remains Q171.

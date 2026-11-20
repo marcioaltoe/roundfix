@@ -1,0 +1,9 @@
+Pull Request row
+Environment: no open Pull Request, as supplied by the Daemon prompt. No forge lookup.
+Approval: operative Spec _authorization.md status approved, granted 2026-11-19, operations include implement, commit, push, pull_request, merge and release; operative revision 416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff. This QA assignment does not authorize publication.
+Checks and status: Daemon make verify-changed pass (exit 0) at audited head; diagnostics removed on success.
+Unresolved review threads: none, because no Pull Request exists.
+Merge-Ready acceptance: none yet; Review Source evidence is unavailable pre-PR.
+Review-artifact ancestry: claimed candidate c6e7d2c429f9d813afb140c3e8e342c21bc4ed83; no separate review artifact exists yet; Q19 proves Task commit ancestry.
+Unblocking: delivery owner opens the target-branch Pull Request after QA/review/archive, then verifies required checks and Review Source acceptance for the published candidate.
+Every equivalent control is explicitly recorded; absent Merge-Ready acceptance keeps this row blocked.

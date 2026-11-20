@@ -1,0 +1,2020 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ go test -count=1 -timeout 40m -v -run '^(TestTheRoundfixSkillDescribesFlowPermissions|TestTheRoundfixSkillNamesTheFlowPermissionsReports|TestEveryOwnedSkillVersionIsRecorded)$' ./skills
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+--- PASS: TestTheRoundfixSkillDescribesFlowPermissions (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/see_the_list (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/trust_rule (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/copies_identical (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary (0.00s)
+--- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical (0.00s)
+PASS
+ok  	roundfix/skills	0.315s
+stderr:
+exit: 0
+$ go test -count=1 -timeout 40m ./skills
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+ok  	roundfix/skills	2.348s
+stderr:
+exit: 0
+$ make skills-sync-check
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.184s
+stderr:
+exit: 0
+$ go test -count=1 -timeout 40m -tags docscontract ./internal/docscontract
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+ok  	roundfix/internal/docscontract	15.619s
+stderr:
+exit: 0
+$ go test -count=1 -timeout 40m -v -tags docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$' ./internal/docscontract
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.01s)
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.09s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.11s)
+PASS
+ok  	roundfix/internal/docscontract	0.444s
+stderr:
+exit: 0
+$ go test -count=1 -timeout 40m -v -run '^TestCoverageEquivalence$' ./internal/spec
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+=== RUN   TestCoverageEquivalence
+=== PAUSE TestCoverageEquivalence
+=== CONT  TestCoverageEquivalence
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestDoctorReportsFlowPermissions"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestPermissionsCommand"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestPermissionsRefusalBoundaries"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestPermissionsSurfaceTranscripts"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestPermissionsTextPreviewNamesEveryExclusion"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestRootHelpNamesThePermissionsCommand"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/cli" now executes "TestUpdateCheckReportsFlowPermissions"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/docscontract" now executes "TestAnUnlistedSkillCommandIsReported"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/docscontract" now executes "TestOwnedSkillCommandCollectionReadsOnlyCode"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/docscontract" now executes "TestOwnedSkillsNameOnlyListedOrExcludedCommands"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" is now listed
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestApply"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestClaudeSettingsSpanEdges"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestCodexRulesFile"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestEditClaudeSettings"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestFlowCommandList"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestGuardEntriesMatchTheirOption"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestListAccessorsReturnIndependentData"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestOnlyTheCommandAndTheReportsUseTheList"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestPermissionPathBoundary"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestPermissionPlanEdges"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestPlan"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestReadOpenCode"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestRenderingsHoldNoForbiddenRule"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/flowpermissions" now executes "TestRetiredSetKeepsEveryReleasedEntry"
+    coverage_test.go:77: coverage addition: package "roundfix/internal/spec" now executes "TestWithADRAmendedByExcept"
+    coverage_test.go:77: coverage addition: package "roundfix/skills" now executes "TestTheRoundfixSkillDescribesFlowPermissions"
+    coverage_test.go:77: coverage addition: package "roundfix/skills" now executes "TestTheRoundfixSkillNamesTheFlowPermissionsReports"
+--- PASS: TestCoverageEquivalence (1.08s)
+PASS
+suiteguard: guard cost: measured 3451 paths; fingerprint took 319.690667ms before and 299.822292ms after
+ok  	roundfix/internal/spec	1.958s
+stderr:
+exit: 0
+Roundfix owned-version record:
+{
+  "schemaVersion": "roundfix/owned-skill-versions/v1",
+  "skills": {
+    "archive-spec": [
+      {
+        "version": "0.0.2",
+        "digest": "c854526f940c3c87492d620479b35d43b19d28591fa19f5bdf27e1589defd11d"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "c75cd5dc6a7fd2ff559c123b25af48a929a3007694fdfacec5290ce1ea9b451d"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "bfd7389125d8df446661b1afb596156caf42b6410f3461fd6dec643f6fff843d"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "7e86ac8b06fce7af0d5179aa3f2e5f2ec7d2d83e97c16016dd863ad5680a9f63"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "ca951297a683cf647185936b6e8ef72631ae5a907029588774c6aabdfa6952cb"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "d3a842ec164be09bf264916a0228c36c8908f0ed353af087e4da54cf9fe6cd94"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "89442ead735a2b45279164995971fc474754f323d6f9f5dda11428de2b1c56dc"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "4d62e3ea12c0539800f2ae3c44ddb3671a25f8664a7fd1d3e7ee5917bdb62356"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "0791ebdf88f4773b6f0f370c2cebc3d63835e449fad01b40abd95f21946cb4af"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "7ee354f9b3788fb771c32b8230ca0e30527e1ff7b3f65e2e0e6d6b30340b07c3"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "b9280288155ebfd0ae74bc67b44a2b69aa2b2eb735810a06991396ee97e4aefa"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "0fb0c80f9d4681c613c6c6a4c8557814395a95760e8ed6b627377f3bab8a5256"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "97ec4472a971423d2567acae16dd5ca091bf176ed7110f29b8ccba11541f0880"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "c5bf9cbb95c01a4349a06a64acb7e2f9bed1af07a2598b97c950476a6128c085"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "753f1e913ae2f3e189936e18d2b462855a700a74f7dbc75f6877c625d3b01000"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "2c2920830ebe60f20c68f01f35f0063253b98fa21d9b8a63174fc0fab6d78e9e"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "d875422c334cb1e259ff8d7f1ca0863caeaeea31e43bfacbc8e8987a50cdfa8d"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "226f5b986ec827e485c196d628693d9447b58227262ae1596936334501969dfe"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "eca49fc5b4fb35c2c56a204f883a47ad296f554473226dc4bd30eaa582fe1338"
+      }
+    ],
+    "brainstorming": [
+      {
+        "version": "0.0.2",
+        "digest": "111d21efa124ab7e41787c82d4e793a281d1df7fe71df70b5aed8652cffae92b"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "364716d2f901608df5b98d04ed55cb7500ff374adf1e9247212ed2817eef5fb9"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "2140cdd430d1392df03edf4d75f4994b44bcc600149880235776ea747adbb603"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "4480417f93677bbd2035c5092d8b4950db393b36065e7a07d89c14487bcbe6a4"
+      }
+    ],
+    "business-analyst": [
+      {
+        "version": "0.0.2",
+        "digest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "a9cd63389b87e40b08336c3837f8da3a61a2a4d06e1727ce6c33a72025a87252"
+      }
+    ],
+    "evidence-gate": [
+      {
+        "version": "0.0.2",
+        "digest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
+      }
+    ],
+    "implement-task": [
+      {
+        "version": "0.0.2",
+        "digest": "6c27aeead5a40348e395e94a73dcc021791b66688a21a0fcfe59980c39f276f4"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "b29715978c528200ea79bfd2a87ab0f6ecfab91e13f364407ead298c9c601553"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "fdb3e5a72048ca6dd4c7f01a4a3ec2b21fcbd336df1c4f77d702e827c82c9ce6"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "510de9617e7f800b8e86c51fe7c4d6c05c4600f06501fcd02e3992b45ca413c8"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "df858dc01e9182d010acb58c3763244d7a5475de8bafea1167bd546f2cc14662"
+      }
+    ],
+    "qa-gate": [
+      {
+        "version": "0.0.3",
+        "digest": "ebc971086ce4eb4dc769e30414f10db12db44684c4479520d67a53220486ded5"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "4e6ad547f4373a699f6fdacbaec594e2396d9717a2aae843b51ecb3b44fee5cb"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "1f22aff749528aa7eee4600493ba8f8f29bc8f896a3a67548cc13e764f75fd3c"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "414726ae349251db8a493a47c62b32d8687cd1f7ee69bc13205ea5da4a264bcb"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "d3549f74338f72731aac514b67b9008839332c863614c5b9d3f7d8b3d08be4fa"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "67e103ee060f3a178b84c0f03dfd8739fb73c655d56315b866369fe0294eb5ae"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "beee018d3d9ff68d261d7db16d7d997f0e2cc97c75e7577653a38af455a03f5e"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "ea85abcb16c20adcf2654a7fd54e0b07a68ab98d7b1cf68e6118d0326b71f492"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "658fc4be689a173208bbdf2fe519e8c426a53578ad19716faec204d819e071b5"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "3812449df3e5b0f5b2620cbf2a10f2d7e521befb28745eee986d19454790e7bb"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "fd986cc4aeb9b6c98c1943ec93fc039d170b9bb11850f3b35a38ed9b694523eb"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "04f042d14aa7c5cbe96958b1915a09f316cd904f8f7f52737c5588d968596266"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "f5e17d2a9e50a3036cfe464f3113084a210a2c0a54ed24a866f1de9b78a840c2"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "0ca5bbef009b2ccda99ed60478a01ad8315074cba50ce1a2959f40e88ef52e6e"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "6857c24e168c82d165453b8ae2bde064931fa9a3486747d5df29c523947fd74b"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "5369b9e2a0c75722ea7d965a1af0f54462706d69e96ea7daf28820e575e63a9f"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "99fae3395df155aa8d3752c42042ae1f43ef5935c34b8fd555ee6a9681f67ef9"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "7434ca0f18d3ca93ea74099221a34e0169a090cef5c8da4735056ecf153ad3e4"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "c7fc87c29cbe3e83b10cbf40a7b7bb849ea9b9f4ceabc92be2a5b659037dda62"
+      },
+      {
+        "version": "0.0.22",
+        "digest": "0169ed19af15a7ada02be9b4b0cb99b724a5b5691f86ec3c5b55a6eeac152676"
+      },
+      {
+        "version": "0.0.23",
+        "digest": "6ff39933c1b4368c3a14d0052fcbf7260323e8b3e92664ce2ce336dbf172b5d6"
+      },
+      {
+        "version": "0.0.24",
+        "digest": "c1894b512799b927f0e006aa0c0a588a33ce1ff3bfa62afae35ba3153256517e"
+      },
+      {
+        "version": "0.0.25",
+        "digest": "af00eb5c3d31dcccde48b550405bd4b4c4b289ee0f0a18d2951cfa3cead822cc"
+      },
+      {
+        "version": "0.0.26",
+        "digest": "dc1a3e99f0bd685a8f46df1ba0e246e48e3c9fdfff450b31df8e1179c7ec4b9b"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "499208ed8705c46506a5a6307ca9ac9ec943701a92763d4b73eecea21a50a1c9"
+      }
+    ],
+    "roundfix": [
+      {
+        "version": "0.0.3",
+        "digest": "e7b89f8adbbea0a9800618f3100ef4833b3180c42eb48399b6f789de05ca93ee"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "42d32aff469d5e1e2476794848dfc5a3a14409d4d557a4a368e9319c9d58f2cd"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "9c61c29cc4aa46ff526e33988e65f8d5e46c3fd72a38b73603e0fa251d13db4d"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "b12f406d81069f92001022514caf85b70373c7088606b5b9a6f7e38eb1354e89"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "a5e86d7120a25c3aaecfaae8717b67d509ef5c5b4ff0fb276e932841e5f0caa2"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "d82ed9b74d5dbdb5ab1e2107d98486c5c778b73bc63a7053d6289f67b054b5bf"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "840cdf62d15bdf81cd3ef4d496641411a79b5bfb6d6bed9fa9defa7c5e0be493"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "a44a6c21c83555cc2ae9d5c15a6f35624b3ecf3b9fef77ada7c644c640e69044"
+      },
+      {
+        "version": "0.1.2",
+        "digest": "b4bf716d51762e1719420651174379648b3b4206b8fb5ba8e1986c232973f38a"
+      },
+      {
+        "version": "0.1.3",
+        "digest": "7e0dfdbd530fe77d8465b350dc1876ba7eb2fe9a8fb2bdd3982bfad6c561bbae"
+      },
+      {
+        "version": "0.1.4",
+        "digest": "23240c92a6fccb3988d182119bda3fcee30216d84189ca3dc0716da0a849181f"
+      },
+      {
+        "version": "0.1.5",
+        "digest": "db9ea531eb266da99886cb72b8003451a8ec945e78d96889f790d9cb9e80d236"
+      },
+      {
+        "version": "0.1.6",
+        "digest": "8c06ca138f9f8c7bd67ef54a686fb67ad7e2f053188fc35ec6cc74c7cbdbde55"
+      },
+      {
+        "version": "0.1.7",
+        "digest": "39cf23d9c90135dbcbc972202919953c668b0c68c8f2ab4d23739425bb8af3ab"
+      },
+      {
+        "version": "0.1.8",
+        "digest": "7a78c0236b6368a11149f9c4a55f390155816327f3af87e0f6118d1b3e8d1d48"
+      },
+      {
+        "version": "0.1.9",
+        "digest": "07857b978ad4dbe2cedc090062e35363fac17f9f5476a2a0e97f1e4a47e81eb4"
+      },
+      {
+        "version": "0.1.10",
+        "digest": "0b0f3c7e16a2ae8502ce587b0836e97ba4b71d1d33bf75a559d535d73659b58c"
+      },
+      {
+        "version": "0.1.11",
+        "digest": "7936842b6117b91ba0c9062540c4a0746484f33e12e53c0f0322d8f9064804f7"
+      },
+      {
+        "version": "0.1.12",
+        "digest": "1ce74c5f85024393ca5727c895cd8f0537d9bba16196ec5d368b6f0e43937ff6"
+      },
+      {
+        "version": "0.1.13",
+        "digest": "1acb900bfd61a9c32dd8a550d1491b539901f862323b3866b26e26ebb12b65e9"
+      },
+      {
+        "version": "0.1.14",
+        "digest": "f66f0402c78957315b4c4834fa4a8c8658578f0518c928c43877b6b04692cd02"
+      },
+      {
+        "version": "0.1.15",
+        "digest": "0126bfaeebc59fcf5dc81ad398536397c51b643f25db85de29c2e6066fe7d569"
+      },
+      {
+        "version": "0.1.16",
+        "digest": "b3766188c32b86dac53bc343e9f4c4a3e05408f2cafef839286f4558acbb6e8a"
+      },
+      {
+        "version": "0.1.17",
+        "digest": "300f87c925585bd7b78be3a2415261d2d23d91d3911d23af774f6a9ed3126312"
+      },
+      {
+        "version": "0.1.18",
+        "digest": "952720edc2bac31927502c39eb5fcdaf07b52c57193a1ad5dc220ce59a83eb7d"
+      },
+      {
+        "version": "0.1.19",
+        "digest": "89ef4878000a90d9c022a3ff88e7652808ca88653acbe80cf50c6bb18c3e9ccf"
+      },
+      {
+        "version": "0.1.20",
+        "digest": "82fac7cd7316d89a8d3c8e6f56b198707c3ad4113819b4057022851209777f7d"
+      },
+      {
+        "version": "0.1.21",
+        "digest": "a9e6cd1afcca57420074b22c309190d20d8989537b3d1ef46f3e000151342c26"
+      },
+      {
+        "version": "0.1.22",
+        "digest": "29f63338e1c9872142ff7346b354bf2db28008eb74757d8ee9f7d007f03bdc9c"
+      },
+      {
+        "version": "0.1.23",
+        "digest": "c062e70c2fa6f6579f00d469e6bbc10b0e4d9086e92c7aa024dd8b6c41f49c33"
+      },
+      {
+        "version": "0.1.24",
+        "digest": "2b156225c945ab0b271ec1f6a360a56f42d462c9be2a5a93746c4d45a847f8f8"
+      },
+      {
+        "version": "0.1.25",
+        "digest": "e13b08cae587ee95a256f16b2b7aa891ee3171582ce772b0a0ab2ad4395a445e"
+      },
+      {
+        "version": "0.1.26",
+        "digest": "0bb47417be37f1a5c84d7c019f5331f7f611170d45a46e775105e2b0fe83460b"
+      },
+      {
+        "version": "0.1.27",
+        "digest": "3005130e331ff9d64741a676ab46eff6ab5fe7d3226b224cd3c0a96a74a270b7"
+      },
+      {
+        "version": "0.1.28",
+        "digest": "29a4a7260629404d4abf25b600eb7d247d90c7c482bb8ec3fdc47c35b3c3e3d6"
+      },
+      {
+        "version": "0.1.29",
+        "digest": "4ffde83b906c28a0ca042375f8af5d2d818ac2523511f9ab695f2e87ad6b0370"
+      },
+      {
+        "version": "0.1.30",
+        "digest": "843a6dcf01d6736618074896e288d55390793223abb1b43e6949ee2d47f2242a"
+      },
+      {
+        "version": "0.1.31",
+        "digest": "af71106715722ee2a2a1af2fca65153d52c607da848fa01f7eca05e934535ded"
+      },
+      {
+        "version": "0.1.32",
+        "digest": "01b1b1deb95219ec7c501dcea28389a2d3089e086e361c54088b0806d62b101c"
+      },
+      {
+        "version": "0.1.33",
+        "digest": "83c77cf4d870dc4da5b719676d9cdb6c267d49b82b088984c3bea36f0b021d80"
+      },
+      {
+        "version": "0.1.34",
+        "digest": "9386ca563405b4d6a7514b4feebb44cbdd766e2c02c4628e510e4b637ef1e138"
+      },
+      {
+        "version": "0.1.35",
+        "digest": "eaee59686c1d1c08ccfa9dc39bde09e6590f6f73b652f0c403f049664a1b3052"
+      },
+      {
+        "version": "0.1.36",
+        "digest": "ef5583f6f9fb92260cd557d4327a82bec6d3bc26a1753556add81f95f3226bc1"
+      },
+      {
+        "version": "0.1.37",
+        "digest": "3ca57f552b3dab57df9aba9c6fdc0cc29cebc7c641de03a0fd35a9c4ed407b20"
+      },
+      {
+        "version": "0.1.38",
+        "digest": "3ca562ef0cc5e2743bab5b46e69c9c9f0a87974f9c12964d1378a291f91c5074"
+      },
+      {
+        "version": "0.1.39",
+        "digest": "455c93fc69acc83910176bb349a700d47f74db2d89569aefa5f41e459aa0154f"
+      },
+      {
+        "version": "0.1.40",
+        "digest": "aa3cb8c25877909c3d6e6f888ac260692f9a9b0583d6ed6c235ce53c7c91fe4f"
+      },
+      {
+        "version": "0.1.41",
+        "digest": "c6ff2b31bd396073fdd365794a23f1b9da8990af8c245a12e142ccec4055fef1"
+      },
+      {
+        "version": "0.1.42",
+        "digest": "7ca9a172db855ac1d08c64e0dfbcd03a240123f7ecd72ed3dcf6d2c27cad0c81"
+      },
+      {
+        "version": "0.1.43",
+        "digest": "9a3888243f748d9f9c900629e64931602571899ce254c0f8bc078bbbb8339656"
+      },
+      {
+        "version": "0.1.44",
+        "digest": "ece57c544a0e0a145a9d1e83d080937af9fc6562632507d8594e7d0f2b201e1f"
+      },
+      {
+        "version": "0.1.45",
+        "digest": "7ac11964f0ec57026d834fc255ad5e32823817a6acd5fafbbaf4ce24575ab694"
+      },
+      {
+        "version": "0.1.46",
+        "digest": "df6ef127e5e0611e17779bfe7150422c5b8cb6b1bd9a80eb3f801364450b8ef7"
+      },
+      {
+        "version": "0.1.47",
+        "digest": "fa182a67ab0949091d03384796466ff3cb7babff6868275e5676feb9e1a8547a"
+      },
+      {
+        "version": "0.1.48",
+        "digest": "cece65731e7b4a1b415b3ba7f0fdaf3be460566f76b04d6879d4be52f3a45cb8"
+      },
+      {
+        "version": "0.1.49",
+        "digest": "a6c43f182934ab31a9e70f226583b757544fc23da8d939a1a6967ecabc503105"
+      },
+      {
+        "version": "0.1.50",
+        "digest": "91700c0a76f1ba6965a556cd12d84a22a3ff9f17657c7646a593d469a31b287a"
+      },
+      {
+        "version": "0.1.51",
+        "digest": "de09e3f54e0c64a7c2272049b5f09212b2a8eea54d3d2e7d6bcbb3e9bcd6a7f1"
+      },
+      {
+        "version": "0.1.52",
+        "digest": "02dd50025ef4f4d75901ccb688904ec2fdbbd19806381db20b8b49c36c17ba77"
+      },
+      {
+        "version": "0.1.53",
+        "digest": "78bf205901d9bb3331502d68fc5492affab86e49f3cf9e4e616586f51b206d01"
+      },
+      {
+        "version": "0.1.54",
+        "digest": "27f7dba619c93423d63519328a62dc484c485ef2e27af883cccea09d89e009d1"
+      },
+      {
+        "version": "0.1.55",
+        "digest": "975ae8a08662743814eea8429f685c3dcb0bdec3554280686c0187e4b3f05eb6"
+      },
+      {
+        "version": "0.1.56",
+        "digest": "38c87eacaf679c3c68786193b46ef7612b11c25db43007ae88db67559357004a"
+      },
+      {
+        "version": "0.1.57",
+        "digest": "48d153eb07e2db709af2bf9eee16ed5866bf2890da43acc23bd22e3d93ba81e8"
+      },
+      {
+        "version": "0.1.58",
+        "digest": "31f2015a50b5fba2185c688b92f3662401b6309e629fb3fc0045e612b5f88e95"
+      },
+      {
+        "version": "0.1.59",
+        "digest": "f27812ac55e40366e735443756f1718b1b56c14bbcea7b39ee8fa39cefe45ce0"
+      },
+      {
+        "version": "0.1.60",
+        "digest": "5e1082c7cf287cf367a3932f443c6fcef9ac6bdb7a0b01900d828dfc97c9f5b0"
+      },
+      {
+        "version": "0.1.61",
+        "digest": "971d42707397a94c620ecf83256e291eefcc131f4f91e63284061319be8903db"
+      },
+      {
+        "version": "0.1.62",
+        "digest": "2338b5939320851070ecb337203875a3849a4c4f1960f6b936876ea5f65445b2"
+      },
+      {
+        "version": "0.1.63",
+        "digest": "6a604fe7947ba634dcb2932748f0667e697533dc6ae47e7f58e2f34f567f8fca"
+      },
+      {
+        "version": "0.1.64",
+        "digest": "ce2169017dd23b466e37a93cef5719d7cea05c21264a6b20da29c2d6c572d1af"
+      },
+      {
+        "version": "0.1.65",
+        "digest": "d8d8575b948a46bbe6f83a186b6d74081fd192692094c89982066f5bfcc21389"
+      },
+      {
+        "version": "0.1.66",
+        "digest": "449363a3d8177a17ff765c9442de96d07d9bdbf7b2770383ee1742fe1f7fc5e3"
+      },
+      {
+        "version": "0.1.67",
+        "digest": "dde80ba0781689146517ebda923bfd03d3e751febb28998242d8f9b592d0e639"
+      },
+      {
+        "version": "0.1.68",
+        "digest": "47e808d633cc9ba1781e6599783226caac6516d9064085f59107d63b178828bb"
+      },
+      {
+        "version": "0.1.69",
+        "digest": "b4a7bbb9b082b397bfff2110b8abc079e9246c50060a0229d4391d35585c1432"
+      },
+      {
+        "version": "0.1.70",
+        "digest": "b9f186553c9a8b9d516152f950951920f205275a0252b78408b788b96a957454"
+      },
+      {
+        "version": "0.1.71",
+        "digest": "a1e3ba5f3af463f14b0c1518794ebac32d8b4630760be37177ae30ccd3e2bb0b"
+      },
+      {
+        "version": "0.1.72",
+        "digest": "d4f6298dc6d14e70d4c486ece170a332e27aee80a810d4067e22ba1158a1d2e9"
+      },
+      {
+        "version": "0.1.73",
+        "digest": "2eab0952fc549008498d339af4a457f0d07393b7aa1df07e6fb02ce3ce7cc5e7"
+      },
+      {
+        "version": "0.1.74",
+        "digest": "1246626c0c0812202f269b88f60f7d0a42558e6a5c005eb17e4c14b39c5663c3"
+      },
+      {
+        "version": "0.1.75",
+        "digest": "0c236dd078be2f5b0c7cd4a1d2c7ee11fe2a9d7cd072eed7070d3c0731ba9bc9"
+      },
+      {
+        "version": "0.1.76",
+        "digest": "1a0781ae5e9c6d3cda1bbee88701567d848d9feb48e30ed79ccfe2816d4ce41c"
+      },
+      {
+        "version": "0.1.77",
+        "digest": "b57ab885baf7ec9186cb766e2ec36c5ddfdab4784f62a75111526e96d5e8f5ec"
+      },
+      {
+        "version": "0.1.78",
+        "digest": "d974b7c66df3c37e8a90553e5cd172d9d64264b760858744421c26de9efdebba"
+      },
+      {
+        "version": "0.1.79",
+        "digest": "f5844d293159921b11458e4dc21c4c2d0419531c27f66af461355a77a5d7ebf8"
+      },
+      {
+        "version": "0.1.80",
+        "digest": "4413c2cb3d6a1fc4de7cbcc673e023eaa442490d54341b54c35f3d04271bc1db"
+      },
+      {
+        "version": "0.1.81",
+        "digest": "71ee75cf081b686340fcdfa46d19bee555ca05a623b7077f1b25af93911b0324"
+      },
+      {
+        "version": "0.1.82",
+        "digest": "337a4d60ef390a5890318e6dd084f45e477e7485d34c7ff978d24479f05c25d2"
+      },
+      {
+        "version": "0.1.83",
+        "digest": "0872d702920c223cb2d6ad95ac73f9c88ed4c4377e3f61a6dd2f567406992888"
+      },
+      {
+        "version": "0.1.84",
+        "digest": "76480c7c54ca76c95b86dd3c5df06ea21e9adad921ca1ee3ea48fac64199ee3d"
+      },
+      {
+        "version": "0.1.85",
+        "digest": "c46391275d53232736cac984b94d2260aa4de7a9eab3acbdf6c0545342cb671c"
+      },
+      {
+        "version": "0.1.86",
+        "digest": "64ff3e14422618c6ca7848286b3307a813c5ec11ec9cbee4f14bcbbf5e91f1d2"
+      },
+      {
+        "version": "0.1.87",
+        "digest": "345bae8bb81471d18f1375d05f1e4d63f443e9b583024b0032639bc27695bb26"
+      },
+      {
+        "version": "0.1.88",
+        "digest": "f5a1f606edf8cae8410fb35318eaf68e91f8b4beeb42168e22abf7c525a42648"
+      },
+      {
+        "version": "0.1.89",
+        "digest": "42c3771790aa4d9ed86b7b5a1f110a62b195843820fe48cc8e1f27c20b0d7808"
+      },
+      {
+        "version": "0.1.90",
+        "digest": "52156edb502082cd498668c801bea81ac25800a71c4525c1b61c4193d019ec2f"
+      },
+      {
+        "version": "0.1.91",
+        "digest": "8983a7999e861e43e2d2e4954e1d294afe1934c94cb8c73c2a92086a3a160d6d"
+      },
+      {
+        "version": "0.1.92",
+        "digest": "732032efc7abaf36544b55854dc9b15d4de639b22eb058017a33543e692347ae"
+      },
+      {
+        "version": "0.1.93",
+        "digest": "0d99e252e76d49a267933682344b4629c1fa436e13c365c51b664f0ec41fbc3d"
+      },
+      {
+        "version": "0.1.94",
+        "digest": "3b7968af6de768877b3a5106a8ad6b87aca1f8269f455da4498f197b68055b55"
+      },
+      {
+        "version": "0.1.95",
+        "digest": "55664fc1fef70316f5651c0da2aef290c07a7d385549322dcd0b59e34f1d5d51"
+      },
+      {
+        "version": "0.1.96",
+        "digest": "a95152c9735f3ac0c8e5e547c738a8f21378626bb6559958f682c7f067c58e2b"
+      },
+      {
+        "version": "0.1.97",
+        "digest": "958d2e0338ae01bbf833e67dc33234896e4c768a20513ce13d6e4850264128b1"
+      },
+      {
+        "version": "0.1.98",
+        "digest": "e92ce0f5f77ecfe28c747f8b7b217a83301473a5826fa4af51ec935919609a30"
+      },
+      {
+        "version": "0.1.99",
+        "digest": "1167baea41afdf770c29a983090b28f5fe3533cbcde8e8018082ef0e038240b0"
+      },
+      {
+        "version": "0.1.100",
+        "digest": "9ffe2157e257c94e643bfafa30a95ba43c7cc768f3d6a5af38fdd20fb8d9d6c7"
+      },
+      {
+        "version": "0.1.101",
+        "digest": "9bfdefdf69be3c1128395da28a260653cbf7dc67741f4cbf72e89a5f6772c155"
+      },
+      {
+        "version": "0.1.102",
+        "digest": "b85ba03365e7cd2d170a201f8713d045139f0f4a4357bf2600f21e6ff8cbc05e"
+      },
+      {
+        "version": "0.1.103",
+        "digest": "7f164509679f93bbe3bd3cbb5e233b6d34e1334fbc905ca9fab8eb0bfcb9293c"
+      },
+      {
+        "version": "0.1.104",
+        "digest": "7c1d9297709e802d483abd55c5e9988f53e024d8d01479d74939af9fb8840f30"
+      },
+      {
+        "version": "0.1.105",
+        "digest": "5dee2224884e442eed2ced58c0c1f424bb22242b712bd0e5c3a1178a3f7cefbc"
+      },
+      {
+        "version": "0.1.106",
+        "digest": "16d0cc4d610f331f7c307e7755fb81357ee3c9ec4f959f2581c14c0a2992304e"
+      },
+      {
+        "version": "0.1.107",
+        "digest": "cee4fc8e8ea4ec2dfe8fcb957829c7dd476f40270b7bf1085c68f81f30d5ddd6"
+      },
+      {
+        "version": "0.1.108",
+        "digest": "a10254d9a0f1b16df0da9f9eebba964a33ee9c8a51faaee731f87493dedd0dd8"
+      },
+      {
+        "version": "0.1.109",
+        "digest": "7e4d5633829d938df80180612098fe94fec3eae2060d35b73091dbc5ff2e601d"
+      },
+      {
+        "version": "0.1.110",
+        "digest": "39aab96d6ef22582a34945281f9245aac5b701748a54517a4c165b7c04f9c98e"
+      },
+      {
+        "version": "0.1.111",
+        "digest": "d6db1ed53d797044daee886886bcd5c1d5dffece9f40fb434708ef7f6ab370a8"
+      },
+      {
+        "version": "0.1.112",
+        "digest": "70f85323990e816b68f56d4bea9f274d6a2619b009e20e539d9ace8139b38bcd"
+      },
+      {
+        "version": "0.1.113",
+        "digest": "720daaa0a603974083ce2a5f5c1af4b44544c8586feb223a9857b310c662d878"
+      },
+      {
+        "version": "0.1.114",
+        "digest": "2bf0a743448cca59188ae7f66b8bcde95a7cba135bcc4eae7fd7b451c49c55ac"
+      },
+      {
+        "version": "0.1.115",
+        "digest": "09de16554fcabd933366488bfd6929c8c07494a9ee57906950f298449563051f"
+      },
+      {
+        "version": "0.1.116",
+        "digest": "9b215ffbd90cb5eb624ee720700464f5a7f5cc7f50607c7f8553bc71eaa894b8"
+      },
+      {
+        "version": "0.1.117",
+        "digest": "e58c416f6918532a189ee06933af29eaacfe90c45d85d68eaba005abfa61c656"
+      },
+      {
+        "version": "0.1.118",
+        "digest": "7c237a06b728895e8b974d85edbecf6d6775cbde7ed0bd21e2ec234746e506ea"
+      },
+      {
+        "version": "0.1.119",
+        "digest": "8c597a5deca06d8e55260114f8e90ecbdd6976744b07325b2b88d0ce8040547c"
+      },
+      {
+        "version": "0.1.120",
+        "digest": "81c06cb71fc4636a0da215a3ec3de4c519967e9be7fe7268cfcaacf40d1607e2"
+      },
+      {
+        "version": "0.1.121",
+        "digest": "2a565d4340d1f348361fe6b4ddbecb3752a6800f517deafe302724a3298723d4"
+      },
+      {
+        "version": "0.1.122",
+        "digest": "45afcb9273a6ea7a44c94aa3e9b0aef2dd2a36e1a12d0fad3072f4ef8b43eaf0"
+      },
+      {
+        "version": "0.1.123",
+        "digest": "2caa535b801fa87abd1e641897bb2051b11c5f6b68fd818a7229c495311dcfaa"
+      },
+      {
+        "version": "0.1.124",
+        "digest": "5ec9f6a2f93ba367b78a47a0db86a9f7a4956deaa565e41135e23cea27d7f4f4"
+      },
+      {
+        "version": "0.1.125",
+        "digest": "76004e357163e214f7c35947d65012aaae9bc9bbb057ab2748f07070ac63190f"
+      },
+      {
+        "version": "0.1.126",
+        "digest": "64d2148c123e4fde5e2d5c245518364ac496160be58df6e04e84da3826928ea4"
+      },
+      {
+        "version": "0.1.127",
+        "digest": "59a0deb11aaa509998a0d33dc059301cd7cbb8165befcfd54beff74f24a2d26a"
+      },
+      {
+        "version": "0.1.128",
+        "digest": "725fc49df1ebc2bcbcad3c0f4dce93d3e7bdc5cd4d7a7444e11986dfec818d47"
+      },
+      {
+        "version": "0.1.129",
+        "digest": "006b23a1c440314016130cc50f709239a749ce546438981f3a264e4e64b1f2ee"
+      },
+      {
+        "version": "0.1.130",
+        "digest": "b78a3a9f85fefe7bf092d35fe04d459cfff68470ecf2956791a6c9d291eadbb0"
+      },
+      {
+        "version": "0.1.131",
+        "digest": "3a38573ad11d0b9e65dda4dd2876b58688c3506f446fa3a4195f432b174919ad"
+      },
+      {
+        "version": "0.1.132",
+        "digest": "6d65a2f495ed0e14948830aa0d544f4922217b80ebe5d060ae823dbd7aa05f87"
+      },
+      {
+        "version": "0.1.133",
+        "digest": "4c9bb7b93c6b4a1d75843bc3ec9626ab4198797cdbf11bc44f3d72432bd08111"
+      },
+      {
+        "version": "0.1.134",
+        "digest": "2e444e2d7fe5b2816c6922b88a82f44f564907975b1a484b3f57077da882a97b"
+      },
+      {
+        "version": "0.1.135",
+        "digest": "501b037533637e75116661501c64649070815810a75b3ee120712c1fcc18108a"
+      },
+      {
+        "version": "0.1.136",
+        "digest": "a286e385127b24a9ddeb7317824cc44b77507f0034d29dc3f98eee1491b0396a"
+      },
+      {
+        "version": "0.1.137",
+        "digest": "30e7a105ad4f5c34547f05f57010bb5c9c9d24da67fe27174ebf286b1025515f"
+      },
+      {
+        "version": "0.1.138",
+        "digest": "ec3be634e3f110d43b3a2a8d591252f9c74e573442d2d2ca3fdf3e13152392ef"
+      },
+      {
+        "version": "0.1.139",
+        "digest": "a51ce10dd0ac2b5e61c55ff83a1cbebe4d1da6278ad3000031dbfe7505cbfd25"
+      },
+      {
+        "version": "0.1.140",
+        "digest": "02c5edddb2ac42476c6c3c54d39e93a5d4d2aab14b6bd3d673c874066ee28f60"
+      },
+      {
+        "version": "0.1.141",
+        "digest": "918ab2a94e8a0fb0553011cb300de2eba2e82361e4948dbcfa53ef89a2dd9be3"
+      },
+      {
+        "version": "0.1.142",
+        "digest": "8339dc1af8232f1a5c55c33a21a81e3d07f62f0ae4c7dc10e1fca53f30029791"
+      },
+      {
+        "version": "0.1.143",
+        "digest": "fcb779cbc402fcc54f20ed1ecce1ff0ff6afa9757b82414919fbf9e2fc72e517"
+      },
+      {
+        "version": "0.1.144",
+        "digest": "96e9da6d72992a269cf896eee62c7451b54ae20620e1f09b01908351942e9d3d"
+      },
+      {
+        "version": "0.1.145",
+        "digest": "65d197cab0c13e0a2e786904fa595f791c66c7039a3ea28d0b1934ccd0023ca6"
+      },
+      {
+        "version": "0.1.146",
+        "digest": "3fb04203204eefc90989c77fad98a0ba601c38433087dd7e47b682380b881151"
+      },
+      {
+        "version": "0.1.147",
+        "digest": "5e53961c076a29c1aa36fa7d949f34e6d0cfcb7257ab67c1be5de36b43f69f18"
+      },
+      {
+        "version": "0.1.148",
+        "digest": "51a2a53b6956250a8b71c64cd2f374af266c419c08e84086f30f6c74f51cfc41"
+      },
+      {
+        "version": "0.1.149",
+        "digest": "dfa0bb398ce185f153a6ad046c8a5a39169f5a34ab0a2b8612152b902583cca5"
+      },
+      {
+        "version": "0.1.150",
+        "digest": "11ac39f8d88f072dce59d339a2272e2ed98eab92a2359715e227af6a2a1e2ba5"
+      },
+      {
+        "version": "0.1.151",
+        "digest": "69534d0d1b1bcc15a2f7d1f047b30c62c4492ecce92273e45df9eeb0c4dc09fc"
+      },
+      {
+        "version": "0.1.152",
+        "digest": "1dbfb3d1a95ed6908d03b0c2a1dd3cc5791dce49897c86a78c55debd6ac0c19b"
+      },
+      {
+        "version": "0.1.153",
+        "digest": "291c3fe38cf7c4b14f885c57717c7a5a2fbc3905fd8af31c2246da7df8d2991f"
+      },
+      {
+        "version": "0.1.154",
+        "digest": "6d2f3c7b0828fb096cb4da8c8b11b4e9f1c844deebec6a4054c17235052e9fe0"
+      },
+      {
+        "version": "0.1.155",
+        "digest": "38f2d7abc2d943f2f33795f896ad6de5aa4e6f898f5584918f22ffd29574eba3"
+      },
+      {
+        "version": "0.1.156",
+        "digest": "cb79ea87fa0a6a94ef97ccf8bfed2f425b84c7373df4ebf7acb8febd18eb1225"
+      },
+      {
+        "version": "0.1.158",
+        "digest": "1d1ff461f32d273daefbd22af42017f6dc0a5683960f3cee38ae4613ab6e2554"
+      },
+      {
+        "version": "0.1.159",
+        "digest": "d311039771199ebf7397252c9fa3073e947e0c958d56a0b2e12e71485a441e94"
+      },
+      {
+        "version": "0.1.160",
+        "digest": "58f5a37b8cc84616d83148798b98f69579329c777529646df43b3cf4c48ff4b4"
+      },
+      {
+        "version": "0.1.161",
+        "digest": "50f4c518c653961389bb824b315cc0d8bba7ef8a34f0421712d24e8111092007"
+      },
+      {
+        "version": "0.1.162",
+        "digest": "29dae287181c1d3ff92e14238e6010e7427bb119ca97ef865f969652a6c3abb8"
+      },
+      {
+        "version": "0.1.163",
+        "digest": "fe62719d5adccfe7c8cb073301386d99945a7e13f99445ee670b2aaaf11cf3fe"
+      },
+      {
+        "version": "0.1.164",
+        "digest": "4b504acbdc70462649d51c42dab0ca0835d0146f6087e7e6cda2214954839d7d"
+      },
+      {
+        "version": "0.1.165",
+        "digest": "433f70073745e280172a074a44f8d3149441802673081e914227271331754083"
+      },
+      {
+        "version": "0.1.166",
+        "digest": "b7dc2013630aec9a28b55fe3be27f4e4ea3c26e9d937d0b0f803d8af662381c4"
+      },
+      {
+        "version": "0.1.167",
+        "digest": "2931712f2a4c45232c728d17da10d1b93da8fc34b6f83f770e943da652a4b40f"
+      },
+      {
+        "version": "0.1.168",
+        "digest": "eb7723795923121fdd0557645208f9f30a9432e5ece1f97aee2773c543658a00"
+      },
+      {
+        "version": "0.1.169",
+        "digest": "9ae53ae25b8bab20f9fc7ee200760c75a0125234b6d71d76db5570adf40bac00"
+      },
+      {
+        "version": "0.1.170",
+        "digest": "630c48237c713ddf53df429a461a3b482ec12200b222bf0ff33a751e0cbe3215"
+      },
+      {
+        "version": "0.1.171",
+        "digest": "1659e13481790991498a1762b350fa17a83b09f9e582adc1412e16bb17d1f340"
+      },
+      {
+        "version": "0.1.172",
+        "digest": "5e83ca38116874c42853a74712d925036f478547642b39a60503b2f4391ae4b9"
+      },
+      {
+        "version": "0.1.173",
+        "digest": "d5c574aa2fc089466cbd0425970386c36cea2f5bd8a7a980b53ba2f66e114d81"
+      },
+      {
+        "version": "0.1.174",
+        "digest": "e2653c9d842d29652d628c5750361b4b864527661799be2179426842080984fa"
+      },
+      {
+        "version": "0.1.175",
+        "digest": "feccf774b9dfa04551f357079a28c681282a20a09dbda0ca0ac197d4504b5956"
+      },
+      {
+        "version": "0.1.176",
+        "digest": "550efb573666eb373e373182ccb6b52fa884caf318a01544739a895c0ad58f50"
+      },
+      {
+        "version": "0.1.177",
+        "digest": "78e65ed3b4d3ea5d3445ac3159c5eeb807d6c7da797c66f74cd16edd58a6c0ed"
+      },
+      {
+        "version": "0.1.178",
+        "digest": "2319e79361294044da67b28e063ac697a1f69d2e1b7d6493102b472cd055b1a4"
+      },
+      {
+        "version": "0.1.179",
+        "digest": "e893c46d5efba3ffaed091d66b087d12bec255c568592e8f72fd49ca03422d69"
+      },
+      {
+        "version": "0.1.180",
+        "digest": "76a67710ce8bcefef365078da560168d247bfac50a54c384dba422725d159cd2"
+      },
+      {
+        "version": "0.1.181",
+        "digest": "8248bc90ad628e38f7f6a75620786f8d9730baac646cb119e9cb0db9475d1d8f"
+      },
+      {
+        "version": "0.1.182",
+        "digest": "2bc5d22a24edaa3d8c0318d4cb47e4e45d395f5466306a256716d2eb10e88e3e"
+      },
+      {
+        "version": "0.1.183",
+        "digest": "606d84ab48501a96baa6d6308cb76331a4b43d64e15da541fb474d67a9e10d30"
+      },
+      {
+        "version": "0.1.184",
+        "digest": "8e7f3b48fa97bc7d620f2e741227d8cde2e5b90a51d04832c97cba3d75111199"
+      },
+      {
+        "version": "0.1.185",
+        "digest": "0cbfdec72cc40020ccaf678995d00c17880564a70e79f9974c377efe5977b704"
+      },
+      {
+        "version": "0.1.186",
+        "digest": "38401d6d88f3edd8720a937e36f903a9e29294138b63a00afc91479d80612641"
+      },
+      {
+        "version": "0.1.187",
+        "digest": "0b9f5a11dcaebceb0f1ec418e7c8ecde56a9d127ccca88ab3b970ce1fa08ab98"
+      },
+      {
+        "version": "0.1.189",
+        "digest": "ec845b934198785d7b345e7197bc9935d4d3f8d84099e87ba29a1986c6eb04f6"
+      },
+      {
+        "version": "0.1.190",
+        "digest": "67494ddd5def8b4ebbb3d3ee08b9ad211c41a3b3e829e9ca660a0620491a3894"
+      },
+      {
+        "version": "0.1.191",
+        "digest": "251c6d376c0af7edcf9348696bda0320c15aeea129b242fb38d57fd1bb1d161a"
+      },
+      {
+        "version": "0.1.192",
+        "digest": "4fd8ff640805b12ec29c6f5ab134f460f1e9d4319ff9d884264a1fb68fd5f2ea"
+      },
+      {
+        "version": "0.1.193",
+        "digest": "e90c7ac1fefe016aca7c3de273655e15538855cd913bbe4de468e8e32f2e5288"
+      },
+      {
+        "version": "0.1.194",
+        "digest": "10408b31a6df700576eaee798eedb78d1f92262dde8bf0e3875efdbe3d3d3a43"
+      },
+      {
+        "version": "0.1.195",
+        "digest": "820c8873990b557b65cb067efcd39f9fb4cb801dfa8691f0ad9833990eda4faa"
+      },
+      {
+        "version": "0.1.196",
+        "digest": "4486432cec681f408cc7685cb2d7b67452a2b51e2ff034cab2620190542d63ac"
+      },
+      {
+        "version": "0.1.197",
+        "digest": "73de3872289b5b8de2773d17e876e1e2ecf8ea91d5c669861359fceb9eb37425"
+      },
+      {
+        "version": "0.1.198",
+        "digest": "0f8ae298f90cd9120b77474cc1403b866fc1b62e0783106e4e01c6c6a3719345"
+      },
+      {
+        "version": "0.1.199",
+        "digest": "911b146c5b3654f5deab75768c6284927a09e1ead53f90ca6dad03f63e3b284d"
+      },
+      {
+        "version": "0.1.200",
+        "digest": "5d62061e094d6bce0cc16d70cacc0cb0d6122b2ac0a418e49921a05fe2e321a5"
+      },
+      {
+        "version": "0.1.201",
+        "digest": "3746f74c87724a9a916aa1635ea15f1f10513e44f477ebea0b265c854e619be5"
+      },
+      {
+        "version": "0.1.202",
+        "digest": "a79b9ce9e3e3b42ac7d2d09d56258b960b835d26d6ec07bc4e7f2bd97ce71404"
+      },
+      {
+        "version": "0.1.203",
+        "digest": "e35a5acb363903532ec87d5fc87c7b222f87897a2a262ae97224af83939762e6"
+      },
+      {
+        "version": "0.1.204",
+        "digest": "ac9e5c08f792b079608df53c48ea9c642c961cb19afae32290dd7c907fd8616b"
+      },
+      {
+        "version": "0.1.205",
+        "digest": "bef49f0182c3a273222fbd5ba164f06892af8d2c316e719ecc71fb9e46ea7e46"
+      },
+      {
+        "version": "0.1.206",
+        "digest": "201a8c716518f66bd7070092f3e17402aa01c93964ecd0a7792e3cff4ef5c674"
+      },
+      {
+        "version": "0.1.207",
+        "digest": "83a0fd6a7933a9ec0a8c5e284103c669c3944f3eb719e2cc206a663b9f50ec97"
+      },
+      {
+        "version": "0.1.208",
+        "digest": "f5f1a5903febf9d00c15653fce507a9fe2dc095c6da938d9951640df8157bcff"
+      },
+      {
+        "version": "0.1.209",
+        "digest": "776c3eff179e8867a97013abe0285915350058f6932a614d8ec2d6f4551934af"
+      },
+      {
+        "version": "0.1.210",
+        "digest": "142ffa38a985e6f6ef9b073603eaf258294b7338efd5c199fca6fa1b8579b284"
+      },
+      {
+        "version": "0.1.211",
+        "digest": "58bd351f5aa7f6ad289ca47ca6dcc74180af51434a8e2ba9ca52456887893cf3"
+      },
+      {
+        "version": "0.1.212",
+        "digest": "728486a1d0720d3ebad25fbb7f720958a925d02fadceb292a637c87854da76dd"
+      },
+      {
+        "version": "0.1.213",
+        "digest": "562497c6df74a87240dd86144f60e94e3d58b3d3d42867872f8290081a33f9cb"
+      },
+      {
+        "version": "0.1.214",
+        "digest": "f0a2d6871aa32559bf2881e576a7819ddd5d2296c11836f254a8234dc0b1ee46"
+      },
+      {
+        "version": "0.1.215",
+        "digest": "f1467e76a5d33840c054feb6f6fbf2486e5839aabdd45bb15b42779c499f1592"
+      },
+      {
+        "version": "0.1.216",
+        "digest": "78ffe42217c9b693c57b65c334de7231e6829d503b3ca5b5fcac4b2b92ad9d5c"
+      },
+      {
+        "version": "0.1.217",
+        "digest": "7bed38c28eb496a9eba2e809c976dc74d110d573595f01a639d27b52b5298475"
+      },
+      {
+        "version": "0.1.218",
+        "digest": "925c3f4f6b6d7ca7707c958c6637160c3a6046a2fcf60b837600cc136971a826"
+      },
+      {
+        "version": "0.1.219",
+        "digest": "76dec54ebcfaaa30f4959d38973eb563636ffe16867721f74485fa4442467b30"
+      },
+      {
+        "version": "0.1.220",
+        "digest": "b2de66325226d11199e554907b5a412c161550949273365dfc101739256fd63f"
+      },
+      {
+        "version": "0.1.221",
+        "digest": "85192ea814c9827c52ad309f36d487b94914f30c3bed404b3f7d9ec644f8b283"
+      },
+      {
+        "version": "0.1.222",
+        "digest": "fd0d5fe34c7b907c919b468c9b939fc7a1f27477c799d7b2762b0475c521d15e"
+      },
+      {
+        "version": "0.1.223",
+        "digest": "8b35078dc7ef88ab6074f2975ee7da743be7fef292e63e22c5930ff2641f900b"
+      },
+      {
+        "version": "0.1.224",
+        "digest": "382b89d4021ba04632467a74f1f287ef3fe7e45a6fd16f3cc8f4b41d4721b2db"
+      },
+      {
+        "version": "0.1.225",
+        "digest": "8b0bbf96809a98ee309da02a7e3298a8857100c1d994a467c95dc15a5a1a0f80"
+      },
+      {
+        "version": "0.1.226",
+        "digest": "d2778b1fd34e5269c33ba68694463c6d5e9ecf89f422423876d150dffb0b1451"
+      },
+      {
+        "version": "0.1.227",
+        "digest": "eeb3c26ada50f5d8b7d1362c8c905fe0e24eb058d74e1ebb7b6820a371dd1822"
+      },
+      {
+        "version": "0.1.228",
+        "digest": "0abfa2854d46581e67e61275f1d3b8306dae2a253574d61832ac9bc0e72b390b"
+      },
+      {
+        "version": "0.1.229",
+        "digest": "781e8a0f940141aa35d7d0e61ca2fa47e7c813f78f34e4a545cdfd33a9628a1b"
+      },
+      {
+        "version": "0.1.230",
+        "digest": "ee49a6f20b394f492e2548b7e7530d9b20be3dd2232169a10992312f4afb3162"
+      },
+      {
+        "version": "0.1.231",
+        "digest": "de1a28c30c3257cb0261b14854ad9bb7ccb3bf752f9385473b4eeb9e7f7d7985"
+      },
+      {
+        "version": "0.1.232",
+        "digest": "2b6799f65810dfa8327a89b8aecf926edd4b4c9bbae584992c298034d9b5cc48"
+      },
+      {
+        "version": "0.1.233",
+        "digest": "00285224ada8cc61af7e8cc7d6eecf98cef10d98202564efa38364869081ec63"
+      },
+      {
+        "version": "0.1.234",
+        "digest": "f3101927056e77f5f4ae1968b7a4a4e075f64c4a1d5b424a9d568c2d6ab0e33d"
+      },
+      {
+        "version": "0.1.235",
+        "digest": "49c45c08aac83a2a9b95d9247b7f81c302b3feea66b5613fa5c63fd5a3e48b42"
+      },
+      {
+        "version": "0.1.236",
+        "digest": "c2d7a2c4a38488929408358a0d026b4fa436f7d148cfce620cf39904d7973795"
+      },
+      {
+        "version": "0.1.237",
+        "digest": "9ddb0c3d970f4a21980b56a6eb6f5cf6544934358a1f8a35aec6253e0274ad3b"
+      },
+      {
+        "version": "0.1.238",
+        "digest": "ce5471834e41d48c474d2dcbd3d629dd8efa49b28745e9133aff6eb8fca1a3e9"
+      },
+      {
+        "version": "0.1.239",
+        "digest": "a6bb747c5d95a5306bfebc8fbcafc5c5260074f25f2cb606cbe6c676d5c16e21"
+      },
+      {
+        "version": "0.1.240",
+        "digest": "b81b16496385996ce4167089b98a05408663c904daa79c4652fd2ba3953db8e9"
+      },
+      {
+        "version": "0.1.241",
+        "digest": "dcbc450e14d04a4b3cf80f4cdcd53bf07bb779b7b3b7f33e922b16115b96424a"
+      },
+      {
+        "version": "0.1.242",
+        "digest": "842a228dd24f2595e99cf399c4bb4183adfa4471ea8b32664c4829a9f8de1846"
+      },
+      {
+        "version": "0.1.243",
+        "digest": "d93046e0f928e9727ca94d4375f0e365fb891d35010f9161dc63d9b63bc2f1a3"
+      },
+      {
+        "version": "0.1.244",
+        "digest": "2b59b7ad181a2cc4c0c35e4f9e254ecf4681f7c1d032465019b590c5574e0b1e"
+      },
+      {
+        "version": "0.1.245",
+        "digest": "181587e91e65da5769461344105a3885624003c1f73e322933a1a49eee643668"
+      },
+      {
+        "version": "0.1.246",
+        "digest": "a9d25f34020664e4954892b90e3cd8c385410c2d4347e1f113c09942d128f7b2"
+      },
+      {
+        "version": "0.1.247",
+        "digest": "d7c9dc3bc9b3f212ae1404759ecb8b535cedb56e4f40308f1d5924285b40f23b"
+      },
+      {
+        "version": "0.1.248",
+        "digest": "c13537f7e6e8c5387b69c9255b4230ae2b22a553fed743b73181978706bbdfff"
+      },
+      {
+        "version": "0.1.249",
+        "digest": "3b05501ac488cff051a14fd2fa5cec9309f859a571314e26531670804d0ce76e"
+      },
+      {
+        "version": "0.1.250",
+        "digest": "fa62da3a64a4163c9221dcf8436c6cd5cb1f732d8b5459eb83108a492fc809d7"
+      },
+      {
+        "version": "0.1.251",
+        "digest": "aae48294a9ee00450e0ba269f1d2ea2014193e8a05440bc766eae9342d16831e"
+      },
+      {
+        "version": "0.1.252",
+        "digest": "6367fea85c50440d8c65ab98e328f19733d9d2f68a06f59afca38fe9d43f9f77"
+      },
+      {
+        "version": "0.1.253",
+        "digest": "6b62509ae6041008cc7b104b50c9e4d168935e8785ab80935fca36e58a70beef"
+      },
+      {
+        "version": "0.1.254",
+        "digest": "a8fc6311470dd44655db5dade42a95df9dbf6a00b765982230bf0f4d0f9207a5"
+      },
+      {
+        "version": "0.1.255",
+        "digest": "56d3370975ed7d1c699617f825d82be1c1cda9e918ca142a17127bf8bcfe5c57"
+      },
+      {
+        "version": "0.1.256",
+        "digest": "9db90946b0e1461bdeb7962cfaba665e6c9f21daffebff2350662cdc60448e00"
+      },
+      {
+        "version": "0.1.257",
+        "digest": "e9b57ed5eb8e8706d4f5ca22ec2bb48b72a494117edd640d3d44f2a0c95bf893"
+      },
+      {
+        "version": "0.1.258",
+        "digest": "b2cade3caeb85ec950a0a566ab3e358d7c5a1e50c8e340905ef645d5241711cd"
+      },
+      {
+        "version": "0.1.259",
+        "digest": "9d011342036c84d9718aefc88d31b27c2284c98b161fc78dc5f72f827a6f5451"
+      },
+      {
+        "version": "0.1.260",
+        "digest": "424b939bfb3345dedeab0d8e57c0a54fbb51ef6904b133a863b5578c23b41585"
+      },
+      {
+        "version": "0.1.261",
+        "digest": "a8a097c5b37afbbe1adbe050124156bca4d5ed179e02adcdc64d76ef36cba20e"
+      },
+      {
+        "version": "0.1.262",
+        "digest": "83d234e811ca0dffc0b8f0cf928f14d162a5eb027c4b7ab3ff6c313914771d3e"
+      },
+      {
+        "version": "0.1.263",
+        "digest": "423e07a5f493096dbffcc24a6fcb1594bfba460e4657cc5a5784b6f2d23989dd"
+      },
+      {
+        "version": "0.1.264",
+        "digest": "8195d540d4c79e3d5c961382872632d59e2ab3df558d810d853e1207ca21bd74"
+      },
+      {
+        "version": "0.1.265",
+        "digest": "97b5f8ab0d07e3b30f6c337ccf6c02a7668fd4bc013916e83bdab800a05ef5ba"
+      },
+      {
+        "version": "0.1.266",
+        "digest": "7c94881404d6a045bf987fab2f6c3e55016656241e3359bc1ea6e035af3ce652"
+      },
+      {
+        "version": "0.1.267",
+        "digest": "3fffededffddd6587ecc35961e1bec8cc40312985133c5f932dff096fa2f69ae"
+      },
+      {
+        "version": "0.1.268",
+        "digest": "a6603e2034c4b71ca9ddf7b03cebfb19404fdd91d9bf24f570d07dd0e6251731"
+      },
+      {
+        "version": "0.1.269",
+        "digest": "a75a463bddcc290a9bafed4f6c21e8bb72c961b068583ac2f807a425bcd4aba5"
+      },
+      {
+        "version": "0.1.270",
+        "digest": "856054b0909c3c94a0b0d617081a41edd87e4c3348e54618d68f10568ed5a62f"
+      },
+      {
+        "version": "0.1.271",
+        "digest": "2030422198fda1a5b8620d040671c3b9dc7142c8e4740a76279b69f0d460d913"
+      },
+      {
+        "version": "0.1.272",
+        "digest": "41c8f0a79eb1f33a7b5b7e2bc30a2fd4b4310898568fd8a67a8909ca30653dc1"
+      },
+      {
+        "version": "0.1.273",
+        "digest": "402d448aaaa5cfdac2b47fd9e00552b11ab2fbf38e238c9948ee3784327dd709"
+      },
+      {
+        "version": "0.1.274",
+        "digest": "5d337f8661f2ffc98e52fcaab5a3e5c637562440085bc1ee19bf4b498c7af905"
+      },
+      {
+        "version": "0.1.275",
+        "digest": "82aa1da957d8145c43ee6831c29ce01d59b988d52e966f7886d878965f8eb382"
+      },
+      {
+        "version": "0.1.276",
+        "digest": "6498bfcea7e6d07b6fd4cfc4af59688bd7d1ee7060bd1d88c7c33aeb9bbaaba0"
+      },
+      {
+        "version": "0.1.277",
+        "digest": "80fa86e223bbeba93ed4167507f927cbea57b7426bf4f4bdb2d03dc63aa90cdf"
+      },
+      {
+        "version": "0.1.278",
+        "digest": "84a5ccbfcca1c1a8744bc1dd58f1fc3eb5b76fb1e2e8345ab9b13e6dcbbb45dc"
+      },
+      {
+        "version": "0.1.279",
+        "digest": "04835d0bc5b863f3f3c3a333ff3bdbad50b3257ee3f9957e47b87ac83772a0ec"
+      },
+      {
+        "version": "0.1.280",
+        "digest": "fe8a26f6de5b101be20f546193803c6e0648f73634375655d5f0a02a20907757"
+      },
+      {
+        "version": "0.1.281",
+        "digest": "64b21954c6ac322a1c84cc70c825fd4d51b069b0bd3ae4c67feb88b27010ba15"
+      },
+      {
+        "version": "0.1.282",
+        "digest": "2e23de1142f1cd787c0cfd196af14b908ed90ffad7806d2d6ae1296fcfa4e94c"
+      },
+      {
+        "version": "0.1.283",
+        "digest": "1096166141e2241bb22ae3cf259954809c50ec0610997247deb8ead0ec939066"
+      }
+    ],
+    "setup-context-driven": [
+      {
+        "version": "0.0.2",
+        "digest": "3879a0b0fe351b3e2edc454121b82b6159a83073df43d774827d5ad891375c2a"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "64d01187ae21fd55a7031dfcf0b2ea0064cb0c1216d3ab2fd8244d785207bae0"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "5221305da8faae1b6f1f7b2bb77a29a9f3674d017e27f3962c33a54c573786b4"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "5b6432e62bfffc6ba5b5137e2e66015a77299a93b74f733a88cb4e3292aed3c2"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "5fd0d41002184c313a97df09a34beadad243de952b9dc33d74ebf1881677f894"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "cdb24381010c1526d094ef499eba17ebc10eff6e348d9d5948f24b8db32d5667"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "f0cfe53f97e3092aa79264194f6f57b76ab1d26f55d72b16c76f9f5eff29fbeb"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "8c56a00794c91845cf8fc97d90eae920b33cbd391c22a662707a710175cc6155"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "a48a6e4096e84a00c5a62833339d547700da54112ec8b8e1294ce32c1f0c835c"
+      }
+    ],
+    "write-idea": [
+      {
+        "version": "0.0.2",
+        "digest": "d44bdbca416d00966d04f3383eb848bace94a4f77334065551cb811454bcc1d8"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "4074139fb0c7d262e7a8dbc59d08ce467c88d8c040ea74567e161217a2ace6a7"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "c55e30bb784fe9a6cc14fe7d4f38951621773669cc125ed05544552c06184d33"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "ffad36d5c52bed856d0dd8a43191c79dc64324f8c281757506ef6391d1458b92"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "45cc03f95bfde3062cb272b38ad0b00c57c73e6e58e6330a506c66a965cfa740"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "fcbe90d67681deca422309da292c2e6481fa409c8abb189372bcde0d452f2387"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "06f31e0096985ae365eae4f6882d36fa8e7cd58c20805bf73c4d22060e232f92"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "7fbfc99e2050d6d388ae5c129562f09992e4ad01ef7eb3aac9edc046a3fac030"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "e21b82e3e96be4dc6095d2cdb15912ecb1d3b68fa871f5082d8337fb1de7efb1"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "9bceb9b84b4b180dcf098f1d5051b33eedbf6afd63d24a380945513cb772135e"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "ea3229916ec56a97d1dbe1b211b80745782754b69f34c8bf67333a20934c30b2"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "6e8485ab3d27fd154d6a62e982403b090a8434f05f08e74cd81aa08557cf7e5f"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "2397ed22f9ef229a625b6e8ef4b276a45c0db9ca76cc58d6e21da7eea40abad4"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "adf2cc6d3229adfd742eb1f63f5143d5d3e9b4925bd89757c1f036fcd729ba4e"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "e1c245ee77ef920af58ed2ccbe6962a42529477c33040d59752fba2e2f7029b3"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "4e457589a0170e90d47824d25e008a7b89717bc4b24d99dd0487ecf33493c31b"
+      }
+    ],
+    "write-prd": [
+      {
+        "version": "0.0.2",
+        "digest": "f4cfd245ea34f5103be328c023191c66e8b4d56fc13827362642b97d570b6898"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "aa1396faad18e962a2ffde77236bc3de44ea5dbf070d47e5fb1848a15ced8d31"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "65e9417cf082fd4b931d7b33b6234a613433c0294a94e6e73c55b8907c1eba8d"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "5f6450b33705d868e090d54bdaad1612b18ffb4e8df06f65dd811fa91873e781"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "e42fe9c807087a91a74b7dd044d3fc0018a2f427ea86d0813e70aa88f5506e99"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "7bf72eb662f03e360447efa31a8769b0938ac81563e1f0a5d52e66d6c042dc8f"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "92901bb01f574dbb2f0d6b923544ffef7d44ac92752c890c3356e8cebc4e8e30"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "3335412d5c1443e60677c46eb9f6ce64ebe1feb9a1bf028d21af17da72adab29"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "6f4417b9b2ce8be1a7203e9a413dbae6ae4dc85d1156f27e360a0c8b017d02b7"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "567c5eb5aac99e60601374babe756410a1ead2e253702b2295ee527e404e37f1"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "078a0f5c2896b6ff15e76b1728605175ec8850207e1e68bbec954ee574e94613"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "b7ccc4374fbea3b846554c47ef2dd025b7008d95f5581bf7b006a9798d5c5bf0"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "9b2cc893a063b5b23484a892513f596b0ad63ba6e1b950bc2884d06b0bf19c96"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "119245338c63b96189ce437123181e401d4e64c67f97a00b6616587089230c88"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "4fcb6564c350334b31dcb3e3f7e20ebd07fb564ee73c4d4f71cc1b90eeecbc25"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "6812400fe4b0bf6bb4f1a4185fdaf6868f0cb992e15cb174ce7138f8c8ae1246"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "3543b05c47bf34edd6782f3bc827ccea8dcd53d269030ec32506b6853d363c28"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "ff679a3701401dcdf245bc948f4c8acf70f0e07422525999f5de117702727478"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "a5b0fede139ae395528ff45572cbe69071247d0b5726fc205fe2c1575007c598"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "d8a1f0fd24441fc84eac05ec73c29a28e1c32d05e8d700a7da590728d91e158f"
+      },
+      {
+        "version": "0.0.22",
+        "digest": "298b2cdc7465ff4ad60dbe63c7ba311b2f66094beb8af1d1e997a5da0b52cd14"
+      },
+      {
+        "version": "0.0.23",
+        "digest": "6ff9cf76f5c075c072d5e7c7cedb722c53f08e0467050508571c67fe13043915"
+      },
+      {
+        "version": "0.0.24",
+        "digest": "990962f539d5703868b31f68a7f9125354c0f649cc0c112db8c6785f6a0124f9"
+      },
+      {
+        "version": "0.0.25",
+        "digest": "ef1212f64d5e8ad16f7bbece54c50ad135625ec6e7ddf7124ab91c8e1678df79"
+      },
+      {
+        "version": "0.0.26",
+        "digest": "2eb606ce54ef91a655eba8147a41219522a1e928b2c4e132bdf64016008199b8"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "ba1b294a7ce5845b975c8289a71a5d9c0149c5dcd9c091ba865c382eeec72782"
+      },
+      {
+        "version": "0.0.28",
+        "digest": "a307b23d243e573c03191b9aab30fbfc4550dcff5674e9f76fb50f88cb505d12"
+      }
+    ],
+    "write-tasks": [
+      {
+        "version": "0.0.3",
+        "digest": "b6b0af1efb4a777b7c1e0545ab924b6d427c2a909fc6cc3491d83b981be7f27e"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "5cbbcfeb91bcf38bc6bb709c7132abf8ae4b2c9ea7e5d8cda1e6f7bc2aeb30a7"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "10c038ce8a63a532fec7e6793e25a9b822e86ff46ecc01efef7e402a5fcb4f57"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "3a63300d64453f46830d205463e3d4d7bf93a9e0296ee70318d863c23a47ea84"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "cef0bbd6a4fd80a547987e6df4a6459fe2c33eb12d4662487ce786efb66ac47a"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "cbaf9f290c1614cad822558a7281160a761622e38d216518f52ceebdeb939ce7"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "75b76bdc86aa927b4a4b5f3a9daf4e66ab7e5e515ab14e6c551a471787c7073e"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "66c74c34b37a9a6074bfd79e02cecc38e094f3c9727527d33df722e15ba33ece"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "2de03cf0ad19db092e84aa56622d2d399657f748b835d232fc7c1ad29916ced9"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "164589d61de58671b28b5ac3d01fad4feb8ef5d114ba4fac81a4a04ac5cbd5d2"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "1fc2c645419861da134e2647f5a3c79d4f5f62e570df4990e347c6068a816e04"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "8876631421a52ddf4051e242929544c4020cc0013d3b6e7143496c95b456f8ff"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "9780c58a3d9a8bdcb71018f222b2ae312b022799bb6f0de2f3cd146fe5133965"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "ed47ac8b44234dab5949233df2f7951dbea29d78cb694201ddfef8be4eed1a49"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "9726062b82cbb4ff1f6256c2a7c8a414e2f588fddac2d85ecade943c2c45def1"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "c4672f800b7f8408c2d69e1188f6f235967ade9688b2bd8be6274572c123a12c"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "598021cbb7bf09e0f818672bea545ada284dfbb959d649027b803807850597f3"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "f5bcfb3e54896fd20058243bc0a05dc8b820286cf36755f8dee4a2ed8a19a470"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "725b815aba0f06403e71aaff5a82a918017281ffc8ac8fd79f1c072505380112"
+      },
+      {
+        "version": "0.0.22",
+        "digest": "73de481ab0938aa4fbe86da6c2fed433b6065de4f0ee9daaa0996dc9771b7da4"
+      },
+      {
+        "version": "0.0.23",
+        "digest": "57bfac277bf5ab922999e860f803fad03408f76c4708dd1b14b389c03420b5a7"
+      },
+      {
+        "version": "0.0.24",
+        "digest": "29c59fc11ad2e0896ccc91fdfffbbcc3166baf6a5c0a80a74450e10541903bb2"
+      },
+      {
+        "version": "0.0.25",
+        "digest": "48f25f5e6349fdd25a383c48531714950fbc3ebab248f4e2167d570f070b3e46"
+      },
+      {
+        "version": "0.0.26",
+        "digest": "15aaf34f15fb33dc309b7e3fedf1b79c2b67d973fb908031923a3e10e2624fb8"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "3c7e9de59f84a90d0d202188b5305307a24bea086f9936b50b55debf9cf7fb9e"
+      },
+      {
+        "version": "0.0.28",
+        "digest": "578befc4bfddcbfd1c94e2579eaafb5a49f88bb8b9544028db25b78baa450e89"
+      },
+      {
+        "version": "0.0.29",
+        "digest": "a686d76dfdbce402a4c9ac30239a1b670c769ddf0947b5b1419063ac378b28f6"
+      },
+      {
+        "version": "0.0.30",
+        "digest": "af3f29f031e676fe77f987b59bc93fe5e45a16f959fb4336943436970d31f6ef"
+      },
+      {
+        "version": "0.0.31",
+        "digest": "376f193a9f791d602efa40386925577c8265a4c601f1e737d75f0b35ac5f276d"
+      },
+      {
+        "version": "0.0.32",
+        "digest": "07eb8c649e9782767738bb9537264fd3865bf92cd135929b346f6168650edc73"
+      },
+      {
+        "version": "0.0.33",
+        "digest": "577d1955862c6b3697d8c10a9d079a4506375ea97a8f2d3f501eb79d479aef53"
+      },
+      {
+        "version": "0.0.34",
+        "digest": "cb2286160b077707d5fff292288362b265cc7530a958f1803427b8bb74e34549"
+      },
+      {
+        "version": "0.0.35",
+        "digest": "107129b57fc93d13e19a37a74adb1c7d09dbbb9cebd1ec40de72d610f2848d0b"
+      },
+      {
+        "version": "0.0.36",
+        "digest": "08bcf3cb732a98c3e5265eb0b1d1ddc6874d67f601179979c0dd243bc0df9ab5"
+      },
+      {
+        "version": "0.0.37",
+        "digest": "4d42189f4ad5dba2388871ec2fca286b4c5f1ccb18b33eb4805aae5e050bff98"
+      },
+      {
+        "version": "0.0.38",
+        "digest": "6644ff5c7a0ac2e32ae24353adf8d3160e780be56ad37ac7766de57f28bd43ce"
+      },
+      {
+        "version": "0.0.39",
+        "digest": "b033a917cc168466521768d0ddc857797862093299c571ce9e64af0364ee6b10"
+      },
+      {
+        "version": "0.0.40",
+        "digest": "77de6209a6e3a54788fff9fc34fef84a99628cf4b7d688ef66c5c2bc2725930a"
+      }
+    ],
+    "write-techspec": [
+      {
+        "version": "0.0.2",
+        "digest": "590d4401c995a0e16adb483d27ac284a7b4269ef0f9022dd23bf81ca3aec4485"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "2b41b87d8a9066df6e7203054dbae27af311e75eccf6fe0cb1c8d42b4238c249"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "7d44593860ba2c8384785efaa65987e55bf7d4c4ffc2e0aec6601cd75039ece8"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "b8993caca075651698767fe2ab9d94a7fc7751e490e1b4c7ec3140f97b7e7d19"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "e150220e1c331a593c9b4700ceff140287bf8afe6747b32f19c26b8299b9856c"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "f1938fb49592af6d5217c4644c314a6c158f5cd560226df844b6c9a426362285"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "33336b760d67bb18ccc1131052474b304a98e035d6789749f942ec02765f8b00"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "8b14101c9e72148e5c3455b32c76c422a74e8535cc946a15dd9045214afa0401"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "5b5d1e23844d79f23a62a46ae9bb4b934bf3d05e19fc865986ef599fe01af2da"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "d218c1cfbb3c6eea220340d102ee6f7f7285f06050101a0971eacdedf59576a2"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "7fb1a69098605290cd0a5efb04a0aee5b93ccc74dd9d5c7de534a2211f76d1b5"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "e78ef4838d6f7fcb3f4b51d4ab15b84962dda8df6021c88bbd036eeb2fca7088"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "d49a0f65a94b6d2e7069d4bcceb9b5adb6fb9806ae75c7b3499e12f37f1a3eb1"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "9d5cb1e700ff589379804d96ac0c8ffac3bc036632ec4701b40c754bc9f99367"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "998b159f1c8359d19f719a72c6d4ba0b99a54ab9a426c2071e855f78ec7db039"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "87b8032639e46968eebbf7245f6ee251082fe17cb2206ba9a1ca74b8e3408b8a"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "54ecdec5d273639137ca9190ff2644d8a2aa13382b0dd00838b5ead0e11d3c1a"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "18d1074ce7cbf243e48caca00d167f3f3c01a86c8d0afc395d4af3ac3c681ead"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "ca8cfe9a3a049e9c2dab9b50c84848cec2b0af85da1e39fc6ed561e9f37ddb32"
+      },
+      {
+        "version": "0.0.21",
+        "digest": "bb9d2adece96ffc0fba47d2b5d03e508c2f699c05d48f516d5204adf5be07201"
+      },
+      {
+        "version": "0.0.22",
+        "digest": "6e65b32bc74c93190ebd01f96c58e0ac1adda85ecf01749229131b6eea396a23"
+      },
+      {
+        "version": "0.0.23",
+        "digest": "fcbab397b8104dc92eccb6668081337f6c951c3103f749a713548ea82f23ab8f"
+      },
+      {
+        "version": "0.0.24",
+        "digest": "8d90d0acf36554f31df4a3bf413de140e86dbf43b26e7dd63063043bd4d4097f"
+      },
+      {
+        "version": "0.0.25",
+        "digest": "b75732f757c6cf9ddeea3685307821e674a5935c148f3271680cc19664802e39"
+      },
+      {
+        "version": "0.0.26",
+        "digest": "c70222b9aa0a32db9e2f8c4e6c43410488a60f73e5da3518450aa68a3f64e3d0"
+      },
+      {
+        "version": "0.0.27",
+        "digest": "af84a76ce22f406f178dffc3422fd139cb30de33737669ccdfc5b584ed7bff24"
+      },
+      {
+        "version": "0.0.28",
+        "digest": "2f895c11ac83006740dcb8985af13b9a81ea0032f1459e45e954c075ba4916cd"
+      }
+    ]
+  }
+}
+Both Roundfix SKILL.md copies identical; declared version: 0.1.283
+ASSERTIONS PASSED

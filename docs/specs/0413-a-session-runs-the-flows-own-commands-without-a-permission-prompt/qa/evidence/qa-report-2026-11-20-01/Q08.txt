@@ -1,0 +1,296 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm fixture --allow-empty
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude --format json
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+{
+  "schemaVersion": "roundfix/flow-permissions/v1",
+  "roundfix": "0.150.0",
+  "harnesses": [
+    {
+      "harness": "claude",
+      "action": "apply",
+      "file": ".claude/settings.json",
+      "fileExists": false,
+      "state": "not_applied",
+      "add": [
+        "Bash(roundfix archive *)",
+        "Bash(roundfix attach *)",
+        "Bash(roundfix cancel *)",
+        "Bash(roundfix corrections *)",
+        "Bash(roundfix deliver *)",
+        "Bash(roundfix doctor *)",
+        "Bash(roundfix events *)",
+        "Bash(roundfix fetch *)",
+        "Bash(roundfix follow-up *)",
+        "Bash(roundfix gc *)",
+        "Bash(roundfix history *)",
+        "Bash(roundfix implement *)",
+        "Bash(roundfix init *)",
+        "Bash(roundfix migrate *)",
+        "Bash(roundfix phase *)",
+        "Bash(roundfix qa-report *)",
+        "Bash(roundfix reconcile *)",
+        "Bash(roundfix reopen *)",
+        "Bash(roundfix resolve *)",
+        "Bash(roundfix review *)",
+        "Bash(roundfix runs *)",
+        "Bash(roundfix settle *)",
+        "Bash(roundfix setup *)",
+        "Bash(roundfix spec *)",
+        "Bash(roundfix stop *)",
+        "Bash(roundfix storage *)",
+        "Bash(roundfix supersede *)",
+        "Bash(roundfix update *)",
+        "Bash(roundfix upgrade *)",
+        "Bash(roundfix watch *)",
+        "Bash(roundfix window *)",
+        "Bash(git archive *)",
+        "Bash(git cat-file *)",
+        "Bash(git check-ignore *)",
+        "Bash(git diff *)",
+        "Bash(git diff-tree *)",
+        "Bash(git grep *)",
+        "Bash(git ls-files *)",
+        "Bash(git merge-tree *)",
+        "Bash(git rev-list *)",
+        "Bash(git rev-parse *)",
+        "Bash(git show *)",
+        "Bash(git status *)",
+        "Bash(gh api *)",
+        "Bash(gh pr view *)"
+      ],
+      "addGuards": [
+        "Bash(git archive *--output*)",
+        "Bash(git archive* -o*)",
+        "Bash(git archive *--remote*)",
+        "Bash(git archive *--exec*)",
+        "Bash(git diff *--output*)",
+        "Bash(git diff *--ext-diff*)",
+        "Bash(git diff-tree *--output*)",
+        "Bash(git diff-tree *--ext-diff*)",
+        "Bash(git grep *--open-files-in-pager*)",
+        "Bash(git grep* -O*)",
+        "Bash(git show *--output*)",
+        "Bash(git show *--ext-diff*)",
+        "Bash(gh api *--method*)",
+        "Bash(gh api* -X*)",
+        "Bash(gh api *--field*)",
+        "Bash(gh api* -F*)",
+        "Bash(gh api *--raw-field*)",
+        "Bash(gh api* -f*)",
+        "Bash(gh api *--input*)"
+      ],
+      "remove": [],
+      "exclusions": [
+        {
+          "command": "roundfix baseline",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix profiles",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix release",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix skills",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix permissions",
+          "reason": "the command that applies this list"
+        },
+        {
+          "command": "git -C",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git config",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git init",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git merge",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git mv",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git push",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git remote",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git repack",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git switch",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git worktree",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "gh auth",
+          "reason": "it changes your credentials"
+        }
+      ],
+      "digest": "c3213c6f555c",
+      "next": "roundfix permissions --harness claude --apply c3213c6f555c"
+    }
+  ]
+}
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude --apply c3213c6f555c
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+stderr:
+.claude/settings.json leaves the repository through a link. Nothing was written.
+exit: 1
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+Flow Command List for Claude Code, from Roundfix 0.150.0
+File: .claude/settings.json
+State: not readable: settings are not strict JSON
+
+Would add under permissions.allow (0):
+
+Would add under permissions.ask, to keep these options asked about (0):
+  These ask in every permission mode, a session that skips prompts included.
+
+Left out, and still asked about:
+  roundfix permissions: the command that applies this list
+  roundfix baseline, profiles, release, skills: the Roundfix skill tells a session to ask you first
+  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration
+  gh auth: it changes your credentials
+  A commit, a push, a merge and a Pull Request stay asked about, and a delivery's push and merge stay behind the Spec's authorization.
+
+What this does not do:
+  It is not a security boundary: a roundfix command runs what this repository declares.
+  A listed read accepts any option; only the options listed above stay asked about.
+  The rules apply only after you trust this folder in Claude Code.
+
+Nothing was written.
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude --apply 000000000000
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+stderr:
+.claude/settings.json cannot be read as Claude Code documents it: settings are not strict JSON. Nothing was written.
+exit: 1
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude --format json
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-link-tn79gd66
+stdout:
+{
+  "schemaVersion": "roundfix/flow-permissions/v1",
+  "roundfix": "0.150.0",
+  "harnesses": [
+    {
+      "harness": "claude",
+      "action": "apply",
+      "file": ".claude/settings.json",
+      "fileExists": true,
+      "state": "unreadable",
+      "add": [],
+      "addGuards": [],
+      "remove": [],
+      "exclusions": [
+        {
+          "command": "roundfix baseline",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix profiles",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix release",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix skills",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix permissions",
+          "reason": "the command that applies this list"
+        },
+        {
+          "command": "git -C",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git config",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git init",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git merge",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git mv",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git push",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git remote",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git repack",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git switch",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git worktree",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "gh auth",
+          "reason": "it changes your credentials"
+        }
+      ],
+      "digest": "",
+      "next": ""
+    }
+  ]
+}
+stderr:
+exit: 0
+Platform: darwin; external directory-link probe executed, no skip; external directory remains empty; unreadable file byte identity preserved.
+ASSERTIONS PASSED

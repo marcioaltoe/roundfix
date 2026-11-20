@@ -1,0 +1,51 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ go test -count=1 -timeout 40m -v -run '^TestOnlyTheCommandAndTheReportsUseTheList$' ./internal/flowpermissions
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== RUN   TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+=== PAUSE TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList/this_repository
+=== CONT  TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported
+--- PASS: TestOnlyTheCommandAndTheReportsUseTheList (0.00s)
+    --- PASS: TestOnlyTheCommandAndTheReportsUseTheList/planted_baseline_import_is_reported (0.01s)
+    --- PASS: TestOnlyTheCommandAndTheReportsUseTheList/this_repository (0.04s)
+PASS
+ok  	roundfix/internal/flowpermissions	0.275s
+stderr:
+exit: 0
+$ go test -count=1 -timeout 40m -v -run '^(TestPermissionsCommand|TestDoctorReportsFlowPermissions|TestUpdateCheckReportsFlowPermissions)$/(home_files_untouched|writes_nothing)$' ./internal/cli
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+=== RUN   TestDoctorReportsFlowPermissions
+=== PAUSE TestDoctorReportsFlowPermissions
+=== RUN   TestPermissionsCommand
+=== PAUSE TestPermissionsCommand
+=== RUN   TestUpdateCheckReportsFlowPermissions
+=== PAUSE TestUpdateCheckReportsFlowPermissions
+=== CONT  TestDoctorReportsFlowPermissions
+=== CONT  TestUpdateCheckReportsFlowPermissions
+=== CONT  TestPermissionsCommand
+=== RUN   TestDoctorReportsFlowPermissions/writes_nothing
+=== PAUSE TestDoctorReportsFlowPermissions/writes_nothing
+=== RUN   TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== PAUSE TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== CONT  TestUpdateCheckReportsFlowPermissions/writes_nothing
+=== RUN   TestPermissionsCommand/home_files_untouched
+=== CONT  TestDoctorReportsFlowPermissions/writes_nothing
+--- PASS: TestPermissionsCommand (0.06s)
+    --- PASS: TestPermissionsCommand/home_files_untouched (0.06s)
+--- PASS: TestDoctorReportsFlowPermissions (0.00s)
+    --- PASS: TestDoctorReportsFlowPermissions/writes_nothing (0.06s)
+--- PASS: TestUpdateCheckReportsFlowPermissions (0.00s)
+    --- PASS: TestUpdateCheckReportsFlowPermissions/writes_nothing (0.10s)
+PASS
+suiteguard: guard cost: measured 3449 paths; fingerprint took 284.555667ms before and 287.308167ms after
+ok  	roundfix/internal/cli	0.993s
+stderr:
+exit: 0
+ASSERTIONS PASSED

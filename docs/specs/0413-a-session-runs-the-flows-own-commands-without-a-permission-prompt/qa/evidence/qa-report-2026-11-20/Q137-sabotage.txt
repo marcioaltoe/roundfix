@@ -1,0 +1,55 @@
+Independent git archive of df1529f9e2845738434bff1d4a99ccdb1b250426; initialized/staged/committed before sabotage. No regeneration or synchronization.
+diff --git a/internal/cli/doctor_flow_permissions.go b/internal/cli/doctor_flow_permissions.go
+index 18c090d..7c6ff33 100644
+--- a/internal/cli/doctor_flow_permissions.go
++++ b/internal/cli/doctor_flow_permissions.go
+@@ -58,7 +58,7 @@ func doctorFlowPermissionsResult(repository string) CheckResult {
+ 	}
+ 	result.Detail = strings.Join(parts, "; ")
+ 	if code != "" {
+-		result.Status = CheckStatusWarn
++		result.Status = CheckStatusFailed
+ 		result.Detail = code + ": " + result.Detail
+ 	} else if result.Status == CheckStatusSkipped {
+ 		result.Detail += "; to see the list: roundfix permissions"
+
+$ go test -count=1 -timeout 40m -v -run '^TestDoctorReportsFlowPermissions$/^never_fails$' ./internal/cli
+stdout:
+=== RUN   TestDoctorReportsFlowPermissions
+=== PAUSE TestDoctorReportsFlowPermissions
+=== CONT  TestDoctorReportsFlowPermissions
+=== RUN   TestDoctorReportsFlowPermissions/never_fails
+=== PAUSE TestDoctorReportsFlowPermissions/never_fails
+=== CONT  TestDoctorReportsFlowPermissions/never_fails
+    doctor_flow_permissions_test.go:141: exit=1 want=0 stderr= stdout=node: ok
+        acpx: ok
+        adapter: ok (claude: claude-agent-acp | codex: codex-acp)
+        profiles: ok (0 distinct tuples; 0 category references)
+        recommendations: ok (snapshot 2026-11-17; 5 current, 0 differ, 0 pinned)
+        pre-pr-review: ok (provider=codex; source=default)
+        gh: ok
+        git: ok
+        remote: ok
+        toolchain: ok
+        environment: ok
+        skills: ok (39 required: 14 Roundfix-owned, 25 external)
+        baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)
+        baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)
+        baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)
+        baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)
+        flow-permissions: failed (DR-FLOW-PERMISSIONS-BEHIND: claude: not readable; codex: behind, 1 to add, 1 to remove; opencode: not readable; next: roundfix permissions --harness claude)
+        residue: ok (no process residue found)
+        storage: ok (no Run Database)
+        codex: ok
+--- FAIL: TestDoctorReportsFlowPermissions (0.00s)
+    --- FAIL: TestDoctorReportsFlowPermissions/never_fails (0.04s)
+FAIL
+suiteguard: guard cost: measured 3374 paths; fingerprint took 538.18675ms before and 258.5775ms after
+FAIL	roundfix/internal/cli	1.312s
+FAIL
+
+stderr:
+
+exit: 1
+
+Expected named assertion failure observed; package compiled; sabotage detected.

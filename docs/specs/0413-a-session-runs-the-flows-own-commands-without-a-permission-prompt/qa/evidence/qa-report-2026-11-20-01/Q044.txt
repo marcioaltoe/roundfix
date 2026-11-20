@@ -1,0 +1,28 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-lwwoy168
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm fixture --allow-empty
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-lwwoy168
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness opencode
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-lwwoy168
+stdout:
+Flow Command List for OpenCode, from Roundfix 0.150.0
+State: not needed
+OpenCode's base policy allows every shell command, and this repository holds no OpenCode configuration that asks about or denies one.
+Roundfix writes nothing for OpenCode.
+stderr:
+exit: 0
+Transcript matching: separate stdout/stderr; exit exact; ... and <placeholder> rules satisfied.
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-repo-lwwoy168
+stdout:
+No harness files in this repository. Name one with --harness.
+stderr:
+exit: 0
+ASSERTIONS PASSED

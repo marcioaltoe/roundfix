@@ -1,0 +1,17 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix archive 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt --plan --offline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+archive plan for 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt: removes 105 file(s) (1031491 bytes) and writes docs/history/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt.md
+core 13 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-20-01.md, qa/qa-report-2026-11-20.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md, task_06.md
+evidence 88 file(s) (638354 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 36495 bytes: no advice (offline)
+candidate references/2026-11-19-harness-rule-measurements.md 9229 bytes: no advice (offline)
+candidate references/2026-11-19-maintainer-answers.md 4245 bytes: no advice (offline)
+candidate references/2026-11-19-the-flows-commands-and-the-harness-permission-rules.md 12686 bytes: no advice (offline)
+promote with: roundfix archive 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt --promote <path>
+stderr:
+exit: 0
+Offline archive plan only; Judge Key Variables and TYPESAFE_API_KEY unset; no promotion, write, judge or publication attempted.
+ASSERTIONS PASSED

@@ -1,0 +1,21 @@
+$ ./bin/roundfix permissions --harness claude --format json
+stdout:
+
+stderr:
+.claude/settings.json leaves the repository through a link. Nothing was written.
+
+exit: 1
+
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T033653Z_96d2b5330174b3f3/docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/qa/evidence/qa-report-2026-11-20/gate.py.txt", line 184, in flow
+    fn(t,e,logs,artifacts)
+    ~~^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T033653Z_96d2b5330174b3f3/docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/qa/evidence/qa-report-2026-11-20/gate.py.txt", line 296, in refusal_flow
+    j,_=plan('claude',repo,e,logs)
+        ~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T033653Z_96d2b5330174b3f3/docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/qa/evidence/qa-report-2026-11-20/gate.py.txt", line 202, in plan
+    p=call(args,repo,e,logs)
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T033653Z_96d2b5330174b3f3/docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/qa/evidence/qa-report-2026-11-20/gate.py.txt", line 197, in call
+    p=cli(args,repo,e); logs.append(transcript([BINARY]+args,p)); assert p.returncode==expected,(args,p.returncode,p.stderr)
+                                                                         ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (['permissions', '--harness', 'claude', '--format', 'json'], 1, '.claude/settings.json leaves the repository through a link. Nothing was written.\n')

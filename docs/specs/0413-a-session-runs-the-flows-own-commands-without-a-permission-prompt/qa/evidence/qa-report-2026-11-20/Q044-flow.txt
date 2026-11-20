@@ -1,0 +1,14 @@
+$ ./bin/roundfix permissions --harness opencode
+stdout:
+Flow Command List for OpenCode, from Roundfix 0.150.0
+State: not needed
+OpenCode's base policy allows every shell command, and this repository holds no OpenCode configuration that asks about or denies one.
+Roundfix writes nothing for OpenCode.
+
+stderr:
+
+exit: 0
+
+Surface Transcript 4: stdout and stderr independently matched, exact exit. Only version/digest placeholders and explicit ellipses varied.
+
+Independent temporary-home snapshot unchanged.

@@ -1,0 +1,69 @@
+$ go test -count=1 -timeout 40m -v -run '^(TestPermissionsSurfaceTranscripts|TestPermissionsCommand|TestRootHelpNamesThePermissionsCommand)$' ./internal/cli
+stdout:
+=== RUN   TestPermissionsSurfaceTranscripts
+=== PAUSE TestPermissionsSurfaceTranscripts
+=== RUN   TestPermissionsCommand
+=== PAUSE TestPermissionsCommand
+=== RUN   TestRootHelpNamesThePermissionsCommand
+=== PAUSE TestRootHelpNamesThePermissionsCommand
+=== CONT  TestPermissionsSurfaceTranscripts
+=== CONT  TestRootHelpNamesThePermissionsCommand
+=== CONT  TestPermissionsCommand
+=== RUN   TestPermissionsSurfaceTranscripts/help
+=== RUN   TestPermissionsCommand/no_harness_files
+--- PASS: TestRootHelpNamesThePermissionsCommand (0.00s)
+=== RUN   TestPermissionsSurfaceTranscripts/claude_preview
+=== RUN   TestPermissionsCommand/preview_every_present_harness
+=== RUN   TestPermissionsSurfaceTranscripts/stale_digest
+=== RUN   TestPermissionsCommand/json_preview_schema
+=== RUN   TestPermissionsSurfaceTranscripts/opencode_report
+=== RUN   TestPermissionsCommand/apply_writes_the_preview
+--- PASS: TestPermissionsSurfaceTranscripts (0.14s)
+    --- PASS: TestPermissionsSurfaceTranscripts/help (0.04s)
+    --- PASS: TestPermissionsSurfaceTranscripts/claude_preview (0.04s)
+    --- PASS: TestPermissionsSurfaceTranscripts/stale_digest (0.03s)
+    --- PASS: TestPermissionsSurfaceTranscripts/opencode_report (0.03s)
+=== RUN   TestPermissionsCommand/apply_json_written
+=== RUN   TestPermissionsCommand/second_preview_is_current
+=== RUN   TestPermissionsCommand/apply_without_harness_is_invalid
+=== RUN   TestPermissionsCommand/apply_opencode_is_invalid
+=== RUN   TestPermissionsCommand/unknown_harness_is_invalid
+=== RUN   TestPermissionsCommand/unknown_format_is_invalid
+=== RUN   TestPermissionsCommand/outside_a_git_repository
+=== RUN   TestPermissionsCommand/stale_digest_after_file_change
+=== RUN   TestPermissionsCommand/unreadable_target_on_write
+=== RUN   TestPermissionsCommand/link_outside_the_repository
+=== RUN   TestPermissionsCommand/remove_preview_and_apply
+=== RUN   TestPermissionsCommand/nothing_to_remove
+=== RUN   TestPermissionsCommand/codex_apply_and_remove
+=== RUN   TestPermissionsCommand/codex_preview_says_no_guard
+=== RUN   TestPermissionsCommand/exclusions_printed
+=== RUN   TestPermissionsCommand/home_files_untouched
+--- PASS: TestPermissionsCommand (0.63s)
+    --- PASS: TestPermissionsCommand/no_harness_files (0.04s)
+    --- PASS: TestPermissionsCommand/preview_every_present_harness (0.04s)
+    --- PASS: TestPermissionsCommand/json_preview_schema (0.03s)
+    --- PASS: TestPermissionsCommand/apply_writes_the_preview (0.03s)
+    --- PASS: TestPermissionsCommand/apply_json_written (0.03s)
+    --- PASS: TestPermissionsCommand/second_preview_is_current (0.03s)
+    --- PASS: TestPermissionsCommand/apply_without_harness_is_invalid (0.03s)
+    --- PASS: TestPermissionsCommand/apply_opencode_is_invalid (0.03s)
+    --- PASS: TestPermissionsCommand/unknown_harness_is_invalid (0.03s)
+    --- PASS: TestPermissionsCommand/unknown_format_is_invalid (0.03s)
+    --- PASS: TestPermissionsCommand/outside_a_git_repository (0.00s)
+    --- PASS: TestPermissionsCommand/stale_digest_after_file_change (0.03s)
+    --- PASS: TestPermissionsCommand/unreadable_target_on_write (0.03s)
+    --- PASS: TestPermissionsCommand/link_outside_the_repository (0.03s)
+    --- PASS: TestPermissionsCommand/remove_preview_and_apply (0.03s)
+    --- PASS: TestPermissionsCommand/nothing_to_remove (0.03s)
+    --- PASS: TestPermissionsCommand/codex_apply_and_remove (0.04s)
+    --- PASS: TestPermissionsCommand/codex_preview_says_no_guard (0.03s)
+    --- PASS: TestPermissionsCommand/exclusions_printed (0.03s)
+    --- PASS: TestPermissionsCommand/home_files_untouched (0.04s)
+PASS
+suiteguard: guard cost: measured 3385 paths; fingerprint took 288.182042ms before and 261.234042ms after
+ok  	roundfix/internal/cli	1.659s
+
+stderr:
+
+exit: 0

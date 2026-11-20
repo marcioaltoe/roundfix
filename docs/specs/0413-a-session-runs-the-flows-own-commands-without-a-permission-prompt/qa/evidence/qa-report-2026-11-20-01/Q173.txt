@@ -1,0 +1,4 @@
+criterion: Success Metric 12 holds in the 30 days after a repository applies the list.
+reason: it needs weeks of use after the release, in a repository whose maintainer chose to apply the list.
+satisfied-by: the operator's count, at a cycle close, of the Backlog Entries, Findings and messages that name that cause, recorded session evidence.
+Observed gate constraint: the authorization forbids starting a real harness or interactive Agent session, and this offline pre-release gate has no post-application 30-day observation interval. No prohibited experiment attempted. The operator must supply the declared recorded session evidence after release; neither offline renderings nor headless checks establish this criterion.

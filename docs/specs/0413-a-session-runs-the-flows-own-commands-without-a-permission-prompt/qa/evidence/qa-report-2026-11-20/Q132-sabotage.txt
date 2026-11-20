@@ -1,0 +1,32 @@
+Independent git archive of df1529f9e2845738434bff1d4a99ccdb1b250426; initialized/staged/committed before sabotage. No regeneration or synchronization.
+diff --git a/internal/flowpermissions/list.go b/internal/flowpermissions/list.go
+index e7ccaca..05439fc 100644
+--- a/internal/flowpermissions/list.go
++++ b/internal/flowpermissions/list.go
+@@ -29,6 +29,7 @@ type list struct {
+ // shipped is data, never derived from the repository or installed tools at runtime.
+ var shipped = list{
+ 	entries: []Entry{
++        {Words: []string{"python3", "-c"}},
+ 		{Words: []string{"roundfix", "archive"}},
+ 		{Words: []string{"roundfix", "attach"}},
+ 		{Words: []string{"roundfix", "cancel"}},
+
+$ go test -count=1 -timeout 20m -v -run '^TestRenderingsHoldNoForbiddenRule$/^claude$' ./internal/flowpermissions
+stdout:
+=== RUN   TestRenderingsHoldNoForbiddenRule
+=== PAUSE TestRenderingsHoldNoForbiddenRule
+=== CONT  TestRenderingsHoldNoForbiddenRule
+=== RUN   TestRenderingsHoldNoForbiddenRule/claude
+    render_test.go:119: forbidden rules: [python3 -c]
+--- FAIL: TestRenderingsHoldNoForbiddenRule (0.00s)
+    --- FAIL: TestRenderingsHoldNoForbiddenRule/claude (0.00s)
+FAIL
+FAIL	roundfix/internal/flowpermissions	0.234s
+FAIL
+
+stderr:
+
+exit: 1
+
+Expected named assertion failure observed; package compiled; sabotage detected.

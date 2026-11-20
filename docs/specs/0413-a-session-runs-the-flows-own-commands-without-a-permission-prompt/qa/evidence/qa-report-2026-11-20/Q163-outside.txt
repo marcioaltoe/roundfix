@@ -1,0 +1,3 @@
+Source: Codex rules documentation; read 2026-11-19. External author; passage preserved in _prd.md Acceptance evidence. Offline comparison only, no lookup.
+Recorded passage: Run the command outside the sandbox without prompting.
+Fresh public Codex preview prints the corresponding outside-sandbox warning verbatim. No session loading is claimed; Q172 carries that limit.

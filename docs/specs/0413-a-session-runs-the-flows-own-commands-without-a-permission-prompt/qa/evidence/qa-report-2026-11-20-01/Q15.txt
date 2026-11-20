@@ -1,0 +1,563 @@
+Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
+$ git init -q
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+stderr:
+exit: 0
+$ git -c user.name=QA -c user.email=qa@example.invalid -c commit.gpgsign=false commit -qm fixture --allow-empty
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude --format json
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+{
+  "schemaVersion": "roundfix/flow-permissions/v1",
+  "roundfix": "0.150.0",
+  "harnesses": [
+    {
+      "harness": "claude",
+      "action": "apply",
+      "file": ".claude/settings.json",
+      "fileExists": false,
+      "state": "not_applied",
+      "add": [
+        "Bash(roundfix archive *)",
+        "Bash(roundfix attach *)",
+        "Bash(roundfix cancel *)",
+        "Bash(roundfix corrections *)",
+        "Bash(roundfix deliver *)",
+        "Bash(roundfix doctor *)",
+        "Bash(roundfix events *)",
+        "Bash(roundfix fetch *)",
+        "Bash(roundfix follow-up *)",
+        "Bash(roundfix gc *)",
+        "Bash(roundfix history *)",
+        "Bash(roundfix implement *)",
+        "Bash(roundfix init *)",
+        "Bash(roundfix migrate *)",
+        "Bash(roundfix phase *)",
+        "Bash(roundfix qa-report *)",
+        "Bash(roundfix reconcile *)",
+        "Bash(roundfix reopen *)",
+        "Bash(roundfix resolve *)",
+        "Bash(roundfix review *)",
+        "Bash(roundfix runs *)",
+        "Bash(roundfix settle *)",
+        "Bash(roundfix setup *)",
+        "Bash(roundfix spec *)",
+        "Bash(roundfix stop *)",
+        "Bash(roundfix storage *)",
+        "Bash(roundfix supersede *)",
+        "Bash(roundfix update *)",
+        "Bash(roundfix upgrade *)",
+        "Bash(roundfix watch *)",
+        "Bash(roundfix window *)",
+        "Bash(git archive *)",
+        "Bash(git cat-file *)",
+        "Bash(git check-ignore *)",
+        "Bash(git diff *)",
+        "Bash(git diff-tree *)",
+        "Bash(git grep *)",
+        "Bash(git ls-files *)",
+        "Bash(git merge-tree *)",
+        "Bash(git rev-list *)",
+        "Bash(git rev-parse *)",
+        "Bash(git show *)",
+        "Bash(git status *)",
+        "Bash(gh api *)",
+        "Bash(gh pr view *)"
+      ],
+      "addGuards": [
+        "Bash(git archive *--output*)",
+        "Bash(git archive* -o*)",
+        "Bash(git archive *--remote*)",
+        "Bash(git archive *--exec*)",
+        "Bash(git diff *--output*)",
+        "Bash(git diff *--ext-diff*)",
+        "Bash(git diff-tree *--output*)",
+        "Bash(git diff-tree *--ext-diff*)",
+        "Bash(git grep *--open-files-in-pager*)",
+        "Bash(git grep* -O*)",
+        "Bash(git show *--output*)",
+        "Bash(git show *--ext-diff*)",
+        "Bash(gh api *--method*)",
+        "Bash(gh api* -X*)",
+        "Bash(gh api *--field*)",
+        "Bash(gh api* -F*)",
+        "Bash(gh api *--raw-field*)",
+        "Bash(gh api* -f*)",
+        "Bash(gh api *--input*)"
+      ],
+      "remove": [],
+      "exclusions": [
+        {
+          "command": "roundfix baseline",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix profiles",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix release",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix skills",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix permissions",
+          "reason": "the command that applies this list"
+        },
+        {
+          "command": "git -C",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git config",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git init",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git merge",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git mv",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git push",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git remote",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git repack",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git switch",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git worktree",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "gh auth",
+          "reason": "it changes your credentials"
+        }
+      ],
+      "digest": "c3213c6f555c",
+      "next": "roundfix permissions --harness claude --apply c3213c6f555c"
+    }
+  ]
+}
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness claude
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+Flow Command List for Claude Code, from Roundfix 0.150.0
+File: .claude/settings.json (absent, it would be created)
+State: not applied
+
+Would add under permissions.allow (45):
+  Bash(roundfix archive *)
+  Bash(roundfix attach *)
+  Bash(roundfix cancel *)
+  Bash(roundfix corrections *)
+  Bash(roundfix deliver *)
+  Bash(roundfix doctor *)
+  Bash(roundfix events *)
+  Bash(roundfix fetch *)
+  Bash(roundfix follow-up *)
+  Bash(roundfix gc *)
+  Bash(roundfix history *)
+  Bash(roundfix implement *)
+  Bash(roundfix init *)
+  Bash(roundfix migrate *)
+  Bash(roundfix phase *)
+  Bash(roundfix qa-report *)
+  Bash(roundfix reconcile *)
+  Bash(roundfix reopen *)
+  Bash(roundfix resolve *)
+  Bash(roundfix review *)
+  Bash(roundfix runs *)
+  Bash(roundfix settle *)
+  Bash(roundfix setup *)
+  Bash(roundfix spec *)
+  Bash(roundfix stop *)
+  Bash(roundfix storage *)
+  Bash(roundfix supersede *)
+  Bash(roundfix update *)
+  Bash(roundfix upgrade *)
+  Bash(roundfix watch *)
+  Bash(roundfix window *)
+  Bash(git archive *)
+  Bash(git cat-file *)
+  Bash(git check-ignore *)
+  Bash(git diff *)
+  Bash(git diff-tree *)
+  Bash(git grep *)
+  Bash(git ls-files *)
+  Bash(git merge-tree *)
+  Bash(git rev-list *)
+  Bash(git rev-parse *)
+  Bash(git show *)
+  Bash(git status *)
+  Bash(gh api *)
+  Bash(gh pr view *)
+
+Would add under permissions.ask, to keep these options asked about (19):
+  Bash(git archive *--output*)
+  Bash(git archive* -o*)
+  Bash(git archive *--remote*)
+  Bash(git archive *--exec*)
+  Bash(git diff *--output*)
+  Bash(git diff *--ext-diff*)
+  Bash(git diff-tree *--output*)
+  Bash(git diff-tree *--ext-diff*)
+  Bash(git grep *--open-files-in-pager*)
+  Bash(git grep* -O*)
+  Bash(git show *--output*)
+  Bash(git show *--ext-diff*)
+  Bash(gh api *--method*)
+  Bash(gh api* -X*)
+  Bash(gh api *--field*)
+  Bash(gh api* -F*)
+  Bash(gh api *--raw-field*)
+  Bash(gh api* -f*)
+  Bash(gh api *--input*)
+  These ask in every permission mode, a session that skips prompts included.
+
+Left out, and still asked about:
+  roundfix permissions: the command that applies this list
+  roundfix baseline, profiles, release, skills: the Roundfix skill tells a session to ask you first
+  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration
+  gh auth: it changes your credentials
+  A commit, a push, a merge and a Pull Request stay asked about, and a delivery's push and merge stay behind the Spec's authorization.
+
+What this does not do:
+  It is not a security boundary: a roundfix command runs what this repository declares.
+  A listed read accepts any option; only the options listed above stay asked about.
+  The rules apply only after you trust this folder in Claude Code.
+
+Nothing was written. To write exactly this: roundfix permissions --harness claude --apply c3213c6f555c
+stderr:
+exit: 0
+claude: all 16 exclusions, reasons and exact git -C line agree across public formats; forbidden-rule sweep passed.
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness codex --format json
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+{
+  "schemaVersion": "roundfix/flow-permissions/v1",
+  "roundfix": "0.150.0",
+  "harnesses": [
+    {
+      "harness": "codex",
+      "action": "apply",
+      "file": ".codex/rules/roundfix-flow.rules",
+      "fileExists": false,
+      "state": "not_applied",
+      "add": [
+        "roundfix archive",
+        "roundfix attach",
+        "roundfix cancel",
+        "roundfix corrections",
+        "roundfix deliver",
+        "roundfix doctor",
+        "roundfix events",
+        "roundfix fetch",
+        "roundfix follow-up",
+        "roundfix gc",
+        "roundfix history",
+        "roundfix implement",
+        "roundfix init",
+        "roundfix migrate",
+        "roundfix phase",
+        "roundfix qa-report",
+        "roundfix reconcile",
+        "roundfix reopen",
+        "roundfix resolve",
+        "roundfix review",
+        "roundfix runs",
+        "roundfix settle",
+        "roundfix setup",
+        "roundfix spec",
+        "roundfix stop",
+        "roundfix storage",
+        "roundfix supersede",
+        "roundfix update",
+        "roundfix upgrade",
+        "roundfix watch",
+        "roundfix window",
+        "git archive",
+        "git cat-file",
+        "git check-ignore",
+        "git diff",
+        "git diff-tree",
+        "git grep",
+        "git ls-files",
+        "git merge-tree",
+        "git rev-list",
+        "git rev-parse",
+        "git show",
+        "git status",
+        "gh api",
+        "gh pr view"
+      ],
+      "addGuards": [],
+      "remove": [],
+      "exclusions": [
+        {
+          "command": "roundfix baseline",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix profiles",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix release",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix skills",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix permissions",
+          "reason": "the command that applies this list"
+        },
+        {
+          "command": "git -C",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git config",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git init",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git merge",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git mv",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git push",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git remote",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git repack",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git switch",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git worktree",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "gh auth",
+          "reason": "it changes your credentials"
+        }
+      ],
+      "digest": "bdbc7d1fe7da",
+      "next": "roundfix permissions --harness codex --apply bdbc7d1fe7da"
+    }
+  ]
+}
+stderr:
+exit: 0
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524/bin/roundfix permissions --harness codex
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf413-content-lrkkw1sw
+stdout:
+Flow Command List for Codex, from Roundfix 0.150.0
+File: .codex/rules/roundfix-flow.rules (absent, it would be created)
+State: not applied
+
+Would allow (45):
+  roundfix archive
+  roundfix attach
+  roundfix cancel
+  roundfix corrections
+  roundfix deliver
+  roundfix doctor
+  roundfix events
+  roundfix fetch
+  roundfix follow-up
+  roundfix gc
+  roundfix history
+  roundfix implement
+  roundfix init
+  roundfix migrate
+  roundfix phase
+  roundfix qa-report
+  roundfix reconcile
+  roundfix reopen
+  roundfix resolve
+  roundfix review
+  roundfix runs
+  roundfix settle
+  roundfix setup
+  roundfix spec
+  roundfix stop
+  roundfix storage
+  roundfix supersede
+  roundfix update
+  roundfix upgrade
+  roundfix watch
+  roundfix window
+  git archive
+  git cat-file
+  git check-ignore
+  git diff
+  git diff-tree
+  git grep
+  git ls-files
+  git merge-tree
+  git rev-list
+  git rev-parse
+  git show
+  git status
+  gh api
+  gh pr view
+No option of a listed read can be kept asked about in Codex.
+
+Left out, and still asked about:
+  roundfix permissions: the command that applies this list
+  roundfix baseline, profiles, release, skills: the Roundfix skill tells a session to ask you first
+  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration
+  gh auth: it changes your credentials
+  A commit, a push, a merge and a Pull Request stay asked about, and a delivery's push and merge stay behind the Spec's authorization.
+
+What this does not do:
+  It is not a security boundary: a roundfix command runs what this repository declares.
+  In Codex an allowed command runs outside the sandbox with nobody asked.
+  Codex rules match the start of a command, so a listed read runs with any option: git show --output=<file> would write that file.
+  The rules apply only after you trust this project in Codex.
+
+Nothing was written. To write exactly this: roundfix permissions --harness codex --apply bdbc7d1fe7da
+stderr:
+exit: 0
+codex: all 16 exclusions, reasons and exact git -C line agree across public formats; forbidden-rule sweep passed.
+Identical canonical/mirror bytes: SKILL.md
+Identical canonical/mirror bytes: references/setup.md
+Identical canonical/mirror bytes: references/modes.md
+Exact promised phrases confirmed: docs/user-guide/commands/permissions.md
+Exact promised phrases confirmed: docs/user-guide/commands.md
+Exact promised phrases confirmed: docs/user-guide/usage.md
+Exact promised phrases confirmed: docs/user-guide/commands/doctor.md
+Exact promised phrases confirmed: docs/user-guide/commands/update.md
+Exact promised phrases confirmed: docs/user-guide/configuration.md
+Exact promised phrases confirmed: internal/cli/cli.go
+0444-roundfix-writes-a-harness-permission-file-only-as-a-list-the-user-saw-and-confirmed.md: accepted; Knowledge Mark true
+0445-the-flow-command-list-names-subcommands-and-holds-every-git-and-github-read-the-skills-name.md: accepted; Knowledge Mark true
+0446-a-write-to-a-harness-permission-file-takes-a-preview-digest-and-roundfix-knows-its-entries-by-their-text.md: accepted; Knowledge Mark false
+$ git diff --name-only 416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff..c6e7d2c429f9d813afb140c3e8e342c21bc4ed83 -- internal/config
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+stderr:
+exit: 0
+$ git diff --unified=0 416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff..c6e7d2c429f9d813afb140c3e8e342c21bc4ed83 -- internal/cli/cli.go
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+diff --git a/internal/cli/cli.go b/internal/cli/cli.go
+index 38b0dcd8..41c57c1a 100644
+--- a/internal/cli/cli.go
++++ b/internal/cli/cli.go
+@@ -101,0 +102 @@ Usage:
++  roundfix permissions [--harness <claude|codex|opencode>] [--remove] [--apply <digest>] [--format <text|json>]
+@@ -145,0 +147 @@ Commands:
++  permissions  Show or apply the Flow Command List for an Agent harness
+@@ -634,0 +637,2 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
++	case "permissions":
++		return runPermissionsCommand(ctx, args[1:], stdout, stderr, environment)
+@@ -5372,0 +5377 @@ AGENTS.md and never fails Doctor.
++The flow-permissions: line reports whether the Flow Command List is applied and current for each Agent harness this repository holds, and never fails Doctor.
+@@ -5451,0 +5457 @@ from the Recommended Profile, with the command that adopts it.
++It also reports each Agent harness where this repository applied the Flow Command List, and whether that list is current.
+@@ -6132,0 +6139,2 @@ Options:
++	case "permissions":
++		return permissionsUsage
+stderr:
+exit: 0
+$ git diff --unified=0 416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff..c6e7d2c429f9d813afb140c3e8e342c21bc4ed83 -- internal/cli/update_check.go
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+diff --git a/internal/cli/update_check.go b/internal/cli/update_check.go
+index b5169959..cf079d42 100644
+--- a/internal/cli/update_check.go
++++ b/internal/cli/update_check.go
+@@ -16,0 +17 @@ import (
++	"roundfix/internal/flowpermissions"
+@@ -64,0 +66,8 @@ type updateCheckBaseline struct {
++type updateCheckFlowPermission struct {
++	Harness flowpermissions.Harness `json:"harness"`
++	State   flowpermissions.State   `json:"state"`
++	Add     int                     `json:"add"`
++	Remove  int                     `json:"remove"`
++	Next    string                  `json:"next"`
++}
++
+@@ -77,0 +87 @@ type updateCheckReport struct {
++	FlowPermissions   []updateCheckFlowPermission      `json:"flowPermissions,omitempty"`
+@@ -118,0 +129,10 @@ func runUpdateCommand(ctx context.Context, args []string, stdout, stderr io.Writ
++	for _, plan := range flowPermissionPlans(loaded.GitRoot) {
++		switch plan.State {
++		case flowpermissions.Current, flowpermissions.Behind, flowpermissions.Unreadable:
++			part := updateCheckFlowPermission{Harness: plan.Harness, State: plan.State, Add: len(plan.Add) + len(plan.AddGuards), Remove: len(plan.Remove)}
++			if plan.State != flowpermissions.Current {
++				part.Next = permissionsPreviewCommand(plan)
++			}
++			report.FlowPermissions = append(report.FlowPermissions, part)
++		}
++	}
+@@ -350,0 +371,10 @@ func printUpdateCheckReport(stdout io.Writer, report updateCheckReport) {
++	for _, part := range report.FlowPermissions {
++		switch part.State {
++		case flowpermissions.Current:
++			fmt.Fprintf(stdout, "Flow permissions: %s current\n", part.Harness)
++		case flowpermissions.Behind:
++			fmt.Fprintf(stdout, "Flow permissions: %s behind, %d to add, %d to remove — %s\n", part.Harness, part.Add, part.Remove, part.Next)
++		case flowpermissions.Unreadable:
++			fmt.Fprintf(stdout, "Flow permissions: %s not readable — %s\n", part.Harness, part.Next)
++		}
++	}
+stderr:
+exit: 0
+$ git diff --unified=0 416e16dd24cdc72737fa0fe8d2c8aa32ab0b89ff..c6e7d2c429f9d813afb140c3e8e342c21bc4ed83 -- internal/cli/doctor.go
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt-c8f2a1536ff2df13-ef18df96-ac610702/run_20261120T063034Z_b3f2d33da96d7524
+stdout:
+diff --git a/internal/cli/doctor.go b/internal/cli/doctor.go
+index e7e2a270..2a51b60e 100644
+--- a/internal/cli/doctor.go
++++ b/internal/cli/doctor.go
+@@ -137,0 +138 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
++	results = append(results, doctorFlowPermissionsResult(repositoryRoot))
+stderr:
+exit: 0
+No existing registration/flag/exit-code line removed or rewritten; only permissions registered; internal/config byte-identical across Task range. New advisory check and optional JSON report field match API Contract 5.
+ASSERTIONS PASSED

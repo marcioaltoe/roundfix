@@ -1,0 +1,4 @@
+Pre-run declaration: in an interactive Codex session of a trusted project where the list was applied, the same walk shows no prompt for a listed command, and the session loaded the rules file of Roundfix's own from the project's rules folder.
+Reason: it needs a person at an interactive Codex session, and no test may run the real harness.
+Observed constraint: Spec authorization forbids any QA/test from starting the real harness or an interactive session; this offline gate starts none and has no trusted interactive session.
+To satisfy: the operator's walk in Codex after the release, kept in the same reference document, recorded session evidence.

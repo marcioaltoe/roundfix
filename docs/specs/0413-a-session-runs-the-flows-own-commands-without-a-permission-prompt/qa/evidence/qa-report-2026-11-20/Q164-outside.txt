@@ -1,0 +1,8 @@
+Source: Pillar Security, GitPwned: Allowlist to RCE, published 2026-07-20; read 2026-11-19. External author; passage preserved in _prd.md Acceptance evidence. Offline comparison only, no lookup.
+Recorded passage: Command-name allowlists don't work for commands with complex option semantics.
+git show: Bash(git show *--output*), Bash(git show *--ext-diff*)
+git diff: Bash(git diff *--output*), Bash(git diff *--ext-diff*), Bash(git diff-tree *--output*), Bash(git diff-tree *--ext-diff*)
+git grep: Bash(git grep *--open-files-in-pager*), Bash(git grep* -O*)
+git archive: Bash(git archive *--output*), Bash(git archive* -o*), Bash(git archive *--remote*), Bash(git archive *--exec*)
+gh api: Bash(gh api *--method*), Bash(gh api* -X*), Bash(gh api *--field*), Bash(gh api* -F*), Bash(gh api *--raw-field*), Bash(gh api* -f*), Bash(gh api *--input*)
+Fresh Claude apply places these dangerous-option guards in ask; Codex preview explicitly states it can write no guard. This compares implemented mitigation and disclosed limit with an external challenge rather than treating the Spec premise as proof.

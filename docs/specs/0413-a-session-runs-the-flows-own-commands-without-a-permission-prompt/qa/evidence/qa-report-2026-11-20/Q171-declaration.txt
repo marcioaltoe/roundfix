@@ -1,0 +1,4 @@
+Pre-run declaration: in an interactive Claude Code session of a trusted folder where the list was applied, a walk through the status view, a phase start and a Spec Consistency Check shows no permission prompt for a listed command, in the session and in an Author Subagent it starts, and a Named Exclusion is still asked about.
+Reason: it needs a person at an interactive session of the harness, which no Verification or QA row may start; a headless session cannot show a prompt.
+Observed constraint: Spec authorization forbids any QA/test from starting the real harness or an interactive session; this offline gate starts none and has no trusted interactive session.
+To satisfy: the operator's walk in Claude Code after the release, with the count of prompts before and after applying, kept as a reference document, recorded session evidence.

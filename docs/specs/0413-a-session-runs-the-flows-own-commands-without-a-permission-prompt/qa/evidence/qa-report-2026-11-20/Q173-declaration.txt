@@ -1,0 +1,4 @@
+Pre-run declaration: Success Metric 12 holds in the 30 days after a repository applies the list.
+Reason: it needs weeks of use after the release, in a repository whose maintainer chose to apply the list.
+Observed constraint: This is the implementation-day gate; no post-release application/30-day observation window exists. No clock-duration assertion or observation count is fabricated.
+To satisfy: the operator's count, at a cycle close, of the Backlog Entries, Findings and messages that name that cause, recorded session evidence.

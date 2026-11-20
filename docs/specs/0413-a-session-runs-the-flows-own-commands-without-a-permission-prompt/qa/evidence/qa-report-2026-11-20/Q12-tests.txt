@@ -1,0 +1,120 @@
+$ go test -count=1 -timeout 20m -v -run '^(TestTheRoundfixSkillDescribesFlowPermissions|TestTheRoundfixSkillNamesTheFlowPermissionsReports|TestEveryOwnedSkillVersionIsRecorded)$' ./skills
+stdout:
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== RUN   TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== RUN   TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== PAUSE TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+=== PAUSE TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/copies_identical
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/see_the_list
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/trust_rule
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes
+=== CONT  TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical
+=== CONT  TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply
+--- PASS: TestTheRoundfixSkillDescribesFlowPermissions (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/trust_rule (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/copies_identical (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/index_row_names_the_command (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/see_the_list (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/not_a_security_boundary (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/never_on_its_own_or_from_a_run (0.00s)
+    --- PASS: TestTheRoundfixSkillDescribesFlowPermissions/one_question_then_apply (0.00s)
+--- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/reports_never_apply (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_names_next (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/setup_names_both_reports (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/update_mode_never_applies_unasked (0.00s)
+    --- PASS: TestTheRoundfixSkillNamesTheFlowPermissionsReports/copies_identical (0.00s)
+PASS
+ok  	roundfix/skills	0.307s
+
+stderr:
+
+exit: 0
+
+$ go test -count=1 -timeout 20m ./skills
+stdout:
+ok  	roundfix/skills	3.103s
+
+stderr:
+
+exit: 0
+
+$ make skills-sync-check
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.187s
+
+stderr:
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+stdout:
+ok  	roundfix/internal/docscontract	19.025s
+
+stderr:
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -tags docscontract -v -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$' ./internal/docscontract
+stdout:
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.01s)
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.12s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.09s)
+PASS
+ok  	roundfix/internal/docscontract	0.497s
+
+stderr:
+
+exit: 0
+
+$ go test -count=1 -timeout 20m -run '^TestCoverageEquivalence$' ./internal/spec
+stdout:
+ok  	roundfix/internal/spec	2.063s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "roundfix/flow-permissions/v1",
+  "roundfix": "0.150.0",
+  "harnesses": [
+    {
+      "harness": "codex",
+      "action": "apply",
+      "file": ".codex/rules/roundfix-flow.rules",
+      "fileExists": false,
+      "state": "not_applied",
+      "add": [
+        "roundfix archive",
+        "roundfix attach",
+        "roundfix cancel",
+        "roundfix corrections",
+        "roundfix deliver",
+        "roundfix doctor",
+        "roundfix events",
+        "roundfix fetch",
+        "roundfix follow-up",
+        "roundfix gc",
+        "roundfix history",
+        "roundfix implement",
+        "roundfix init",
+        "roundfix migrate",
+        "roundfix phase",
+        "roundfix qa-report",
+        "roundfix reconcile",
+        "roundfix reopen",
+        "roundfix resolve",
+        "roundfix review",
+        "roundfix runs",
+        "roundfix settle",
+        "roundfix setup",
+        "roundfix spec",
+        "roundfix stop",
+        "roundfix storage",
+        "roundfix supersede",
+        "roundfix update",
+        "roundfix upgrade",
+        "roundfix watch",
+        "roundfix window",
+        "git archive",
+        "git cat-file",
+        "git check-ignore",
+        "git diff",
+        "git diff-tree",
+        "git grep",
+        "git ls-files",
+        "git merge-tree",
+        "git rev-list",
+        "git rev-parse",
+        "git show",
+        "git status",
+        "gh api",
+        "gh pr view"
+      ],
+      "addGuards": [],
+      "remove": [],
+      "exclusions": [
+        {
+          "command": "roundfix baseline",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix profiles",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix release",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix skills",
+          "reason": "the Roundfix skill tells a session to ask you first"
+        },
+        {
+          "command": "roundfix permissions",
+          "reason": "the command that applies this list"
+        },
+        {
+          "command": "git -C",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git config",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git init",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git merge",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git mv",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git push",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git remote",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git repack",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git switch",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "git worktree",
+          "reason": "they change the repository or its configuration"
+        },
+        {
+          "command": "gh auth",
+          "reason": "it changes your credentials"
+        }
+      ],
+      "digest": "bdbc7d1fe7da",
+      "next": "roundfix permissions --harness codex --apply bdbc7d1fe7da"
+    }
+  ]
+}

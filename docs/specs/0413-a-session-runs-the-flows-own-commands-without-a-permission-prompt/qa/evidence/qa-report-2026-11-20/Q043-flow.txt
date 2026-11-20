@@ -1,0 +1,12 @@
+$ ./bin/roundfix permissions --harness claude --apply 000000000000
+stdout:
+
+stderr:
+The preview changed since digest 000000000000 was printed. Nothing was written.
+Run the preview again: roundfix permissions --harness claude
+
+exit: 3
+
+Surface Transcript 3: stdout and stderr independently matched, exact exit. Only version/digest placeholders and explicit ellipses varied.
+
+Independent temporary-home snapshot unchanged.

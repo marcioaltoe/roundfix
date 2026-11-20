@@ -1,0 +1,37 @@
+Coverage: declared Requirements 2, 3, 9, 10, 11, 12, 13, 14 and 19; repository Verification; four Surface Transcripts; four outside-evidence sources; three declared criteria; Pull Request row.
+Q01 | repository Verification | Record Daemon-supplied make verify-changed pass, exit 0; confirm make build and local binary identity.
+Q02 | task_05 Requirement 2 | Verbose list, forbidden-rule, Guard Entry, Codex and retired tests; owned-command contracts; whole flowpermissions package.
+Q03 | task_05 Requirement 3 | Verbose settings, OpenCode, plan and apply tests; record every named case, including link pass/skip.
+Q041 | task_05 Requirement 14; Surface Transcript 1 | Reproduce Surface Transcript 1 with the built binary, compare stdout/stderr separately, exact exit, ellipses and angle placeholders only.
+Q042 | task_05 Requirement 14; Surface Transcript 2 | Reproduce Surface Transcript 2 with the built binary, compare stdout/stderr separately, exact exit, ellipses and angle placeholders only.
+Q043 | task_05 Requirement 14; Surface Transcript 3 | Reproduce Surface Transcript 3 with the built binary, compare stdout/stderr separately, exact exit, ellipses and angle placeholders only.
+Q044 | task_05 Requirement 14; Surface Transcript 4 | Reproduce Surface Transcript 4 with the built binary, compare stdout/stderr separately, exact exit, ellipses and angle placeholders only.
+Q04T | task_05 Requirement 14 | Run PermissionsSurfaceTranscripts, PermissionsCommand and root-help tests verbosely.
+Q05 | task_05 Requirements 3 and 14 | Claude JSON preview/apply/current/removal/stale digest and invalid-argument public journeys; strict JSON, tabs, no final newline, byte restoration.
+Q06 | task_05 Requirements 2 and 14 | Codex public preview/apply/removal, preserve default.rules, independently inspect blocks and exclusions.
+Q07 | task_05 Requirements 2 and 3 | Measure five short-option patterns and Codex filename/form offline; state real-session limits.
+Q08 | task_05 Requirements 3 and 14 | Public outside-directory-link refusal and unreadable-comment file; unchanged target and no outside write.
+Q09 | task_05 Requirement 9 | Verbose Doctor/UpdateCheck reports with fakes; broad Doctor|UpdateCheck|Permissions tests; never fails, exit/order, next warnings.
+Q10 | task_05 Requirement 10 | Both import-boundary subtests and home-files-untouched/report writes_nothing subtests.
+Q11 | task_05 Requirement 11 | Verbose governed-path cases, historical set-growth cases, full speccheck with and without repocontract.
+Q12 | task_05 Requirement 12 | Skill sentence tests, version record, whole skills/docscontract suites, sync check, command/coverage/glossary and coverage-equivalence tests.
+Q131 | task_05 Requirement 13 | Sabotage 1 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q132 | task_05 Requirement 13 | Sabotage 2 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q133 | task_05 Requirement 13 | Sabotage 3 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q134 | task_05 Requirement 13 | Sabotage 4 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q135 | task_05 Requirement 13 | Sabotage 5 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q136 | task_05 Requirement 13 | Sabotage 6 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q137 | task_05 Requirement 13 | Sabotage 7 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q138 | task_05 Requirement 13 | Sabotage 8 on an independent git-archive copy; require the named assertion failure, no generation or synchronization.
+Q14 | task_05 Requirement 14 | Execute each task_01–task_04 Verification command, including expected named-pass checks and Windows package builds.
+Q15 | task_05 Requirements 12 and 14 | Search actual JSON renderings, exclusions, warnings, guides, skill copies, help sentences, ADR marks and unchanged existing CLI/config contracts.
+Q161 | outside-evidence row; published source 1 | Compare the dated, committed external-source quotation with fresh public-flow output; no lookup.
+Q162 | outside-evidence row; published source 2 | Compare the dated, committed external-source quotation with fresh public-flow output; no lookup.
+Q163 | outside-evidence row; published source 3 | Compare the dated, committed external-source quotation with fresh public-flow output; no lookup.
+Q164 | outside-evidence row; published source 4 | Compare the dated, committed external-source quotation with fresh public-flow output; no lookup.
+Q171 | PRD Unreachable Acceptance: in an interactive Claude Code session of a trusted folder where the list was applied, a walk through the status view, a phase start and a Spec Consistency Check shows no permission prompt for a listed command, in the session and in an Author Subagent it starts, and a Named Exclusion is still asked about. | Prove matching pre-run constraint and record exact operator satisfied-by action; no harness starts.
+Q172 | PRD Unreachable Acceptance: in an interactive Codex session of a trusted project where the list was applied, the same walk shows no prompt for a listed command, and the session loaded the rules file of Roundfix's own from the project's rules folder. | Prove matching pre-run constraint and record exact operator satisfied-by action; no harness starts.
+Q173 | PRD Unreachable Acceptance: Success Metric 12 holds in the 30 days after a repository applies the list. | Prove matching pre-run constraint and record exact operator satisfied-by action; no harness starts.
+Q18 | task_05 Requirement 12 | Check four glossary additions, exact placement/definitions, only Governed Path sentence changed, no other entry changed; glossary contract.
+Q19 | task_05 Requirement 19 | Audit actual task commit paths against Context/Recorded paths, frozen grant, protected paths, ADRs and QA settlement sections.
+Q20 | Pull Request row | Record no open Pull Request; delivery authority, Daemon verification, no unresolved threads, no Merge-Ready acceptance and exact candidate head.

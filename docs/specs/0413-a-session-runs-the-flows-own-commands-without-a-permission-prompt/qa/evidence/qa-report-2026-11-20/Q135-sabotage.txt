@@ -1,0 +1,33 @@
+Independent git archive of df1529f9e2845738434bff1d4a99ccdb1b250426; initialized/staged/committed before sabotage. No regeneration or synchronization.
+diff --git a/internal/flowpermissions/plan.go b/internal/flowpermissions/plan.go
+index 37e5a42..d2f982b 100644
+--- a/internal/flowpermissions/plan.go
++++ b/internal/flowpermissions/plan.go
+@@ -258,7 +258,7 @@ func Apply(repoRoot string, harness Harness, action Action, digest string) (Plan
+ 	if digest == "" {
+ 		return result.Plan, ErrNotWritable
+ 	}
+-	if result.Digest != digest {
++	if false {
+ 		return result.Plan, ErrPreviewChanged
+ 	}
+ 	if err := checkTarget(repoRoot, result.File); err != nil {
+
+$ go test -count=1 -timeout 20m -v -run '^TestApply$/^stale_digest_writes_nothing$' ./internal/flowpermissions
+stdout:
+=== RUN   TestApply
+=== PAUSE TestApply
+=== CONT  TestApply
+=== RUN   TestApply/stale_digest_writes_nothing
+    plan_test.go:306: stale apply: <nil>
+--- FAIL: TestApply (0.00s)
+    --- FAIL: TestApply/stale_digest_writes_nothing (0.00s)
+FAIL
+FAIL	roundfix/internal/flowpermissions	0.225s
+FAIL
+
+stderr:
+
+exit: 1
+
+Expected named assertion failure observed; package compiled; sabotage detected.
