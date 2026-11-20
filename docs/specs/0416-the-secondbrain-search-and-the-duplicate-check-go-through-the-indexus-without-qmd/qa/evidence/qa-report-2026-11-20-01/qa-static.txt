@@ -1,6 +1,0 @@
-Daemon repository Verification at da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe
-command: make verify-changed
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Agent did not rerun repository Verification.

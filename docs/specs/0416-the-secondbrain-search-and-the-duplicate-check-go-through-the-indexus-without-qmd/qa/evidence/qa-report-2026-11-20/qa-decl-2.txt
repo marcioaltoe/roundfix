@@ -1,4 +1,0 @@
-criterion: An Agent session that exposes the Indexus follows the reworded clauses and receives groups from the live service.
-reason: The QA gate starts no Agent session and calls no MCP server.
-satisfied-by: The author's live calls of 2026-11-20, recorded in the characterization, section 5.
-Observed gate boundary: offline-only authorization and Task Overview prohibit MCP calls, another repository, Agent sessions and network. No such call or session ran. The recorded notice widens delivery authority; it is not a measurement run by this QA.

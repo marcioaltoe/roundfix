@@ -1,4 +1,0 @@
-criterion: The Indexus is superior to qmd in what the projects and the maintainer's assistant use.
-reason: The Indexus project measures it in a side-by-side test outside this repository, and the QA gate reads no other repository and reaches no network.
-satisfied-by: The notice of the test's result that the project that owns the Secondbrain sends to this project's inbox, which the operator records before the merge.
-Observed gate boundary: authored Task forbids other repositories, network, MCP and Agent sessions; none invoked. Declared live criterion remains unproven by this gate. Operative authority includes merge/release, per widening; no delivery performed.

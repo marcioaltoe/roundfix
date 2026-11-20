@@ -1,4 +1,0 @@
-Audited head: da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe
-Delivery Base: ac1a57deca0bd27a690ba1e260ad458011fcf3d6
-Initial status:
-?? docs/specs/0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd/qa/

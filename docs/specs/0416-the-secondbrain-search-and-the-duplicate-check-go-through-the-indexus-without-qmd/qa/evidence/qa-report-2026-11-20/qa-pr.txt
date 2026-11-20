@@ -1,7 +1,0 @@
-Prompt fact: no open Pull Request on feat/secondbrain-search-through-indexus; the Run branch is never pushed.
-Approval: operative delivery authority is the recorded decision 01a1f993-7830-7362-b8dc-49813553eab8, Superior; remover já; authorizes merge and patch release, not a reviewer acceptance.
-Checks/status: Daemon make verify-changed passed at c97707d82292c9487571094fab4e61c0bceafed2 (exit 0). Required remote PR checks are unavailable before a PR.
-Unresolved review threads: none exists because no Pull Request exists.
-Merge-Ready acceptance: none yet; no current-candidate review was supplied or requested by this child QA.
-Review-artifact ancestry: claimed candidate is c97707d82292c9487571094fab4e61c0bceafed2; no review-artifact commit is available to establish reviewer acceptance.
-Unblock: the Supervisor obtains the configured current-candidate review and opens the Spec target-branch PR, then observes approval, checks and review ancestry. No equivalent evidence for those absent controls is invented.
