@@ -1,0 +1,14 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^TestQADocumentationHead$' ./internal/cli
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-2d_14m1n
+stdout:
+=== RUN   TestQADocumentationHead
+    qa_documentation_head_test.go:8: baseline-export: ok (the Standard Export List is current; 4 line(s) of the repository's own)
+    qa_documentation_head_test.go:8: baseline-docs: ok (the documentation follows the docs-layout guide)
+--- PASS: TestQADocumentationHead (0.07s)
+PASS
+suiteguard: guard cost: measured 3465 paths; fingerprint took 289.479542ms before and 164.74275ms after
+ok  	roundfix/internal/cli	1.335s
+
+stderr:
+
+exit: 0

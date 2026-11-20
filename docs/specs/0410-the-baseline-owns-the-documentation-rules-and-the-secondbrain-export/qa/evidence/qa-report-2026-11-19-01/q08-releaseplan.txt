@@ -1,0 +1,529 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec ./internal/releaseplan
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4
+stdout:
+=== RUN   TestClassifyCommit
+=== RUN   TestClassifyCommit/breaking_marker_in_subject
+=== RUN   TestClassifyCommit/breaking_footer_in_body
+=== RUN   TestClassifyCommit/scoped_feature_is_minor
+=== RUN   TestClassifyCommit/fix_is_patch
+=== RUN   TestClassifyCommit/perf_is_patch
+=== RUN   TestClassifyCommit/other_conventional_type_has_no_automatic_increment
+=== RUN   TestClassifyCommit/malformed_subject_has_no_automatic_increment
+=== RUN   TestClassifyCommit/malformed_type_with_bang_is_not_guessed
+--- PASS: TestClassifyCommit (0.00s)
+    --- PASS: TestClassifyCommit/breaking_marker_in_subject (0.00s)
+    --- PASS: TestClassifyCommit/breaking_footer_in_body (0.00s)
+    --- PASS: TestClassifyCommit/scoped_feature_is_minor (0.00s)
+    --- PASS: TestClassifyCommit/fix_is_patch (0.00s)
+    --- PASS: TestClassifyCommit/perf_is_patch (0.00s)
+    --- PASS: TestClassifyCommit/other_conventional_type_has_no_automatic_increment (0.00s)
+    --- PASS: TestClassifyCommit/malformed_subject_has_no_automatic_increment (0.00s)
+    --- PASS: TestClassifyCommit/malformed_type_with_bang_is_not_guessed (0.00s)
+=== RUN   TestMaintenanceOnly
+=== RUN   TestMaintenanceOnly/docs/specs/0034-release-plan/task_02.md
+=== RUN   TestMaintenanceOnly/docs/backlog/2026-11-01-example.md
+=== RUN   TestMaintenanceOnly/docs/adr/0048-release-planning-is-read-only-and-confirmation-gated.md
+=== RUN   TestMaintenanceOnly/docs/findings/2026-07-16-release-version-strategy-and-approval-gates.md
+=== RUN   TestMaintenanceOnly/docs/handoffs/2026-07-16-release-plan.md
+=== RUN   TestMaintenanceOnly/docs/references/evidence.md
+=== RUN   TestMaintenanceOnly/internal/releaseplan/classifier_test.go
+=== RUN   TestMaintenanceOnly/.agents/skills/setup-context-driven/tests/test_assets.py
+=== RUN   TestMaintenanceOnly/internal/releaseplan/testdata/commit.txt
+=== RUN   TestMaintenanceOnly/internal/releaseplan/fixtures/plan.json
+=== RUN   TestMaintenanceOnly/.github/workflows/ci-conventions.yml
+=== RUN   TestMaintenanceOnly/.github/workflows/secondbrain-sync.yml
+=== RUN   TestMaintenanceOnly/.github/workflows/release.yml
+=== RUN   TestMaintenanceOnly/internal/cli/release.go
+=== RUN   TestMaintenanceOnly/cmd/roundfix/main.go
+=== RUN   TestMaintenanceOnly/.agents/skills/roundfix/SKILL.md
+=== RUN   TestMaintenanceOnly/package.json
+=== RUN   TestMaintenanceOnly/go.mod
+=== RUN   TestMaintenanceOnly/README.md
+=== RUN   TestMaintenanceOnly/docs/user-guide/commands.md
+=== RUN   TestMaintenanceOnly/../outside.md
+=== RUN   TestMaintenanceOnly/#00
+--- PASS: TestMaintenanceOnly (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/specs/0034-release-plan/task_02.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/backlog/2026-11-01-example.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/adr/0048-release-planning-is-read-only-and-confirmation-gated.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/findings/2026-07-16-release-version-strategy-and-approval-gates.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/handoffs/2026-07-16-release-plan.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/references/evidence.md (0.00s)
+    --- PASS: TestMaintenanceOnly/internal/releaseplan/classifier_test.go (0.00s)
+    --- PASS: TestMaintenanceOnly/.agents/skills/setup-context-driven/tests/test_assets.py (0.00s)
+    --- PASS: TestMaintenanceOnly/internal/releaseplan/testdata/commit.txt (0.00s)
+    --- PASS: TestMaintenanceOnly/internal/releaseplan/fixtures/plan.json (0.00s)
+    --- PASS: TestMaintenanceOnly/.github/workflows/ci-conventions.yml (0.00s)
+    --- PASS: TestMaintenanceOnly/.github/workflows/secondbrain-sync.yml (0.00s)
+    --- PASS: TestMaintenanceOnly/.github/workflows/release.yml (0.00s)
+    --- PASS: TestMaintenanceOnly/internal/cli/release.go (0.00s)
+    --- PASS: TestMaintenanceOnly/cmd/roundfix/main.go (0.00s)
+    --- PASS: TestMaintenanceOnly/.agents/skills/roundfix/SKILL.md (0.00s)
+    --- PASS: TestMaintenanceOnly/package.json (0.00s)
+    --- PASS: TestMaintenanceOnly/go.mod (0.00s)
+    --- PASS: TestMaintenanceOnly/README.md (0.00s)
+    --- PASS: TestMaintenanceOnly/docs/user-guide/commands.md (0.00s)
+    --- PASS: TestMaintenanceOnly/../outside.md (0.00s)
+    --- PASS: TestMaintenanceOnly/#00 (0.00s)
+=== RUN   TestClassifyChanges
+=== RUN   TestClassifyChanges/breaking_outranks_feature_fix_and_none
+=== RUN   TestClassifyChanges/breaking_outranks_every_order
+=== RUN   TestClassifyChanges/feature_outranks_fix_and_none
+=== RUN   TestClassifyChanges/fix_outranks_none
+=== RUN   TestClassifyChanges/maintenance_only_produces_no_release
+=== RUN   TestClassifyChanges/maintenance_only_fix_produces_no_release
+=== RUN   TestClassifyChanges/maintenance_only_breaking_feature_produces_no_release
+=== RUN   TestClassifyChanges/ambiguous_shipped_surface_requires_manual_classification
+=== RUN   TestClassifyChanges/valid_manual_classification_resolves_ambiguity
+--- PASS: TestClassifyChanges (0.00s)
+    --- PASS: TestClassifyChanges/breaking_outranks_feature_fix_and_none (0.00s)
+    --- PASS: TestClassifyChanges/breaking_outranks_every_order (0.00s)
+    --- PASS: TestClassifyChanges/feature_outranks_fix_and_none (0.00s)
+    --- PASS: TestClassifyChanges/fix_outranks_none (0.00s)
+    --- PASS: TestClassifyChanges/maintenance_only_produces_no_release (0.00s)
+    --- PASS: TestClassifyChanges/maintenance_only_fix_produces_no_release (0.00s)
+    --- PASS: TestClassifyChanges/maintenance_only_breaking_feature_produces_no_release (0.00s)
+    --- PASS: TestClassifyChanges/ambiguous_shipped_surface_requires_manual_classification (0.00s)
+    --- PASS: TestClassifyChanges/valid_manual_classification_resolves_ambiguity (0.00s)
+=== RUN   TestValidateManualImpact
+=== RUN   TestValidateManualImpact/valid_equal_impact
+=== RUN   TestValidateManualImpact/valid_higher_impact
+=== RUN   TestValidateManualImpact/empty_reason
+=== RUN   TestValidateManualImpact/impact_below_automatic_minimum
+--- PASS: TestValidateManualImpact (0.00s)
+    --- PASS: TestValidateManualImpact/valid_equal_impact (0.00s)
+    --- PASS: TestValidateManualImpact/valid_higher_impact (0.00s)
+    --- PASS: TestValidateManualImpact/empty_reason (0.00s)
+    --- PASS: TestValidateManualImpact/impact_below_automatic_minimum (0.00s)
+=== RUN   TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult
+=== RUN   TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/manual_reason_without_impact
+=== RUN   TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/manual_impact_below_automatic_minimum
+=== RUN   TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/unsupported_manual_impact
+--- PASS: TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult (0.00s)
+    --- PASS: TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/manual_reason_without_impact (0.00s)
+    --- PASS: TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/manual_impact_below_automatic_minimum (0.00s)
+    --- PASS: TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult/unsupported_manual_impact (0.00s)
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== PAUSE TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly
+=== PAUSE TestAnAdopterManagedPathIsMaintenanceOnly
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames
+=== PAUSE TestManagedPathsRejectInvalidPathsAndSkillNames
+=== RUN   TestManagedMaintenanceIgnoresConventionalImpact
+=== PAUSE TestManagedMaintenanceIgnoresConventionalImpact
+=== RUN   TestBuildReadsManagedPathsBeforeCheckingReleasePreparation
+=== PAUSE TestBuildReadsManagedPathsBeforeCheckingReleasePreparation
+=== RUN   TestAnswerApprovalFollowsEveryCeiling
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease
+=== RUN   TestBuildLooksForGrantsOnlyWhenApprovalIsRequired
+=== PAUSE TestBuildLooksForGrantsOnlyWhenApprovalIsRequired
+=== RUN   TestReleasePreparationCommitSetsNoImpact
+=== PAUSE TestReleasePreparationCommitSetsNoImpact
+=== RUN   TestParseStableVersion
+=== RUN   TestParseStableVersion/version_zero_release
+=== RUN   TestParseStableVersion/major_release
+=== RUN   TestParseStableVersion/multi_digit_release
+=== RUN   TestParseStableVersion/empty
+=== RUN   TestParseStableVersion/missing_patch
+=== RUN   TestParseStableVersion/bare_missing_patch
+=== RUN   TestParseStableVersion/extra_component
+=== RUN   TestParseStableVersion/major_leading_zero
+=== RUN   TestParseStableVersion/bare_major_leading_zero
+=== RUN   TestParseStableVersion/minor_leading_zero
+=== RUN   TestParseStableVersion/patch_leading_zero
+=== RUN   TestParseStableVersion/build_metadata
+=== RUN   TestParseStableVersion/pre-release
+=== RUN   TestParseStableVersion/bare_pre-release
+=== RUN   TestParseStableVersion/version_zero_pre-release
+=== RUN   TestParseStableVersion/prefix_near_miss
+--- PASS: TestParseStableVersion (0.00s)
+    --- PASS: TestParseStableVersion/version_zero_release (0.00s)
+    --- PASS: TestParseStableVersion/major_release (0.00s)
+    --- PASS: TestParseStableVersion/multi_digit_release (0.00s)
+    --- PASS: TestParseStableVersion/empty (0.00s)
+    --- PASS: TestParseStableVersion/missing_patch (0.00s)
+    --- PASS: TestParseStableVersion/bare_missing_patch (0.00s)
+    --- PASS: TestParseStableVersion/extra_component (0.00s)
+    --- PASS: TestParseStableVersion/major_leading_zero (0.00s)
+    --- PASS: TestParseStableVersion/bare_major_leading_zero (0.00s)
+    --- PASS: TestParseStableVersion/minor_leading_zero (0.00s)
+    --- PASS: TestParseStableVersion/patch_leading_zero (0.00s)
+    --- PASS: TestParseStableVersion/build_metadata (0.00s)
+    --- PASS: TestParseStableVersion/pre-release (0.00s)
+    --- PASS: TestParseStableVersion/bare_pre-release (0.00s)
+    --- PASS: TestParseStableVersion/version_zero_pre-release (0.00s)
+    --- PASS: TestParseStableVersion/prefix_near_miss (0.00s)
+=== RUN   TestStableVersionAcceptsBothSpellings
+=== RUN   TestStableVersionAcceptsBothSpellings/bare
+=== RUN   TestStableVersionAcceptsBothSpellings/prefixed
+--- PASS: TestStableVersionAcceptsBothSpellings (0.00s)
+    --- PASS: TestStableVersionAcceptsBothSpellings/bare (0.00s)
+    --- PASS: TestStableVersionAcceptsBothSpellings/prefixed (0.00s)
+=== RUN   TestStableVersionPreservesRejectionMessages
+=== RUN   TestStableVersionPreservesRejectionMessages/bare_pre-release
+=== RUN   TestStableVersionPreservesRejectionMessages/prefixed_build_metadata
+=== RUN   TestStableVersionPreservesRejectionMessages/bare_missing_patch
+=== RUN   TestStableVersionPreservesRejectionMessages/bare_leading_zero
+=== RUN   TestStableVersionPreservesRejectionMessages/prefix_near_miss
+--- PASS: TestStableVersionPreservesRejectionMessages (0.00s)
+    --- PASS: TestStableVersionPreservesRejectionMessages/bare_pre-release (0.00s)
+    --- PASS: TestStableVersionPreservesRejectionMessages/prefixed_build_metadata (0.00s)
+    --- PASS: TestStableVersionPreservesRejectionMessages/bare_missing_patch (0.00s)
+    --- PASS: TestStableVersionPreservesRejectionMessages/bare_leading_zero (0.00s)
+    --- PASS: TestStableVersionPreservesRejectionMessages/prefix_near_miss (0.00s)
+=== RUN   TestSelectionSpansSpellings
+=== RUN   TestSelectionSpansSpellings/higher_bare_version_outranks_lower_prefixed_version
+=== RUN   TestSelectionSpansSpellings/equal_highest_version_reports_every_ref_spelling
+=== RUN   TestSelectionSpansSpellings/single_spelling_keeps_existing_highest_selection
+--- PASS: TestSelectionSpansSpellings (0.00s)
+    --- PASS: TestSelectionSpansSpellings/higher_bare_version_outranks_lower_prefixed_version (0.00s)
+    --- PASS: TestSelectionSpansSpellings/equal_highest_version_reports_every_ref_spelling (0.00s)
+    --- PASS: TestSelectionSpansSpellings/single_spelling_keeps_existing_highest_selection (0.00s)
+=== RUN   TestCalculateProposal
+=== RUN   TestCalculateProposal/patch_impact_is_ready
+=== RUN   TestCalculateProposal/compatible_minor_requires_approval
+=== RUN   TestCalculateProposal/version-zero_breaking_maps_to_minor
+=== RUN   TestCalculateProposal/breaking_marker_raises_patch_to_version-zero_minor
+=== RUN   TestCalculateProposal/major_breaking_increments_major_at_one_or_later
+=== RUN   TestCalculateProposal/none_produces_no_release
+=== RUN   TestCalculateProposal/manual_classification_required_produces_no_version
+--- PASS: TestCalculateProposal (0.00s)
+    --- PASS: TestCalculateProposal/patch_impact_is_ready (0.00s)
+    --- PASS: TestCalculateProposal/compatible_minor_requires_approval (0.00s)
+    --- PASS: TestCalculateProposal/version-zero_breaking_maps_to_minor (0.00s)
+    --- PASS: TestCalculateProposal/breaking_marker_raises_patch_to_version-zero_minor (0.00s)
+    --- PASS: TestCalculateProposal/major_breaking_increments_major_at_one_or_later (0.00s)
+    --- PASS: TestCalculateProposal/none_produces_no_release (0.00s)
+    --- PASS: TestCalculateProposal/manual_classification_required_produces_no_version (0.00s)
+=== RUN   TestCalculateProposalRejectsUnknownImpact
+--- PASS: TestCalculateProposalRejectsUnknownImpact (0.00s)
+=== RUN   TestImpactOrdering
+=== RUN   TestImpactOrdering/none_vs_none
+=== RUN   TestImpactOrdering/none_vs_patch
+=== RUN   TestImpactOrdering/none_vs_minor
+=== RUN   TestImpactOrdering/none_vs_major
+=== RUN   TestImpactOrdering/patch_vs_none
+=== RUN   TestImpactOrdering/patch_vs_patch
+=== RUN   TestImpactOrdering/patch_vs_minor
+=== RUN   TestImpactOrdering/patch_vs_major
+=== RUN   TestImpactOrdering/minor_vs_none
+=== RUN   TestImpactOrdering/minor_vs_patch
+=== RUN   TestImpactOrdering/minor_vs_minor
+=== RUN   TestImpactOrdering/minor_vs_major
+=== RUN   TestImpactOrdering/major_vs_none
+=== RUN   TestImpactOrdering/major_vs_patch
+=== RUN   TestImpactOrdering/major_vs_minor
+=== RUN   TestImpactOrdering/major_vs_major
+--- PASS: TestImpactOrdering (0.00s)
+    --- PASS: TestImpactOrdering/none_vs_none (0.00s)
+    --- PASS: TestImpactOrdering/none_vs_patch (0.00s)
+    --- PASS: TestImpactOrdering/none_vs_minor (0.00s)
+    --- PASS: TestImpactOrdering/none_vs_major (0.00s)
+    --- PASS: TestImpactOrdering/patch_vs_none (0.00s)
+    --- PASS: TestImpactOrdering/patch_vs_patch (0.00s)
+    --- PASS: TestImpactOrdering/patch_vs_minor (0.00s)
+    --- PASS: TestImpactOrdering/patch_vs_major (0.00s)
+    --- PASS: TestImpactOrdering/minor_vs_none (0.00s)
+    --- PASS: TestImpactOrdering/minor_vs_patch (0.00s)
+    --- PASS: TestImpactOrdering/minor_vs_minor (0.00s)
+    --- PASS: TestImpactOrdering/minor_vs_major (0.00s)
+    --- PASS: TestImpactOrdering/major_vs_none (0.00s)
+    --- PASS: TestImpactOrdering/major_vs_patch (0.00s)
+    --- PASS: TestImpactOrdering/major_vs_minor (0.00s)
+    --- PASS: TestImpactOrdering/major_vs_major (0.00s)
+=== RUN   TestApprovalDecision
+=== RUN   TestApprovalDecision/minor_approval_question
+=== RUN   TestApprovalDecision/version-zero_breaking_uses_minor_approval_question
+=== RUN   TestApprovalDecision/major_approval_question
+=== RUN   TestApprovalDecision/patch_needs_no_approval
+--- PASS: TestApprovalDecision (0.00s)
+    --- PASS: TestApprovalDecision/minor_approval_question (0.00s)
+    --- PASS: TestApprovalDecision/version-zero_breaking_uses_minor_approval_question (0.00s)
+    --- PASS: TestApprovalDecision/major_approval_question (0.00s)
+    --- PASS: TestApprovalDecision/patch_needs_no_approval (0.00s)
+=== RUN   TestPlanSchemaVersionAndEvidence
+--- PASS: TestPlanSchemaVersionAndEvidence (0.00s)
+=== RUN   TestBuildResetPlanSortsCompleteInventoryAndCalculatesDeterministicDigest
+--- PASS: TestBuildResetPlanSortsCompleteInventoryAndCalculatesDeterministicDigest (0.00s)
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/target_version
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/target_revision
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/target_commit
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_spelling
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_ref
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_target_commit
+=== RUN   TestBuildResetPlanDigestChangesWithEveryBoundInput/release_identity
+--- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/target_version (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/target_revision (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/target_commit (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_spelling (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_ref (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/tag_target_commit (0.00s)
+    --- PASS: TestBuildResetPlanDigestChangesWithEveryBoundInput/release_identity (0.00s)
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/malformed_target_version
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/missing_target_commit
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/local_or_remote_tag_inventory_unavailable
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/GitHub_release_inventory_unavailable
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/duplicate_tag_identity
+=== RUN   TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/duplicate_release_identity
+--- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/malformed_target_version (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/missing_target_commit (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/local_or_remote_tag_inventory_unavailable (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/GitHub_release_inventory_unavailable (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/duplicate_tag_identity (0.00s)
+    --- PASS: TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory/duplicate_release_identity (0.00s)
+=== CONT  TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/lessons
+=== CONT  TestAnswerApprovalFollowsEveryCeiling
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/with_another_path
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/answered
+--- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/lessons (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/with_another_path (0.00s)
+=== CONT  TestBuildReadsManagedPathsBeforeCheckingReleasePreparation
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/answered
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/breaking
+=== CONT  TestManagedMaintenanceIgnoresConventionalImpact
+=== CONT  TestManagedPathsRejectInvalidPathsAndSkillNames
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/breaking
+--- PASS: TestBuildReadsManagedPathsBeforeCheckingReleasePreparation (0.00s)
+=== CONT  TestAnAdopterManagedPathIsMaintenanceOnly
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/classified_by_hand
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/classified_by_hand
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/#00
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/the_setup_manifest
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/patch
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/patch
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/maintenance
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/maintenance
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_classification
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/every_Spec_grants
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/.
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_classification
+=== RUN   TestManagedMaintenanceIgnoresConventionalImpact/feat:_update_instructions
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/..
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/minor
+=== RUN   TestManagedMaintenanceIgnoresConventionalImpact/fix:_correct_instructions
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames//CONTEXT.md
+=== RUN   TestManagedMaintenanceIgnoresConventionalImpact/feat!:_replace_instructions
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/minor
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/../CONTEXT.md
+--- PASS: TestManagedMaintenanceIgnoresConventionalImpact (0.00s)
+    --- PASS: TestManagedMaintenanceIgnoresConventionalImpact/feat:_update_instructions (0.00s)
+    --- PASS: TestManagedMaintenanceIgnoresConventionalImpact/fix:_correct_instructions (0.00s)
+    --- PASS: TestManagedMaintenanceIgnoresConventionalImpact/feat!:_replace_instructions (0.00s)
+=== CONT  TestBuildLooksForGrantsOnlyWhenApprovalIsRequired
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/../outside
+=== RUN   TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/automatic_patch
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/every_Spec_grants
+=== PAUSE TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/automatic_patch
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/nested/skill/SKILL.md
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/every_ceiling
+=== RUN   TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_patch
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/every_ceiling
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/unlocked/SKILL.md
+=== PAUSE TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_patch
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/outside_impact
+=== RUN   TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_minor
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/outside_impact
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_recorded_guide
+=== PAUSE TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_minor
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/roundfix-extra/SKILL.md
+=== CONT  TestReleasePreparationCommitSetsNoImpact
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_in_a_minor_range
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_in_a_minor_range
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/preparation_is_answered
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/no_ceiling
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/preparation_is_answered
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/no_ceiling
+=== RUN   TestManagedPathsRejectInvalidPathsAndSkillNames/.claude/agents/nested/roundfix-author.md
+=== RUN   TestReleasePreparationCommitSetsNoImpact/inside_release_paths
+--- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/#00 (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/. (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/.. (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames//CONTEXT.md (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/../CONTEXT.md (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/../outside (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/nested/skill/SKILL.md (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/unlocked/SKILL.md (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/.agents/skills/roundfix-extra/SKILL.md (0.00s)
+    --- PASS: TestManagedPathsRejectInvalidPathsAndSkillNames/.claude/agents/nested/roundfix-author.md (0.00s)
+=== CONT  TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/automatic_patch
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/inside_release_paths
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/skills_lock
+=== RUN   TestReleasePreparationCommitSetsNoImpact/cleaned_paths_match
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/paths_from_every_granted_record
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/cleaned_paths_match
+=== CONT  TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_minor
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/paths_from_every_granted_record
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_locked_skill_file
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/ungranted_paths_do_not_prepare
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/ungranted_paths_do_not_prepare
+=== CONT  TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_patch
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/empty_early_grants_are_not_reloaded
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_claude_skill_link
+--- PASS: TestBuildLooksForGrantsOnlyWhenApprovalIsRequired (0.00s)
+    --- PASS: TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/automatic_patch (0.00s)
+    --- PASS: TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_minor (0.00s)
+    --- PASS: TestBuildLooksForGrantsOnlyWhenApprovalIsRequired/manual_patch (0.00s)
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/no_deliveries
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/empty_early_grants_are_not_reloaded
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/claude_md
+=== RUN   TestReleasePreparationCommitSetsNoImpact/one_unlisted_path
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_preparation_is_not_answered
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/one_unlisted_path
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/specific_repository
+=== RUN   TestReleasePreparationCommitSetsNoImpact/no_release_paths
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/no_release_paths
+=== RUN   TestReleasePreparationCommitSetsNoImpact/no_changed_path
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_preparation_is_not_answered
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/source_without_the_optional_capability
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/source_without_the_optional_capability
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/read_error
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/read_error
+=== RUN   TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_read_error
+=== PAUSE TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_read_error
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/patch
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_generated_author_subagent
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/project_config
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_nested_context_md
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_read_error
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_unlocked_local_skill_crosses
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/no_deliveries
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/read_error
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/context_map_crosses
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/source_without_the_optional_capability
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_unrecorded_guide_crosses
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/lower_impact_outside
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/a_mixed_commit_crosses
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/lower_impact_outside
+=== RUN   TestAnswerApprovalFollowsEveryCeiling/planning_feature
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing
+=== RUN   TestAnAdopterManagedPathIsMaintenanceOnly/an_empty_commit_still_crosses
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_preparation_is_not_answered
+--- PASS: TestAnAdopterManagedPathIsMaintenanceOnly (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/the_setup_manifest (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_recorded_guide (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/skills_lock (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_locked_skill_file (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_claude_skill_link (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/claude_md (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/specific_repository (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_generated_author_subagent (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/project_config (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_nested_context_md (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_unlocked_local_skill_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/another_claude_agent_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/context_map_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_unrecorded_guide_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/a_mixed_commit_crosses (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/not_an_adopter_changes_nothing (0.00s)
+    --- PASS: TestAnAdopterManagedPathIsMaintenanceOnly/an_empty_commit_still_crosses (0.00s)
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/empty_early_grants_are_not_reloaded
+=== PAUSE TestAnswerApprovalFollowsEveryCeiling/planning_feature
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_in_a_minor_range
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/minor
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/maintenance
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_classification
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/ungranted_paths_do_not_prepare
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/paths_from_every_granted_record
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/answered
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/outside_impact
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/every_ceiling
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/classified_by_hand
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/breaking
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/no_changed_path
+=== RUN   TestReleasePreparationCommitSetsNoImpact/fix_on_release_paths
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/fix_on_release_paths
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/no_ceiling
+=== RUN   TestReleasePreparationCommitSetsNoImpact/breaking_on_release_paths
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/planning_feature
+=== CONT  TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/preparation_is_answered
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/breaking_on_release_paths
+=== RUN   TestReleasePreparationCommitSetsNoImpact/docs_references_planning_commit
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/no_deliveries
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/lower_impact_outside
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/docs_references_planning_commit
+=== CONT  TestAnswerApprovalFollowsEveryCeiling/every_Spec_grants
+=== RUN   TestReleasePreparationCommitSetsNoImpact/feat_on_release_paths
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/feat_on_release_paths
+=== RUN   TestReleasePreparationCommitSetsNoImpact/perf_on_release_paths
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/perf_on_release_paths
+=== RUN   TestReleasePreparationCommitSetsNoImpact/preparation_without_release_subject
+--- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/patch (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_read_error (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/read_error (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/source_without_the_optional_capability (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_preparation_is_not_answered (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/empty_early_grants_are_not_reloaded (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/candidate_in_a_minor_range (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/minor (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/maintenance (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/manual_classification (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/ungranted_paths_do_not_prepare (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/paths_from_every_granted_record (0.00s)
+    --- PASS: TestBuildLoadsReleaseGrantsOnceWhenACommitMayPrepareTheRelease/preparation_is_answered (0.00s)
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/preparation_without_release_subject
+--- PASS: TestAnswerApprovalFollowsEveryCeiling (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/answered (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/outside_impact (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/classified_by_hand (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/breaking (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/every_ceiling (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/no_ceiling (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/planning_feature (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/lower_impact_outside (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/no_deliveries (0.00s)
+    --- PASS: TestAnswerApprovalFollowsEveryCeiling/every_Spec_grants (0.00s)
+=== RUN   TestReleasePreparationCommitSetsNoImpact/unlisted_planning_path
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/unlisted_planning_path
+=== RUN   TestReleasePreparationCommitSetsNoImpact/maintenance_only_path_listed_in_release_paths
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/maintenance_only_path_listed_in_release_paths
+=== RUN   TestReleasePreparationCommitSetsNoImpact/invalid_changed_path
+=== PAUSE TestReleasePreparationCommitSetsNoImpact/invalid_changed_path
+=== CONT  TestReleasePreparationCommitSetsNoImpact/inside_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/docs_references_planning_commit
+=== CONT  TestReleasePreparationCommitSetsNoImpact/no_changed_path
+=== CONT  TestReleasePreparationCommitSetsNoImpact/no_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/one_unlisted_path
+=== CONT  TestReleasePreparationCommitSetsNoImpact/invalid_changed_path
+=== CONT  TestReleasePreparationCommitSetsNoImpact/breaking_on_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/unlisted_planning_path
+=== CONT  TestReleasePreparationCommitSetsNoImpact/maintenance_only_path_listed_in_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/perf_on_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/feat_on_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/fix_on_release_paths
+=== CONT  TestReleasePreparationCommitSetsNoImpact/preparation_without_release_subject
+=== CONT  TestReleasePreparationCommitSetsNoImpact/cleaned_paths_match
+--- PASS: TestReleasePreparationCommitSetsNoImpact (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/inside_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/docs_references_planning_commit (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/no_changed_path (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/no_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/invalid_changed_path (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/one_unlisted_path (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/breaking_on_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/unlisted_planning_path (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/maintenance_only_path_listed_in_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/perf_on_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/feat_on_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/fix_on_release_paths (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/preparation_without_release_subject (0.00s)
+    --- PASS: TestReleasePreparationCommitSetsNoImpact/cleaned_paths_match (0.00s)
+PASS
+ok  	roundfix/internal/releaseplan	0.222s
+
+stderr:
+
+exit: 0

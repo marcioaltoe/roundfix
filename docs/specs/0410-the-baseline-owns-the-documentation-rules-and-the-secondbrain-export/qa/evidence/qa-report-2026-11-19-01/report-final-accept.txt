@@ -1,0 +1,7 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/roundfix qa-report accept docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/qa-report-2026-11-19-01.md
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4
+stdout:
+
+stderr:
+
+exit: 0

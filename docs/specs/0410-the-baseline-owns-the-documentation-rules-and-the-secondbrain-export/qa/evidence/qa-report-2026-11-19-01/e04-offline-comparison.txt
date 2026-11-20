@@ -1,0 +1,3 @@
+Mehmet Iscan (2026), read 2026-11-18 and 2026-11-19, https://arxiv.org/abs/2604.27283. The recorded passage values memory when the current failure is compatible with a previous one. The shipped form separates Applies when from Does not apply when, and requires content for each. The comparison supports explicit applicability boundaries.
+
+Sources read only from the PRD Acceptance evidence and adopted measurement; no external lookup, network or other-repository read.

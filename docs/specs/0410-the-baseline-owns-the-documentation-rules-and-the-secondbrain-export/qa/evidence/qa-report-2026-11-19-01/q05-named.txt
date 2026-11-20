@@ -1,0 +1,63 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^TestTheSkillsCarryTheDocumentationSteps$' ./skills
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4
+stdout:
+=== RUN   TestTheSkillsCarryTheDocumentationSteps
+=== PAUSE TestTheSkillsCarryTheDocumentationSteps
+=== CONT  TestTheSkillsCarryTheDocumentationSteps
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/five_signs
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/no_sign_nothing
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/commit_with_archive
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/report_the_failed_part
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/never_fill
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/queue_defers
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/skip_without_rule
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/corrections/skip_without_rule
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/corrections/cheapest_moment
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/corrections/in_the_correcting_commit
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/corrections/after_merge
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/step3_documentation
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/step4_stops_exporting
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/marking
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/review_in_pr
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/auto_marks_nothing
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/baseline/documentation_part
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/baseline/marks_none
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/baseline/marker_refused
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/baseline/no_history
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/setup/two_checks
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/setup/repairs
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/release/sentence
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/archive/before_steps
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/five_steps
+--- PASS: TestTheSkillsCarryTheDocumentationSteps (0.01s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/five_signs (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/no_sign_nothing (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/commit_with_archive (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/report_the_failed_part (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/never_fill (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/queue_defers (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/skip_without_rule (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/corrections/skip_without_rule (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/corrections/cheapest_moment (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/corrections/in_the_correcting_commit (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/corrections/after_merge (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/step3_documentation (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/step4_stops_exporting (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/marking (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/review_in_pr (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/auto_marks_nothing (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/baseline/documentation_part (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/baseline/marks_none (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/baseline/marker_refused (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/baseline/no_history (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/setup/two_checks (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/setup/repairs (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/release/sentence (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/archive/before_steps (0.00s)
+    --- PASS: TestTheSkillsCarryTheDocumentationSteps/modes/five_steps (0.00s)
+PASS
+ok  	roundfix/skills	0.359s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,200 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/roundfix baseline update --repo . --no-skills --no-history --format text --yes
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-vw7x8u1r
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+Current catalog: sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51
+File changes: 77
+- update docs/agents/agent-instructions.md (1 managed entries)
+- update docs/agents/docs-layout.md (2 managed entries)
+- update docs/agents/secondbrain.md (1 managed entries)
+- update docs/agents/setup-context.json (1 managed entries)
+- update .secondbrain-export (1 managed entries)
+- update docs/adr/0011-acp-runtimes-run-batches-with-full-access.md (1 managed entries)
+- update docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md (1 managed entries)
+- update docs/adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md (1 managed entries)
+- update docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md (1 managed entries)
+- update docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md (1 managed entries)
+- update docs/adr/0092-triage-intent-lives-in-a-typed-backlog.md (1 managed entries)
+- update docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md (1 managed entries)
+- update docs/adr/0100-a-managed-refresh-proves-preservation-instead-of-backing-it-up.md (1 managed entries)
+- update docs/adr/0103-an-applied-refresh-republishes-the-setup-manifest.md (1 managed entries)
+- update docs/adr/0104-a-spec-accepts-on-evidence-it-did-not-author.md (1 managed entries)
+- update docs/adr/0120-retired-documentation-lives-under-one-history-root.md (1 managed entries)
+- update docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md (1 managed entries)
+- update docs/adr/0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md (1 managed entries)
+- update docs/adr/0167-the-pre-pr-pull-request-row-never-decides-a-qualifying-partial.md (1 managed entries)
+- update docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md (1 managed entries)
+- update docs/adr/0170-a-task-already-completed-on-its-target-is-nothing-to-carry.md (1 managed entries)
+- update docs/adr/0181-a-configuration-is-compared-with-the-recommendation-only-where-a-person-asked.md (1 managed entries)
+- update docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md (1 managed entries)
+- update docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md (1 managed entries)
+- update docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md (1 managed entries)
+- update docs/adr/0208-work-items-that-share-a-context-share-a-spec.md (1 managed entries)
+- update docs/adr/0212-a-merged-spec-supersedes-its-runs-spec-directory-work-and-declared-leftovers.md (1 managed entries)
+- update docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md (1 managed entries)
+- update docs/adr/0224-this-repository-holds-its-upstream-skills-to-the-snapshot-and-the-lock-not-to-a-pinned-digest.md (1 managed entries)
+- update docs/adr/0227-a-review-through-claude-keeps-its-verdict-and-fits-its-window.md (1 managed entries)
+- update docs/adr/0229-an-operator-archive-resumes-any-park-from-the-run-start.md (1 managed entries)
+- update docs/adr/0231-the-jev-ceiling-is-a-user-config-value.md (1 managed entries)
+- update docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md (1 managed entries)
+- update docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md (1 managed entries)
+- update docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md (1 managed entries)
+- update docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md (1 managed entries)
+- update docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md (1 managed entries)
+- update docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md (1 managed entries)
+- update docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md (1 managed entries)
+- update docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md (1 managed entries)
+- update docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md (1 managed entries)
+- update docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md (1 managed entries)
+- update docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md (1 managed entries)
+- update docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md (1 managed entries)
+- update docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md (1 managed entries)
+- update docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md (1 managed entries)
+- update docs/adr/0276-a-row-the-authorization-keeps-offline-qualifies-and-a-byte-invariant-compares-with-the-delivery-base.md (1 managed entries)
+- update docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md (1 managed entries)
+- update docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md (1 managed entries)
+- update docs/adr/0281-a-test-replaces-an-executable-it-rebuilds-instead-of-writing-into-it.md (1 managed entries)
+- update docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md (1 managed entries)
+- update docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md (1 managed entries)
+- update docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md (1 managed entries)
+- update docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md (1 managed entries)
+- update docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md (1 managed entries)
+- update docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md (1 managed entries)
+- update docs/adr/0294-the-linux-lane-runs-like-ci.md (1 managed entries)
+- update docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md (1 managed entries)
+- update docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md (1 managed entries)
+- update docs/adr/0327-gc-trims-a-declared-shared-build-cache.md (1 managed entries)
+- update docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md (1 managed entries)
+- update docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md (1 managed entries)
+- update docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md (1 managed entries)
+- update docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md (1 managed entries)
+- update docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md (1 managed entries)
+- update docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md (1 managed entries)
+- update docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md (1 managed entries)
+- update docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md (1 managed entries)
+- update docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md (1 managed entries)
+- update docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md (1 managed entries)
+- update docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md (1 managed entries)
+- update docs/adr/0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md (1 managed entries)
+- update docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md (1 managed entries)
+- update docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md (1 managed entries)
+- update docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md (1 managed entries)
+- update docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md (1 managed entries)
+- update docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md (1 managed entries)
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Documentation: applied
+Export list: update .secondbrain-export (8 line(s) in the Standard Export List)
+- adds docs/user-guide/
+- adds docs/references/
+- adds docs/design/
+- adds docs/lessons/
+- adds docs/adr/0444-roundfix-writes-a-harness-permission-file-only-as-a-list-the-user-saw-and-confirmed.md
+- adds docs/adr/0445-the-flow-command-list-names-subcommands-and-holds-every-git-and-github-read-the-skills-name.md
+- removes CONTEXT.md
+- removes docs/
+- removes README.md
+- removes AGENTS.md
+- stops exporting AGENTS.md (process)
+- stops exporting docs/agents/ (process)
+- stops exporting docs/backlog/ (process)
+- stops exporting docs/findings/ (process)
+- stops exporting docs/handoffs/ (process)
+- stops exporting docs/history/ (process)
+- stops exporting docs/specs/ (process)
+- stops exporting docs/adr/ (not in the standard list)
+ADRs without a Knowledge Mark: 373 of 376; they are not exported
+ADR headers: 72
+- docs/adr/0011-acp-runtimes-run-batches-with-full-access.md gains amended_by: [ADR-0293]
+- docs/adr/0034-run-worktrees-can-bootstrap-their-environment.md gains amended_by: [ADR-0406]
+- docs/adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md gains amended_by: [ADR-0379]
+- docs/adr/0056-spec-runs-separate-task-and-verification-capacity.md gains amended_by: [ADR-0384]
+- docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md gains amended_by: [ADR-0399]
+- docs/adr/0092-triage-intent-lives-in-a-typed-backlog.md gains amended_by: [ADR-0278]
+- docs/adr/0093-spec-consistency-is-checked-by-citation-never-by-inference.md gains amended_by: [ADR-0377]
+- docs/adr/0100-a-managed-refresh-proves-preservation-instead-of-backing-it-up.md gains amended_by: [ADR-0432]
+- docs/adr/0103-an-applied-refresh-republishes-the-setup-manifest.md gains amended_by: [ADR-0287]
+- docs/adr/0104-a-spec-accepts-on-evidence-it-did-not-author.md gains amended_by: [ADR-0240]
+- docs/adr/0120-retired-documentation-lives-under-one-history-root.md gains amended_by: [ADR-0278]
+- docs/adr/0146-release-publication-is-all-or-nothing-with-a-bounded-token-fallback.md gains amended_by: [ADR-0374]
+- docs/adr/0148-one-verification-prober-refuses-vacuous-tasks-before-agent-and-at-authoring.md gains amended_by: [ADR-0406]
+- docs/adr/0167-the-pre-pr-pull-request-row-never-decides-a-qualifying-partial.md gains amended_by: [ADR-0240]
+- docs/adr/0168-a-related-adr-gap-opens-only-for-adrs-that-predate-the-spec.md gains amended_by: [ADR-0377]
+- docs/adr/0170-a-task-already-completed-on-its-target-is-nothing-to-carry.md gains amended_by: [ADR-0284]
+- docs/adr/0181-a-configuration-is-compared-with-the-recommendation-only-where-a-person-asked.md gains amended_by: [ADR-0416]
+- docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md gains amended_by: [ADR-0286, ADR-0366, ADR-0391]
+- docs/adr/0201-the-judge-sends-only-spec-artifacts-and-spends-under-a-monthly-ceiling.md gains amended_by: [ADR-0231, ADR-0239, ADR-0404]
+- docs/adr/0206-the-baseline-takes-upstream-setup-names-and-drops-a-removed-skill.md gains amended_by: [ADR-0380]
+- docs/adr/0208-work-items-that-share-a-context-share-a-spec.md gains amended_by: [ADR-0400]
+- docs/adr/0212-a-merged-spec-supersedes-its-runs-spec-directory-work-and-declared-leftovers.md gains amended_by: [ADR-0289]
+- docs/adr/0221-a-required-external-skill-is-held-to-its-setup-snapshot-not-only-its-lock.md gains amended_by: [ADR-0364]
+- docs/adr/0224-this-repository-holds-its-upstream-skills-to-the-snapshot-and-the-lock-not-to-a-pinned-digest.md gains amended_by: [ADR-0364]
+- docs/adr/0227-a-review-through-claude-keeps-its-verdict-and-fits-its-window.md gains amended_by: [ADR-0352]
+- docs/adr/0229-an-operator-archive-resumes-any-park-from-the-run-start.md gains amended_by: [ADR-0240]
+- docs/adr/0231-the-jev-ceiling-is-a-user-config-value.md gains amended_by: [ADR-0235]
+- docs/adr/0241-a-repository-profile-takes-its-skill-contracts-from-the-embedded-setup-snapshots.md gains amended_by: [ADR-0364]
+- docs/adr/0247-an-archive-leaves-an-archive-record-and-the-spec-folder-stays-in-git.md gains amended_by: [ADR-0278]
+- docs/adr/0248-existing-history-is-sanitized-in-batches-after-a-history-full-tag.md gains amended_by: [ADR-0278]
+- docs/adr/0250-a-module-version-is-chosen-when-recorded-and-the-coverage-record-lists-every-platform.md gains amended_by: [ADR-0285]
+- docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md gains amended_by: [ADR-0278]
+- docs/adr/0258-a-spec-is-authored-against-the-qa-rerun-classes-and-a-retirement-writes-reduced-history.md gains amended_by: [ADR-0278]
+- docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md gains amended_by: [ADR-0387]
+- docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md gains amended_by: [ADR-0278]
+- docs/adr/0261-an-archive-record-names-its-pull-request-and-readers-fetch-its-head.md gains amended_by: [ADR-0278]
+- docs/adr/0264-roundfix-never-replaces-a-vendored-skill-it-cannot-prove-older.md gains amended_by: [ADR-0364]
+- docs/adr/0269-archive-and-cancel-refuse-ignored-spec-files-and-finish-a-failed-removal-forward.md gains amended_by: [ADR-0306]
+- docs/adr/0272-a-review-record-survives-a-fix-and-a-correction-inside-the-archived-specs-declared-paths-returns-to-review.md gains amended_by: [ADR-0286]
+- docs/adr/0273-no-secret-and-no-spec-content-leaves-the-machine-from-a-run.md gains amended_by: [ADR-0283, ADR-0291, ADR-0292]
+- docs/adr/0274-a-turn-that-did-not-finish-is-not-accepted.md gains amended_by: [ADR-0335]
+- docs/adr/0276-a-row-the-authorization-keeps-offline-qualifies-and-a-byte-invariant-compares-with-the-delivery-base.md gains amended_by: [ADR-0335]
+- docs/adr/0277-a-legacy-archive-folder-conversion-keeps-the-summary-links-and-dates-its-folder-held.md gains amended_by: [ADR-0278]
+- docs/adr/0278-a-retirement-deletes-and-the-history-root-holds-only-archive-records.md gains amended_by: [ADR-0282, ADR-0299]
+- docs/adr/0281-a-test-replaces-an-executable-it-rebuilds-instead-of-writing-into-it.md gains amended_by: [ADR-0282]
+- docs/adr/0282-the-history-cleanup-names-a-superseded-adr-in-its-successor-and-a-large-candidate-is-reviewed-in-segments.md gains amended_by: [ADR-0290, ADR-0299, ADR-0352, ADR-0366, ADR-0368]
+- docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md gains amended_by: [ADR-0366]
+- docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md gains amended_by: [ADR-0294, ADR-0297]
+- docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md gains amended_by: [ADR-0379]
+- docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md gains amended_by: [ADR-0379]
+- docs/adr/0292-a-task-commit-is-scanned-for-secrets-and-a-retry-accepts-a-secret-rewrite.md gains amended_by: [ADR-0361]
+- docs/adr/0294-the-linux-lane-runs-like-ci.md gains amended_by: [ADR-0297, ADR-0316]
+- docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-minutes-by-default.md gains amended_by: [ADR-0369]
+- docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md gains amended_by: [ADR-0383, ADR-0390]
+- docs/adr/0327-gc-trims-a-declared-shared-build-cache.md gains amended_by: [ADR-0370]
+- docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md gains amended_by: [ADR-0383, ADR-0390, ADR-0396]
+- docs/adr/0334-every-implement-run-and-the-queue-gate-trim-a-declared-shared-build-cache.md gains amended_by: [ADR-0370]
+- docs/adr/0352-the-pre-pr-review-omits-declared-paths-and-a-large-claude-candidate-is-reviewed-in-segments.md gains amended_by: [ADR-0366]
+- docs/adr/0353-a-waiting-item-is-held-back-from-the-follow-up-list-unless-all-is-asked.md gains amended_by: [ADR-0410]
+- docs/adr/0357-a-read-only-run-command-needs-no-repository-and-only-warns-on-worktree-location.md gains amended_by: [ADR-0362]
+- docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md gains amended_by: [ADR-0369]
+- docs/adr/0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md gains amended_by: [ADR-0391]
+- docs/adr/0370-the-makefile-bounds-its-build-cache-and-the-queue-warns-of-low-disk-and-names-a-full-one.md gains amended_by: [ADR-0394]
+- docs/adr/0377-only-an-adr-a-spec-applies-or-changes-draws-in-the-adrs-that-cite-it.md gains amended_by: [ADR-0389]
+- docs/adr/0383-a-message-expects-a-reply-only-when-it-declares-the-work-it-blocks.md gains amended_by: [ADR-0390, ADR-0396]
+- docs/adr/0386-a-user-level-copy-of-a-roundfix-owned-skill-older-than-the-binary-is-reported-never-changed.md gains amended_by: [ADR-0405]
+- docs/adr/0390-one-blocking-message-per-sender-takes-precedence-and-every-direct-question-is-answered.md gains amended_by: [ADR-0396]
+- docs/adr/0401-each-authoring-phase-runs-on-the-model-its-repository-declares.md gains amended_by: [ADR-0408, ADR-0415, ADR-0427]
+- docs/adr/0407-a-phase-record-names-the-spec-and-phase-of-supervisor-work-and-a-phase-boundary-ends-the-session.md gains amended_by: [ADR-0410, ADR-0414, ADR-0418, ADR-0428]
+- docs/adr/0410-the-status-view-lists-specs-being-authored-and-open-backlog-entries.md gains amended_by: [ADR-0434]
+- docs/adr/0411-a-repository-rule-outside-the-specific-repository-guide-is-named-never-moved.md gains amended_by: [ADR-0432]
+- docs/adr/0415-doctor-and-the-update-check-recommend-an-authoring-model-declaration-when-none-is-declared.md gains amended_by: [ADR-0430, ADR-0441]
+Plan Digest: sha256:9436eb919ce010d4ef1171b53ba1f147dc92d55d441f3c0aba657b2fbb6b6d7b
+Approved Plan Digest: sha256:9436eb919ce010d4ef1171b53ba1f147dc92d55d441f3c0aba657b2fbb6b6d7b
+
+stderr:
+
+exit: 0

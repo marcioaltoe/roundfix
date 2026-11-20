@@ -1,0 +1,17 @@
+Fresh isolated git archive of ecb96c232e62b404b6f4c24337555734d40beabe
+Expected failing subtest: TestADRAmendmentNotices/fenced_block_ignored
+Mutation diff:
+diff --git a/internal/spec/adr_header.go b/internal/spec/adr_header.go
+index 7aab4b3..c6a1c28 100644
+--- a/internal/spec/adr_header.go
++++ b/internal/spec/adr_header.go
+@@ -107,7 +107,7 @@ func ADRAmendmentNotices(content []byte) []string {
+ 				}
+ 			}
+ 		}
+-		if fence != 0 {
++		if false && fence != 0 {
+ 			continue
+ 		}
+ 		for i := 0; i < len(line); {
+Assertion failure observed; package compiled; no regeneration or synchronization ran.

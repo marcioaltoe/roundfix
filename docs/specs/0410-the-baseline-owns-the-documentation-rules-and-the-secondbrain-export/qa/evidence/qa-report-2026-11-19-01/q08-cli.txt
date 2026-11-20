@@ -1,0 +1,2272 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run 'Baseline|GuidanceComposition|SetupManifest|Doctor|UpdateCheck|ReleasePlan' ./internal/cli
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4
+stdout:
+=== RUN   TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne
+=== PAUSE TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne
+=== RUN   TestDoctorRefusesAnAdapterBelowTheFloor
+=== PAUSE TestDoctorRefusesAnAdapterBelowTheFloor
+=== RUN   TestDoctorAcceptsAnAdapterAtTheFloor
+=== PAUSE TestDoctorAcceptsAnAdapterAtTheFloor
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== PAUSE TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== PAUSE TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== PAUSE TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration
+=== PAUSE TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration
+=== RUN   TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks
+=== PAUSE TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks
+=== RUN   TestDoctorReportsTheAuthoringModels
+=== PAUSE TestDoctorReportsTheAuthoringModels
+=== RUN   TestUpdateCheckReportsTheAuthoringModels
+=== PAUSE TestUpdateCheckReportsTheAuthoringModels
+=== RUN   TestBaselineApplyCommand
+=== PAUSE TestBaselineApplyCommand
+=== RUN   TestBaselineApplyTextReportsHistoryMoves
+=== PAUSE TestBaselineApplyTextReportsHistoryMoves
+=== RUN   TestBaselineApplyCollisionExitStatus
+=== PAUSE TestBaselineApplyCollisionExitStatus
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes
+=== PAUSE TestBaselineApplyStdoutStderrAndExitCodes
+=== RUN   TestBaselineApplyCommandRealCLI
+=== PAUSE TestBaselineApplyCommandRealCLI
+=== RUN   TestBaselineAssetsSyncCommand
+=== PAUSE TestBaselineAssetsSyncCommand
+=== RUN   TestBaselineUpdateWithoutABranchPrefixAsksNothing
+=== PAUSE TestBaselineUpdateWithoutABranchPrefixAsksNothing
+=== RUN   TestBaselineUpdateKeepsARecordedBranchPrefix
+=== PAUSE TestBaselineUpdateKeepsARecordedBranchPrefix
+=== RUN   TestBaselineSkillsReconcileExampleParses
+=== PAUSE TestBaselineSkillsReconcileExampleParses
+=== RUN   TestBaselineGroupUsageTranscripts
+=== PAUSE TestBaselineGroupUsageTranscripts
+=== RUN   TestBaselinePlanPrintsRelocationCitationWarnings
+=== PAUSE TestBaselinePlanPrintsRelocationCitationWarnings
+=== RUN   TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== PAUSE TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== RUN   TestHumanBaselineAdoption
+=== PAUSE TestHumanBaselineAdoption
+=== RUN   TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer
+=== PAUSE TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer
+=== RUN   TestBaselineHumanProfileChangeRemainsReachable
+=== PAUSE TestBaselineHumanProfileChangeRemainsReachable
+=== RUN   TestHumanBaselineProfileDigestDriftRemainsUpdate
+=== PAUSE TestHumanBaselineProfileDigestDriftRemainsUpdate
+=== RUN   TestHumanBaselinePromptsOnlyForManifestMissingDecision
+=== PAUSE TestHumanBaselinePromptsOnlyForManifestMissingDecision
+=== RUN   TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== PAUSE TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== RUN   TestHumanBaselineUnreadableManifestFallsBackToFullInterview
+=== PAUSE TestHumanBaselineUnreadableManifestFallsBackToFullInterview
+=== RUN   TestHumanBaselineDecisionDefaults
+=== PAUSE TestHumanBaselineDecisionDefaults
+=== RUN   TestHumanBaselinePreservationDefaultFollowsInstructionInventory
+=== PAUSE TestHumanBaselinePreservationDefaultFollowsInstructionInventory
+=== RUN   TestHumanBaselineConfirmationRequiresExplicitChoice
+=== PAUSE TestHumanBaselineConfirmationRequiresExplicitChoice
+=== RUN   TestHumanBaselineInvokesSemanticSegmentationAndClassification
+=== PAUSE TestHumanBaselineInvokesSemanticSegmentationAndClassification
+=== RUN   TestBaselineHumanProfileAdaptation
+=== PAUSE TestBaselineHumanProfileAdaptation
+=== RUN   TestBaselineNoTTY
+=== PAUSE TestBaselineNoTTY
+=== RUN   TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== PAUSE TestBaselineUpdateNamesTheMissingIncrementalDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== RUN   TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== PAUSE TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== RUN   TestBaselinePlanWithoutIncrementalDecisionExitsThree
+=== PAUSE TestBaselinePlanWithoutIncrementalDecisionExitsThree
+=== RUN   TestBaselinePlanPreflightJSONActionRequired
+=== PAUSE TestBaselinePlanPreflightJSONActionRequired
+=== RUN   TestBaselinePlanPreflightText
+=== PAUSE TestBaselinePlanPreflightText
+=== RUN   TestBaselinePlanPreflightBlocksUnsafeRepository
+=== PAUSE TestBaselinePlanPreflightBlocksUnsafeRepository
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== PAUSE TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== RUN   TestBaselinePlanPreflightHelp
+=== PAUSE TestBaselinePlanPreflightHelp
+=== RUN   TestBaselinePlanProfileFile
+=== PAUSE TestBaselinePlanProfileFile
+=== RUN   TestBaselinePlanPreflightRealCLI
+=== PAUSE TestBaselinePlanPreflightRealCLI
+=== RUN   TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles
+=== PAUSE TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles
+=== RUN   TestBaselinePlanHistoryRelocationTextAndExitStatus
+=== PAUSE TestBaselinePlanHistoryRelocationTextAndExitStatus
+=== RUN   TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus
+=== PAUSE TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus
+=== RUN   TestBaselinePlanNamesEveryMissingAnswerInOneRefusal
+=== PAUSE TestBaselinePlanNamesEveryMissingAnswerInOneRefusal
+=== RUN   TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== PAUSE TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== RUN   TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange
+=== PAUSE TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange
+=== RUN   TestBaselineProfileValidateNamesADecisionGap
+=== PAUSE TestBaselineProfileValidateNamesADecisionGap
+=== RUN   TestBaselinePlanRefusesAProfileDecisionGap
+=== PAUSE TestBaselinePlanRefusesAProfileDecisionGap
+=== RUN   TestBaselineUpdateRefusesAProfileDecisionGap
+=== PAUSE TestBaselineUpdateRefusesAProfileDecisionGap
+=== RUN   TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt
+=== PAUSE TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt
+=== RUN   TestBaselineProfileCommandInitShowAndValidate
+=== PAUSE TestBaselineProfileCommandInitShowAndValidate
+=== RUN   TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== PAUSE TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+=== RUN   TestBaselineProfileHelpContract
+=== PAUSE TestBaselineProfileHelpContract
+=== RUN   TestGuidanceCompositionJourney
+=== PAUSE TestGuidanceCompositionJourney
+=== RUN   TestBaselineMacroJourneysPublicCLI
+=== PAUSE TestBaselineMacroJourneysPublicCLI
+=== RUN   TestBaselineFindingRegressionsHumanReview
+=== PAUSE TestBaselineFindingRegressionsHumanReview
+=== RUN   TestBaselineApplyNamesTheRootBackupItWrote
+=== PAUSE TestBaselineApplyNamesTheRootBackupItWrote
+=== RUN   TestBaselinePlanTextLabelsTheRootBackup
+=== PAUSE TestBaselinePlanTextLabelsTheRootBackup
+=== RUN   TestBaselineUpdateWritesNoRootBackupWarning
+=== PAUSE TestBaselineUpdateWritesNoRootBackupWarning
+=== RUN   TestBaselineSkillsReconcilePreviewThenConfirm
+=== PAUSE TestBaselineSkillsReconcilePreviewThenConfirm
+=== RUN   TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== PAUSE TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== RUN   TestBaselineSkillsReconcileRejectsAMutableRevision
+=== PAUSE TestBaselineSkillsReconcileRejectsAMutableRevision
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+=== RUN   TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== PAUSE TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+=== RUN   TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== PAUSE TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== PAUSE TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== RUN   TestBaselineSkillsRestoreCommand
+=== PAUSE TestBaselineSkillsRestoreCommand
+=== RUN   TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+=== PAUSE TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+=== RUN   TestBaselineSkillsRestoreTextListsTheClaudeLink
+=== PAUSE TestBaselineSkillsRestoreTextListsTheClaudeLink
+=== RUN   TestBaselineStartersPreviewTranscript
+=== PAUSE TestBaselineStartersPreviewTranscript
+=== RUN   TestBaselineStartersApplyTranscript
+=== PAUSE TestBaselineStartersApplyTranscript
+=== RUN   TestBaselineStartersWritesAProjectConfigRoundfixLoads
+=== PAUSE TestBaselineStartersWritesAProjectConfigRoundfixLoads
+=== RUN   TestBaselineStartersJSONAndRefusals
+=== PAUSE TestBaselineStartersJSONAndRefusals
+=== RUN   TestBaselineStartersHelp
+=== PAUSE TestBaselineStartersHelp
+=== RUN   TestBaselineUpdateListsHistoryCitationsTranscript
+=== PAUSE TestBaselineUpdateListsHistoryCitationsTranscript
+=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript
+=== PAUSE TestBaselineUpdatePromotesOnlyOnRequestTranscript
+=== RUN   TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+=== PAUSE TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+=== RUN   TestBaselineUpdateHistoryDigestBindsCitations
+=== PAUSE TestBaselineUpdateHistoryDigestBindsCitations
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion
+=== PAUSE TestBaselineUpdateRefusesAnInvalidPromotion
+=== RUN   TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== PAUSE TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== RUN   TestBaselineUpdateHistoryCitationBoundaries
+=== PAUSE TestBaselineUpdateHistoryCitationBoundaries
+=== RUN   TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== PAUSE TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== RUN   TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+=== PAUSE TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== PAUSE TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== RUN   TestBaselineUpdateRewritesEveryListedCitation
+=== PAUSE TestBaselineUpdateRewritesEveryListedCitation
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision
+=== PAUSE TestBaselineUpdateRecordsADeclaredDecision
+=== RUN   TestBaselineUpdateDeclaresTheBetterAuthBasePath
+=== PAUSE TestBaselineUpdateDeclaresTheBetterAuthBasePath
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision
+=== PAUSE TestBaselineUpdateRefusesAnUndeclarableDecision
+=== RUN   TestBaselineUpdateDocumentationPart
+=== PAUSE TestBaselineUpdateDocumentationPart
+=== RUN   TestBaselineUpdatePlansPendingHistoryWithoutWrites
+=== PAUSE TestBaselineUpdatePlansPendingHistoryWithoutWrites
+=== RUN   TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+=== PAUSE TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+=== RUN   TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+=== PAUSE TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+=== RUN   TestBaselineUpdateNoHistorySkipsTheSection
+=== PAUSE TestBaselineUpdateNoHistorySkipsTheSection
+=== RUN   TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+=== PAUSE TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag
+=== PAUSE TestBaselineUpdateHistoryHonorsAnExistingTag
+=== RUN   TestBaselineUpdateRejectsAStaleHistoryDigest
+=== PAUSE TestBaselineUpdateRejectsAStaleHistoryDigest
+=== RUN   TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+=== PAUSE TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries
+=== PAUSE TestBaselineUpdateHistoryPlanningBoundaries
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules
+=== PAUSE TestBaselineUpdateNamesMisplacedRepositoryRules
+=== RUN   TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== PAUSE TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== PAUSE TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== PAUSE TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestDoctorNamesAMissingRequiredSkill
+=== PAUSE TestDoctorNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== PAUSE TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+=== PAUSE TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+=== RUN   TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+=== PAUSE TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+=== RUN   TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== PAUSE TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== RUN   TestBaselineUpdateNamesEveryFileItWillRemove
+=== PAUSE TestBaselineUpdateNamesEveryFileItWillRemove
+=== RUN   TestBaselineSkillsRestoreNamesTheProfilePath
+=== PAUSE TestBaselineSkillsRestoreNamesTheProfilePath
+=== RUN   TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== PAUSE TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets
+=== PAUSE TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== PAUSE TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== RUN   TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== PAUSE TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+=== RUN   TestBaselineUpdateAppliesAndListsRetiredSkills
+=== PAUSE TestBaselineUpdateAppliesAndListsRetiredSkills
+=== RUN   TestBaselineUpdateReportsRetiredSkillInspectionFailure
+=== PAUSE TestBaselineUpdateReportsRetiredSkillInspectionFailure
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== RUN   TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+=== PAUSE TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+=== RUN   TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+=== PAUSE TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+=== RUN   TestBaselineUpdateTextReportsHistoryMoves
+=== PAUSE TestBaselineUpdateTextReportsHistoryMoves
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+=== PAUSE TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+=== RUN   TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+=== PAUSE TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+=== RUN   TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+=== PAUSE TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+=== RUN   TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+=== PAUSE TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+=== RUN   TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+=== PAUSE TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+=== RUN   TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== PAUSE TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== RUN   TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+=== PAUSE TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+=== RUN   TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+=== PAUSE TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+=== RUN   TestBaselineUpdateIdempotenceReportsZeroFileChanges
+=== PAUSE TestBaselineUpdateIdempotenceReportsZeroFileChanges
+=== RUN   TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+=== PAUSE TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis
+=== PAUSE TestBaselineUpdateUnresolvedProfileDiagnosis
+=== RUN   TestBaselineUpdateFleetSweep
+=== PAUSE TestBaselineUpdateFleetSweep
+=== RUN   TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+=== PAUSE TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+=== RUN   TestBaselineUpdateAdoptsEverySuggestedDecision
+=== PAUSE TestBaselineUpdateAdoptsEverySuggestedDecision
+=== RUN   TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+=== PAUSE TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+=== RUN   TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+=== PAUSE TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+=== RUN   TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+=== PAUSE TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+=== RUN   TestBaselineUpdateHelpNamesNonInteractiveContract
+=== PAUSE TestBaselineUpdateHelpNamesNonInteractiveContract
+=== RUN   TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+=== PAUSE TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+=== RUN   TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== PAUSE TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== RUN   TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+=== PAUSE TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+=== RUN   TestDoctorNamesADegradedPolicy
+=== PAUSE TestDoctorNamesADegradedPolicy
+=== RUN   TestDoctorReportsMisplacedRepositoryRules
+=== PAUSE TestDoctorReportsMisplacedRepositoryRules
+=== RUN   TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory
+=== PAUSE TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory
+=== RUN   TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories
+=== PAUSE TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories
+=== RUN   TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory
+=== PAUSE TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory
+=== RUN   TestDoctorReportsTheClaudeInstructionLink
+=== PAUSE TestDoctorReportsTheClaudeInstructionLink
+=== RUN   TestDoctorAdapterNamesTheCursorLogin
+=== PAUSE TestDoctorAdapterNamesTheCursorLogin
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk
+=== RUN   TestDoctorReportsTheDocumentationRules
+=== PAUSE TestDoctorReportsTheDocumentationRules
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== PAUSE TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== RUN   TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels
+=== PAUSE TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage
+=== PAUSE TestDoctorLinuxLaneCheckReportsDockerAndTheImage
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== PAUSE TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles
+=== PAUSE TestDoctorReportsRecommendationsAfterProfiles
+=== RUN   TestDoctorRecommendationsNeverFailDoctor
+=== PAUSE TestDoctorRecommendationsNeverFailDoctor
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry
+=== PAUSE TestDoctorNamesAStaleOwnedSkillLockEntry
+=== RUN   TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry
+=== PAUSE TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== PAUSE TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== RUN   TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions
+=== PAUSE TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions
+=== RUN   TestDoctorStorageReportsReclaimableRunsAndNamesGC
+=== PAUSE TestDoctorStorageReportsReclaimableRunsAndNamesGC
+=== RUN   TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold
+=== PAUSE TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold
+=== RUN   TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+=== PAUSE TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+=== RUN   TestDoctorStorageDoesNotCreateAMissingRunDatabase
+=== PAUSE TestDoctorStorageDoesNotCreateAMissingRunDatabase
+=== RUN   TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead
+=== PAUSE TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead
+=== RUN   TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged
+=== PAUSE TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged
+=== RUN   TestDoctorStorageZeroRetentionKeepsEveryRun
+=== PAUSE TestDoctorStorageZeroRetentionKeepsEveryRun
+=== RUN   TestDoctorStorageDoesNotInspectArtifactDirectoriesOutsideGit
+=== PAUSE TestDoctorStorageDoesNotInspectArtifactDirectoriesOutsideGit
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest
+=== PAUSE TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest
+=== RUN   TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts
+=== PAUSE TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts
+=== RUN   TestDoctorReportsPrePRReviewPolicy
+=== PAUSE TestDoctorReportsPrePRReviewPolicy
+=== RUN   TestDoctorReportsProcessResidueReported
+=== PAUSE TestDoctorReportsProcessResidueReported
+=== RUN   TestDoctorReportsProcessResidueExcludesLiveRun
+=== PAUSE TestDoctorReportsProcessResidueExcludesLiveRun
+=== RUN   TestDoctorReportsProcessResidueEmpty
+=== PAUSE TestDoctorReportsProcessResidueEmpty
+=== RUN   TestDoctorReportsProcessResidueUnreadable
+=== PAUSE TestDoctorReportsProcessResidueUnreadable
+=== RUN   TestDoctorReportsNoResidueForAReusedOwnerPID
+=== PAUSE TestDoctorReportsNoResidueForAReusedOwnerPID
+=== RUN   TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== PAUSE TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== RUN   TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+=== PAUSE TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+=== RUN   TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes
+=== PAUSE TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes
+=== RUN   TestDoctorAdapterCheckAggregatesEveryFailure
+=== PAUSE TestDoctorAdapterCheckAggregatesEveryFailure
+=== RUN   TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime
+=== PAUSE TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime
+=== RUN   TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile
+=== PAUSE TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile
+=== RUN   TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence
+=== PAUSE TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence
+=== RUN   TestRunDoctorContinuesChecksAfterProfileReadinessFailure
+=== PAUSE TestRunDoctorContinuesChecksAfterProfileReadinessFailure
+=== RUN   TestRunDoctorRepositorySkillReadiness
+=== PAUSE TestRunDoctorRepositorySkillReadiness
+=== RUN   TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness
+=== PAUSE TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness
+=== RUN   TestRunDoctorPassesCommandContextToRepositorySkillReadiness
+=== PAUSE TestRunDoctorPassesCommandContextToRepositorySkillReadiness
+=== RUN   TestRunDoctorMissingRepositoryRoot
+=== PAUSE TestRunDoctorMissingRepositoryRoot
+=== RUN   TestRunDoctorRealRepositoryCheckDoesNotMutateState
+=== PAUSE TestRunDoctorRealRepositoryCheckDoesNotMutateState
+=== RUN   TestDoctorLeavesAnObsoleteLockEntryUntouched
+=== PAUSE TestDoctorLeavesAnObsoleteLockEntryUntouched
+=== RUN   TestRunDoctorRejectsArguments
+=== PAUSE TestRunDoctorRejectsArguments
+=== RUN   TestDoctorReportsTheVerificationCoreBudget
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget
+=== RUN   TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== PAUSE TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== RUN   TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== PAUSE TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence
+=== PAUSE TestDoctorChecksAnExternalSkillOnlyForPresence
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== PAUSE TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== RUN   TestBaselineUpdatePlansLineageAndLiveLinks
+=== PAUSE TestBaselineUpdatePlansLineageAndLiveLinks
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== RUN   TestBaselineUpdatePromotionRebasesLinks
+=== PAUSE TestBaselineUpdatePromotionRebasesLinks
+=== RUN   TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== PAUSE TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== RUN   TestBaselineUpdateRewritesBrokenRecordLinks
+=== PAUSE TestBaselineUpdateRewritesBrokenRecordLinks
+=== RUN   TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+=== PAUSE TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+=== RUN   TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+=== PAUSE TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity
+=== RUN   TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+=== PAUSE TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+=== PAUSE TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+=== RUN   TestBaselineUpdateSkillsStageReportsTheUnpinnedLockEntries
+=== PAUSE TestBaselineUpdateSkillsStageReportsTheUnpinnedLockEntries
+=== RUN   TestBaselineUpdateReportsAWithheldHeader
+=== PAUSE TestBaselineUpdateReportsAWithheldHeader
+=== RUN   TestDoctorPrintsForgeWarningsAndExitsZero
+=== PAUSE TestDoctorPrintsForgeWarningsAndExitsZero
+=== RUN   TestDoctorPrintsTheFiveReadinessLines
+=== PAUSE TestDoctorPrintsTheFiveReadinessLines
+=== RUN   TestReleasePlanReportsTheSkillsAndBaselineChecks
+=== PAUSE TestReleasePlanReportsTheSkillsAndBaselineChecks
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision
+=== PAUSE TestReleasePlanChecksNeverChangeTheDecision
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes
+=== PAUSE TestReleasePlanCommandMatchesPRDOutcomes
+=== RUN   TestReleasePlanRefusesAmbiguousHighestVersion
+=== PAUSE TestReleasePlanRefusesAmbiguousHighestVersion
+=== RUN   TestReleasePlanReadsBareTags
+=== PAUSE TestReleasePlanReadsBareTags
+=== RUN   TestReleasePlanCommandMixedOrderSelectsHighestImpact
+=== PAUSE TestReleasePlanCommandMixedOrderSelectsHighestImpact
+=== RUN   TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits
+=== PAUSE TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits
+=== RUN   TestReleasePlanJSONIncludesEveryCommitEvidence
+=== PAUSE TestReleasePlanJSONIncludesEveryCommitEvidence
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation
+=== PAUSE TestReleasePlanExitCodesAndInvalidInputIsolation
+=== RUN   TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== PAUSE TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== PAUSE TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== RUN   TestReleasePlanReadOnlyPreservesRepositoryForOutcomes
+=== PAUSE TestReleasePlanReadOnlyPreservesRepositoryForOutcomes
+=== RUN   TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic
+=== PAUSE TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic
+=== RUN   TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary
+=== PAUSE TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary
+=== RUN   TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
+=== PAUSE TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory
+=== PAUSE TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory
+=== RUN   TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory
+=== PAUSE TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory
+=== RUN   TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag
+=== PAUSE TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag
+=== RUN   TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths
+=== PAUSE TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths
+=== RUN   TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo
+=== PAUSE TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly
+=== PAUSE TestReleasePlanGitSourceInvalidInputsFailReadOnly
+=== RUN   TestReleasePlanGitSourceHonorsContextCancellation
+=== PAUSE TestReleasePlanGitSourceHonorsContextCancellation
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== PAUSE TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation
+=== RUN   TestReleasePlanBlocksALaggingSurface
+=== PAUSE TestReleasePlanBlocksALaggingSurface
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges
+=== PAUSE TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges
+=== RUN   TestReleasePlanSkillCoverageNeverBlocksWithoutAMap
+=== PAUSE TestReleasePlanSkillCoverageNeverBlocksWithoutAMap
+=== RUN   TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap
+=== PAUSE TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap
+=== RUN   TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== PAUSE TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== RUN   TestUpdateCheckTranscripts
+=== PAUSE TestUpdateCheckTranscripts
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== RUN   TestUpdateCheckSessionsStartingTogetherReadTheNetworkOnce
+=== PAUSE TestUpdateCheckSessionsStartingTogetherReadTheNetworkOnce
+=== RUN   TestUpdateCheckReplacesAStaleLookupLock
+=== PAUSE TestUpdateCheckReplacesAStaleLookupLock
+=== RUN   TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup
+=== PAUSE TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview
+=== RUN   TestUpdateCheckUsage
+=== PAUSE TestUpdateCheckUsage
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation
+=== RUN   TestUpdateCheckLookupTimeoutContinues
+=== PAUSE TestUpdateCheckLookupTimeoutContinues
+=== RUN   TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate
+=== PAUSE TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate
+=== RUN   TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+=== PAUSE TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+=== RUN   TestUpdateCheckNamesStaleUserSkillCopies
+=== PAUSE TestUpdateCheckNamesStaleUserSkillCopies
+=== RUN   TestDoctorStorageReportsWorktreeBuildCaches
+=== PAUSE TestDoctorStorageReportsWorktreeBuildCaches
+=== RUN   TestDoctorStorageBoundsTheWorktreeBuildCacheWalk
+=== PAUSE TestDoctorStorageBoundsTheWorktreeBuildCacheWalk
+=== RUN   TestDoctorStorageIsUnchangedWithoutDeclaredCaches
+=== PAUSE TestDoctorStorageIsUnchangedWithoutDeclaredCaches
+=== RUN   TestBuildCacheDoctorReportsUnreadablePathsAsPartial
+=== PAUSE TestBuildCacheDoctorReportsUnreadablePathsAsPartial
+=== CONT  TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock
+=== CONT  TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne
+=== CONT  TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady
+=== CONT  TestBaselineUpdateRefusesUnitsWithUncommittedChanges
+=== CONT  TestBaselineUpdateNoHistorySkipsTheSection
+--- PASS: TestBaselineUpdateNeverRestoresAnExternalSkillThatDiffersFromItsLock (0.06s)
+=== CONT  TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest
+--- PASS: TestDoctorKeepsAnExternalSkillThatDiffersFromItsLockReady (0.08s)
+=== CONT  TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag
+--- PASS: TestBaselineUpdateHistoryPlansAnAbsentSpecRootLikeAnEmptyOne (0.31s)
+=== CONT  TestBaselineUpdatePlansPendingHistoryWithoutWrites
+--- PASS: TestBaselineUpdateNoHistorySkipsTheSection (2.21s)
+=== CONT  TestBaselineUpdateHistoryHonorsAnExistingTag
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/annotated
+--- PASS: TestBaselineUpdateWithoutPendingHistoryKeepsTheBaselineDigest (2.39s)
+=== CONT  TestBaselineUpdateDocumentationPart
+=== RUN   TestBaselineUpdateDocumentationPart/plan_names_the_list_and_the_losses
+--- PASS: TestBaselineUpdateRefusesUnitsWithUncommittedChanges (2.92s)
+=== CONT  TestDoctorReportsTheVerificationCoreBudget
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/default
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/default
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/capacity_off
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/capacity_off
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/explicit_within_the_machine
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/explicit_within_the_machine
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/explicit_beyond_the_machine
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/explicit_beyond_the_machine
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/demand_beyond_the_int64_limit
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/demand_beyond_the_int64_limit
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/unreadable_Run_Database
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/unreadable_Run_Database
+=== RUN   TestDoctorReportsTheVerificationCoreBudget/default_dependency_without_a_Run_Database
+=== PAUSE TestDoctorReportsTheVerificationCoreBudget/default_dependency_without_a_Run_Database
+=== CONT  TestBaselineUpdateRefusesAnUndeclarableDecision
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/malformed_pair
+--- PASS: TestBaselineUpdatePlansPendingHistoryWithoutWrites (2.67s)
+=== CONT  TestRunDoctorRejectsArguments
+--- PASS: TestRunDoctorRejectsArguments (0.00s)
+=== CONT  TestBaselineUpdateDeclaresTheBetterAuthBasePath
+--- PASS: TestBaselineUpdateAppliesPendingHistoryAndCreatesTheTag (3.42s)
+=== CONT  TestDoctorLeavesAnObsoleteLockEntryUntouched
+--- PASS: TestDoctorLeavesAnObsoleteLockEntryUntouched (0.41s)
+=== CONT  TestBaselineUpdateRecordsADeclaredDecision
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/changed_recorded_decision
+=== RUN   TestBaselineUpdateDocumentationPart/text_section
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/empty_id
+=== RUN   TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight
+--- PASS: TestBaselineUpdateDeclaresTheBetterAuthBasePath (2.39s)
+=== CONT  TestRunDoctorRealRepositoryCheckDoesNotMutateState
+--- PASS: TestRunDoctorRealRepositoryCheckDoesNotMutateState (0.34s)
+=== CONT  TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/empty_value
+=== RUN   TestBaselineUpdateDocumentationPart/json_member
+--- PASS: TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink (0.31s)
+=== CONT  TestRunDoctorMissingRepositoryRoot
+--- PASS: TestRunDoctorMissingRepositoryRoot (0.01s)
+=== CONT  TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_text
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/new_required_decision
+--- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag (4.92s)
+    --- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/annotated (2.70s)
+    --- PASS: TestBaselineUpdateHistoryHonorsAnExistingTag/lightweight (2.23s)
+=== CONT  TestBaselineUpdateRewritesEveryListedCitation
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/unknown_decision
+=== RUN   TestBaselineUpdateDocumentationPart/digest_moves_only_when_pending
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_json
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/unselected_decision
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/remaining_suggestions
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_text
+=== RUN   TestBaselineUpdateDocumentationPart/plan_ready_message
+--- PASS: TestBaselineUpdateRewritesEveryListedCitation (3.79s)
+=== CONT  TestRunDoctorPassesCommandContextToRepositorySkillReadiness
+--- PASS: TestRunDoctorPassesCommandContextToRepositorySkillReadiness (0.00s)
+=== CONT  TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/profile-fixed_decision
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/repository_profile
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_json
+=== RUN   TestBaselineUpdateDocumentationPart/file_changes
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/same_profile-fixed_value
+=== RUN   TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename
+=== RUN   TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/exit_code_unchanged
+=== RUN   TestBaselineUpdateDocumentationPart/confirmed_apply
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/preservation_mode
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/empty_array_without_declarations
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_typed_value
+=== RUN   TestBaselineUpdateRecordsADeclaredDecision/help
+--- PASS: TestBaselineUpdateRecordsADeclaredDecision (12.40s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/changed_recorded_decision (2.75s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/new_required_decision (2.98s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/remaining_suggestions (2.48s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/repository_profile (2.32s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/empty_array_without_declarations (1.87s)
+    --- PASS: TestBaselineUpdateRecordsADeclaredDecision/help (0.00s)
+=== CONT  TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness
+=== RUN   TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/satisfies
+=== RUN   TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/below
+=== RUN   TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/unversioned
+--- PASS: TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness (0.04s)
+    --- PASS: TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/satisfies (0.02s)
+    --- PASS: TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/below (0.01s)
+    --- PASS: TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness/unversioned (0.02s)
+=== CONT  TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome
+=== RUN   TestBaselineUpdateDocumentationPart/second_run_current
+--- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames (5.94s)
+    --- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/distinct_files (2.51s)
+    --- PASS: TestBaselineUpdateHistoryPromotionsRepeatAndRefuseSharedBasenames/shared_basename (3.43s)
+=== CONT  TestRunDoctorRepositorySkillReadiness
+=== RUN   TestRunDoctorRepositorySkillReadiness/ready
+=== RUN   TestRunDoctorRepositorySkillReadiness/owned_failure
+=== RUN   TestRunDoctorRepositorySkillReadiness/single_external_gap_uses_skill-scoped_remediation
+=== RUN   TestRunDoctorRepositorySkillReadiness/several_external_gaps_each_use_skill-scoped_remediation
+=== RUN   TestRunDoctorRepositorySkillReadiness/mixed_failure_is_sorted_with_ordered_remediation
+=== RUN   TestRunDoctorRepositorySkillReadiness/symlinked_lock_keeps_external_remediation
+=== RUN   TestRunDoctorRepositorySkillReadiness/unclassified_checker_error
+--- PASS: TestRunDoctorRepositorySkillReadiness (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/ready (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/owned_failure (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/single_external_gap_uses_skill-scoped_remediation (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/several_external_gaps_each_use_skill-scoped_remediation (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/mixed_failure_is_sorted_with_ordered_remediation (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/symlinked_lock_keeps_external_remediation (0.00s)
+    --- PASS: TestRunDoctorRepositorySkillReadiness/unclassified_checker_error (0.00s)
+=== CONT  TestBaselineUpdateHistoryCitationDetectorFailureIsLocal
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/duplicate_declaration
+=== RUN   TestBaselineUpdateDocumentationPart/secondbrain_off
+--- PASS: TestBaselineUpdateHistoryStaleDetectorFailureKeepsOutcome (2.51s)
+=== CONT  TestRunDoctorContinuesChecksAfterProfileReadinessFailure
+--- PASS: TestRunDoctorContinuesChecksAfterProfileReadinessFailure (0.00s)
+=== CONT  TestBaselineUpdateHistoryCitationBoundaries
+--- PASS: TestBaselineUpdateHistoryCitationDetectorFailureIsLocal (2.47s)
+=== CONT  TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence
+--- PASS: TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence (0.01s)
+=== CONT  TestBaselineUpdateWithoutCitationsKeepsDigestAndText
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/atomic_refusal
+=== RUN   TestBaselineUpdateDocumentationPart/marker_refused_rest_applies
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_auth
+--- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink (15.94s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_text (2.13s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/withheld_json (1.83s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_text (2.20s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/unlinked_checkout_json (2.10s)
+    --- PASS: TestBaselineUpdateWarnsAboutTheClaudeInstructionLink/exit_code_unchanged (7.67s)
+=== CONT  TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile
+--- PASS: TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile (0.00s)
+=== CONT  TestBaselineUpdateRefusesAnInvalidPromotion
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/core
+--- PASS: TestBaselineUpdateHistoryCitationBoundaries (3.15s)
+=== CONT  TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime
+--- PASS: TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime (0.00s)
+=== CONT  TestBaselineUpdateHistoryDigestBindsCitations
+--- PASS: TestBaselineUpdateWithoutCitationsKeepsDigestAndText (2.70s)
+=== CONT  TestDoctorAdapterCheckAggregatesEveryFailure
+--- PASS: TestDoctorAdapterCheckAggregatesEveryFailure (0.00s)
+=== CONT  TestBaselineUpdateReportsStaleHistoryCitationsTranscript
+=== RUN   TestBaselineUpdateDocumentationPart/fills_amendment_lists
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/
+=== RUN   TestBaselineUpdateDocumentationPart/drops_its_own_identifier
+--- PASS: TestBaselineUpdateHistoryDigestBindsCitations (2.62s)
+=== CONT  TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes
+=== RUN   TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/official_adapters_report_package_and_version_evidence
+=== RUN   TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/legacy_claude_fails_without_suppressing_codex_evidence
+=== RUN   TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/multiple_failures_report_every_remediation
+--- PASS: TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes (0.00s)
+    --- PASS: TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/official_adapters_report_package_and_version_evidence (0.00s)
+    --- PASS: TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/legacy_claude_fails_without_suppressing_codex_evidence (0.00s)
+    --- PASS: TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes/multiple_failures_report_every_remediation (0.00s)
+=== CONT  TestBaselineUpdatePromotesOnlyOnRequestTranscript
+--- PASS: TestBaselineUpdateReportsStaleHistoryCitationsTranscript (3.12s)
+=== CONT  TestDoctorReportsProcessResidueDoesNotWriteRunRecord
+--- PASS: TestDoctorReportsProcessResidueDoesNotWriteRunRecord (0.11s)
+=== CONT  TestBaselineUpdateListsHistoryCitationsTranscript
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/*
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/outside_units
+=== RUN   TestBaselineUpdateDocumentationPart/fill_beside_history_unit
+=== RUN   TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a_b
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination
+--- PASS: TestBaselineUpdateListsHistoryCitationsTranscript (3.14s)
+=== CONT  TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne
+=== RUN   TestBaselineUpdateDocumentationPart/no_history_does_not_skip
+--- PASS: TestDoctorKeepsPartialForAnUnreadableOwnerBesideAReusedOne (0.47s)
+=== CONT  TestBaselineStartersHelp
+--- PASS: TestBaselineStartersHelp (0.01s)
+=== CONT  TestDoctorReportsNoResidueForAReusedOwnerPID
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a//b
+--- PASS: TestDoctorReportsNoResidueForAReusedOwnerPID (0.49s)
+=== CONT  TestBaselineStartersJSONAndRefusals
+--- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript (4.97s)
+    --- PASS: TestBaselineUpdatePromotesOnlyOnRequestTranscript/without_request (2.16s)
+=== CONT  TestDoctorReportsProcessResidueUnreadable
+--- PASS: TestBaselineStartersJSONAndRefusals (0.26s)
+=== CONT  TestBaselineStartersWritesAProjectConfigRoundfixLoads
+--- PASS: TestBaselineStartersWritesAProjectConfigRoundfixLoads (0.04s)
+=== CONT  TestDoctorReportsProcessResidueEmpty
+=== RUN   TestBaselineUpdateDocumentationPart/apply_failure
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/no_history
+--- PASS: TestDoctorReportsProcessResidueUnreadable (0.44s)
+=== CONT  TestBaselineStartersApplyTranscript
+--- PASS: TestDoctorReportsProcessResidueEmpty (0.42s)
+=== CONT  TestBaselineStartersPreviewTranscript
+--- PASS: TestBaselineStartersApplyTranscript (0.27s)
+=== CONT  TestDoctorReportsProcessResidueExcludesLiveRun
+--- PASS: TestBaselineStartersPreviewTranscript (0.24s)
+=== CONT  TestBaselineSkillsRestoreTextListsTheClaudeLink
+=== RUN   TestBaselineSkillsRestoreTextListsTheClaudeLink/text
+=== RUN   TestBaselineSkillsRestoreTextListsTheClaudeLink/json
+--- PASS: TestBaselineSkillsRestoreTextListsTheClaudeLink (0.00s)
+    --- PASS: TestBaselineSkillsRestoreTextListsTheClaudeLink/text (0.00s)
+    --- PASS: TestBaselineSkillsRestoreTextListsTheClaudeLink/json (0.00s)
+=== CONT  TestDoctorReportsProcessResidueReported
+=== RUN   TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a?x
+--- PASS: TestDoctorReportsProcessResidueExcludesLiveRun (0.47s)
+=== CONT  TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal
+--- PASS: TestBaselineSkillsRestoreHelpNamesTheLockChangeRefusal (0.00s)
+=== CONT  TestDoctorReportsPrePRReviewPolicy
+=== RUN   TestDoctorReportsPrePRReviewPolicy/project_choice
+=== RUN   TestDoctorReportsPrePRReviewPolicy/user_choice
+=== RUN   TestDoctorReportsPrePRReviewPolicy/built-in_default
+=== RUN   TestDoctorReportsPrePRReviewPolicy/disabled_by_project_configuration
+--- PASS: TestDoctorReportsPrePRReviewPolicy (0.00s)
+    --- PASS: TestDoctorReportsPrePRReviewPolicy/project_choice (0.00s)
+    --- PASS: TestDoctorReportsPrePRReviewPolicy/user_choice (0.00s)
+    --- PASS: TestDoctorReportsPrePRReviewPolicy/built-in_default (0.00s)
+    --- PASS: TestDoctorReportsPrePRReviewPolicy/disabled_by_project_configuration (0.00s)
+=== CONT  TestBaselineSkillsRestoreCommand
+=== RUN   TestBaselineSkillsRestoreCommand/public_help_exposes_the_approved_contract
+=== RUN   TestBaselineSkillsRestoreCommand/JSON_preview_stays_on_stdout_and_exits_action_required
+--- PASS: TestDoctorReportsProcessResidueReported (0.45s)
+=== CONT  TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts
+=== RUN   TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/all_checks_pass
+=== RUN   TestBaselineSkillsRestoreCommand/text_success_is_diagnostic_free
+--- PASS: TestBaselineSkillsRestoreCommand (0.01s)
+    --- PASS: TestBaselineSkillsRestoreCommand/public_help_exposes_the_approved_contract (0.00s)
+    --- PASS: TestBaselineSkillsRestoreCommand/JSON_preview_stays_on_stdout_and_exits_action_required (0.01s)
+    --- PASS: TestBaselineSkillsRestoreCommand/text_success_is_diagnostic_free (0.00s)
+=== CONT  TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills
+=== RUN   TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/quarantined_codex_fails_with_reinstall_action
+--- PASS: TestBaselineUpdateDocumentationPart (28.81s)
+    --- PASS: TestBaselineUpdateDocumentationPart/plan_names_the_list_and_the_losses (1.56s)
+    --- PASS: TestBaselineUpdateDocumentationPart/text_section (1.88s)
+    --- PASS: TestBaselineUpdateDocumentationPart/json_member (2.21s)
+    --- PASS: TestBaselineUpdateDocumentationPart/digest_moves_only_when_pending (2.47s)
+    --- PASS: TestBaselineUpdateDocumentationPart/plan_ready_message (1.89s)
+    --- PASS: TestBaselineUpdateDocumentationPart/file_changes (1.89s)
+    --- PASS: TestBaselineUpdateDocumentationPart/confirmed_apply (2.05s)
+    --- PASS: TestBaselineUpdateDocumentationPart/second_run_current (2.10s)
+    --- PASS: TestBaselineUpdateDocumentationPart/secondbrain_off (2.31s)
+    --- PASS: TestBaselineUpdateDocumentationPart/marker_refused_rest_applies (1.64s)
+    --- PASS: TestBaselineUpdateDocumentationPart/fills_amendment_lists (1.90s)
+    --- PASS: TestBaselineUpdateDocumentationPart/drops_its_own_identifier (1.86s)
+    --- PASS: TestBaselineUpdateDocumentationPart/fill_beside_history_unit (2.20s)
+    --- PASS: TestBaselineUpdateDocumentationPart/no_history_does_not_skip (1.39s)
+    --- PASS: TestBaselineUpdateDocumentationPart/apply_failure (1.45s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheLockChangeRefusal (0.00s)
+=== CONT  TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/TypeScript_modules_exclude_Go_and_TUI_skills
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/Go_CLI_and_TUI_modules_retain_their_skills
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/absent_manifest_requires_Baseline_adoption_but_no_external_skills
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/checker_error_text_cannot_mask_the_zero_external_requirement
+=== RUN   TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/unknown_module_fails_before_repository_readiness
+--- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest (0.04s)
+    --- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/TypeScript_modules_exclude_Go_and_TUI_skills (0.01s)
+    --- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/Go_CLI_and_TUI_modules_retain_their_skills (0.01s)
+    --- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/absent_manifest_requires_Baseline_adoption_but_no_external_skills (0.00s)
+    --- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/checker_error_text_cannot_mask_the_zero_external_requirement (0.00s)
+    --- PASS: TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest/unknown_module_fails_before_repository_readiness (0.01s)
+=== CONT  TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit
+--- PASS: TestBaselineSkillsReconcileHelpDocumentsTheRequiredRemovedExit (0.00s)
+=== CONT  TestDoctorStorageDoesNotInspectArtifactDirectoriesOutsideGit
+--- PASS: TestDoctorStorageDoesNotInspectArtifactDirectoriesOutsideGit (0.05s)
+=== CONT  TestDoctorStorageZeroRetentionKeepsEveryRun
+--- PASS: TestDoctorStorageZeroRetentionKeepsEveryRun (0.00s)
+=== CONT  TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/unclean
+--- PASS: TestDoctorStorageLeavesTheRunDatabaseBytesUnchanged (0.03s)
+=== CONT  TestBaselineSkillsReconcileHelpNamesTheConfirmationContract
+--- PASS: TestBaselineSkillsReconcileHelpNamesTheConfirmationContract (0.00s)
+=== CONT  TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead
+--- PASS: TestDoctorStorageIsPartialWhenTheRunDatabaseCannotBeRead (0.04s)
+=== CONT  TestBaselineSkillsReconcileRejectsAMutableRevision
+--- PASS: TestBaselineSkillsReconcileRejectsAMutableRevision (0.00s)
+=== CONT  TestDoctorStorageDoesNotCreateAMissingRunDatabase
+--- PASS: TestDoctorStorageDoesNotCreateAMissingRunDatabase (0.00s)
+=== CONT  TestDoctorStorageIsOKWhenNothingIsLeftToReclaim
+--- PASS: TestDoctorStorageIsOKWhenNothingIsLeftToReclaim (0.03s)
+=== CONT  TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan
+=== RUN   TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/codex_not_applicable_does_not_fail
+=== RUN   TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills
+--- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision (29.02s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/malformed_pair (1.23s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/empty_id (1.57s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/empty_value (1.81s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/unknown_decision (2.06s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/unselected_decision (1.42s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/profile-fixed_decision (1.51s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/same_profile-fixed_value (1.93s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/preservation_mode (1.83s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_typed_value (1.81s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/duplicate_declaration (1.44s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/atomic_refusal (1.62s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_auth (1.74s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/ (1.46s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/ (1.72s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/auth/* (1.65s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a_b (1.54s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a//b (1.49s)
+    --- PASS: TestBaselineUpdateRefusesAnUndeclarableDecision/invalid_base_path_/a?x (1.18s)
+=== CONT  TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold
+--- PASS: TestDoctorStorageResultNamesCompactAtTheFreeBytesThreshold (0.00s)
+=== CONT  TestBaselineSkillsReconcilePreviewThenConfirm
+--- PASS: TestBaselineSkillsReconcileRequiredRemovedPrintsAnEmptyPlan (0.62s)
+=== CONT  TestDoctorStorageReportsReclaimableRunsAndNamesGC
+--- PASS: TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts (1.31s)
+    --- PASS: TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/all_checks_pass (0.43s)
+    --- PASS: TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/quarantined_codex_fails_with_reinstall_action (0.45s)
+    --- PASS: TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts/codex_not_applicable_does_not_fail (0.43s)
+=== CONT  TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions
+=== RUN   TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions/external_failure
+--- PASS: TestDoctorStorageReportsReclaimableRunsAndNamesGC (0.04s)
+=== CONT  TestBaselineUpdateWritesNoRootBackupWarning
+=== RUN   TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions/unversioned
+--- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision (1.39s)
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/marcioaltoe/skills (0.53s)
+    --- PASS: TestBaselineSkillsReconcileNoChangesNamesTheSetupSnapshotRevision/example/no-profile-skills (0.43s)
+=== CONT  TestBaselinePlanTextLabelsTheRootBackup
+--- PASS: TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions (0.10s)
+    --- PASS: TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions/external_failure (0.06s)
+    --- PASS: TestDoctorOwnedLockWarningKeepsReadinessDetailAndNextActions/unversioned (0.03s)
+=== CONT  TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink
+=== RUN   TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory
+--- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable (0.01s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/absent (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/malformed (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/schema (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/symlink (0.00s)
+    --- PASS: TestDoctorKeepsReadinessWhenOwnedLockComparisonIsUnavailable/directory (0.00s)
+=== CONT  TestBaselineApplyNamesTheRootBackupItWrote
+=== RUN   TestBaselineApplyNamesTheRootBackupItWrote/text
+--- PASS: TestBaselinePlanTextLabelsTheRootBackup (0.11s)
+=== CONT  TestBaselineFindingRegressionsHumanReview
+=== RUN   TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== PAUSE TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== RUN   TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+=== PAUSE TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+=== CONT  TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry
+--- PASS: TestDoctorKeepsAFailedSkillsLineWithAStaleOwnedSkillLockEntry (0.11s)
+=== CONT  TestBaselineMacroJourneysPublicCLI
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/absolute
+=== RUN   TestBaselineMacroJourneysPublicCLI/greenfield_automation_apply_and_empty_reapply
+--- PASS: TestBaselineSkillsReconcilePreviewThenConfirm (1.29s)
+=== CONT  TestDoctorNamesAStaleOwnedSkillLockEntry
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install
+=== RUN   TestDoctorNamesAStaleOwnedSkillLockEntry/unpinned_with_the_installed_hash
+=== RUN   TestBaselineApplyNamesTheRootBackupItWrote/json
+--- PASS: TestDoctorNamesAStaleOwnedSkillLockEntry (0.23s)
+    --- PASS: TestDoctorNamesAStaleOwnedSkillLockEntry/pinned_after_a_bundle_install (0.15s)
+    --- PASS: TestDoctorNamesAStaleOwnedSkillLockEntry/unpinned_with_the_installed_hash (0.08s)
+=== CONT  TestGuidanceCompositionJourney
+=== RUN   TestGuidanceCompositionJourney/go-cli-tui
+--- PASS: TestBaselineUpdateWritesNoRootBackupWarning (2.26s)
+=== CONT  TestDoctorRecommendationsNeverFailDoctor
+--- PASS: TestDoctorRecommendationsNeverFailDoctor (0.00s)
+=== CONT  TestBaselineProfileHelpContract
+=== RUN   TestBaselineProfileHelpContract/baseline_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_capabilities_check_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_init_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_show_--help
+=== RUN   TestBaselineProfileHelpContract/baseline_profile_validate_--help
+--- PASS: TestBaselineProfileHelpContract (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_capabilities_check_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_init_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_show_--help (0.00s)
+    --- PASS: TestBaselineProfileHelpContract/baseline_profile_validate_--help (0.00s)
+=== CONT  TestDoctorReportsRecommendationsAfterProfiles
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/ok
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/found
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/pinned
+=== RUN   TestDoctorReportsRecommendationsAfterProfiles/skipped
+--- PASS: TestDoctorReportsRecommendationsAfterProfiles (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/ok (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/found (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/pinned (0.00s)
+    --- PASS: TestDoctorReportsRecommendationsAfterProfiles/skipped (0.00s)
+=== CONT  TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles
+--- PASS: TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles (0.09s)
+=== CONT  TestBaselineProfileCommandInitShowAndValidate
+--- PASS: TestBaselineProfileCommandInitShowAndValidate (0.04s)
+=== CONT  TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/off
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/on
+=== RUN   TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/no_dependency
+--- PASS: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn (0.06s)
+    --- PASS: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/off (0.02s)
+    --- PASS: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/on (0.02s)
+    --- PASS: TestDoctorPrintsTheLinuxLaneLineOnlyWhenTheLaneIsOn/no_dependency (0.02s)
+=== CONT  TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt
+--- PASS: TestBaselineApplyNamesTheRootBackupItWrote (2.82s)
+    --- PASS: TestBaselineApplyNamesTheRootBackupItWrote/text (1.17s)
+    --- PASS: TestBaselineApplyNamesTheRootBackupItWrote/json (1.65s)
+=== CONT  TestDoctorLinuxLaneCheckReportsDockerAndTheImage
+=== RUN   TestBaselineMacroJourneysPublicCLI/preservation
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/ok
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/directory
+=== RUN   TestGuidanceCompositionJourney/go-cli-typescript-monorepo
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/image_missing
+--- PASS: TestBaselineUpdateAsksForTheDecisionOnceTheProfileListsIt (1.89s)
+=== CONT  TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels
+=== RUN   TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/built-in
+=== RUN   TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/full_access
+=== RUN   TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/no_light_model
+=== RUN   TestBaselineMacroJourneysPublicCLI/update_and_profile_change
+--- PASS: TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels (0.04s)
+    --- PASS: TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/built-in (0.01s)
+    --- PASS: TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/full_access (0.02s)
+    --- PASS: TestDoctorPrintsTheLightTierLineOnlyWithFullAccessAndLightModels/no_light_model (0.01s)
+=== CONT  TestBaselineUpdateRefusesAProfileDecisionGap
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/docker_missing
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/daemon_unreachable
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/configured_image
+=== RUN   TestGuidanceCompositionJourney/python
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/missing
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_go_version
+--- PASS: TestBaselineUpdateRefusesAProfileDecisionGap (1.29s)
+=== CONT  TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/full_access_off
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/no_light_model
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/static_runtime
+=== RUN   TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/serving_runtime
+--- PASS: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess (0.00s)
+    --- PASS: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/full_access_off (0.00s)
+    --- PASS: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/no_light_model (0.00s)
+    --- PASS: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/static_runtime (0.00s)
+    --- PASS: TestDoctorLightTierResultNamesTheLightRuntimeThatCannotServeFullAccess/serving_runtime (0.00s)
+=== CONT  TestDoctorReportsTheDocumentationRules
+=== RUN   TestDoctorReportsTheDocumentationRules/export_list_missing
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_module
+=== RUN   TestDoctorReportsTheDocumentationRules/export_list_stale
+=== RUN   TestDoctorReportsTheDocumentationRules/export_marker
+=== RUN   TestDoctorReportsTheDocumentationRules/export_process_path
+=== RUN   TestDoctorReportsTheDocumentationRules/export_reason_missing
+=== RUN   TestDoctorReportsTheDocumentationRules/export_adr_unmarked
+=== RUN   TestDoctorReportsTheDocumentationRules/export_unread
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_required_missing
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_outside_layout
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_adr_retired
+=== RUN   TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_repository
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_adr_amendment_unlisted
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_lesson_form
+=== RUN   TestDoctorReportsTheDocumentationRules/both_ok
+=== RUN   TestDoctorReportsTheDocumentationRules/skipped_without_manifest
+=== RUN   TestDoctorReportsTheDocumentationRules/export_skipped_secondbrain_off
+=== RUN   TestDoctorReportsTheDocumentationRules/twenty_lines_then_more
+=== RUN   TestDoctorReportsTheDocumentationRules/exit_unchanged
+=== RUN   TestDoctorReportsTheDocumentationRules/named_by_the_repository_guide
+--- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage (3.59s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/ok (0.70s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/image_missing (0.48s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/docker_missing (0.40s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/daemon_unreachable (0.37s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/configured_image (0.33s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_go_version (0.09s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_module (0.17s)
+    --- PASS: TestDoctorLinuxLaneCheckReportsDockerAndTheImage/no_repository (0.63s)
+=== CONT  TestBaselinePlanRefusesAProfileDecisionGap
+=== RUN   TestDoctorReportsTheDocumentationRules/order_after_claude_link
+=== RUN   TestDoctorReportsTheDocumentationRules/proposed_adrs
+=== RUN   TestBaselineMacroJourneysPublicCLI/stale_plan
+=== RUN   TestDoctorReportsTheDocumentationRules/legacy_proposed_adr
+=== RUN   TestDoctorReportsTheDocumentationRules/docs_required_glossary_missing
+=== RUN   TestDoctorReportsTheDocumentationRules/root_reference_document
+=== RUN   TestDoctorReportsTheDocumentationRules/marker_mentioned_in_comment
+--- PASS: TestDoctorReportsTheDocumentationRules (1.00s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_list_missing (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_list_stale (0.00s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_marker (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_process_path (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_reason_missing (0.00s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_adr_unmarked (0.00s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_unread (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_required_missing (0.02s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_outside_layout (0.04s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_adr_retired (0.07s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_adr_amendment_unlisted (0.08s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_lesson_form (0.11s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/both_ok (0.11s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/skipped_without_manifest (0.09s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/export_skipped_secondbrain_off (0.09s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/twenty_lines_then_more (0.09s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/exit_unchanged (0.08s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/named_by_the_repository_guide (0.07s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/order_after_claude_link (0.04s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/proposed_adrs (0.02s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/legacy_proposed_adr (0.02s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/docs_required_glossary_missing (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/root_reference_document (0.01s)
+    --- PASS: TestDoctorReportsTheDocumentationRules/marker_mentioned_in_comment (0.01s)
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== RUN   TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== PAUSE TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== CONT  TestBaselineProfileValidateNamesADecisionGap
+--- PASS: TestBaselinePlanRefusesAProfileDecisionGap (0.19s)
+=== CONT  TestDoctorAdapterNamesTheCursorLogin
+--- PASS: TestBaselineProfileValidateNamesADecisionGap (0.05s)
+=== CONT  TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange
+=== RUN   TestBaselineMacroJourneysPublicCLI/cross-clone_apply
+=== RUN   TestGuidanceCompositionJourney/rust-cli
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/duplicate
+=== RUN   TestDoctorAdapterNamesTheCursorLogin/message
+=== RUN   TestDoctorAdapterNamesTheCursorLogin/exit
+--- PASS: TestDoctorAdapterNamesTheCursorLogin (1.19s)
+    --- PASS: TestDoctorAdapterNamesTheCursorLogin/message (0.30s)
+    --- PASS: TestDoctorAdapterNamesTheCursorLogin/exit (0.04s)
+=== CONT  TestDoctorReportsTheClaudeInstructionLink
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/ok
+=== RUN   TestBaselineMacroJourneysPublicCLI/unsafe_carrier
+--- PASS: TestBaselinePlanCarriesTheRecordedDecisionsAcrossAProfileChange (1.76s)
+=== CONT  TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand
+=== RUN   TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+=== PAUSE TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+=== RUN   TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== PAUSE TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== RUN   TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+=== PAUSE TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+=== CONT  TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory
+=== RUN   TestGuidanceCompositionJourney/standard-typescript-monorepo
+--- PASS: TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory (0.52s)
+=== CONT  TestBaselinePlanNamesEveryMissingAnswerInOneRefusal
+=== RUN   TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit
+--- PASS: TestBaselinePlanNamesEveryMissingAnswerInOneRefusal (0.12s)
+=== CONT  TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/absent
+=== CONT  TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus
+--- PASS: TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories (0.47s)
+=== RUN   TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/first-adoption-greenfield-with-inline-decisions-emits-plan
+--- PASS: TestBaselineUpdateRefusesAProfileDecisionAndNamesThePlanCommand (1.72s)
+=== CONT  TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory
+=== RUN   TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/first-adoption-preservation-with-complete-strict-decision-document-emits-plan
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/regular_file
+=== RUN   TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/decisions-absent-names-every-required-decision
+=== RUN   TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/decisions-supplied-without-preservation-mode-requires-action
+--- PASS: TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory (0.50s)
+=== CONT  TestDoctorReportsMisplacedRepositoryRules
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/ok
+--- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus (1.18s)
+    --- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/first-adoption-greenfield-with-inline-decisions-emits-plan (0.78s)
+    --- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/first-adoption-preservation-with-complete-strict-decision-document-emits-plan (0.17s)
+    --- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/decisions-absent-names-every-required-decision (0.09s)
+    --- PASS: TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus/decisions-supplied-without-preservation-mode-requires-action (0.13s)
+=== CONT  TestBaselinePlanHistoryRelocationTextAndExitStatus
+--- PASS: TestBaselineUpdateRefusesAnInvalidPromotion (20.95s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/core (2.11s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/valid_then_core (2.13s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/outside_units (2.08s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/occupied_destination (1.71s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/no_history (1.38s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/unclean (1.45s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/absolute (2.61s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/directory (2.26s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/missing (1.53s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/duplicate (1.97s)
+    --- PASS: TestBaselineUpdateRefusesAnInvalidPromotion/refused_unit (1.73s)
+=== CONT  TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles
+--- PASS: TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles (0.24s)
+=== CONT  TestDoctorNamesADegradedPolicy
+=== RUN   TestDoctorNamesADegradedPolicy/degraded_full_access
+--- PASS: TestBaselinePlanHistoryRelocationTextAndExitStatus (0.39s)
+=== CONT  TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix
+--- PASS: TestTheUpdateCheckNamesARepositoryRecordedByANewerRoundfix (0.03s)
+=== CONT  TestBaselinePlanPreflightRealCLI
+--- PASS: TestGuidanceCompositionJourney (9.87s)
+    --- PASS: TestGuidanceCompositionJourney/go-cli-tui (1.99s)
+    --- PASS: TestGuidanceCompositionJourney/go-cli-typescript-monorepo (2.10s)
+    --- PASS: TestGuidanceCompositionJourney/python (1.54s)
+    --- PASS: TestGuidanceCompositionJourney/rust-cli (1.87s)
+    --- PASS: TestGuidanceCompositionJourney/standard-typescript-monorepo (2.37s)
+=== CONT  TestBaselinePlanProfileFile
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/link_elsewhere
+=== RUN   TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs
+=== RUN   TestBaselinePlanProfileFile/invalid_draft
+=== RUN   TestBaselinePlanProfileFile/stale_draft
+=== RUN   TestBaselinePlanProfileFile/output_failure
+--- PASS: TestBaselinePlanProfileFile (0.26s)
+    --- PASS: TestBaselinePlanProfileFile/mutually_exclusive_Profile_inputs (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/invalid_draft (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/stale_draft (0.00s)
+    --- PASS: TestBaselinePlanProfileFile/output_failure (0.03s)
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== RUN   TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== PAUSE TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestBaselinePlanPreflightHelp
+--- PASS: TestBaselinePlanPreflightHelp (0.00s)
+=== CONT  TestBaselineUpdateRecordsTheRunningRoundfixVersion
+=== RUN   TestDoctorNamesADegradedPolicy/ordinary_full_access
+=== RUN   TestDoctorNamesADegradedPolicy/runtime_default_access
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_one_passage
+--- PASS: TestBaselinePlanPreflightRealCLI (1.16s)
+=== CONT  TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency
+--- PASS: TestDoctorNamesADegradedPolicy (1.41s)
+    --- PASS: TestDoctorNamesADegradedPolicy/degraded_full_access (0.50s)
+    --- PASS: TestDoctorNamesADegradedPolicy/ordinary_full_access (0.45s)
+    --- PASS: TestDoctorNamesADegradedPolicy/runtime_default_access (0.46s)
+=== CONT  TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/unknown_flag
+=== RUN   TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/repository_without_commit
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/file_with_passages
+--- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository (0.07s)
+    --- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/unknown_flag (0.00s)
+    --- PASS: TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository/repository_without_commit (0.07s)
+=== CONT  TestBaselineUpdateHelpNamesNonInteractiveContract
+--- PASS: TestBaselineUpdateHelpNamesNonInteractiveContract (0.00s)
+=== CONT  TestBaselinePlanPreflightBlocksUnsafeRepository
+--- PASS: TestBaselinePlanPreflightBlocksUnsafeRepository (0.13s)
+=== CONT  TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites
+--- PASS: TestBaselineUpdateRecordsTheRunningRoundfixVersion (2.23s)
+=== CONT  TestBaselinePlanPreflightText
+--- PASS: TestBaselinePlanPreflightText (0.36s)
+=== CONT  TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms
+--- PASS: TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms (0.00s)
+=== CONT  TestBaselinePlanPreflightJSONActionRequired
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_two_passages
+--- PASS: TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency (1.75s)
+=== CONT  TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/link_elsewhere_with_passages
+--- PASS: TestBaselinePlanPreflightJSONActionRequired (0.08s)
+=== CONT  TestBaselinePlanWithoutIncrementalDecisionExitsThree
+--- PASS: TestBaselinePlanWithoutIncrementalDecisionExitsThree (0.06s)
+=== CONT  TestBaselineUpdateAdoptsEverySuggestedDecision
+--- PASS: TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites (1.89s)
+=== CONT  TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/agents_not_regular
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/warn_extension_off
+--- PASS: TestBaselineUpdateAdoptsEverySuggestedDecision (1.77s)
+=== CONT  TestBaselineUpdateNewDecisionRequiresActionWithoutWrites
+--- PASS: TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest (1.86s)
+=== CONT  TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/unlinked_checkout
+--- PASS: TestBaselineUpdateAdoptsADeclaredIncrementalSuggestion (2.25s)
+=== CONT  TestBaselineUpdateFleetSweep
+=== RUN   TestBaselineUpdateFleetSweep/manifest-predates-managed-regions
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/skipped
+--- PASS: TestBaselineUpdateNewDecisionRequiresActionWithoutWrites (1.11s)
+=== CONT  TestBaselineUpdateNamesTheMissingIncrementalDecision
+--- PASS: TestBaselineUpdateRefusesAnUndeclaredIncrementalSuggestion (1.17s)
+=== CONT  TestBaselineUpdateUnresolvedProfileDiagnosis
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/unread
+--- PASS: TestBaselineUpdateNamesTheMissingIncrementalDecision (1.24s)
+=== CONT  TestBaselineNoTTY
+=== RUN   TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity
+--- PASS: TestBaselineNoTTY (0.12s)
+=== CONT  TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest
+--- PASS: TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites (0.16s)
+=== CONT  TestBaselineHumanProfileAdaptation
+=== RUN   TestBaselineUpdateFleetSweep/structural-clauses-missing
+=== RUN   TestBaselineHumanProfileAdaptation/decline_writes_nothing
+=== RUN   TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing
+--- PASS: TestBaselineHumanProfileAdaptation (0.47s)
+    --- PASS: TestBaselineHumanProfileAdaptation/decline_writes_nothing (0.00s)
+    --- PASS: TestBaselineHumanProfileAdaptation/review_output_failure_writes_nothing (0.04s)
+=== CONT  TestBaselineUpdateIdempotenceReportsZeroFileChanges
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/skipped
+--- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis (2.34s)
+    --- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/missing_repository-owned_Profile (1.19s)
+    --- PASS: TestBaselineUpdateUnresolvedProfileDiagnosis/unknown_catalog_identity (1.15s)
+=== CONT  TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill
+--- PASS: TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill (0.00s)
+=== CONT  TestHumanBaselineInvokesSemanticSegmentationAndClassification
+--- PASS: TestHumanBaselineInvokesSemanticSegmentationAndClassification (0.45s)
+=== CONT  TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation
+--- PASS: TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation (0.00s)
+=== CONT  TestHumanBaselineConfirmationRequiresExplicitChoice
+--- PASS: TestHumanBaselineConfirmationRequiresExplicitChoice (0.00s)
+=== CONT  TestBaselineUpdatePassesOfflineSourceToSkillStage
+=== RUN   TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code
+=== RUN   TestDoctorReportsTheClaudeInstructionLink/after_baseline_rules_and_exit_code
+--- PASS: TestBaselineUpdateIdempotenceReportsZeroFileChanges (1.81s)
+=== CONT  TestHumanBaselinePreservationDefaultFollowsInstructionInventory
+=== RUN   TestHumanBaselinePreservationDefaultFollowsInstructionInventory/instructions_use_preservation
+=== RUN   TestHumanBaselinePreservationDefaultFollowsInstructionInventory/no_instructions_use_greenfield
+--- PASS: TestHumanBaselinePreservationDefaultFollowsInstructionInventory (0.00s)
+    --- PASS: TestHumanBaselinePreservationDefaultFollowsInstructionInventory/instructions_use_preservation (0.00s)
+    --- PASS: TestHumanBaselinePreservationDefaultFollowsInstructionInventory/no_instructions_use_greenfield (0.00s)
+=== CONT  TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory
+=== RUN   TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve
+--- PASS: TestDoctorReportsMisplacedRepositoryRules (10.99s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/ok (1.30s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_one_passage (2.08s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_two_passages (1.74s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/warn_extension_off (1.19s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/skipped (1.52s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/unread_invalid_manifest (1.52s)
+    --- PASS: TestDoctorReportsMisplacedRepositoryRules/after_skills_and_exit_code (1.64s)
+=== CONT  TestHumanBaselineDecisionDefaults
+=== RUN   TestHumanBaselineDecisionDefaults/existing_manifest_value_wins
+=== RUN   TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog
+=== RUN   TestHumanBaselineDecisionDefaults/language
+=== RUN   TestHumanBaselineDecisionDefaults/verification
+=== RUN   TestHumanBaselineDecisionDefaults/frontend_layout
+=== RUN   TestHumanBaselineDecisionDefaults/HTTP_contract
+=== RUN   TestHumanBaselineDecisionDefaults/spec_scaffold
+=== RUN   TestHumanBaselineDecisionDefaults/domain_layout
+=== RUN   TestHumanBaselineDecisionDefaults/external_triage
+=== RUN   TestHumanBaselineDecisionDefaults/autonomous_work
+=== RUN   TestHumanBaselineDecisionDefaults/Secondbrain
+=== RUN   TestHumanBaselineDecisionDefaults/repository_extension
+=== RUN   TestHumanBaselineDecisionDefaults/backend_runtime
+=== RUN   TestHumanBaselineDecisionDefaults/design_runtime
+--- PASS: TestHumanBaselineDecisionDefaults (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/existing_manifest_value_wins (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/invalid_manifest_value_falls_back_to_catalog (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/language (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/verification (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/frontend_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/HTTP_contract (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/spec_scaffold (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/domain_layout (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/external_triage (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/autonomous_work (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/Secondbrain (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/repository_extension (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/backend_runtime (0.00s)
+    --- PASS: TestHumanBaselineDecisionDefaults/design_runtime (0.00s)
+=== CONT  TestBaselineUpdateSkillWarningKeepsApplyAxisVerified
+--- PASS: TestBaselineUpdatePassesOfflineSourceToSkillStage (1.81s)
+=== CONT  TestHumanBaselineUnreadableManifestFallsBackToFullInterview
+--- PASS: TestDoctorReportsTheClaudeInstructionLink (14.00s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/ok (1.31s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/absent (1.36s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/regular_file (0.85s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/link_elsewhere (1.13s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/file_with_passages (1.60s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/link_elsewhere_with_passages (1.26s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/agents_not_regular (1.40s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/unlinked_checkout (1.45s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/unread (1.07s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/skipped (1.24s)
+    --- PASS: TestDoctorReportsTheClaudeInstructionLink/after_baseline_rules_and_exit_code (1.33s)
+=== CONT  TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills
+--- PASS: TestHumanBaselineUnreadableManifestFallsBackToFullInterview (0.17s)
+=== CONT  TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== RUN   TestBaselineUpdateFleetSweep/already-current
+=== CONT  TestHumanBaselinePromptsOnlyForManifestMissingDecision
+--- PASS: TestHumanBaselineFirstAdoptionPromptSequenceCharacterization (0.10s)
+--- PASS: TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory (1.75s)
+=== CONT  TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs
+--- PASS: TestHumanBaselinePromptsOnlyForManifestMissingDecision (1.49s)
+=== CONT  TestHumanBaselineProfileDigestDriftRemainsUpdate
+--- PASS: TestBaselineUpdateSkillWarningKeepsApplyAxisVerified (2.04s)
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput
+--- PASS: TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills (1.89s)
+=== CONT  TestBaselineHumanProfileChangeRemainsReachable
+--- PASS: TestBaselineUpdateFleetSweep (7.09s)
+    --- PASS: TestBaselineUpdateFleetSweep/manifest-predates-managed-regions (1.97s)
+    --- PASS: TestBaselineUpdateFleetSweep/structural-clauses-missing (2.16s)
+    --- PASS: TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve (1.07s)
+    --- PASS: TestBaselineUpdateFleetSweep/already-current (1.39s)
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionJSONOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan
+--- PASS: TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs (2.12s)
+=== CONT  TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer
+--- PASS: TestHumanBaselineProfileDigestDriftRemainsUpdate (1.75s)
+=== CONT  TestBaselineUpdateUnrecordedManagedRegionTextOutput
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan
+--- PASS: TestBaselineHumanProfileChangeRemainsReachable (1.68s)
+=== CONT  TestHumanBaselineAdoption
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput (1.99s)
+=== CONT  TestBaselineUpdateTextReportsHistoryMoves
+--- PASS: TestBaselineUpdateTextReportsHistoryMoves (0.00s)
+=== CONT  TestBaselineUpdateRefusesADigestWhoseCitationsChanged
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan
+--- PASS: TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer (1.71s)
+=== CONT  TestBaselineUpdateAppliesManifestPlanAndReportsJSON
+--- PASS: TestHumanBaselineAdoption (1.56s)
+=== CONT  TestBaselinePlanPrintsRelocationCitationWarnings
+=== RUN   TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan
+=== RUN   TestBaselinePlanPrintsRelocationCitationWarnings/text
+=== RUN   TestBaselinePlanPrintsRelocationCitationWarnings/json
+--- PASS: TestBaselinePlanPrintsRelocationCitationWarnings (0.64s)
+    --- PASS: TestBaselinePlanPrintsRelocationCitationWarnings/text (0.03s)
+    --- PASS: TestBaselinePlanPrintsRelocationCitationWarnings/json (0.03s)
+=== CONT  TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan
+--- PASS: TestBaselineUpdateRefusesADigestWhoseCitationsChanged (2.34s)
+=== CONT  TestBaselineGroupUsageTranscripts
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_1
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_2
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_3
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_4
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_5
+=== RUN   TestBaselineGroupUsageTranscripts/transcript_6
+--- PASS: TestBaselineGroupUsageTranscripts (0.01s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_1 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_2 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_3 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_4 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_5 (0.00s)
+    --- PASS: TestBaselineGroupUsageTranscripts/transcript_6 (0.00s)
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput (4.73s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/presented_plan (2.34s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionJSONOutput/applied_plan (2.39s)
+=== CONT  TestBaselineSkillsReconcileExampleParses
+--- PASS: TestBaselineSkillsReconcileExampleParses (0.00s)
+=== CONT  TestBaselineUpdateReportsRetiredSkillInspectionFailure
+--- PASS: TestBaselineUpdateAppliesManifestPlanAndReportsJSON (2.18s)
+=== CONT  TestBaselineUpdateKeepsARecordedBranchPrefix
+--- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput (4.46s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/presented_plan (2.14s)
+    --- PASS: TestBaselineUpdateUnrecordedManagedRegionTextOutput/applied_plan (2.31s)
+=== CONT  TestBaselineUpdateAppliesAndListsRetiredSkills
+--- PASS: TestBaselineUpdateReportsRetiredSkillInspectionFailure (1.73s)
+=== CONT  TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+--- PASS: TestBaselineUpdateKeepsARecordedBranchPrefix (1.91s)
+=== CONT  TestBaselineUpdateWithoutABranchPrefixAsksNothing
+--- PASS: TestBaselineUpdateRefusesARetiredSkillEditedAfterThePlan (2.92s)
+=== CONT  TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json
+=== RUN   TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies
+--- PASS: TestBaselineUpdateWithoutABranchPrefixAsksNothing (2.25s)
+=== CONT  TestBaselineAssetsSyncCommand
+=== RUN   TestBaselineAssetsSyncCommand/public_help_exposes_the_approved_contract
+=== RUN   TestBaselineAssetsSyncCommand/JSON_drift_stays_on_stdout_and_exits_execution_failure
+=== RUN   TestBaselineAssetsSyncCommand/text_success_is_diagnostic_free
+--- PASS: TestBaselineAssetsSyncCommand (0.00s)
+    --- PASS: TestBaselineAssetsSyncCommand/public_help_exposes_the_approved_contract (0.00s)
+    --- PASS: TestBaselineAssetsSyncCommand/JSON_drift_stays_on_stdout_and_exits_execution_failure (0.00s)
+    --- PASS: TestBaselineAssetsSyncCommand/text_success_is_diagnostic_free (0.00s)
+=== CONT  TestBaselineUpdateRetiredSkillDeletionTargets
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/lock_only
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/two_paths
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/digest_binds_only_planned_deletions
+=== RUN   TestBaselineUpdateRetiredSkillDeletionTargets/kept_unsafe_copy
+--- PASS: TestBaselineUpdateRetiredSkillDeletionTargets (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/lock_only (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/two_paths (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/both_paths_and_lock (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/digest_binds_only_planned_deletions (0.00s)
+    --- PASS: TestBaselineUpdateRetiredSkillDeletionTargets/kept_unsafe_copy (0.00s)
+=== CONT  TestBaselineSkillsRestoreAcceptsARepositoryProfile
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes
+--- PASS: TestBaselineSkillsRestoreAcceptsARepositoryProfile (1.74s)
+=== CONT  TestBaselineApplyCommandRealCLI
+--- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState (3.96s)
+    --- PASS: TestBaselineUpdateListsRetiredSkillsWithoutChangingItsState/no_retired_copies (1.95s)
+=== CONT  TestBaselineSkillsRestoreNamesTheProfilePath
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage
+--- PASS: TestBaselineApplyCommandRealCLI (0.75s)
+=== CONT  TestBaselineApplyStdoutStderrAndExitCodes
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/confirmation_refusal_is_actionable_JSON
+--- PASS: TestBaselineUpdateAppliesAndListsRetiredSkills (5.65s)
+=== CONT  TestBaselineUpdateNamesEveryFileItWillRemove
+--- PASS: TestBaselineSkillsRestoreNamesTheProfilePath (0.82s)
+=== CONT  TestDoctorFailsForAnOwnedSkillOlderThanTheBundle
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/stale_preimage_is_exit_three
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/invalid_plan_is_exit_two
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/incomplete_rollback_is_exit_one
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/cancellation_is_exit_130
+=== RUN   TestBaselineApplyStdoutStderrAndExitCodes/text_success_reports_recommendations_without_running_them
+--- PASS: TestDoctorFailsForAnOwnedSkillOlderThanTheBundle (0.72s)
+=== CONT  TestBaselineApplyCollisionExitStatus
+--- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills (8.43s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/text (2.65s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/json (2.25s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/yes (2.24s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills/reinspects_after_the_skills_stage (1.29s)
+=== CONT  TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck
+--- PASS: TestBaselineApplyStdoutStderrAndExitCodes (1.23s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/confirmation_refusal_is_actionable_JSON (0.11s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/stale_preimage_is_exit_three (0.18s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/invalid_plan_is_exit_two (0.01s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/incomplete_rollback_is_exit_one (0.00s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/cancellation_is_exit_130 (0.34s)
+    --- PASS: TestBaselineApplyStdoutStderrAndExitCodes/text_success_reports_recommendations_without_running_them (0.59s)
+=== CONT  TestBaselineApplyTextReportsHistoryMoves
+--- PASS: TestBaselineApplyTextReportsHistoryMoves (0.00s)
+=== CONT  TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch
+--- PASS: TestBaselineApplyCollisionExitStatus (0.87s)
+=== CONT  TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false
+--- PASS: TestBaselineUpdateWithoutSkillsOmitsRetiredSkills (6.88s)
+=== CONT  TestDoctorNamesAMissingRequiredSkill
+=== RUN   TestDoctorNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+--- PASS: TestBaselineUpdatePreviewWithNoSkillsSkipsTheOwnedSkillCheck (1.14s)
+=== CONT  TestBaselineApplyCommand
+--- PASS: TestBaselineUpdatePreviewStaysCurrentWhenOwnedSkillsMatch (1.28s)
+=== CONT  TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+=== RUN   TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true
+--- PASS: TestBaselineApplyCommand (1.24s)
+=== CONT  TestUpdateCheckReportsTheAuthoringModels
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/applied
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/unapplied
+=== RUN   TestUpdateCheckReportsTheAuthoringModels/unapplied_without_next
+--- PASS: TestUpdateCheckReportsTheAuthoringModels (0.07s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/applied (0.02s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/unapplied (0.02s)
+    --- PASS: TestUpdateCheckReportsTheAuthoringModels/unapplied_without_next (0.02s)
+=== CONT  TestDoctorReportsTheAuthoringModels
+=== RUN   TestDoctorReportsTheAuthoringModels/ok
+=== RUN   TestDoctorReportsTheAuthoringModels/warn
+=== RUN   TestDoctorReportsTheAuthoringModels/warn_without_next
+=== RUN   TestDoctorReportsTheAuthoringModels/after_user_skills
+=== RUN   TestDoctorNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+=== RUN   TestDoctorReportsTheAuthoringModels/project_config_not_read
+--- PASS: TestBaselineUpdateNamesEveryFileItWillRemove (3.87s)
+=== CONT  TestBaselineUpdateMisplacedRuleReportAcrossFailures
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/empty_array
+=== RUN   TestDoctorReportsTheAuthoringModels/outside_repository
+--- PASS: TestDoctorReportsTheAuthoringModels (0.29s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/ok (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/warn (0.02s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/warn_without_next (0.06s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/after_user_skills (0.08s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/project_config_not_read (0.10s)
+    --- PASS: TestDoctorReportsTheAuthoringModels/outside_repository (0.01s)
+=== CONT  TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks
+--- PASS: TestSurfaceTranscript9UpdateCheckRecommendsTheFallbacks (0.19s)
+=== CONT  TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+--- PASS: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.35s)
+=== CONT  TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration
+--- PASS: TestSurfaceTranscript1UpdateCheckRecommendsTheDeclaration (0.24s)
+=== CONT  TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/partly_published
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/invalid_manifest
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/no_authoring_skill
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated
+=== RUN   TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/declared
+--- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared (1.06s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared (0.37s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/partly_published (0.33s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published (0.21s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/no_authoring_skill (0.08s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated (0.05s)
+    --- PASS: TestUpdateCheckRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/declared (0.03s)
+=== CONT  TestBaselineUpdateNamesMisplacedRepositoryRules
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text
+--- PASS: TestDoctorNamesAMissingRequiredSkill (4.31s)
+    --- PASS: TestDoctorNamesAMissingRequiredSkill/folder_and_lock_entry_removed (1.87s)
+    --- PASS: TestDoctorNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (2.45s)
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== RUN   TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== PAUSE TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+=== CONT  TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/partly_published
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry
+--- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill (4.89s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=false (1.86s)
+    --- PASS: TestBaselineUpdatePreviewReportsAnOlderOwnedSkill/guidance_changed=true (3.03s)
+=== CONT  TestBaselineUpdateHistoryPlanningBoundaries
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/declared_decision_failure
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/no_authoring_skill
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated
+=== RUN   TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/declared
+--- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared (1.33s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/undeclared (0.21s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/partly_published (0.14s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/published (0.08s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/no_authoring_skill (0.03s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/leftover_generated (0.27s)
+    --- PASS: TestDoctorRecommendsAnAuthoringDeclarationWhenNoneIsDeclared/declared (0.59s)
+=== CONT  TestBaselineUpdateReportsATagFailureBeforeAnyConversion
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json
+=== RUN   TestBaselineUpdateMisplacedRuleReportAcrossFailures/carrier_read_failure
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_text
+--- PASS: TestBaselineUpdateReportsATagFailureBeforeAnyConversion (2.25s)
+=== CONT  TestBaselineUpdateAppliesTheAuthoringModelDeclaration
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_reports_lock_and_removal
+--- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures (6.01s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/empty_array (1.68s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/invalid_manifest (1.05s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/declared_decision_failure (1.41s)
+    --- PASS: TestBaselineUpdateMisplacedRuleReportAcrossFailures/carrier_read_failure (1.86s)
+=== CONT  TestBaselineUpdateRejectsAStaleHistoryDigest
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/uncovered_notice_and_warnings
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/load_failure
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_failure
+=== RUN   TestBaselineUpdateAppliesTheAuthoringModelDeclaration/no_loader_reads_no_configuration
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out
+--- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration (0.77s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_reports_lock_and_removal (0.24s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/uncovered_notice_and_warnings (0.16s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/load_failure (0.04s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/installation_failure (0.03s)
+    --- PASS: TestBaselineUpdateAppliesTheAuthoringModelDeclaration/no_loader_reads_no_configuration (0.29s)
+=== CONT  TestDoctorAcceptsAnAdapterAtTheFloor
+=== RUN   TestDoctorAcceptsAnAdapterAtTheFloor/codex
+=== RUN   TestDoctorAcceptsAnAdapterAtTheFloor/claude
+--- PASS: TestDoctorAcceptsAnAdapterAtTheFloor (0.05s)
+    --- PASS: TestDoctorAcceptsAnAdapterAtTheFloor/codex (0.02s)
+    --- PASS: TestDoctorAcceptsAnAdapterAtTheFloor/claude (0.03s)
+=== CONT  TestDoctorRefusesAnAdapterBelowTheFloor
+=== RUN   TestDoctorRefusesAnAdapterBelowTheFloor/codex
+=== RUN   TestDoctorRefusesAnAdapterBelowTheFloor/claude
+--- PASS: TestDoctorRefusesAnAdapterBelowTheFloor (0.05s)
+    --- PASS: TestDoctorRefusesAnAdapterBelowTheFloor/codex (0.03s)
+    --- PASS: TestDoctorRefusesAnAdapterBelowTheFloor/claude (0.03s)
+=== CONT  TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory
+=== RUN   TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/dirty_target
+=== RUN   TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/remote_inventory_unavailable
+=== RUN   TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/GitHub_inventory_unavailable
+=== RUN   TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/GitHub_pagination_output_incomplete
+--- PASS: TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory (0.00s)
+    --- PASS: TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/dirty_target (0.00s)
+    --- PASS: TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/remote_inventory_unavailable (0.00s)
+    --- PASS: TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/GitHub_inventory_unavailable (0.00s)
+    --- PASS: TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory/GitHub_pagination_output_incomplete (0.00s)
+=== CONT  TestReleasePlanReportsTheSkillsAndBaselineChecks
+--- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill (8.64s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed (1.79s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (2.16s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry (2.49s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed (2.20s)
+=== CONT  TestBuildCacheDoctorReportsUnreadablePathsAsPartial
+--- PASS: TestBuildCacheDoctorReportsUnreadablePathsAsPartial (0.09s)
+=== CONT  TestDoctorStorageIsUnchangedWithoutDeclaredCaches
+--- PASS: TestDoctorStorageIsUnchangedWithoutDeclaredCaches (0.05s)
+=== CONT  TestDoctorStorageBoundsTheWorktreeBuildCacheWalk
+--- PASS: TestReleasePlanReportsTheSkillsAndBaselineChecks (0.61s)
+=== CONT  TestDoctorStorageReportsWorktreeBuildCaches
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/current_json
+--- PASS: TestDoctorStorageBoundsTheWorktreeBuildCacheWalk (0.05s)
+=== CONT  TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/from
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/to
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/impact
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/reason
+=== RUN   TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/malformed_target
+--- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory (0.00s)
+    --- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/from (0.00s)
+    --- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/to (0.00s)
+    --- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/impact (0.00s)
+    --- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/reason (0.00s)
+    --- PASS: TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory/malformed_target (0.00s)
+=== CONT  TestUpdateCheckNamesStaleUserSkillCopies
+--- PASS: TestDoctorStorageReportsWorktreeBuildCaches (0.04s)
+=== CONT  TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
+--- PASS: TestUpdateCheckNamesStaleUserSkillCopies (0.03s)
+=== CONT  TestDoctorReportsStaleUserSkillCopiesWithoutFailing
+--- PASS: TestDoctorReportsStaleUserSkillCopiesWithoutFailing (0.02s)
+=== CONT  TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate
+--- PASS: TestUpgradeNoticeOutsideARepositoryNamesBaselineUpdate (0.01s)
+=== CONT  TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary
+--- PASS: TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary (0.00s)
+=== CONT  TestUpdateCheckLookupTimeoutContinues
+--- PASS: TestUpdateCheckLookupTimeoutContinues (0.01s)
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation/corrupt
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation/corrupt
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation/schema_mismatch
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation/schema_mismatch
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation/future_timestamp
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation/future_timestamp
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation/read_and_write_failure
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation/read_and_write_failure
+=== RUN   TestUpdateCheckCacheFailuresAndDevelopmentIsolation/development_ignores_cache
+=== PAUSE TestUpdateCheckCacheFailuresAndDevelopmentIsolation/development_ignores_cache
+=== CONT  TestUpdateCheckUsage
+=== RUN   TestUpdateCheckUsage/bare_group
+=== PAUSE TestUpdateCheckUsage/bare_group
+=== RUN   TestUpdateCheckUsage/unknown_subcommand
+=== PAUSE TestUpdateCheckUsage/unknown_subcommand
+=== RUN   TestUpdateCheckUsage/unexpected_argument
+=== PAUSE TestUpdateCheckUsage/unexpected_argument
+=== RUN   TestUpdateCheckUsage/invalid_format
+=== PAUSE TestUpdateCheckUsage/invalid_format
+=== RUN   TestUpdateCheckUsage/invalid_configuration
+=== PAUSE TestUpdateCheckUsage/invalid_configuration
+=== RUN   TestUpdateCheckUsage/help
+=== PAUSE TestUpdateCheckUsage/help
+=== RUN   TestUpdateCheckUsage/group_help
+=== PAUSE TestUpdateCheckUsage/group_help
+=== RUN   TestUpdateCheckUsage/short_help
+=== PAUSE TestUpdateCheckUsage/short_help
+=== RUN   TestUpdateCheckUsage/short_group_help
+=== PAUSE TestUpdateCheckUsage/short_group_help
+=== CONT  TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic
+--- PASS: TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic (0.20s)
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/current
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/current
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== RUN   TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== PAUSE TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== CONT  TestReleasePlanReadOnlyPreservesRepositoryForOutcomes
+=== RUN   TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/ready
+--- PASS: TestBaselineUpdateRejectsAStaleHistoryDigest (1.68s)
+=== CONT  TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup
+=== RUN   TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/no_cache
+=== PAUSE TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/no_cache
+=== RUN   TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/expired_cache
+=== PAUSE TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/expired_cache
+=== CONT  TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/skills_lock
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/claude_md_and_specific_repository
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/project_config_and_context
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/base_and_target
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/roundfix_itself
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/adopter_test
+=== RUN   TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/setup_manifest
+--- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/skills_lock (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/claude_md_and_specific_repository (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/generated_subagents (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/project_config_and_context (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/base_and_target (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/roundfix_itself (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/adopter_test (0.00s)
+    --- PASS: TestTheReleasePlanHelpNamesTheAdopterMaintenancePaths/setup_manifest (0.00s)
+=== CONT  TestUpdateCheckReplacesAStaleLookupLock
+--- PASS: TestUpdateCheckReplacesAStaleLookupLock (0.02s)
+=== CONT  TestUpdateCheckSessionsStartingTogetherReadTheNetworkOnce
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind
+--- PASS: TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly (0.47s)
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+--- PASS: TestUpdateCheckSessionsStartingTogetherReadTheNetworkOnce (0.18s)
+=== CONT  TestUpdateCheckTranscripts
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== RUN   TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== PAUSE TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== CONT  TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary
+=== RUN   TestUpdateCheckTranscripts/available_notify
+=== PAUSE TestUpdateCheckTranscripts/available_notify
+=== RUN   TestUpdateCheckTranscripts/available_auto
+=== PAUSE TestUpdateCheckTranscripts/available_auto
+=== RUN   TestUpdateCheckTranscripts/current
+=== PAUSE TestUpdateCheckTranscripts/current
+=== RUN   TestUpdateCheckTranscripts/ahead_of_latest
+=== PAUSE TestUpdateCheckTranscripts/ahead_of_latest
+=== RUN   TestUpdateCheckTranscripts/unknown
+=== PAUSE TestUpdateCheckTranscripts/unknown
+=== RUN   TestUpdateCheckTranscripts/no_releases
+=== PAUSE TestUpdateCheckTranscripts/no_releases
+=== RUN   TestUpdateCheckTranscripts/empty_listing
+=== PAUSE TestUpdateCheckTranscripts/empty_listing
+=== RUN   TestUpdateCheckTranscripts/bounded_error
+=== PAUSE TestUpdateCheckTranscripts/bounded_error
+=== RUN   TestUpdateCheckTranscripts/development
+=== PAUSE TestUpdateCheckTranscripts/development
+=== RUN   TestUpdateCheckTranscripts/truncated
+=== PAUSE TestUpdateCheckTranscripts/truncated
+=== RUN   TestUpdateCheckTranscripts/untitled_release
+=== PAUSE TestUpdateCheckTranscripts/untitled_release
+=== RUN   TestUpdateCheckTranscripts/json
+=== PAUSE TestUpdateCheckTranscripts/json
+--- PASS: TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary (0.00s)
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison
+=== CONT  TestReleasePlanExitCodesAndInvalidInputIsolation
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== RUN   TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+=== PAUSE TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/json
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/json
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero/ready
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== RUN   TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== PAUSE TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== CONT  TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2
+=== RUN   TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/approval
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero/no_release
+=== RUN   TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/manual_required
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three/approval
+=== RUN   TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/invalid_range
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three/manual
+=== RUN   TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3
+=== RUN   TestBaselineUpdateHistoryPlanningBoundaries/apply_text
+--- PASS: TestReleasePlanReadOnlyPreservesRepositoryForOutcomes (1.62s)
+    --- PASS: TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/ready (0.38s)
+    --- PASS: TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/approval (0.55s)
+    --- PASS: TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/manual_required (0.47s)
+    --- PASS: TestReleasePlanReadOnlyPreservesRepositoryForOutcomes/invalid_range (0.23s)
+=== CONT  TestReleasePlanJSONIncludesEveryCommitEvidence
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/invalid_input_exits_two_with_no_partial_plan
+--- PASS: TestReleasePlanJSONIncludesEveryCommitEvidence (0.69s)
+=== CONT  TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion
+--- PASS: TestDoctorNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (0.02s)
+=== CONT  TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits
+=== RUN   TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits/determining_commits
+=== RUN   TestReleasePlanExitCodesAndInvalidInputIsolation/manual_downgrade_exits_two_with_no_partial_plan
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged
+--- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation (2.85s)
+    --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero (1.05s)
+        --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero/ready (0.42s)
+        --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/ready_and_no_release_exit_zero/no_release (0.63s)
+    --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three (0.72s)
+        --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three/approval (0.33s)
+        --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/decision_gates_exit_three/manual (0.39s)
+    --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/invalid_input_exits_two_with_no_partial_plan (0.65s)
+    --- PASS: TestReleasePlanExitCodesAndInvalidInputIsolation/manual_downgrade_exits_two_with_no_partial_plan (0.44s)
+=== CONT  TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap
+=== RUN   TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap/malformed_map
+=== RUN   TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits/blocking_commits
+--- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion (2.95s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_2 (1.40s)
+    --- PASS: TestBaselineUpdateNamesRoundfixUpgradeForAnUnsupportedSkillsLockVersion/version_3 (1.55s)
+=== CONT  TestReleasePlanSkillCoverageNeverBlocksWithoutAMap
+=== RUN   TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/absent
+--- PASS: TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits (1.26s)
+    --- PASS: TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits/determining_commits (0.80s)
+    --- PASS: TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits/blocking_commits (0.47s)
+=== CONT  TestReleasePlanCommandMixedOrderSelectsHighestImpact
+=== RUN   TestReleasePlanCommandMixedOrderSelectsHighestImpact/fix_then_feature
+--- PASS: TestBaselineUpdateHistoryPlanningBoundaries (8.68s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/similarly_named_tag (2.03s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/non_ancestor_tag (1.93s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/configuration_failure_and_opt_out (1.19s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/dirty_kind (1.52s)
+    --- PASS: TestBaselineUpdateHistoryPlanningBoundaries/apply_text (2.01s)
+=== CONT  TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/skill
+=== RUN   TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap/missing_record
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged
+=== RUN   TestReleasePlanCommandMixedOrderSelectsHighestImpact/feature_then_fix
+=== RUN   TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/introduced
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/review
+--- PASS: TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap (1.30s)
+    --- PASS: TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap/malformed_map (0.69s)
+    --- PASS: TestReleasePlanSkillCoverageFailsClosedOnAnUnreadableMap/missing_record (0.61s)
+=== CONT  TestReleasePlanReadsBareTags
+--- PASS: TestReleasePlanCommandMixedOrderSelectsHighestImpact (0.83s)
+    --- PASS: TestReleasePlanCommandMixedOrderSelectsHighestImpact/fix_then_feature (0.41s)
+    --- PASS: TestReleasePlanCommandMixedOrderSelectsHighestImpact/feature_then_fix (0.42s)
+=== CONT  TestReleasePlanBlocksALaggingSurface
+=== RUN   TestReleasePlanBlocksALaggingSurface/fix:_correct_output
+--- PASS: TestReleasePlanReadsBareTags (0.33s)
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/planning_reference_is_answered
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/planning_reference_is_answered
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/without_the_reference_the_same_decision
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/without_the_reference_the_same_decision
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_keeps_the_decision
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_keeps_the_decision
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_with_an_unlisted_path
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_with_an_unlisted_path
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/record_without_a_ceiling
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/record_without_a_ceiling
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/fix_on_release_paths
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/fix_on_release_paths
+=== RUN   TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/classified_by_hand
+=== PAUSE TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/classified_by_hand
+=== CONT  TestReleasePlanRefusesAmbiguousHighestVersion
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off
+--- PASS: TestReleasePlanRefusesAmbiguousHighestVersion (0.21s)
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_minor
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_minor
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_patch
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_patch
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/no_ceiling
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/no_ceiling
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_direct_feat_commit
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_direct_feat_commit
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_breaking_footer
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_breaking_footer
+=== RUN   TestReleasePlanAnswersApprovalFromTheReleaseCeiling/classified_by_hand
+=== PAUSE TestReleasePlanAnswersApprovalFromTheReleaseCeiling/classified_by_hand
+=== CONT  TestReleasePlanCommandMatchesPRDOutcomes
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/fix_only_proposes_patch_without_approval
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/unchanged_review
+=== RUN   TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/no_release
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/compatible_feature_requires_minor_approval
+=== RUN   TestReleasePlanBlocksALaggingSurface/feat:_add_output
+=== RUN   TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/major_breaking_requires_major_approval
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/removed
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/version_zero_breaking_maps_to_minor_approval
+--- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules (11.93s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_text (1.81s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_json (2.15s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_text (1.55s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/current_json (1.42s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/applied_json (1.67s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/plan_digest_unchanged (0.98s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/exit_code_unchanged (1.01s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/extension_decision_off (0.71s)
+    --- PASS: TestBaselineUpdateNamesMisplacedRepositoryRules/no_manifest_omits_the_field (0.62s)
+=== CONT  TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/the_fiscus_shape
+--- PASS: TestReleasePlanSkillCoverageNeverBlocksWithoutAMap (3.05s)
+    --- PASS: TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/absent (0.97s)
+    --- PASS: TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/introduced (1.04s)
+    --- PASS: TestReleasePlanSkillCoverageNeverBlocksWithoutAMap/no_release (1.03s)
+=== CONT  TestReleasePlanChecksNeverChangeTheDecision
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/fix:_correct_outputv0.4.0ready
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/maintenance_only_produces_no_release
+--- PASS: TestReleasePlanBlocksALaggingSurface (1.98s)
+    --- PASS: TestReleasePlanBlocksALaggingSurface/fix:_correct_output (0.97s)
+    --- PASS: TestReleasePlanBlocksALaggingSurface/feat:_add_output (1.01s)
+=== CONT  TestReleasePlanGitSourceHonorsContextCancellation
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/feat:_add_outputv0.4.0approval_required
+=== RUN   TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/uncovered
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/roundfix_itself
+--- PASS: TestReleasePlanGitSourceHonorsContextCancellation (0.29s)
+=== CONT  TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/ambiguous_shipped_change_requires_manual_classification
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/feat!:_replace_outputv1.4.0approval_required
+=== RUN   TestReleasePlanCommandMatchesPRDOutcomes/manual_classification_records_reason_and_still_gates_minor_approval
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/fix!:_replace_outputv0.4.0approval_required
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_skill_removed_in_the_range
+--- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges (3.69s)
+    --- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/skill (0.67s)
+    --- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/review (0.74s)
+    --- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/unchanged_review (0.84s)
+    --- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/removed (0.77s)
+    --- PASS: TestReleasePlanSkillCoverageIsCurrentWhenItsSkillChanges/uncovered (0.67s)
+=== CONT  TestReleasePlanGitSourceInvalidInputsFailReadOnly
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/omitted_base_without_stable_tag
+--- PASS: TestReleasePlanCommandMatchesPRDOutcomes (2.52s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/fix_only_proposes_patch_without_approval (0.34s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/compatible_feature_requires_minor_approval (0.39s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/major_breaking_requires_major_approval (0.38s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/version_zero_breaking_maps_to_minor_approval (0.37s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/maintenance_only_produces_no_release (0.43s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/ambiguous_shipped_change_requires_manual_classification (0.31s)
+    --- PASS: TestReleasePlanCommandMatchesPRDOutcomes/manual_classification_records_reason_and_still_gates_minor_approval (0.29s)
+=== CONT  TestDoctorPrintsTheFiveReadinessLines
+--- PASS: TestDoctorPrintsTheFiveReadinessLines (0.00s)
+=== CONT  TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/malformed_explicit_base
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/docs:_describe_outputv0.4.0no_release
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_malformed_lock_makes_no_adopter
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/chore:_tune_outputv0.4.0manual_classification_required
+--- PASS: TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo (0.48s)
+=== CONT  TestDoctorPrintsForgeWarningsAndExitsZero
+--- PASS: TestDoctorPrintsForgeWarningsAndExitsZero (0.01s)
+=== CONT  TestBaselineUpdateReportsAWithheldHeader
+=== RUN   TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/project_config_is_not_read
+--- PASS: TestBaselineUpdateReportsAWithheldHeader (0.04s)
+=== CONT  TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/pre-release_explicit_base
+=== RUN   TestReleasePlanChecksNeverChangeTheDecision/chore:_tune_outputv0.4.0approval_required
+--- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget (2.21s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/the_fiscus_shape (0.54s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/roundfix_itself (0.53s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_skill_removed_in_the_range (0.33s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/a_malformed_lock_makes_no_adopter (0.43s)
+    --- PASS: TestTheReleasePlanReadsTheManagedRecordsAtBaseAndTarget/project_config_is_not_read (0.37s)
+=== CONT  TestBaselineUpdateSkillsStageReportsTheUnpinnedLockEntries
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/missing_explicit_base_tag
+--- PASS: TestBaselineUpdateSkillsStageReportsTheUnpinnedLockEntries (0.03s)
+=== CONT  TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag
+--- PASS: TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths (0.43s)
+=== CONT  TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries
+=== CONT  TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock
+--- PASS: TestBaselineUpdateSkillsStageReportsTheRewrittenLockEntries (0.02s)
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/malformed
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/symlink
+=== RUN   TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/directory
+--- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock (0.11s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/malformed (0.04s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/symlink (0.04s)
+    --- PASS: TestBaselineUpdateSkillsStageFailsOnAnUnsafeLock/directory (0.04s)
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/empty
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/empty
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/off
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/off
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== RUN   TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== PAUSE TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== CONT  TestBaselineUpdatePromotionRebasesLinks
+--- PASS: TestReleasePlanChecksNeverChangeTheDecision (2.44s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/fix:_correct_outputv0.4.0ready (0.32s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/feat:_add_outputv0.4.0approval_required (0.35s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/feat!:_replace_outputv1.4.0approval_required (0.31s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/fix!:_replace_outputv0.4.0approval_required (0.31s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/docs:_describe_outputv0.4.0no_release (0.39s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/chore:_tune_outputv0.4.0manual_classification_required (0.39s)
+    --- PASS: TestReleasePlanChecksNeverChangeTheDecision/chore:_tune_outputv0.4.0approval_required (0.37s)
+=== CONT  TestBaselineUpdateRewritesBrokenRecordLinks
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/unresolved_target
+--- PASS: TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag (0.53s)
+=== CONT  TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy
+=== CONT  TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations
+--- PASS: TestBaselineUpdateRemovesWhatTheBaselineUsedToRelocate (2.44s)
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/non_commit_target
+--- PASS: TestBaselineUpdatePromotionRebasesLinks (1.69s)
+=== CONT  TestBaselineUpdatePlansLineageAndLiveLinks
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/empty_range
+=== RUN   TestReleasePlanGitSourceInvalidInputsFailReadOnly/reversed_range
+--- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly (3.97s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/omitted_base_without_stable_tag (0.15s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/malformed_explicit_base (0.50s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/pre-release_explicit_base (0.36s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/missing_explicit_base_tag (0.44s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/unresolved_target (0.61s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/non_commit_target (0.98s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/empty_range (0.42s)
+    --- PASS: TestReleasePlanGitSourceInvalidInputsFailReadOnly/reversed_range (0.49s)
+=== CONT  TestBaselineUpdateNeverRestoresAPresentExternalSkill
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill/present_copy_that_differs_from_its_Setup_Snapshot
+=== RUN   TestBaselineUpdateNeverRestoresAPresentExternalSkill/missing_copy
+--- PASS: TestBaselineUpdatePlansAPromotedRecordLinkAtItsCopy (2.46s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+=== RUN   TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== PAUSE TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== CONT  TestDoctorChecksAnExternalSkillOnlyForPresence
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot
+--- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill (0.06s)
+    --- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill/present_copy_that_differs_from_its_Setup_Snapshot (0.03s)
+    --- PASS: TestBaselineUpdateNeverRestoresAPresentExternalSkill/missing_copy (0.03s)
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/default
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/explicit_beyond_the_machine
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/default_dependency_without_a_Run_Database
+=== RUN   TestDoctorChecksAnExternalSkillOnlyForPresence/missing
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/unreadable_Run_Database
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/demand_beyond_the_int64_limit
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/explicit_within_the_machine
+--- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence (0.08s)
+    --- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence/differs_from_its_Setup_Snapshot (0.04s)
+    --- PASS: TestDoctorChecksAnExternalSkillOnlyForPresence/missing (0.04s)
+=== CONT  TestDoctorReportsTheVerificationCoreBudget/capacity_off
+=== CONT  TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== CONT  TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+--- PASS: TestDoctorReportsTheVerificationCoreBudget (0.00s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/default (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/explicit_beyond_the_machine (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/default_dependency_without_a_Run_Database (0.00s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/unreadable_Run_Database (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/demand_beyond_the_int64_limit (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/undivided_with_three_Runs (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/explicit_within_the_machine (0.01s)
+    --- PASS: TestDoctorReportsTheVerificationCoreBudget/capacity_off (0.01s)
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/healthy
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable
+=== CONT  TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold
+=== CONT  TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+--- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/below_the_threshold (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/preserves_a_failed_exit (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/before_linux_lane (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/one_byte_below_the_threshold (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/healthy (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/missing_location (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/unreadable (0.00s)
+    --- PASS: TestDoctorWarnsWhenALocationIsLowOnDisk/at_the_threshold (0.00s)
+--- PASS: TestBaselineFindingRegressionsHumanReview (0.00s)
+    --- PASS: TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review (0.11s)
+    --- PASS: TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers (0.16s)
+=== CONT  TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+=== CONT  TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan
+=== CONT  TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update
+--- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/adopt (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/apply (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_reconcile (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/skills_restore (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/plan (0.00s)
+    --- PASS: TestBaselineCommandsRefuseARepositoryRecordedByANewerRoundfix/update (0.00s)
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited
+=== CONT  TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited
+--- PASS: TestBaselineMacroJourneysPublicCLI (8.21s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/greenfield_automation_apply_and_empty_reapply (2.04s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/preservation (1.40s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/update_and_profile_change (2.23s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/stale_plan (0.21s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/cross-clone_apply (1.45s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/unsafe_carrier (0.23s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity (0.12s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/rejected-plan_revision (0.16s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review (0.14s)
+--- PASS: TestBaselineUpdateRemovesRetiredHistoryAndRewritesCitations (2.85s)
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation/corrupt
+=== CONT  TestUpdateCheckUsage/bare_group
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation/development_ignores_cache
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation/read_and_write_failure
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation/future_timestamp
+=== CONT  TestUpdateCheckCacheFailuresAndDevelopmentIsolation/schema_mismatch
+--- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation (0.00s)
+    --- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation/corrupt (0.03s)
+    --- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation/development_ignores_cache (0.02s)
+    --- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation/read_and_write_failure (0.02s)
+    --- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation/future_timestamp (0.03s)
+    --- PASS: TestUpdateCheckCacheFailuresAndDevelopmentIsolation/schema_mismatch (0.03s)
+=== CONT  TestUpdateCheckUsage/help
+=== CONT  TestUpdateCheckUsage/short_group_help
+=== CONT  TestUpdateCheckUsage/short_help
+=== CONT  TestUpdateCheckUsage/group_help
+=== CONT  TestUpdateCheckUsage/invalid_format
+=== CONT  TestUpdateCheckUsage/invalid_configuration
+=== CONT  TestUpdateCheckUsage/unexpected_argument
+=== CONT  TestUpdateCheckUsage/unknown_subcommand
+--- PASS: TestUpdateCheckUsage (0.00s)
+    --- PASS: TestUpdateCheckUsage/bare_group (0.01s)
+    --- PASS: TestUpdateCheckUsage/help (0.01s)
+    --- PASS: TestUpdateCheckUsage/short_group_help (0.01s)
+    --- PASS: TestUpdateCheckUsage/short_help (0.01s)
+    --- PASS: TestUpdateCheckUsage/group_help (0.01s)
+    --- PASS: TestUpdateCheckUsage/invalid_format (0.01s)
+    --- PASS: TestUpdateCheckUsage/invalid_configuration (0.02s)
+    --- PASS: TestUpdateCheckUsage/unexpected_argument (0.01s)
+    --- PASS: TestUpdateCheckUsage/unknown_subcommand (0.01s)
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/current
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/outside_repository
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/no_manifest
+--- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill (0.00s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/edited (2.19s)
+    --- PASS: TestBaselineUpdateApprovedApplyDeletesTheReplacedInngestSkill/unedited (2.33s)
+=== CONT  TestUpdateCheckSummarizesTheBaselinePreview/plan_ready
+--- PASS: TestBaselineUpdatePlansLineageAndLiveLinks (5.35s)
+=== CONT  TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/no_cache
+=== CONT  TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/expired_cache
+--- PASS: TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup (0.00s)
+    --- PASS: TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/no_cache (0.00s)
+    --- PASS: TestUpdateCheckNeverReadsTheNetworkWhileAnotherSessionHoldsTheLookup/expired_cache (0.01s)
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh
+=== CONT  TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later
+--- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/second_check_within_a_day (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/failed_lookup (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/refresh (0.00s)
+    --- PASS: TestUpdateCheckReadsTheNetworkAtMostOncePerDay/a_day_later (0.00s)
+=== CONT  TestUpdateCheckTranscripts/available_notify
+=== CONT  TestUpdateCheckTranscripts/empty_listing
+=== CONT  TestUpdateCheckTranscripts/json
+=== CONT  TestUpdateCheckTranscripts/untitled_release
+=== CONT  TestUpdateCheckTranscripts/truncated
+=== CONT  TestUpdateCheckTranscripts/development
+=== CONT  TestUpdateCheckTranscripts/bounded_error
+=== CONT  TestUpdateCheckTranscripts/ahead_of_latest
+=== CONT  TestUpdateCheckTranscripts/no_releases
+=== CONT  TestUpdateCheckTranscripts/unknown
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error
+=== CONT  TestUpdateCheckTranscripts/available_auto
+=== CONT  TestUpdateCheckTranscripts/current
+--- PASS: TestUpdateCheckTranscripts (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/available_notify (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/empty_listing (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/json (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/untitled_release (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/truncated (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/development (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/bounded_error (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/ahead_of_latest (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/no_releases (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/unknown (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/available_auto (0.00s)
+    --- PASS: TestUpdateCheckTranscripts/current (0.00s)
+=== CONT  TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config
+--- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison (0.00s)
+    --- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison/comparison_error (0.00s)
+    --- PASS: TestUpdateCheckOmitsAnUnavailableProfileComparison/unread_config (0.00s)
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/transcript
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/user_pin
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/user_config_source
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing
+=== CONT  TestUpdateCheckNamesEachProfileThatDiffers/json
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/planning_reference_is_answered
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/record_without_a_ceiling
+--- PASS: TestUpdateCheckNamesEachProfileThatDiffers (0.00s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/transcript (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/release_update_preserves_next (0.06s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/bounded_reason (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/collapsed_reason (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/user_pin (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/newer_baseline_reports_no_member (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/no_profiles_keep_the_report_bytes (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/user_config_source (0.05s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/pinned_and_current_add_nothing (0.04s)
+    --- PASS: TestUpdateCheckNamesEachProfileThatDiffers/json (0.08s)
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/classified_by_hand
+--- PASS: TestUpdateCheckSummarizesTheBaselinePreview (0.00s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/current (1.70s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/outside_repository (0.02s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/no_manifest (0.07s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/writes_nothing (1.73s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/plan_ready (1.62s)
+    --- PASS: TestUpdateCheckSummarizesTheBaselinePreview/history_and_skill_counts (2.24s)
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/fix_on_release_paths
+--- PASS: TestBaselineUpdateRewritesBrokenRecordLinks (7.57s)
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_keeps_the_decision
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_with_an_unlisted_path
+=== CONT  TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/without_the_reference_the_same_decision
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_minor
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_direct_feat_commit
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/no_ceiling
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_patch
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_breaking_footer
+--- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation (0.00s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/planning_reference_is_answered (0.82s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/classified_by_hand (0.82s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/record_without_a_ceiling (0.91s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_keeps_the_decision (0.93s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/without_the_reference_the_same_decision (0.79s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/fix_on_release_paths (1.38s)
+    --- PASS: TestReleasePlanNeedsNoClassificationForPlanningReferencesOrReleasePreparation/preparation_with_an_unlisted_path (0.90s)
+=== CONT  TestReleasePlanAnswersApprovalFromTheReleaseCeiling/classified_by_hand
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/empty
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/off
+=== CONT  TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter
+--- PASS: TestDoctorReportsTheMachineVerificationCapacity (0.00s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/empty (0.01s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/unreadable_entry (0.01s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/unreadable_directory (0.01s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/off (0.01s)
+    --- PASS: TestDoctorReportsTheMachineVerificationCapacity/holder_and_waiter (0.01s)
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec
+=== CONT  TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git
+--- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling (0.00s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_minor (0.87s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_direct_feat_commit (0.99s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/ceiling_patch (0.97s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/a_breaking_footer (0.96s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/classified_by_hand (0.95s)
+    --- PASS: TestReleasePlanAnswersApprovalFromTheReleaseCeiling/no_ceiling (1.82s)
+--- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate (0.00s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/creation_commit (1.89s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/PRD_precedes_TechSpec (1.65s)
+    --- PASS: TestBaselineUpdateHistoryRecordsTheCreationCommitDate/TechSpec_precedes_Git (1.63s)
+PASS
+suiteguard: guard cost: measured 3493 paths; fingerprint took 173.995083ms before and 208.337125ms after
+ok  	roundfix/internal/cli	100.189s
+
+stderr:
+
+exit: 0

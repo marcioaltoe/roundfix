@@ -1,0 +1,36 @@
+diff --git a/CONTEXT.md b/CONTEXT.md
+index da513f71..11079dd4 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -1524,9 +1524,29 @@ The byte range one setup-owned marker pair delimits inside an instruction carrie
+ _Avoid_: Managed file, generated block, setup section
+ 
+ **Managed Refresh**:
+-The preservation mode that regenerates Managed Regions, requires no Source Baseline and no Decision Plan, and proves preservation on the plan's preimages. It may also replace the root `CLAUDE.md` with the Claude Instruction Link when the file holds nothing of its own, writing the root backup of a replaced regular file; every other byte outside Managed Regions stays identical ([ADR-0432](docs/adr/0432-claude-md-is-always-a-symbolic-link-to-agents-md.md)). It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
++The preservation mode that regenerates Managed Regions, requires no Source Baseline and no Decision Plan, and proves preservation on the plan's preimages. It may also replace the root `CLAUDE.md` with the Claude Instruction Link when the file holds nothing of its own, writing the root backup of a replaced regular file; every other byte outside Managed Regions stays identical ([ADR-0432](docs/adr/0432-claude-md-is-always-a-symbolic-link-to-agents-md.md)). It also lists History Citations, binds them into the Plan Digest, accepts repeatable `--promote` values, and converts Pending History on approval. It also keeps the Standard Export List and fills each Amendment List, in a documentation part of its plan that the Plan Digest covers. Its preservation proof still covers the instruction carriers. It converges: a second run against an unchanged catalog reports the repository current and proposes no change ([ADR-0254](docs/adr/0254-baseline-update-sanitizes-pending-history-in-the-change-it-plans.md), [ADR-0260](docs/adr/0260-an-archive-relinks-live-citations-and-a-baseline-update-lists-the-citations-it-breaks.md)).
+ _Avoid_: Baseline Readoption, reapply, overwrite
+ 
++**Standard Export List**:
++The lines of `.secondbrain-export` between its two marker lines, which the Baseline keeps in a repository that has the Secondbrain turned on: the README, the glossary files, `docs/user-guide/`, `docs/references/`, `docs/design/`, `docs/lessons/` and each ADR whose Knowledge Mark is true. A Managed Refresh rewrites them and no other line of the file ([ADR-0438](docs/adr/0438-a-repository-publishes-a-standard-export-list-the-baseline-keeps-and-varies-it-only-in-its-own-lines.md)).
++_Avoid_: Export template, mirror filter, managed block
++
++**Export Variation**:
++The lines of `.secondbrain-export` outside the Standard Export List, which belong to the repository: a file or a folder of knowledge it adds, or an exclusion that drops a standard item, each with its reason in a comment above it. No Baseline operation changes them ([ADR-0438](docs/adr/0438-a-repository-publishes-a-standard-export-list-the-baseline-keeps-and-varies-it-only-in-its-own-lines.md)).
++_Avoid_: Override file, custom list, local exclusion
++
++**Knowledge Mark**:
++The header field `knowledge` of an ADR in a repository that has the Secondbrain turned on: true when the decision states a rule of the business or of the product that someone outside the repository's development can use, false when it is about how the repository is built or about a tool. An ADR without the mark is not published ([ADR-0439](docs/adr/0439-an-adrs-header-says-whether-the-secondbrain-wants-it-and-which-adrs-amend-it.md)).
++_Avoid_: Export flag, public ADR, tag
++
++**Amendment List**:
++The header field `amended_by` of an accepted ADR that later accepted ADRs change in part, naming those ADRs in ascending order. A Managed Refresh fills it from the notices in the ADR's body ([ADR-0439](docs/adr/0439-an-adrs-header-says-whether-the-secondbrain-wants-it-and-which-adrs-amend-it.md)).
++_Avoid_: Amended status, change log, supersession
++
++**Lesson Learned**:
++One file under `docs/lessons/` that records something a repository tried, what went wrong, the proven cause and what solved it, with when it applies and when it does not. It is written only when the Baseline's test holds, when a Finding closes or a Spec that needed a correction is archived, and it is deleted once an ADR, a guide or a skill states what it teaches ([ADR-0440](docs/adr/0440-a-lesson-learned-is-written-only-when-a-test-holds-and-leaves-when-a-rule-states-it.md)).
++_Avoid_: Postmortem, retrospective, incident report
++
+ **Unrecorded Managed Region**:
+ A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+ _Avoid_: Hand-edited marker, corrupted block, drift
+All five additions equal API Contract 21; Managed Refresh gains only its specified sentence; no other entry changed. PRD declares all six operations; TechSpec declares none.

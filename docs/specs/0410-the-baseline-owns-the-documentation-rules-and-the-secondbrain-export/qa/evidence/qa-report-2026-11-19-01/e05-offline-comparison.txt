@@ -1,0 +1,3 @@
+Public conflicting-ADR discussion (2026), read 2026-11-18 and 2026-11-19, https://github.com/mattpocock/skills/discussions/847. Its recorded observation is that an agent reading only the first lines misses a note buried in the body. The shipped amendment list is in the header, and the CLI journey independently fills it without changing the decision body. This is anecdotal support rather than controlled proof.
+
+Sources read only from the PRD Acceptance evidence and adopted measurement; no external lookup, network or other-repository read.

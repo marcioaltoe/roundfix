@@ -1,0 +1,1 @@
+Compared zero-context Delivery Base-to-head ADR diff: no line removed except an amended_by replacement; every added nonblank line is knowledge, amended_by or one of the three exact prescribed notices. updated_at unchanged.

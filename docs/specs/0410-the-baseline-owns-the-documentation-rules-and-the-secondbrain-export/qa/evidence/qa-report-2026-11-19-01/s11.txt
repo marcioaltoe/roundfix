@@ -1,0 +1,13 @@
+command: go test -count=1 -timeout 20m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -tags docscontract -run '^TestThisRepositoryExportsNoProcessPath$' ./internal/docscontract
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-ithcl4sx
+stdout:
+=== RUN   TestThisRepositoryExportsNoProcessPath
+    secondbrain_export_test.go:30: export variation departures: [{Code:DR-EXPORT-PROCESS-PATH Path:docs/agents/ Line:343 Detail:}]
+--- FAIL: TestThisRepositoryExportsNoProcessPath (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.504s
+FAIL
+
+stderr:
+
+exit: 1

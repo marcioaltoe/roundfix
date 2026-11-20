@@ -1,0 +1,25 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/roundfix baseline update --repo . --no-skills --no-history --format text
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-kr7nkmt9
+stdout:
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51
+Current catalog: sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Documentation: current
+Export list refused: # roundfix:standard-export:begin is missing; nothing is written to .secondbrain-export
+ADRs without a Knowledge Mark: 1 of 376; they are not exported
+Plan Digest: sha256:924ec88ea5a14afdfa0505d1073f4cca5e721ebb3f64f1bbacbc86784117c44d
+
+stderr:
+
+exit: 0

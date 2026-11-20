@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 20m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^TestTheSkillsCarryTheDocumentationSteps$/^modes$/^auto_marks_nothing$' ./skills
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-6_btzwbw
+stdout:
+=== RUN   TestTheSkillsCarryTheDocumentationSteps
+=== PAUSE TestTheSkillsCarryTheDocumentationSteps
+=== CONT  TestTheSkillsCarryTheDocumentationSteps
+=== RUN   TestTheSkillsCarryTheDocumentationSteps/modes/auto_marks_nothing
+    documentation_rules_steps_test.go:57: ../.agents/skills: expected phrase once: mark nothing and report the count.
+--- FAIL: TestTheSkillsCarryTheDocumentationSteps (0.00s)
+    --- FAIL: TestTheSkillsCarryTheDocumentationSteps/modes/auto_marks_nothing (0.00s)
+FAIL
+FAIL	roundfix/skills	0.338s
+FAIL
+
+stderr:
+
+exit: 1

@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 20m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^TestTheBaselineModulesCarryTheDocumentationRules$/^the_export_rule$' ./internal/baseline
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-h45o7a01
+stdout:
+=== RUN   TestTheBaselineModulesCarryTheDocumentationRules
+=== PAUSE TestTheBaselineModulesCarryTheDocumentationRules
+=== CONT  TestTheBaselineModulesCarryTheDocumentationRules
+=== RUN   TestTheBaselineModulesCarryTheDocumentationRules/the_export_rule
+    documentation_rules_clauses_test.go:139: clause order or force differs
+--- FAIL: TestTheBaselineModulesCarryTheDocumentationRules (0.00s)
+    --- FAIL: TestTheBaselineModulesCarryTheDocumentationRules/the_export_rule (0.00s)
+FAIL
+suiteguard: guard cost: measured 3464 paths; fingerprint took 179.894625ms before and 175.144458ms after
+FAIL	roundfix/internal/baseline	0.734s
+FAIL
+
+stderr:
+
+exit: 1

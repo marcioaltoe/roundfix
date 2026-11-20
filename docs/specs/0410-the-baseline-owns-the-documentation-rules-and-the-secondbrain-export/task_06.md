@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

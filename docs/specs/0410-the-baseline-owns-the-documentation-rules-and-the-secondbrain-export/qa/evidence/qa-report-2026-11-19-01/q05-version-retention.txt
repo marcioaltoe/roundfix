@@ -1,0 +1,3 @@
+archive-spec: both header versions 0.0.20; record contains version; mirror equal
+roundfix: both header versions 0.1.281; record contains version; mirror equal
+All five --update steps and every Delivery Base sentence retained; changed reference mirrors are byte-identical; QA settlement untouched.

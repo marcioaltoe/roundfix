@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^(TestMaintenanceOnlyCountsLessonsAndTheExportList)$' ./internal/releaseplan
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4
+stdout:
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== PAUSE TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== CONT  TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/lessons
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/with_another_path
+--- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/lessons (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list (0.00s)
+    --- PASS: TestMaintenanceOnlyCountsLessonsAndTheExportList/with_another_path (0.00s)
+PASS
+ok  	roundfix/internal/releaseplan	0.229s
+
+stderr:
+
+exit: 0

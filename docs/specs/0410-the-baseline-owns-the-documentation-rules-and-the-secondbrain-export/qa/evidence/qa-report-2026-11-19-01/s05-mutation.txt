@@ -1,0 +1,24 @@
+Fresh isolated git archive of ecb96c232e62b404b6f4c24337555734d40beabe
+Expected failing subtest: TestPlanExportList/never_a_process_path
+Mutation diff:
+diff --git a/internal/baseline/export_list.go b/internal/baseline/export_list.go
+index 2d0a1ed..b94ea32 100644
+--- a/internal/baseline/export_list.go
++++ b/internal/baseline/export_list.go
+@@ -42,6 +42,7 @@ func exportWithin(path, parent string) bool {
+ }
+ func exportProcess(path string, facts ExportListFacts) bool {
+ 	for _, process := range facts.ProcessPaths {
++		if process == "AGENTS.md" { continue }
+ 		if exportWithin(exportPath(path), exportPath(process)) {
+ 			return true
+ 		}
+@@ -50,6 +51,7 @@ func exportProcess(path string, facts ExportListFacts) bool {
+ }
+ func exportContainsProcess(path string, facts ExportListFacts) bool {
+ 	for _, process := range facts.ProcessPaths {
++		if process == "AGENTS.md" { continue }
+ 		if exportWithin(exportPath(process), exportPath(path)) {
+ 			return true
+ 		}
+Assertion failure observed; package compiled; no regeneration or synchronization ran.

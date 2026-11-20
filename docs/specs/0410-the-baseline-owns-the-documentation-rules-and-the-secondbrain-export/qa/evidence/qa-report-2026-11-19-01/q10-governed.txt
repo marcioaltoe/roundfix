@@ -1,0 +1,33 @@
+command: go test -count=1 -timeout 40m -v -exec /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261120T002917Z_b1037bcbeaa809c4/bin/qa-0410-01/test-exec -run '^TestQAGovernedGrant$' ./internal/speccheck
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-0410-qa-y5hostik
+stdout:
+=== RUN   TestQAGovernedGrant
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/archive-spec/SKILL.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/SKILL.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/references/baseline.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/references/corrections.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/references/modes.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/references/release.md
+    qa_governed_grant_test.go:3: governed and granted: .agents/skills/roundfix/references/setup.md
+    qa_governed_grant_test.go:3: governed and granted: docs/agents/agent-instructions.md
+    qa_governed_grant_test.go:3: governed and granted: docs/agents/docs-layout.md
+    qa_governed_grant_test.go:3: governed and granted: docs/agents/secondbrain.md
+    qa_governed_grant_test.go:3: governed and granted: docs/agents/setup-context.json
+    qa_governed_grant_test.go:3: governed and granted: docs/references/coverage-record.json
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/modules/context-workflow.json
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/modules/core.json
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/modules/secondbrain.json
+    qa_governed_grant_test.go:3: governed and granted: internal/baseline/assets/profiles/standard-typescript-monorepo.json
+    qa_governed_grant_test.go:3: governed and granted: skills/archive-spec/SKILL.md
+    qa_governed_grant_test.go:3: governed and granted: skills/roundfix/SKILL.md
+--- PASS: TestQAGovernedGrant (0.01s)
+PASS
+suiteguard: guard cost: measured 3465 paths; fingerprint took 169.994542ms before and 167.984542ms after
+ok  	roundfix/internal/speccheck	0.694s
+
+stderr:
+
+exit: 0

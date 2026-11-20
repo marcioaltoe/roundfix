@@ -1,0 +1,7 @@
+command: ./bin/roundfix --version
+stdout:
+roundfix 0.149.0 (ecb96c23-dirty, built 2026-11-19 21:55:22 -0300)
+
+stderr:
+
+exit: 0

@@ -1,0 +1,17 @@
+Fresh isolated git archive of ecb96c232e62b404b6f4c24337555734d40beabe
+Expected failing subtest: TestTheGuidesRenderTheDocumentationRulesOnce/repository_guide
+Mutation diff:
+diff --git a/docs/agents/docs-layout.md b/docs/agents/docs-layout.md
+index a73dec3..70df114 100644
+--- a/docs/agents/docs-layout.md
++++ b/docs/agents/docs-layout.md
+@@ -206,7 +206,7 @@ created: YYYY-MM-DD
+ - Links: <the Finding, Spec, Pull Request or commit that holds the evidence>
+ ```
+ 
+-- **mandatory**: Write a Lesson Learned only when every part of this test holds: something was tried, it went wrong, the cause is proven, something solved it, and no accepted ADR, reference document or glossary entry already states it. Otherwise write nothing. Apply the test at two moments: when a Finding closes, in the change that answers it or retires it, and when a Spec that needed a correction, a failed QA or a retry is archived. Write the file in that change, so the Pull Request that carries it shows the lesson to a person, who may delete it.
++
+ 
+ <!-- setup-context-driven:end id=guide.docs-layout -->
+ <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
+Assertion failure observed; package compiled; no regeneration or synchronization ran.

@@ -1,0 +1,137 @@
+{
+  "base": "96eca968cafc2a9df0c7b188738c0f3a06541346",
+  "rows": [
+    [
+      "Q01",
+      "repository Verification"
+    ],
+    [
+      "Q02",
+      "Requirement 2"
+    ],
+    [
+      "Q03",
+      "Requirement 5"
+    ],
+    [
+      "Q04",
+      "Requirement 6"
+    ],
+    [
+      "Q05",
+      "Requirement 7"
+    ],
+    [
+      "Q06",
+      "Requirement 8"
+    ],
+    [
+      "Q07",
+      "Requirement 9"
+    ],
+    [
+      "S01",
+      "Requirement 10"
+    ],
+    [
+      "S02",
+      "Requirement 10"
+    ],
+    [
+      "S03",
+      "Requirement 10"
+    ],
+    [
+      "S04",
+      "Requirement 10"
+    ],
+    [
+      "S05",
+      "Requirement 10"
+    ],
+    [
+      "S06",
+      "Requirement 10"
+    ],
+    [
+      "S07",
+      "Requirement 10"
+    ],
+    [
+      "S08",
+      "Requirement 10"
+    ],
+    [
+      "S09",
+      "Requirement 10"
+    ],
+    [
+      "S10",
+      "Requirement 10"
+    ],
+    [
+      "S11",
+      "Requirement 10"
+    ],
+    [
+      "Q08",
+      "Requirement 11"
+    ],
+    [
+      "Q09",
+      "Requirement 15"
+    ],
+    [
+      "Q10",
+      "Requirement 16"
+    ],
+    [
+      "E01",
+      "outside-evidence row"
+    ],
+    [
+      "E02",
+      "outside-evidence row"
+    ],
+    [
+      "E03",
+      "outside-evidence row"
+    ],
+    [
+      "E04",
+      "outside-evidence row"
+    ],
+    [
+      "E05",
+      "outside-evidence row"
+    ],
+    [
+      "E06",
+      "outside-evidence row"
+    ],
+    [
+      "U01",
+      "after the release, this repository's mirror in the Secondbrain holds fewer than 60 files once the first push to the default branch has synced."
+    ],
+    [
+      "U02",
+      "Success Metric 10 holds for the adopters 30 days after the release."
+    ],
+    [
+      "U03",
+      "in an adopter, the Agent of the update session marks the existing ADRs, runs the update again, and a person reviews the marks in one Pull Request."
+    ],
+    [
+      "U04",
+      "Success Metric 11 holds over the first 60 days."
+    ],
+    [
+      "U05",
+      "the sync drops what this repository's own lines exclude, the line `!docs/adr/*` included, with the rsync its workflow runs."
+    ],
+    [
+      "PR",
+      "Pull Request row"
+    ]
+  ]
+}
