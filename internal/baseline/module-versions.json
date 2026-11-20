@@ -345,6 +345,10 @@
       {
         "version": 10,
         "digest": "sha256:bc741ff9126dd5a5a6e1830feead25a8afd5b0ce463273f76ef48705dd60f72b"
+      },
+      {
+        "version": 11,
+        "digest": "sha256:0d8ab3b739f0e69e5056dee38808a3cdd86f345a5bea4f8843aa5e7cb48dfe81"
       }
     ]
   }

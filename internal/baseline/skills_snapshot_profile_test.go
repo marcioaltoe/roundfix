@@ -211,3 +211,63 @@ func TestEmbeddedSetupSnapshotsAgreeOnEveryExternalSkill(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func typescriptBackendProfileFixture(t *testing.T) (string, *Catalog, string) {
+	t.Helper()
+	root := t.TempDir()
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const id = "typescript-backend"
+	result, err := InitCustomProfile(root, id, "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profilePath := result.Path
+	data, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var profile customProfileDocument
+	if err := json.Unmarshal(data, &profile); err != nil {
+		t.Fatal(err)
+	}
+	profile.Modules = []string{"core", "context-workflow", "typescript", "bun", "autonomous-work", "spec-workflow", "secondbrain", "repository-extension"}
+	data, err = json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(profilePath, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root, catalog, id
+}
+
+func TestARepositoryProfileWithoutFrontendRequiresSolid(t *testing.T) {
+	t.Parallel()
+	root, catalog, id := typescriptBackendProfileFixture(t)
+	profile, err := loadSkillSnapshotProfile(root, id, catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, required := profile.RequiredSkills["solid"]; !required {
+		t.Fatal("TypeScript profile without frontend does not require solid")
+	}
+	var want restoreSkillContract
+	for _, snapshot := range embeddedSnapshotContracts(catalog) {
+		if snapshot.ID == "typescript" {
+			want = snapshot.Skills["solid"]
+		}
+	}
+	if want.Name != "solid" || profile.Skills["solid"] != want {
+		t.Fatalf("solid contract = %+v, want TypeScript Setup Snapshot contract %+v", profile.Skills["solid"], want)
+	}
+	runApplyGit(t, root, "init")
+	payload, err := RestoreSkills(t.Context(), SkillsRestoreRequest{
+		Repository: root, ProfileID: id, Skills: []string{"solid"}, SourceDir: filepath.Join(root, "absent-source"),
+	})
+	if err == nil || payload.Finding == nil || payload.Finding.Code != "restore.source-dir-invalid" {
+		t.Fatalf("solid restore payload = %+v, error = %v; want restore.source-dir-invalid after selection", payload, err)
+	}
+}

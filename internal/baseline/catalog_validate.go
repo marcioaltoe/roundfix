@@ -1422,12 +1422,39 @@ func (l *catalogLoader) validateSkillActivations(catalog *Catalog) {
 	for _, activation := range objectsOrDiagnostic(l, doc["activations"], "catalog.skill.activation.collection.invalid", "skill-activations.json") {
 		id := validateOwnedID(l, "skill.activation", "skill-activations.json", activation, seenTriggers)
 		owner, _ := stringValue(activation, "owner")
-		if _, ok := catalog.modules[owner]; !ok {
+		_, ownerExists := catalog.modules[owner]
+		if !ownerExists {
 			l.add("catalog.skill.activation.owner.unknown", id, owner)
 		}
 		bundle, _ := stringValue(activation, "bundle")
-		if _, ok := bundleSkills[bundle]; !ok {
+		skills, bundleExists := bundleSkills[bundle]
+		if !bundleExists {
 			l.add("catalog.skill.activation.bundle.unknown", id, bundle)
+		}
+		if !ownerExists || !bundleExists {
+			continue
+		}
+		required := make(map[string]struct{})
+		visited := make(map[string]struct{})
+		var visit func(string)
+		visit = func(moduleID string) {
+			if _, seen := visited[moduleID]; seen {
+				return
+			}
+			visited[moduleID] = struct{}{}
+			module := catalog.modules[moduleID]
+			for _, name := range stringsOrEmpty(module["requiredSkills"]) {
+				required[name] = struct{}{}
+			}
+			for _, dependency := range stringsOrEmpty(module["dependsOn"]) {
+				visit(dependency)
+			}
+		}
+		visit(owner)
+		for _, skill := range skills {
+			if _, ok := required[skill]; !ok {
+				l.add("catalog.skill.activation.skill.unrequired", id, skill)
+			}
 		}
 	}
 }

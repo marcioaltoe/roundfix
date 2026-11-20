@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "typescript",
-  "version": 10,
+  "version": 11,
   "kind": "language-runtime",
   "title": "TypeScript repository guidance",
   "dependsOn": [
@@ -20,6 +20,7 @@
     "git-rebase",
     "humanizer",
     "onioncry",
+    "solid",
     "typescript-advanced",
     "vite",
     "vitest",

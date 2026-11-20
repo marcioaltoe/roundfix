@@ -383,7 +383,7 @@
         "internal/cli/doctor_storage.go",
         "internal/cli/worktree_build_cache.go"
       ],
-      "review": "2026-10-12 — Spec 0259 task_04 reports declared Worktree Build Caches with a two-second measurement budget; undeclared cache output stays byte-identical"
+      "review": "2026-11-20 — Spec 0415 task_01 reads the required external skills of Doctor through Catalog.RequiredSkills; no check name, status, message, next action, output line or exit code changes"
     },
     {
       "id": "command events",

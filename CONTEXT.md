@@ -1509,6 +1509,7 @@ _Avoid_: Assumed stack, installed package list, inferred readiness
 
 **Skill Activation**:
 A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+The module that owns it, or a module that owner depends on, requires every skill of the bundle, so a profile that selects the owner holds the whole bundle in its Repository Skill Set ([ADR-0448](docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md)).
 _Avoid_: Suggested skill, inferred bundle, partial activation
 
 **Decision Plan**:
