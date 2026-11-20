@@ -329,6 +329,7 @@ docs/adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-
 docs/adr/0444-roundfix-writes-a-harness-permission-file-only-as-a-list-the-user-saw-and-confirmed.md
 docs/adr/0445-the-flow-command-list-names-subcommands-and-holds-every-git-and-github-read-the-skills-name.md
 docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-context-md-needs-no-release.md
+docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md
 # roundfix:standard-export:end
 
 # This repository publishes its README, its user guide and its lessons (maintainer, 2026-11-18).

@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:9a4b443e817f14b013fb882ed75d289b74a8d19f2b54a2ce1c88bc7f7af6d89e",
+  "catalogDigest": "sha256:4e22847ab7884e91340697a3327c738ead88ab5c40bfb9bf392f2ac4e17964a0",
   "modules": [
     "core",
     "context-workflow",
@@ -237,7 +237,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "0000b764899650d255b0b07e1c7c0e6c37360f4540019890935fdc6466ef1d1d"
+      "digest": "9caf8af3f6cdcaa1f5706ef517fb027ebc13563f212a1d150db00d93d6093584"
     },
     {
       "id": "root.repository-extension",
@@ -270,5 +270,5 @@
       "declarationDigest": "sha256:387cf4f9a887b8224148bb286b78aff411273f139812ec0ffee9481dbb41bd3d"
     }
   ],
-  "roundfixVersion": "0.150.0"
+  "roundfixVersion": "0.152.0"
 }
