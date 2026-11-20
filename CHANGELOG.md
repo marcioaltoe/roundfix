@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.150.0] - 2026-11-20
+
+### The Baseline owns the documentation rules and the Secondbrain export
+
+- **Standard Export List.** `roundfix baseline update` writes and keeps a Baseline-owned block in `.secondbrain-export` between two marker lines: `README.md`, every `CONTEXT.md`, `docs/user-guide/`, `docs/references/`, `docs/design/`, `docs/lessons/` and the ADRs marked as knowledge. Process folders (`AGENTS.md`, `CLAUDE.md`, `docs/agents|history|backlog|specs|findings|handoffs/`) stay out. A repository may remove or add lines in a block of its own, each with a one-line reason (**Export Variation**). ADR-0438.
+- **Knowledge Mark and Amendment List.** Each ADR carries `knowledge: true|false`, and only marked-true ADRs are exported. An ADR amended in part lists the ADRs that amend it in `amended_by:` at the top, written by the update as the union of what the header holds and the notices name (never the ADR itself; an identifier a person wrote is never removed). A superseded ADR is still deleted. ADR-0439.
+- **Lesson Learned.** `docs/lessons/YYYY-MM-DD-<slug>.md` records a lesson only when it passes the Baseline test (attempt, problem, proven cause, solution, not yet said by an ADR, reference or glossary). It is asked when a Finding closes and when a Spec is archived after a correction, a failed QA gate or a retry, and deleted once an ADR or rule states it. ADR-0440.
+- **Each docs folder has one job, and Doctor checks it.** The docs-layout guide states each folder's job; `roundfix doctor` gains `baseline-export` and `baseline-docs` lines that warn without failing. Nothing is renamed or moved. `roundfix release plan` counts `.secondbrain-export` and `docs/lessons/` as maintenance.
+- **Adopters:** a mirror shrinks at the first push after `roundfix baseline update`, because the Secondbrain sync replaces it. Requested by the Indexus (messages 01a1eec1, 01a1eeca).
+
 ## [0.149.1] - 2026-11-19
 
 ### The status counts a delivering Spec's Tasks, and a Roundfix update needs no release
