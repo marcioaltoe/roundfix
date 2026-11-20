@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -83,3 +83,37 @@ This Task adds the package `internal/flowpermissions` with the Flow Command List
 - [`references/2026-11-19-harness-rule-measurements.md`](references/2026-11-19-harness-rule-measurements.md)
 - [`references/2026-11-19-the-flows-commands-and-the-harness-permission-rules.md`](references/2026-11-19-the-flows-commands-and-the-harness-permission-rules.md)
 - ADR-0445
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-safety, golang-structs-interfaces, golang-testing, testing-boss, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented the list half of the package: one static unexported `list` value holds 45 entries (31 Roundfix, 12 Git, two GitHub), 16 Named Exclusions, 19 individual Claude Code Guard Entries, the diagnostic words `failed` and `has`, and empty retired sets. Accessors copy nested word slices. Claude allow rules, OpenCode plain entries and the complete Codex file render from that data. The Codex reader accepts the rendered block syntax, including empty lines and older lists, and rejects other lines, malformed patterns, other decisions, incorrect justifications and unbalanced blocks. The first-release inventory records 109 sorted lines: 45 plain entries, 45 allow rules and 19 ask rules.
+
+Derivation on this tree: read the owned-skill registry and scanned Markdown under all twelve canonical skill folders; the documentation contract obtains registered top-level commands from root help. The allow entries, four ask-first Roundfix exclusions, other Git/GitHub exclusions and diagnostic words match the TechSpec's authoring table. The sole additional classification is `git -C`, a Named Exclusion with reason `they change the repository or its configuration`: `.agents/skills/roundfix/references/deliver.md` names `git -C '<worktree>' branch 'roundfix-amended-<run-id>' HEAD`, `git -C '<worktree>' reset --hard '<first-amendment>^'` and `git -C '<worktree>' cherry-pick '<amendment>' ...`. It is an option before writes, never a diagnostic word. The existing Roundfix skill sentences about asking before applying a Baseline plan, approving profile adoption, running a release when the user asks, and removing or refreshing a user-level skill only when the user asks retain the exclusions `baseline`, `profiles`, `release` and `skills`. `permissions` remains excluded as the command that applies the list.
+
+Focused implementation evidence, all commands below exited 0:
+
+- `go test ./internal/flowpermissions -run '^TestCodexRulesFile$' -record-codex-rules` generated the golden through the required recorder, which declares its exact command with `suiteguard.DeclareSanctionedRegeneration` before writing.
+- `go test ./internal/flowpermissions -run '^(TestFlowCommandList|TestRenderingsHoldNoForbiddenRule|TestGuardEntriesMatchTheirOption|TestRetiredSetKeepsEveryReleasedEntry|TestListAccessorsReturnIndependentData)$' -count=1` exercised ordering, disjoint classifications, exclusion reasons, argument-free entries, defensive copies, all three renderings, planted forbidden entries, guard matching, and the release inventory.
+- `go test -tags docscontract ./internal/docscontract -run '^(TestOwnedSkillsNameOnlyListedOrExcludedCommands|TestAnUnlistedSkillCommandIsReported|TestOwnedSkillCommandCollectionReadsOnlyCode)$' -count=1` checked every owned skill, each required planted command and the removed `roundfix spec` entry. Findings assert the exact repository-relative file and command. The collector checks inline code and backtick/tilde fenced blocks, including indented fences, and ignores prose. An initial collector test exposed ambiguity in its indented-fence fixture; the scanner now handles those fences explicitly and the fixture expects the command inside them to be collected.
+- `go test ./internal/flowpermissions -run '^TestCodexRulesFile$' -count=1`, after adding the empty-line reader case, exercised the golden, every allowed entry, absence of exclusion rules and guards, complete and older-list round trips, permitted empty lines, and malformed-content rejection.
+- `go test ./internal/flowpermissions -run '^TestRenderingsHoldNoForbiddenRule$' -count=1`, after strengthening the independent Git-read oracle, checked all forbidden first words and rejected commits, pushes, merges, `git clone`, `git fetch` and GitHub PR writes even when no skill names them. Every required planted case names the offending entry in each harness rendering.
+- `git diff --check` reported no whitespace errors during review.
+
+Acceptance evidence:
+
+1. Command coverage and planted findings: the focused documentation contract passed over the current tree and asserted the exact file-and-command findings for all required negative cases; `gh auth` and `git -C` exclusions cover their longer forms by word prefix.
+2. Forbidden rules: the three rendering checks and their planted shell, interpreter, wildcard-subcommand and exclusion cases passed; the oracle also rejects a wildcard command and unnamed Git/GitHub writes.
+3. Guard behavior: the independent 19-option matrix passed every required option-position, equals-sign, short-form and long-form subtest. No guard matched any of the five specified ordinary reads. Each guard belongs to a current entry and has its own ask-rule text.
+4. Codex file: the recorded golden and focused reader tests passed, with all 45 entries allowed, no Named Exclusion or Guard Entry rendered, and every entry read back. The release-record tests passed with both retired sets empty.
+5. Outside evidence: inspected the committed PRD's quoted permissions-documentation passage, `Rules are evaluated in order: deny, then ask, then allow.`, and row A of `references/2026-11-19-harness-rule-measurements.md`. Row A records the ordinary `git show` read running while `git show --output=probe-out.txt HEAD` is refused with a separate ask rule; row B records the same output option running without that ask rule. This is carried recorded evidence, not a fresh harness measurement. No network lookup, harness session or real `gh` invocation was performed.
+
+The initial working-tree change was this Task's Daemon-owned `status: in_progress`; it was preserved. All new implementation paths are declared by this Task. No other Task, Task Graph manifest, owned skill, harness permission file or user-home file was changed. The execution environment rejected sandbox startup because the configured writable root contains a symlink; approved escalated shell access was used for the Task's reads, edits and focused checks.
+
+Declared Verification, the Windows build it contains, and repository Verification remain for the Daemon. No terminal Task verdict is asserted here.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T033653Z_96d2b5330174b3f3`
+- Source commit: `29ea0e371184228e3f9709f336e3db3925105459`
