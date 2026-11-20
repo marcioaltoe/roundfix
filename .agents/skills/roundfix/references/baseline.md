@@ -73,6 +73,16 @@ writes nothing. A declared decision also answers a new decision without
 `--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
 `roundfix baseline update --decision auth.base_path=/auth`.
 
+`roundfix baseline update` also keeps a repository's documentation to the Baseline's
+rules, in a `documentation` part of its plan that the Plan Digest covers and the same
+confirmation applies. Where the Setup Manifest has the Secondbrain turned on, it writes
+the Standard Export List between the two markers of `.secondbrain-export` and no other
+line; the first time, it converts the list the file had and names every path that stops
+being exported. In every repository it fills an ADR's `amended_by` from the amendment
+notices in its body. It reports the count of ADRs without a Knowledge Mark and marks
+none. A missing or repeated marker is refused: nothing is written to that file, and the
+rest of the plan applies. `--no-history` does not skip this part.
+
 `--no-skills` skips the Repository Skill Set refresh.
 After the bundle install, an existing `skills-lock.json` entry naming an owned
 skill receives the installed folder's `computedHash` and loses its `ref`; every

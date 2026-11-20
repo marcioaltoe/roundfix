@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 14,
+  "version": 15,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 12,
+      "version": 13,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -41,7 +41,8 @@
         "rule.secondbrain.research-digests",
         "rule.secondbrain.secret-safety",
         "rule.secondbrain.citations",
-        "rule.secondbrain.hermes-escalation"
+        "rule.secondbrain.hermes-escalation",
+        "rule.secondbrain.knowledge-export"
       ],
       "references": []
     }
@@ -166,6 +167,30 @@
           "id": "clause.secondbrain.baseline-owned-guidance",
           "enforcement": "mandatory",
           "guidance": "Guidance delivered inside `setup-context-driven` markers is owned by the Baseline, not by the repository holding it. Proposing a change to it is a message to the Baseline's owner; editing it locally produces a change the next Baseline update silently overwrites. Verify ownership by looking for the markers before editing any agent guide, because the same file usually carries repository-authored prose outside them that is yours to change."
+        }
+      ]
+    },
+    {
+      "id": "rule.secondbrain.knowledge-export",
+      "version": 1,
+      "coverage": [
+        "coverage.secondbrain"
+      ],
+      "clauses": [
+        {
+          "id": "clause.secondbrain.export-01-standard-list",
+          "enforcement": "mandatory",
+          "guidance": "This repository publishes to the Secondbrain only what `.secondbrain-export` lists, and that file has two parts. The first is the Standard Export List, between the lines `# roundfix:standard-export:begin` and `# roundfix:standard-export:end`: the README, the glossary files, `docs/user-guide/`, `docs/references/`, `docs/design/`, `docs/lessons/` and each ADR whose header says `knowledge: true`, one path per line. The Baseline owns those lines: `roundfix baseline update` rewrites them, and the only line added by hand is the path of an ADR, in order, when the ADR is written with that mark. Never publish process: `AGENTS.md`, `CLAUDE.md`, `docs/agents/`, the Spec folders, `docs/backlog/`, `docs/findings/`, `docs/handoffs/` and `docs/history/` stay out of both parts."
+        },
+        {
+          "id": "clause.secondbrain.export-02-variation",
+          "enforcement": "mandatory",
+          "guidance": "The second part is the repository's own lines, everything outside those two markers, which no Baseline operation changes. There the repository may add a file or a folder of knowledge that the standard list lacks, or drop a standard item with an exclusion line: `!` followed by the item as the list writes it, or `!docs/adr/*` for every ADR. Give each such line its reason in a comment line directly above it; one comment stands for the lines that follow it without a blank line. `roundfix doctor` reports a line without a reason, a process path, and a standard list that differs from what the update would write."
+        },
+        {
+          "id": "clause.secondbrain.export-03-knowledge-mark",
+          "enforcement": "mandatory",
+          "guidance": "Mark every ADR you write with whether the Secondbrain wants it: add `knowledge: true` or `knowledge: false` to its header, on the line after `status`. It is `true` when the decision states a rule of the business or of the product that someone outside this repository's development can use, and `false` when it is about how this repository is built, tested, organized or delivered, or about a tool it uses. An ADR without the mark is not published. The ADRs a repository already has are marked once, by the same test, by the Agent of the session that applies the Baseline update that brings this rule: in one commit that a person reviews in a Pull Request, followed by a second update so the list names them."
         }
       ]
     }

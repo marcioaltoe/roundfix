@@ -413,3 +413,28 @@ func TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult(t *testin
 		})
 	}
 }
+
+func TestMaintenanceOnlyCountsLessonsAndTheExportList(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name    string
+		paths   []string
+		crosses bool
+	}{
+		{"lessons", []string{"docs/lessons/2026-01-01-lesson.md"}, false},
+		{"export_list", []string{".secondbrain-export", "docs/lessons/2026-01-01-lesson.md"}, false},
+		{"with_another_path", []string{".secondbrain-export", "docs/lessons/2026-01-01-lesson.md", "internal/app/version.go"}, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ClassifyCommit(Commit{Subject: "feat: change", ChangedPaths: tt.paths})
+			if got.CrossesMaintenanceOnlyBoundary != tt.crosses {
+				t.Fatalf("classification = %+v", got)
+			}
+			for _, path := range tt.paths {
+				if path != "internal/app/version.go" && !MaintenanceOnly(path) {
+					t.Errorf("not maintenance: %s", path)
+				}
+			}
+		})
+	}
+}

@@ -64,8 +64,8 @@ func TestTheDocsLayoutRegionStaysLean(t *testing.T) {
 	if start < 0 || finish < start {
 		t.Fatalf("docs-layout managed region markers missing")
 	}
-	if size := len(text[start : finish+len(end)]); size > 11000 {
-		t.Fatalf("guide.docs-layout region = %d bytes, want at most 11000", size)
+	if size := len(text[start : finish+len(end)]); size > 13000 {
+		t.Fatalf("guide.docs-layout region = %d bytes, want at most 13000", size)
 	}
 }
 
@@ -115,9 +115,8 @@ func TestTheCaptureTriggerAsksForAConditionalLesson(t *testing.T) {
 			guidance := clause["guidance"].(string)
 			for _, phrase := range []string{
 				"When a Finding closes",
-				"ADR, Archive Record or reference",
-				"Only then send one message",
-				"<repository>@<commit>:<path>",
+				"send no message about what it taught",
+				"Lesson Learned",
 			} {
 				if !strings.Contains(guidance, phrase) {
 					t.Errorf("capture trigger lacks %q", phrase)

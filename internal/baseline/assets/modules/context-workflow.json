@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 31,
+  "version": 32,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -188,11 +188,12 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 17,
+      "version": 18,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
-        "rule.context.docs-layout"
+        "rule.context.docs-layout",
+        "rule.context.lessons"
       ],
       "references": []
     },
@@ -248,7 +249,7 @@
         {
           "id": "clause.context.adr-01-template",
           "enforcement": "mandatory",
-          "guidance": "When creating a new ADR, prepend this repository-owned lifecycle overlay to the body contract in `.agents/skills/domain-modeling/ADR-FORMAT.md`:\n\n```markdown\n---\nstatus: proposed # proposed | accepted | rejected | deprecated | superseded\ncreated_at: YYYY-MM-DDTHH:MM:SSZ\nupdated_at: YYYY-MM-DDTHH:MM:SSZ\ndeprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ\nsuperseded_by: null # null or ADR-NNNN\n---\n\n# <Short title of the decision>\n\n<One to three sentences describing the context, decision, and reason.>\n```"
+          "guidance": "When creating a new ADR, prepend this repository-owned lifecycle overlay to the body contract in `.agents/skills/domain-modeling/ADR-FORMAT.md`:\n\n```markdown\n---\nstatus: proposed # proposed | accepted | rejected | deprecated | superseded\ncreated_at: YYYY-MM-DDTHH:MM:SSZ\nupdated_at: YYYY-MM-DDTHH:MM:SSZ\ndeprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ\nsuperseded_by: null # null or ADR-NNNN\n---\n\n# <Short title of the decision>\n\n<One to three sentences describing the context, decision, and reason.>\n```\n\nAn accepted ADR that a later accepted ADR changes in part, without replacing it, stays `accepted`. In the change that adds the later ADR, its header gains `amended_by: [ADR-NNNN]`, and its body gains, after the text that changed, a dated notice that begins `Amended by ADR-NNNN (YYYY-MM-DD)` and says what changed. `roundfix baseline update` fills the list from the notices an ADR already carries."
         },
         {
           "id": "clause.context.adr-02-active-status",
@@ -258,12 +259,12 @@
         {
           "id": "clause.context.adr-03-legacy-compatibility",
           "enforcement": "mandatory",
-          "guidance": "Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata."
+          "guidance": "Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata. The one exception is a header field that a guide of this repository defines for existing ADRs, such as `amended_by`: it is written into them and changes no other line, and a header that holds no lifecycle field leaves its ADR a legacy ADR."
         },
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes only when a repository has no Secondbrain, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts of the product, such as an interface, API or data design, and never a decision or a plan, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/lessons/` for Lessons Learned, `docs/references/` for external pointers and durable project reference documents, including one that would otherwise sit at the repository root, the `DESIGN.md` design contract excepted, and `docs/user-guide/` for human documentation. A folder under `docs/` or a reference document at the root that this clause does not name is a variation: name its path and its job in `docs/agents/specific-repository.md`, or move its content to the directory whose job it is. `roundfix doctor` reports one that is neither. Preserve repository-authored bytes outside setup markers, and add a repository rule only to `docs/agents/specific-repository.md`. Each directory holds live work only. The history root `docs/history/` holds Archive Records, and Git keeps their full text. Spec-contained authorization records live at `<spec-root>/<slug>/_authorization.md`; the preserved legacy location `docs/workflow/authorizations/` remains readable for historical grants. When the runtime's archive leaves an Archive Record, the record names each Spec-owned adopted reference, and the reference leaves the tree with the Spec folder."
         },
         {
           "id": "clause.context.docs-upstream-flow",
@@ -297,7 +298,7 @@
             "clause.context.findings-10-live-work-health",
             "clause.context.findings-11-rollup-closure"
           ],
-          "guidance": "A retirement deletes the file. A Finding, Rollup or Backlog Entry with a terminal status (`deferred` included), a handoff on the user's explicit confirmation, a finished Review Artifact, a rejected or deprecated ADR, and a superseded ADR once an accepted successor names it with its date are deleted in the change that records the disposition. Git keeps the text. A Spec that absorbs a source adopts it and its Archive Record names it; any other retirement names its reason in the commit. A citation of a deleted file becomes the Git Locator `roundfix spec check` prints. The runtime's `roundfix history sanitize` removes what an earlier layout left."
+          "guidance": "A retirement deletes the file. A Finding, Rollup or Backlog Entry with a terminal status (`deferred` included), a handoff on the user's explicit confirmation, a finished Review Artifact, a rejected or deprecated ADR, a superseded ADR once an accepted successor names it with its date, and a Lesson Learned once an accepted ADR, a guide or a skill states what it teaches are deleted in the change that records the disposition. Git keeps the text. A Spec that absorbs a source adopts it and its Archive Record names it; any other retirement names its reason in the commit. A citation of a deleted file becomes the Git Locator `roundfix spec check` prints. The runtime's `roundfix history sanitize` removes what an earlier layout left."
         },
         {
           "id": "clause.context.findings-02-pending",
@@ -343,6 +344,25 @@
           "id": "clause.context.inbox-03-extend-before-minting",
           "enforcement": "mandatory",
           "guidance": "Before minting a Finding or Backlog Entry, including in Triage, look for an existing one that is not yet implemented and that the new observation or intent fits: an `open` Backlog Entry in `docs/backlog/` or an unresolved Finding in `docs/findings/`. Revise a fitting Backlog Entry in place under its existing name; extend a fitting Finding with a dated addendum, because a Finding is immutable history. Mint a new file only when none fits. A Triage that extends an existing entry resolves its message into that entry, which cites the message's provenance."
+        }
+      ]
+    },
+    {
+      "id": "rule.context.lessons",
+      "version": 1,
+      "coverage": [
+        "coverage.context-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.context.lesson-01-record",
+          "enforcement": "mandatory",
+          "guidance": "A Lesson Learned records something this repository tried, what went wrong, why, and what solved it. It is one file, `docs/lessons/YYYY-MM-DD-<kebab-slug>.md`, in this complete copyable form; keep each label as written and write the rest in the language of the repository's documentation:\n\n```markdown\n---\ncreated: YYYY-MM-DD\n---\n# <The lesson in one line>\n\n- Context: <the work it happened in>\n- Tried: <what was tried>\n- Went wrong: <what was observed>\n- Cause: <the proven cause>\n- Solved by: <what solved it>\n- Applies when: <when a reader should use this lesson>\n- Does not apply when: <what looks alike and is different>\n- Links: <the Finding, Spec, Pull Request or commit that holds the evidence>\n```"
+        },
+        {
+          "id": "clause.context.lesson-02-test",
+          "enforcement": "mandatory",
+          "guidance": "Write a Lesson Learned only when every part of this test holds: something was tried, it went wrong, the cause is proven, something solved it, and no accepted ADR, reference document or glossary entry already states it. Otherwise write nothing. Apply the test at two moments: when a Finding closes, in the change that answers it or retires it, and when a Spec that needed a correction, a failed QA or a retry is archived. Write the file in that change, so the Pull Request that carries it shows the lesson to a person, who may delete it."
         }
       ]
     }

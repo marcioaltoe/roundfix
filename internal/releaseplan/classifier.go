@@ -149,7 +149,7 @@ func MaintenanceOnly(changedPath string) bool {
 	if isTestOrFixturePath(clean) {
 		return true
 	}
-	if isPlanningEvidencePath(clean) {
+	if clean == ".secondbrain-export" || isPlanningEvidencePath(clean) {
 		return true
 	}
 	if isNonReleaseCIPath(clean) {
@@ -248,6 +248,7 @@ func isPlanningEvidencePath(changedPath string) bool {
 		"docs/findings/",
 		"docs/handoffs/",
 		"docs/references/",
+		"docs/lessons/",
 	} {
 		if strings.HasPrefix(changedPath, prefix) {
 			return true
