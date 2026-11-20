@@ -1,0 +1,19 @@
+command: ./bin/roundfix init
+stdout:
+Roundfix config created
+
+Scope:
+  project
+
+Path:
+  /private/tmp/q412-init-h2weg0ti/.roundfixrc.yml
+
+Next:
+  roundfix fetch --pr <number>
+
+stderr:
+Roundfix Config Init
+Choose where to write the config.
+Press Enter to use project config.
+Scope [project] (project/user): 
+exit: 0

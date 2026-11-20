@@ -1,0 +1,8 @@
+command: ./bin/roundfix follow-up --status
+stdout:
+
+stderr:
+roundfix: follow-up failed: parse config "/private/tmp/q412-repo-cvaaf77f/.roundfixrc.yml": authoring.open_questions must be wait or follow
+Run 'roundfix follow-up --help' for usage.
+
+exit: 2

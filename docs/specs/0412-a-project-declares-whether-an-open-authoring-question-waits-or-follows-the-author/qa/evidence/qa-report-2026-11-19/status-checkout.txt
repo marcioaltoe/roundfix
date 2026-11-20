@@ -1,0 +1,26 @@
+command: ./bin/roundfix follow-up --status
+stdout:
+Status for q412-repo-cvaaf77f in /private/tmp/q412-repo-cvaaf77f
+In progress: 1
+  git main 6a5a932: 1 changed path(s), 0 unpushed commit(s)
+Pending Specs: 0
+Spec queue: 0
+Next release: unavailable: resolve release range: check release plan worktree status: dirty worktree: paths: .roundfixrc.yml; commit, stash, or remove these paths before planning a release
+Blockers: 0
+Waiting on the maintainer: 0
+Open authoring questions: wait (default); this checkout's Project Config gives follow, which counts only once the default branch holds it
+Delegated decisions: 0
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1
+  git: checked 1
+  specs: checked 0
+  release-plan: unavailable: resolve release range: check release plan worktree status: dirty worktree: paths: .roundfixrc.yml; commit, stash, or remove these paths before planning a release
+  backlog: checked 0
+  phase-record: checked 0
+  delivery-history: checked 0
+
+stderr:
+
+exit: 0

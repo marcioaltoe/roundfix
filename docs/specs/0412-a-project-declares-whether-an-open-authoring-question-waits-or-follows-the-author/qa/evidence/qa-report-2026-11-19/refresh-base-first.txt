@@ -1,0 +1,30 @@
+command: ./bin/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: not run
+Prior catalog: sha256:7b7333fdc8a4833ebf575de4045a9ae008692f1f171a7e8061b275cbc6982015
+Current catalog: sha256:6ee15c4162126ec497f13fb924120320d2fe8db14e4a1318c355160566a893e5
+File changes: 2
+- update docs/agents/setup-context.json (1 managed entries)
+- update docs/agents/spec-routing.md (1 managed entries)
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:ab0f8986756aa4e5db4552b993388e4e10f2787dbcfc62584b5aa0005928e18d
+Approved Plan Digest: sha256:ab0f8986756aa4e5db4552b993388e4e10f2787dbcfc62584b5aa0005928e18d
+
+stderr:
+
+exit: 0

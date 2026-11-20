@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses$/^the_rule$ ./internal/baseline
+stdout:
+=== RUN   TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== PAUSE TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== CONT  TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== RUN   TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses/the_rule
+    open_authoring_question_clauses_test.go:28: clause = map[enforcement:mandatory guidance:An Open Authoring Question is a question the author of a PRD, a TechSpec or a Task Graph needs answered to finish its phase and that no source settles: neither the request, the brief, the approved Idea, a recorded answer of the user nor another source of the repository. State it as the stop-and-ask clause of `docs/agents/agent-instructions.md` says, with two or three options, the recommended one first and its reason, and say whether it is a Reserved Question and why. When the user is present, ask: a question the user can see waits for the user, and a recommendation, silence, a dismissal or a timeout adopts nothing. Treat the user as absent only when the brief that started the session says so, the user said so, or the session runs as a continuation that an unattended flow armed. With the user absent the Spec waits, unless following is in force: `roundfix follow-up --status` reports `follow` as the project's Authoring Question Preference, or the Spec's `_authorization.md` quotes the user's answer, given before the flow, that the session follows the author. Never write that preference into Project Config yourself. A Reserved Question waits even then: the Idea stage and the choice an Idea-stage judgment leaves to the user; a Rule Challenge; every authorization, which is a commit, a push, a Pull Request, a merge, a release, a Governed Path, a destructive Git operation, a database statement and any other action a stop-and-ask clause holds for express authority; a recommended option that adds a goal, a feature, a source or a surface that the request, the approved Idea and the PRD do not hold, removes one of their non-goals or contradicts a recorded answer of the user, that needs a paid service, a paid plan or a quota the repository does not already use, or that sends repository or client content to a service or a person the repository does not already send it to; a question without two or three options and a recommended one; and a question you cannot classify. An author that a session started returns the question and never adopts its own recommendation; the session checks the author's statement against this list, and when either reads the question as reserved or cannot tell, the Spec waits. id:clause.spec.open-authoring-question-01-wait-or-follow]
+--- FAIL: TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses (0.00s)
+    --- FAIL: TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses/the_rule (0.00s)
+FAIL
+suiteguard: guard cost: measured 3364 paths; fingerprint took 425.754709ms before and 294.956042ms after
+FAIL	roundfix/internal/baseline	1.013s
+FAIL
+
+stderr:
+
+exit: 1

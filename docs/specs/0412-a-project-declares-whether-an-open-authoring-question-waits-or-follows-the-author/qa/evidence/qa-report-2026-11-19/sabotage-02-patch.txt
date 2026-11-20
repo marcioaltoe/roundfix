@@ -1,0 +1,13 @@
+diff --git a/internal/config/authoring.go b/internal/config/authoring.go
+index d90cf07..08c2c53 100644
+--- a/internal/config/authoring.go
++++ b/internal/config/authoring.go
+@@ -56,7 +56,7 @@ var authoringModelName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0
+ var authoringMCPTool = regexp.MustCompile(`^mcp__[A-Za-z0-9_.*-]+$`)
+ 
+ func prepareAuthoringConfig(document *yaml.Node, warnings *configWarnings, source ProfileSource) error {
+-	if source == ProfileSourceUser && removeYAMLPath(document, []string{"authoring", "open_questions"}) {
++	if false && source == ProfileSourceUser && removeYAMLPath(document, []string{"authoring", "open_questions"}) {
+ 		const key = "authoring.open_questions"
+ 		if warnings != nil && !warnings.emitted[key] {
+ 			warnings.emitted[key] = true

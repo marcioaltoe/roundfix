@@ -1,0 +1,7 @@
+command: go test -count=1 -timeout 40m -tags docscontract -run FollowUp|Status|SpecCheck|Clarification ./internal/cli
+stdout:
+ok  	roundfix/internal/cli	14.930s
+
+stderr:
+
+exit: 0

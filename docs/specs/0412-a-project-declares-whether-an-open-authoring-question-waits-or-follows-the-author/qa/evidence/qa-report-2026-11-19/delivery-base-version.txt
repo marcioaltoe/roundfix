@@ -1,0 +1,7 @@
+command: ./bin/roundfix-delivery-base --version
+stdout:
+roundfix 0.149.0 (96eca968)
+
+stderr:
+
+exit: 0

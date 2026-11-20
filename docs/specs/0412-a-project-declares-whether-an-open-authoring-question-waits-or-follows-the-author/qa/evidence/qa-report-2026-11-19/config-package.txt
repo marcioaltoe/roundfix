@@ -1,0 +1,7 @@
+command: go test -count=1 -timeout 40m ./internal/config
+stdout:
+ok  	roundfix/internal/config	1.297s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,8 @@
+Source: Cuadron and Gupta, 2026, BOBA
+URL: https://arxiv.org/abs/2611.02207
+Read and rechecked by the authors: 2026-11-19
+Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
+Passage: complete 95% of requests taken one at a time, but when requests are chained together, they complete 51%
+Comparison: The study measures chained code requests, not planning decisions. It motivates inspectable entries and a later answer that wins, allowing the maintainer to see and correct an adopted option. No success rate for this workflow is inferred.
+Observed contract assertions: True
+Result: pass

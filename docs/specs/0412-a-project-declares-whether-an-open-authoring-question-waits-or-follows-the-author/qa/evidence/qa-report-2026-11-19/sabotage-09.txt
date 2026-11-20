@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses$/^ask$/^never_writes_the_preference$ ./internal/baseline
+stdout:
+=== RUN   TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== PAUSE TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== CONT  TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses
+=== RUN   TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses/ask/never_writes_the_preference
+    open_authoring_question_clauses_test.go:136: phrase "Never write that preference into Project Config yourself." occurs 0 times
+--- FAIL: TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses (0.00s)
+    --- FAIL: TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses/ask/never_writes_the_preference (0.00s)
+FAIL
+suiteguard: guard cost: measured 3364 paths; fingerprint took 448.349333ms before and 295.253084ms after
+FAIL	roundfix/internal/baseline	1.044s
+FAIL
+
+stderr:
+
+exit: 1

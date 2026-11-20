@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike$/^the_core_text_is_shared$ ./skills
+stdout:
+=== RUN   TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike
+=== PAUSE TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike
+=== CONT  TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike
+=== RUN   TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike/the_core_text_is_shared
+    open_authoring_question_test.go:148: write-tasks: core differs
+--- FAIL: TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike (0.00s)
+    --- FAIL: TestTheAuthoringSkillsTreatAnOpenAuthoringQuestionAlike/the_core_text_is_shared (0.00s)
+FAIL
+FAIL	roundfix/skills	0.275s
+FAIL
+
+stderr:
+
+exit: 1

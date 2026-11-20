@@ -1,0 +1,7 @@
+command: go test -count=1 -timeout 40m ./internal/baseline
+stdout:
+ok  	roundfix/internal/baseline	98.554s
+
+stderr:
+
+exit: 0

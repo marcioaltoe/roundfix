@@ -1,0 +1,85 @@
+command: go test -count=1 -timeout 40m -v -run ^(TestTheAuthoringQuestionPreferenceIsAProjectConfigValue|TestRequireDefectClassIsAProjectConfigBoolean)$ ./internal/config
+stdout:
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean
+=== PAUSE TestRequireDefectClassIsAProjectConfigBoolean
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/builtin_waits
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/builtin_waits
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/absent_key_waits
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/absent_key_waits
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_wait
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_wait
+=== CONT  TestRequireDefectClassIsAProjectConfigBoolean
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/absent
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_follow
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_follow
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_number
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_number
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_list
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_list
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_mapping
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_mapping
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_an_unknown_key
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_an_unknown_key
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/default_configuration_omits_the_key
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/default_configuration_omits_the_key
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/builtin_waits
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/default_configuration_omits_the_key
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_follow
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_mapping
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_an_unknown_key
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_list
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_number
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_wait
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/absent_key_waits
+--- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue (0.00s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/builtin_waits (0.00s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/default_configuration_omits_the_key (0.00s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe (0.02s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_follow (0.02s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_mapping (0.02s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_list (0.01s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_an_unknown_key (0.02s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once (0.04s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_a_number (0.02s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/project_config_wait (0.01s)
+    --- PASS: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/absent_key_waits (0.01s)
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/true
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/false
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/user_true
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/user_invalid
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/project_over_user
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_'true'
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_yes
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_1
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_[]
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_{}
+=== RUN   TestRequireDefectClassIsAProjectConfigBoolean/refuses_null
+--- PASS: TestRequireDefectClassIsAProjectConfigBoolean (0.25s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/absent (0.05s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/true (0.04s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/false (0.04s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/user_true (0.04s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/user_invalid (0.04s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/project_over_user (0.04s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_'true' (0.00s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_yes (0.00s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_1 (0.00s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_[] (0.00s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_{} (0.00s)
+    --- PASS: TestRequireDefectClassIsAProjectConfigBoolean/refuses_null (0.00s)
+PASS
+suiteguard: guard cost: measured 3372 paths; fingerprint took 190.688125ms before and 160.2805ms after
+ok  	roundfix/internal/config	1.013s
+
+stderr:
+
+exit: 0

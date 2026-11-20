@@ -1,0 +1,13 @@
+diff --git a/internal/cli/follow_up_status_authoring.go b/internal/cli/follow_up_status_authoring.go
+index 19537e3..d34e1e6 100644
+--- a/internal/cli/follow_up_status_authoring.go
++++ b/internal/cli/follow_up_status_authoring.go
+@@ -31,7 +31,7 @@ func readFollowUpAuthoringQuestions(ctx context.Context, loaded roundconfig.Load
+ 		report.Ref = head.Ref
+ 		config, err := roundconfig.DeliveryConfigAtCommit(ctx, runner, loaded.GitRoot, loaded.UserConfigPath, head.Commit)
+ 		if err != nil {
+-			report.Detail = "the default branch's Project Config was not read: " + err.Error()
++			report.Detail = ""
+ 		} else {
+ 			report.Preference = config.Authoring.OpenQuestions
+ 			if config.Authoring.OpenQuestionsDeclared {

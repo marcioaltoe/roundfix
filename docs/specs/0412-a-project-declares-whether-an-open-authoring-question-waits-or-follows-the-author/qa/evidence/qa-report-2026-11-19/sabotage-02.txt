@@ -1,0 +1,20 @@
+command: go test -count=1 -timeout 20m -v -run ^TestTheAuthoringQuestionPreferenceIsAProjectConfigValue$/^user_config_ignored_once$ ./internal/config
+stdout:
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once
+    authoring_questions_test.go:66: User Config follow warning = "", want "config: authoring.open_questions in User Config is ignored; set authoring.open_questions in Project Config\n"
+    authoring_questions_test.go:51: parse config "User Config proposal": authoring.open_questions must be wait or follow
+--- FAIL: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue (0.00s)
+    --- FAIL: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/user_config_ignored_once (0.01s)
+FAIL
+suiteguard: guard cost: measured 3364 paths; fingerprint took 157.101333ms before and 168.516917ms after
+FAIL	roundfix/internal/config	0.572s
+FAIL
+
+stderr:
+
+exit: 1

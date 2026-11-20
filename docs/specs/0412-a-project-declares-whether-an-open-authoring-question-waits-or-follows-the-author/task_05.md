@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

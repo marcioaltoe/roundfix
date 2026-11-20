@@ -1,0 +1,72 @@
+PASS internal/baseline/assets/modules/autonomous-work.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/autonomous-work.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/autonomous-work.json: byte-identical
+PASS internal/baseline/assets/modules/backend.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/backend.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/backend.json: byte-identical
+PASS internal/baseline/assets/modules/bun.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/bun.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/bun.json: byte-identical
+PASS internal/baseline/assets/modules/cli-surface.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/cli-surface.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/cli-surface.json: byte-identical
+PASS internal/baseline/assets/modules/context-workflow.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/context-workflow.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/context-workflow.json: byte-identical
+PASS internal/baseline/assets/modules/core.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/core.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/core.json: byte-identical
+PASS internal/baseline/assets/modules/external-triage.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/external-triage.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/external-triage.json: byte-identical
+PASS internal/baseline/assets/modules/frontend.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/frontend.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/frontend.json: byte-identical
+PASS internal/baseline/assets/modules/go.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/go.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/go.json: byte-identical
+PASS internal/baseline/assets/modules/monorepo.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/monorepo.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/monorepo.json: byte-identical
+PASS internal/baseline/assets/modules/python.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/python.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/python.json: byte-identical
+PASS internal/baseline/assets/modules/repository-extension.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/repository-extension.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/repository-extension.json: byte-identical
+PASS internal/baseline/assets/modules/rust.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/rust.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/rust.json: byte-identical
+PASS internal/baseline/assets/modules/secondbrain.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/secondbrain.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/secondbrain.json: byte-identical
+PASS internal/baseline/assets/modules/spec-workflow.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/spec-workflow.json: exact allowed added clauses ['clause.spec.open-authoring-question-01-wait-or-follow', 'clause.spec.open-authoring-question-02-record']
+PASS internal/baseline/assets/modules/tui-surface.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/tui-surface.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/tui-surface.json: byte-identical
+PASS internal/baseline/assets/modules/typescript.json: every existing clause retains id, force and text
+PASS internal/baseline/assets/modules/typescript.json: exact allowed added clauses []
+PASS internal/baseline/assets/modules/typescript.json: byte-identical
+PASS internal/baseline/assets/source-baselines: byte-identical; changed=[]
+PASS internal/baseline/assets/setups: byte-identical; changed=[]
+PASS internal/baseline/assets/profiles/go-cli-typescript-monorepo.json: new rule not required
+PASS internal/baseline/assets/profiles/standard-typescript-monorepo.json: new rule not required
+PASS internal/baseline/assets/profiles/go-cli-tui.json: new rule not required
+PASS internal/baseline/assets/profiles/rust-cli.json: new rule not required
+PASS internal/baseline/assets/profiles/python.json: new rule not required
+PASS internal/speccheck/coherence.go: byte-identical
+PASS internal/docscontract/testdata/corpus-golden.json: byte-identical
+PASS internal/spec/archive_layout_characterization_test.go: byte-identical
+PASS docs/references/coverage-record.json: byte-identical
+PASS clause characterization: only two new clause ids, no removed lines
+diff --git a/internal/baseline/clause_characterization_test.go b/internal/baseline/clause_characterization_test.go
+index 1cdeaa1f..0ad51b7f 100644
+--- a/internal/baseline/clause_characterization_test.go
++++ b/internal/baseline/clause_characterization_test.go
+@@ -162,0 +163,2 @@ func characterizedBaselineForce() map[string]string {
++		"clause.spec.open-authoring-question-01-wait-or-follow":       "stop-and-ask",
++		"clause.spec.open-authoring-question-02-record":               "mandatory",
+
+PASS Delivery Base binary freshly built inside this Run Worktree
+PASS follow-up --help: identical stdout, stderr and exit code across fresh builds

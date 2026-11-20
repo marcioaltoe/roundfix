@@ -1,0 +1,22 @@
+diff --git a/internal/speccheck/delegated_decision.go b/internal/speccheck/delegated_decision.go
+index f38acc5..9a93eca 100644
+--- a/internal/speccheck/delegated_decision.go
++++ b/internal/speccheck/delegated_decision.go
+@@ -3,7 +3,6 @@ package speccheck
+ import (
+ 	"regexp"
+ 	"strings"
+-	"time"
+ )
+ 
+ // DelegatedDecision is an adopted authoring option, never a person's answer.
+@@ -63,8 +62,7 @@ func DelegatedDecisions(prd []byte) []DelegatedDecision {
+ }
+ 
+ func delegatedDateValid(date string) bool {
+-	_, err := time.Parse(time.DateOnly, date)
+-	return err == nil
++	return regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`).MatchString(date)
+ }
+ 
+ func delegatedProblem(entry DelegatedDecision, headOK bool, counts map[string]int) string {

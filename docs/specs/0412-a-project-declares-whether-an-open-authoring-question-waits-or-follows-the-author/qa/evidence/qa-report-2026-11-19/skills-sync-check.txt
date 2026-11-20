@@ -1,0 +1,8 @@
+command: make skills-sync-check GO=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T011943Z_1748a9fa9528c4f3/docs/specs/0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author/qa/evidence/qa-report-2026-11-19/gate.py.txt go SHELL=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T011943Z_1748a9fa9528c4f3/docs/specs/0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author/qa/evidence/qa-report-2026-11-19/gate.py.txt BUILD_COMMIT=f416d013-dirty BUILD_TIME=2026-11-19 22:54:19 -0300
+stdout:
+/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T011943Z_1748a9fa9528c4f3/docs/specs/0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author/qa/evidence/qa-report-2026-11-19/gate.py.txt go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.282s
+
+stderr:
+
+exit: 0

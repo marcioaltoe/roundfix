@@ -1,0 +1,8 @@
+Source: Apache Software Foundation, Decision-Making
+URL: https://community.apache.org/committers/decisionMaking.html
+Read and rechecked by the authors: 2026-11-19
+Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
+Passage: Sometimes lazy consensus is not appropriate.
+Comparison: Apache describes contexts where lazy consensus is inappropriate. This workflow follows only with an explicit project preference or recorded before-flow answer, and Reserved Questions still wait. Silence alone never enables follow.
+Observed contract assertions: True
+Result: pass

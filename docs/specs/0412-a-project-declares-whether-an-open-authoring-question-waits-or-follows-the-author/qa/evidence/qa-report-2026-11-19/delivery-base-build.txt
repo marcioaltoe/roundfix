@@ -1,0 +1,6 @@
+command: go build -buildvcs=false -ldflags -X roundfix/internal/app.BuildCommit=96eca968 -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T011943Z_1748a9fa9528c4f3/bin/roundfix-delivery-base ./cmd/roundfix
+stdout:
+
+stderr:
+
+exit: 0

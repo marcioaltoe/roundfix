@@ -1,0 +1,136 @@
+# Roundfix config.
+# User Config: ~/.roundfix/config.yml
+# Project Config: <repo>/.roundfixrc.yml
+
+defaults:
+  # false keeps each ACP Runtime's normal sandbox or permission mode.
+  agent_full_access: false
+  # Verification command for review Batches; Spec Tasks use their task file commands.
+  verification: make verify
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
+  auto_commit: true
+
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  frontend:
+    preferred:
+      runtime: claude
+      model: opus
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: "xhigh"
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-6.1-sol
+      reasoning_effort: "high"
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: "high"
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-6-luna
+      reasoning_effort: "max"
+    fallbacks:
+      - runtime: codex
+        model: gpt-6.1-sol
+        reasoning_effort: "high"
+
+specs:
+  # Directory holding Spec folders; relative paths resolve against the repository root.
+  root: "docs/specs"
+
+
+worktree:
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
+  location: "~/.roundfix/worktrees"
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: 2
+  # Repository-relative untracked files copied into each Run Worktree.
+  # Empty copies no files.
+  copy: []
+  # Rebuildable directories in ended worktrees reported by Doctor and removed by GC.
+  caches: []
+  # Command run once after copy before Agent work; empty disables bootstrap.
+  bootstrap: ""
+  # Maximum time allowed for each worktree bootstrap command.
+  bootstrap_timeout: 10m
+
+verification:
+  # Maximum concurrent Task Verification attempts per spec Run; independent from worktree.concurrency.
+  concurrency: 1
+  # Append repository Verification when a non-QA Task of a gated graph settles.
+  repository_at_settlement: true
+  # Additional bare executable names Doctor must find on PATH without running.
+  tools: []
+  # Formats the files a QA step commits under the Spec's qa/ directory; empty runs nothing.
+  format: ""
+
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: 336h
+
+# Legacy PR-feedback Review Source, read only by fetch, watch and resolve; it never selects or requests a pre-PR reviewer.
+review_source:
+  name: coderabbit
+  # false excludes CodeRabbit findings whose severity is nitpick.
+  include_nitpicks: false
+  # true asks the Review Source to review each pushed Round head.
+  request_review: false
+  request_command: "@coderabbitai review"
+
+watch:
+  until_clean: true
+  max_rounds: 6
+  poll_interval: 30s
+  review_timeout: 30m
+  check_grace_period: 5m
+  quiet_period: 30s
+  # auto_push runs only after no Unresolved Review Issues remain.
+  auto_push: true
+  # Leave empty to use the branch upstream detected by Preflight Validation.
+  push_remote: ""
+  push_branch: ""
+
+implement:
+  # auto_push runs only after a Clean spec Run and never creates pull requests.
+  auto_push: false
+
+notify:
+  # false disables notifications entirely.
+  enabled: true
+  # Shell command run on terminal outcome; empty uses the native desktop notification.
+  command: ""
+
+budget:
+  enabled: true
+  max_run_duration: 2h
+  # Bounds wall-clock time from Run start; evaluated before each review Round and during Review Source waits.
+  # Active Work Item resolution is not interrupted when the budget expires.
+  # An Implement Run's allowance renews at each Task settlement.
+  # budget.max_run_duration bounds how long a Run may run; the Run Window bounds when one may start.
+
+resolve:
+  batch_size: 3

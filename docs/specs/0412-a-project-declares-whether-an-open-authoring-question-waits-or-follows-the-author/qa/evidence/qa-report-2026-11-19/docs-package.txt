@@ -1,0 +1,7 @@
+command: go test -count=1 -timeout 40m -tags docscontract ./internal/docscontract
+stdout:
+ok  	roundfix/internal/docscontract	14.997s
+
+stderr:
+
+exit: 0

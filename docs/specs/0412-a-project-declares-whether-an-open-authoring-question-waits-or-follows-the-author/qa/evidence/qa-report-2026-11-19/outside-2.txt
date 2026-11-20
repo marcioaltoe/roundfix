@@ -1,0 +1,8 @@
+Source: Feng, McDonald and Zhang, 2025, Levels of Autonomy for AI Agents
+URL: https://arxiv.org/abs/2506.12469
+Read and rechecked by the authors: 2026-11-19
+Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
+Passage: five levels of escalating agent autonomy, characterized by the roles a user can take
+Comparison: The published framework distinguishes user roles at different autonomy levels. The repository chooses wait or follow in Project Config; an agent cannot set the preference itself. This is a project choice, while the session still classifies Reserved Questions.
+Observed contract assertions: True
+Result: pass

@@ -1,0 +1,8 @@
+Source: Bezos, 2015 shareholder letter, filed 2016
+URL: https://www.sec.gov/Archives/edgar/data/1018724/000119312516530910/d168744dex991.htm
+Read and rechecked by the authors: 2026-11-19
+Access in this QA: offline, supplied PRD Acceptance evidence excerpt; no fresh lookup
+Passage: Type 2 decisions can and should be made quickly
+Comparison: The letter supports quick reversible choices. The rule bounds delegation by reserving authorizations, new scope, spend and external data transfers; this records the intended boundary, whose live enforcement remains declared unproven.
+Observed contract assertions: True
+Result: pass

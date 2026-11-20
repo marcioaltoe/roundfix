@@ -1,0 +1,13 @@
+diff --git a/internal/config/authoring.go b/internal/config/authoring.go
+index d90cf07..b95d169 100644
+--- a/internal/config/authoring.go
++++ b/internal/config/authoring.go
+@@ -64,7 +64,7 @@ func prepareAuthoringConfig(document *yaml.Node, warnings *configWarnings, sourc
+ 		}
+ 	}
+ 	if node, found := yamlValueAtPath(document, []string{"authoring", "open_questions"}); found {
+-		if node.Kind != yaml.ScalarNode || node.Tag != "!!str" || (node.Value != OpenQuestionsWait && node.Value != OpenQuestionsFollow) {
++		if node.Kind != yaml.ScalarNode || node.Tag != "!!str" || false {
+ 			return fmt.Errorf("authoring.open_questions must be wait or follow")
+ 		}
+ 	}
