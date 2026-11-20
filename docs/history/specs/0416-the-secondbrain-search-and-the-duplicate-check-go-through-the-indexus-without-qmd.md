@@ -37,9 +37,10 @@ regeneration:
       - docs/agents/secondbrain.md
       - docs/agents/setup-context.json
 promoted: []
+pull_request: "944"
 type: feat
 ---
 
 # The Secondbrain search and the duplicate check go through the Indexus, without qmd
 
-The candidate directs Secondbrain search and duplicate checks through the Indexus with no second search tool; the isolated Delivery Base adopter receives only its guide and Setup Manifest and c…
+The candidate directs Secondbrain search and duplicate checks through the Indexus with no second search tool; the isolated Delivery Base adopter receives only its guide and …
