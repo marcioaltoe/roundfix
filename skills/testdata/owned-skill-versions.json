@@ -1493,6 +1493,10 @@
       {
         "version": "0.0.17",
         "digest": "4e457589a0170e90d47824d25e008a7b89717bc4b24d99dd0487ecf33493c31b"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "9b73ca49df6d582337a3134fbaedc730daffc1ff54cd35ee4327cbd3bb677ff8"
       }
     ],
     "write-prd": [

@@ -259,6 +259,10 @@
       {
         "version": 15,
         "digest": "sha256:11c0c5aeed22558d080901044dd9fcab0f5b3394434eac0f50bd33fe949c5295"
+      },
+      {
+        "version": 16,
+        "digest": "sha256:8e00cafe0258d733a2d1f0af2b6f2b8f31b45f14e70aae1ab3b0a18c2d94e69d"
       }
     ],
     "spec-workflow": [

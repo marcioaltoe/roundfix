@@ -4,7 +4,7 @@
 
 - **mandatory**: Consult both the local Secondbrain and Exa MCP before proposing solutions or recommendations, making product, design, or architecture decisions, and authoring an Idea, PRD, or TechSpec. Both sources are required; one does not replace the other.
 
-- **mandatory**: Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
+- **mandatory**: Read `wiki/index.md` first. Then search with the `pesquisar_acervos` tool of the `indexus` MCP server, which returns one group per acervo the session's key reaches; `abrir_conteudo` opens a returned page by its `caminho` as returned, which for a `wiki` result is relative to `wiki/`. An answer without a `wiki` result is a limitation to record. When the tool is not in the session or does not answer, the Secondbrain search is unavailable: substitute no other search tool. Inspect `projects/<project>/mirror/` only when the index and the search point there, and open only the files required for the task; treat mirrors as references, not workspaces.
 
 - **mandatory**: Use Secondbrain for prior decisions, related project experience, and existing research.
 
@@ -14,7 +14,7 @@
 
 - **prohibited**: Do not create, edit, rename, move, or delete any Secondbrain file, `inbox/` included. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check.
 
-- **mandatory**: Send substantive external research and relevant findings or articles from Exa MCP as a sourced digest in one message to the project that owns the Secondbrain, for its own ingestion and later reuse as reference material, including relevant articles found outside a dedicated research session. Include each source's title and URL, a concise summary of the content read, the projects or topics it informs, and why it matters; distinguish published evidence from inference. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and name a strong verified match in the message so the owner extends existing knowledge instead of duplicating it; a score alone never decides.
+- **mandatory**: Send substantive external research and relevant findings or articles from Exa MCP as a sourced digest in one message to the project that owns the Secondbrain, for its own ingestion and later reuse as reference material, including relevant articles found outside a dedicated research session. Include each source's title and URL, a concise summary of the content read, the projects or topics it informs, and why it matters; distinguish published evidence from inference. Run the advisory duplicate check first with the Indexus tool `pesquisar_acervos`, verify that each returned page opens, and name a strong verified match in the message so the owner extends existing knowledge instead of duplicating it; a relevance label or a rank alone never decides.
 
 - **prohibited**: Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source.
 

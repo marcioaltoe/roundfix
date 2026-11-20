@@ -1,9 +1,9 @@
 ---
 status: accepted
 knowledge: true
-amended_by: [ADR-0383, ADR-0390, ADR-0396]
+amended_by: [ADR-0383, ADR-0390, ADR-0396, ADR-0449]
 created_at: 2026-10-24T17:30:00Z
-updated_at: 2026-11-12T21:40:00Z
+updated_at: 2026-11-20T15:34:29Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -33,6 +33,8 @@ The Baseline keeps its consultation rules: read `wiki/index.md` first, then
 durable change. A session never writes a Secondbrain file, `inbox/` included.
 Substantive external research reaches the Secondbrain as a digest message to
 the project that owns it, which ingests it by its own contract.
+
+**Amended by [ADR-0449](0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md) (2026-11-20).** The consultation rule after the wiki index uses the Indexus tool `pesquisar_acervos`, the advisory duplicate check uses the same tool, and no second search tool is named.
 
 **ai-memory carries session handoffs and cross-project messages.** The core
 module requires and dispatches `ai-memory-handoff` and `ai-memory-messaging`

@@ -5,10 +5,10 @@ argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery
   tags: [product, research, requirements, workflow]
-  version: 0.0.17
+  version: 0.0.18
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.17
+version: 0.0.18
 ---
 
 # Write Idea
@@ -132,9 +132,11 @@ Spawn two parallel explorations: one over the codebase (existing patterns, integ
 
 When the session performed substantive external research, send a digest with
 its sources in one ai-memory message to the project that owns the Secondbrain
-before leaving this step. Run the advisory qmd duplicate check first through an
-authorized access path, verify that returned paths exist, and name a strong
-verified match in the message; a score alone never decides.
+before leaving this step. Run the advisory duplicate check first with the
+Indexus tool `pesquisar_acervos`, verify that each returned page opens, and
+name a strong verified match in the message; a relevance label or a rank alone
+never decides. When that tool is not in the session or does not answer, say so
+in the message and substitute no other search tool.
 
 ### 5. Score viability
 
