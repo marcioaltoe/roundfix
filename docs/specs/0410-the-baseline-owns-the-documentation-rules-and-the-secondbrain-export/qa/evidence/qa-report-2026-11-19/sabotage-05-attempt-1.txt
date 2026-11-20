@@ -1,0 +1,12 @@
+$ go test -count=1 -timeout 20m -v -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/qa/sabotage-05.test -run '^TestPlanExportList$/^never_a_process_path$' ./internal/baseline
+=== RUN   TestPlanExportList
+=== PAUSE TestPlanExportList
+=== CONT  TestPlanExportList
+=== RUN   TestPlanExportList/never_a_process_path
+--- PASS: TestPlanExportList (0.00s)
+    --- PASS: TestPlanExportList/never_a_process_path (0.00s)
+PASS
+suiteguard: guard cost: measured 3370 paths; fingerprint took 177.310666ms before and 175.4775ms after
+ok  	roundfix/internal/baseline	0.660s
+
+exit: 0

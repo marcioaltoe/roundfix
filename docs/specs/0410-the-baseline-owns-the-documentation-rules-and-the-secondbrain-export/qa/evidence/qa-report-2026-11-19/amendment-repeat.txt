@@ -1,0 +1,25 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51
+Current catalog: sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:b6aab408fb2772908bf95add7c71b7fc8aea1566d94ac77cd91578dcd22680c3
+Approved Plan Digest: sha256:b6aab408fb2772908bf95add7c71b7fc8aea1566d94ac77cd91578dcd22680c3
+
+exit: 0

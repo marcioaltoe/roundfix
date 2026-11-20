@@ -1,0 +1,28 @@
+binary-version exit 0 passes 0
+assert: Delivery Base lacks and a Lesson Learned once an accepted ADR, a guide or a skill states what it teaches are deleted
+assert: Delivery Base lacks Write a Lesson Learned only when every part of this test holds
+assert: Delivery Base lacks send no message about what it taught
+assert: Delivery Base lacks An ADR without the mark is not published.
+refresh-delivery-base exit 0 passes 0
+assert: Delivery Base refresh exit
+assert: refreshed phrase once: and a Lesson Learned once an accepted ADR, a guide or a skill states what it teaches are deleted
+assert: refreshed phrase once: Write a Lesson Learned only when every part of this test holds
+assert: refreshed phrase once: send no message about what it taught
+assert: refreshed phrase once: An ADR without the mark is not published.
+refresh-delivery-base-second exit 0 passes 0
+Traceback (most recent call last):
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt", line 95, in <module>
+    if __name__=='__main__':flows()
+                            ~~~~~^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt", line 60, in flows
+    current(cli('refresh-delivery-base-second',d,True))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt", line 50, in current
+    def current(p):check(p.returncode==0 and ('Baseline update: current' in p.stdout or '"state":"current"' in p.stdout),'fresh read current')
+                   ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt", line 47, in check
+    if not test:raise AssertionError(label)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: fresh read current
+
+exit: 1

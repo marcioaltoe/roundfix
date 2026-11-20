@@ -1,0 +1,10 @@
+PASS PRD declares adds Standard Export List
+PASS PRD declares adds Export Variation
+PASS PRD declares adds Knowledge Mark
+PASS PRD declares adds Amendment List
+PASS PRD declares adds Lesson Learned
+PASS PRD declares Managed Refresh change
+PASS TechSpec declares no glossary delta
+PASS five exact API Contract 21 definitions contiguous
+PASS new definitions after Managed Refresh
+PASS no other glossary entry changes after removing prescribed additions

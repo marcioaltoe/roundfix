@@ -1,0 +1,13 @@
+$ go test -count=1 -timeout 20m -v -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/qa/sabotage-08.test -run '^TestMaintenanceOnlyCountsLessonsAndTheExportList$/^export_list$' ./internal/releaseplan
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== PAUSE TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== CONT  TestMaintenanceOnlyCountsLessonsAndTheExportList
+=== RUN   TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list
+    classifier_test.go:431: classification = {CommitSHA: Subject:feat: change ConventionalType:feat Breaking:false AutomaticImpact:minor CrossesMaintenanceOnlyBoundary:true ReleasePreparation:false}
+--- FAIL: TestMaintenanceOnlyCountsLessonsAndTheExportList (0.00s)
+    --- FAIL: TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list (0.00s)
+FAIL
+FAIL	roundfix/internal/releaseplan	0.211s
+FAIL
+
+exit: 1

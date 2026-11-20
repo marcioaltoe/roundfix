@@ -1,0 +1,4 @@
+Source: measurement; 2026-11-18; Secondbrain commit a2b713574; references/2026-11-18-mirrored-documentation-measurement.md.
+Recorded by PRD Acceptance evidence, checked offline as Requirement 13 instructs; no live lookup.
+Comparison: 1,509 process files of 3,534 (42.7%); no lessons folder. Standard list names docs/lessons/ and excludes process paths.
+Independent confirmation: baseline/export/ADR/lesson contract tests and public-flow evidence of this pass.

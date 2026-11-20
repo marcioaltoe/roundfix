@@ -1,0 +1,41 @@
+from pathlib import Path
+exec(open(str(Path.cwd()/'docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt')).read().split("if __name__=='__main__':flows()")[0])
+CASES=[('internal/baseline/assets/modules/context-workflow.json','./internal/baseline','TestTheBaselineModulesCarryTheDocumentationRules/lesson/otherwise_nothing'),('internal/baseline/assets/modules/secondbrain.json','./internal/baseline','TestTheBaselineModulesCarryTheDocumentationRules/the_export_rule'),('docs/agents/docs-layout.md','./internal/baseline','TestTheGuidesRenderTheDocumentationRulesOnce/repository_guide'),('internal/spec/adr_header.go','./internal/spec','TestADRAmendmentNotices/fenced_block_ignored'),('internal/baseline/export_list.go','./internal/baseline','TestPlanExportList/never_a_process_path'),('internal/baseline/export_list.go','./internal/baseline','TestPlanExportList/refuse_begin_missing'),('internal/cli/doctor_documentation.go','./internal/cli','TestDoctorReportsTheDocumentationRules/export_reason_missing'),('internal/releaseplan/classifier.go','./internal/releaseplan','TestMaintenanceOnlyCountsLessonsAndTheExportList/export_list'),('skills/archive-spec/SKILL.md','./skills','TestTheSkillsCarryTheDocumentationSteps/archive/never_fill'),('.agents/skills/roundfix/references/modes.md','./skills','TestTheSkillsCarryTheDocumentationSteps/modes/auto_marks_nothing'),('.secondbrain-export','./internal/docscontract','TestThisRepositoryExportsNoProcessPath')]
+def replace(s,a,b):
+ check(s.count(a)==1,'one mutation anchor '+a[:90]);return s.replace(a,b,1)
+def sabotage(n,d,path):
+ p=d/path;s=p.read_text()
+ if n==1:s=replace(s,'Otherwise write nothing.','')
+ elif n==2:
+  a='"id": "clause.secondbrain.export-02-variation",\n          "enforcement": "mandatory"';s=replace(s,a,a.replace('mandatory','stop-and-ask'))
+ elif n==3:
+  s,count=re.subn(r'^- \*\*mandatory\*\*: Write a Lesson Learned only when every part of this test holds:.*\n','',s,flags=re.M);check(count==1,'rendered lesson clause removed')
+ elif n==4:s=replace(s,'if fence != 0 {\n\t\t\tcontinue\n\t\t}','if false && fence != 0 {\n\t\t\tcontinue\n\t\t}')
+ elif n==5:s=replace(s,'func PlanExportList(current []byte, exists bool, facts ExportListFacts) ExportListPlan {','func PlanExportList(current []byte, exists bool, facts ExportListFacts) ExportListPlan {\n process := []string{}; for _, path := range facts.ProcessPaths { if exportPath(path) != "AGENTS.md" { process = append(process, path) } }; facts.ProcessPaths = process')
+ elif n==6:s=replace(s,'p.Refusal = ExportListBeginMarker + " is missing"','p.Refusal = ExportListBeginMarker + " is"')
+ elif n==7:s=replace(s,'result.Status = CheckStatusWarn','result.Status = CheckStatusWarn\n for _, d := range departures { if d.Code == "DR-EXPORT-REASON-MISSING" { result.Status = CheckStatusFailed } }')
+ elif n==8:s=replace(s,'clean == ".secondbrain-export" || isPlanningEvidencePath(clean)','isPlanningEvidencePath(clean)')
+ elif n==9:s=replace(s,'Never write a lesson to fill the folder.','')
+ elif n==10:s=replace(s,'mark nothing and report the count.','')
+ elif n==11:s+='\n# Deliberately forbidden process path\ndocs/agents/\n'
+ p.write_text(s)
+def main():
+ outcomes=json.loads((EV/'sabotage-outcomes.txt').read_text()) if (EV/'sabotage-outcomes.txt').exists() else {}
+ for n,(path,pkg,target) in enumerate(CASES,1):
+  if len(sys.argv)>1 and n!=int(sys.argv[1]):continue
+  row='S%02d'%n;name='sabotage-%02d'%n
+  try:
+   with clone() as d:
+    sabotage(n,d,path)
+    (EV/(name+'-mutation.txt')).write_text(raw(['git','diff','--',path],d).decode())
+    pattern='/'.join('^'+part+'$' for part in target.split('/'))
+    args=['go','test','-count=1','-timeout','20m','-v','-o',str(ROOT/'bin/qa'/str(name+'.test')),'-run',pattern]
+    if pkg=='./internal/docscontract':args+=['-tags','docscontract']
+    p=run(name,args+[pkg],cwd=d)
+    ok=p.returncode!=0 and ('--- FAIL: '+target+' ') in p.stdout and '[build failed]' not in p.stdout and 'panic:' not in p.stdout and 'setup failed' not in p.stdout
+    outcomes[row]=ok
+    note(row,'Mutation of `'+path+'` only; '+link(name+'-mutation')+'; '+link(name)+'. Expected assertion `'+target+'` '+('failed as required without a build failure.' if ok else 'was NOT independently proved to fail; inspect transcript.'),'pass' if ok else 'fail')
+  except Exception as exc:
+   outcomes[row]=False;(EV/(name+'-harness-error.txt')).write_text(str(exc)+'\n');note(row,'Harness error: '+link(name+'-harness-error')+'.','fail')
+ (EV/'sabotage-outcomes.txt').write_text(json.dumps(outcomes,indent=2)+'\n')
+if __name__=='__main__':main()

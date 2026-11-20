@@ -1,0 +1,13 @@
+{
+  "S01": true,
+  "S02": true,
+  "S03": true,
+  "S04": true,
+  "S05": true,
+  "S06": true,
+  "S07": true,
+  "S08": true,
+  "S09": true,
+  "S10": true,
+  "S11": true
+}

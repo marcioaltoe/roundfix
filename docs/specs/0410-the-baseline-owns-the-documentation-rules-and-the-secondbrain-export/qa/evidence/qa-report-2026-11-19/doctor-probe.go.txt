@@ -1,0 +1,10 @@
+package cli
+import("testing"; "path/filepath")
+func TestQADocumentationAtAuditedHead(t *testing.T) {
+ t.Parallel()
+ root,err:=filepath.Abs("../..");if err!=nil{t.Fatal(err)}
+ results:=doctorDocumentationResults(root)
+ if len(results)!=2{t.Fatalf("results=%v",results)}
+ want:=[]string{"the Standard Export List is current; 4 line(s) of the repository's own","the documentation follows the docs-layout guide"}
+ for i,r:=range results{t.Logf("%s: %s (%s)",r.Name,r.Status,r.Detail);if r.Status!=CheckStatusOK || r.Detail!=want[i]{t.Errorf("unexpected result: %+v",r)}}
+}

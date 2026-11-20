@@ -1,0 +1,4 @@
+Source: Ansible blockinfile documentation; read 2026-11-18 and 2026-11-19; https://docs.ansible.com/ansible/latest/collections/ansible/builtin/blockinfile_module.html.
+Recorded by PRD Acceptance evidence, checked offline as Requirement 13 instructs; no live lookup.
+Comparison: Indistinguishable markers can repeatedly insert a block; this implementation uses distinct begin/end markers, refuses a broken pair and proves idempotence.
+Independent confirmation: baseline/export/ADR/lesson contract tests and public-flow evidence of this pass.

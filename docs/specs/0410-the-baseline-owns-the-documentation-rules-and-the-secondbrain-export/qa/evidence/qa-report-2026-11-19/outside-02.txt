@@ -1,0 +1,4 @@
+Source: Milton; 2017; read 2026-11-18 and 2026-11-19; http://www.nickmilton.com/2017/07/leaving-lessons-in-lessons-database.html.
+Recorded by PRD Acceptance evidence, checked offline as Requirement 13 instructs; no live lookup.
+Comparison: Embedding a lesson in a practice, design principle or checklist licenses removing it; the rendered retirement rule deletes a lesson once an accepted ADR, guide or skill states it.
+Independent confirmation: baseline/export/ADR/lesson contract tests and public-flow evidence of this pass.

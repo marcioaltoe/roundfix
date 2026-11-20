@@ -1,0 +1,10 @@
+{
+  "baseline-suite": 0,
+  "spec-suite": 0,
+  "releaseplan-suite": 0,
+  "cli-suite": 0,
+  "skills-suite": 0,
+  "docscontract-suite": 0,
+  "skills-sync-check": 0,
+  "verify-docs": 0
+}

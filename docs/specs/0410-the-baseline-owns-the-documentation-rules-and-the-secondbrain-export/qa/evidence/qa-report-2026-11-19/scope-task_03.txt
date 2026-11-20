@@ -1,0 +1,22 @@
+commit 6e9bbed617465fc415c26df52a5aa2f3cfff8bbe
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/setup.md
+docs/references/behavior-surfaces.json
+docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/task_03.md
+docs/user-guide/commands/doctor.md
+internal/baseline/docs_layout.go
+internal/baseline/docs_layout_test.go
+internal/baseline/export_variation.go
+internal/baseline/export_variation_test.go
+internal/cli/doctor.go
+internal/cli/doctor_baseline_rules_test.go
+internal/cli/doctor_claude_link_test.go
+internal/cli/doctor_documentation.go
+internal/cli/doctor_documentation_test.go
+internal/cli/doctor_test.go
+internal/cli/health.go
+internal/spec/lesson.go
+internal/spec/lesson_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/setup.md
+skills/testdata/owned-skill-versions.json

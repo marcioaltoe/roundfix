@@ -1,0 +1,17 @@
+PASS same SKILL.md bytes archive-spec
+PASS two version fields agree archive-spec
+PASS record holds version archive-spec 0.0.20
+PASS same SKILL.md bytes roundfix
+PASS two version fields agree roundfix
+PASS record holds version roundfix 0.1.281
+PASS update addition once  Show its `documentation` member too: the lines the Standard Export List gains and loses, each path under `stopsExporting` with its kind, each ADR header it fills and the count of ADRs without a Knowledge Mark.
+PASS update addition once  Ask that same question, naming the paths, when `documentation.exportList.stopsExporting` is not empty.
+PASS every prior update sentence and byte retained
+PASS update exactly five steps
+PASS reference mirrors baseline
+PASS reference mirrors corrections
+PASS reference mirrors modes
+PASS reference mirrors release
+PASS reference mirrors setup
+PASS QA settlement unchanged archive-spec
+PASS QA settlement unchanged roundfix

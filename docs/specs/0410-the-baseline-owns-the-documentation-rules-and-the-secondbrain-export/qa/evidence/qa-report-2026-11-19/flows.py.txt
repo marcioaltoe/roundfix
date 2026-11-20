@@ -1,0 +1,95 @@
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path.cwd()/'docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19'))
+exec((Path(sys.path[0])/'qa_runner.py.txt').read_text().split("if __name__==")[0])
+import tempfile,tarfile,io,shutil,contextlib
+BIN=ROOT/'bin/roundfix'
+def raw(args,cwd=ROOT):
+ p=subprocess.run(args,cwd=cwd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ if p.returncode:raise RuntimeError(str(args)+': '+p.stderr.decode())
+ return p.stdout
+BASE=raw(['git','merge-base',HEAD,'origin/HEAD']).decode().strip()
+@contextlib.contextmanager
+def clone(revision=HEAD):
+ d=Path(tempfile.mkdtemp(prefix='qa0410-copy-'))
+ try:
+  blob=raw(['git','archive',revision])
+  with tarfile.open(fileobj=io.BytesIO(blob)) as archive:archive.extractall(d,filter='tar')
+  raw(['git','init','-q'],d);raw(['git','config','core.hooksPath','/dev/null'],d);raw(['git','add','-A'],d)
+  raw(['git','-c','user.name=QA fixture','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false','commit','-qm','fixture'],d)
+  yield d
+ finally:
+  for path in d.rglob('*'):
+   if not path.is_symlink():
+    try:path.chmod(path.stat().st_mode|0o700)
+    except OSError:pass
+  shutil.rmtree(d)
+@contextlib.contextmanager
+def product_env():
+ go=json.loads(raw(['go','env','-json','GOMODCACHE','GOCACHE']))
+ with tempfile.TemporaryDirectory(prefix='qa0410-home-') as h,tempfile.TemporaryDirectory(prefix='qa0410-tmp-') as t:
+  e=os.environ.copy();e.update(go)
+  e['RUSTUP_HOME']=e.get('RUSTUP_HOME',str(Path(e['HOME'])/'.rustup'));e['CARGO_HOME']=e.get('CARGO_HOME',str(Path(e['HOME'])/'.cargo'))
+  e.update(HOME=h,TMPDIR=t,GOPROXY='off',GOSUMDB='off',PATH=str(ROOT/'bin/qa')+os.pathsep+e['PATH'])
+  for key in list(e):
+   if key in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID'] or ('ROUNDFIX' in key and ('API_KEY' in key or 'TOKEN' in key)):e.pop(key,None)
+  yield e
+  for directory in [h,t]:
+   for p in Path(directory).rglob('*'):
+    if not p.is_symlink():
+     try:p.chmod(p.stat().st_mode|0o700)
+     except OSError:pass
+
+def cli(name,repo,yes=False,fmt='text',extra=None):
+ with product_env() as e:
+  return run(name,[str(BIN),'baseline','update','--repo','.', '--no-skills','--no-history',*(['--yes'] if yes else []),'--format',fmt,*(extra or [])],cwd=repo,env=e)
+def check(test,label):
+ if not test:raise AssertionError(label)
+ print('assert:',label,flush=True)
+def norm(s):return ' '.join(s.split())
+def current(p):check(p.returncode==0 and ('Baseline update: current' in p.stdout or '"state":"current"' in p.stdout or ('File changes: 0' in p.stdout and 'already applied' in p.stdout)),'fresh read current')
+def flows():
+ (ROOT/'bin/qa/gh').write_text('#!/bin/sh\nexit 1\n');(ROOT/'bin/qa/gh').chmod(0o755)
+ version=run('binary-version',[str(BIN),'--version']);s=REPORT.read_text().replace('user_flow_binary: "pending build"','user_flow_binary: '+json.dumps(version.stdout.strip())).replace('  - bin/roundfix\n','  - bin/roundfix\n  - bin/qa/gh\n',1);REPORT.write_text(s)
+ (EV/'delivery-base.txt').write_text('default branch: origin/main\naudited head: '+HEAD+'\nmerge base: '+BASE+'\n')
+ phrases=[('docs/agents/docs-layout.md','and a Lesson Learned once an accepted ADR, a guide or a skill states what it teaches are deleted'),('docs/agents/docs-layout.md','Write a Lesson Learned only when every part of this test holds'),('docs/agents/agent-instructions.md','send no message about what it taught'),('docs/agents/secondbrain.md','An ADR without the mark is not published.')]
+ with clone(BASE) as d:
+  for path,phrase in phrases:check(phrase not in norm((d/path).read_text()),'Delivery Base lacks '+phrase)
+  p=cli('refresh-delivery-base',d,True);check(p.returncode==0,'Delivery Base refresh exit')
+  for path,phrase in phrases:check(norm((d/path).read_text()).count(phrase)==1,'refreshed phrase once: '+phrase)
+  current(cli('refresh-delivery-base-second',d,True))
+ with clone() as d:current(cli('refresh-head-first',d,True))
+ note('Q02','Public refresh: '+link('refresh-delivery-base')+', '+link('refresh-delivery-base-second')+', '+link('refresh-head-first')+'. Four new phrases absent at Delivery Base and present exactly once after apply; repeat/current head reports current.')
+ with clone() as d:
+  own='# Own knowledge fixture\ndocs/qa-own.md\n';(d/'docs/qa-own.md').write_text('# Knowledge fixture\n');(d/'.secondbrain-export').write_text('docs/\nAGENTS.md\n'+own)
+  adr=next(x for x in sorted((d/'docs/adr').glob('*.md')) if 'knowledge:' in x.read_text());adr.write_text(re.sub(r'^knowledge: (true|false)\n','',adr.read_text(),flags=re.M))
+  p=cli('export-preview',d);check(p.returncode==3,'export preview requires approval (exit 3)')
+  for phrase in ['Documentation: pending','Export list: update .secondbrain-export (','ADRs without a Knowledge Mark: 1 of ']+['- stops exporting '+x+' (process)' for x in ['AGENTS.md','docs/agents/','docs/backlog/','docs/findings/','docs/handoffs/','docs/history/','docs/specs/']]:check(phrase in p.stdout,'preview: '+phrase)
+  p=cli('export-apply',d,True);check(p.returncode==0,'export apply exit');content=(d/'.secondbrain-export').read_text();check(content.endswith(own),'own comment and path preserved byte for byte');check('AGENTS.md\n' not in content and '\ndocs/\n' not in content,'process/whole-docs lines removed');current(cli('export-repeat',d,True))
+  (d/'.secondbrain-export').write_text(content.replace('# roundfix:standard-export:begin\n',''));before=(d/'.secondbrain-export').read_bytes();p=cli('export-marker-refused',d,True)
+  check('Export list refused: # roundfix:standard-export:begin is missing; nothing is written to .secondbrain-export' in p.stdout,'exact missing marker refusal');check(before==(d/'.secondbrain-export').read_bytes(),'refused export remains byte identical')
+ with clone() as d:
+  adrs=[a for a in sorted((d/'docs/adr').glob('*.md')) if 'status: accepted' in a.read_text() and 'ADR-0438' not in a.read_text().split('---',2)[1] and not a.name.startswith('0438')][:2]
+  notice='Narrowed by ADR-0438 (2026-11-20).';adrs[0].write_text(adrs[0].read_text()+'\n'+notice+'\n');adrs[1].write_text(adrs[1].read_text()+'\n```text\n'+notice+'\n```\n');pre=[a.read_bytes() for a in adrs]
+  p=cli('amendment-preview',d);check(p.returncode==3,'amendment preview requires approval (exit 3)');check('- '+str(adrs[0].relative_to(d))+' gains amended_by:' in p.stdout and '- '+str(adrs[1].relative_to(d))+' gains amended_by:' not in p.stdout,'only prose notice listed')
+  check(cli('amendment-apply',d,True).returncode==0,'amendment apply exit')
+  strip=lambda b:re.sub(rb'^amended_by:.*\n',b'',b,flags=re.M)
+  check(strip(adrs[0].read_bytes())==strip(pre[0]),'amended ADR every other byte preserved');check(adrs[1].read_bytes()==pre[1],'fenced ADR byte identical');current(cli('amendment-repeat',d,True))
+ note('Q03','Public export conversion, kept own bytes, marker refusal, amendment-only update and repeat reads passed: '+', '.join(link(x) for x in ['export-preview','export-apply','export-repeat','export-marker-refused','amendment-preview','amendment-apply','amendment-repeat'])+'.')
+ current(cli('audited-head-json',ROOT,fmt='json'));data=json.loads((EV/'audited-head-json.txt').read_text().split('\n',1)[1].rsplit('\nexit:',1)[0]);check(data['documentation']['status']=='current' and data['documentation']['adrs']['unmarked']==0,'head documentation current and unmarked zero')
+ with clone() as d:
+  probe=d/'internal/cli/qa_documentation_probe_test.go';probe.write_text('''package cli
+import("testing"; "path/filepath")
+func TestQADocumentationAtAuditedHead(t *testing.T) {
+ t.Parallel()
+ root,err:=filepath.Abs("../..");if err!=nil{t.Fatal(err)}
+ results:=doctorDocumentationResults(root)
+ if len(results)!=2{t.Fatalf("results=%v",results)}
+ want:=[]string{"the Standard Export List is current; 4 line(s) of the repository's own","the documentation follows the docs-layout guide"}
+ for i,r:=range results{t.Logf("%s: %s (%s)",r.Name,r.Status,r.Detail);if r.Status!=CheckStatusOK || r.Detail!=want[i]{t.Errorf("unexpected result: %+v",r)}}
+}
+''');(EV/'doctor-probe.go.txt').write_text(probe.read_text());p=run('doctor-head-probe',['go','test','-count=1','-timeout','20m','-v','-o',str(ROOT/'bin/qa/doctor-head-probe.test'),'-run','^TestQADocumentationAtAuditedHead$','./internal/cli'],cwd=d);check(p.returncode==0,'both Doctor repository checks ok')
+ note('Q04','Public JSON and throwaway repository Doctor probe: '+link('audited-head-json')+', '+link('doctor-head-probe')+'. The Doctor binary was not invoked; the named suite exercises its command entry point and exit_unchanged.')
+ with product_env() as e:p=run('archive-plan',[str(BIN),'archive',SPEC.name,'--plan','--offline'],env=e)
+ note('Q01','Built with `make build` (exit 0), then '+link('binary-version')+'. Static gate: Daemon supplied `make verify-changed`, exit 0 at '+HEAD+'; diagnostics removed on success. Archive-plan observation: '+link('archive-plan')+'.','pass')
+if __name__=='__main__':flows()

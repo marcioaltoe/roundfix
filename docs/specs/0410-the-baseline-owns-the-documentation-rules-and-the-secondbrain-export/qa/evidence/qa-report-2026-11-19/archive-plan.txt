@@ -1,0 +1,14 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/roundfix archive 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export --plan --offline
+archive plan for 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export: removes 49 file(s) (2040706 bytes) and writes docs/history/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export.md
+core 12 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-19.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md, task_06.md
+evidence 31 file(s) (1616942 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 47859 bytes: no advice (offline)
+candidate references/2026-11-16-the-docs-folders-of-adopters-have-unclear-jobs.md 1902 bytes: no advice (offline)
+candidate references/2026-11-18-maintainer-answers.md 4680 bytes: no advice (offline)
+candidate references/2026-11-18-mirrored-documentation-measurement.md 5457 bytes: no advice (offline)
+candidate references/2026-11-18-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export.md 4383 bytes: no advice (offline)
+candidate references/2026-11-19-prototype-and-governed-paths.md 12294 bytes: no advice (offline)
+promote with: roundfix archive 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export --promote <path>
+
+exit: 0

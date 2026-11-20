@@ -1,0 +1,28 @@
+package spec
+import("testing";"os";"path/filepath";"strings";"roundfix/internal/secretscan";"gopkg.in/yaml.v3")
+func TestQAReportSelfAudit(t *testing.T){
+ t.Parallel()
+ reportPath:="/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/qa-report-2026-11-19.md"
+ repository:="/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242"
+ report,err:=ReadQAReportFile(reportPath);if err!=nil{t.Fatal(err)}
+ if err:=QAReportEligibility(filepath.Dir(filepath.Dir(reportPath)),report);err!=nil{t.Fatal(err)}
+ if report.Verdict!="partial" || report.RowsBlockedEnvironment!=1 || report.RowsBlockedDeclared!=5 || report.RowsSkipped!=0 || report.RowsBlockedFinding!=0 {t.Fatalf("unexpected report: %+v",report)}
+ if report.ResultsBreak!=nil || report.Hollow{t.Fatalf("invalid Results: %+v",report)}
+ links,err:=UnresolvedEvidenceLinks(t.Context(),reportPath);if err!=nil{t.Fatal(err)};if len(links)>0{t.Fatalf("unresolved links: %+v",links)}
+ data,err:=os.ReadFile(reportPath);if err!=nil{t.Fatal(err)}
+ parts:=strings.SplitN(string(data),"---",3);if len(parts)!=3{t.Fatal("frontmatter")}
+ var meta struct{Executables []string `yaml:"user_flow_executables"`};if err:=yaml.Unmarshal([]byte(parts[1]),&meta);err!=nil{t.Fatal(err)}
+ seen:=map[string]bool{}
+ for _,p:=range meta.Executables{
+  full:=p;if !filepath.IsAbs(full){full=filepath.Join(repository,full)}
+  rel,err:=filepath.Rel(repository,full);if err!=nil || rel==".." || strings.HasPrefix(rel,".."+string(filepath.Separator)){t.Errorf("executable outside Run: %s",p)}
+  if _,err:=os.Stat(full);err!=nil{t.Errorf("missing executable: %s: %v",p,err)}
+  if seen[p]{t.Errorf("duplicate executable: %s",p)};seen[p]=true
+ }
+ files:=0
+ err=filepath.WalkDir(filepath.Dir(reportPath),func(p string,d os.DirEntry,e error)error{
+  if e!=nil{return e};if d.IsDir(){return nil};b,err:=os.ReadFile(p);if err!=nil{return err}
+  for _,match:=range secretscan.ScanContent(p,b){t.Errorf("%s",match.String())};files++;return nil
+ });if err!=nil{t.Fatal(err)}
+ t.Logf("qualifying partial: 1 pre-PR environment row, 5 covered declarations, 0 skipped/finding-blocked; all links resolve; %d executable paths inside Run; %d report/evidence files scanned for secrets",len(meta.Executables),files)
+}

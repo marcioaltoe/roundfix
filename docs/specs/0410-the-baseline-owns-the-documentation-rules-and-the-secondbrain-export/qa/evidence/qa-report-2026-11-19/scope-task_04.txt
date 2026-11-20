@@ -1,0 +1,14 @@
+commit ec2032a9fecefe2d521bbe68da324c8e9cc375d9
+.agents/skills/archive-spec/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/corrections.md
+.agents/skills/roundfix/references/modes.md
+docs/references/behavior-surfaces.json
+docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/task_04.md
+docs/user-guide/context-driven-development.md
+skills/archive-spec/SKILL.md
+skills/documentation_rules_steps_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/corrections.md
+skills/roundfix/references/modes.md
+skills/testdata/owned-skill-versions.json

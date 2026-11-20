@@ -1,0 +1,200 @@
+[
+  {
+    "id": "Q01",
+    "source": "repository Verification",
+    "detail": "Build make build, capture ./bin/roundfix --version, and record supplied Daemon make verify-changed pass. Archive only with --plan --offline.",
+    "history": false
+  },
+  {
+    "id": "Q02",
+    "source": "Requirement 2",
+    "detail": "Named verbose Baseline tests, whole baseline package and CLI Baseline/GuidanceComposition/SetupManifest; public Managed Refresh on Delivery Base and head with repeat-run proof.",
+    "history": true
+  },
+  {
+    "id": "Q03",
+    "source": "Requirement 5",
+    "detail": "Verbose ADR, lesson, export, layout, Doctor entry-point and maintenance tests; full spec/releaseplan and CLI selections; public export conversion/refusal/amendment rehearsal.",
+    "history": false
+  },
+  {
+    "id": "Q04",
+    "source": "Requirement 6",
+    "detail": "Throwaway Doctor probe on archived head; audited-head JSON current/unmarked zero; marks, export own lines and exact notices.",
+    "history": false
+  },
+  {
+    "id": "Q05",
+    "source": "Requirement 7",
+    "detail": "Verbose skill phrase tests, version record, full skills, sync check; compare five steps and all existing update text against Delivery Base.",
+    "history": true
+  },
+  {
+    "id": "Q06",
+    "source": "Requirement 8",
+    "detail": "Whole docscontract, named verbose glossary/export/coverage tests, CoverageEquivalence and make verify-docs.",
+    "history": false
+  },
+  {
+    "id": "Q07",
+    "source": "Requirement 9",
+    "detail": "Compare all clauses, identities, enforcement, protected Baseline assets and test files against Delivery Base.",
+    "history": true
+  },
+  {
+    "id": "S01",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 1 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S02",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 2 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S03",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 3 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S04",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 4 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S05",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 5 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S06",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 6 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S07",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 7 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S08",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 8 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S09",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 9 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S10",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 10 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "S11",
+    "source": "Requirement 10",
+    "detail": "Independent sabotage 11 on committed temporary copy; exact named assertion must fail without compilation failure.",
+    "history": false
+  },
+  {
+    "id": "Q08",
+    "source": "Requirement 11",
+    "detail": "Execute every test named by task_01 through task_05 Verification; record pass names; search guide/module/golden/skill/help contracts and surface preservation.",
+    "history": true
+  },
+  {
+    "id": "Q09",
+    "source": "Requirement 15",
+    "detail": "Verify glossary declarations, five exact definitions, sole Managed Refresh sentence and unchanged other entries against Delivery Base; named glossary test.",
+    "history": true
+  },
+  {
+    "id": "Q10",
+    "source": "Requirement 16",
+    "detail": "Audit Task commit scope, Recorded paths, governed grant, preserved ADR bytes and restricted path/QA settlement changes.",
+    "history": true
+  },
+  {
+    "id": "E01",
+    "source": "outside-evidence row",
+    "detail": "mirror measurement; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "E02",
+    "source": "outside-evidence row",
+    "detail": "Milton lesson retirement; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "E03",
+    "source": "outside-evidence row",
+    "detail": "Lindenbauer abstention; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "E04",
+    "source": "outside-evidence row",
+    "detail": "Iscan compatibility; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "E05",
+    "source": "outside-evidence row",
+    "detail": "conflicting ADR headers; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "E06",
+    "source": "outside-evidence row",
+    "detail": "Ansible distinct markers; offline attributed source from PRD Acceptance evidence, date and comparison; no external lookup.",
+    "history": false
+  },
+  {
+    "id": "U01",
+    "source": "after the release, this repository's mirror in the Secondbrain holds fewer than 60 files once the first push to the default branch has synced.",
+    "detail": "Record exact declared criterion, its reason and satisfied-by; no forbidden or future action.",
+    "history": false
+  },
+  {
+    "id": "U02",
+    "source": "Success Metric 10 holds for the adopters 30 days after the release.",
+    "detail": "Record exact declared criterion, its reason and satisfied-by; no forbidden or future action.",
+    "history": false
+  },
+  {
+    "id": "U03",
+    "source": "in an adopter, the Agent of the update session marks the existing ADRs, runs the update again, and a person reviews the marks in one Pull Request.",
+    "detail": "Record exact declared criterion, its reason and satisfied-by; no forbidden or future action.",
+    "history": false
+  },
+  {
+    "id": "U04",
+    "source": "Success Metric 11 holds over the first 60 days.",
+    "detail": "Record exact declared criterion, its reason and satisfied-by; no forbidden or future action.",
+    "history": false
+  },
+  {
+    "id": "U05",
+    "source": "the sync drops what this repository's own lines exclude, the line `!docs/adr/*` included, with the rsync its workflow runs.",
+    "detail": "Record exact declared criterion, its reason and satisfied-by; no forbidden or future action.",
+    "history": false
+  },
+  {
+    "id": "PR",
+    "source": "Pull Request row",
+    "detail": "No open Pull Request, delivery authority, supplied checks, no threads, no Merge-Ready acceptance and audited candidate ancestry.",
+    "history": true
+  }
+]

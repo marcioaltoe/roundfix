@@ -1,0 +1,13 @@
+diff --git a/internal/baseline/assets/modules/secondbrain.json b/internal/baseline/assets/modules/secondbrain.json
+index 54b4392..cd47ad4 100644
+--- a/internal/baseline/assets/modules/secondbrain.json
++++ b/internal/baseline/assets/modules/secondbrain.json
+@@ -184,7 +184,7 @@
+         },
+         {
+           "id": "clause.secondbrain.export-02-variation",
+-          "enforcement": "mandatory",
++          "enforcement": "stop-and-ask",
+           "guidance": "The second part is the repository's own lines, everything outside those two markers, which no Baseline operation changes. There the repository may add a file or a folder of knowledge that the standard list lacks, or drop a standard item with an exclusion line: `!` followed by the item as the list writes it, or `!docs/adr/*` for every ADR. Give each such line its reason in a comment line directly above it; one comment stands for the lines that follow it without a blank line. `roundfix doctor` reports a line without a reason, a process path, and a standard list that differs from what the update would write."
+         },
+         {

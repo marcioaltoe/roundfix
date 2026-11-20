@@ -1,0 +1,11 @@
+$ go test -count=1 -timeout 20m -v -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/qa/report-self-audit.test -run '^TestQAReportSelfAudit$' ./internal/spec
+=== RUN   TestQAReportSelfAudit
+=== PAUSE TestQAReportSelfAudit
+=== CONT  TestQAReportSelfAudit
+    qa_report_self_audit_test.go:27: qualifying partial: 1 pre-PR environment row, 5 covered declarations, 0 skipped/finding-blocked; all links resolve; 28 executable paths inside Run; 90 report/evidence files scanned for secrets
+--- PASS: TestQAReportSelfAudit (0.38s)
+PASS
+suiteguard: guard cost: measured 3371 paths; fingerprint took 169.317417ms before and 172.930958ms after
+ok  	roundfix/internal/spec	0.988s
+
+exit: 0

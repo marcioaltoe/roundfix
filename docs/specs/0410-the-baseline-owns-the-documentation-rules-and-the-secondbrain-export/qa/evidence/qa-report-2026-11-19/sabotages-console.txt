@@ -1,0 +1,26 @@
+assert: one mutation anchor Otherwise write nothing.
+sabotage-01 exit 1 passes 0
+assert: one mutation anchor "id": "clause.secondbrain.export-02-variation",
+          "enforcement": "mandatory"
+sabotage-02 exit 1 passes 0
+assert: rendered lesson clause removed
+sabotage-03 exit 1 passes 0
+assert: one mutation anchor if fence != 0 {
+			continue
+		}
+sabotage-04 exit 1 passes 0
+assert: one mutation anchor func exportProcess(path string, facts ExportListFacts) bool {
+sabotage-05 exit 0 passes 2
+assert: one mutation anchor p.Refusal = ExportListBeginMarker + " is missing"
+sabotage-06 exit 1 passes 0
+assert: one mutation anchor result.Status = CheckStatusWarn
+sabotage-07 exit 1 passes 0
+assert: one mutation anchor clean == ".secondbrain-export" || isPlanningEvidencePath(clean)
+sabotage-08 exit 1 passes 0
+assert: one mutation anchor Never write a lesson to fill the folder.
+sabotage-09 exit 1 passes 0
+assert: one mutation anchor mark nothing and report the count.
+sabotage-10 exit 1 passes 0
+sabotage-11 exit 1 passes 0
+
+exit: 0

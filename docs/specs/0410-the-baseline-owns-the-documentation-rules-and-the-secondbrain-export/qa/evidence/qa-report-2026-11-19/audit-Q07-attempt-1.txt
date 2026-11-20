@@ -1,0 +1,614 @@
+PASS clause retained clause.autonomous.delegate-through-roundfix
+PASS force retained clause.autonomous.delegate-through-roundfix
+PASS guidance retained clause.autonomous.delegate-through-roundfix
+PASS clause retained clause.autonomous.supervisor-prohibition
+PASS force retained clause.autonomous.supervisor-prohibition
+PASS guidance retained clause.autonomous.supervisor-prohibition
+PASS clause retained clause.autonomous.daemon-verifies-task
+PASS force retained clause.autonomous.daemon-verifies-task
+PASS guidance retained clause.autonomous.daemon-verifies-task
+PASS clause retained clause.autonomous.hook-strictness
+PASS force retained clause.autonomous.hook-strictness
+PASS guidance retained clause.autonomous.hook-strictness
+PASS clause retained clause.autonomous.loop-01-qa-once
+PASS force retained clause.autonomous.loop-01-qa-once
+PASS guidance retained clause.autonomous.loop-01-qa-once
+PASS clause retained clause.autonomous.loop-02-autonomous-decomposition
+PASS force retained clause.autonomous.loop-02-autonomous-decomposition
+PASS guidance retained clause.autonomous.loop-02-autonomous-decomposition
+PASS clause retained clause.autonomous.loop-03-specify-the-hazard
+PASS force retained clause.autonomous.loop-03-specify-the-hazard
+PASS guidance retained clause.autonomous.loop-03-specify-the-hazard
+PASS clause retained clause.autonomous.loop-04-verify-the-class
+PASS force retained clause.autonomous.loop-04-verify-the-class
+PASS guidance retained clause.autonomous.loop-04-verify-the-class
+PASS clause retained clause.autonomous.loop-05-clean-is-not-evidence
+PASS force retained clause.autonomous.loop-05-clean-is-not-evidence
+PASS guidance retained clause.autonomous.loop-05-clean-is-not-evidence
+PASS clause retained clause.autonomous.loop-06-branch-hygiene
+PASS force retained clause.autonomous.loop-06-branch-hygiene
+PASS guidance retained clause.autonomous.loop-06-branch-hygiene
+PASS clause retained clause.autonomous.loop-07-outlive-the-turn
+PASS force retained clause.autonomous.loop-07-outlive-the-turn
+PASS guidance retained clause.autonomous.loop-07-outlive-the-turn
+PASS only prescribed new clauses in internal/baseline/assets/modules/autonomous-work.json
+PASS clause retained clause.backend.boundary-contracts
+PASS force retained clause.backend.boundary-contracts
+PASS guidance retained clause.backend.boundary-contracts
+PASS clause retained clause.backend.layered-architecture
+PASS force retained clause.backend.layered-architecture
+PASS guidance retained clause.backend.layered-architecture
+PASS clause retained clause.backend.thin-http-handlers
+PASS force retained clause.backend.thin-http-handlers
+PASS guidance retained clause.backend.thin-http-handlers
+PASS clause retained clause.backend.http-independent-use-cases
+PASS force retained clause.backend.http-independent-use-cases
+PASS guidance retained clause.backend.http-independent-use-cases
+PASS clause retained clause.backend.persistence-owner
+PASS force retained clause.backend.persistence-owner
+PASS guidance retained clause.backend.persistence-owner
+PASS clause retained clause.backend.prohibit-generic-buckets
+PASS force retained clause.backend.prohibit-generic-buckets
+PASS guidance retained clause.backend.prohibit-generic-buckets
+PASS only prescribed new clauses in internal/baseline/assets/modules/backend.json
+PASS clause retained clause.bun.use-bun-owned-commands
+PASS force retained clause.bun.use-bun-owned-commands
+PASS guidance retained clause.bun.use-bun-owned-commands
+PASS clause retained clause.bun.verify-dependency-before-add
+PASS force retained clause.bun.verify-dependency-before-add
+PASS guidance retained clause.bun.verify-dependency-before-add
+PASS clause retained clause.bun.add-from-owning-workspace
+PASS force retained clause.bun.add-from-owning-workspace
+PASS guidance retained clause.bun.add-from-owning-workspace
+PASS clause retained clause.bun.prohibit-other-package-managers
+PASS force retained clause.bun.prohibit-other-package-managers
+PASS guidance retained clause.bun.prohibit-other-package-managers
+PASS only prescribed new clauses in internal/baseline/assets/modules/bun.json
+PASS clause retained clause.cli.public-command-contract
+PASS force retained clause.cli.public-command-contract
+PASS guidance retained clause.cli.public-command-contract
+PASS clause retained clause.cli.separate-output-streams
+PASS force retained clause.cli.separate-output-streams
+PASS guidance retained clause.cli.separate-output-streams
+PASS clause retained clause.cli.ship-the-skill-with-the-behavior
+PASS force retained clause.cli.ship-the-skill-with-the-behavior
+PASS guidance retained clause.cli.ship-the-skill-with-the-behavior
+PASS clause retained clause.cli.deterministic-non-interactive
+PASS force retained clause.cli.deterministic-non-interactive
+PASS guidance retained clause.cli.deterministic-non-interactive
+PASS clause retained clause.cli.explicit-safe-writes
+PASS force retained clause.cli.explicit-safe-writes
+PASS guidance retained clause.cli.explicit-safe-writes
+PASS only prescribed new clauses in internal/baseline/assets/modules/cli-surface.json
+PASS clause retained clause.context.read-domain-contract
+PASS force retained clause.context.read-domain-contract
+PASS guidance retained clause.context.read-domain-contract
+PASS clause retained clause.domain.canonical-language
+PASS force retained clause.domain.canonical-language
+PASS guidance retained clause.domain.canonical-language
+PASS clause retained clause.domain.layout-decision
+PASS force retained clause.domain.layout-decision
+PASS guidance retained clause.domain.layout-decision
+PASS clause retained clause.domain.glossary-currency
+PASS force retained clause.domain.glossary-currency
+PASS guidance retained clause.domain.glossary-currency
+PASS clause retained clause.context.adr-01-template
+PASS force retained clause.context.adr-01-template
+PASS clause retained clause.context.adr-02-active-status
+PASS force retained clause.context.adr-02-active-status
+PASS guidance retained clause.context.adr-02-active-status
+PASS clause retained clause.context.adr-03-legacy-compatibility
+PASS force retained clause.context.adr-03-legacy-compatibility
+PASS clause retained clause.context.docs-one-job-per-directory
+PASS force retained clause.context.docs-one-job-per-directory
+PASS clause retained clause.context.docs-upstream-flow
+PASS force retained clause.context.docs-upstream-flow
+PASS guidance retained clause.context.docs-upstream-flow
+PASS clause retained clause.context.backlog-01-operational-contract
+PASS force retained clause.context.backlog-01-operational-contract
+PASS guidance retained clause.context.backlog-01-operational-contract
+PASS clause retained clause.context.backlog-02-finding-boundary
+PASS force retained clause.context.backlog-02-finding-boundary
+PASS guidance retained clause.context.backlog-02-finding-boundary
+PASS clause retained clause.context.findings-01-frontmatter
+PASS force retained clause.context.findings-01-frontmatter
+PASS guidance retained clause.context.findings-01-frontmatter
+PASS clause retained clause.context.findings-08-rollup
+PASS force retained clause.context.findings-08-rollup
+PASS guidance retained clause.context.findings-08-rollup
+PASS clause retained clause.context.findings-09-archive
+PASS force retained clause.context.findings-09-archive
+PASS clause retained clause.context.findings-02-pending
+PASS force retained clause.context.findings-02-pending
+PASS guidance retained clause.context.findings-02-pending
+PASS clause retained clause.context.findings-03-partial
+PASS force retained clause.context.findings-03-partial
+PASS guidance retained clause.context.findings-03-partial
+PASS clause retained clause.context.findings-04-deferred
+PASS force retained clause.context.findings-04-deferred
+PASS guidance retained clause.context.findings-04-deferred
+PASS clause retained clause.context.findings-05-done
+PASS force retained clause.context.findings-05-done
+PASS guidance retained clause.context.findings-05-done
+PASS clause retained clause.context.findings-06-append-evidence
+PASS force retained clause.context.findings-06-append-evidence
+PASS guidance retained clause.context.findings-06-append-evidence
+PASS clause retained clause.context.findings-07-update-timestamp
+PASS force retained clause.context.findings-07-update-timestamp
+PASS guidance retained clause.context.findings-07-update-timestamp
+PASS clause retained clause.context.inbox-01-triage
+PASS force retained clause.context.inbox-01-triage
+PASS guidance retained clause.context.inbox-01-triage
+PASS clause retained clause.context.inbox-02-fleet-flow
+PASS force retained clause.context.inbox-02-fleet-flow
+PASS guidance retained clause.context.inbox-02-fleet-flow
+PASS clause retained clause.context.inbox-03-extend-before-minting
+PASS force retained clause.context.inbox-03-extend-before-minting
+PASS guidance retained clause.context.inbox-03-extend-before-minting
+PASS only prescribed new clauses in internal/baseline/assets/modules/context-workflow.json
+PASS clause retained clause.core.keep-root-compact
+PASS force retained clause.core.keep-root-compact
+PASS guidance retained clause.core.keep-root-compact
+PASS clause retained clause.core.fix-root-causes
+PASS force retained clause.core.fix-root-causes
+PASS guidance retained clause.core.fix-root-causes
+PASS clause retained clause.core.prohibit-verification-workarounds
+PASS force retained clause.core.prohibit-verification-workarounds
+PASS guidance retained clause.core.prohibit-verification-workarounds
+PASS clause retained clause.core.regenerate-generated-files
+PASS force retained clause.core.regenerate-generated-files
+PASS guidance retained clause.core.regenerate-generated-files
+PASS clause retained clause.core.keep-follow-ups-outside-slice
+PASS force retained clause.core.keep-follow-ups-outside-slice
+PASS guidance retained clause.core.keep-follow-ups-outside-slice
+PASS clause retained clause.core.record-acceptance-evidence
+PASS force retained clause.core.record-acceptance-evidence
+PASS guidance retained clause.core.record-acceptance-evidence
+PASS clause retained clause.core.require-fresh-evidence
+PASS force retained clause.core.require-fresh-evidence
+PASS guidance retained clause.core.require-fresh-evidence
+PASS clause retained clause.core.run-selected-verification
+PASS force retained clause.core.run-selected-verification
+PASS guidance retained clause.core.run-selected-verification
+PASS clause retained clause.core.verification-two-tiers
+PASS force retained clause.core.verification-two-tiers
+PASS guidance retained clause.core.verification-two-tiers
+PASS clause retained clause.core.prohibit-verification-contract-bypass
+PASS force retained clause.core.prohibit-verification-contract-bypass
+PASS guidance retained clause.core.prohibit-verification-contract-bypass
+PASS clause retained clause.core.ask-before-verification-configuration-change
+PASS force retained clause.core.ask-before-verification-configuration-change
+PASS guidance retained clause.core.ask-before-verification-configuration-change
+PASS clause retained clause.core.never-let-a-pipe-hide-a-gate
+PASS force retained clause.core.never-let-a-pipe-hide-a-gate
+PASS guidance retained clause.core.never-let-a-pipe-hide-a-gate
+PASS clause retained clause.core.assertion-reads-the-constant
+PASS force retained clause.core.assertion-reads-the-constant
+PASS guidance retained clause.core.assertion-reads-the-constant
+PASS clause retained clause.core.flaky-tests-block
+PASS force retained clause.core.flaky-tests-block
+PASS guidance retained clause.core.flaky-tests-block
+PASS clause retained clause.core.lint-warnings-block
+PASS force retained clause.core.lint-warnings-block
+PASS guidance retained clause.core.lint-warnings-block
+PASS clause retained clause.core.prohibit-test-only-production-hooks
+PASS force retained clause.core.prohibit-test-only-production-hooks
+PASS guidance retained clause.core.prohibit-test-only-production-hooks
+PASS clause retained clause.core.require-tooling-authorization
+PASS force retained clause.core.require-tooling-authorization
+PASS guidance retained clause.core.require-tooling-authorization
+PASS clause retained clause.core.tooling-commit-choreography
+PASS force retained clause.core.tooling-commit-choreography
+PASS guidance retained clause.core.tooling-commit-choreography
+PASS clause retained clause.core.activate-matching-skills
+PASS force retained clause.core.activate-matching-skills
+PASS guidance retained clause.core.activate-matching-skills
+PASS clause retained clause.core.use-conventional-commits
+PASS force retained clause.core.use-conventional-commits
+PASS guidance retained clause.core.use-conventional-commits
+PASS clause retained clause.core.use-github-pr-workflow
+PASS force retained clause.core.use-github-pr-workflow
+PASS guidance retained clause.core.use-github-pr-workflow
+PASS clause retained clause.core.prohibit-editing-vendored-skills
+PASS force retained clause.core.prohibit-editing-vendored-skills
+PASS guidance retained clause.core.prohibit-editing-vendored-skills
+PASS clause retained clause.core.ask-the-person-to-start-a-person-only-skill
+PASS force retained clause.core.ask-the-person-to-start-a-person-only-skill
+PASS guidance retained clause.core.ask-the-person-to-start-a-person-only-skill
+PASS clause retained clause.core.write-generated-guidance-in-english
+PASS force retained clause.core.write-generated-guidance-in-english
+PASS guidance retained clause.core.write-generated-guidance-in-english
+PASS clause retained clause.core.research-authoritative-external-sources
+PASS force retained clause.core.research-authoritative-external-sources
+PASS guidance retained clause.core.research-authoritative-external-sources
+PASS clause retained clause.core.research-local-code-locally
+PASS force retained clause.core.research-local-code-locally
+PASS guidance retained clause.core.research-local-code-locally
+PASS clause retained clause.core.use-declared-external-research-fallback
+PASS force retained clause.core.use-declared-external-research-fallback
+PASS guidance retained clause.core.use-declared-external-research-fallback
+PASS clause retained clause.core.prohibit-external-research-for-local-code
+PASS force retained clause.core.prohibit-external-research-for-local-code
+PASS guidance retained clause.core.prohibit-external-research-for-local-code
+PASS clause retained clause.core.follow-dependency-workflow
+PASS force retained clause.core.follow-dependency-workflow
+PASS guidance retained clause.core.follow-dependency-workflow
+PASS clause retained clause.core.review-new-dependencies
+PASS force retained clause.core.review-new-dependencies
+PASS guidance retained clause.core.review-new-dependencies
+PASS clause retained clause.core.preserve-git-scope
+PASS force retained clause.core.preserve-git-scope
+PASS guidance retained clause.core.preserve-git-scope
+PASS clause retained clause.core.ask-before-destructive-git
+PASS force retained clause.core.ask-before-destructive-git
+PASS guidance retained clause.core.ask-before-destructive-git
+PASS clause retained clause.core.ask-before-delivery
+PASS force retained clause.core.ask-before-delivery
+PASS guidance retained clause.core.ask-before-delivery
+PASS clause retained clause.core.request-review-explicitly
+PASS force retained clause.core.request-review-explicitly
+PASS guidance retained clause.core.request-review-explicitly
+PASS clause retained clause.core.conventional-commit-titles
+PASS force retained clause.core.conventional-commit-titles
+PASS guidance retained clause.core.conventional-commit-titles
+PASS clause retained clause.core.plan-the-release-first
+PASS force retained clause.core.plan-the-release-first
+PASS guidance retained clause.core.plan-the-release-first
+PASS clause retained clause.core.ai-memory-is-optional
+PASS force retained clause.core.ai-memory-is-optional
+PASS guidance retained clause.core.ai-memory-is-optional
+PASS clause retained clause.core.message-the-owning-project
+PASS force retained clause.core.message-the-owning-project
+PASS clause retained clause.core.messages-are-self-contained
+PASS force retained clause.core.messages-are-self-contained
+PASS guidance retained clause.core.messages-are-self-contained
+PASS clause retained clause.core.consume-messages-after-recording
+PASS force retained clause.core.consume-messages-after-recording
+PASS guidance retained clause.core.consume-messages-after-recording
+PASS clause retained clause.core.check-for-updates-at-session-start
+PASS force retained clause.core.check-for-updates-at-session-start
+PASS guidance retained clause.core.check-for-updates-at-session-start
+PASS clause retained clause.core.ask-user-answerable-decisions
+PASS force retained clause.core.ask-user-answerable-decisions
+PASS guidance retained clause.core.ask-user-answerable-decisions
+PASS clause retained clause.core.prohibit-secret-exposure
+PASS force retained clause.core.prohibit-secret-exposure
+PASS guidance retained clause.core.prohibit-secret-exposure
+PASS clause retained clause.core.ask-before-database-mutation
+PASS force retained clause.core.ask-before-database-mutation
+PASS guidance retained clause.core.ask-before-database-mutation
+PASS clause retained clause.core.prove-the-mutation-predicate
+PASS force retained clause.core.prove-the-mutation-predicate
+PASS guidance retained clause.core.prove-the-mutation-predicate
+PASS clause retained clause.core.prohibit-disguised-database-mutation
+PASS force retained clause.core.prohibit-disguised-database-mutation
+PASS guidance retained clause.core.prohibit-disguised-database-mutation
+PASS only prescribed new clauses in internal/baseline/assets/modules/core.json
+PASS clause retained clause.external-triage.classify-before-labelling
+PASS force retained clause.external-triage.classify-before-labelling
+PASS guidance retained clause.external-triage.classify-before-labelling
+PASS clause retained clause.external-triage.move-through-mapped-states
+PASS force retained clause.external-triage.move-through-mapped-states
+PASS guidance retained clause.external-triage.move-through-mapped-states
+PASS clause retained clause.external-triage.ask-for-an-unmapped-label
+PASS force retained clause.external-triage.ask-for-an-unmapped-label
+PASS guidance retained clause.external-triage.ask-for-an-unmapped-label
+PASS clause retained clause.external-triage.needs-info-asks-and-stops
+PASS force retained clause.external-triage.needs-info-asks-and-stops
+PASS guidance retained clause.external-triage.needs-info-asks-and-stops
+PASS clause retained clause.external-triage.disclose-ai-authorship
+PASS force retained clause.external-triage.disclose-ai-authorship
+PASS guidance retained clause.external-triage.disclose-ai-authorship
+PASS clause retained clause.external-triage.record-wontfix-decisions
+PASS force retained clause.external-triage.record-wontfix-decisions
+PASS guidance retained clause.external-triage.record-wontfix-decisions
+PASS clause retained clause.external-triage.pull-request-is-an-issue-with-code
+PASS force retained clause.external-triage.pull-request-is-an-issue-with-code
+PASS guidance retained clause.external-triage.pull-request-is-an-issue-with-code
+PASS clause retained clause.external-triage.route-accepted-work-to-specs
+PASS force retained clause.external-triage.route-accepted-work-to-specs
+PASS guidance retained clause.external-triage.route-accepted-work-to-specs
+PASS only prescribed new clauses in internal/baseline/assets/modules/external-triage.json
+PASS clause retained clause.frontend.organize-by-system
+PASS force retained clause.frontend.organize-by-system
+PASS guidance retained clause.frontend.organize-by-system
+PASS clause retained clause.frontend.public-system-boundary
+PASS force retained clause.frontend.public-system-boundary
+PASS guidance retained clause.frontend.public-system-boundary
+PASS clause retained clause.frontend.read-design-contract-before-ui-work
+PASS force retained clause.frontend.read-design-contract-before-ui-work
+PASS guidance retained clause.frontend.read-design-contract-before-ui-work
+PASS clause retained clause.frontend.test-user-visible-behavior
+PASS force retained clause.frontend.test-user-visible-behavior
+PASS guidance retained clause.frontend.test-user-visible-behavior
+PASS clause retained clause.frontend.prohibit-incidental-ui-assertions
+PASS force retained clause.frontend.prohibit-incidental-ui-assertions
+PASS guidance retained clause.frontend.prohibit-incidental-ui-assertions
+PASS clause retained clause.frontend.inspect-runnable-ui
+PASS force retained clause.frontend.inspect-runnable-ui
+PASS guidance retained clause.frontend.inspect-runnable-ui
+PASS clause retained clause.frontend.follow-recorded-layout
+PASS force retained clause.frontend.follow-recorded-layout
+PASS guidance retained clause.frontend.follow-recorded-layout
+PASS only prescribed new clauses in internal/baseline/assets/modules/frontend.json
+PASS clause retained clause.go.change-module-files-through-go
+PASS force retained clause.go.change-module-files-through-go
+PASS guidance retained clause.go.change-module-files-through-go
+PASS clause retained clause.go.keep-entry-points-thin
+PASS force retained clause.go.keep-entry-points-thin
+PASS guidance retained clause.go.keep-entry-points-thin
+PASS clause retained clause.go.record-the-reason-for-a-module
+PASS force retained clause.go.record-the-reason-for-a-module
+PASS guidance retained clause.go.record-the-reason-for-a-module
+PASS clause retained clause.go.own-every-goroutine
+PASS force retained clause.go.own-every-goroutine
+PASS guidance retained clause.go.own-every-goroutine
+PASS clause retained clause.go.pass-context-first
+PASS force retained clause.go.pass-context-first
+PASS guidance retained clause.go.pass-context-first
+PASS clause retained clause.go.wrap-errors-with-the-operation
+PASS force retained clause.go.wrap-errors-with-the-operation
+PASS guidance retained clause.go.wrap-errors-with-the-operation
+PASS clause retained clause.go.build-every-constrained-platform
+PASS force retained clause.go.build-every-constrained-platform
+PASS guidance retained clause.go.build-every-constrained-platform
+PASS clause retained clause.go.test-observable-behavior
+PASS force retained clause.go.test-observable-behavior
+PASS guidance retained clause.go.test-observable-behavior
+PASS clause retained clause.go.keep-tests-hermetic
+PASS force retained clause.go.keep-tests-hermetic
+PASS guidance retained clause.go.keep-tests-hermetic
+PASS clause retained clause.go.test-through-go-test
+PASS force retained clause.go.test-through-go-test
+PASS guidance retained clause.go.test-through-go-test
+PASS only prescribed new clauses in internal/baseline/assets/modules/go.json
+PASS only prescribed new clauses in internal/baseline/assets/modules/monorepo.json
+PASS clause retained clause.python.change-dependencies-through-uv
+PASS force retained clause.python.change-dependencies-through-uv
+PASS guidance retained clause.python.change-dependencies-through-uv
+PASS clause retained clause.python.run-tools-through-uv
+PASS force retained clause.python.run-tools-through-uv
+PASS guidance retained clause.python.run-tools-through-uv
+PASS clause retained clause.python.sync-the-locked-environment
+PASS force retained clause.python.sync-the-locked-environment
+PASS guidance retained clause.python.sync-the-locked-environment
+PASS clause retained clause.python.check-the-lock-offline
+PASS force retained clause.python.check-the-lock-offline
+PASS guidance retained clause.python.check-the-lock-offline
+PASS clause retained clause.python.iterate-with-focused-commands
+PASS force retained clause.python.iterate-with-focused-commands
+PASS guidance retained clause.python.iterate-with-focused-commands
+PASS clause retained clause.python.ruff-findings-fail-the-gate
+PASS force retained clause.python.ruff-findings-fail-the-gate
+PASS guidance retained clause.python.ruff-findings-fail-the-gate
+PASS clause retained clause.python.type-check-with-ty
+PASS force retained clause.python.type-check-with-ty
+PASS guidance retained clause.python.type-check-with-ty
+PASS clause retained clause.python.select-a-new-test-by-its-node-id
+PASS force retained clause.python.select-a-new-test-by-its-node-id
+PASS guidance retained clause.python.select-a-new-test-by-its-node-id
+PASS clause retained clause.python.keep-tests-hermetic
+PASS force retained clause.python.keep-tests-hermetic
+PASS guidance retained clause.python.keep-tests-hermetic
+PASS clause retained clause.python.outside-data-skips-by-name
+PASS force retained clause.python.outside-data-skips-by-name
+PASS guidance retained clause.python.outside-data-skips-by-name
+PASS clause retained clause.python.exercise-every-platform-branch
+PASS force retained clause.python.exercise-every-platform-branch
+PASS guidance retained clause.python.exercise-every-platform-branch
+PASS clause retained clause.python.keep-entry-points-thin
+PASS force retained clause.python.keep-entry-points-thin
+PASS guidance retained clause.python.keep-entry-points-thin
+PASS only prescribed new clauses in internal/baseline/assets/modules/python.json
+PASS only prescribed new clauses in internal/baseline/assets/modules/repository-extension.json
+PASS clause retained clause.rust.change-manifests-through-cargo
+PASS force retained clause.rust.change-manifests-through-cargo
+PASS guidance retained clause.rust.change-manifests-through-cargo
+PASS clause retained clause.rust.read-current-docs
+PASS force retained clause.rust.read-current-docs
+PASS guidance retained clause.rust.read-current-docs
+PASS clause retained clause.rust.iterate-with-focused-cargo-commands
+PASS force retained clause.rust.iterate-with-focused-cargo-commands
+PASS guidance retained clause.rust.iterate-with-focused-cargo-commands
+PASS clause retained clause.rust.test-the-command-through-execution
+PASS force retained clause.rust.test-the-command-through-execution
+PASS guidance retained clause.rust.test-the-command-through-execution
+PASS clause retained clause.rust.keep-the-binary-thin
+PASS force retained clause.rust.keep-the-binary-thin
+PASS guidance retained clause.rust.keep-the-binary-thin
+PASS clause retained clause.rust.keep-type-erased-errors-at-the-entry-point
+PASS force retained clause.rust.keep-type-erased-errors-at-the-entry-point
+PASS guidance retained clause.rust.keep-type-erased-errors-at-the-entry-point
+PASS clause retained clause.rust.prohibit-panics-on-user-paths
+PASS force retained clause.rust.prohibit-panics-on-user-paths
+PASS guidance retained clause.rust.prohibit-panics-on-user-paths
+PASS clause retained clause.rust.return-typed-errors
+PASS force retained clause.rust.return-typed-errors
+PASS guidance retained clause.rust.return-typed-errors
+PASS only prescribed new clauses in internal/baseline/assets/modules/rust.json
+PASS clause retained clause.secondbrain.01-consult-triggers
+PASS force retained clause.secondbrain.01-consult-triggers
+PASS guidance retained clause.secondbrain.01-consult-triggers
+PASS clause retained clause.secondbrain.02-query-order
+PASS force retained clause.secondbrain.02-query-order
+PASS guidance retained clause.secondbrain.02-query-order
+PASS clause retained clause.secondbrain.03-decision-consultation
+PASS force retained clause.secondbrain.03-decision-consultation
+PASS guidance retained clause.secondbrain.03-decision-consultation
+PASS clause retained clause.secondbrain.04-external-research
+PASS force retained clause.secondbrain.04-external-research
+PASS guidance retained clause.secondbrain.04-external-research
+PASS clause retained clause.secondbrain.05-research-limitations
+PASS force retained clause.secondbrain.05-research-limitations
+PASS guidance retained clause.secondbrain.05-research-limitations
+PASS clause retained clause.secondbrain.prohibit-writes
+PASS force retained clause.secondbrain.prohibit-writes
+PASS guidance retained clause.secondbrain.prohibit-writes
+PASS clause retained clause.secondbrain.research-to-the-knowledge-owner
+PASS force retained clause.secondbrain.research-to-the-knowledge-owner
+PASS guidance retained clause.secondbrain.research-to-the-knowledge-owner
+PASS clause retained clause.secondbrain.prohibit-secret-access
+PASS force retained clause.secondbrain.prohibit-secret-access
+PASS guidance retained clause.secondbrain.prohibit-secret-access
+PASS clause retained clause.secondbrain.record-decision-sources
+PASS force retained clause.secondbrain.record-decision-sources
+PASS guidance retained clause.secondbrain.record-decision-sources
+PASS clause retained clause.secondbrain.cite-used-files
+PASS force retained clause.secondbrain.cite-used-files
+PASS guidance retained clause.secondbrain.cite-used-files
+PASS clause retained clause.secondbrain.escalate-durable-updates
+PASS force retained clause.secondbrain.escalate-durable-updates
+PASS guidance retained clause.secondbrain.escalate-durable-updates
+PASS clause retained clause.secondbrain.baseline-owned-guidance
+PASS force retained clause.secondbrain.baseline-owned-guidance
+PASS guidance retained clause.secondbrain.baseline-owned-guidance
+PASS only prescribed new clauses in internal/baseline/assets/modules/secondbrain.json
+PASS clause retained clause.spec.routing-01-large-initiative
+PASS force retained clause.spec.routing-01-large-initiative
+PASS guidance retained clause.spec.routing-01-large-initiative
+PASS clause retained clause.spec.routing-02-standard-feature
+PASS force retained clause.spec.routing-02-standard-feature
+PASS guidance retained clause.spec.routing-02-standard-feature
+PASS clause retained clause.spec.routing-03-refactor-bugfix
+PASS force retained clause.spec.routing-03-refactor-bugfix
+PASS guidance retained clause.spec.routing-03-refactor-bugfix
+PASS clause retained clause.spec.routing-04-trivial-change
+PASS force retained clause.spec.routing-04-trivial-change
+PASS guidance retained clause.spec.routing-04-trivial-change
+PASS clause retained clause.spec.routing-05-task-graph
+PASS force retained clause.spec.routing-05-task-graph
+PASS guidance retained clause.spec.routing-05-task-graph
+PASS clause retained clause.spec.verification-two-tiers
+PASS force retained clause.spec.verification-two-tiers
+PASS guidance retained clause.spec.verification-two-tiers
+PASS clause retained clause.spec.sources-01-group-by-shared-context
+PASS force retained clause.spec.sources-01-group-by-shared-context
+PASS guidance retained clause.spec.sources-01-group-by-shared-context
+PASS clause retained clause.spec.sources-02-bound-the-group
+PASS force retained clause.spec.sources-02-bound-the-group
+PASS guidance retained clause.spec.sources-02-bound-the-group
+PASS clause retained clause.spec.name-the-finding-a-task-answers
+PASS force retained clause.spec.name-the-finding-a-task-answers
+PASS guidance retained clause.spec.name-the-finding-a-task-answers
+PASS clause retained clause.spec.verification-fails-before-the-change
+PASS force retained clause.spec.verification-fails-before-the-change
+PASS guidance retained clause.spec.verification-fails-before-the-change
+PASS clause retained clause.spec.rule-challenge-01-ask
+PASS force retained clause.spec.rule-challenge-01-ask
+PASS guidance retained clause.spec.rule-challenge-01-ask
+PASS clause retained clause.spec.rule-challenge-02-answer
+PASS force retained clause.spec.rule-challenge-02-answer
+PASS guidance retained clause.spec.rule-challenge-02-answer
+PASS clause retained clause.spec.local-task-tracker-only
+PASS force retained clause.spec.local-task-tracker-only
+PASS guidance retained clause.spec.local-task-tracker-only
+PASS clause retained clause.spec.tracker-artifacts
+PASS force retained clause.spec.tracker-artifacts
+PASS guidance retained clause.spec.tracker-artifacts
+PASS clause retained clause.spec.project-constraints-01-active-artifacts
+PASS force retained clause.spec.project-constraints-01-active-artifacts
+PASS guidance retained clause.spec.project-constraints-01-active-artifacts
+PASS clause retained clause.spec.project-constraints-02-tooling-authorization
+PASS force retained clause.spec.project-constraints-02-tooling-authorization
+PASS guidance retained clause.spec.project-constraints-02-tooling-authorization
+PASS clause retained clause.spec.project-constraints-03-bounded-execution
+PASS force retained clause.spec.project-constraints-03-bounded-execution
+PASS guidance retained clause.spec.project-constraints-03-bounded-execution
+PASS clause retained clause.spec.project-constraints-04-qa-audit
+PASS force retained clause.spec.project-constraints-04-qa-audit
+PASS guidance retained clause.spec.project-constraints-04-qa-audit
+PASS clause retained clause.spec.project-constraints-05-legacy-and-ownership
+PASS force retained clause.spec.project-constraints-05-legacy-and-ownership
+PASS guidance retained clause.spec.project-constraints-05-legacy-and-ownership
+PASS clause retained clause.spec.project-constraints-06-outside-evidence
+PASS force retained clause.spec.project-constraints-06-outside-evidence
+PASS guidance retained clause.spec.project-constraints-06-outside-evidence
+PASS clause retained clause.spec.keep-artifacts-in-spec-folder
+PASS force retained clause.spec.keep-artifacts-in-spec-folder
+PASS guidance retained clause.spec.keep-artifacts-in-spec-folder
+PASS clause retained clause.spec.specs-are-downstream-artifacts
+PASS force retained clause.spec.specs-are-downstream-artifacts
+PASS guidance retained clause.spec.specs-are-downstream-artifacts
+PASS clause retained clause.spec.prohibit-tests-that-read-specs
+PASS force retained clause.spec.prohibit-tests-that-read-specs
+PASS guidance retained clause.spec.prohibit-tests-that-read-specs
+PASS only prescribed new clauses in internal/baseline/assets/modules/spec-workflow.json
+PASS clause retained clause.tui.drive-models-synchronously
+PASS force retained clause.tui.drive-models-synchronously
+PASS guidance retained clause.tui.drive-models-synchronously
+PASS clause retained clause.tui.emulate-the-terminal-last
+PASS force retained clause.tui.emulate-the-terminal-last
+PASS guidance retained clause.tui.emulate-the-terminal-last
+PASS clause retained clause.tui.keep-design-policy-in-repository-guidance
+PASS force retained clause.tui.keep-design-policy-in-repository-guidance
+PASS guidance retained clause.tui.keep-design-policy-in-repository-guidance
+PASS only prescribed new clauses in internal/baseline/assets/modules/tui-surface.json
+PASS clause retained clause.typescript.read-current-authoritative-docs
+PASS force retained clause.typescript.read-current-authoritative-docs
+PASS guidance retained clause.typescript.read-current-authoritative-docs
+PASS clause retained clause.typescript.keep-type-errors-visible
+PASS force retained clause.typescript.keep-type-errors-visible
+PASS guidance retained clause.typescript.keep-type-errors-visible
+PASS clause retained clause.typescript.inspect-dependent-interfaces-before-tests
+PASS force retained clause.typescript.inspect-dependent-interfaces-before-tests
+PASS guidance retained clause.typescript.inspect-dependent-interfaces-before-tests
+PASS clause retained clause.typescript.test-observable-failure-modes
+PASS force retained clause.typescript.test-observable-failure-modes
+PASS guidance retained clause.typescript.test-observable-failure-modes
+PASS clause retained clause.typescript.prohibit-incidental-test-oracles
+PASS force retained clause.typescript.prohibit-incidental-test-oracles
+PASS guidance retained clause.typescript.prohibit-incidental-test-oracles
+PASS clause retained clause.typescript.type-fixtures-from-the-schema
+PASS force retained clause.typescript.type-fixtures-from-the-schema
+PASS guidance retained clause.typescript.type-fixtures-from-the-schema
+PASS only prescribed new clauses in internal/baseline/assets/modules/typescript.json
+PASS exactly five new clauses across modules
+PASS same file identities internal/baseline/assets/source-baselines
+PASS unchanged protected asset internal/baseline/assets/source-baselines/_ownership.yml
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/accounting.json
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/agent-instructions.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/autonomous-work.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/backend.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/docs-layout.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/domain.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/external-triage.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/frontend.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/issue-tracker.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/monorepo.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/secondbrain.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/skill-dispatch.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/typescript-bun.md
+PASS unchanged protected asset internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json
+PASS unchanged protected asset internal/baseline/assets/source-baselines/index.json
+PASS same file identities internal/baseline/assets/setups
+PASS unchanged protected asset internal/baseline/assets/setups/_ownership.yml
+PASS unchanged protected asset internal/baseline/assets/setups/go-cli-typescript-bun.json
+PASS unchanged protected asset internal/baseline/assets/setups/go.json
+PASS unchanged protected asset internal/baseline/assets/setups/python.json
+PASS unchanged protected asset internal/baseline/assets/setups/rust.json
+PASS unchanged protected asset internal/baseline/assets/setups/typescript.json
+PASS same file identities internal/baseline/assets/modules
+PASS unchanged protected asset internal/baseline/assets/modules/autonomous-work.json
+PASS unchanged protected asset internal/baseline/assets/modules/backend.json
+PASS unchanged protected asset internal/baseline/assets/modules/bun.json
+PASS unchanged protected asset internal/baseline/assets/modules/cli-surface.json
+PASS unchanged protected asset internal/baseline/assets/modules/external-triage.json
+PASS unchanged protected asset internal/baseline/assets/modules/frontend.json
+PASS unchanged protected asset internal/baseline/assets/modules/go.json
+PASS unchanged protected asset internal/baseline/assets/modules/monorepo.json
+PASS unchanged protected asset internal/baseline/assets/modules/python.json
+PASS unchanged protected asset internal/baseline/assets/modules/repository-extension.json
+PASS unchanged protected asset internal/baseline/assets/modules/rust.json
+PASS unchanged protected asset internal/baseline/assets/modules/spec-workflow.json
+PASS unchanged protected asset internal/baseline/assets/modules/tui-surface.json
+PASS unchanged protected asset internal/baseline/assets/modules/typescript.json
+PASS same file identities internal/baseline/assets/profiles
+PASS unchanged protected asset internal/baseline/assets/profiles/_ownership.yml
+PASS unchanged protected asset internal/baseline/assets/profiles/go-cli-tui.json
+PASS unchanged protected asset internal/baseline/assets/profiles/go-cli-typescript-monorepo.json
+PASS unchanged protected asset internal/baseline/assets/profiles/python.json
+PASS unchanged protected asset internal/baseline/assets/profiles/rust-cli.json
+FAIL audit exception Expecting value: line 1 column 1 (char 0)

@@ -1,0 +1,118 @@
+from pathlib import Path
+exec(open(str(Path.cwd()/'docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/qa/evidence/qa-report-2026-11-19/flows.py.txt')).read().split("if __name__=='__main__':flows()")[0])
+import difflib
+failures={}
+def audit(row,fn):
+ lines=[]
+ def ok(condition,claim):
+  lines.append(('PASS ' if condition else 'FAIL ')+claim)
+  if not condition:failures.setdefault(row,[]).append(claim)
+ try:fn(ok)
+ except Exception as exc:ok(False,'audit exception '+str(exc))
+ name='audit-'+row;(EV/(name+'.txt')).write_text('\n'.join(lines)+'\n');note(row,link(name)+'.','fail' if row in failures else 'pass');print(row,'FAIL' if row in failures else 'pass',len(lines),'assertions',flush=True)
+def show(rev,path):return raw(['git','show',rev+':'+path]).decode()
+def files(rev,path):return raw(['git','ls-tree','-r','--name-only',rev,'--',path]).decode().splitlines()
+def walk(obj):
+ if isinstance(obj,dict):
+  yield obj
+  for value in obj.values():yield from walk(value)
+ elif isinstance(obj,list):
+  for value in obj:yield from walk(value)
+NEW={'clause.context.lesson-01-record','clause.context.lesson-02-test','clause.secondbrain.export-01-standard-list','clause.secondbrain.export-02-variation','clause.secondbrain.export-03-knowledge-mark'}
+CHANGED={'clause.context.adr-01-template','clause.context.adr-03-legacy-compatibility','clause.context.docs-one-job-per-directory','clause.context.findings-09-archive','clause.core.message-the-owning-project'}
+def retention(ok):
+ counts=0
+ for f in files(BASE,'internal/baseline/assets/modules'):
+  b={x['id']:x for x in walk(json.loads(show(BASE,f))) if x.get('id','').startswith('clause.')};h={x['id']:x for x in walk(json.loads((ROOT/f).read_text())) if x.get('id','').startswith('clause.')}
+  for ident,x in b.items():
+   ok(ident in h,'clause retained '+ident)
+   if ident not in h:continue
+   ok(x.get('enforcement')==h[ident].get('enforcement'),'force retained '+ident)
+   if ident not in CHANGED:ok(x.get('guidance')==h[ident].get('guidance'),'guidance retained '+ident)
+  ok(set(h)-set(b)<=NEW,'only prescribed new clauses in '+f);counts+=len(b)
+ all_new=set()
+ for f in files(HEAD,'internal/baseline/assets/modules'):
+  b={x.get('id') for x in walk(json.loads(show(BASE,f)))};h={x.get('id') for x in walk(json.loads((ROOT/f).read_text()))};all_new|={i for i in h-b if i and i.startswith('clause.')}
+ ok(all_new==NEW,'exactly five new clauses across modules')
+ for parent in ['internal/baseline/assets/source-baselines','internal/baseline/assets/setups','internal/baseline/assets/modules','internal/baseline/assets/profiles']:
+  before=files(BASE,parent);after=files(HEAD,parent);ok(before==after,'same file identities '+parent)
+  for f in before:
+   excluded=(parent.endswith('modules') and Path(f).name in ['context-workflow.json','core.json','secondbrain.json']) or (parent.endswith('profiles') and Path(f).name=='standard-typescript-monorepo.json')
+   if not excluded:ok(show(BASE,f)==(ROOT/f).read_text(),'unchanged protected asset '+f)
+ for f in files(HEAD,'internal/baseline/assets/profiles'):
+  if not f.endswith('.json'):continue
+  obj=json.loads((ROOT/f).read_text());rules=[r for x in walk(obj) for r in (x.get('requiredRules') or [])];ok('rule.context.lessons' not in rules and 'rule.secondbrain.knowledge-export' not in rules,'new rules not profile requirements '+f)
+ f='internal/baseline/clause_characterization_test.go';diff=list(difflib.ndiff(show(BASE,f).splitlines(),(ROOT/f).read_text().splitlines()));added=[x[2:] for x in diff if x.startswith('+ ')];removed=[x[2:] for x in diff if x.startswith('- ')];ok(not removed and len(added)==5 and set(re.findall(r'"(clause\.[^"]+)"','\n'.join(added)))==NEW,'characterization only five ids added')
+ for f in ['internal/baseline/plan_test.go','internal/cli/cli_test.go','internal/cli/baseline_human_test.go','skills/baseline_skill_contract_test.go']:ok(show(BASE,f)==(ROOT/f).read_text(),'protected test unchanged '+f)
+def skillcheck(ok):
+ record=json.loads((ROOT/'skills/testdata/owned-skill-versions.json').read_text())['skills']
+ for name in ['archive-spec','roundfix']:
+  a=(ROOT/'.agents/skills'/name/'SKILL.md').read_text();b=(ROOT/'skills'/name/'SKILL.md').read_text();vs=re.findall(r'^\s*version: ([\d.]+)',a,re.M);ok(a==b,'same SKILL.md bytes '+name);ok(len(vs)==2 and len(set(vs))==1,'two version fields agree '+name);ok(any(r['version']==vs[0] for r in record[name]),'record holds version '+name+' '+vs[0])
+ f='.agents/skills/roundfix/references/modes.md';a=(ROOT/f).read_text().split('## --update\n',1)[1];b=show(BASE,f).split('## --update\n',1)[1]
+ additions=[" Show its `documentation` member too: the lines the Standard Export List gains and loses, each path under `stopsExporting` with its kind, each ADR header it fills and the count of ADRs without a Knowledge Mark."," Ask that same question, naming the paths, when `documentation.exportList.stopsExporting` is not empty."]
+ for text in additions:ok(a.count(text)==1,'update addition once '+text);a=a.replace(text,'')
+ a=a.split('\nMarking the existing ADRs:',1)[0].rstrip();ok(a==b.rstrip(),'every prior update sentence and byte retained');ok(re.findall(r'^(\d+)\. ',a,re.M)==['1','2','3','4','5'],'update exactly five steps')
+ for name in ['baseline','corrections','modes','release','setup']:
+  f=Path('roundfix/references')/(name+'.md');ok((ROOT/'.agents/skills'/f).read_bytes()==(ROOT/'skills'/f).read_bytes(),'reference mirrors '+name)
+ for name in ['archive-spec','roundfix']:
+  f='.agents/skills/'+name+'/SKILL.md';before=show(BASE,f);after=(ROOT/f).read_text()
+  extract=lambda t:re.findall(r'### QA settlement\n.*?(?=\n#{1,3} |\Z)',t,re.S)
+  ok(extract(before)==extract(after),'QA settlement unchanged '+name)
+def glossary(ok):
+ prd=(SPEC/'_prd.md').read_text().split('## Glossary\n')[1].split('\n## ')[0];ts=(SPEC/'_techspec.md').read_text();ctx=(ROOT/'CONTEXT.md').read_text();before=show(BASE,'CONTEXT.md')
+ terms=['Standard Export List','Export Variation','Knowledge Mark','Amendment List','Lesson Learned']
+ for term in terms:ok('- adds: **'+term+'**' in prd,'PRD declares adds '+term)
+ ok('- changes: **Managed Refresh**' in prd,'PRD declares Managed Refresh change')
+ section=ts.split('## Glossary\n',1)[1].split('\n## ',1)[0] if '## Glossary\n' in ts else ''
+ ok(not re.search(r'^- (adds|changes|removes):',section,re.M),'TechSpec declares no glossary delta')
+ contract=ts.split('21. API Contract:')[1].split('22. API Contract:')[0];block=contract.split('```markdown\n')[1].split('\n```')[0]
+ ok(block in ctx,'five exact API Contract 21 definitions contiguous');ok(ctx.index('**Managed Refresh**:')<ctx.index('**Standard Export List**:'),'new definitions after Managed Refresh')
+ sentence='It also keeps the Standard Export List and fills each Amendment List, in a documentation part of its plan that the Plan Digest covers.'
+ removed=ctx.replace(block+'\n\n','').replace(' '+sentence,'').replace(sentence+'\n','')
+ ok(norm(removed)==norm(before),'no other glossary entry changes after removing prescribed additions')
+def repository(ok):
+ ts=(SPEC/'_techspec.md').read_text();adrs=list((ROOT/'docs/adr').glob('*.md'));counts={'true':0,'false':0}
+ for f in adrs:
+  text=f.read_text();m=re.search(r'^status:.*\nknowledge: (true|false)\n',text,re.M);ok(bool(m),'mark immediately after status '+f.name)
+  if m:counts[m[1]]+=1
+ ok(len(adrs)==sum(counts.values()),'all ADRs marked '+str(counts))
+ section=ts.split('22. API Contract:')[1].split('23. API Contract:')[0];own=section.split('```text\n')[1].split('\n```')[0];content=(ROOT/'.secondbrain-export').read_text();ok(content.split('# roundfix:standard-export:end\n',1)[1]=='\n'+own+'\n','exact API Contract 22 own lines')
+ notices=ts.split('23. API Contract:')[1].split('24. API Contract:')[0].split('```markdown\n')[1].split('\n```')[0].split('\n\n')
+ for prefix,notice,ids in zip(['0248','0278','0412'],notices,[['ADR-0438'],['ADR-0440'],['ADR-0438','ADR-0440']]):
+  f=next((ROOT/'docs/adr').glob(prefix+'-*.md'));text=f.read_text();ok(notice in text,'exact notice '+prefix);line=re.search(r'^amended_by: (.*)',text,re.M);ok(bool(line) and all(i in line[1] for i in ids),'amendment identifiers '+prefix)
+ for prefix in ['0438','0439','0440']:
+  f=next((ROOT/'docs/adr').glob(prefix+'-*.md'));ok('status: accepted\n' in f.read_text(),'accepted ADR '+prefix)
+def history(ok):
+ commits=re.findall(r'^\| (task_0[1-5]) \| ([0-9a-f]{40}) \| granted',REPORT.read_text(),re.M);allpaths=set();grant=(SPEC/'_authorization.md').read_text().split('\npaths:\n')[1].split('\noperations:')[0];allowed=set(re.findall(r'^  - (.+)$',grant,re.M))
+ for task,commit in commits:
+  changed=raw(['git','diff-tree','--no-commit-id','--name-only','-r',commit]).decode().splitlines();allpaths.update(changed);text=(SPEC/(task+'.md')).read_text();context=text.split('## Context\n')[1].split('\n## ')[0];declared=set(re.findall(r'^- (?:interface|creates|instruction): `?([^`\n]+)`?$',context,re.M));recorded=text.split('## Recorded paths\n',1)[1].split('\n## ')[0] if '## Recorded paths\n' in text else '';declared.update(re.findall(r'^- `([^`]+)`',recorded,re.M));declared.add(str((SPEC/(task+'.md')).relative_to(ROOT)))
+  extras=set(changed)-declared;ok(not extras,task+' scope '+commit+' (Recorded paths included); extras '+str(sorted(extras)))
+  (EV/('scope-'+task+'.txt')).write_text('commit '+commit+'\n'+ '\n'.join(changed)+'\n')
+ for f in files(BASE,'docs/adr'):
+  if not (ROOT/f).exists():ok(False,'ADR removed '+f);continue
+  b=show(BASE,f);h=(ROOT/f).read_text();strip=lambda t:re.sub(r'^(knowledge: (?:true|false)|amended_by: .*)\n','',t,flags=re.M)
+  extra=[x[2:] for x in difflib.ndiff(strip(b).splitlines(),strip(h).splitlines()) if x.startswith('+ ')]
+  missing=[x[2:] for x in difflib.ndiff(strip(b).splitlines(),strip(h).splitlines()) if x.startswith('- ')]
+  allowed_notice=Path(f).name[:4] in ['0248','0278','0412']
+  ok(not missing and (not extra or (allowed_notice and len([x for x in extra if x.strip()])==1 and re.search(r'^\*\*(Amended|Extended) by ',next((x for x in extra if x.strip()),'')))),'ADR retains all original bytes/only authorized additions '+f)
+  ok(re.findall(r'^updated_at:.*$',b,re.M)==re.findall(r'^updated_at:.*$',h,re.M),'updated_at unchanged '+f)
+ protected=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','AGENTS.md','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/agents/specific-repository.md']
+ for f in allpaths:
+  bad=f in protected or f.startswith('.github/workflows/') or f.startswith('docs/lessons/') or (f.startswith('docs/agents/') and Path(f).name not in ['agent-instructions.md','docs-layout.md','secondbrain.md','setup-context.json'])
+  if f.startswith(('.agents/skills/','skills/')) and f.count('/')>=2:
+   rest=f.split('skills/',1)[1];name=rest.split('/')[0]
+   if name not in ['testdata','archive-spec','roundfix']:bad=True
+   if name=='roundfix' and rest not in ['roundfix/SKILL.md']+['roundfix/references/'+n+'.md' for n in ['baseline','corrections','modes','release','setup']]:bad=True
+  ok(not bad,'path within negative scope '+f)
+ with clone() as d:
+  paths=sorted(allpaths);probe='''package speccheck
+import "testing"
+func TestQAGovernedGrant(t *testing.T){t.Parallel(); allowed:=map[string]bool{%s}; for _,p:=range []string{%s}{if GovernedPath(p){t.Logf("governed: %%s",p);if !allowed[p]{t.Errorf("missing grant: %%s",p)}}}}
+'''%(','.join(json.dumps(x)+':true' for x in sorted(allowed)),','.join(json.dumps(x) for x in paths))
+  (d/'internal/speccheck/qa_governed_probe_test.go').write_text(probe);(EV/'governed-probe.go.txt').write_text(probe)
+  p=run('governed-grant-probe',['go','test','-count=1','-timeout','20m','-v','-o',str(ROOT/'bin/qa/governed-grant-probe.test'),'-run','^TestQAGovernedGrant$','./internal/speccheck'],cwd=d);ok(p.returncode==0,'exact GovernedPath classification and grant for all Task changed files')
+
+def main():
+ audit('Q07',retention);audit('Q05',skillcheck);audit('Q09',glossary);audit('Q04',repository);audit('Q10',history)
+ (EV/'audit-outcomes.txt').write_text(json.dumps(failures,indent=2)+'\n')
+if __name__=='__main__':main()
