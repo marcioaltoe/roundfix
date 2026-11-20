@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.152.0] - 2026-11-20
+
+### A session runs the flow's own commands without a permission prompt
+
+- **`roundfix permissions`.** It shows the closed list of commands the Roundfix flow runs: the `roundfix` subcommands the owned skills name (minus the ones a skill asks about first, and the command that writes the list), and the `git` and `gh` reads they name. Only after a visible confirmation, and only with the preview's digest, it writes them as allow entries in `.claude/settings.json` (keeping every other byte) and in the Codex rules file, with Guard Entries that keep asking for `gh api` write options and Git forms that can write or run code. For OpenCode it only reports, because OpenCode already allows the shell. It never adds a shell wildcard or an interpreter. Push and merge stay behind the Spec's `_authorization.md`. ADR-0444 to ADR-0446.
+- **Harness Permission Files are Governed Paths,** so a Spec changes them only with a named authorization. `roundfix doctor` and `roundfix update check` report whether the project's permission files hold the current list.
+- **This repository declares `authoring.open_questions: follow`** (Spec 0412), as the maintainer decided on 2026-11-19.
+
 ## [0.151.0] - 2026-11-20
 
 ### A project declares whether an open authoring question waits or follows the author
