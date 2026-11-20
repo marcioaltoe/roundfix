@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -62,3 +62,37 @@ Invariant 7 says the list written is the union of the identifiers the header alr
 - Pre-PR review of 2026-11-19 (artifact `81eee2e07bb96026`, head `d8506932`) → F1
 - `_techspec.md` → Interfaces; Invariants 6 and 7
 - task_02 → Requirement 1
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-safety, golang-cli, evidence-gate
+
+### Implementation
+
+Finding F1 is fixed at its root: an ADR's own identifier can no longer survive a header fill, in the plan or in the apply, while every other identifier a person wrote is kept.
+
+- `internal/spec/adr_header.go` gains `WithADRAmendedByExcept(content []byte, ids []string, own string) []byte`. It builds the same union as before, then drops every identifier whose number equals `own`'s (`ADR-55`, `ADR-055` and file-name `0055` compare equal through the new unexported `adrNumber` helper), and writes the ordered result. `WithADRAmendedBy(content, ids)` is now the one-line call `WithADRAmendedByExcept(content, ids, "")`, so its signature and nine subtests are unchanged (Requirement 2).
+- The write guard now distinguishes an existing Amendment List: when the union filters to nothing and the header has an `amended_by` line, the line is rewritten as `amended_by: []`; a header with no Amendment List and no identifier to write returns the input byte for byte (Requirement 3). Only one line changes, so Invariant 6 holds.
+- `internal/cli/baseline_update_documentation.go` gains one helper, `documentationOwnIdentifier(path) string`, that returns the file name's leading number. `documentationNotices` and both header fills (the plan's fill and the apply's fill) take the ADR's own identifier from it, and both fills call `WithADRAmendedByExcept` (Requirement 4). The apply's second write is idempotent because the identifier is already gone.
+
+### Focused checks
+
+- `gofmt -l <the four changed files>` → no output, exit 0 (formatted).
+- `go build ./internal/spec ./internal/cli` → exit 0.
+- `go vet ./internal/spec ./internal/cli` → exit 0.
+- `go test -count=1 -run 'TestWithADRAmendedBy|TestWithADRAmendedByExcept|TestReadADRHeader|TestADRAmendmentNotices' ./internal/spec` → `ok` exit 0; the unchanged nine `TestWithADRAmendedBy` cases and the four new cases pass.
+- `go test -count=1 -v -run '^TestWithADRAmendedByExcept$' ./internal/spec` → PASS: `drops_its_own_identifier`, `own_by_number`, `only_itself_leaves_an_empty_list`, `empty_own_is_the_union`.
+- `go test -count=1 -run '^TestBaselineUpdateDocumentationPart$' ./internal/cli` → `ok` exit 0; the fourteen existing subtests and the new one pass.
+- `go test -count=1 -v -run 'TestBaselineUpdateDocumentationPart/drops_its_own_identifier' ./internal/cli` → PASS.
+
+The declared `## Verification` commands were not run; the Daemon runs them verbatim at settlement.
+
+### Acceptance criteria
+
+- An ADR whose header lists its own identifier and another is filled without its own and keeps the other, through the pure writer and through `roundfix baseline update`, and a second update is current — evidence: `TestWithADRAmendedByExcept/drops_its_own_identifier` and `/own_by_number` pass, and `TestBaselineUpdateDocumentationPart/drops_its_own_identifier` writes `amended_by: [ADR-42, ADR-43]` from an input of `[ADR-42, ADR-55]` with a body notice of ADR-43, then `documentationRequireCurrent` reports the second update current.
+- The nine subtests of `TestWithADRAmendedBy` and the fourteen existing subtests of `TestBaselineUpdateDocumentationPart` still pass — evidence: the `./internal/spec` and `./internal/cli` focused runs above both exit 0, and `withADRAmendedBy`/its callers keep their signatures.
+
+### Notes
+
+- Pre-change (red) signal: this Task's Overview and Verification record that before the fix the command wrote `amended_by: [ADR-42, ADR-43, ADR-55]`; the new `drops_its_own_identifier` subtest is exactly that reproduction and now passes.
+- No follow-ups. `_prd.md`, `_techspec.md`, `_tasks.md`, other task files, guides, records, skills, Baseline modules, the Makefile, workflows, `go.mod` and lint configuration are untouched.

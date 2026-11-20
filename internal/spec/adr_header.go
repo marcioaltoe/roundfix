@@ -141,6 +141,11 @@ func ADRAmendmentNotices(content []byte) []string {
 	return orderedADRIdentifiers(ids)
 }
 
+// adrNumber is the number an identifier names, so ADR-55, ADR-055 and 0055 agree.
+func adrNumber(id string) string {
+	return strings.TrimLeft(strings.TrimPrefix(id, "ADR-"), "0")
+}
+
 func orderedADRIdentifiers(ids []string) []string {
 	unique := map[string]bool{}
 	result := []string{}
@@ -151,7 +156,7 @@ func orderedADRIdentifiers(ids []string) []string {
 		}
 	}
 	sort.Slice(result, func(i, j int) bool {
-		a, b := strings.TrimLeft(strings.TrimPrefix(result[i], "ADR-"), "0"), strings.TrimLeft(strings.TrimPrefix(result[j], "ADR-"), "0")
+		a, b := adrNumber(result[i]), adrNumber(result[j])
 		if len(a) != len(b) {
 			return len(a) < len(b)
 		}
@@ -166,12 +171,49 @@ func orderedADRIdentifiers(ids []string) []string {
 // WithADRAmendedBy inserts or replaces only the Amendment List line, keeping all
 // other bytes (including timestamps and line endings) as they were.
 func WithADRAmendedBy(content []byte, ids []string) []byte {
+	return WithADRAmendedByExcept(content, ids, "")
+}
+
+// WithADRAmendedByExcept writes the union of the identifiers the header already
+// lists and ids, without an identifier whose number equals own's. An ADR never
+// lists itself, and every other identifier a person wrote stays. With an empty
+// own it is WithADRAmendedBy.
+func WithADRAmendedByExcept(content []byte, ids []string, own string) []byte {
 	h := ReadADRHeader(content)
-	all := orderedADRIdentifiers(append(append([]string{}, h.AmendedBy...), ids...))
-	if len(all) == 0 {
+	combined := append(append([]string{}, h.AmendedBy...), ids...)
+	kept := make([]string, 0, len(combined))
+	for _, id := range combined {
+		if own != "" && adrNumber(id) == adrNumber(own) {
+			continue
+		}
+		kept = append(kept, id)
+	}
+	all := orderedADRIdentifiers(kept)
+	lines, end := adrHeaderLines(content)
+	existing, status, knowledge := -1, -1, -1
+	if end >= 0 {
+		for i := 1; i < end; i++ {
+			field, _, ok := strings.Cut(string(lines[i]), ":")
+			if !ok {
+				continue
+			}
+			switch field {
+			case "amended_by":
+				if existing < 0 {
+					existing = i
+				}
+			case "status":
+				status = i
+			case "knowledge":
+				knowledge = i
+			}
+		}
+	}
+	// A header with no Amendment List and no identifier to write stays as it was;
+	// an ADR that drops only its own identifier still rewrites an existing list.
+	if len(all) == 0 && (own == "" || existing < 0) {
 		return content
 	}
-	lines, end := adrHeaderLines(content)
 	newline := "\n"
 	if bytes.Contains(content, []byte("\r\n")) {
 		newline = "\r\n"
@@ -180,27 +222,15 @@ func WithADRAmendedBy(content []byte, ids []string) []byte {
 	if end < 0 {
 		return append([]byte("---"+newline+string(line)+"---"+newline), content...)
 	}
-	insert := 1
-	status, knowledge := -1, -1
-	for i := 1; i < end; i++ {
-		field, _, ok := strings.Cut(string(lines[i]), ":")
-		if !ok {
-			continue
+	if existing >= 0 {
+		if !bytes.HasSuffix(lines[existing], []byte("\n")) {
+			line = bytes.TrimSuffix(line, []byte(newline))
 		}
-		switch field {
-		case "amended_by":
-			if !bytes.HasSuffix(lines[i], []byte("\n")) {
-				line = bytes.TrimSuffix(line, []byte(newline))
-			}
-			output := append([][]byte(nil), lines...)
-			output[i] = line
-			return bytes.Join(output, nil)
-		case "status":
-			status = i
-		case "knowledge":
-			knowledge = i
-		}
+		output := append([][]byte(nil), lines...)
+		output[existing] = line
+		return bytes.Join(output, nil)
 	}
+	insert := 1
 	if knowledge >= 0 {
 		insert = knowledge + 1
 	} else if status >= 0 {

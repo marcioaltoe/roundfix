@@ -337,6 +337,17 @@ func TestBaselineUpdateDocumentationPart(t *testing.T) {
 		}
 		documentationRequireCurrent(t, f)
 	})
+	t.Run("drops_its_own_identifier", func(t *testing.T) {
+		f := newDocumentationFixture(t, true)
+		original := "---\nstatus: accepted\nknowledge: false\namended_by: [ADR-42, ADR-55]\n---\n# Rule\nAmended by ADR-43.\n"
+		want := "---\nstatus: accepted\nknowledge: false\namended_by: [ADR-42, ADR-43]\n---\n# Rule\nAmended by ADR-43.\n"
+		writeBaselinePlanTestFile(t, f.root, "docs/adr/0055-lists-itself.md", original)
+		_, out, code := documentationRun(t, f, "json", "--yes")
+		if code != exitOK || string(documentationRead(t, f, "docs/adr/0055-lists-itself.md")) != want {
+			t.Fatalf("%d %s", code, out)
+		}
+		documentationRequireCurrent(t, f)
+	})
 	t.Run("fill_beside_history_unit", func(t *testing.T) {
 		f := newDocumentationFixture(t, true)
 		writeBaselinePlanTestFile(t, f.root, "docs/adr/0004-old.md", "---\nstatus: superseded\nsuperseded_by: ADR-0001\n---\n# Old\n")

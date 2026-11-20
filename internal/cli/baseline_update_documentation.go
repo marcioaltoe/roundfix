@@ -185,9 +185,15 @@ func documentationContentDigest(content []byte) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+// documentationOwnIdentifier is the numeric identifier a record's file name begins with.
+func documentationOwnIdentifier(path string) string {
+	own, _, _ := strings.Cut(filepath.Base(path), "-")
+	return own
+}
+
 func documentationNotices(adr documentationADR) []string {
 	// Paths carry the record's own numeric identifier; never add it from a notice.
-	own, _, _ := strings.Cut(filepath.Base(adr.Path), "-")
+	own := documentationOwnIdentifier(adr.Path)
 	result := []string{}
 	for _, id := range adr.Notices {
 		if strings.TrimLeft(strings.TrimPrefix(id, "ADR-"), "0") != strings.TrimLeft(own, "0") {
@@ -231,7 +237,7 @@ func planBaselineUpdateDocumentation(root string) (baselineDocumentationPlan, er
 			p.Report.ADRs.Unmarked++
 		}
 		notices := documentationNotices(adr)
-		after := spec.WithADRAmendedBy(adr.Content, notices)
+		after := spec.WithADRAmendedByExcept(adr.Content, notices, documentationOwnIdentifier(adr.Path))
 		if bytes.Equal(after, adr.Content) {
 			continue
 		}
@@ -285,7 +291,7 @@ func (p baselineDocumentationPlan) apply(ctx context.Context, root string, ancho
 		if err != nil {
 			return report, fmt.Errorf("read ADR %s: %w", header.Path, err)
 		}
-		after := spec.WithADRAmendedBy(content, header.AmendedBy)
+		after := spec.WithADRAmendedByExcept(content, header.AmendedBy, documentationOwnIdentifier(header.Path))
 		if bytes.Equal(content, after) {
 			continue
 		}

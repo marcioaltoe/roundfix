@@ -98,3 +98,37 @@ func TestWithADRAmendedBy(t *testing.T) {
 		})
 	}
 }
+
+func TestWithADRAmendedByExcept(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name, before, after string
+		ids                 []string
+		own                 string
+	}{
+		{"drops_its_own_identifier", "---\nstatus: accepted\namended_by: [ADR-42, ADR-55]\n---\nBody\n", "---\nstatus: accepted\namended_by: [ADR-42, ADR-43]\n---\nBody\n", []string{"ADR-43"}, "ADR-55"},
+		{"own_by_number", "---\namended_by: [ADR-55, ADR-42]\n---\n", "---\namended_by: [ADR-42]\n---\n", []string{}, "ADR-055"},
+		{"only_itself_leaves_an_empty_list", "---\nstatus: accepted\namended_by: [ADR-55]\nknowledge: false\n---\nBody\n", "---\nstatus: accepted\namended_by: []\nknowledge: false\n---\nBody\n", []string{}, "ADR-55"},
+		{"empty_own_is_the_union", "---\namended_by: [ADR-0007]\n---\n", "", []string{"ADR-0003"}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := []byte(tt.before)
+			before := bytes.Clone(original)
+			want := tt.after
+			if tt.own == "" {
+				want = string(WithADRAmendedBy(original, tt.ids))
+			}
+			got := WithADRAmendedByExcept(original, tt.ids, tt.own)
+			if string(got) != want {
+				t.Fatalf("got %q, want %q", got, want)
+			}
+			if !bytes.Equal(original, before) {
+				t.Fatal("mutated input")
+			}
+			if twice := WithADRAmendedByExcept(got, tt.ids, tt.own); !bytes.Equal(twice, got) {
+				t.Fatalf("second write differs: %q", twice)
+			}
+		})
+	}
+}
