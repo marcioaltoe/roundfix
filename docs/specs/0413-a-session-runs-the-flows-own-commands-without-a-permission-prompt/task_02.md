@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -78,3 +78,36 @@ This Task gives `internal/flowpermissions` its file side: the editor that change
 - `_prd.md` → Goals 2 and 4; User Stories 2, 3, 7 and 9; Core Features 6, 7, 8, 9 and 10; Success Metric 3; Success Metric 4; Success Metric 7
 - `_techspec.md` → The settings editor; The plan and its digest; Interfaces; Invariants 1, 2, 3, 4, 5, 8 and 10; Data Models (the Claude Code file, the Codex file, States, the digest); Testing Approach; Risks & Considerations; Build Order 1
 - ADR-0444, ADR-0446
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, golang-safety, evidence-gate, tech-writer.
+
+Added the six declared Go files. The settings editor uses decoder offsets and span edits, validates strict JSON and object-key uniqueness, preserves existing string encodings and surrounding bytes, and decodes its output to compare both resulting lists. The OpenCode reader handles comments and trailing commas outside strings and reports shell restrictions without writing. One list-parameterized planner supplies harness discovery, states, changes and the preview digest. Apply recomputes that plan, preserves unreadable-error causes, refuses empty or stale digests and OpenCode writes, checks repository paths before I/O, and replaces a writable target through a temporary file and one rename. Codex removal deletes only its named rules file.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Preserve user rules, unrelated bytes and formatting; repeat apply and removal round trips | `TestEditClaudeSettings` asserts exact bytes for every required fixture, including tabs, compact lists, no final newline and CRLF. Each formatting fixture also checks idempotence and, when both lists existed, restoration. `TestClaudeSettingsSpanEdges` checks multiple additions, escaped strings, empty-list round trips and input-slice preservation. |
+| Reject non-strict JSON and unexpected list shapes without writing | The reader rejects comments, trailing commas, duplicate top-level/permissions keys, nulls and other invalid shapes. `TestApply/unreadable_target_is_not_written` exercises both actions and checks `ErrUnreadable` together with the underlying Claude error and unchanged bytes. `TestPermissionPlanEdges` also covers a directory target and a non-directory parent. |
+| Write only against the current plan's digest | `TestPlan` checks digest stability, file-byte sensitivity, an independent hash oracle, sorted rule groups and empty no-op digests. `TestApply` checks exact preview content, unchanged file identity on repeated apply, one-byte target changes, empty digests and OpenCode refusals. Additional cases cover changed lists and stale removal previews. |
+| Refuse links leaving the repository and ignore home settings | Path checks precede target reads and writes. Required link tests and `TestPermissionPathBoundary` cover target links, nested Codex directory links, a link installed after a valid preview, OpenCode links, and permitted directory links within the repository. `TestPlan/home_settings_ignored` sets HOME to a separate temporary directory containing applied Claude settings and observes the repository as `not_applied`. Source inspection found no home lookup. |
+| Reach every state and distinguish OpenCode shell restrictions | `TestPlan` covers Claude/Codex absent, current, behind and unreadable states, including retired rules and Git-only settings. `TestReadOpenCode` and `TestPlan/opencode_states` cover `not_needed`, `own_rules` and `unreadable`, both configuration filenames, string-contained comment markers, wildcard effects and malformed files. |
+
+Focused checks:
+
+- Starting signal: `go test ./internal/flowpermissions -run '^TestEditClaudeSettings/one_line_lists$' -count=1` could not compile because the assigned editor and error symbols did not yet exist.
+- `go test ./internal/flowpermissions -run '^TestEditClaudeSettings$' -count=1`: passed after adding the editor.
+- `go test ./internal/flowpermissions -count=1`: passed after adding the reader, planner, writer and required tests.
+- `go test ./internal/flowpermissions -run 'Test(ClaudeSettingsSpanEdges|PermissionPlanEdges)' -count=1`: passed after the additional edge cases.
+- `go test -race -cover ./internal/flowpermissions -count=1`: passed after the final path-boundary cases; 92.6% statement coverage.
+- `GOOS=windows go test -c -o /tmp/roundfix-0413-flowpermissions.test.exe ./internal/flowpermissions`: exit 0; Windows test-binary compilation only, no Windows execution.
+- Ran gofmt on the six new Go files. Source I/O inspection found repository-relative targets only, with no HOME or UserHomeDir lookup. No permanent Harness Permission File fixture was created.
+
+The Task file's pre-existing `in_progress` status is unchanged. Task 01's list and renderer, the Task Graph and every other Task file are unchanged. The declared Verification commands and repository gates were not run; the Daemon retains Verification and settlement ownership. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T033653Z_96d2b5330174b3f3`
+- Source commit: `dfd4ed71b7759f1d93becc1c30d312f2fbdbfc00`
