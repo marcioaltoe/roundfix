@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.151.0] - 2026-11-20
+
+### A project declares whether an open authoring question waits or follows the author
+
+- **`authoring.open_questions: wait | follow` in Project Config.** When a PRD, TechSpec or Tasks phase ends with an **Open Authoring Question** and nobody is present, `wait` (the default) stops that Spec, while `follow` lets the session adopt the author's recommended option and record it as a **Delegated Decision** in the PRD (question, options, the adopted option, date). The Idea stage stays the user's. A **Reserved Question** (data sent out, new scope, spend, an authorization, a Rule Challenge, or an option that contradicts a recorded answer) always waits. Without the key, the session asks once before the flow, and with no answer the Spec waits. The key is read at the default branch head. ADR-0442.
+- **`roundfix follow-up --status` shows the preference and the Delegated Decisions of active Specs,** each with the user's later answer beside it, and prints repository text as one terminal-safe line. `roundfix spec check` reports an unrecorded delegated decision.
+
 ## [0.150.0] - 2026-11-20
 
 ### The Baseline owns the documentation rules and the Secondbrain export
