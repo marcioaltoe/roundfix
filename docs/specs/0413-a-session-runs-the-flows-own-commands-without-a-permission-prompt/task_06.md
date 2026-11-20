@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -62,3 +62,29 @@ task_01 Requirement 2 makes `git -C` a Named Exclusion with that reason, task_03
 - task_01 → Requirement 2
 - task_03 → Requirement 2
 - task_05 → Requirement 15
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, tech-writer, evidence-gate, no-workarounds.
+
+The text preview now names every entry `Exclusions()` returns, `git -C` included. Removing the hyphen-led skip in `printPermissionsExclusions` makes the Git line read `git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration`. The transcript oracle and the guide page carry the same line. A new `TestPermissionsTextPreviewNamesEveryExclusion` compares the text block with the JSON `exclusions` for `claude` and `codex` and names any command present on one side only.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Text previews name all 16 Named Exclusions with correct reasons, Git line matches Overview | `TestPermissionsTextPreviewNamesEveryExclusion` passed for both `claude` and `codex`; the text block now matches the JSON preview's 16 entries, reasons included. `TestPermissionsSurfaceTranscripts/claude_preview` passed against the corrected transcript oracle. The guide line grep found the exact Overview Git line. |
+| Omitting `git -C` fails the new test | Before the production fix, the focused new test failed for both harnesses with `JSON names "git -C", text preview does not`. After the fix, the same test passed. |
+| Existing subtests pass and the Behavior Surface Record is current | `TestPermissionsSurfaceTranscripts` and `TestPermissionsCommand` passed. `TestTheSkillCoverageMapIsCurrent` and `TestOwnedSkillsNameOnlyListedOrExcludedCommands` passed after the sanctioned re-record. `gofmt -l` printed nothing for the two Go files. |
+
+Focused checks (not the Task's declared Verification):
+
+- `go test -count=1 -timeout 10m -run '^TestPermissionsTextPreviewNamesEveryExclusion$' ./internal/cli` — failed before the fix for both subtests, passed after.
+- `go test -count=1 -run '^TestPermissionsSurfaceTranscripts$' ./internal/cli` — passed.
+- `go test -count=1 -run '^TestPermissionsCommand$' ./internal/cli` — passed.
+- `gofmt -l internal/cli/permissions.go internal/cli/permissions_test.go` — printed nothing.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$'` — passed after the re-record.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestOwnedSkillsNameOnlyListedOrExcludedCommands$'` — passed.
+- `tr -s '[:space:]' ' ' < docs/user-guide/commands/permissions.md | grep -qF -- 'git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration'` — passed.
+
+The Behavior Surface Record was re-recorded with `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` after the last edit; the only changed fingerprint is the guide page's. The pre-existing Task status delta is Daemon-owned and was preserved. No Task Graph or other Task file changed, and no commit, push or Pull Request was made. Declared Verification and terminal settlement remain with the Daemon.

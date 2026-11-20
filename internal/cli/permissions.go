@@ -314,11 +314,6 @@ func printPermissionsExclusions(w io.Writer) {
 		}
 	}
 	for _, ex := range exclusions {
-		// The catalog also classifies Git global options for the skill scanner;
-		// the preview names commands down to their subcommands.
-		if len(ex.Words) > 1 && strings.HasPrefix(ex.Words[1], "-") {
-			continue
-		}
 		if _, ok := commands[ex.Reason]; !ok && (len(reasons) == 0 || reasons[0] != ex.Reason) {
 			reasons = append(reasons, ex.Reason)
 		}

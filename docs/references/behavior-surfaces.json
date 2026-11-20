@@ -88,7 +88,7 @@
     "guide docs/user-guide/commands/implement.md": "sha256:199547246dfddfd437d635d9f388ebdc49f998d323034cae9e150461db501e98",
     "guide docs/user-guide/commands/init.md": "sha256:6e44fee83f2f7c08cf9b6a074d4fddc8293c4d065e6351d089692648a8178d3a",
     "guide docs/user-guide/commands/migrate.md": "sha256:9ef86066a0b47688dbb5fbfc35d805c0e9258b802aeb61eb7c2a7ffd09f44e03",
-    "guide docs/user-guide/commands/permissions.md": "sha256:79830e22817ef8a45e8a0135107326a905e55e2cfe35d01e8a1746245dfdb2c1",
+    "guide docs/user-guide/commands/permissions.md": "sha256:9cf6e34e441aff5c96bb093dac2912fdf0e88ad7c6fcc54918804ebb54597a13",
     "guide docs/user-guide/commands/phase.md": "sha256:fe3d12c9943c5da9ad112d8ba58036ae0c3bad5158509a0b85dbb8d0dabef3d7",
     "guide docs/user-guide/commands/profiles.md": "sha256:53f45c93f032d9097310cc483c470a84a8b83bfd7acd9431e804cf69d2223d66",
     "guide docs/user-guide/commands/qa-report.md": "sha256:02007f41ee4fa26c69c304a64b9663ee00e78678649e19d77abaac58e42e478d",

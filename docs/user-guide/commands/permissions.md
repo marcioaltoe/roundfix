@@ -65,7 +65,7 @@ Would add under permissions.ask, to keep these options asked about (<m>):
 Left out, and still asked about:
   roundfix permissions: the command that applies this list
   roundfix baseline, profiles, release, skills: the Roundfix skill tells a session to ask you first
-  git config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration
+  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration
   gh auth: it changes your credentials
   A commit, a push, a merge and a Pull Request stay asked about, and a delivery's push and merge stay behind the Spec's authorization.
 

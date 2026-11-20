@@ -53,7 +53,7 @@ func permissionsClaudeTranscript(p flowpermissions.Plan) string {
 	out.WriteString("  These ask in every permission mode, a session that skips prompts included.\n\nLeft out, and still asked about:\n")
 	out.WriteString("  roundfix permissions: the command that applies this list\n")
 	out.WriteString("  roundfix baseline, profiles, release, skills: the Roundfix skill tells a session to ask you first\n")
-	out.WriteString("  git config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration\n")
+	out.WriteString("  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration\n")
 	out.WriteString("  gh auth: it changes your credentials\n")
 	out.WriteString("  A commit, a push, a merge and a Pull Request stay asked about, and a delivery's push and merge stay behind the Spec's authorization.\n")
 	out.WriteString("\nWhat this does not do:\n  It is not a security boundary: a roundfix command runs what this repository declares.\n  A listed read accepts any option; only the options listed above stay asked about.\n  The rules apply only after you trust this folder in Claude Code.\n")
@@ -367,6 +367,102 @@ func TestPermissionsCommand(t *testing.T) {
 			t.Fatal("home files changed")
 		}
 	})
+}
+
+func TestPermissionsTextPreviewNamesEveryExclusion(t *testing.T) {
+	t.Parallel()
+	for _, harness := range []string{"claude", "codex"} {
+		t.Run(harness, func(t *testing.T) {
+			permissionsWorkspace(t)
+			text, diagnostics, code := permissionsRun(t, "--harness", harness)
+			if code != 0 || diagnostics != "" {
+				t.Fatalf("text preview: exit=%d stderr=%q", code, diagnostics)
+			}
+			textExclusions := permissionsTextExclusions(t, text)
+			jsonExclusions := permissionsJSONExclusions(t, permissionsJSON(t, "--harness", harness))
+			if len(textExclusions) == 0 {
+				t.Fatal("text preview names no Named Exclusion")
+			}
+			for command, reason := range textExclusions {
+				jsonReason, ok := jsonExclusions[command]
+				if !ok {
+					t.Errorf("text preview names %q, JSON does not", command)
+					continue
+				}
+				if jsonReason != reason {
+					t.Errorf("%q: text reason %q, JSON reason %q", command, reason, jsonReason)
+				}
+			}
+			for command := range jsonExclusions {
+				if _, ok := textExclusions[command]; !ok {
+					t.Errorf("JSON names %q, text preview does not", command)
+				}
+			}
+		})
+	}
+}
+
+func permissionsTextExclusions(t *testing.T, preview string) map[string]string {
+	t.Helper()
+	const heading = "Left out, and still asked about:"
+	const fixed = "  A commit, a push, a merge and a Pull Request stay asked about"
+	lines := strings.Split(preview, "\n")
+	start := -1
+	for i, line := range lines {
+		if line == heading {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		t.Fatalf("text preview has no %q block", heading)
+	}
+	exclusions := map[string]string{}
+	for _, line := range lines[start+1:] {
+		if strings.HasPrefix(line, fixed) {
+			break
+		}
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		reasonAt := strings.LastIndex(line, ": ")
+		if reasonAt < 0 {
+			t.Fatalf("exclusion line %q has no reason", line)
+		}
+		commands := strings.Split(line[:reasonAt], ", ")
+		reason := line[reasonAt+2:]
+		firstWord := strings.Fields(commands[0])[0]
+		for i, command := range commands {
+			if i > 0 && strings.Fields(command)[0] != firstWord {
+				command = firstWord + " " + command
+			}
+			exclusions[command] = reason
+		}
+	}
+	return exclusions
+}
+
+func permissionsJSONExclusions(t *testing.T, report map[string]any) map[string]string {
+	t.Helper()
+	raw, ok := report["exclusions"].([]any)
+	if !ok {
+		t.Fatalf("JSON report has no exclusions: %v", report)
+	}
+	exclusions := map[string]string{}
+	for _, item := range raw {
+		exclusion, ok := item.(map[string]any)
+		if !ok {
+			t.Fatalf("unexpected exclusion: %v", item)
+		}
+		command, _ := exclusion["command"].(string)
+		reason, _ := exclusion["reason"].(string)
+		if command == "" {
+			t.Fatalf("exclusion has no command: %v", exclusion)
+		}
+		exclusions[command] = reason
+	}
+	return exclusions
 }
 
 func TestRootHelpNamesThePermissionsCommand(t *testing.T) {
