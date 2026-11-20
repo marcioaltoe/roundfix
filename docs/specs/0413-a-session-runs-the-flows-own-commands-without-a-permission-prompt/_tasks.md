@@ -18,6 +18,9 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
+      needs: [task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_04]
 ---
 
@@ -29,9 +32,12 @@ graph:
 | task_02 | A harness's file is written or cleaned only as a preview with the same digest showed it                                    | backend | high       | task_01 |
 | task_03 | `roundfix permissions` shows the list for a harness and writes it only with the digest a preview printed                   | backend | high       | task_02 |
 | task_04 | The Doctor Command and the Update Check say where a project's list stands, and a harness's permission files are Governed Paths | backend | high       | task_03 |
-| task_05 | Run the final QA gate                                                                                                      | qa      | high       | task_04 |
+| task_05 | Run the final QA gate                                                                                                      | qa      | high       | task_06 |
+| task_06 | Every text preview names every Named Exclusion, `git -C` included                                                          | backend | low        | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
+
+task_06 is corrective Task 1 of 2, added on 2026-11-20 for finding F-01 of the QA gate of that day (`qa/qa-report-2026-11-20.md`, audited head `df1529f9`, row Q15); the QA gate now needs it.
 
 The graph follows `_techspec.md` → Build Order, with its step 1 cut in two. task_01 is the list half of step 1: the data, the three renderings, the Codex golden, the release record and the three contracts of API Contract 6. task_02 is the file half: the settings editor, the OpenCode reader, the plan, its digest and the write. task_03 is step 2, the command with its skill rule, its guide and the glossary. task_04 is step 3, the two reports, the governed set and the test that nothing else uses the list. task_05 is the gate.
 

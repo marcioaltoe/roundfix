@@ -66,10 +66,11 @@ A command that fails only because a fresh `HOME` hid a toolchain is a gate error
     6. The governed pattern loses its `opencode` alternative: `TestGovernedPath/OpenCode_configuration`.
     7. The Doctor check returns the status `failed` for a behind harness: `TestDoctorReportsFlowPermissions/never_fails`.
     8. The sentence "A recommendation, silence or a missing answer is never that yes." is removed from the mirror `skills/roundfix/references/setup.md`: `TestTheRoundfixSkillDescribesFlowPermissions/silence_is_never_that_yes`.
-14. MUST execute the tests task_01 to task_04 name in their Verification.
+    9. `printPermissionsExclusions` skips again every catalog entry whose second word begins with a hyphen: `TestPermissionsTextPreviewNamesEveryExclusion/claude` and `TestPermissionsTextPreviewNamesEveryExclusion/codex`, each naming `git -C`.
+14. MUST execute the tests task_01 to task_04 and the corrective task_06 name in their Verification.
 15. MUST search and record:
     - every rendering of the list printed by the JSON previews of requirements 5 and 6 holds no entry whose first word after `Bash(` is `bash`, `sh`, `zsh`, `python`, `python3`, `node`, `go`, `make`, `npm`, `bun` or `npx`, no `*` in the place of a command or a subcommand, and no rule for a Named Exclusion;
-    - every preview names the Named Exclusions with their reasons and prints "It is not a security boundary: a roundfix command runs what this repository declares.";
+    - every preview names the Named Exclusions with their reasons and prints "It is not a security boundary: a roundfix command runs what this repository declares."; the text preview of Claude Code and of Codex names, entry by entry, the same Named Exclusions with the same reasons as the JSON preview of the same plan, `git -C` included, and its Git line reads `  git -C, config, init, merge, mv, push, remote, repack, switch, worktree: they change the repository or its configuration`, the line corrective task_06 fixes in place of the example of `_techspec.md` → API Contract 2, which predates the classification of `git -C`;
     - both copies of the Roundfix `SKILL.md`, `setup` and `modes` references carry the texts of `_techspec.md` → API Contract 7 and of task_04, and `.agents/skills` and `skills` hold the same bytes for each changed file; no `### QA settlement` section changed;
     - `docs/user-guide/commands/permissions.md`, `docs/user-guide/commands.md`, `docs/user-guide/usage.md`, `docs/user-guide/commands/doctor.md`, `docs/user-guide/commands/update.md` and `docs/user-guide/configuration.md` carry their texts, and the Doctor and Update Check help carry their sentences;
     - ADR-0444, ADR-0445 and ADR-0446 are `accepted` and carry the Knowledge Mark;
@@ -132,4 +133,5 @@ A command that fails only because a fresh `HOME` hid a toolchain is a gate error
 - `_techspec.md` → Interfaces; Invariants 1-10; API Contracts 1-7; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Testing Approach; Build Order 4
 - [`references/2026-11-19-harness-rule-measurements.md`](references/2026-11-19-harness-rule-measurements.md)
 - [`references/2026-11-19-the-flows-commands-and-the-harness-permission-rules.md`](references/2026-11-19-the-flows-commands-and-the-harness-permission-rules.md)
+- task_06 → Requirements 1-5
 - ADR-0444, ADR-0445, ADR-0446
