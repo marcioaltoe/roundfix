@@ -6,6 +6,7 @@ package docscontract
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -23,6 +24,7 @@ import (
 
 	"roundfix/internal/cli"
 	"roundfix/internal/delivery"
+	"roundfix/internal/flowpermissions"
 	"roundfix/internal/runevent"
 	"roundfix/internal/secretscan"
 	"roundfix/internal/speccheck"
@@ -745,4 +747,216 @@ func checkEventCategoryDocumentation(docs []anchoredText, categories []string) e
 		}
 	}
 	return nil
+}
+
+// ownedSkillCode collects inline code and fenced code (both Markdown fence
+// characters), leaving prose out of the command contract.
+func ownedSkillCode(text string) []string {
+	var code []string
+	var prose strings.Builder
+	var fenced strings.Builder
+	var fence byte
+	var width int
+	flushProse := func() {
+		for _, span := range glossaryContractCodeSpans(prose.String()) {
+			code = append(code, span.value)
+		}
+		prose.Reset()
+	}
+	for _, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimLeft(line, " ")
+		run := 0
+		if len(trimmed) > 0 && (trimmed[0] == '`' || trimmed[0] == '~') {
+			run = len(trimmed) - len(strings.TrimLeft(trimmed, string(trimmed[0])))
+		}
+		if fence != 0 {
+			if run >= width && trimmed[0] == fence && strings.TrimSpace(trimmed[run:]) == "" {
+				code = append(code, fenced.String())
+				fenced.Reset()
+				fence = 0
+			} else {
+				fenced.WriteString(line)
+				fenced.WriteByte('\n')
+			}
+			continue
+		}
+		if run >= 3 {
+			flushProse()
+			fence = trimmed[0]
+			width = run
+			continue
+		}
+		prose.WriteString(line)
+		prose.WriteByte('\n')
+	}
+	if fence != 0 {
+		code = append(code, fenced.String())
+	}
+	flushProse()
+	return code
+}
+
+var ownedSkillCommandPattern = regexp.MustCompile(`\b(roundfix|git|gh)\s+([-a-zA-Z0-9_]+)`)
+var ownedSkillNextWord = regexp.MustCompile(`^\s+([-a-zA-Z0-9_]+)`)
+
+func ownedSkillCommands(text string, registered map[string]bool) []string {
+	seen := map[string]bool{}
+	for _, code := range ownedSkillCode(text) {
+		for _, match := range ownedSkillCommandPattern.FindAllStringSubmatchIndex(code, -1) {
+			tool, word := code[match[2]:match[3]], code[match[4]:match[5]]
+			if tool == "roundfix" && !registered[word] {
+				continue
+			}
+			command := tool + " " + word
+			if tool == "gh" && (word == "pr" || word == "auth") {
+				if next := ownedSkillNextWord.FindStringSubmatch(code[match[1]:]); next != nil {
+					command += " " + next[1]
+				}
+			}
+			seen[command] = true
+		}
+	}
+	commands := make([]string, 0, len(seen))
+	for command := range seen {
+		commands = append(commands, command)
+	}
+	slices.Sort(commands)
+	return commands
+}
+
+func unlistedSkillCommands(document documentedText, registered map[string]bool, entries []flowpermissions.Entry, exclusions []flowpermissions.Exclusion, notCommands []string) []string {
+	var findings []string
+	for _, command := range ownedSkillCommands(document.content, registered) {
+		words := strings.Fields(command)
+		covered := (words[0] == "git" || words[0] == "gh") && slices.Contains(notCommands, words[1])
+		hasPrefix := func(prefix []string) bool {
+			return len(prefix) <= len(words) && slices.Equal(prefix, words[:len(prefix)])
+		}
+		for _, entry := range entries {
+			if hasPrefix(entry.Words) {
+				covered = true
+			}
+		}
+		for _, exclusion := range exclusions {
+			if hasPrefix(exclusion.Words) {
+				covered = true
+			}
+		}
+		if !covered {
+			findings = append(findings, fmt.Sprintf("%s: %s is neither on the Flow Command List nor a Named Exclusion", document.path, command))
+		}
+	}
+	return findings
+}
+
+func registeredFlowCommands(t *testing.T) map[string]bool {
+	t.Helper()
+	var stdout, stderr bytes.Buffer
+	if code := cli.Run([]string{"--help"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("root help exited %d: %s", code, stderr.String())
+	}
+	registered := map[string]bool{}
+	for _, path := range commandPaths(stdout.String()) {
+		registered[strings.Fields(path)[0]] = true
+	}
+	if !registered["spec"] || !registered["doctor"] {
+		t.Fatalf("root help did not register the anchor commands: %v", registered)
+	}
+	return registered
+}
+
+func TestOwnedSkillsNameOnlyListedOrExcludedCommands(t *testing.T) {
+	t.Parallel()
+	root := baselineDocumentationRepoRoot()
+	data, err := os.ReadFile(filepath.Join(root, "skills/testdata/owned-skill-versions.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var record struct {
+		Skills map[string]json.RawMessage `json:"skills"`
+	}
+	if err := json.Unmarshal(data, &record); err != nil {
+		t.Fatal(err)
+	}
+	if len(record.Skills) == 0 {
+		t.Fatal("owned skill registry is empty")
+	}
+	names := make([]string, 0, len(record.Skills))
+	for name := range record.Skills {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	registered := registeredFlowCommands(t)
+	for _, name := range names {
+		count := 0
+		err := filepath.WalkDir(filepath.Join(root, ".agents/skills", name), func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() || filepath.Ext(path) != ".md" {
+				return nil
+			}
+			count++
+			relative, err := filepath.Rel(root, path)
+			if err != nil {
+				return err
+			}
+			document := documentedText{path: filepath.ToSlash(relative), content: readContractDocument(t, path)}
+			for _, finding := range unlistedSkillCommands(document, registered, flowpermissions.Entries(), flowpermissions.Exclusions(), flowpermissions.NotCommands()) {
+				t.Error(finding)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count == 0 {
+			t.Errorf("owned skill %s has no Markdown files", name)
+		}
+	}
+}
+
+func TestAnUnlistedSkillCommandIsReported(t *testing.T) {
+	t.Parallel()
+	registered := registeredFlowCommands(t)
+	withoutSpec := slices.DeleteFunc(flowpermissions.Entries(), func(entry flowpermissions.Entry) bool { return slices.Equal(entry.Words, []string{"roundfix", "spec"}) })
+	for _, tc := range []struct {
+		name, text, missing string
+		entries             []flowpermissions.Entry
+	}{
+		{"unlisted_roundfix_subcommand", "`roundfix doctor`", "roundfix doctor", nil},
+		{"unlisted_git_command", "```sh\ngit log --oneline\n```", "git log", flowpermissions.Entries()},
+		{"unlisted_gh_pr_command", "`gh pr list`", "gh pr list", flowpermissions.Entries()},
+		{"entry_taken_off_the_list", "`roundfix spec check`", "roundfix spec", withoutSpec},
+		{"excluded_command_is_covered", "`git push origin HEAD`", "", flowpermissions.Entries()},
+		{"exclusion_prefix_covers_its_forms", "`gh auth login` and `gh auth refresh` and `git -C '<repo>' reset --hard`", "", flowpermissions.Entries()},
+		{"unregistered_roundfix_word_is_ignored", "`roundfix invented-subcommand` and `roundfix --status`", "", flowpermissions.Entries()},
+		{"not_a_command_word_is_covered", "`gh failed: no response` and `gh has no credentials`", "", flowpermissions.Entries()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			const path = ".agents/skills/planted/references/commands.md"
+			findings := unlistedSkillCommands(documentedText{path: path, content: tc.text}, registered, tc.entries, flowpermissions.Exclusions(), flowpermissions.NotCommands())
+			var want []string
+			if tc.missing != "" {
+				want = []string{path + ": " + tc.missing + " is neither on the Flow Command List nor a Named Exclusion"}
+			}
+			if !slices.Equal(findings, want) {
+				t.Fatalf("findings = %v, want %v", findings, want)
+			}
+		})
+	}
+}
+
+func TestOwnedSkillCommandCollectionReadsOnlyCode(t *testing.T) {
+	t.Parallel()
+	text := "Prose git push and roundfix doctor are ignored.\n" +
+		"Use ``roundfix spec --format `json` `` and `gh pr view`.\n" +
+		"```sh\ngit status\ngh auth login\n```\n" +
+		"~~~sh\ngit -C '<repo>' branch work\ngh pr create\n~~~\n" +
+		"    ```\ngit log nested-fence\n    ```\n"
+	got := ownedSkillCommands(text, map[string]bool{"spec": true, "doctor": true})
+	want := []string{"gh auth login", "gh pr create", "gh pr view", "git -C", "git log", "git status", "roundfix spec"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("commands = %q, want %q", got, want)
+	}
 }

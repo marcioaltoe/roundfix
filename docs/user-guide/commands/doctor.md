@@ -96,8 +96,14 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
 - `baseline-export:` — after `baseline-claude-link:`, compares the Standard
   Export List with the update's plan and reads the repository's own lines.
   It is skipped when the Secondbrain is turned off in the Setup Manifest.
-- `baseline-docs:` — after `baseline-export:` and before `residue:`, checks
+- `baseline-docs:` — after `baseline-export:` and before `flow-permissions:`, checks
   the documentation layout, ADR headers and Lesson Learned form.
+- `flow-permissions:` — after the Baseline checks and before `residue:`, reports
+  each present harness as current, behind, not applied, not readable, not needed
+  or own rules. It is `ok` for current, not needed or own rules; `skipped` when
+  no harness is present or every list is not applied; and `warn` with
+  `DR-FLOW-PERMISSIONS-BEHIND` or `DR-FLOW-PERMISSIONS-UNREADABLE` and the preview
+  command for the first harness behind or not readable. It warns when a harness is behind or not readable and never fails Doctor.
 - `residue:` — live processes from terminal Run lineages, or a partial result
   when Doctor cannot inspect every lineage. A terminal Run whose recorded owner
   PID is alive with a different start identity adds nothing: its owner is gone
@@ -272,6 +278,7 @@ remote: ok (origin: github.com/<owner/repo>; reachable)
 toolchain: ok (<tools> found)
 environment: ok (spec judge keys: ROUNDFIX_OPENROUTER_JUDGE_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set, ROUNDFIX_TYPESAFE_API_KEY not set; implementation keys: ROUNDFIX_OPENROUTER_IMPLEMENT_API_KEY not set, ROUNDFIX_OPENROUTER_API_KEY not set)
 skills: ok (<required> required: <owned> Roundfix-owned, <external> external)
+flow-permissions: skipped (no harness files in this repository)
 residue: ok (no process residue found)
 storage: ok (nothing to reclaim; Runs reclaimable: 0; Run Database free bytes: 0)
 codex: ok
@@ -475,6 +482,27 @@ Use `1 passage` or `<n> passages`; locations are separated by `, `.
 `DR-BASELINE-CLAUDE-LINK-UNLINKED` names a checkout without symbolic links;
 `DR-BASELINE-CLAUDE-LINK-UNREAD` reports a read error. Every code is advisory:
 the line never fails Doctor or changes its exit code, and writes nothing.
+
+#### Flow permissions
+
+The offline check reads only the repository's Harness Permission Files. It
+prints one part per present harness in Claude Code, Codex, OpenCode order,
+joined with `; `. It applies nothing and never changes Doctor's exit code.
+
+```text
+flow-permissions: ok (claude: current; opencode: not needed)
+flow-permissions: warn (DR-FLOW-PERMISSIONS-BEHIND: claude: behind, 2 to add, 0 to remove; codex: not applied; next: roundfix permissions --harness claude)
+flow-permissions: warn (DR-FLOW-PERMISSIONS-UNREADABLE: claude: not readable; next: roundfix permissions --harness claude)
+flow-permissions: skipped (claude: not applied; to see the list: roundfix permissions)
+flow-permissions: skipped (no harness files in this repository)
+flow-permissions: skipped (outside a Git repository)
+```
+
+`opencode: own rules` is also `ok`: compare the project's shell rules with the
+list using `roundfix permissions --harness opencode`. A behind part takes
+precedence over an unreadable part for the warning code; the next command
+always names the first harness that is behind or not readable. Add counts
+include missing Guard Entries.
 
 #### Documentation rules
 

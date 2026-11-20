@@ -494,6 +494,12 @@ Config, Runs, or Run Database state. See
 for the audit, decision, preview, apply, formatter, Verification, audit, and
 reapply workflow.
 
+## Agent harness permission files
+
+No Project Config key records the Flow Command List: the Harness Permission File itself is the record, and `roundfix permissions` shows or applies it.
+
+Each Harness Permission File is a Governed Path, so a Task that changes one needs a grant that names it.
+
 ## Full example
 
 ```yaml

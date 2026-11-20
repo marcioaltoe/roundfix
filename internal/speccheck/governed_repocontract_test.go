@@ -116,6 +116,22 @@ func TestGovernedSetOnlyGrows(t *testing.T) {
 		})
 	}
 
+	for _, file := range []struct{ label, path string }{
+		{"claude-shared-settings", ".claude/settings.json"},
+		{"claude-personal-settings", ".claude/settings.local.json"},
+		{"codex-rules-file", ".codex/rules/roundfix-flow.rules"},
+		{"codex-config", ".codex/config.toml"},
+		{"opencode-json", "opencode.json"},
+		{"opencode-jsonc", "opencode.jsonc"},
+	} {
+		t.Run("harness permission file "+file.label, func(t *testing.T) {
+			t.Parallel()
+			if !GovernedPath(file.path) || !governedPathHasClause(file.path, toolingAuthorityClause) {
+				t.Fatalf("%s must be governed with clause %q", file.path, toolingAuthorityClause)
+			}
+		})
+	}
+
 	ordinaryPaths := []string{
 		"internal/app/metadata.go",
 		"docs/specs/example/_prd.md",

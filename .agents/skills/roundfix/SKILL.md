@@ -5,10 +5,10 @@ metadata:
   category: code-review
   opencode/slash: "true"
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.282
+  version: 0.1.283
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
-version: 0.1.282
+version: 0.1.283
 ---
 
 # Roundfix
@@ -89,7 +89,7 @@ Each command has one reference, edited when its command changes. Read its row;
 | [runs](references/runs.md) | `runs`, `runs causes`, `attach` | Discovering Runs, explaining Verification failures, or viewing detached Runs. |
 | [runtime](references/runtime.md) | — (the Node.js and acpx prerequisite that `setup`, `doctor` and `upgrade` check; those commands live in setup) | Checking or configuring the ACP Runtime dependency. |
 | [settle](references/settle.md) | `settle`, `reopen`, `qa-report` | Reopening or settling a Task, or accepting a QA Report. |
-| [setup](references/setup.md) | `init`, `setup`, `migrate`, `doctor`, `upgrade`, `update`, `skills` | Initializing config, checking readiness, upgrading, or installing skills. |
+| [setup](references/setup.md) | `init`, `setup`, `migrate`, `doctor`, `upgrade`, `update`, `skills`, `permissions` | Initializing config, checking readiness, upgrading, installing skills, or showing the Flow Command List with `roundfix permissions`. |
 | [spec](references/spec.md) | `spec` | Checking a Spec or auditing its closure. |
 | [spec-delivery](references/spec-delivery.md) | — (the loop across `implement` and `deliver`; each command lives in its own reference) | Driving the implementation loop and autonomous Spec delivery. |
 | [stop](references/stop.md) | `stop` | Stopping a Run. |

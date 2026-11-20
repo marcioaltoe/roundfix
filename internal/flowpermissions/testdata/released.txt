@@ -1,0 +1,109 @@
+Bash(gh api *)
+Bash(gh api *--field*)
+Bash(gh api *--input*)
+Bash(gh api *--method*)
+Bash(gh api *--raw-field*)
+Bash(gh api* -F*)
+Bash(gh api* -X*)
+Bash(gh api* -f*)
+Bash(gh pr view *)
+Bash(git archive *)
+Bash(git archive *--exec*)
+Bash(git archive *--output*)
+Bash(git archive *--remote*)
+Bash(git archive* -o*)
+Bash(git cat-file *)
+Bash(git check-ignore *)
+Bash(git diff *)
+Bash(git diff *--ext-diff*)
+Bash(git diff *--output*)
+Bash(git diff-tree *)
+Bash(git diff-tree *--ext-diff*)
+Bash(git diff-tree *--output*)
+Bash(git grep *)
+Bash(git grep *--open-files-in-pager*)
+Bash(git grep* -O*)
+Bash(git ls-files *)
+Bash(git merge-tree *)
+Bash(git rev-list *)
+Bash(git rev-parse *)
+Bash(git show *)
+Bash(git show *--ext-diff*)
+Bash(git show *--output*)
+Bash(git status *)
+Bash(roundfix archive *)
+Bash(roundfix attach *)
+Bash(roundfix cancel *)
+Bash(roundfix corrections *)
+Bash(roundfix deliver *)
+Bash(roundfix doctor *)
+Bash(roundfix events *)
+Bash(roundfix fetch *)
+Bash(roundfix follow-up *)
+Bash(roundfix gc *)
+Bash(roundfix history *)
+Bash(roundfix implement *)
+Bash(roundfix init *)
+Bash(roundfix migrate *)
+Bash(roundfix phase *)
+Bash(roundfix qa-report *)
+Bash(roundfix reconcile *)
+Bash(roundfix reopen *)
+Bash(roundfix resolve *)
+Bash(roundfix review *)
+Bash(roundfix runs *)
+Bash(roundfix settle *)
+Bash(roundfix setup *)
+Bash(roundfix spec *)
+Bash(roundfix stop *)
+Bash(roundfix storage *)
+Bash(roundfix supersede *)
+Bash(roundfix update *)
+Bash(roundfix upgrade *)
+Bash(roundfix watch *)
+Bash(roundfix window *)
+gh api
+gh pr view
+git archive
+git cat-file
+git check-ignore
+git diff
+git diff-tree
+git grep
+git ls-files
+git merge-tree
+git rev-list
+git rev-parse
+git show
+git status
+roundfix archive
+roundfix attach
+roundfix cancel
+roundfix corrections
+roundfix deliver
+roundfix doctor
+roundfix events
+roundfix fetch
+roundfix follow-up
+roundfix gc
+roundfix history
+roundfix implement
+roundfix init
+roundfix migrate
+roundfix phase
+roundfix qa-report
+roundfix reconcile
+roundfix reopen
+roundfix resolve
+roundfix review
+roundfix runs
+roundfix settle
+roundfix setup
+roundfix spec
+roundfix stop
+roundfix storage
+roundfix supersede
+roundfix update
+roundfix upgrade
+roundfix watch
+roundfix window

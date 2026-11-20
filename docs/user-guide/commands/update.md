@@ -191,6 +191,23 @@ comparison runs.
 
 When a newer Roundfix wrote this repository's Baseline, the check prints `roundfix: warning: <refusal>; Project Config not read` on stderr, reads no Project Config, and its Baseline line is `Baseline: failed:` followed by the refusal.
 
+After the profile recommendations and before `Next:`, the check reports each
+harness whose Flow Command List is current, behind or not readable:
+
+```text
+Flow permissions: claude current
+Flow permissions: claude behind, 2 to add, 0 to remove — roundfix permissions --harness claude
+Flow permissions: claude not readable — roundfix permissions --harness claude
+```
+
+The optional JSON part `flowPermissions` holds one object per such harness, in
+Claude Code, Codex, OpenCode order, with `harness`, `state` (`current`, `behind`
+or `unreadable`), `add` and `remove` counts, and `next`. The preview command in
+`next` is empty when current. Add counts include missing Guard Entries. The
+part is omitted when none qualifies, including when no list is applied or no
+harness is present. It changes neither the top-level `next` nor the exit code.
+The update check never applies the Flow Command List.
+
 Only when a release is newer or the Baseline has a plan, the last line names
 the configured mode:
 
@@ -239,6 +256,7 @@ document:
 | `recommendations.categories[].deviation` | Profile Deviation, present only when `state` is `pinned_to_older_snapshot` |
 | `recommendations.categories[].repin` | Configuration key and snapshot that re-pin an older deviation, present only when `state` is `pinned_to_older_snapshot` |
 | `recommendations.categories[].adopt` | `roundfix profiles check --apply --scope <user|project>` for the category's source |
+| `flowPermissions` | Optional harness list with `harness`, `state`, `add`, `remove` and `next`; omitted when empty |
 | `next` | `apply` for a newer release or a `plan_ready` Baseline, otherwise `none` |
 
 A repository that wants the harness itself to run the check may add a SessionStart hook whose command is `roundfix update check`: in Claude Code under `hooks` → `SessionStart` with the matcher `startup` in `.claude/settings.json`, whose plain standard output reaches the session's context, and in Codex the same entry in `.codex/hooks.json`, which runs only in a trusted project after the hook is reviewed with `/hooks`. A hook is repository tooling configuration, so add it only with the maintainer's authorization; the session still sees the report once, because the instruction skips a session whose context already holds it.
