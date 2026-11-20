@@ -66,6 +66,32 @@ In brainstorming, the Idea and the PRD, a recorded decision guides the solution 
 
 The Idea and the PRD record each question under `## Rule challenges`, and write `None.` there when no rule blocked the goal. An author asks at most three Rule Challenges in one Authoring Phase or brainstorming session, and the TechSpec author asks one before a design takes what an accepted ADR rejected. With nobody present to answer, only that Spec waits, as a Backlog Entry with a Waiting Declaration, and other work goes on. A rule inside a Managed Region changes only in the Baseline: the user's decision goes to the Baseline's owner as one ai-memory message, and the rule stays in force until the Baseline changes. In a Run, in a Task and in the QA gate a rule is a guard-rail, and no Rule Challenge is asked there ([ADR-0436](../adr/0436-an-authoring-phase-questions-a-rule-that-blocks-the-goal-and-the-rule-binds-until-the-user-answers.md), [ADR-0437](../adr/0437-a-rule-the-user-keeps-carries-a-kept-line-and-is-asked-about-again-only-with-a-new-fact.md)).
 
+### Open authoring questions
+
+An Open Authoring Question is a question the author of a PRD, a TechSpec or a Task Graph needs answered to finish its phase and that no source settles. The author states it with two or three options and the one it recommends. A user who is present is asked, and a recommendation, silence, a dismissal or a timeout adopts nothing. With nobody present, the project's Authoring Question Preference decides:
+
+| `authoring.open_questions` | What happens with nobody present |
+| --- | --- |
+| `wait`, or absent | The Spec waits: no artifact of that phase is written, and an open Backlog Entry names the Spec, holds the question and carries a Waiting Declaration. Other work goes on. |
+| `follow` | The session adopts the option the author recommends and records it in the PRD as a Delegated Decision. The Spec goes on through authoring and delivery inside the authorization it already holds. |
+
+In a project that declares nothing, the `unattended` Skill Mode asks once before the flow, with waiting as the recommended option, and the answer holds for the Specs of that flow.
+
+A Reserved Question waits whatever the preference: the Idea stage and the choice an Idea Stage Judgment leaves to the user; a Rule Challenge; every authorization; a recommended option that adds scope, spends, sends data outside or contradicts a recorded answer of the user; a question without two or three options and a recommended one; and a question the author or the session cannot classify. The author says whether a question is reserved, and the session checks that before it adopts anything.
+
+A Delegated Decision is an entry of the PRD's `## Decisions`, never a dated answer of a person:
+
+```markdown
+- delegated: 2026-11-20, prd
+  - question: which failure behavior does an expired import have?
+  - options: retry automatically up to 3 times; fail fast and notify the user; park it for manual review
+  - adopted: retry automatically up to 3 times — it preserves the sync retry behavior
+  - under: Project Config
+  - answer: none yet
+```
+
+The report of the session lists every Delegated Decision of the flow, and `roundfix follow-up --status` lists the ones of every active Spec. The user's later answer wins: it replaces `none yet` as `YYYY-MM-DD, kept` or `YYYY-MM-DD, changed` with the user's words while no Run and no delivery of the Spec has started; after that a changed answer becomes a correction of the Spec in delivery or a Backlog Entry ([ADR-0442](../adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
+
 ### Knowledge a repository publishes
 
 When the Secondbrain is enabled, `.secondbrain-export` holds the Standard Export List between markers. The Baseline update maintains the README, glossary, user guide, references, design, lessons and marked ADR paths. Lines outside the markers are the Export Variation: repository additions or exclusions, each with a reason. For example:

@@ -128,7 +128,8 @@ when a source pattern matches it.
   the key to deliver as `feat`.
 
 - `SC-DECISIONS-UNRECORDED` — a PRD's `## Decisions` section lacks both a
-  dated answer and the autonomous-route line naming its decision source. A gap
+  dated answer and the autonomous-route line naming its decision source, or
+  holds a Delegated Decision entry that cannot be read. A gap
   from the PRD stage that reads shape only. Its horizon is the oldest commit
   that added `.agents/skills/write-prd/references/clarification-record.md`: a
   PRD whose adding commit is at or after it, or an uncommitted PRD, is held;

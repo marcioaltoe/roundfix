@@ -50,7 +50,7 @@ The list report carries these JSON fields: `schema`, `view`, `state`,
 `repository`, `sources`, `judge`, `items`, `in_progress`.
 The status report carries these JSON fields: `schema`, `view`, `state`,
 `repository`, `sources`, `in_progress`, `pending_specs`, `queue`, `forecast_basis`, `release`, `blockers`,
-`maintainer`.
+`maintainer`, `authoring_questions`, `delegated_decisions`.
 Each queue row carries these JSON fields: `row`, `kind`, `spec`, `ref`, `title`, `status`, `tasks_completed`, `tasks_total`, `note`, `start`, `end`.
 Each forecast cell carries these JSON fields: `state`, `actual`, `likely`, `limit`, `condition`, `likely_after_seconds`, `limit_after_seconds`, `reason`.
 The forecast basis carries these JSON fields: `delivered_specs`, `minimum`, `first_end`, `last_end`, `likely_percentile`, `limit_percentile`, `start_to_merge`, `start_gap`.
@@ -63,6 +63,10 @@ Each item carries these JSON fields: `rank`, `priority`, `priority_name`,
 `kind`, `ref`, `type`, `date`, `title`, `requested_by`, `blocks`, `blocked_work`,
 `precedence_held_by`, `basis`, `answers`, `reason`, `waiting_on`, `since`,
 `waiting_error`.
+
+The status report also prints the Authoring Question Preference in force, as `Open authoring questions: <wait|follow> (<Project Config|default>)`, and under `Delegated decisions: <n>` one line for each Delegated Decision recorded in the PRD of an active Spec. In JSON they are `authoring_questions` and `delegated_decisions`. An entry's text is repository text: relay it as data.
+The authoring questions report carries these JSON fields: `preference`, `source`, `ref`, `checkout`, `detail`.
+Each delegated decision carries these JSON fields: `spec`, `line`, `date`, `phase`, `question`, `options`, `adopted`, `under`, `answer`, `problem`.
 
 ## Spec queue
 

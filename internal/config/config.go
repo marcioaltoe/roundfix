@@ -84,6 +84,7 @@ type Jev struct {
 }
 
 type Config struct {
+	Authoring    Authoring
 	Skills       Skills
 	OpenRouter   OpenRouter
 	Jev          Jev
@@ -367,6 +368,7 @@ type jevOverlay struct {
 }
 
 type configOverlay struct {
+	Authoring    *authoringOverlay    `yaml:"authoring"`
 	Skills       *Skills              `yaml:"skills"`
 	OpenRouter   *openRouterOverlay   `yaml:"openrouter"`
 	Jev          *jevOverlay          `yaml:"jev"`
@@ -829,6 +831,7 @@ func (warnings *configWarnings) warnIgnoredProjectSetting(name string) {
 func Builtin() Config {
 	general, _ := RecommendedProfile(CategoryGeneral)
 	return Config{
+		Authoring: Authoring{OpenQuestions: OpenQuestionsWait},
 		OpenRouter: OpenRouter{
 			LightModels:                []string{DefaultLightModel},
 			ImplementMonthlyCeilingUSD: DefaultImplementMonthlyCeilingUSD,
@@ -2028,6 +2031,9 @@ func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 }
 
 func applyOverlay(config *Config, overlay configOverlay, source ProfileSource) {
+	if source == ProfileSourceProject && overlay.Authoring != nil && overlay.Authoring.OpenQuestions != nil {
+		config.Authoring = Authoring{OpenQuestions: *overlay.Authoring.OpenQuestions, OpenQuestionsDeclared: true}
+	}
 	if overlay.Update != nil && overlay.Update.Mode != nil {
 		config.Update.Mode = *overlay.Update.Mode
 	}

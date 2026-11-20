@@ -73,8 +73,8 @@ func TestTheSpecWorkflowModuleCarriesTheRuleChallengeClauses(t *testing.T) {
 			t.Fatal("missing guide rules")
 		}
 		found := false
-		for i := 1; i+1 < len(rules); i++ {
-			if rules[i] == "rule.spec.rule-challenge" && rules[i-1] == "rule.spec.routing" && rules[i+1] == "rule.spec.project-constraints" {
+		for i := 1; i+2 < len(rules); i++ {
+			if rules[i] == "rule.spec.rule-challenge" && rules[i-1] == "rule.spec.routing" && rules[i+1] == "rule.spec.open-authoring-question" && rules[i+2] == "rule.spec.project-constraints" {
 				found = true
 			}
 		}

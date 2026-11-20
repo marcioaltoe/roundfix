@@ -317,6 +317,10 @@
       {
         "version": 28,
         "digest": "sha256:3edcb9c8cc33a04001b27177d9c491285cd1ff87daab7dec788bf2f5c28cc6f2"
+      },
+      {
+        "version": 29,
+        "digest": "sha256:e36bc326eae64825b62e687aec46ffc92cf2a0c41589cab17aa858f8883f6a23"
       }
     ],
     "tui-surface": [
