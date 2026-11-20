@@ -1,3 +1,0 @@
-Nick Milton (2017), read 2026-11-18 and 2026-11-19, published at http://www.nickmilton.com/2017/07/leaving-lessons-in-lessons-database.html. The locally recorded passage removes a lesson after a practice, design principle or checklist embeds it. The rendered retirement rule now deletes a Lesson Learned when an accepted ADR, guide or skill states it. The source supports retirement; it is also dissent against storing lessons at all.
-
-Sources read only from the PRD Acceptance evidence and adopted measurement; no external lookup, network or other-repository read.

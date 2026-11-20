@@ -1,4 +1,0 @@
-Source: Iscan; 2026; read 2026-11-18 and 2026-11-19; https://arxiv.org/abs/2604.27283.
-Recorded by PRD Acceptance evidence, checked offline as Requirement 13 instructs; no live lookup.
-Comparison: Prior memory requires compatibility with the current failure; the eight-line lesson form includes Applies when and Does not apply when.
-Independent confirmation: baseline/export/ADR/lesson contract tests and public-flow evidence of this pass.

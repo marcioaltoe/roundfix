@@ -1,9 +1,0 @@
-$ go test -count=1 -timeout 20m -v -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/qa/sabotage-11.test -run '^TestThisRepositoryExportsNoProcessPath$' -tags docscontract ./internal/docscontract
-=== RUN   TestThisRepositoryExportsNoProcessPath
-    secondbrain_export_test.go:30: export variation departures: [{Code:DR-EXPORT-PROCESS-PATH Path:docs/agents/ Line:343 Detail:}]
---- FAIL: TestThisRepositoryExportsNoProcessPath (0.00s)
-FAIL
-FAIL	roundfix/internal/docscontract	0.461s
-FAIL
-
-exit: 1

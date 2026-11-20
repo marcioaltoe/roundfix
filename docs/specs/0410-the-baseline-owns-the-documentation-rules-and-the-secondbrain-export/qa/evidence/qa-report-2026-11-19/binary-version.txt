@@ -1,4 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export-3b10b6236fac1036-72bc717a-81eee2e0/run_20261119T233243Z_57c90d2c2fba0242/bin/roundfix --version
-roundfix 0.149.0 (357ae206-dirty, built 2026-11-19 21:03:34 -0300)
-
-exit: 0

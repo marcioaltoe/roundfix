@@ -1,6 +1,0 @@
-task_01.md: 52 named test or absence predicates satisfied
-task_02.md: 34 named test or absence predicates satisfied
-task_03.md: 23 named test or absence predicates satisfied
-task_04.md: 1 named test or absence predicates satisfied
-TestSecondbrainExportFollowsTheHistoryForm: required negative check; old test absent
-task_05.md: 6 named test or absence predicates satisfied

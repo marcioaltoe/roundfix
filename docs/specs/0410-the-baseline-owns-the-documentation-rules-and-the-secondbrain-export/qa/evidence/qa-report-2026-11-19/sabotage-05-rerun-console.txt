@@ -1,4 +1,0 @@
-assert: one mutation anchor func PlanExportList(current []byte, exists bool, facts ExportListFacts) ExportListPlan {
-sabotage-05 exit 1 passes 0
-
-exit: 0

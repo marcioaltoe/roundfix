@@ -1,3 +1,0 @@
-Ansible blockinfile documentation, read 2026-11-18 and 2026-11-19, https://docs.ansible.com/ansible/latest/collections/ansible/builtin/blockinfile_module.html. Its locally recorded warning connects indistinct markers with repeated insertion. The shipped list has distinct begin/end markers, rejects a broken pair without writing and is unchanged on repeat. The comparison is specific to marker safety.
-
-Sources read only from the PRD Acceptance evidence and adopted measurement; no external lookup, network or other-repository read.

@@ -1,3 +1,0 @@
-Measurement recorded 2026-11-18 from Secondbrain commit a2b713574: 15 mirrors, 1,509 process files of 3,534 documentation files, and no lesson folder. The six process counts sum to 1,509. The current standard block contains docs/lessons/ and none of those process paths. This compares the recorded baseline to the shipped list; it does not claim a post-sync mirror count.
-
-Sources read only from the PRD Acceptance evidence and adopted measurement; no external lookup, network or other-repository read.

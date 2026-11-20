@@ -1,2 +1,0 @@
-Delivery Base: 96eca968cafc2a9df0c7b188738c0f3a06541346
-All four prescribed phrases absent before apply, each present exactly once after whitespace normalization; second confirmed run: File changes: 0.

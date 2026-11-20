@@ -1,3 +1,0 @@
-default branch: origin/main
-audited head: 357ae20690b9438cfb48c8cd5f87cb4a85162741
-merge base: 96eca968cafc2a9df0c7b188738c0f3a06541346

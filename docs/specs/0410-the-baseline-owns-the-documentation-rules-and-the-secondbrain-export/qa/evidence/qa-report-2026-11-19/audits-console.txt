@@ -1,8 +1,0 @@
-Q07 FAIL 614 assertions
-Q05 pass 17 assertions
-Q09 pass 10 assertions
-Q04 pass 387 assertions
-governed-grant-probe exit 0 passes 1
-Q10 pass 1209 assertions
-
-exit: 0

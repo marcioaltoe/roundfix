@@ -1,4 +1,0 @@
-Source: Lindenbauer, Groh and Schuetze; 2025; read 2026-11-18 and 2026-11-19; https://aclanthology.org/2025.realm-1.30.pdf.
-Recorded by PRD Acceptance evidence, checked offline as Requirement 13 instructs; no live lookup.
-Comparison: Distracting CTIM items and exemplar trajectories introduce noise; the five-part lesson test writes nothing by default.
-Independent confirmation: baseline/export/ADR/lesson contract tests and public-flow evidence of this pass.
