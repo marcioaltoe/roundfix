@@ -1,4 +1,0 @@
-Both restore readers and Doctor call Catalog.RequiredSkills; no direct requiredSkills module readers remain in those files.
-Restore retains restore.assets-invalid and Embedded Baseline Profile %q references a missing module.
-Doctor retains resolve external skill requirement: Setup Manifest names unknown module %q and removes owned names after the call.
-Named public-command regression tests and the complete CLI package passed.

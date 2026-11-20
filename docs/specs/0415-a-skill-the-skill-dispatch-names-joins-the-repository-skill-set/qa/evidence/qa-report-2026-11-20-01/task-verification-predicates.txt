@@ -1,8 +1,0 @@
-command: /bin/bash -c '(grep -q '"'"'func (catalog \*Catalog) RequiredSkills(moduleIDs \[\]string) (\[\]string, error)'"'"' internal/baseline/catalog.go && grep -q '"'"'UnknownModuleError'"'"' internal/baseline/catalog.go && grep -q '"'"'catalog.skill.activation.skill.unrequired'"'"' internal/baseline/catalog_validate.go && ! grep -q '"'"'requiredSkills"\]'"'"' internal/baseline/skills_restore.go && ! grep -q '"'"'json:"requiredSkills"'"'"' internal/cli/doctor.go && tr -d '"'"'[:space:]'"'"' < internal/baseline/assets/modules/typescript.json | grep -qF '"'"'"onioncry","solid"'"'"') || exit 1
-(grep -F -- '"'"'**Skill Activation**'"'"' < CONTEXT.md | grep -qE '"'"'^([-*+] )?\*\*Skill Activation\*\*(:| —( |$))'"'"' && tr -s '"'"'[:space:]'"'"' '"'"' '"'"' < CONTEXT.md | grep -qF -- "requires every skill of the bundle, so a profile that selects the owner holds the whole bundle in its Repository Skill Set (" || { printf '"'"'missing phrase in %s: %s\n'"'"' CONTEXT.md "requires every skill of the bundle, so a profile that selects the owner holds the whole bundle in its Repository Skill Set (" >&2; exit 1; }; grep -qF -- '"'"'(docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md)'"'"' CONTEXT.md) || exit 1
-(grep -qF -- '"'"'2026-11-20 — Spec 0415 task_01 reads the required external skills of Doctor through Catalog.RequiredSkills'"'"' docs/references/skill-coverage.json) || exit 1'
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
-exit: 0
-stdout:
-
-stderr:

@@ -1,9 +1,0 @@
-command: git log '--format=%H %s' --ancestry-path '2d8a2abda98ea907bb5a126c875711f2ee3189de^..8c57f80812c5df9ad90b6325b78bf07d06f99c6e'
-cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
-exit: 0
-stdout:
-8c57f80812c5df9ad90b6325b78bf07d06f99c6e feat: the owner of a Skill Activation requires every skill of its bundle, and one function reads the required skills
-0c9ce42cb95f125bce9eda429b755871d1dff23b docs: give the 0415 update preview a Setup Manifest the binary writes
-2d8a2abda98ea907bb5a126c875711f2ee3189de docs: plan 0415, a skill the skill dispatch names joins the repository skill set (#941)
-
-stderr:

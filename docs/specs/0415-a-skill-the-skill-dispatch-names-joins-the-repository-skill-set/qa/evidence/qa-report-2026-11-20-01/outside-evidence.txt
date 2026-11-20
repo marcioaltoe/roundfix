@@ -1,3 +1,0 @@
-External source: Bazel documentation, Dependencies, https://bazel.build/concepts/dependencies; read 2026-11-20 as recorded offline in PRD Acceptance evidence. No lookup performed.
-For correct builds, the graph of actual dependencies A must be a subgraph of the graph of declared dependencies D.
-Observed invariant: bundle skills (actual dependencies) must be a subset of the requiredSkills of the owner and its transitive dependencies (declared dependencies). Passing sibling diagnostic test and failing missing-solid sabotage establish rejection even though frontend independently requires solid. No source authored by this Spec substitutes for the published passage.

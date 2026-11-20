@@ -1,7 +1,0 @@
-Supplied by the Daemon in this QA assignment.
-command: make verify-changed
-head: 508e9e7746144022883614cbba917223d1b100fd
-verdict: pass
-exit: 0
-diagnostics: removed on success
-Not re-executed by the child Agent.

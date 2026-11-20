@@ -1,3 +1,0 @@
-TypeScript differs only by solid after onioncry and recorder-owned version.
-Module version record differs only by the new TypeScript version/digest.
-{"version": 11, "digest": "sha256:0d8ab3b739f0e69e5056dee38808a3cdd86f345a5bea4f8843aa5e7cb48dfe81"}

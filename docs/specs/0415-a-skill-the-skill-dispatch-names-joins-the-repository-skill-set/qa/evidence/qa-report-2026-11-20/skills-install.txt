@@ -1,8 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067/bin/roundfix skills install --target project
-working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p
-stdout:
-Installed Roundfix skill for project: /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p/.agents/skills (43 file(s))
-
-stderr:
-
-exit: 0
