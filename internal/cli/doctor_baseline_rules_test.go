@@ -77,6 +77,7 @@ func TestDoctorReportsMisplacedRepositoryRules(t *testing.T) {
 				t.Fatalf("exit=%d want=%d stderr=%s stdout=%s", code, wantCode, stderr.String(), stdout.String())
 			}
 			lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
+			lines = slices.DeleteFunc(lines, func(line string) bool { return strings.HasPrefix(line, "  DR-") })
 			position := slices.Index(lines, want)
 			if position < 0 {
 				t.Fatalf("missing whole line %q:\n%s", want, stdout.String())
@@ -92,7 +93,7 @@ func TestDoctorReportsMisplacedRepositoryRules(t *testing.T) {
 					}
 				}
 			}
-			if count != 1 || position+2 >= len(lines) || !strings.HasPrefix(lines[position+1], "baseline-claude-link:") || !strings.HasPrefix(lines[position+2], "residue:") {
+			if count != 1 || position+4 >= len(lines) || !strings.HasPrefix(lines[position+1], "baseline-claude-link:") || !strings.HasPrefix(lines[position+2], "baseline-export:") || !strings.HasPrefix(lines[position+3], "baseline-docs:") || !strings.HasPrefix(lines[position+4], "residue:") {
 				t.Fatalf("baseline rules position: %s", stdout.String())
 			}
 			if name == "after_skills_and_exit_code" {

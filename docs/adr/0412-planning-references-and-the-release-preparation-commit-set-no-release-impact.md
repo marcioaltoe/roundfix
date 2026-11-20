@@ -1,5 +1,7 @@
 ---
 status: accepted
+knowledge: true
+amended_by: [ADR-0438, ADR-0440]
 created_at: 2026-11-16T23:30:00Z
 updated_at: 2026-11-16T23:30:00Z
 deprecated_at: null
@@ -55,6 +57,8 @@ release paths.
 the five conditions of ADR-0349 and never answers a breaking plan or a
 classification by hand. The two rules above remove the reason a plan needed a
 classification; they never answer one.
+
+**Extended by [ADR-0438](0438-a-repository-publishes-a-standard-export-list-the-baseline-keeps-and-varies-it-only-in-its-own-lines.md) and [ADR-0440](0440-a-lesson-learned-is-written-only-when-a-test-holds-and-leaves-when-a-rule-states-it.md) (2026-11-19).** `.secondbrain-export` is maintenance-only and `docs/lessons/` is planning evidence.
 
 ## Considered Options
 

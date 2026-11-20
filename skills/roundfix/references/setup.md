@@ -127,6 +127,8 @@ evidence, and the next `roundfix profiles configure` or
 recommend model-managed reasoning. The command has no flags and mutates
 nothing.
 
+`roundfix doctor` reports two documentation checks as warnings that never change its exit. `baseline-export`, where the Secondbrain is turned on, compares `.secondbrain-export` with the Standard Export List and reads the repository's own lines; its codes start with `DR-EXPORT-`. `baseline-docs` reads the documentation layout, the ADR headers and `docs/lessons/`; its codes start with `DR-DOCS-`. `roundfix baseline update` repairs the list, an Amendment List and a retired ADR, and the rest is an edit by hand.
+
 A terminal Run whose recorded owner PID is alive with a different start identity
 adds nothing: its owner is gone and the PID was reused, so `partial` is left for
 a process table Doctor cannot read.

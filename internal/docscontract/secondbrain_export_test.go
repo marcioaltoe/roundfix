@@ -5,97 +5,46 @@
 package docscontract
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"roundfix/internal/baseline"
 )
 
-const secondbrainHistoryExclusion = "!docs/history/specs/*/qa/"
+func exportVariationAt(root string) ([]baseline.DocumentationDeparture, error) {
+	content, err := os.ReadFile(filepath.Join(root, ".secondbrain-export"))
+	if err != nil {
+		return nil, err
+	}
+	facts := baseline.ExportListFacts{ProcessPaths: []string{"AGENTS.md", "CLAUDE.md", "docs/agents/", "docs/backlog/", "docs/findings/", "docs/handoffs/", "docs/specs/", "docs/history/"}}
+	return baseline.ExportVariationDepartures(content, facts), nil
+}
 
-func TestSecondbrainExportFollowsTheHistoryForm(t *testing.T) {
-	root := baselineDocumentationRepoRoot()
-	if _, err := os.Stat(filepath.Join(root, ".secondbrain-export")); errors.Is(err, os.ErrNotExist) {
-		t.Skip("repository has no .secondbrain-export")
-	} else if err != nil {
+func TestThisRepositoryExportsNoProcessPath(t *testing.T) {
+	departures, err := exportVariationAt(baselineDocumentationRepoRoot())
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := checkSecondbrainExport(root); err != nil {
-		t.Fatal(err)
+	if len(departures) != 0 {
+		t.Fatalf("export variation departures: %+v", departures)
 	}
 }
 
-func TestSecondbrainExportRuleRefusesBothMismatches(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		legacy     bool
-		exclusions bool
-	}{
-		{name: "exclusions without legacy folders", exclusions: true},
-		{name: "legacy folder without exclusions", legacy: true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
+func TestTheExportRuleRefusesAProcessPath(t *testing.T) {
+	for _, tc := range []struct{ name, path string }{{"docs_whole", "docs/"}, {"agents_md", "AGENTS.md"}} {
+		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
-			if test.legacy {
-				if err := os.MkdirAll(filepath.Join(root, "docs", "history", "specs", "old-spec"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(root, "docs", "history", "specs", "old-spec", "_prd.md"), []byte("---\n---\n"), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			content := "docs/\n"
-			if test.exclusions {
-				content += secondbrainHistoryExclusion + "\n"
-			}
-			if err := os.WriteFile(filepath.Join(root, ".secondbrain-export"), []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(root, ".secondbrain-export"), []byte("# reason\n"+tc.path+"\n"), 0o644); err != nil {
 				t.Fatal(err)
 			}
-			if err := checkSecondbrainExport(root); err == nil {
-				t.Fatal("checkSecondbrainExport succeeded for a mismatched fixture")
+			departures, err := exportVariationAt(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(departures) != 1 || departures[0].Code != "DR-EXPORT-PROCESS-PATH" {
+				t.Fatalf("departures: %+v", departures)
 			}
 		})
 	}
-}
-
-func checkSecondbrainExport(root string) error {
-	export, err := os.ReadFile(filepath.Join(root, ".secondbrain-export"))
-	if err != nil {
-		return fmt.Errorf("read .secondbrain-export: %w", err)
-	}
-	entries, err := os.ReadDir(filepath.Join(root, "docs", "history", "specs"))
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("read history specs: %w", err)
-	}
-	legacy := false
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		if _, err := os.Stat(filepath.Join(root, "docs", "history", "specs", entry.Name(), "_prd.md")); err == nil {
-			legacy = true
-			break
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("inspect legacy folder %q: %w", entry.Name(), err)
-		}
-	}
-	hasExclusion := false
-	for _, line := range strings.Split(string(export), "\n") {
-		if strings.TrimSpace(line) == secondbrainHistoryExclusion {
-			hasExclusion = true
-		}
-	}
-	if legacy && !hasExclusion {
-		return fmt.Errorf("legacy archive folders require %q", secondbrainHistoryExclusion)
-	}
-	if !legacy {
-		for _, line := range strings.Split(string(export), "\n") {
-			if strings.HasPrefix(strings.TrimSpace(line), "!docs/history") {
-				return fmt.Errorf("history exclusion %q remains without legacy archive folders", strings.TrimSpace(line))
-			}
-		}
-	}
-	return nil
 }

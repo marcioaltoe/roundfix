@@ -466,6 +466,104 @@ Change Plan and Setup Manifest, and no refresh changes it. JSON output uses
 `roundfix/baseline-starters/v1`; invalid arguments, an unknown profile or an
 unsupported format exit 2.
 
+### Documentation part
+
+The Plan Digest covers the documentation part, and the one confirmation applies it.
+Where the Setup Manifest's modules include `secondbrain`, the update keeps the
+Standard Export List between `# roundfix:standard-export:begin` and
+`# roundfix:standard-export:end` in `.secondbrain-export`. It lists `README.md`,
+the existing glossary files and the glossary files their maps link, then
+`docs/user-guide/`, `docs/references/`, `docs/design/`, `docs/lessons/` and each
+non-retired ADR marked `knowledge: true`, in that order. Every standard folder
+is listed even when absent. The second line is always:
+
+```text
+# Kept by the Baseline: roundfix baseline update rewrites the lines between these two markers.
+```
+
+The first update converts the list the file had and names every path that stops being exported.
+It removes include lines that equal standard items, name process, lie under
+process or contain process (`docs/` whole), and exclusions under process.
+Process means `AGENTS.md`, `CLAUDE.md`, `docs/agents/`, `docs/backlog/`,
+`docs/findings/`, `docs/handoffs/`, and the configured Spec Root and History
+Root inside the repository. A converted file holds the block, a blank line and
+the kept lines in their original order and bytes; a new file holds the block
+and a final newline. A loss names a removed process path as `process`, or each
+immediate child of `docs/` that a removed broad include no longer covers as
+`process` or `other`. Later updates replace only the block; the repository's
+own lines outside it stay byte-identical. Where the module is off, the export
+list action is `none` and the file is neither read nor written.
+
+A missing or repeated marker is refused, and nothing is written to `.secondbrain-export`.
+The rest of the plan still applies. An end before a begin is refused too.
+The five refusal forms are:
+
+```text
+# roundfix:standard-export:begin is missing
+# roundfix:standard-export:end is missing
+# roundfix:standard-export:begin appears <n> times
+# roundfix:standard-export:end appears <n> times
+# roundfix:standard-export:end comes before # roundfix:standard-export:begin
+```
+
+In every repository the update fills each ADR's `amended_by` with the union of
+its listed identifiers and its body's notices: `Amended by`, `Narrowed by`,
+`Extended by` or `Superseded in part by`, followed by plain or Markdown-linked
+`ADR-<digits>` identifiers joined by a comma or `and`. It ignores fenced and
+inline code, excludes the ADR's own identifier, keeps identifiers written by
+a person and sorts by number. The line replaces an existing `amended_by` in
+place or goes after `knowledge`, after `status` otherwise. A file without
+frontmatter gains a header holding only that line. Every other byte stays,
+including `updated_at` and CRLF line endings. Retired ADRs are neither counted
+nor given a header. The update reports unmarked ADRs and assigns no mark.
+
+JSON adds `documentation` immediately after `history`. Its members are
+`status`, `exportList`, `adrs` and `adrHeaders`, in that order. `exportList`
+holds `path`, `action`, `standard`, `added`, `removed`, `converted`,
+`stopsExporting` (objects with `path` and `kind`) and `refusal`. `adrs` holds
+`total` then `unmarked`; each header fill holds `path` and `amendedBy`.
+Every array is present, including an empty one. Status is `pending` when the
+export action is `create` or `update` or a header fill is planned, `current`
+otherwise, and `applied` after applying a pending part. Export actions are
+`none`, `unchanged`, `create`, `update` and `refused`.
+
+Only a pending documentation part changes the digest: SHA-256 of the digest
+so far and the JSON of the export action, content digest and refusal and each
+header fill, written as `sha256:<hex>`. A current part leaves it unchanged.
+With no guidance change or history unit, a pending part reports `plan_ready`,
+exit `3`, and `guidance matches the current Baseline catalog; <n> documentation
+change(s) pending`, counting files. Review the plan and rerun with
+`--confirm-plan <planDigest>`, or use `--yes` to approve the digest computed
+in one invocation. Each documentation write also appears in `fileChanges`:
+`.secondbrain-export` as `create` or `update` with the managed entry
+`export.standard-list`, each ADR as `update` with `adr.amendment-list`.
+
+The text section follows history when pending or applied, when a marker is
+refused, or when an ADR lacks a mark. Each line below appears only when it
+has something to report, in this order:
+
+```text
+Documentation: <current|pending|applied>
+Export list: <create|update> .secondbrain-export (<n> line(s) in the Standard Export List)
+- adds <line>
+- removes <line>
+- stops exporting <path> (process)
+- stops exporting <path> (not in the standard list)
+Export list refused: <refusal>; nothing is written to .secondbrain-export
+ADRs without a Knowledge Mark: <n> of <m>; they are not exported
+ADR headers: <n>
+- <path> gains amended_by: [<identifiers>]
+```
+
+Apply runs after guidance and history. It fills headers over the bytes the
+files hold at that moment, skips files history removed, and plans the export
+list again from the resulting tree before writing it. A write failure exits
+`1`, reports category `documentation`, and gives this next action:
+`restore .secondbrain-export and docs/adr with git restore, then rerun roundfix baseline update`.
+A second update of the same tree reports nothing to do.
+`--no-history` does not skip the documentation part.
+Neither does `--no-skills`; no flag, configuration key or exit code is added.
+
 ### Retired skills
 
 A Retired Skill is a skill the Baseline no longer requires although the

@@ -92,6 +92,49 @@ A Delegated Decision is an entry of the PRD's `## Decisions`, never a dated answ
 
 The report of the session lists every Delegated Decision of the flow, and `roundfix follow-up --status` lists the ones of every active Spec. The user's later answer wins: it replaces `none yet` as `YYYY-MM-DD, kept` or `YYYY-MM-DD, changed` with the user's words while no Run and no delivery of the Spec has started; after that a changed answer becomes a correction of the Spec in delivery or a Backlog Entry ([ADR-0442](../adr/0442-an-open-authoring-question-waits-unless-the-project-declares-that-the-session-follows-the-author.md)).
 
+### Knowledge a repository publishes
+
+When the Secondbrain is enabled, `.secondbrain-export` holds the Standard Export List between markers. The Baseline update maintains the README, glossary, user guide, references, design, lessons and marked ADR paths. Lines outside the markers are the Export Variation: repository additions or exclusions, each with a reason. For example:
+
+```text
+# roundfix:standard-export:begin
+# Kept by the Baseline: roundfix baseline update rewrites the lines between these two markers.
+README.md
+CONTEXT.md
+docs/user-guide/
+docs/references/
+docs/design/
+docs/lessons/
+docs/adr/0007-a-credit-note-never-reopens-a-closed-period.md
+docs/adr/0012-a-price-change-takes-effect-at-the-next-opening.md
+# roundfix:standard-export:end
+
+# The design contract the interface follows.
+DESIGN.md
+# API contracts (uncomment when present)
+# openapi.json
+```
+
+The Knowledge Mark says whether an ADR holds a business or product rule useful beyond development. An ADR without the Knowledge Mark is not published. The marks of the ADRs a repository already has are one change a person reviews. An Amendment List names later accepted ADRs that change part of a decision; the update fills it from notices in the ADR.
+
+A Lesson Learned records a proven cause and solution in `docs/lessons/`. A Lesson Learned is written only when there is a lesson, and it leaves when a rule takes it in. Its form is:
+
+```markdown
+---
+created: YYYY-MM-DD
+---
+# <The lesson in one line>
+
+- Context: <the work it happened in>
+- Tried: <what was tried>
+- Went wrong: <what was observed>
+- Cause: <the proven cause>
+- Solved by: <what solved it>
+- Applies when: <when a reader should use this lesson>
+- Does not apply when: <what looks alike and is different>
+- Links: <the Finding, Spec, Pull Request or commit that holds the evidence>
+```
+
 ### Spec Event Announcements
 
 A user who follows Specs on a board, a tracker or an assistant can have the

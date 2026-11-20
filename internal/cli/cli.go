@@ -5683,7 +5683,7 @@ Decision states:
 
 approval_required is answered when every Spec the range delivers has an approved authorization record whose release_ceiling is at or above the impact, nothing is breaking or classified by hand, and every change that sets the impact is such a delivery; the decision is then ready and the plan names the records.
 
-Planning evidence (docs/specs, docs/backlog, docs/adr, docs/findings, docs/handoffs and docs/references) needs no release. So does a release-preparation commit: one with no impact whose every changed path is in the release_paths of a Spec the range delivers with a Release Ceiling.
+Planning evidence (docs/specs, docs/backlog, docs/adr, docs/findings, docs/handoffs and docs/references) needs no release. Neither does docs/lessons or the export list .secondbrain-export. So does a release-preparation commit: one with no impact whose every changed path is in the release_paths of a Spec the range delivers with a Release Ceiling.
 
 In an adopter, a repository whose skills-lock.json at the target records the roundfix skill, a commit that changes only planning evidence and Adopter Maintenance Paths needs no release either. Those paths are the Setup Manifest docs/agents/setup-context.json and every path it records, skills-lock.json and every skill directory it records under .agents/skills/ and .claude/skills/, CLAUDE.md, docs/agents/specific-repository.md, a generated .claude/agents/roundfix-*.md, .roundfixrc.yml and every CONTEXT.md; the two records are read at the base and at the target. Roundfix's own repository authors the roundfix skill and records none, so its skills and Baseline still set a release.
 

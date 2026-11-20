@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 32,
+  "version": 33,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -671,7 +671,7 @@
           "replaces": [
             "clause.secondbrain.capture-trigger"
           ],
-          "guidance": "Observing a defect, an improvement worth making, or a feature idea obliges one message to the project that owns the fix, which is frequently not the project the session is running in, sent to that project's inbox with `memory_message_send`. When a Finding closes, state whether its change teaches a lesson that its ADR, Archive Record or reference does not already state. Only then send one message with its source pinned as `<repository>@<commit>:<path>`. Sending is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends. A message expects no reply unless the sending project's own work depends on the answer. After sending a message that expects none, do not wait for a reply, check whether the other project acted, send the message again, or record a `waiting_on` wait for it: the receiving project owns what follows, the answer to a direct question the message asks included. A message may also ask to be told when the work it asks for is done; ask for that only when the sending project will act on the notice, and do not wait or watch for it either: the receiving project sends it once that work is delivered."
+          "guidance": "Observing a defect, an improvement worth making, or a feature idea obliges one message to the project that owns the fix, which is frequently not the project the session is running in, sent to that project's inbox with `memory_message_send`. When a Finding closes, send no message about what it taught: the docs-layout guide says when that becomes a Lesson Learned in this repository. Sending is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends. A message expects no reply unless the sending project's own work depends on the answer. After sending a message that expects none, do not wait for a reply, check whether the other project acted, send the message again, or record a `waiting_on` wait for it: the receiving project owns what follows, the answer to a direct question the message asks included. A message may also ask to be told when the work it asks for is done; ask for that only when the sending project will act on the notice, and do not wait or watch for it either: the receiving project sends it once that work is delivered."
         },
         {
           "id": "clause.core.messages-are-self-contained",

@@ -5,10 +5,10 @@ argument-hint: "<spec slug>"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.19
+  version: 0.0.20
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.19
+version: 0.0.20
 ---
 
 # Archive Spec
@@ -311,6 +311,20 @@ QA outcome and archived revision without changing the QA Task or report. When
 the QA Task is not completed, it also records `qa_override_qa_task_status`. An
 unreadable report's recorded outcome names its path relative to the Spec folder,
 never the machine's absolute path.
+
+## Lesson Learned
+
+Before the archive, find out whether the Spec stumbled or answered a Finding. Read five signs:
+
+- `references/_index.md` adopts a Finding;
+- `qa/` holds a QA Report whose verdict is not `pass`, or more than one report;
+- the Task Graph holds a Corrective Task;
+- `roundfix corrections report --spec <slug> --format json` lists a declaration other than `not-a-correction`, or an undeclared sign;
+- a Task of the Run failed its Verification and ran again, or the Delivery Queue item was retried.
+
+With no sign, write nothing. With any, apply the Lesson Learned test of `docs/agents/docs-layout.md` to what went wrong. When every part of the test holds, write the file under `docs/lessons/` in the form that guide gives and commit it with the archive, so the same Pull Request shows it to a person, who may delete it. When a part fails, write nothing and say in the report that the test was applied and which part failed. Never write a lesson to fill the folder.
+
+When the Delivery Queue writes the archive, no Agent runs this step there: the Supervisor session applies the test as the Roundfix skill's `corrections` reference says. A repository whose docs-layout guide has no Lesson Learned rule skips this section.
 
 ## Steps
 

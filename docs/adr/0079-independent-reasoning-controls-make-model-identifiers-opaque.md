@@ -1,5 +1,6 @@
 ---
 status: accepted
+knowledge: true
 created_at: 2026-07-28T20:02:08Z
 updated_at: 2026-07-28T20:02:08Z
 deprecated_at: null

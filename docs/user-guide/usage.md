@@ -374,7 +374,9 @@ an answered plan.
 Backlog Entries under `docs/backlog/` and outside evidence under
 `docs/references/` are planning evidence alongside `docs/specs/`,
 `docs/adr/`, `docs/findings/` and `docs/handoffs/`; commits changing only
-those paths are maintenance-only. A Release-Preparation Commit, a commit
+those paths are maintenance-only.
+Lessons Learned under `docs/lessons/` are planning evidence too, and the export list
+`.secondbrain-export` is maintenance-only. A Release-Preparation Commit, a commit
 with no automatic impact whose every changed path is a `release_paths` entry
 of a Spec the range delivers with a Release Ceiling, is maintenance-only too,
 and JSON marks it `releasePreparation: true`. A `refactor:` delivery that

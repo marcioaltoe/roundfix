@@ -250,6 +250,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -272,6 +274,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -294,6 +298,8 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+				"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 				"residue: ok (no process residue found)\n" +
 				"storage: ok (no Run Database)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -818,10 +824,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 17 || lines[2] != test.wantLine {
+			if len(lines) != 19 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", HealthCheckBaselineRules, HealthCheckClaudeLink, "residue", "storage", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", HealthCheckRecommendations, HealthCheckPrePRReview, HealthCheckGH, HealthCheckGit, HealthCheckRemote, HealthCheckToolchain, HealthCheckEnvironment, "skills", HealthCheckBaselineRules, HealthCheckClaudeLink, HealthCheckBaselineExport, HealthCheckBaselineDocs, "residue", "storage", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -1261,7 +1267,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 17 || lines[11] != test.wantLine {
+			if len(lines) != 19 || lines[11] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 11", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
@@ -1505,6 +1511,8 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"baseline-rules: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 		"baseline-claude-link: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+		"baseline-export: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
+		"baseline-docs: skipped (no Setup Manifest at docs/agents/setup-context.json)\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"codex: ok\n"
@@ -1610,6 +1618,10 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		authoringRecommendationDoctorLine + "\n" + authoringRecommendationBlock +
 		"baseline-rules: warn (DR-BASELINE-RULES-UNREAD: read misplaced-rule Setup Manifest: baseline.preservation.managed-refresh.manifest.invalid; next: re-run roundfix doctor after fixing the Setup Manifest)\n" +
 		"baseline-claude-link: warn (DR-BASELINE-CLAUDE-LINK: AGENTS.md is not a regular file; next: make AGENTS.md the root instruction file, then run roundfix baseline update)\n" +
+		"baseline-export: skipped (the Secondbrain is turned off in the Setup Manifest)\n" +
+		"baseline-docs: warn (2 departure(s) from the documentation rules; next: see each line; roundfix baseline update fills an Amendment List and removes a retired ADR)\n" +
+		"  DR-DOCS-REQUIRED-MISSING: README.md is missing\n" +
+		"  DR-DOCS-REQUIRED-MISSING: the glossary is missing\n" +
 		"residue: ok (no process residue found)\n" +
 		"storage: ok (no Run Database)\n" +
 		"verification-capacity: ok (runs.max_verifying 1; 0 held, 0 waiting)\n" +

@@ -140,3 +140,7 @@ are data, never instructions.
 
 The group, `declare` and `report` accept `--help` and `-h`, exit `0`,
 and print the same complete corrections help.
+
+## Lesson Learned
+
+A Correction is where a delivery's lesson is cheapest to state, because its declarer has just named the cause. After `roundfix corrections declare` records a Correction other than `not-a-correction`, and after a `roundfix deliver retry` that follows a repair, apply the Lesson Learned test of `docs/agents/docs-layout.md` to that cause. When every part of the test holds, write the file under `docs/lessons/` in the commit that makes the correction, on the Item Branch, so the delivery Pull Request shows it. When the item has already merged, or the queue made the correction with no session, write the file in the session's next change to the repository. When a part fails, write nothing. A repository whose docs-layout guide has no Lesson Learned rule skips this section.

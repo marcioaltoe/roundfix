@@ -97,6 +97,10 @@
       {
         "version": 31,
         "digest": "sha256:01fff7f787632fcaced6df5b901b9f256ff4f957f10bd44244650e05d15089a7"
+      },
+      {
+        "version": 32,
+        "digest": "sha256:cfb1f8ad21e59499317671a247359baa1cc68bf0ec23e0d1982da1e89358f636"
       }
     ],
     "core": [
@@ -159,6 +163,10 @@
       {
         "version": 32,
         "digest": "sha256:3516168b9b725ea199cf91618ee479dbfe0cd835c0b62b677870277858245ac3"
+      },
+      {
+        "version": 33,
+        "digest": "sha256:f6f407c464d8c94e125110eae66ff8651c42b59984f10aea99831dc958a9e660"
       }
     ],
     "external-triage": [
@@ -247,6 +255,10 @@
       {
         "version": 14,
         "digest": "sha256:4af37411c42596a680ee8584a7e5b455477057509de3172ec849658545101b4a"
+      },
+      {
+        "version": 15,
+        "digest": "sha256:11c0c5aeed22558d080901044dd9fcab0f5b3394434eac0f50bd33fe949c5295"
       }
     ],
     "spec-workflow": [
