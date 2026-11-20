@@ -1,5 +1,0 @@
-Exact definition and placement: Flow Command List
-Exact definition and placement: Named Exclusion
-Exact definition and placement: Guard Entry
-Exact definition and placement: Harness Permission File
-PRD: adds four terms and changes Governed Path; TechSpec: None. Removing exactly the four new blocks and the single Governed Path sentence reproduces the entire Delivery Base CONTEXT.md byte-for-byte. Glossary test passed.

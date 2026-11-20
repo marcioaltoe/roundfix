@@ -1,5 +1,0 @@
-Report structural audit: PASS
-36 contiguous three-column Results rows; exact status counts; every row has typed inputs; seeded auditor identity and Mechanical skips preserved; no evidence_snapshots; all 47 local links resolve to nonignored files; all listed executables are inside this Run; implementation tracked diff empty; git diff --check passed.
-Untracked QA report/evidence only:
-?? docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/qa/
-

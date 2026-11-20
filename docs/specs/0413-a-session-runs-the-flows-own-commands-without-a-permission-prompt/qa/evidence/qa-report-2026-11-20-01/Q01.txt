@@ -1,3 +1,0 @@
-Audited head: c6e7d2c429f9d813afb140c3e8e342c21bc4ed83
-make build: exit 0; binary identity in version.txt. Repository Verification: make verify-changed, pass (exit 0), supplied by Daemon at audited head; diagnostics removed on success; not rerun.
-ASSERTIONS PASSED

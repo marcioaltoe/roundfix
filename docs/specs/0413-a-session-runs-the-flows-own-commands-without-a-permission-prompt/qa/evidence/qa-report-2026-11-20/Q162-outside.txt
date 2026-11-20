@@ -1,3 +1,0 @@
-Source: Claude Code sub-agents documentation; read 2026-11-19. External author; passage preserved in _prd.md Acceptance evidence. Offline comparison only, no lookup.
-Recorded passage: Each inherits the parent conversation's permission rules
-Fresh CLI apply wrote the project shared settings target, not settings.local.json or a home file. That is the parent project rule set whose inheritance the external documentation describes. No subagent was started; Q171 carries the interactive limit.
