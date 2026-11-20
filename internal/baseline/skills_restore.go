@@ -639,12 +639,13 @@ func loadSkillSnapshotProfile(repoRoot, profileID string, catalog *Catalog) (res
 			fmt.Sprintf("Baseline Profile %q is neither built-in nor resolvable at %s/%s.json.", profileID, customProfileDirectory, profileID),
 			fmt.Sprintf("Run roundfix baseline profile validate %s to see why, restore that file, or choose a built-in profile id.", profileID), err)
 	}
-	required := make(map[string]struct{})
-	for _, moduleID := range resolved.Modules {
-		for _, name := range stringsOrEmpty(catalog.modules[moduleID]["requiredSkills"]) {
-			required[name] = struct{}{}
-		}
+	names, err := catalog.RequiredSkills(resolved.Modules)
+	if err != nil {
+		return restoreProfile{}, restoreError(SkillsRestoreInvalid, "restore.assets-invalid",
+			fmt.Sprintf("Embedded Baseline Profile %q references a missing module.", profileID),
+			"Fix the embedded Baseline catalog before restoring skills.", err)
 	}
+	required := stringSet(names)
 	snapshots := embeddedSnapshotContracts(catalog)
 	contracts, err := repositorySnapshotContracts(profileID, required, snapshots)
 	if err != nil {
@@ -783,7 +784,6 @@ func loadRestoreProfile(catalog *Catalog, profileID string) (restoreProfile, err
 			TreeDigest: skill.TreeDigest,
 		}
 	}
-	requiredSkills := make(map[string]struct{})
 	modules, ok := catalog.OrderedModules(profileID)
 	if !ok {
 		return restoreProfile{}, restoreError(
@@ -794,38 +794,21 @@ func loadRestoreProfile(catalog *Catalog, profileID string) (restoreProfile, err
 			errors.New("profile modules are missing"),
 		)
 	}
-	for _, moduleID := range modules {
-		module, exists := catalog.Module(moduleID)
-		if !exists {
-			return restoreProfile{}, restoreError(
-				SkillsRestoreInvalid,
-				"restore.assets-invalid",
-				fmt.Sprintf("Embedded Baseline Profile %q references a missing module.", profileID),
-				"Fix the embedded Baseline catalog before restoring skills.",
-				errors.New("profile module is missing"),
-			)
-		}
-		var moduleDocument struct {
-			RequiredSkills []string `json:"requiredSkills"`
-		}
-		if err := json.Unmarshal(module.Data, &moduleDocument); err != nil {
-			return restoreProfile{}, restoreError(
-				SkillsRestoreInvalid,
-				"restore.assets-invalid",
-				fmt.Sprintf("Embedded Baseline module %q is invalid.", moduleID),
-				"Fix the embedded Baseline catalog before restoring skills.",
-				err,
-			)
-		}
-		for _, name := range moduleDocument.RequiredSkills {
-			requiredSkills[name] = struct{}{}
-		}
+	names, err := catalog.RequiredSkills(modules)
+	if err != nil {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.assets-invalid",
+			fmt.Sprintf("Embedded Baseline Profile %q references a missing module.", profileID),
+			"Fix the embedded Baseline catalog before restoring skills.",
+			err,
+		)
 	}
 	return restoreProfile{
 		ID:             profileDocument.ID,
 		Setup:          setupDocument.ID,
 		Skills:         contracts,
-		RequiredSkills: requiredSkills,
+		RequiredSkills: stringSet(names),
 	}, nil
 }
 

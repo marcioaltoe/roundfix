@@ -597,37 +597,23 @@ func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
 	for _, name := range ownedNames {
 		owned[name] = struct{}{}
 	}
-	required := make(map[string]struct{})
-	for _, moduleID := range manifest.Modules {
-		module, ok := catalog.Module(moduleID)
-		if !ok {
+	required, err := catalog.RequiredSkills(manifest.Modules)
+	if err != nil {
+		var unknown *baseline.UnknownModuleError
+		if errors.As(err, &unknown) {
 			return nil, false, fmt.Errorf(
 				"resolve external skill requirement: Setup Manifest names unknown module %q",
-				moduleID,
+				unknown.ModuleID,
 			)
 		}
-		var declaration struct {
-			RequiredSkills []string `json:"requiredSkills"`
-		}
-		if err := json.Unmarshal(module.Data, &declaration); err != nil {
-			return nil, false, fmt.Errorf(
-				"resolve external skill requirement for module %q: %w",
-				moduleID,
-				err,
-			)
-		}
-		for _, name := range declaration.RequiredSkills {
-			if _, isOwned := owned[name]; !isOwned {
-				required[name] = struct{}{}
-			}
-		}
+		return nil, false, fmt.Errorf("resolve external skill requirement: %w", err)
 	}
-
 	external := make([]string, 0, len(required))
-	for name := range required {
-		external = append(external, name)
+	for _, name := range required {
+		if _, isOwned := owned[name]; !isOwned {
+			external = append(external, name)
+		}
 	}
-	sort.Strings(external)
 	return external, true, nil
 }
 
