@@ -1,0 +1,13 @@
+command: go test -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77/docs/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set/qa/evidence/qa-report-2026-11-20-01/scope-overlay.json.txt -count=1 -timeout 20m -v -run '^TestQA0415ChangedGovernedPaths$' ./internal/speccheck
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+=== RUN   TestQA0415ChangedGovernedPaths
+    qa0415_scope_test.go:5: governed: docs/agents/setup-context.json
+    qa0415_scope_test.go:5: governed: internal/baseline/assets/modules/typescript.json
+--- PASS: TestQA0415ChangedGovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3471 paths; fingerprint took 578.293292ms before and 159.392084ms after
+ok  	roundfix/internal/speccheck	1.013s
+
+stderr:

@@ -1,0 +1,28 @@
+$ go test -count=1 -timeout 20m -v -run '^TestAnActivationOwnerRequiresEverySkillOfItsBundle$' ./internal/baseline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067
+stdout:
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== PAUSE TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== CONT  TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_dependency_satisfies_the_owner
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_owner_reports_only_the_owner
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_bundle_reports_only_the_bundle
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/dependency_cycles_do_not_recurse_forever
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/diagnostics_follow_activation_and_bundle_order
+--- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle (1.89s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads (0.40s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner (0.40s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_dependency_satisfies_the_owner (0.31s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_owner_reports_only_the_owner (0.22s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_bundle_reports_only_the_bundle (0.13s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/dependency_cycles_do_not_recurse_forever (0.26s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/diagnostics_follow_activation_and_bundle_order (0.18s)
+PASS
+suiteguard: guard cost: measured 3377 paths; fingerprint took 3.046264666s before and 1.940661833s after
+ok  	roundfix/internal/baseline	7.308s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,8 @@
+$ go test -count=1 -timeout 20m ./internal/cli
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067
+stdout:
+ok  	roundfix/internal/cli	642.696s
+
+stderr:
+
+exit: 0

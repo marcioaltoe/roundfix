@@ -1,0 +1,6 @@
+source: QA assignment; audited head 8c57f80812c5df9ad90b6325b78bf07d06f99c6e
+command: make verify-changed
+verdict: pass
+exit: 0
+diagnostics: removed on success
+not rerun by Agent

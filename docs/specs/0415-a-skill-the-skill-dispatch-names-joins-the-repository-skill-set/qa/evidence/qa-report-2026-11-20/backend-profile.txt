@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 20m -v -run '^TestARepositoryProfileWithoutFrontendRequiresSolid$' ./internal/baseline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067
+stdout:
+=== RUN   TestARepositoryProfileWithoutFrontendRequiresSolid
+=== PAUSE TestARepositoryProfileWithoutFrontendRequiresSolid
+=== CONT  TestARepositoryProfileWithoutFrontendRequiresSolid
+--- PASS: TestARepositoryProfileWithoutFrontendRequiresSolid (0.35s)
+PASS
+suiteguard: guard cost: measured 3380 paths; fingerprint took 1.347119416s before and 1.068950792s after
+ok  	roundfix/internal/baseline	2.959s
+
+stderr:
+
+exit: 0

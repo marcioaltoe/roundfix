@@ -1,0 +1,4 @@
+Outside source: Bazel documentation, Dependencies, https://bazel.build/concepts/dependencies
+Source read date recorded by Spec: 2026-11-20. This gate uses only the quoted passage preserved in PRD Acceptance evidence; no live lookup.
+Quotation: For correct builds, the graph of actual dependencies A must be a subgraph of the graph of declared dependencies D.
+Comparison: an activation bundle is its actual dependency set; the owner and its transitive dependencies provide the declared set. The sibling test and sabotage 1 witness rejection of trigger.production-code using solid without an owner declaration, even while frontend declares solid. This applies the published subset rule and does not infer success from a file read alone.

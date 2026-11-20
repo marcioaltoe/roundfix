@@ -1,0 +1,24 @@
+command: git diff-tree --no-commit-id --name-only -r 8c57f80812c5df9ad90b6325b78bf07d06f99c6e
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+CONTEXT.md
+docs/agents/setup-context.json
+docs/references/skill-coverage.json
+docs/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set/task_01.md
+internal/baseline/assets/modules/typescript.json
+internal/baseline/catalog.go
+internal/baseline/catalog_activation_requirement_test.go
+internal/baseline/catalog_validate.go
+internal/baseline/module-versions.json
+internal/baseline/skills_restore.go
+internal/baseline/skills_snapshot_profile_test.go
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/cli/doctor.go
+
+stderr:

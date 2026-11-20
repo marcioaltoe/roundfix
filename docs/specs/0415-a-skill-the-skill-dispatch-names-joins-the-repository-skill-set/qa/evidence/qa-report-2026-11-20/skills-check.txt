@@ -1,0 +1,43 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067/bin/roundfix skills check
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p
+stdout:
+
+stderr:
+roundfix: Roundfix skill check failed:
+  .agents/skills/ai-memory-handoff: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill ai-memory-handoff
+  .agents/skills/ai-memory-messaging: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill ai-memory-messaging
+  .agents/skills/app-renderer-systems: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill app-renderer-systems
+  .agents/skills/architectural-analysis: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill architectural-analysis
+  .agents/skills/bun: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill bun
+  .agents/skills/business-storyteller: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill business-storyteller
+  .agents/skills/clean-code: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill clean-code
+  .agents/skills/codebase-design: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill codebase-design
+  .agents/skills/coding-guidelines: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill coding-guidelines
+  .agents/skills/context7-cli: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill context7-cli
+  .agents/skills/conventional-commits: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill conventional-commits
+  .agents/skills/crafting-effective-readmes: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill crafting-effective-readmes
+  .agents/skills/docker: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill docker
+  .agents/skills/domain-modeling: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill domain-modeling
+  .agents/skills/exa-web-search: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill exa-web-search
+  .agents/skills/find-rules: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill find-rules
+  .agents/skills/find-skills: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill find-skills
+  .agents/skills/git-rebase: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill git-rebase
+  .agents/skills/github-pr-workflow: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill github-pr-workflow
+  .agents/skills/grill-with-docs: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill grill-with-docs
+  .agents/skills/grilling: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill grilling
+  .agents/skills/humanizer: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill humanizer
+  .agents/skills/knowledge-workspace: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill knowledge-workspace
+  .agents/skills/no-workarounds: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill no-workarounds
+  .agents/skills/onioncry: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill onioncry
+  .agents/skills/solid: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill solid
+  .agents/skills/systematic-debugging: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill systematic-debugging
+  .agents/skills/tech-writer: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill tech-writer
+  .agents/skills/testing-boss: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill testing-boss
+  .agents/skills/typesafe-ai: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill typesafe-ai
+  .agents/skills/typescript-advanced: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill typescript-advanced
+  .agents/skills/vite: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill vite
+  .agents/skills/vitest: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill vitest
+  .agents/skills/writing-clearly-and-concisely: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill writing-clearly-and-concisely
+  .agents/skills/zod: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill zod
+
+exit: 1

@@ -1,0 +1,18 @@
+$ go test -count=1 -timeout 20m -v -run '^TestAnActivationOwnerRequiresEverySkillOfItsBundle$/^a_sibling_module_does_not_satisfy_the_owner$' ./internal/baseline
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-copy-p3vrisul
+stdout:
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== PAUSE TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== CONT  TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner
+    catalog_activation_requirement_test.go:31: load catalog error = <nil>, want *ValidationError
+--- FAIL: TestAnActivationOwnerRequiresEverySkillOfItsBundle (0.14s)
+    --- FAIL: TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner (0.14s)
+FAIL
+suiteguard: guard cost: measured 3367 paths; fingerprint took 592.094875ms before and 1.968037166s after
+FAIL	roundfix/internal/baseline	3.071s
+FAIL
+
+stderr:
+
+exit: 1

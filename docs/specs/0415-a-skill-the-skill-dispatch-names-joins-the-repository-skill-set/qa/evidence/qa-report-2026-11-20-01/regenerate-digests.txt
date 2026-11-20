@@ -1,0 +1,16 @@
+command: make baseline-digests
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-regeneration-onfthxhl/audited
+exit: 0
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+stderr:
+ok  	roundfix/internal/baseline	1.852s
+ok  	roundfix/skills	0.294s
+ok  	roundfix/internal/baseline	1.601s
+ok  	roundfix/internal/baseline	0.830s
+ok  	roundfix/internal/baseline	1.781s
+ok  	roundfix/internal/baseline	1.391s
+ok  	roundfix/internal/baseline	2.029s
+ok  	roundfix/internal/baseline	0.685s
+baseline-digests: no changes; derived artifacts already match their canonical sources

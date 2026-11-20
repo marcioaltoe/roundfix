@@ -1,0 +1,7 @@
+package speccheck
+import "testing"
+func TestQA0415ChangedGovernedPaths(t *testing.T) {
+ for _, path := range []string{"CONTEXT.md","docs/agents/setup-context.json","docs/references/skill-coverage.json","docs/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set/task_01.md","internal/baseline/assets/modules/typescript.json","internal/baseline/catalog.go","internal/baseline/catalog_activation_requirement_test.go","internal/baseline/catalog_validate.go","internal/baseline/module-versions.json","internal/baseline/skills_restore.go","internal/baseline/skills_snapshot_profile_test.go","internal/baseline/testdata/catalog.digest","internal/baseline/testdata/catalog.normalized.json","internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json","internal/baseline/testdata/plan-characterization/clean-adoption.golden.json","internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json","internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json","internal/cli/doctor.go"} {
+  if GovernedPath(path) { t.Log("governed:", path) }
+ }
+}

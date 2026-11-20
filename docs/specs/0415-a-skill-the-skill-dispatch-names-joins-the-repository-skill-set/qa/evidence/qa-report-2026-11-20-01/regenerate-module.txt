@@ -1,0 +1,7 @@
+command: go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1 -timeout 20m
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-regeneration-onfthxhl/audited
+exit: 0
+stdout:
+ok  	roundfix/internal/baseline	0.632s
+
+stderr:

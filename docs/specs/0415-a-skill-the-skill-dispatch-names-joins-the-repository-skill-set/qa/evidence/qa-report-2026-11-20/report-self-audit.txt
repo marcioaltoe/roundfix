@@ -1,0 +1,8 @@
+Report self-audit: PASS
+18 contiguous Results rows: 16 pass, 1 fail, 1 environment-blocked; no pending/skipped/declared/finding-blocked rows.
+Every row has typed inputs; commit-dependent rows name commit_range.
+Coverage provenance exactly matches all declared and non-waivable sources.
+Seeded auditor fields and mechanical tables preserved.
+All linked evidence exists and is not ignored; all evidence is UTF-8 text.
+All listed user-flow executables exist inside this Run Worktree.
+Audited HEAD is unchanged; tracked-file delta is empty; all untracked changes are under the assigned qa directory.

@@ -1,0 +1,3 @@
+All three sanctioned commands exit 0; make baseline-digests reports changed:false, Managed Refresh reports File changes: 0, and git status is empty.
+The first harness compared every permission bit and its assertion failed. A diagnostic reproduction proves that git archive creates 0664 files and the approved apply normalizes managed files to 0644. Every content hash and Git executable bit remains unchanged; no ignored operational file was added.
+This was an over-broad QA harness assertion, not a changed derived record. The retained diagnosis lists every affected path, old/new mode and content_unchanged:true. The harness now compares the executable bit, which Git records. No product assertion or source was changed.

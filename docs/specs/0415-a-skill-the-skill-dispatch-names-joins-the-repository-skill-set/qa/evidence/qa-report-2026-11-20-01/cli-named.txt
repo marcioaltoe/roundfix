@@ -1,0 +1,53 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestDoctorNamesAMissingRequiredSkill|TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestSkillsCheckNamesAMissingRequiredSkill|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent)$' ./internal/cli
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+=== RUN   TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== PAUSE TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== PAUSE TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestDoctorNamesAMissingRequiredSkill
+=== PAUSE TestDoctorNamesAMissingRequiredSkill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill
+=== CONT  TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== CONT  TestDoctorNamesAMissingRequiredSkill
+=== RUN   TestDoctorNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_every_required_skill
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_every_required_skill
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+=== RUN   TestSkillsCheckNamesAMissingRequiredSkill/outside_a_Git_repository
+=== PAUSE TestSkillsCheckNamesAMissingRequiredSkill/outside_a_Git_repository
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill
+=== CONT  TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/outside_a_Git_repository
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest
+=== CONT  TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_every_required_skill
+--- PASS: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.99s)
+--- PASS: TestSkillsCheckNamesAMissingRequiredSkill (0.00s)
+    --- PASS: TestSkillsCheckNamesAMissingRequiredSkill/outside_a_Git_repository (0.05s)
+    --- PASS: TestSkillsCheckNamesAMissingRequiredSkill/repository_without_a_Setup_Manifest (0.09s)
+    --- PASS: TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_a_missing_required_skill (2.68s)
+    --- PASS: TestSkillsCheckNamesAMissingRequiredSkill/adopted_repository_with_every_required_skill (2.72s)
+=== RUN   TestDoctorNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry
+--- PASS: TestDoctorNamesAMissingRequiredSkill (4.88s)
+    --- PASS: TestDoctorNamesAMissingRequiredSkill/folder_and_lock_entry_removed (3.03s)
+    --- PASS: TestDoctorNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (1.85s)
+=== RUN   TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed
+--- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill (9.30s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_and_lock_entry_removed (3.16s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_removed_with_a_stale_lock_entry (1.61s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/folder_no_longer_matches_its_lock_entry (1.70s)
+    --- PASS: TestBaselineUpdatePreviewNamesAMissingRequiredSkill/every_required_skill_installed (2.82s)
+PASS
+suiteguard: guard cost: measured 3433 paths; fingerprint took 1.271325042s before and 3.216058458s after
+ok  	roundfix/internal/cli	14.492s
+
+stderr:

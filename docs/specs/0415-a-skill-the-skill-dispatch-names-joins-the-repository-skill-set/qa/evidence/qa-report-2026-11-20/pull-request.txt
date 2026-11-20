@@ -1,0 +1,8 @@
+Pull Request row
+Environment: no open Pull Request, supplied in this gate assignment for the Spec target branch. The Run branch is never pushed.
+Approval: operative delivery authority is the parent-commit approved _authorization.md; maintainer response is option 1, Tudo, com patch v0.152.1, from ai-memory message 01a1f976-6dbf-7a43-93ee-89cc6806e754. No tool lookup was made.
+Checks and status: Daemon make verify-changed pass, exit 0, at 508e9e7746144022883614cbba917223d1b100fd.
+Unresolved review threads: none exists because no Pull Request exists; no remote review is claimed.
+Merge-Ready acceptance: none yet; this control has no equivalent acceptance evidence.
+Review-artifact ancestry: no review artifact exists; the claimed candidate is 508e9e7746144022883614cbba917223d1b100fd.
+Unblocking: Supervisor obtains the configured current-candidate review and required checks on the Spec target branch before merge.

@@ -1,0 +1,10 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77/bin/roundfix baseline skills restore --profile ts-backend --skill solid --source-dir /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/absent-source
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/characterization
+exit: 2
+stdout:
+Baseline skills restore: blocked
+restore.source-dir-invalid: Offline Git object store is not a directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/absent-source.
+Next action: Pass an existing Git checkout or bare object store to --source-dir.
+
+stderr:
+roundfix: baseline skills restore failed: Offline Git object store is not a directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/absent-source.

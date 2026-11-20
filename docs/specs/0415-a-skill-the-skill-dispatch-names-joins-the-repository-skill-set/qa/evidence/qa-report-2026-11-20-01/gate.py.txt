@@ -1,0 +1,376 @@
+import os, pathlib, subprocess, json, tempfile, shutil, sys, re, shlex, tarfile, io
+ROOT=pathlib.Path(__file__).resolve().parents[6]
+SLUG='0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set'
+SPEC=ROOT/'docs/specs'/SLUG
+E=SPEC/'qa/evidence/qa-report-2026-11-20-01'
+REPORT=SPEC/'qa/qa-report-2026-11-20-01.md'
+HEAD='8c57f80812c5df9ad90b6325b78bf07d06f99c6e'
+BASE='0c9ce42c'
+KEYS=['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID','ROUNDFIX_OPENROUTER_JUDGE_API_KEY','ROUNDFIX_OPENROUTER_API_KEY','ROUNDFIX_TYPESAFE_API_KEY']
+ENV=os.environ.copy()
+for key in KEYS: ENV.pop(key,None)
+ENV.update(GOPROXY='off',GOSUMDB='off')
+def run(name,args,cwd=ROOT,env=None,expected=None):
+    p=subprocess.run(args,cwd=cwd,env=env or ENV,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    output='command: '+shlex.join([str(a) for a in args])+'\ncwd: '+str(cwd)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr
+    (E/(name+'.txt')).write_text(output)
+    print(name+': exit '+str(p.returncode),flush=True)
+    if expected is not None and p.returncode!=expected: raise AssertionError(name+' unexpected exit; see '+str(E/(name+'.txt')))
+    return p
+class Product:
+    def __enter__(self):
+        self.temp=pathlib.Path(tempfile.mkdtemp(prefix='qa0415-'))
+        self.env=ENV.copy()
+        for var in ['GOMODCACHE','GOCACHE']:
+            self.env[var]=subprocess.check_output(['go','env',var],env=ENV,text=True).strip()
+        self.env['RUSTUP_HOME']=os.environ.get('RUSTUP_HOME',str(pathlib.Path.home()/'.rustup'))
+        self.env['CARGO_HOME']=os.environ.get('CARGO_HOME',str(pathlib.Path.home()/'.cargo'))
+        for var,part in [('HOME','home'),('TMPDIR','tmp')]:
+            (self.temp/part).mkdir(); self.env[var]=str(self.temp/part)
+        (self.temp/'stub').mkdir()
+        gh=self.temp/'stub/gh'; gh.write_text('#!/bin/sh\nexit 1\n'); gh.chmod(0o755)
+        self.env['PATH']=str(gh.parent)+os.pathsep+ENV['PATH']
+        self.env['GIT_CONFIG_NOSYSTEM']='1'; self.env['GIT_CONFIG_GLOBAL']=os.devnull
+        return self
+    def __exit__(self,*exc):
+        subprocess.run(['chmod','-R','u+w',str(self.temp)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        shutil.rmtree(self.temp)
+    def cli(self,name,args,cwd=ROOT,expected=None):
+        # A repo operand reaches fixtures outside the Run; executable is always Run-built.
+        return run(name,[str(ROOT/'bin/roundfix')]+args,cwd,self.env,expected)
+def update(row,status,note='',files=[]):
+    text=REPORT.read_text()
+    text=re.sub(r'(?m)^\| '+re.escape(row)+r' \| pending \|', '| '+row+' | '+status+' |',text)
+    if note or files:
+        links=', '.join('['+x+'](evidence/qa-report-2026-11-20-01/'+x+')' for x in files)
+        text=text.replace('<!-- observation '+row+' -->','Observation: '+note+(' Evidence: '+links+'.' if links else ''))
+    REPORT.write_text(text)
+def initialize():
+    run('build',['make','build'],expected=0)
+    with Product() as p:
+        v=p.cli('version',['--version'],expected=0)
+        p.cli('precondition',['spec','check',SLUG,'--strict'],expected=0)
+    text=REPORT.read_text()
+    extra='spec: '+SLUG+'\ndate: 2026-11-20\nbuild: "'+HEAD+'"\nstatus: in-progress\nsurfaces: [backend, cli, docs]\nuser_flow_binary: '+json.dumps(v.stdout.strip() or v.stderr.strip())+'\nuser_flow_executables:\n  - bin/roundfix\n  - docs/specs/'+SLUG+'/qa/evidence/qa-report-2026-11-20-01/gate.py.txt\n'
+    text=text.replace('verdict: pending\n','verdict: pending\n'+extra,1)
+    rows=[('Q01','repository Verification','Daemon supplied make verify-changed exit 0; do not rerun.'),('Q02','Requirement 2; Requirement 9','Activation positive/negative subtests and exact sibling diagnostic.'),('Q03','Requirement 3; Requirement 9','Rendered dispatch, five profile counts and unchanged baseline tests/package.'),('Q04','Requirement 4; Requirement 9','Profile without frontend requires the pinned solid contract and accepts selection.'),('Q05a','Requirement 5','Fresh repository profile validation returns 0.'),('Q05b','Requirement 5','Skills check returns 1, counts missing requirements and names solid restore.'),('Q05c','Requirement 5','Restore selection returns source-dir-invalid, never skill-invalid.'),('Q05d','Requirement 5','Binary adopts a complete manifest; read-only update preview names solid and leaves Git clean.'),('Q06','Requirement 6; Requirement 9','CLI filters, four verbose tests, full package and three shared readers.'),('Q07','Requirement 7','Exact catalog delta and sanctioned commands leave a scratch copy unchanged.'),('Q08a','Requirement 8','Sabotage removes solid and fails embedded-catalog subtest.'),('Q08b','Requirement 8','Sabotage deletes rule and fails sibling subtest.'),('Q08c','Requirement 8','Sabotage accepts sibling and fails sibling subtest.'),('Q08d','Requirement 8','Sabotage drops last module and fails rendered-dispatch witness.'),('Q09','Requirement 9','All task_01 Verification test selections and predicates executed.'),('Q10','outside-evidence row','Offline Bazel dependency passage independently compared with observed diagnostic.'),('Q11','Requirement 13','Task history, authorization and bounded changed paths.'),('Q12','Pull Request row','No open PR; pre-PR control equivalents and candidate identity.')]
+    table='\n'.join('| '+r+' | pending | '+src+' |' for r,src,_ in rows)
+    text=text.replace('| - | --- | --- |','| - | --- | --- |\n'+table,1)
+    text+='\n## Scope and environment\n\nAudited head `'+HEAD+'`. The graph has one completed backend Task and its terminal QA Task. `make build` and the strict precondition passed; see [build](evidence/qa-report-2026-11-20-01/build.txt), [version](evidence/qa-report-2026-11-20-01/version.txt), and [precondition](evidence/qa-report-2026-11-20-01/precondition.txt). No carried rows exist; each seeded re-run disposition is retained. No Surface Transcripts or frontend are declared. Product commands use fresh homes and preserved toolchain locations, offline Go module resolution, disabled real gh, and unset Judge/GitHub/session variables. Every test has an explicit timeout. Test/make commands retain session HOME and TMPDIR. Temporary Git copies contain only the audited head. No prior evidence or executables are used.\n\n## Static gate\n\n`make verify-changed`: pass, exit 0, supplied by the Daemon at the audited head; diagnostics removed on success. Not rerun.\n\n## Row details\n'
+    refs=['cmd/**','internal/**','skills/**','.agents/**','go.mod','go.sum','Makefile','docs/**','CONTEXT.md','skills-lock.json','.roundfixrc.yml','AGENTS.md']
+    for row,src,goal in rows:
+        text+='\n### '+row+'\n\n'+goal+' Actor: repository maintainer. Surface: backend, CLI or docs as applicable. Enter through the Run-built binary or the authored test/command. Independent confirmation: diagnostic assertions, public reread, or Git byte comparison; persistence: new process or unchanged scratch tree.\n\n```yaml\ninputs:\n'
+        for ref in refs: text+='  - kind: repository_path\n    ref: '+ref+'\n'
+        if row in ['Q07','Q11','Q12']: text+='  - kind: commit_range\n    ref: '+BASE+'..'+HEAD+'\n'
+        text+='```\n\n<!-- observation '+row+' -->\n'
+    text+='\n## Findings\n\nPending sweep.\n\n## Blocked and skipped\n\nPending sweep.\n\n## Coverage\n\nPending sweep.\n\n## Outcome\n\nPending offline archive plan.\n\n## Final verdict\n\nPending sweep.\n'
+    REPORT.write_text(text)
+    (E/'daemon-verification.txt').write_text('source: QA assignment; audited head '+HEAD+'\ncommand: make verify-changed\nverdict: pass\nexit: 0\ndiagnostics: removed on success\nnot rerun by Agent\n')
+    update('Q01','pass','Daemon supplied verification at this head; no local rerun.',['daemon-verification.txt'])
+if __name__=='__main__':
+    if sys.argv[1]=='init': initialize()
+def tests():
+    primary='^(TestAnActivationOwnerRequiresEverySkillOfItsBundle|TestTheRequiredSkillsCoverTheRenderedDispatch|TestARepositoryProfileWithoutFrontendRequiresSolid)$'
+    p=run('baseline-named',['go','test','-count=1','-timeout','20m','-v','-run',primary,'./internal/baseline'],expected=0)
+    required=['TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads','TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner','TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_dependency_satisfies_the_owner','TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_owner_reports_only_the_owner','TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies','TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile','TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names','TestARepositoryProfileWithoutFrontendRequiresSolid']
+    assert all('--- PASS: '+x+' ' in p.stdout for x in required)
+    source=(ROOT/'internal/baseline/catalog_activation_requirement_test.go').read_text()
+    assert 'catalog.skill.activation.skill.unrequired' in source and 'trigger.production-code' in source
+    (E/'test-contract-assertions.txt').write_text(source+'\n'+(ROOT/'internal/baseline/skills_snapshot_profile_test.go').read_text())
+    update('Q02','pass','All named subtests pass. The sibling test asserts exactly one unrequired diagnostic at trigger.production-code for solid while frontend still requires it.',['baseline-named.txt','test-contract-assertions.txt'])
+    update('Q04','pass','Repository profile without frontend passes its pinned-contract equality and source-dir-invalid assertions.',['baseline-named.txt','test-contract-assertions.txt'])
+    run('baseline-unchanged',['go','test','-count=1','-timeout','20m','-v','-run','^(TestSkillSnapshotProfileKeepsEveryBuiltInProfile|TestSkillSnapshotProfileResolvesARepositoryProfile|TestEveryModuleRequiresEverySkillItDispatches)$','./internal/baseline'],expected=0)
+    run('baseline-package',['go','test','-count=1','-timeout','20m','./internal/baseline'],expected=0)
+    update('Q03','pass','All rendered-dispatch subtests, three unchanged tests and the whole baseline package pass. Profile counts remain go-cli-tui 41, go-cli-typescript-monorepo 105, python 38, rust-cli 34, standard-typescript-monorepo 95; solid only in the TypeScript profiles.',['baseline-named.txt','baseline-unchanged.txt','baseline-package.txt','test-contract-assertions.txt'])
+    run('cli-selection',['go','test','-count=1','-timeout','20m','-run','Doctor|SkillsCheck|MissingRequiredSkill|ExternalSkill|SkillsRestore|BaselineUpdate','./internal/cli'],expected=0)
+    p=run('cli-named',['go','test','-count=1','-timeout','20m','-v','-run','^(TestDoctorNamesAMissingRequiredSkill|TestBaselineUpdatePreviewNamesAMissingRequiredSkill|TestSkillsCheckNamesAMissingRequiredSkill|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent)$','./internal/cli'],expected=0)
+    for name in ['TestDoctorNamesAMissingRequiredSkill','TestBaselineUpdatePreviewNamesAMissingRequiredSkill','TestSkillsCheckNamesAMissingRequiredSkill','TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent']: assert '--- PASS: '+name+' ' in p.stdout
+    run('cli-package',['go','test','-count=1','-timeout','20m','./internal/cli'],expected=0)
+    restore=(ROOT/'internal/baseline/skills_restore.go').read_text(); doctor=(ROOT/'internal/cli/doctor.go').read_text()
+    assert restore.count('catalog.RequiredSkills(')==2 and doctor.count('catalog.RequiredSkills(')==1
+    assert 'requiredSkills"]' not in restore and 'json:"requiredSkills"' not in doctor
+    assert 'Embedded Baseline Profile %q references a missing module.' in restore
+    assert 'resolve external skill requirement: Setup Manifest names unknown module %q' in doctor
+    (E/'shared-readers.txt').write_text('Two restore readers and Doctor use Catalog.RequiredSkills; no hand union remains.\n'+restore[restore.index('func loadRestoreProfile'):restore.index('func loadRestoreProfile')+2200]+'\n'+doctor[doctor.index('func resolveExternalSkillRequirement'):doctor.index('func resolveExternalSkillRequirement')+4500])
+    update('Q06','pass','Filtered, four individually named, and whole CLI suites pass. Shared-reader inspection confirms only Catalog.RequiredSkills supplies names and both unknown-module messages are preserved.',['cli-selection.txt','cli-named.txt','cli-package.txt','shared-readers.txt'])
+    run('docs-contracts',['go','test','-count=1','-timeout','20m','-tags','docscontract','-run','^(TestTheSkillCoverageMapIsCurrent|TestGlossaryPhrasesAreDefinedTerms)$','./internal/docscontract'],expected=0)
+    task=(SPEC/'task_01.md').read_text().split('## Verification\n',1)[1].split('## References',1)[0]
+    commands=re.findall(r'^- `([^\n]+)` — expected:',task,re.M)
+    assert len(commands)==6
+    # Execute the non-suite predicates verbatim; the suite commands above cover every declared test once or as explicitly required.
+    predicates=[commands[1],commands[4],commands[5].split(' && go test',1)[0]]
+    run('task-verification-predicates',['/bin/bash','-c','\n'.join('('+x+') || exit 1' for x in predicates)],expected=0)
+    update('Q09','pass','All tests named in task_01 Verification ran with explicit timeouts; exact source/glossary/coverage predicates also pass. No repository Verification was rerun.',['baseline-named.txt','baseline-package.txt','cli-selection.txt','docs-contracts.txt','task-verification-predicates.txt'])
+if __name__=='__main__' and sys.argv[1]=='tests': tests()
+
+def git_init(repo,env):
+    repo.mkdir()
+    for args in [['init','-q'],['config','user.name','QA Fixture'],['config','user.email','qa@example.invalid']]:
+        subprocess.run(['git']+args,cwd=repo,env=env,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+def git_commit(repo,env,message):
+    subprocess.run(['git','add','.'],cwd=repo,env=env,check=True)
+    subprocess.run(['git','commit','-qm',message,'--allow-empty'],cwd=repo,env=env,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+def trim(repo,adopt=False):
+    file=repo/'.roundfix/baseline/profiles/ts-backend.json'
+    profile=json.loads(file.read_text())
+    profile['modules']=['core','context-workflow','typescript','bun','autonomous-work','spec-workflow','secondbrain','repository-extension']
+    if adopt:
+        profile['capabilities']=[]
+        profile['decisions']=[x for x in profile['decisions'] if (x if isinstance(x,str) else x['id']) not in ['auth.provider','auth.base_path']]
+    file.write_text(json.dumps(profile,indent=2)+'\n')
+    return profile
+
+def flows():
+    with Product() as p:
+        repo=p.temp/'characterization'
+        git_init(repo,p.env); git_commit(repo,p.env,'QA initial repository')
+        p.cli('profile-init',['baseline','profile','init','--id','ts-backend','--from','standard-typescript-monorepo'],repo,0)
+        profile=trim(repo)
+        (repo/'docs/agents').mkdir(parents=True)
+        (repo/'docs/agents/setup-context.json').write_text(json.dumps({'profile':'ts-backend','modules':profile['modules']}))
+        p.cli('skills-install',['skills','install','--target','project'],repo,0)
+        (repo/'skills-lock.json').write_text('{"version":1,"skills":{}}\n')
+        p.cli('profile-validate',['baseline','profile','validate','ts-backend'],repo,0)
+        update('Q05a','pass','A new process validates the eight-module repository profile without frontend.',['profile-init.txt','profile-validate.txt'])
+        check=p.cli('skills-check',['skills','check'],repo,1)
+        combined=check.stdout+check.stderr
+        line='.agents/skills/solid: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill solid'
+        assert line in combined
+        missing=[x for x in combined.splitlines() if 'required by the Baseline and not installed' in x]
+        (E/'missing-count.txt').write_text('Observed matching missing-required lines: '+str(len(missing))+'\n'+combined)
+        update('Q05b','pass','Skills check exits 1 and names solid with the exact restore command; '+str(len(missing))+' missing-required lines observed, with the command summary retained.',['skills-check.txt','missing-count.txt'])
+        restore=p.cli('restore-selection',['baseline','skills','restore','--profile','ts-backend','--skill','solid','--source-dir',str(p.temp/'absent-source')],repo,2)
+        combined=restore.stdout+restore.stderr
+        assert 'restore.source-dir-invalid' in combined and 'restore.skill-invalid' not in combined
+        update('Q05c','pass','Restore accepts solid as required, then exits 2 for the absent source directory; no skill-invalid diagnostic. Independent public read confirms the selection skills check advertised.',['restore-selection.txt','skills-check.txt'])
+        repo=p.temp/'adoption'
+        git_init(repo,p.env)
+        p.cli('adoption-profile-init',['baseline','profile','init','--id','ts-backend','--from','standard-typescript-monorepo'],repo,0)
+        trim(repo,True)
+        (repo/'Makefile').write_text('verify:\n\t@true\nverify-incremental:\n\t@true\n')
+        for name in ['context7-cli','exa-web-search']:
+            file=repo/'.agents/skills'/name/'SKILL.md'; file.parent.mkdir(parents=True)
+            file.write_text('---\nname: '+name+'\ndescription: Offline QA fixture\n---\n')
+        git_commit(repo,p.env,'QA adoption inputs')
+        p.cli('adoption-profile-validate',['baseline','profile','validate','ts-backend'],repo,0)
+        decisions=['preservation.mode=greenfield','language.generated=English','verification.gate=make verify','verification.incremental=make verify-incremental','spec.scaffold=true','domain.layout=single-context','triage.external=false','autonomous.enabled=true','runtime.backend=codex gpt-5.5 xhigh','runtime.design=claude opus xhigh','secondbrain.enabled=true','repository.extension.enabled=true','identifier.strategy={"kind":"uuid-v7"}','http.contract={"mode":"REST"}']
+        args=['baseline','plan','--profile','ts-backend','--repo','.','--format','json']
+        for d in decisions: args+=['--decision',d]
+        plan=p.cli('adoption-plan',args,repo,0)
+        data=json.loads(plan.stdout); digest=data['planDigest']
+        planfile=p.temp/'baseline-plan.json'; planfile.write_text(plan.stdout)
+        apply=p.cli('adoption-apply',['baseline','apply','--plan',str(planfile),'--confirm-plan',digest,'--repo','.','--format','text'],repo,0)
+        assert 'Baseline apply: verified' in apply.stdout+apply.stderr
+        manifest=json.loads((repo/'docs/agents/setup-context.json').read_text())
+        assert manifest['profile']=='ts-backend'
+        (E/'adoption-manifest.txt').write_text(json.dumps(manifest,indent=2)+'\n')
+        p.cli('adoption-skills-install',['skills','install','--target','project'],repo,0)
+        (repo/'skills-lock.json').write_text('{"version":1,"skills":{}}\n')
+        git_commit(repo,p.env,'QA adopted profile and skill installation')
+        preview=p.cli('update-preview',['baseline','update','--repo',str(repo),'--no-history','--format','text'],repo)
+        expected='- missing solid: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill solid'
+        assert preview.returncode in [0,3] and expected in preview.stdout+preview.stderr
+        status=run('preview-status',['git','status','--short'],repo,p.env,0)
+        assert status.stdout==''
+        # Fresh public invocation independently checks persistence and read-only behavior.
+        again=p.cli('update-preview-repeat',['baseline','update','--repo',str(repo),'--no-history','--format','text'],repo)
+        assert again.returncode==preview.returncode and expected in again.stdout+again.stderr
+        assert subprocess.check_output(['git','status','--short'],cwd=repo,env=p.env,text=True)==''
+        update('Q05d','pass','The binary-generated full Setup Manifest reaches skill inspection; preview exits '+str(preview.returncode)+', names missing solid with its restore command, and leaves Git clean after two invocations. Prior F-01 is resolved by the revised fixture.',['adoption-profile-init.txt','adoption-profile-validate.txt','adoption-plan.txt','adoption-apply.txt','adoption-manifest.txt','adoption-skills-install.txt','update-preview.txt','update-preview-repeat.txt','preview-status.txt'])
+
+def scratch(parent,name):
+    path=parent/name; path.mkdir()
+    archive=subprocess.check_output(['git','archive',HEAD],cwd=ROOT,env=ENV)
+    with tarfile.open(fileobj=io.BytesIO(archive)) as t: t.extractall(path,filter='tar')
+    for args in [['init','-q'],['config','user.name','QA Fixture'],['config','user.email','qa@example.invalid']]: subprocess.run(['git']+args,cwd=path,env=ENV,check=True)
+    git_commit(path,ENV,'QA audited head '+HEAD)
+    return path
+
+def mutations():
+    with tempfile.TemporaryDirectory(prefix='qa0415-sabotages-') as temporary:
+        for i in range(1,5):
+            repo=scratch(pathlib.Path(temporary),'sabotage-'+str(i))
+            if i==1:
+                file=repo/'internal/baseline/assets/modules/typescript.json'
+                s=file.read_text(); assert '    "solid",\n' in s
+                file.write_text(s.replace('    "solid",\n','',1))
+                name='TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads'
+            elif i in [2,3]:
+                file=repo/'internal/baseline/catalog_validate.go'; s=file.read_text()
+                start=s.index('\t\trequired := make(map[string]struct{})',s.index('func (l *catalogLoader) validateSkillActivations'))
+                end=s.index('\n\t}\n}',start)
+                if i==2:
+                    # Keep the skill slice read so the mutation compiles.
+                    s=s[:start]+'\t\t_ = skills'+s[end:]
+                else:
+                    at=s.index('\t\tvisit(owner)',start)+len('\t\tvisit(owner)')
+                    s=s[:at]+'\n\t\tfor moduleID := range catalog.modules {\n\t\t\tvisit(moduleID)\n\t\t}'+s[at:]
+                file.write_text(s)
+                name='TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner'
+            else:
+                file=repo/'internal/baseline/catalog.go'; s=file.read_text()
+                start=s.index('func (catalog *Catalog) RequiredSkills(')
+                at=s.index('\tfor _, moduleID := range moduleIDs {',start)
+                s=s[:at]+s[at:].replace('\tfor _, moduleID := range moduleIDs {','\tfor _, moduleID := range moduleIDs[:max(0, len(moduleIDs)-1)] {',1)
+                file.write_text(s)
+                name='TestTheRequiredSkillsCoverTheRenderedDispatch'
+            run('sabotage-'+str(i)+'-patch',['git','diff','--',str(file.relative_to(repo))],repo,expected=0)
+            result=run('sabotage-'+str(i),['go','test','-count=1','-timeout','20m','-v','-run','^'+name.split('/')[0]+'$'+('/^'+name.split('/')[1]+'$' if '/' in name else ''),'./internal/baseline'],repo,expected=1)
+            output=result.stdout+result.stderr
+            assert '--- FAIL: '+name in output
+            assert '[build failed]' not in output and 'undefined:' not in output and 'syntax error:' not in output
+            if i==1: assert all(x in output for x in ['catalog.skill.activation.skill.unrequired','trigger.production-code','solid'])
+            update('Q08'+chr(96+i),'pass','Fresh independent compiling sabotage exits 1 at '+name+' on its assertion; no regeneration ran.',['sabotage-'+str(i)+'-patch.txt','sabotage-'+str(i)+'.txt'])
+
+def regeneration():
+    path='internal/baseline/assets/modules/typescript.json'
+    before=json.loads(subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT,env=ENV,text=True)); after=json.loads((ROOT/path).read_text())
+    skill=before['requiredSkills']; at=skill.index('onioncry'); skill.insert(at+1,'solid')
+    before['version']=after['version']; assert before==after
+    record='internal/baseline/module-versions.json'
+    old=json.loads(subprocess.check_output(['git','show',BASE+':'+record],cwd=ROOT,env=ENV,text=True)); new=json.loads((ROOT/record).read_text())
+    assert new['modules']['typescript'][:-1]==old['modules']['typescript']
+    last=new['modules']['typescript'][-1]; assert last['version']==after['version']
+    new['modules']['typescript'].pop(); assert new==old
+    (E/'catalog-delta.txt').write_text('TypeScript differs only by solid after onioncry and recorder-owned version.\nModule version record differs only by the new TypeScript version/digest.\n'+json.dumps(last)+'\n')
+    with tempfile.TemporaryDirectory(prefix='qa0415-regeneration-') as temporary:
+        repo=scratch(pathlib.Path(temporary),'audited')
+        run('regenerate-module',['go','test','./internal/baseline','-run','^TestEveryBaselineModuleVersionIsRecorded$','-record-module-versions','-count=1','-timeout','20m'],repo,expected=0)
+        run('regenerate-digests',['make','baseline-digests'],repo,expected=0)
+        with Product() as p:
+            result=run('regenerate-manifest',['go','run','-buildvcs=false','./cmd/roundfix','baseline','update','--repo','.','--no-skills','--no-history','--yes','--format','text'],repo,p.env,0)
+        state=run('regenerate-status',['git','status','--short'],repo,expected=0)
+        assert state.stdout==''
+    update('Q07','pass','Exact catalog/record delta confirmed. The module recorder, baseline-digests, and prescribed Go-run managed refresh all exit 0 and leave the freshly committed audited scratch tree byte-identical.',['catalog-delta.txt','regenerate-module.txt','regenerate-digests.txt','regenerate-manifest.txt','regenerate-status.txt'])
+def audits():
+    # Audit only the Task commit, not the planning commits it consumes.
+    actual=run('scope-diff-tree',['git','diff-tree','--no-commit-id','--name-only','-r',HEAD],expected=0).stdout.splitlines()
+    task=(SPEC/'task_01.md').read_text()
+    context=task.split('## Context\n',1)[1].split('## Consumers',1)[0]
+    declared=re.findall(r'^- (?:interface|creates): `([^`]+)`',context,re.M)
+    permitted=set(declared+[str((SPEC/'task_01.md').relative_to(ROOT))])
+    assert set(actual)<=permitted,(set(actual)-permitted)
+    task_commits=subprocess.check_output(['git','rev-list',BASE+'..'+HEAD],cwd=ROOT,env=ENV,text=True).splitlines()
+    assert task_commits==[HEAD]
+    # Explicit prohibited classes and whole-delivery controls.
+    changed=subprocess.check_output(['git','diff','--name-only','851024fa',HEAD],cwd=ROOT,env=ENV,text=True).splitlines()
+    banned={'Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','AGENTS.md','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/behavior-surfaces.json','docs/references/coverage-record.json'}
+    assert not banned.intersection(changed)
+    for path in changed:
+        assert not path.startswith(('.github/workflows/','.agents/skills/','skills/','docs/user-guide/'))
+        if path.startswith('docs/agents/'): assert path=='docs/agents/setup-context.json'
+        if path.startswith('internal/baseline/assets/'): assert path=='internal/baseline/assets/modules/typescript.json'
+        if path.startswith('docs/adr/'): assert path=='docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md'
+    coverage='docs/references/skill-coverage.json'
+    old=json.loads(subprocess.check_output(['git','show','851024fa:'+coverage],cwd=ROOT,env=ENV,text=True)); new=json.loads((ROOT/coverage).read_text())
+    review='2026-11-20 — Spec 0415 task_01 reads the required external skills of Doctor through Catalog.RequiredSkills; no check name, status, message, next action, output line or exit code changes'
+    entries=[x for x in new['surfaces'] if x['id']=='command doctor']; assert len(entries)==1 and entries[0]['review']==review
+    old_entry=next(x for x in old['surfaces'] if x['id']=='command doctor'); old_entry['review']=review
+    assert old==new
+    adr=ROOT/'docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md'
+    assert adr.read_text().startswith('---\nstatus: accepted\n')
+    patch=subprocess.check_output(['git','diff','851024fa',HEAD,'--','.agents/skills','skills'],cwd=ROOT,env=ENV,text=True)
+    assert patch==''
+    grant='2d8a2abda98ea907bb5a126c875711f2ee3189de'
+    assert subprocess.run(['git','merge-base','--is-ancestor',grant,HEAD],cwd=ROOT,env=ENV).returncode==0
+    auth=str((SPEC/'_authorization.md').relative_to(ROOT))
+    assert subprocess.check_output(['git','show',grant+':'+auth],cwd=ROOT,env=ENV)==(ROOT/auth).read_bytes()
+    (E/'scope-audit.txt').write_text('Task commit '+HEAD+'\nDelivery base '+BASE+'\nAll actual paths are declared or the Daemon-owned Task result.\nOnly one Task commit in range. All protected negative-scope assertions pass. Coverage changes only the exact command doctor review. ADR-0448 is accepted and is the only changed ADR from 851024fa. No Skill or QA settlement section changed.\nChanged paths:\n'+'\n'.join(actual)+'\n')
+    run('authorization-ancestry',['git','log','--format=%H %s','--ancestry-path',grant+'^..'+HEAD],expected=0)
+    # Invoke the repository's actual classifier, without changing any repository source.
+    probe='package speccheck\nimport "testing"\nfunc TestQA0415ChangedGovernedPaths(t *testing.T) {\n for _, path := range []string{'+','.join(json.dumps(x) for x in actual)+'} {\n  if GovernedPath(path) { t.Log("governed:", path) }\n }\n}\n'
+    file=E/'scope-probe.go.txt'; file.write_text(probe)
+    overlay=E/'scope-overlay.json.txt'; overlay.write_text(json.dumps({'Replace':{str(ROOT/'internal/speccheck/qa0415_scope_test.go'):str(file)}}))
+    result=run('governed-classification',['go','test','-overlay',str(overlay),'-count=1','-timeout','20m','-v','-run','^TestQA0415ChangedGovernedPaths$','./internal/speccheck'],expected=0)
+    governed=re.findall(r'governed: (\S+)',result.stdout)
+    assert set(governed)=={'docs/agents/setup-context.json','internal/baseline/assets/modules/typescript.json'}
+    authtext=(SPEC/'_authorization.md').read_text().split('operations:',1)[0]
+    assert all('  - '+x in authtext for x in governed)
+    update('Q11','pass','Every Task diff-tree path is declared. The real classifier identifies exactly the two authorized Governed Paths; the operative unchanged grant precedes the Task. All prohibited file classes, other ADRs, skill copies and QA settlement sections are unchanged.',['scope-diff-tree.txt','scope-audit.txt','authorization-ancestry.txt','scope-probe.go.txt','scope-overlay.json.txt','governed-classification.txt'])
+    # Glossary verification is a required gate constraint, not an additional coverage source.
+    prd=(SPEC/'_prd.md').read_text(); tech=(SPEC/'_techspec.md').read_text()
+    for document in [prd,tech]:
+        glossary=document.split('## Glossary\n',1)[1].split('\n## ',1)[0]
+        assert '- changes: **Skill Activation**' in glossary and 'adds:' not in glossary
+    phrase='The module that owns it, or a module that owner depends on, requires every skill of the bundle, so a profile that selects the owner holds the whole bundle in its Repository Skill Set ([ADR-0448](docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md)).'
+    current=(ROOT/'CONTEXT.md').read_text(); earlier=subprocess.check_output(['git','show',BASE+':CONTEXT.md'],cwd=ROOT,env=ENV,text=True)
+    flat=re.sub(r'\s+',' ',current)
+    assert phrase in flat
+    # Remove only the inserted sentence, preserving wrapping differences in the changed entry.
+    canon=lambda s: re.sub(r'\s+',' ',s).strip()
+    assert canon(current).replace(phrase+' ','')==canon(earlier)
+    assert prd.split('## Unreachable Acceptance\n',1)[1].split('\n## ',1)[0].strip()=='None.'
+    (E/'glossary-check.txt').write_text('PRD and TechSpec declare only changes: Skill Activation, no adds. Exact API Contract 4 sentence appears in that entry with linked accepted ADR-0448; removal restores the original glossary modulo whitespace, so no other entry changed. Glossary contract passed in docs-contracts.txt. Unreachable Acceptance: None.\n'+phrase+'\n')
+    text=REPORT.read_text().replace('## Coverage\n\nPending sweep.','## Coverage\n\nGlossary check: PRD and TechSpec declare `changes: Skill Activation` and no additions. The exact API Contract 4 sentence is between the first sentence and `_Avoid_`, with linked accepted ADR-0448; no other entry changed. `TestGlossaryPhrasesAreDefinedTerms` passed with docscontract. [Glossary assertions](evidence/qa-report-2026-11-20-01/glossary-check.txt). Unreachable Acceptance declares none, so declared-blocked rows: 0.')
+    REPORT.write_text(text)
+    passage='For correct builds, the graph of actual dependencies A must be a subgraph of the graph of declared dependencies D.'
+    assert passage in prd
+    (E/'outside-evidence.txt').write_text('External source: Bazel documentation, Dependencies, https://bazel.build/concepts/dependencies; read 2026-11-20 as recorded offline in PRD Acceptance evidence. No lookup performed.\n'+passage+'\nObserved invariant: bundle skills (actual dependencies) must be a subset of the requiredSkills of the owner and its transitive dependencies (declared dependencies). Passing sibling diagnostic test and failing missing-solid sabotage establish rejection even though frontend independently requires solid. No source authored by this Spec substitutes for the published passage.\n')
+    update('Q10','pass','Bazel Dependencies, read 2026-11-20 and quoted offline in PRD Acceptance evidence, supplies the independent declared-dependency rule. Q02 and sabotage 1 demonstrate that its subset condition is enforced at the owner rather than satisfied by a sibling.',['outside-evidence.txt','baseline-named.txt','sabotage-1.txt'])
+    (E/'pull-request.txt').write_text('Pull Request fact from QA assignment: none open.\nApproval: operative maintainer authority in _authorization.md, message 01a1f976-6dbf-7a43-93ee-89cc6806e754, grants delivery for the bounded Spec.\nChecks and status: Daemon supplied make verify-changed pass, exit 0, at '+HEAD+'.\nUnresolved review threads: none, because no Pull Request exists.\nMerge-Ready acceptance: none yet; recorded authority is not a current-candidate Review Source acceptance.\nReview-artifact ancestry / claimed candidate: '+HEAD+'; no PR review-artifact commit exists yet.\nUnblock: Supervisor delivery opens target-branch Pull Request and obtains current-head review/check/Merge-Ready evidence. No real gh invoked.\n')
+    update('Q12','blocked (environment: no open Pull Request)','Approval, Daemon checks, no unresolved threads and exact candidate identity are recorded. No current-head Merge-Ready acceptance exists yet; this pre-PR exception alone qualifies partial.',['pull-request.txt','daemon-verification.txt'])
+    with Product() as p:
+        p.cli('archive-plan',['archive',SLUG,'--plan','--offline'],ROOT,0)
+
+if __name__=='__main__' and sys.argv[1] in ['flows','mutations','regeneration','audits']: globals()[sys.argv[1]]()
+def close():
+    text=REPORT.read_text()
+    text=text.replace('verdict: pending\n','verdict: partial\n',1).replace('status: in-progress\n','status: closed\n',1).replace('rows_blocked_environment: 0\n','rows_blocked_environment: 1\n',1)
+    text=text.replace('## Findings\n\nPending sweep.','## Findings\n\nNo current findings. The prior F-01 authored-fixture defect is resolved: the revised adoption fixture generates a complete Setup Manifest through the public binary, and two fresh update previews reach missing-skill inspection without writing. See Q05d and its fresh evidence.')
+    text=text.replace('## Blocked and skipped\n\nPending sweep.','## Blocked and skipped\n\nQ12 is `blocked (environment: no open Pull Request)`. The recorded maintainer authority, Daemon verification, absent threads, absent Merge-Ready acceptance, and exact claimed candidate are documented in its evidence. The Supervisor must obtain current-head PR review/check and Merge-Ready evidence during delivery. There are no finding-blocked, declared-blocked, skipped, carried, or pending rows. Seeded Mechanical skips remain unchanged and are distinct from matrix outcomes.')
+    text=text.replace('## Outcome\n\nPending offline archive plan.','## Outcome\n\nThe Archive Record can carry a qualifying partial: all 17 runnable rows passed, including the corrected TypeScript-only adopter preview and all four negative probes, and the sole unmet row is the pre-PR Pull Request row. The offline archive plan lists the maintainer answers and characterization as two promotion candidates with no judge advice; the accepted ADR-0448 and the Skill Activation definition already retain the confirmed rule, so this gate promotes nothing and performs no archive. [Offline archive plan](evidence/qa-report-2026-11-20-01/archive-plan.txt).')
+    text=text.replace('## Final verdict\n\nPending sweep.','## Final verdict\n\nQualifying partial: 17 passed, 1 environment-blocked Pull Request row, 0 failed, 0 finding-blocked, 0 declared-blocked, 0 skipped and 0 pending; no current findings. The Daemon may settle the authored QA gate under its pre-PR exception. No commit, push, PR creation, archive, or external request was performed.')
+    text=text.replace('## Coverage\n\nGlossary check:','## Coverage\n\nAll declared verification sources (Requirements 2–9 and 13) and all three non-waivable sources (repository Verification, outside-evidence row, Pull Request row) appear in Results. Requirements 1, 10–12 and 14–15 constrain execution and are recorded in the static gate, Q10/Q12, glossary check and Outcome. No Surface Transcripts, frontend sweep, intentional break or Unreachable Acceptance criterion is declared. The scoped history audit confirms the observable Non-Goals remain unchanged. All four required negative probes compiled and failed at their named assertions.\n\nGlossary check:')
+    text=text.replace('No prior evidence or executables are used.','No prior evidence or executables are used. The user-flow binary carries a dirty suffix because the seeded QA report/evidence and this driver were untracked when it was built; tracked build sources remain byte-identical to the audited head. The executor required escalation because its configured logical writable root crosses a symlink; commands ran from the physical Run Worktree. Environment variables removed by name: `GH_TOKEN`, `GITHUB_TOKEN`, `TYPESAFE_API_KEY`, `CLAUDE_CODE_SESSION_ID`, `ROUNDFIX_OPENROUTER_JUDGE_API_KEY`, `ROUNDFIX_OPENROUTER_API_KEY`, `ROUNDFIX_TYPESAFE_API_KEY`. Toolchain locations were passed through `GOMODCACHE`, `GOCACHE`, `RUSTUP_HOME` and `CARGO_HOME`. `GOPROXY` and `GOSUMDB` kept Go resolution offline; real Git user configuration was disabled for product fixtures.')
+    # Make exact scope and archive observations reachable without adding coverage sources.
+    text+='\n## Report self-audit\n\n[Report integrity and evidence audit](evidence/qa-report-2026-11-20-01/report-self-audit.txt) checks the single seeded frontmatter, all 18 table rows, coverage closure, typed inputs, local links, fresh evidence directory, ignored names, executable locations and unchanged tracked sources.\n'
+    REPORT.write_text(text)
+    validate()
+
+def validate():
+    text=REPORT.read_text()
+    assert text.startswith('---\n')
+    fm=text.split('---',2)[1]
+    assert fm.count('verdict:')==1 and 'verdict: partial' in fm and 'status: closed' in fm
+    assert 'auditing_binary: "0.152.0 (8c57f808, built 2026-11-20 13:53:19 -0300)"' in fm
+    assert 'auditor_staleness: "current: commit ancestry: build commit does not predate the delivery base"' in fm
+    assert 'evidence_snapshots' not in text
+    section=text.split('## Results\n',1)[1].split('\n## ',1)[0]
+    lines=section.strip().splitlines()
+    assert all(line.startswith('|') for line in lines)
+    rows=[line.split('|')[1:4] for line in lines[2:]]
+    assert len(rows)==18
+    assert sum(r[1].strip()=='pass' for r in rows)==17
+    assert sum(r[1].strip()=='blocked (environment: no open Pull Request)' for r in rows)==1
+    coverage={source.strip() for r in rows for source in r[2].split(';')}
+    expected={'Requirement '+str(x) for x in list(range(2,10))+[13]}|{'repository Verification','outside-evidence row','Pull Request row'}
+    assert coverage==expected,(coverage,expected)
+    for row in rows:
+        rid=row[0].strip()
+        detail=text.split('### '+rid+'\n',1)[1].split('\n### ',1)[0]
+        assert '```yaml\ninputs:' in detail and 'kind: repository_path' in detail
+        if rid in ['Q07','Q11','Q12']: assert 'kind: commit_range' in detail
+    assert '<!-- observation' not in text and 'Pending sweep' not in text
+    files=list(E.iterdir())
+    for file in files:
+        assert file.is_file() and file.suffix=='.txt'
+        file.read_text()  # Every new evidence artifact is UTF-8 text.
+        p=subprocess.run(['git','check-ignore','--quiet',str(file.relative_to(ROOT))],cwd=ROOT,env=ENV)
+        assert p.returncode==1, str(file)+' ignored'
+    missing=[]
+    for target in re.findall(r'\]\(([^)]+)\)',text):
+        if '://' in target or target.startswith('#'): continue
+        resolved=(REPORT.parent/target.split('#')[0]).resolve()
+        if not resolved.exists(): missing.append(target)
+        # No prior report's evidence may be linked.
+        assert '/evidence/qa-report-2026-11-20/' not in str(resolved)
+    assert not missing,missing
+    for relative in ['bin/roundfix','docs/specs/'+SLUG+'/qa/evidence/qa-report-2026-11-20-01/gate.py.txt']:
+        assert (ROOT/relative).exists() and (ROOT/relative).resolve().is_relative_to(ROOT)
+    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,env=ENV,text=True).strip()==HEAD
+    assert subprocess.run(['git','diff','--quiet'],cwd=ROOT,env=ENV).returncode==0
+    assert subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT,env=ENV).returncode==0
+    assert subprocess.run(['git','diff','--check'],cwd=ROOT,env=ENV).returncode==0
+    (E/'report-self-audit.txt').write_text('PASS: one preserved seeded frontmatter; 18 contiguous Results rows; 17 pass and one exact no-open-PR block; 12 coverage sources exactly covered; nonempty typed inputs on all executed rows; commit_range on history/authorization rows; no evidence_snapshots; no pending observations; all local links resolve inside this Run; no prior-pass evidence is linked; all '+str(len(files))+' new evidence artifacts are UTF-8 text and nonignored; both declared executable paths exist inside this Run; audited HEAD unchanged; tracked and staged trees clean; whitespace check passed.\n')
+    print('report-self-audit: pass; qualifying partial, 17 passed and 1 pre-PR block',flush=True)
+if __name__=='__main__' and sys.argv[1]=='close': close()

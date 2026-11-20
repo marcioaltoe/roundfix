@@ -1,0 +1,14 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77/bin/roundfix spec check 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set --strict
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+Spec 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set/references/_index.md
+
+stderr:

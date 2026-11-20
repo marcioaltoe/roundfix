@@ -1,0 +1,21 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067/bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p --no-history --format text
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p
+stdout:
+Baseline update: failed
+Category: manifest
+Result: setup manifest is incompatible: manifest does not match the supported Setup Manifest schema
+Prior catalog: unavailable
+Current catalog: sha256:3ec2195f8e80b85f64ab52f56b09ac9e59f92fce49e8aee38abf558d19bd5861
+File changes: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Next action: repair the Setup Manifest or run roundfix baseline for first adoption
+
+stderr:
+roundfix: baseline update failed: setup manifest is incompatible: manifest does not match the supported Setup Manifest schema
+
+exit: 2

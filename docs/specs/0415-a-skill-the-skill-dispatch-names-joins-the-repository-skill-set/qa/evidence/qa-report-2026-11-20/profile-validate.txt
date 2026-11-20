@@ -1,0 +1,8 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067/bin/roundfix baseline profile validate ts-backend
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/rf415-profile-2lcvzs9p
+stdout:
+ts-backend: valid (repository) sha256:51409fcd529bb485897b88283c0f69130977623b1edb19bbe9c93537fbd51452
+
+stderr:
+
+exit: 0

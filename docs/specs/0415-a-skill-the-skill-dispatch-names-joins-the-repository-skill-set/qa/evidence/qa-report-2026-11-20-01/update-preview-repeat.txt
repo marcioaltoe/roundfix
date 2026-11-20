@@ -1,0 +1,65 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77/bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/adoption --no-history --format text
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0415-qeo7ieb9/adoption
+exit: 3
+stdout:
+Baseline update: plan ready
+Category: approval
+Result: guidance matches the current Baseline catalog; 1 documentation change(s) pending
+Prior catalog: sha256:3ec2195f8e80b85f64ab52f56b09ac9e59f92fce49e8aee38abf558d19bd5861
+Current catalog: sha256:3ec2195f8e80b85f64ab52f56b09ac9e59f92fce49e8aee38abf558d19bd5861
+File changes: 1
+- create .secondbrain-export (1 managed entries)
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: missing
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Skills missing: 35
+- missing ai-memory-handoff: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill ai-memory-handoff
+- missing ai-memory-messaging: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill ai-memory-messaging
+- missing app-renderer-systems: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill app-renderer-systems
+- missing architectural-analysis: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill architectural-analysis
+- missing bun: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill bun
+- missing business-storyteller: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill business-storyteller
+- missing clean-code: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill clean-code
+- missing codebase-design: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill codebase-design
+- missing coding-guidelines: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill coding-guidelines
+- missing context7-cli: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill context7-cli
+- missing conventional-commits: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill conventional-commits
+- missing crafting-effective-readmes: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill crafting-effective-readmes
+- missing docker: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill docker
+- missing domain-modeling: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill domain-modeling
+- missing exa-web-search: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill exa-web-search
+- missing find-rules: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill find-rules
+- missing find-skills: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill find-skills
+- missing git-rebase: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill git-rebase
+- missing github-pr-workflow: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill github-pr-workflow
+- missing grill-with-docs: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill grill-with-docs
+- missing grilling: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill grilling
+- missing humanizer: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill humanizer
+- missing knowledge-workspace: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill knowledge-workspace
+- missing no-workarounds: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill no-workarounds
+- missing onioncry: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill onioncry
+- missing solid: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill solid
+- missing systematic-debugging: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill systematic-debugging
+- missing tech-writer: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill tech-writer
+- missing testing-boss: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill testing-boss
+- missing typesafe-ai: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill typesafe-ai
+- missing typescript-advanced: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill typescript-advanced
+- missing vite: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill vite
+- missing vitest: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill vitest
+- missing writing-clearly-and-concisely: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill writing-clearly-and-concisely
+- missing zod: required by the Baseline and not installed; restore with roundfix baseline skills restore --profile ts-backend --skill zod
+Documentation: pending
+Export list: create .secondbrain-export (5 line(s) in the Standard Export List)
+- adds README.md
+- adds docs/user-guide/
+- adds docs/references/
+- adds docs/design/
+- adds docs/lessons/
+Plan Digest: sha256:3e1f3e55df1dc82f9819f164c73e7db873c5a3c6c6ea0c03b8a44c68b3c30886
+Next action: review the plan and rerun with --confirm-plan sha256:3e1f3e55df1dc82f9819f164c73e7db873c5a3c6c6ea0c03b8a44c68b3c30886, or use --yes to approve the digest computed in one invocation
+
+stderr:

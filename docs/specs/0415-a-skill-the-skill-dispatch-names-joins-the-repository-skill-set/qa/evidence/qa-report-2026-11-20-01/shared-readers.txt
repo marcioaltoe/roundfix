@@ -1,0 +1,208 @@
+Two restore readers and Doctor use Catalog.RequiredSkills; no hand union remains.
+func loadRestoreProfile(catalog *Catalog, profileID string) (restoreProfile, error) {
+	profileID = strings.TrimSpace(profileID)
+	entry, ok := catalog.Profile(profileID)
+	if !ok {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.profile-unknown",
+			fmt.Sprintf("Unknown built-in Baseline Profile %q.", profileID),
+			"Choose a profile id from the embedded Baseline catalog.",
+			errors.New("profile is not embedded"),
+		)
+	}
+	var profileDocument struct {
+		ID    string `json:"id"`
+		Setup string `json:"setup"`
+	}
+	if err := json.Unmarshal(entry.Data, &profileDocument); err != nil {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.assets-invalid",
+			fmt.Sprintf("Embedded Baseline Profile %q is invalid.", profileID),
+			"Fix the embedded Baseline catalog before restoring skills.",
+			err,
+		)
+	}
+	setupEntry, ok := catalog.Setup(profileDocument.Setup)
+	if !ok {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.assets-invalid",
+			fmt.Sprintf("Embedded Baseline Profile %q has no Setup Snapshot.", profileID),
+			"Fix the embedded Baseline catalog before restoring skills.",
+			errors.New("profile setup is missing"),
+		)
+	}
+	var setupDocument struct {
+		ID     string `json:"id"`
+		Skills []struct {
+			Name       string `json:"name"`
+			TreeDigest string `json:"treeDigest"`
+			Source     struct {
+				Type       string `json:"type"`
+				Repository string `json:"repository"`
+				Ref        string `json:"ref"`
+				Path       string `json:"path"`
+			} `json:"source"`
+		} `json:"skills"`
+	}
+	if err := json.Unmarshal(setupEntry.Data, &setupDocument); err != nil {
+		return restoreProfile{}, restoreError(
+			SkillsRestoreInvalid,
+			"restore.assets-invalid",
+			fmt.Sprintf("Embedded Setup Snapshot %q is invalid.", profileDocument.Setup),
+			"Fix the embedded Baseline catalog before restoring skills.",
+			err,
+		)
+	}
+	contracts := make(map[string]restoreSkillContract)
+	for _, skill := range setupDocument.Skills {
+		if skill.Source.Type != "github" {
+			continue
+		}
+		contracts[skill.Name] = restoreSkillContract{
+			Name: skill.Name,
+			Source: RestoreSource{
+				Provider:   skill.Source.Type,
+				
+func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return nil, false, nil
+	}
+	manifestPath := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
+	info, err := os.Lstat(manifestPath)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, false, nil
+	}
+	manifestBytes, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, false, nil
+	}
+	var manifest struct {
+		Modules []string `json:"modules"`
+	}
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return nil, false, nil
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		return nil, false, fmt.Errorf("resolve external skill requirement: %w", err)
+	}
+	ownedNames := skills.Names()
+	owned := make(map[string]struct{}, len(ownedNames))
+	for _, name := range ownedNames {
+		owned[name] = struct{}{}
+	}
+	required, err := catalog.RequiredSkills(manifest.Modules)
+	if err != nil {
+		var unknown *baseline.UnknownModuleError
+		if errors.As(err, &unknown) {
+			return nil, false, fmt.Errorf(
+				"resolve external skill requirement: Setup Manifest names unknown module %q",
+				unknown.ModuleID,
+			)
+		}
+		return nil, false, fmt.Errorf("resolve external skill requirement: %w", err)
+	}
+	external := make([]string, 0, len(required))
+	for _, name := range required {
+		if _, isOwned := owned[name]; !isOwned {
+			external = append(external, name)
+		}
+	}
+	return external, true, nil
+}
+
+func parseDoctorCommand(args []string) error {
+	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	if err := fs.Parse(args); err != nil {
+		return validationError{message: err.Error()}
+	}
+	if remaining := fs.Args(); len(remaining) > 0 {
+		return validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+	}
+	return nil
+}
+
+func doctorAdapterRuntimes(config roundconfig.Config) ([]agent.RuntimeSpec, error) {
+	proofs, err := buildProfileProofReports(config, roundconfig.ConfiguredWorkCategories(config))
+	if err != nil {
+		return nil, fmt.Errorf("resolve effective configured Agent Selection Profiles for adapter readiness: %w", err)
+	}
+
+	selectionsByRuntime := make(map[string]roundconfig.AgentSelection)
+	for _, proof := range proofs {
+		runtimeID := strings.TrimSpace(proof.Selection.Runtime)
+		if _, exists := selectionsByRuntime[runtimeID]; exists {
+			continue
+		}
+		selection := proof.Selection
+		selection.Runtime = runtimeID
+		selectionsByRuntime[runtimeID] = selection
+	}
+
+	runtimeIDs := make([]string, 0, len(selectionsByRuntime))
+	for runtimeID := range selectionsByRuntime {
+		runtimeIDs = append(runtimeIDs, runtimeID)
+	}
+	sort.Strings(runtimeIDs)
+
+	runtimes := make([]agent.RuntimeSpec, 0, len(runtimeIDs))
+	for _, runtimeID := range runtimeIDs {
+		runtime, err := runtimeForProfileSelection(selectionsByRuntime[runtimeID])
+		if err != nil {
+			return nil, fmt.Errorf("resolve ACP Runtime %q for adapter readiness: %w", runtimeID, err)
+		}
+		runtimes = append(runtimes, runtime)
+	}
+	return runtimes, nil
+}
+
+func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtimes []agent.RuntimeSpec, runtimeErr error) CheckResult {
+	if runtimeErr != nil {
+		return CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusFailed,
+			Detail: runtimeErr.Error(),
+			Err:    runtimeErr,
+		}
+	}
+	if len(runtimes) == 0 {
+		err := errors.New("effective required Agent Selection Profiles reference no ACP Runtime")
+		return CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusFailed,
+			Detail: err.Error(),
+			Err:    err,
+		}
+	}
+
+	result := CheckResult{
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusOK,
+	}
+	details := make([]string, 0, len(runtimes))
+	nextActions := make([]string, 0, len(runtimes))
+	for _, runtime := range runtimes {
+		runtimeResult := checker.Adapter(ctx, runtime)
+		detail := strings.TrimSpace(runtimeResult.Detail)
+		if detail == "" {
+			detail = string(runtimeResult.Status)
+		}
+		if runtimeResult.Status == CheckStatusFailed {
+			result.Status = CheckStatusFailed
+			if classification := doctorAdapterFailureClassification(runtimeResult.Err); classification != "" {
+				detail += "; classification: " + classification
+			}
+			if nextAction := strings.TrimSpace(runtimeResult.NextAction); nextAction != "" {
+				nextActions = append(nextActions, nextAction)
+			}
+			if runtimeResult.Err != nil {
+				if result.Err == nil {
+					result.Err = runtimeResult.Err
+				} else {
+					result.Err = errors.Join(result.Err, run

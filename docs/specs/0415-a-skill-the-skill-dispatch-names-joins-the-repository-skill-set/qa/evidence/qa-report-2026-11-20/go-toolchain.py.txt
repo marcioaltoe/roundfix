@@ -1,0 +1,6 @@
+#!/opt/homebrew/opt/python@3.15/bin/python3.15
+import os,sys
+a=sys.argv[1:]
+if a and a[0]=="test" and not any(x.startswith("-timeout") for x in a):
+ a += ["-timeout", "20m"]
+os.execv('/usr/local/go/bin/go', ['/usr/local/go/bin/go']+a)

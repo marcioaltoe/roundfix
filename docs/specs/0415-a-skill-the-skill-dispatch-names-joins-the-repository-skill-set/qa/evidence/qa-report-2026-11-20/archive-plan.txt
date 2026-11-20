@@ -1,0 +1,14 @@
+$ ./bin/roundfix archive 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set --plan --offline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067
+stdout:
+archive plan for 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set: removes 55 file(s) (250508 bytes) and writes docs/history/specs/0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set.md
+core 7 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-20.md, task_01.md, task_02.md
+evidence 46 file(s) (123672 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-20-maintainer-answers.md 2758 bytes: no advice (offline)
+candidate references/2026-11-20-request-and-characterization.md 10587 bytes: no advice (offline)
+promote with: roundfix archive 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set --promote <path>
+
+stderr:
+
+exit: 0

@@ -1,0 +1,253 @@
+{
+  "schemaVersion": "setup-context-driven/manifest/0.0.1",
+  "version": "0.0.1",
+  "generator": {
+    "skill": "setup-context-driven",
+    "version": "0.0.1",
+    "baseline": "baseline.ts-backend-0.0.1"
+  },
+  "profile": "ts-backend",
+  "profileDigest": "sha256:f4eb763ebd5d8e80193735e514a60fe8c81c3be7667f159e6310f2c74228cfa0",
+  "catalogDigest": "sha256:3ec2195f8e80b85f64ab52f56b09ac9e59f92fce49e8aee38abf558d19bd5861",
+  "modules": [
+    "core",
+    "context-workflow",
+    "typescript",
+    "bun",
+    "autonomous-work",
+    "spec-workflow",
+    "secondbrain"
+  ],
+  "decisions": {
+    "autonomous.enabled": {
+      "value": true
+    },
+    "domain.layout": {
+      "value": "single-context"
+    },
+    "http.contract": {
+      "value": {
+        "exceptions": [],
+        "mode": "REST"
+      }
+    },
+    "identifier.strategy": {
+      "value": {
+        "kind": "uuid-v7"
+      }
+    },
+    "language.generated": {
+      "value": "English"
+    },
+    "repository.extension.enabled": {
+      "value": true
+    },
+    "runtime.backend": {
+      "value": "codex gpt-5.5 xhigh"
+    },
+    "runtime.design": {
+      "value": "claude opus xhigh"
+    },
+    "secondbrain.enabled": {
+      "value": true
+    },
+    "spec.scaffold": {
+      "value": true
+    },
+    "triage.external": {
+      "value": false
+    },
+    "verification.gate": {
+      "value": "make verify"
+    },
+    "verification.incremental": {
+      "value": "make verify-incremental"
+    }
+  },
+  "managedArtifacts": [
+    {
+      "id": "guide.skill-dispatch",
+      "path": "docs/agents/skill-dispatch.md",
+      "kind": "guide",
+      "module": "core",
+      "template": "template.guide.skill-dispatch",
+      "version": "6",
+      "digest": "715d1273955085f108eabdae933527e16744b0e0f1c707d927d86bbb9d2846dc"
+    },
+    {
+      "id": "root.core",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "core",
+      "template": "template.root.core",
+      "version": "3",
+      "digest": "83989ff1bee22af7c573e11bdf82a928531c27baf18d357a1e226f668df91f0f"
+    },
+    {
+      "id": "guide.docs-layout",
+      "path": "docs/agents/docs-layout.md",
+      "kind": "guide",
+      "module": "context-workflow",
+      "template": "template.guide.docs-layout",
+      "version": "18",
+      "digest": "7526882613c71beaf4d88e7e57e061f996fb33ca0c118f4b719b4851eeafea54"
+    },
+    {
+      "id": "root.context-workflow",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "context-workflow",
+      "template": "template.root.context-workflow",
+      "version": "3",
+      "digest": "1de9a12f45489adb5326705a5cd2a2d351f6ae5ec0a30199d4a52c684cd9711e"
+    },
+    {
+      "id": "guide.typescript-bun",
+      "path": "docs/agents/typescript-bun.md",
+      "kind": "guide",
+      "module": "typescript",
+      "template": "template.guide.typescript-bun",
+      "version": "5",
+      "digest": "fc1eb5a4bc7c788e4750f131d49e048408b1d5031392ceea34293caee1f0fcaf"
+    },
+    {
+      "id": "root.spec-workflow",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "spec-workflow",
+      "template": "template.root.spec-workflow",
+      "version": "3",
+      "digest": "73e86ce8249ceb0d7ca4994f81792960bd59d7505a751a66641ff6d198151f9b"
+    },
+    {
+      "id": "guide.bun",
+      "path": "docs/agents/typescript-bun.md",
+      "kind": "guide",
+      "module": "bun",
+      "template": "template.guide.bun",
+      "version": "4",
+      "digest": "67170f590c76f504be2fae0abdb501cc398ade1fa75fdae58a53fece058491c1"
+    },
+    {
+      "id": "root.autonomous-work",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "autonomous-work",
+      "template": "template.root.autonomous-work",
+      "version": "2",
+      "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
+    },
+    {
+      "id": "guide.agent-instructions",
+      "path": "docs/agents/agent-instructions.md",
+      "kind": "guide",
+      "module": "core",
+      "template": "template.guide.agent-instructions",
+      "version": "18",
+      "digest": "4bc262e23f0ad8033e9b0503ea391c8d032c5a5f9b1324224274cd173239b0e3"
+    },
+    {
+      "id": "guide.domain",
+      "path": "docs/agents/domain.md",
+      "kind": "guide",
+      "module": "context-workflow",
+      "template": "template.guide.domain.single-context",
+      "version": "7",
+      "digest": "b75b34c931cdc9e276c2f252230203f0734c717338bf73dd6ee0e87ae04793aa"
+    },
+    {
+      "id": "root.typescript",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "typescript",
+      "template": "template.root.typescript",
+      "version": "2",
+      "digest": "2604e7b55609ed294f5dd2a3996e494819fe62f0a5f680e1158edb34ec035270"
+    },
+    {
+      "id": "guide.spec-routing",
+      "path": "docs/agents/spec-routing.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-routing",
+      "version": "17",
+      "digest": "55f1d4dcf2973339c67314f112b2149a792ddbede211a2343e9d968d5e496f40"
+    },
+    {
+      "id": "guide.issue-tracker",
+      "path": "docs/agents/issue-tracker.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.issue-tracker",
+      "version": "5",
+      "digest": "818e4d1e44d73a208eba5a7d3aa2115c7420a062b898897a801d3cadd9bc9fd6"
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "path": "docs/agents/docs-layout.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-docs-layout",
+      "version": "8",
+      "digest": "5233d273a0f0c4427b3df89fdabe6ac659c3afb99fbe75d797eb33e38c8776cd"
+    },
+    {
+      "id": "root.bun",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "bun",
+      "template": "template.root.bun",
+      "version": "2",
+      "digest": "48a4bcd7c9b86d8f3be6965ff8b7b33aad77148aa598d49ed8efa74acd3c8e20"
+    },
+    {
+      "id": "guide.autonomous-work",
+      "path": "docs/agents/autonomous-work.md",
+      "kind": "guide",
+      "module": "autonomous-work",
+      "template": "template.guide.autonomous-work",
+      "version": "15",
+      "digest": "d5f8e83b016e43c37d6ea3c614ce7b9efeb38ce205c01e458cd25731dfb1709d"
+    },
+    {
+      "id": "root.secondbrain",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "secondbrain",
+      "template": "template.root.secondbrain",
+      "version": "3",
+      "digest": "0047824759e04bf6df6eef189746f0c4274b533423559d6160f3b79ce21c298f"
+    },
+    {
+      "id": "guide.secondbrain",
+      "path": "docs/agents/secondbrain.md",
+      "kind": "guide",
+      "module": "secondbrain",
+      "template": "template.guide.secondbrain",
+      "version": "13",
+      "digest": "0000b764899650d255b0b07e1c7c0e6c37360f4540019890935fdc6466ef1d1d"
+    }
+  ],
+  "localSkills": [],
+  "verification": [
+    {
+      "id": "verification.gate",
+      "role": "repository-gate",
+      "command": "make verify",
+      "classification": "repository-command",
+      "repositoryExecutable": true,
+      "declarationPath": "Makefile",
+      "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
+    },
+    {
+      "id": "verification.incremental",
+      "role": "incremental",
+      "command": "make verify-incremental",
+      "classification": "repository-command",
+      "repositoryExecutable": true,
+      "declarationPath": "Makefile",
+      "declarationDigest": "sha256:107d02ed69b69a37a4cea340713021b8f470e8e39f82192f61c7ca7a64124abd"
+    }
+  ],
+  "roundfixVersion": "0.152.0"
+}

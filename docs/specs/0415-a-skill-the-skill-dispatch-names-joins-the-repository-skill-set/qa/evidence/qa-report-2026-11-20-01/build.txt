@@ -1,0 +1,9 @@
+command: make build
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=8c57f808-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-20 14:12:56 -0300'" -o bin/roundfix ./cmd/roundfix
+
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 4702 idle entries (4106597470 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 23217307690 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues

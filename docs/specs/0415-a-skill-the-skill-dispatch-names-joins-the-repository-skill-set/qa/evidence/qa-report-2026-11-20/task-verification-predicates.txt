@@ -1,0 +1,5 @@
+All source, adjacency, glossary and review predicates of task_01 Verification are true.
+The tests named by all six Verification commands ran in Q02, Q03, Q04, Q06 and Q09 with explicit timeouts.
+PRD and TechSpec declare changes: Skill Activation and no adds.
+Removing exactly the specified glossary sentence and ADR link produces the Delivery Base CONTEXT.md byte for byte; it sits after the first sentence and before _Avoid_.
+The module that owns it, or a module that owner depends on, requires every skill of the bundle, so a profile that selects the owner holds the whole bundle in its Repository Skill Set ([ADR-0448](docs/adr/0448-the-owner-of-a-skill-activation-requires-every-skill-of-its-bundle.md)).

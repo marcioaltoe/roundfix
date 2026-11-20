@@ -1,0 +1,16 @@
+diff --git a/internal/baseline/catalog.go b/internal/baseline/catalog.go
+index e2e390f..668c374 100644
+--- a/internal/baseline/catalog.go
++++ b/internal/baseline/catalog.go
+@@ -218,7 +218,10 @@ func (err *UnknownModuleError) Error() string {
+ // skills, without repeats. It does not add modules' dependencies implicitly.
+ func (catalog *Catalog) RequiredSkills(moduleIDs []string) ([]string, error) {
+ 	required := make(map[string]struct{})
+-	for _, moduleID := range moduleIDs {
++	for index, moduleID := range moduleIDs {
++		if index == len(moduleIDs)-1 {
++			continue
++		}
+ 		module, ok := catalog.modules[moduleID]
+ 		if !ok {
+ 			return nil, &UnknownModuleError{ModuleID: moduleID}

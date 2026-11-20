@@ -1,0 +1,95 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestAnActivationOwnerRequiresEverySkillOfItsBundle|TestTheRequiredSkillsCoverTheRenderedDispatch|TestARepositoryProfileWithoutFrontendRequiresSolid)$' ./internal/baseline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T165436Z_3a235d04f6e6aa77
+exit: 0
+stdout:
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== PAUSE TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch
+=== PAUSE TestTheRequiredSkillsCoverTheRenderedDispatch
+=== RUN   TestARepositoryProfileWithoutFrontendRequiresSolid
+=== PAUSE TestARepositoryProfileWithoutFrontendRequiresSolid
+=== CONT  TestAnActivationOwnerRequiresEverySkillOfItsBundle
+=== CONT  TestARepositoryProfileWithoutFrontendRequiresSolid
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads
+=== CONT  TestTheRequiredSkillsCoverTheRenderedDispatch
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/autonomous-work
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/backend
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/bun
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/cli-surface
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/context-workflow
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/core
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/external-triage
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/frontend
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/go
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/monorepo
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/python
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/repository-extension
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/rust
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/secondbrain
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/spec-workflow
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/tui-surface
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/typescript
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/go-cli-tui
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/go-cli-typescript-monorepo
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/python
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/rust-cli
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/standard-typescript-monorepo
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/go-cli-tui
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/go-cli-typescript-monorepo
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/python
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/rust-cli
+=== RUN   TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/standard-typescript-monorepo
+--- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch (0.02s)
+    --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/autonomous-work (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/backend (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/bun (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/cli-surface (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/context-workflow (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/core (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/external-triage (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/frontend (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/go (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/monorepo (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/python (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/repository-extension (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/rust (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/secondbrain (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/spec-workflow (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/tui-surface (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_module_with_its_dependencies/typescript (0.00s)
+    --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/go-cli-tui (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/go-cli-typescript-monorepo (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/python (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/rust-cli (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/every_built_in_profile/standard-typescript-monorepo (0.00s)
+    --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/go-cli-tui (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/go-cli-typescript-monorepo (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/python (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/rust-cli (0.00s)
+        --- PASS: TestTheRequiredSkillsCoverTheRenderedDispatch/the_built_in_profiles_keep_their_names/standard-typescript-monorepo (0.00s)
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_dependency_satisfies_the_owner
+--- PASS: TestARepositoryProfileWithoutFrontendRequiresSolid (0.04s)
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_owner_reports_only_the_owner
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_bundle_reports_only_the_bundle
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/dependency_cycles_do_not_recurse_forever
+=== RUN   TestAnActivationOwnerRequiresEverySkillOfItsBundle/diagnostics_follow_activation_and_bundle_order
+--- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle (0.12s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/the_embedded_catalog_loads (0.02s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_sibling_module_does_not_satisfy_the_owner (0.02s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/a_dependency_satisfies_the_owner (0.03s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_owner_reports_only_the_owner (0.01s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/an_unknown_bundle_reports_only_the_bundle (0.01s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/dependency_cycles_do_not_recurse_forever (0.01s)
+    --- PASS: TestAnActivationOwnerRequiresEverySkillOfItsBundle/diagnostics_follow_activation_and_bundle_order (0.01s)
+PASS
+suiteguard: guard cost: measured 3428 paths; fingerprint took 237.993209ms before and 149.721917ms after
+ok  	roundfix/internal/baseline	0.838s
+
+stderr:

@@ -1,0 +1,7 @@
+$ git merge-base --is-ancestor 2d8a2abda98ea907bb5a126c875711f2ee3189de 508e9e7746144022883614cbba917223d1b100fd
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set-d87e7a10b11f716b-6bf22a98-0bc7acb6/run_20261120T152507Z_c7ef9204d7320067
+stdout:
+
+stderr:
+
+exit: 0

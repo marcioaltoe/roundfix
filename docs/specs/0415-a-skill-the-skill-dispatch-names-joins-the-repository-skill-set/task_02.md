@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0415-a-skill-the-skill-dispatch-names-joins-the-repository-skill-set
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

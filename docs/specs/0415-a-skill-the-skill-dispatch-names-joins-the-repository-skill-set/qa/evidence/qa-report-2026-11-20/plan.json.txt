@@ -1,0 +1,92 @@
+[
+  [
+    "Q01",
+    "repository Verification",
+    "Daemon repository Verification and fresh make build"
+  ],
+  [
+    "Q02",
+    "Requirement 2; Requirement 9",
+    "Activation ownership diagnostics and all named subtests"
+  ],
+  [
+    "Q03",
+    "Requirement 3; Requirement 9",
+    "Rendered dispatch, five profile counts, snapshot tests and full Baseline package"
+  ],
+  [
+    "Q04",
+    "Requirement 4; Requirement 9",
+    "Repository profile without frontend requires the pinned solid contract"
+  ],
+  [
+    "Q05a",
+    "Requirement 5",
+    "Public profile initialization and validation in a temporary Git repository"
+  ],
+  [
+    "Q05b",
+    "Requirement 5",
+    "Public skills check names missing solid and its restore command"
+  ],
+  [
+    "Q05c",
+    "Requirement 5",
+    "Public restore selects solid and refuses only the absent source directory"
+  ],
+  [
+    "Q05d",
+    "Requirement 5",
+    "Public update preview names missing solid without writing"
+  ],
+  [
+    "Q06",
+    "Requirement 6; Requirement 9",
+    "Command regressions, full CLI package and the shared required-skills readers"
+  ],
+  [
+    "Q07",
+    "Requirement 7",
+    "Exact module and record delta; sanctioned regeneration is idempotent"
+  ],
+  [
+    "Q08a",
+    "Requirement 8",
+    "Sabotage removes solid from typescript"
+  ],
+  [
+    "Q08b",
+    "Requirement 8",
+    "Sabotage deletes the activation requirement rule"
+  ],
+  [
+    "Q08c",
+    "Requirement 8",
+    "Sabotage allows a sibling module to satisfy the activation"
+  ],
+  [
+    "Q08d",
+    "Requirement 8",
+    "Sabotage skips the last required-skills module"
+  ],
+  [
+    "Q09",
+    "Requirement 9",
+    "Task Verification tests and predicates, glossary and coverage contracts"
+  ],
+  [
+    "Q10",
+    "outside-evidence row",
+    "Offline Bazel declared-dependency passage compared with the observed rejection"
+  ],
+  [
+    "Q11",
+    "Requirement 13",
+    "Task history, bounded changes, unchanged contracts and operative authority"
+  ],
+  [
+    "Q12",
+    "Pull Request row",
+    "Pre-PR equivalent controls at the audited candidate"
+  ]
+]
