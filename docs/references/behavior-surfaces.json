@@ -33,6 +33,7 @@
     "command implement": "sha256:e60a777a0fa88064a2fa8609d0cd8b02d3c6a59451c211e10459905a19413cbe",
     "command init": "sha256:08699dfd2b37400862bb65967019a24df73258d7c1b34ef477210749d2a7e55b",
     "command migrate": "sha256:5bf206b3d29886e97f3024addb7eecfb3be6139d9f2866177b25280a650fb56e",
+    "command permissions": "sha256:180570d0d39578b872a0f202debbc5248e4d822fc551b032030152710bad7a5b",
     "command phase fallback": "sha256:a086085974a076954162613f34efedd40b5b3fc8564d34bef7ac6a8087cd038e",
     "command phase model": "sha256:a086085974a076954162613f34efedd40b5b3fc8564d34bef7ac6a8087cd038e",
     "command phase start": "sha256:a086085974a076954162613f34efedd40b5b3fc8564d34bef7ac6a8087cd038e",
@@ -70,7 +71,7 @@
     "command window show": "sha256:2a24998173825a66d34793f6c6e5a08057adab252ba5afecb716393ffb300376",
     "config keys": "sha256:13b447fd647e1a1f75fe4eac01af4f50278ef8053d0f53f4112d79c571d597c5",
     "exit codes": "sha256:f0dd69d1cc88884b819d234b8716fd430373beb3bfad775009b16d4345dcf596",
-    "guide docs/user-guide/commands.md": "sha256:d467eb3c9a5a5c9749beb0d7dd93165a72b9f7947d0a995c1e93fad810364a4e",
+    "guide docs/user-guide/commands.md": "sha256:a25ae36d7b4847648f491a2ae8f86062e2bfaa48d6d4816643060dd2f70e5e87",
     "guide docs/user-guide/commands/archive.md": "sha256:f96486598d76e1479ca16f370060fa7f29af9ed433d35b66a8ff00489f54df8d",
     "guide docs/user-guide/commands/attach.md": "sha256:a403aec8c685762bb1e359fdd093dbdca65969ee725747a11a7f71328d2642ee",
     "guide docs/user-guide/commands/baseline.md": "sha256:099dedfe82489e317e25c9128ead272ffdb0f5ad63c20a328575379ead7aaa0f",
@@ -87,6 +88,7 @@
     "guide docs/user-guide/commands/implement.md": "sha256:199547246dfddfd437d635d9f388ebdc49f998d323034cae9e150461db501e98",
     "guide docs/user-guide/commands/init.md": "sha256:6e44fee83f2f7c08cf9b6a074d4fddc8293c4d065e6351d089692648a8178d3a",
     "guide docs/user-guide/commands/migrate.md": "sha256:9ef86066a0b47688dbb5fbfc35d805c0e9258b802aeb61eb7c2a7ffd09f44e03",
+    "guide docs/user-guide/commands/permissions.md": "sha256:79830e22817ef8a45e8a0135107326a905e55e2cfe35d01e8a1746245dfdb2c1",
     "guide docs/user-guide/commands/phase.md": "sha256:fe3d12c9943c5da9ad112d8ba58036ae0c3bad5158509a0b85dbb8d0dabef3d7",
     "guide docs/user-guide/commands/profiles.md": "sha256:53f45c93f032d9097310cc483c470a84a8b83bfd7acd9431e804cf69d2223d66",
     "guide docs/user-guide/commands/qa-report.md": "sha256:02007f41ee4fa26c69c304a64b9663ee00e78678649e19d77abaac58e42e478d",
@@ -112,6 +114,6 @@
     "guide docs/user-guide/context-driven-development.md": "sha256:59428cd65f5f0d7ee3359e73ecf92b3b599d4c7de4e562bc74d61e21f56b1482",
     "guide docs/user-guide/release-runbook.md": "sha256:15c0a8138e92c8997d1540d9e5fc878d5df173b8aacbefc4de673c91019c7dcc",
     "guide docs/user-guide/run-database-lifecycle.md": "sha256:b6be401ecef6c94df9d725cbd1da2d362c9b78f47a73766c142651f5582ca1b6",
-    "guide docs/user-guide/usage.md": "sha256:411cef99a2f5b4da30770db7bc9917951462a3d5a08c3c9467978580fd4e3a15"
+    "guide docs/user-guide/usage.md": "sha256:b4cf11ef89d4e07fa055e0c45ba918c00bbcd75463afec875eec35f2446836e5"
   }
 }

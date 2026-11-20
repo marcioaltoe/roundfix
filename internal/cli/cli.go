@@ -99,6 +99,7 @@ Usage:
   roundfix storage report
   roundfix upgrade [--check]
   roundfix update check [--refresh] [--format <text|json>]
+  roundfix permissions [--harness <claude|codex|opencode>] [--remove] [--apply <digest>] [--format <text|json>]
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N] [--format <table|plain>] [--wide]
   roundfix runs show <run-id> [--json]
@@ -143,6 +144,7 @@ Commands:
   storage    Report measured Run Database and Artifact Root storage
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   update     Report a newer release and this repository's Baseline plan
+  permissions  Show or apply the Flow Command List for an Agent harness
   runs       List Runs from the Run Database
   corrections  Declare the cause of a delivery correction and report Corrections by authoring model
   attach     Replay a Run's event timeline from the Run Database
@@ -632,6 +634,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr, environment)
 	case "update":
 		return runUpdateCommand(ctx, args[1:], stdout, stderr, environment)
+	case "permissions":
+		return runPermissionsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "runs":
 		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "stop":
@@ -6130,6 +6134,8 @@ Options:
   --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
   --json      Print deterministic validation JSON
 `
+	case "permissions":
+		return permissionsUsage
 	case "history":
 		return historyUsage
 	case "archive":

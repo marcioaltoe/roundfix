@@ -145,6 +145,22 @@ _Avoid_: Run start head, audited head, delivery target
 A Governed Path named by a pending non-QA Task but omitted from its authorization record or a present Tooling authority row.
 _Avoid_: Unauthorized edit, inferred path, ordinary path
 
+**Flow Command List**:
+The closed list of commands that a session driving the flow may run without a permission prompt once a project applied it: each top-level `roundfix` subcommand an owned skill names and each Git or GitHub read an owned skill names, less every Named Exclusion. An entry names a command down to its subcommand and never constrains its arguments. The list ships inside the binary, and `roundfix permissions` shows it in the rule syntax of an Agent harness and writes it into a Harness Permission File only with the digest of a preview the user saw. It removes prompts and is not a security boundary.
+_Avoid_: allowlist, standing authorization, permission preset
+
+**Named Exclusion**:
+A command an owned skill names that the Flow Command List leaves out on purpose, shown with its reason in every preview: the command that applies the list, a `roundfix` subcommand the Roundfix skill runs only after asking the user, and every Git or GitHub command that changes the repository, its configuration, GitHub or the user's credentials. A harness keeps asking before it runs one.
+_Avoid_: denied command, blocked command
+
+**Guard Entry**:
+A rule beside the Flow Command List that keeps one option of a listed read asked about, such as writing the output of `git show` to a file or sending a body with `gh api`. Claude Code reads it from its ask list, where it wins over the entry it guards in every permission mode; Codex rules match only the start of a command, so its rendering holds no Guard Entry and its preview says so.
+_Avoid_: deny rule, option filter
+
+**Harness Permission File**:
+A file of the repository from which an Agent harness learns which commands a session may run without asking: `.claude/settings.json` or `.claude/settings.local.json` for Claude Code, a file under `.codex/rules/` or `.codex/config.toml` for Codex, and `opencode.json` or `opencode.jsonc` for OpenCode. `roundfix permissions` writes only `.claude/settings.json` and `.codex/rules/roundfix-flow.rules`, and opens no file under the user's home directory.
+_Avoid_: settings file, rules file, harness config
+
 **Undocumented CLI Surface**:
 A CLI source or contract-test path named by a pending non-QA Task that names no guide in itself or its dependency ancestry.
 _Avoid_: Missing documentation, undocumented command, downstream guide

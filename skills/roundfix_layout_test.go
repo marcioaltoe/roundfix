@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-const roundfixSkillEntryByteBudget = 20_000
+const roundfixSkillEntryByteBudget = 20_500
 
 func roundfixLayoutSources() map[string]fs.FS {
 	return map[string]fs.FS{

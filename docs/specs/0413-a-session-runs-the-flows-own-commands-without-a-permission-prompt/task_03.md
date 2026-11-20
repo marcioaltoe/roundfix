@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -91,3 +91,37 @@ This Task adds the command a person runs: `roundfix permissions` prints the plan
 - `_prd.md` → Goals 1, 2, 4 and 5; User Stories 1, 2, 3, 4, 6, 7, 9 and 11; Core Features 6, 7, 8, 9, 10, 11 and 16; Success Metric 4; Success Metric 7; Success Metric 9; User Experience; Glossary
 - `_techspec.md` → The command; Interfaces; API Contract 1; API Contract 2; API Contract 3; API Contract 4; API Contract 7; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 4; Testing Approach; Build Order 2
 - ADR-0444, ADR-0446, ADR-0320, ADR-0256
+
+## Result
+
+Skills loaded: implement-task, agentic-cli-design, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Added the permissions command with explicit digest writes, removal, text and JSON previews, root dispatch/help, and exit-code-specific stderr refusals. It resolves the Git root without loading either configuration. The command delegates all target-file work to the existing planner. Text groups Named Exclusions by reason and names subcommands; the catalog's Git global-option classification remains present in JSON.
+
+Acceptance evidence:
+
+| Criterion | Implementation and focused evidence |
+| --- | --- |
+| Preview, exact apply, stale digest | The CLI tests assert preview non-mutation, the complete JSON schema, exact allow/ask arrays, the original preview object plus `written: true`, current-state empty digest/next, and stale-file byte preservation. Empty digests also exit 3; unreadable targets take exit 1 even with an empty digest. |
+| Exact removal | Claude Code apply/removal restores the original bytes including custom rules and unrelated keys. Codex writes the rendered bytes and removes only Roundfix's file, preserving a separate user rules file. An older-list fixture also proves a full Codex rewrite reports the total entries written. |
+| Four transcripts | `help`, `claude_preview`, `stale_digest` and `opencode_report` each compare all stdout, stderr and the exit code against independent whole-output expectations. The Claude preview's variable entries and guards come from the shipped catalog; only version and digest vary. |
+| Skills, guide, indexes, glossary | Both copies contain the six required sentences and setup index row. Added the guide, both index rows, the two coverage-map surfaces and exactly the four requested definitions. All eight skill-reference subtests passed. The sanctioned recorder raised both version fields to 0.1.282. Each skill entry is 20,064 bytes; only the requested budget constant changed in the layout test. |
+| Home and repository permission files | The temporary-home test preserves both seeded files through previews, applies and removals for Claude Code and Codex. The outside-link probe ran and passed without a skip. Repository permission-path status is empty; no apply ran against this repository. |
+
+Focused checks (not the Task's declared Verification):
+
+- `go test ./internal/cli -run '^TestPermissionsCommand/(preview_every_present_harness|apply_writes_the_preview|remove_preview_and_apply|codex_apply_and_remove|unreadable_target_on_write|home_files_untouched|link_outside_the_repository)$' -count=1` — passed.
+- `go test ./internal/cli -run '^TestPermissionsCommand/(no_harness_files|json_preview_schema|apply_json_written|second_preview_is_current|apply_without_harness_is_invalid|apply_opencode_is_invalid|unknown_harness_is_invalid|unknown_format_is_invalid|outside_a_git_repository|stale_digest_after_file_change|nothing_to_remove|codex_preview_says_no_guard|exclusions_printed)$' -count=1` — passed.
+- `go test ./internal/cli -run '^TestPermissions(SurfaceTranscripts|RefusalBoundaries)$' -count=1 -v` — all four transcripts, empty-digest and OpenCode own-rules checks passed; the additional Codex rewrite fixture initially removed the required header and failed. Corrected it to remove one subcommand alternative, then `go test ./internal/cli -run '^TestPermissionsRefusalBoundaries/codex_rewrite_reports_all_entries$' -count=1` passed. An earlier fixture writer omitted parent directories; corrected that helper before the passing file-operation batch above.
+- `go test ./internal/cli -run '^(TestRootHelpNamesThePermissionsCommand|TestEveryCommandPathPrintsItsHelp/permissions)$' -count=1` — passed. Existing root-help/registration tests outside the forbidden `cli_test.go` derive their command lists or assert inclusion; none needed a fixture change.
+- `go test ./skills -run '^TestTheRoundfixSkillDescribesFlowPermissions/' -count=1 -v` and `go test ./skills -run '^(TestRoundfixSkillEntryFileStaysWithinItsBudget|TestNoPythonBaselineRuntime)$' -count=1` — passed.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^(TestEveryCommandIsNamedInTheRoundfixSkill|TestGlossaryPhrasesAreDefinedTerms)$'` and the separate `^TestOwnedSkillsNameOnlyListedOrExcludedCommands$` focused run — passed.
+- `make skills-sync`, the required owned-skill version recorder, and the second `make skills-sync` — passed. Required `make baseline-digests` passed with `changed: false` and no derived Baseline edits.
+- Final implementation generation: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — passed after the last guide, skill and help edit. No product sources changed afterward.
+
+The executor rejected its symlinked writable root before launching commands; escalated commands used the same physical worktree. The pre-existing Task status delta is Daemon-owned and was preserved. No Task Graph or other Task file changed, and no commit, push or Pull Request was made. Declared Verification and terminal settlement remain with the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T033653Z_96d2b5330174b3f3`
+- Source commit: `6b768ea02f20fa68166bd0c652732e66d1256cf0`

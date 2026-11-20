@@ -1065,6 +1065,7 @@ ordered refusals and exit codes. `phase start` keeps its existing contract.
 | `gc` | Prune old terminal Run journals and artifacts |
 | `upgrade` | Upgrade the binary from GitHub Releases |
 | `update check` | Report a newer release and this repository's Baseline plan (read-only) |
+| `permissions` | Show the Flow Command List for an Agent harness, and write it only with a preview's digest |
 | `skills` | List, check, or install the bundled skills |
 
 Run `roundfix <command> --help` for the full flag list of any command, or read

@@ -475,6 +475,17 @@
       ]
     },
     {
+      "id": "command permissions",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/permissions.md",
+        "internal/cli/permissions.go"
+      ],
+      "review": "2026-11-20 — Spec 0413 task_03 adds digest-confirmed Flow Command List previews, writes and removals for Agent harnesses"
+    },
+    {
       "id": "command phase fallback",
       "skills": [
         ".agents/skills/roundfix/references/phase.md"
@@ -1086,6 +1097,16 @@
       "sources": [
         "docs/user-guide/commands/migrate.md"
       ]
+    },
+    {
+      "id": "guide docs/user-guide/commands/permissions.md",
+      "skills": [
+        ".agents/skills/roundfix/references/setup.md"
+      ],
+      "sources": [
+        "docs/user-guide/commands/permissions.md"
+      ],
+      "review": "2026-11-20 — Spec 0413 task_03 adds digest-confirmed Flow Command List previews, writes and removals for Agent harnesses"
     },
     {
       "id": "guide docs/user-guide/commands/phase.md",
