@@ -1,0 +1,148 @@
+Prepared fresh git archive da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe and committed a disposable local Git repository; prior QA files excluded.
+Command: git init -q
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.name 'QA Fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.email fixture@example.invalid
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config commit.gpgsign false
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git add .
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git -c core.hooksPath=/dev/null commit -qm 'seed isolated QA fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: make skills-sync
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: go test -timeout 20m ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions
+stdout:
+ok  	roundfix/skills	0.287s
+
+stderr:
+
+exit: 0
+
+Command: go test -timeout 20m ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+stdout:
+ok  	roundfix/internal/baseline	0.910s
+
+stderr:
+
+exit: 0
+
+Command: make baseline-digests GO=/Volumes/Brain-SSD/cache/.roundfix/worktrees/indexus-baseline-e45da20d/run_20261120T171608Z_cb6ef9398bae3522/bin/qa-go-0416-timeout-01
+stdout:
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}
+
+stderr:
+ok  	roundfix/internal/baseline	1.800s
+ok  	roundfix/skills	0.232s
+ok  	roundfix/internal/baseline	4.774s
+ok  	roundfix/internal/baseline	0.576s
+ok  	roundfix/internal/baseline	1.335s
+ok  	roundfix/internal/baseline	1.160s
+ok  	roundfix/internal/baseline	5.599s
+ok  	roundfix/internal/baseline	0.576s
+baseline-digests: no changes; derived artifacts already match their canonical sources
+
+exit: 0
+
+Environment names: HOME TMPDIR GOMODCACHE GOCACHE RUSTUP_HOME CARGO_HOME PATH GOPROXY GOSUMDB. Credential and session variable names unset; no values recorded. gh is an inert exit-1 stub.
+Command: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+stdout:
+Baseline update: verified
+Result: approved Baseline Plan is already applied
+Status matrix:
+- Approved postimages: verified
+- Semantic retention: not run
+- Profile alignment: verified
+- Repository Verification: not run
+- Idempotence: verified
+Prior catalog: sha256:4e22847ab7884e91340697a3327c738ead88ab5c40bfb9bf392f2ac4e17964a0
+Current catalog: sha256:4e22847ab7884e91340697a3327c738ead88ab5c40bfb9bf392f2ac4e17964a0
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: skipped
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:282932b4366f44c1b1ece5c3456356c35c7a755e3b7a5779ac4b886aa55087aa
+Approved Plan Digest: sha256:282932b4366f44c1b1ece5c3456356c35c7a755e3b7a5779ac4b886aa55087aa
+
+stderr:
+
+exit: 0
+
+Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/indexus-baseline-e45da20d/run_20261120T171608Z_cb6ef9398bae3522/bin/roundfix baseline update --repo /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0416-tree-yx4wk8_k --no-skills --no-history --format text
+stdout:
+Baseline update: current
+Result: the repository already matches the current Baseline catalog
+Prior catalog: sha256:4e22847ab7884e91340697a3327c738ead88ab5c40bfb9bf392f2ac4e17964a0
+Current catalog: sha256:4e22847ab7884e91340697a3327c738ead88ab5c40bfb9bf392f2ac4e17964a0
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:282932b4366f44c1b1ece5c3456356c35c7a755e3b7a5779ac4b886aa55087aa
+
+stderr:
+
+exit: 0
+
+Command: git status --porcelain --untracked-files=all
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git diff --exit-code
+stdout:
+
+stderr:
+
+exit: 0

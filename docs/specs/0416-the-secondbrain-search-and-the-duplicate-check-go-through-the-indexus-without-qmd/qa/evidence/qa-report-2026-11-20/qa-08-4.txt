@@ -1,0 +1,24 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus)$ ./skills
+STDOUT:
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== PAUSE TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== CONT  TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/duplicate_check_with_the_tool
+    indexus_duplicate_check_test.go:17: write-idea/SKILL.md: phrase "Run the advisory duplicate check first with the Indexus tool `pesquisar_acervos`" occurs 0 times; want once
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/each_returned_page_opens
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/no_label_or_rank_decides
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/absent_tool_substitutes_nothing
+--- FAIL: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus (0.00s)
+    --- FAIL: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/duplicate_check_with_the_tool (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/each_returned_page_opens (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/no_label_or_rank_decides (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/absent_tool_substitutes_nothing (0.00s)
+FAIL
+FAIL	roundfix/skills	0.267s
+FAIL
+
+STDERR:
+
+EXIT: 1
+
+All required named assertion failures observed; packages compiled; no regeneration ran.

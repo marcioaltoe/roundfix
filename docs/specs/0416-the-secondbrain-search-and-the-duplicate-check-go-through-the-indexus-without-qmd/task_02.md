@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

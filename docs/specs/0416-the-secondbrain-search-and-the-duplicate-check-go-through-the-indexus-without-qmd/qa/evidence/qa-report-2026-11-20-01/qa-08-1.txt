@@ -1,0 +1,95 @@
+Prepared fresh git archive da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe and committed a disposable local Git repository; prior QA files excluded.
+Command: git init -q
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.name 'QA Fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.email fixture@example.invalid
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config commit.gpgsign false
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git add .
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git -c core.hooksPath=/dev/null commit -qm 'seed isolated QA fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: go test -count=1 -timeout 20m -v -run '^(TestTheSecondbrainClausesNameTheIndexus|TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand)$' ./internal/baseline
+stdout:
+=== RUN   TestTheSecondbrainClausesNameTheIndexus
+=== PAUSE TestTheSecondbrainClausesNameTheIndexus
+=== RUN   TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+=== PAUSE TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+=== CONT  TestTheSecondbrainClausesNameTheIndexus
+=== CONT  TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+    secondbrain_indexus_clauses_test.go:250: assets/modules/secondbrain.json names the retired search command
+--- FAIL: TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand (0.05s)
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/keeps_identity_and_force
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/search_with_the_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/one_group_per_reached_acervo
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/abrir_conteudo_opens_a_page
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/wiki_path_relative_to_wiki
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/no_wiki_result_is_a_limitation
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/no_other_search_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/index_first
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/mirrors_are_references
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/duplicate_check_with_the_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/each_returned_page_opens
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/extend_existing_knowledge
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/no_label_or_rank_decides
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/no_retired_word
+    secondbrain_indexus_clauses_test.go:76: clause.secondbrain.02-query-order still names the retired search command
+--- FAIL: TestTheSecondbrainClausesNameTheIndexus (0.08s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/keeps_identity_and_force (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/search_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/one_group_per_reached_acervo (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/abrir_conteudo_opens_a_page (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/wiki_path_relative_to_wiki (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/no_wiki_result_is_a_limitation (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/no_other_search_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/index_first (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/mirrors_are_references (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/duplicate_check_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/each_returned_page_opens (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/extend_existing_knowledge (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/no_label_or_rank_decides (0.00s)
+    --- FAIL: TestTheSecondbrainClausesNameTheIndexus/no_retired_word (0.00s)
+FAIL
+suiteguard: guard cost: measured 3380 paths; fingerprint took 696.680375ms before and 647.149ms after
+FAIL	roundfix/internal/baseline	1.811s
+FAIL
+
+stderr:
+
+exit: 1

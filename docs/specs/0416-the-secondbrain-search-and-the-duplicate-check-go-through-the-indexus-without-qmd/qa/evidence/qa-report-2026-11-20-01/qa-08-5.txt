@@ -1,0 +1,57 @@
+Prepared fresh git archive da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe and committed a disposable local Git repository; prior QA files excluded.
+Command: git init -q
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.name 'QA Fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config user.email fixture@example.invalid
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git config commit.gpgsign false
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git add .
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: git -c core.hooksPath=/dev/null commit -qm 'seed isolated QA fixture'
+stdout:
+
+stderr:
+
+exit: 0
+
+Command: go test -count=1 -timeout 20m -v -tags docscontract -run '^(TestTheIndexusDecisionAmendsTheConsultationRule)$' ./internal/docscontract
+stdout:
+=== RUN   TestTheIndexusDecisionAmendsTheConsultationRule
+=== PAUSE TestTheIndexusDecisionAmendsTheConsultationRule
+=== CONT  TestTheIndexusDecisionAmendsTheConsultationRule
+    indexus_decision_record_test.go:88: ADR-0330 must preserve its first Decision paragraph and follow it immediately with the linked, dated amendment
+--- FAIL: TestTheIndexusDecisionAmendsTheConsultationRule (0.01s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.402s
+FAIL
+
+stderr:
+
+exit: 1

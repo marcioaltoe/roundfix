@@ -1,0 +1,40 @@
+COMMAND: git diff-tree --no-commit-id --name-only -r c97707d82292c9487571094fab4e61c0bceafed2
+.agents/skills/write-idea/SKILL.md
+.secondbrain-export
+docs/adr/0330-the-secondbrain-is-read-only-and-ai-memory-carries-handoffs-and-messages.md
+docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md
+docs/agents/secondbrain.md
+docs/agents/setup-context.json
+docs/specs/0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd/task_01.md
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md
+internal/baseline/assets/modules/secondbrain.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+internal/baseline/module-versions.json
+internal/baseline/secondbrain_indexus_clauses_test.go
+internal/baseline/testdata/catalog.diagnostics.golden.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+internal/docscontract/indexus_decision_record_test.go
+internal/verifyselect/contracts_repository_test.go
+skills/indexus_duplicate_check_test.go
+skills/testdata/owned-skill-versions.json
+skills/write-idea/SKILL.md
+Changed files: 24
+All changed paths match task_01 Context or Recorded paths or the task itself.
+Governed Path source patterns and historical set yield exactly the seven authorized paths:
+.agents/skills/write-idea/SKILL.md
+docs/agents/secondbrain.md
+docs/agents/setup-context.json
+internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md
+internal/baseline/assets/modules/secondbrain.json
+internal/baseline/assets/profiles/standard-typescript-monorepo.json
+skills/write-idea/SKILL.md
+Module differences: [".version", ".rules[0].clauses[1].guidance", ".rules[2].clauses[0].guidance"]
+All protected paths unchanged; only ADR-0330 and new accepted ADR-0449 changed; every QA settlement section unchanged.
+Glossary: PRD and TechSpec declare None; CONTEXT.md byte-identical to Delivery Base. Indexus is an external service proper name; acervo/caminho are external contract terms, not new Roundfix domain concepts. Strict Spec check reports no Glossary Gap.
+Seeded authorization audit already grants task_01 at operative revision ac1a57deca0bd27a690ba1e260ad458011fcf3d6; no redundant mechanical authorization audit was executed.
+EXIT: 0

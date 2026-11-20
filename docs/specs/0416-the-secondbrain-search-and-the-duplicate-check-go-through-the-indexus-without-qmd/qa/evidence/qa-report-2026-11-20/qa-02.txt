@@ -1,0 +1,157 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestTheSecondbrainClausesNameTheIndexus|TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten|TestAnAdopterOfTheEarlierWordingReceivesOnlyTheGuideAndTheManifest|TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand|TestBaselineClauseForceIsCharacterized|TestEveryInboxClauseAnAdopterHoldsIsReplaced|TestFormatterComposition|TestEveryBaselineModuleVersionIsRecorded)$ ./internal/baseline
+STDOUT:
+=== RUN   TestBaselineClauseForceIsCharacterized
+=== PAUSE TestBaselineClauseForceIsCharacterized
+=== RUN   TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== PAUSE TestEveryInboxClauseAnAdopterHoldsIsReplaced
+=== RUN   TestEveryBaselineModuleVersionIsRecorded
+--- PASS: TestEveryBaselineModuleVersionIsRecorded (0.00s)
+=== RUN   TestFormatterComposition
+=== PAUSE TestFormatterComposition
+=== RUN   TestTheSecondbrainClausesNameTheIndexus
+=== PAUSE TestTheSecondbrainClausesNameTheIndexus
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten
+=== PAUSE TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten
+=== RUN   TestAnAdopterOfTheEarlierWordingReceivesOnlyTheGuideAndTheManifest
+=== PAUSE TestAnAdopterOfTheEarlierWordingReceivesOnlyTheGuideAndTheManifest
+=== RUN   TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+=== PAUSE TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+=== CONT  TestBaselineClauseForceIsCharacterized
+=== CONT  TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten
+=== CONT  TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand
+=== CONT  TestAnAdopterOfTheEarlierWordingReceivesOnlyTheGuideAndTheManifest
+=== CONT  TestFormatterComposition
+--- PASS: TestNoBaselineAssetOrGuideNamesTheRetiredSearchCommand (0.01s)
+=== CONT  TestEveryInboxClauseAnAdopterHoldsIsReplaced
+--- PASS: TestBaselineClauseForceIsCharacterized (0.03s)
+=== CONT  TestTheSecondbrainClausesNameTheIndexus
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/keeps_identity_and_force
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/search_with_the_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/one_group_per_reached_acervo
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/abrir_conteudo_opens_a_page
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/wiki_path_relative_to_wiki
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/no_wiki_result_is_a_limitation
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/no_other_search_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/index_first
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/search_clause/mirrors_are_references
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/duplicate_check_with_the_tool
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/each_returned_page_opens
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/extend_existing_knowledge
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/no_label_or_rank_decides
+=== RUN   TestTheSecondbrainClausesNameTheIndexus/no_retired_word
+--- PASS: TestTheSecondbrainClausesNameTheIndexus (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/keeps_identity_and_force (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/search_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/one_group_per_reached_acervo (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/abrir_conteudo_opens_a_page (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/wiki_path_relative_to_wiki (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/no_wiki_result_is_a_limitation (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/no_other_search_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/index_first (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/search_clause/mirrors_are_references (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/duplicate_check_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/each_returned_page_opens (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/extend_existing_knowledge (0.00s)
+        --- PASS: TestTheSecondbrainClausesNameTheIndexus/duplicate_check_clause/no_label_or_rank_decides (0.00s)
+    --- PASS: TestTheSecondbrainClausesNameTheIndexus/no_retired_word (0.00s)
+--- PASS: TestEveryInboxClauseAnAdopterHoldsIsReplaced (0.02s)
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/search_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/one_group_per_reached_acervo
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/abrir_conteudo_opens_a_page
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/wiki_path_relative_to_wiki
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_wiki_result_is_a_limitation
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_other_search_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/index_first
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/mirrors_are_references
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/duplicate_check_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/each_returned_page_opens
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/extend_existing_knowledge
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_label_or_rank_decides
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/search_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/one_group_per_reached_acervo
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/abrir_conteudo_opens_a_page
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/wiki_path_relative_to_wiki
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_wiki_result_is_a_limitation
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_other_search_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/index_first
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/mirrors_are_references
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/duplicate_check_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/each_returned_page_opens
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/extend_existing_knowledge
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_label_or_rank_decides
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/search_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/one_group_per_reached_acervo
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/abrir_conteudo_opens_a_page
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/wiki_path_relative_to_wiki
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_wiki_result_is_a_limitation
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_other_search_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/index_first
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/mirrors_are_references
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/duplicate_check_with_the_tool
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/each_returned_page_opens
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/extend_existing_knowledge
+=== RUN   TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_label_or_rank_decides
+--- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten (0.10s)
+    --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/search_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/one_group_per_reached_acervo (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/abrir_conteudo_opens_a_page (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/wiki_path_relative_to_wiki (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_wiki_result_is_a_limitation (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_other_search_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/index_first (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/mirrors_are_references (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/duplicate_check_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/each_returned_page_opens (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/extend_existing_knowledge (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/planned_guide/no_label_or_rank_decides (0.00s)
+    --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/search_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/one_group_per_reached_acervo (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/abrir_conteudo_opens_a_page (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/wiki_path_relative_to_wiki (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_wiki_result_is_a_limitation (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_other_search_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/index_first (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/mirrors_are_references (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/duplicate_check_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/each_returned_page_opens (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/extend_existing_knowledge (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/formatter_golden/no_label_or_rank_decides (0.00s)
+    --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/search_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/one_group_per_reached_acervo (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/abrir_conteudo_opens_a_page (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/wiki_path_relative_to_wiki (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_wiki_result_is_a_limitation (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_other_search_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/index_first (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/mirrors_are_references (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/duplicate_check_with_the_tool (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/each_returned_page_opens (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/extend_existing_knowledge (0.00s)
+        --- PASS: TestTheSecondbrainGuideNamesTheIndexusWhereverItIsWritten/repository_guide/no_label_or_rank_decides (0.00s)
+--- PASS: TestFormatterComposition (1.06s)
+--- PASS: TestAnAdopterOfTheEarlierWordingReceivesOnlyTheGuideAndTheManifest (1.29s)
+PASS
+suiteguard: guard cost: measured 3386 paths; fingerprint took 603.333333ms before and 145.892125ms after
+ok  	roundfix/internal/baseline	2.354s
+
+STDERR:
+
+EXIT: 0
+
+COMMAND: go test -count=1 -timeout 20m ./internal/baseline
+STDOUT:
+ok  	roundfix/internal/baseline	180.938s
+
+STDERR:
+
+EXIT: 0

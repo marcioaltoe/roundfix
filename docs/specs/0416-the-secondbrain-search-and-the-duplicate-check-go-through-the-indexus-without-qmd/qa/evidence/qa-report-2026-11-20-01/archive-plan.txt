@@ -1,0 +1,14 @@
+Environment names: HOME TMPDIR GOMODCACHE GOCACHE RUSTUP_HOME CARGO_HOME PATH GOPROXY GOSUMDB. Credential and session variable names unset; no values recorded. gh is an inert exit-1 stub.
+Command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/indexus-baseline-e45da20d/run_20261120T171608Z_cb6ef9398bae3522/bin/roundfix archive 0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd --plan --offline
+stdout:
+archive plan for 0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd: removes 60 file(s) (3537759 bytes) and writes docs/history/specs/0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd.md
+core 8 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-20-01.md, qa/qa-report-2026-11-20.md, task_01.md, task_02.md
+evidence 50 file(s) (3264849 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate references/2026-11-20-characterization.md 21100 bytes: no advice (offline)
+candidate references/2026-11-20-messages-and-decisions.md 16432 bytes: no advice (offline)
+promote with: roundfix archive 0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd --promote <path>
+
+stderr:
+
+exit: 0

@@ -1,0 +1,16 @@
+COMMAND: go test -count=1 -timeout 20m -tags docscontract -v -run ^(TestTheIndexusDecisionAmendsTheConsultationRule)$ ./internal/docscontract
+STDOUT:
+=== RUN   TestTheIndexusDecisionAmendsTheConsultationRule
+=== PAUSE TestTheIndexusDecisionAmendsTheConsultationRule
+=== CONT  TestTheIndexusDecisionAmendsTheConsultationRule
+    indexus_decision_record_test.go:88: ADR-0330 must preserve its first Decision paragraph and follow it immediately with the linked, dated amendment
+--- FAIL: TestTheIndexusDecisionAmendsTheConsultationRule (0.01s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.380s
+FAIL
+
+STDERR:
+
+EXIT: 1
+
+All required named assertion failures observed; packages compiled; no regeneration ran.

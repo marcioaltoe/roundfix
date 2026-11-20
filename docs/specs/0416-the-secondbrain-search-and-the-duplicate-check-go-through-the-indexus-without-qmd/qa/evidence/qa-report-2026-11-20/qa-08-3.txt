@@ -1,0 +1,17 @@
+COMMAND: go test -count=1 -timeout 20m -v -run ^(TestTheSecondbrainClausesNameTheIndexus)$ ./internal/baseline
+STDOUT:
+=== RUN   TestTheSecondbrainClausesNameTheIndexus
+=== PAUSE TestTheSecondbrainClausesNameTheIndexus
+=== CONT  TestTheSecondbrainClausesNameTheIndexus
+    secondbrain_indexus_clauses_test.go:47: LoadEmbeddedCatalog() error = load embedded Baseline catalog: validate Baseline catalog: catalog.clause.enforcement.invalid: clause.secondbrain.02-query-order: advisory; run 'make baseline-digests' to regenerate stale derived artifacts
+--- FAIL: TestTheSecondbrainClausesNameTheIndexus (0.02s)
+FAIL
+suiteguard: guard cost: measured 3380 paths; fingerprint took 259.35325ms before and 192.701625ms after
+FAIL	roundfix/internal/baseline	0.765s
+FAIL
+
+STDERR:
+
+EXIT: 1
+
+TestTheSecondbrainClausesNameTheIndexus/keeps_identity_and_force

@@ -1,0 +1,203 @@
+Command: go test -count=1 -timeout 20m -v -run '^(TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus|TestNoOwnedSkillNamesTheRetiredSearchCommand|TestAuthorialSkillSync|TestEveryOwnedSkillVersionIsRecorded)$' ./skills
+stdout:
+=== RUN   TestAuthorialSkillSync
+=== PAUSE TestAuthorialSkillSync
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== PAUSE TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== RUN   TestNoOwnedSkillNamesTheRetiredSearchCommand
+=== PAUSE TestNoOwnedSkillNamesTheRetiredSearchCommand
+=== RUN   TestEveryOwnedSkillVersionIsRecorded
+--- PASS: TestEveryOwnedSkillVersionIsRecorded (0.00s)
+=== CONT  TestAuthorialSkillSync
+=== CONT  TestNoOwnedSkillNamesTheRetiredSearchCommand
+=== CONT  TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/duplicate_check_with_the_tool
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/each_returned_page_opens
+=== RUN   TestAuthorialSkillSync/roundfix
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/no_label_or_rank_decides
+=== RUN   TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/absent_tool_substitutes_nothing
+--- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/duplicate_check_with_the_tool (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/each_returned_page_opens (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/no_label_or_rank_decides (0.00s)
+    --- PASS: TestWriteIdeaRunsTheDuplicateCheckThroughTheIndexus/absent_tool_substitutes_nothing (0.00s)
+=== RUN   TestAuthorialSkillSync/write-idea
+=== RUN   TestAuthorialSkillSync/write-prd
+=== RUN   TestAuthorialSkillSync/write-techspec
+=== RUN   TestAuthorialSkillSync/write-tasks
+=== RUN   TestAuthorialSkillSync/setup-context-driven
+=== RUN   TestAuthorialSkillSync/implement-task
+=== RUN   TestAuthorialSkillSync/brainstorming
+=== RUN   TestAuthorialSkillSync/business-analyst
+=== RUN   TestAuthorialSkillSync/archive-spec
+=== RUN   TestAuthorialSkillSync/qa-gate
+=== RUN   TestAuthorialSkillSync/evidence-gate
+=== RUN   TestAuthorialSkillSync/go-cli-typescript-bun.json
+=== RUN   TestAuthorialSkillSync/go.json
+=== RUN   TestAuthorialSkillSync/python.json
+=== RUN   TestAuthorialSkillSync/rust.json
+=== RUN   TestAuthorialSkillSync/typescript.json
+--- PASS: TestNoOwnedSkillNamesTheRetiredSearchCommand (0.01s)
+--- PASS: TestAuthorialSkillSync (0.02s)
+    --- PASS: TestAuthorialSkillSync/roundfix (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-idea (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-prd (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-techspec (0.00s)
+    --- PASS: TestAuthorialSkillSync/write-tasks (0.00s)
+    --- PASS: TestAuthorialSkillSync/setup-context-driven (0.00s)
+    --- PASS: TestAuthorialSkillSync/implement-task (0.00s)
+    --- PASS: TestAuthorialSkillSync/brainstorming (0.00s)
+    --- PASS: TestAuthorialSkillSync/business-analyst (0.00s)
+    --- PASS: TestAuthorialSkillSync/archive-spec (0.00s)
+    --- PASS: TestAuthorialSkillSync/qa-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/evidence-gate (0.00s)
+    --- PASS: TestAuthorialSkillSync/go-cli-typescript-bun.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/go.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/python.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/rust.json (0.00s)
+    --- PASS: TestAuthorialSkillSync/typescript.json (0.00s)
+PASS
+ok  	roundfix/skills	0.295s
+
+stderr:
+
+exit: 0
+
+Command: cmp .agents/skills/write-idea/SKILL.md skills/write-idea/SKILL.md
+stdout:
+
+stderr:
+
+exit: 0
+
+Skill version 0.0.18; sha256 ffb783a44f1122e02f43cadd94eee8618925026e8a9b0d80bd753b65357a8414; recorded-version contract above validates exact bytes.
+Record excerpt:
+{
+  "schemaVersion": "roundfix/owned-skill-versions/v1",
+  "skills": {
+    "archive-spec": [
+      {
+        "version": "0.0.2",
+        "digest": "c854526f940c3c87492d620479b35d43b19d28591fa19f5bdf27e1589defd11d"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "c75cd5dc6a7fd2ff559c123b25af48a929a3007694fdfacec5290ce1ea9b451d"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "bfd7389125d8df446661b1afb596156caf42b6410f3461fd6dec643f6fff843d"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "7e86ac8b06fce7af0d5179aa3f2e5f2ec7d2d83e97c16016dd863ad5680a9f63"
+      },
+      {
+        "version": "0.0.6",
+        "digest": "ca951297a683cf647185936b6e8ef72631ae5a907029588774c6aabdfa6952cb"
+      },
+      {
+        "version": "0.0.7",
+        "digest": "d3a842ec164be09bf264916a0228c36c8908f0ed353af087e4da54cf9fe6cd94"
+      },
+      {
+        "version": "0.0.8",
+        "digest": "89442ead735a2b45279164995971fc474754f323d6f9f5dda11428de2b1c56dc"
+      },
+      {
+        "version": "0.0.9",
+        "digest": "4d62e3ea12c0539800f2ae3c44ddb3671a25f8664a7fd1d3e7ee5917bdb62356"
+      },
+      {
+        "version": "0.0.10",
+        "digest": "0791ebdf88f4773b6f0f370c2cebc3d63835e449fad01b40abd95f21946cb4af"
+      },
+      {
+        "version": "0.0.11",
+        "digest": "7ee354f9b3788fb771c32b8230ca0e30527e1ff7b3f65e2e0e6d6b30340b07c3"
+      },
+      {
+        "version": "0.0.12",
+        "digest": "b9280288155ebfd0ae74bc67b44a2b69aa2b2eb735810a06991396ee97e4aefa"
+      },
+      {
+        "version": "0.0.13",
+        "digest": "0fb0c80f9d4681c613c6c6a4c8557814395a95760e8ed6b627377f3bab8a5256"
+      },
+      {
+        "version": "0.0.14",
+        "digest": "97ec4472a971423d2567acae16dd5ca091bf176ed7110f29b8ccba11541f0880"
+      },
+      {
+        "version": "0.0.15",
+        "digest": "c5bf9cbb95c01a4349a06a64acb7e2f9bed1af07a2598b97c950476a6128c085"
+      },
+      {
+        "version": "0.0.16",
+        "digest": "753f1e913ae2f3e189936e18d2b462855a700a74f7dbc75f6877c625d3b01000"
+      },
+      {
+        "version": "0.0.17",
+        "digest": "2c2920830ebe60f20c68f01f35f0063253b98fa21d9b8a63174fc0fab6d78e9e"
+      },
+      {
+        "version": "0.0.18",
+        "digest": "d875422c334cb1e259ff8d7f1ca0863caeaeea31e43bfacbc8e8987a50cdfa8d"
+      },
+      {
+        "version": "0.0.19",
+        "digest": "226f5b986ec827e485c196d628693d9447b58227262ae1596936334501969dfe"
+      },
+      {
+        "version": "0.0.20",
+        "digest": "eca49fc5b4fb35c2c56a204f883a47ad296f554473226dc4bd30eaa582fe1338"
+      }
+    ],
+    "brainstorming": [
+      {
+        "version": "0.0.2",
+        "digest": "111d21efa124ab7e41787c82d4e793a281d1df7fe71df70b5aed8652cffae92b"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "364716d2f901608df5b98d04ed55cb7500ff374adf1e9247212ed2817eef5fb9"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "2140cdd430d1392df03edf4d75f4994b44bcc600149880235776ea747adbb603"
+      },
+      {
+        "version": "0.0.5",
+        "digest": "4480417f93677bbd2035c5092d8b4950db393b36065e7a07d89c14487bcbe6a4"
+      }
+    ],
+    "business-analyst": [
+      {
+        "version": "0.0.2",
+        "digest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "a9cd63389b87e40b08336c3837f8da3a61a2a4d06e1727ce6c33a72025a87252"
+      }
+    ],
+    "evidence-gate": [
+      {
+        "version": "0.0.2",
+        "digest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
+      }
+    ],
+    "implement-task": [
+      {
+        "version": "0.0.2",
+        "digest": "6c27aeead5a40348e395e94a73dcc021791b66688a21a0fcfe59980c39f276f4"
+      },
+      {
+        "version": "0.0.3",
+        "digest": "b29715978c528200ea79bfd2a87ab0f6ecfab91e13f364407ead298c9c601553"
+      },
+      {
+        "version": "0.0.4",
+        "digest": "fdb3e5a72048ca6dd4c7f01a4a3ec2b21fcbd336df1c4f77d702e827c82c9ce6"
+      },
+      

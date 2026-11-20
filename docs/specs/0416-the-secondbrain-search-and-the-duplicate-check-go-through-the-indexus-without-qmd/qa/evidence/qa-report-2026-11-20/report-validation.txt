@@ -1,0 +1,16 @@
+Audited HEAD unchanged: c97707d82292c9487571094fab4e61c0bceafed2
+Tracked diff: empty
+Results table: 19 contiguous rows; 14 pass, 2 fail, 3 blocked; exact environment/finding/declared counts 1/0/2
+All 19 row input blocks present; no pending rows; original auditor fields preserved
+Local evidence links checked and unignored: 24
+Linked evidence absent from audited HEAD: fresh in this Run
+All QA files UTF-8 text without NUL; official 10 secret-pattern expressions: zero matches
+Candidate, Delivery Base binary and driver exist inside this Run; transient .qa-0416 trees removed
+COMMAND: /Volumes/Brain-SSD/cache/.roundfix/worktrees/indexus-baseline-e45da20d/run_20261120T163517Z_ffde54b215e63efe/bin/roundfix qa-report accept /Volumes/Brain-SSD/cache/.roundfix/worktrees/indexus-baseline-e45da20d/run_20261120T163517Z_ffde54b215e63efe/docs/specs/0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd/qa/qa-report-2026-11-20.md
+STDOUT:
+
+STDERR:
+roundfix: QA Report eligibility refused: newest QA Report verdict is "fail"; expected "pass"
+
+EXIT: 1
+

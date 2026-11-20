@@ -1,0 +1,8 @@
+Pull Request row
+Prompt fact: no open Pull Request on feat/secondbrain-search-through-indexus.
+Approval: approved Spec authority in docs/specs/0416-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-without-qmd/_authorization.md; maintainer decisions 01a1f952-79e3, 01a1f955-c546 and widening 01a1f993-7830 recorded; no current-candidate Review Source acceptance obtained here.
+Checks/status: Daemon make verify-changed pass, exit 0 at da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe.
+Unresolved threads: none because no Pull Request exists.
+Merge-Ready acceptance: none yet.
+Review-artifact ancestry: no PR review artifact yet; claimed candidate da84c5a7b21ecb23af44bfbd2fe3cbbc1f2cdfbe is the audited HEAD.
+No real gh, network, reviewer or mutation used.
