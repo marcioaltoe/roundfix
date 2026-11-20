@@ -19,6 +19,9 @@ graph:
       needs: [task_03]
     - id: task_05
       file: task_05.md
+      needs: [task_06]
+    - id: task_06
+      file: task_06.md
       needs: [task_04]
 ---
 
@@ -30,9 +33,12 @@ graph:
 | task_02 | A Delegated Decision is read from the PRD, checked and listed in the status view                        | backend | high       | task_01 |
 | task_03 | The Spec workflow says what a session does with an Open Authoring Question                              | docs    | medium     | task_02 |
 | task_04 | The authoring skills and the modes treat an Open Authoring Question alike, and the glossary names it    | docs    | high       | task_03 |
-| task_05 | Run the final QA gate                                                                                   | qa      | high       | task_04 |
+| task_05 | Run the final QA gate                                                                                   | qa      | high       | task_06 |
+| task_06 | The status view prints the repository text of this Spec as one terminal-safe line                      | backend | low        | task_04 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_06 · 6 → task_05
+
+task_06 is corrective Task 1 of 2, added on 2026-11-19 for finding F1 of the pre-PR review of that day (artifact `043751504adb2ac5`, head `b38daf3d`); the QA gate now needs it.
 
 The graph follows `_techspec.md` → Build Order. task_01 is step 1: the Project Config key with its validation and warning, the reader at the default branch head, the `authoring_questions` field and line of the status view, and the guide and reference texts that describe the line. task_02 is step 2: the parser of the entry, the finding of the Clarification Record's check, the `delegated_decisions` field and block, the Surface Transcripts, the Clarification Record guide and the PRD template. task_03 and task_04 are step 3, cut in two: task_03 is the Baseline rule with its two clauses, the closed list of clause forces, the clause tests and the regeneration through the Managed Refresh; task_04 is the section of the three authoring skills, the `modes` reference, the glossary, the workflow guide and the amendment notice of ADR-0280. task_05 is the gate.
 

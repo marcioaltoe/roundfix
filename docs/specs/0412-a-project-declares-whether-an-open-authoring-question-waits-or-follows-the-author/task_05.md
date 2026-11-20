@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: completed
+status: pending
 type: qa
 complexity: high
 ---
@@ -132,3 +132,9 @@ A command that fails only because a fresh `HOME` hid a toolchain is a gate error
 - `_techspec.md` → Interfaces; Invariants 1-14; API Contracts 1-14; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Testing Approach; Build Order 5
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md)
 - ADR-0442, ADR-0280
+
+## Invalidation
+
+- Date: `2026-11-20`
+- QA Report: `qa/qa-report-2026-11-19.md`
+- Dependencies not completed: `task_06`
