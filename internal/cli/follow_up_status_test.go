@@ -258,7 +258,7 @@ func TestFollowUpStatusNamesTheManualClassification(t *testing.T) {
 	}
 	for _, want := range []string{
 		"\nNext release: not proposed (manual_classification_required): " + reason + "\n",
-		"\nWaiting on the maintainer: 1\n  release classification: " + detail + "\nSources:\n",
+		"\nWaiting on the maintainer: 1\n  release classification: " + detail + "\nOpen authoring questions: wait (default)\nDelegated decisions: 0\nSources:\n",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("stdout=%s, want %q", out, want)

@@ -75,20 +75,22 @@ type followUpForecastBasis struct {
 }
 
 type followUpStatusDocument struct {
-	Schema        string                `json:"schema"`
-	View          string                `json:"view"`
-	State         string                `json:"state"`
-	Repository    followUpRepository    `json:"repository"`
-	Sources       []followUpSource      `json:"sources"`
-	InProgress    followUpProgress      `json:"in_progress"`
-	PendingSpecs  []followUpPendingSpec `json:"pending_specs"`
-	Queue         []followUpQueueRow    `json:"queue"`
-	ForecastBasis followUpForecastBasis `json:"forecast_basis"`
-	Release       followUpRelease       `json:"release"`
-	Blockers      []followUpBlocker     `json:"blockers"`
-	Maintainer    []followUpMaintainer  `json:"maintainer"`
-	now           time.Time
-	zone          *time.Location
+	Schema             string                      `json:"schema"`
+	View               string                      `json:"view"`
+	State              string                      `json:"state"`
+	Repository         followUpRepository          `json:"repository"`
+	Sources            []followUpSource            `json:"sources"`
+	InProgress         followUpProgress            `json:"in_progress"`
+	PendingSpecs       []followUpPendingSpec       `json:"pending_specs"`
+	Queue              []followUpQueueRow          `json:"queue"`
+	ForecastBasis      followUpForecastBasis       `json:"forecast_basis"`
+	Release            followUpRelease             `json:"release"`
+	Blockers           []followUpBlocker           `json:"blockers"`
+	Maintainer         []followUpMaintainer        `json:"maintainer"`
+	AuthoringQuestions followUpAuthoringQuestions  `json:"authoring_questions"`
+	DelegatedDecisions []followUpDelegatedDecision `json:"delegated_decisions"`
+	now                time.Time
+	zone               *time.Location
 }
 
 func runFollowUpStatus(ctx context.Context, req followUpRequest, stdout, stderr io.Writer, loaded roundconfig.Loaded, environment commandEnvironment) int {
@@ -148,6 +150,7 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 		Blockers: []followUpBlocker{}, Maintainer: []followUpMaintainer{},
 	}
 	pending, source := followUpPendingSpecs(loaded, progress)
+	doc.AuthoringQuestions = readFollowUpAuthoringQuestions(ctx, loaded, runner)
 	doc.PendingSpecs = pending
 	doc.Sources = append(doc.Sources, source)
 	for _, item := range progress.DeliveryQueue {
@@ -191,6 +194,20 @@ func runFollowUpStatusWithHistoryGit(ctx context.Context, req followUpRequest, s
 	input.Runs = progress.historyRuns
 	history, historySource := deliveryHistoryFromTimes(input, historyGit.read, historyGit.err)
 	active, skipped, _ := spec.ListActiveDetailed(root.Path)
+	var delegatedErr error
+	doc.DelegatedDecisions, delegatedErr = readFollowUpDelegatedDecisions(root.Path, active, skipped)
+	if delegatedErr != nil {
+		for i, source := range doc.Sources {
+			if source.Name != "specs" {
+				continue
+			}
+			detail := strings.ReplaceAll(delegatedErr.Error(), "\n", "; ")
+			if source.Detail != "" {
+				detail = source.Detail + "; " + detail
+			}
+			doc.Sources[i] = followUpSource{Name: "specs", State: "unavailable", Detail: detail}
+		}
+	}
 	rows, forecastRows, queueSources := followUpQueueRows(followUpQueueInput{Context: ctx, Loaded: loaded, SpecRoot: root.Path, ArchiveRoot: input.ArchiveRoot, Progress: progress, Active: active, Skipped: skipped, History: history, Now: now, Zone: zone, Origin: &origin})
 	basis := queueforecast.NewBasis(history)
 	forecasts := queueforecast.Forecast(basis, forecastRows, now)
@@ -318,6 +335,19 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 			fmt.Fprintf(&out, "  release %s: %s\n", doc.Release.ProposedVersion, item.Detail)
 		}
 	}
+	source := "default"
+	if doc.AuthoringQuestions.Source == "project-config" {
+		source = "Project Config"
+	}
+	fmt.Fprintf(&out, "Open authoring questions: %s (%s)", followUpTerminalText(doc.AuthoringQuestions.Preference), source)
+	if doc.AuthoringQuestions.Checkout != "" {
+		fmt.Fprintf(&out, "; this checkout's Project Config gives %s, which counts only once the default branch holds it", followUpTerminalText(doc.AuthoringQuestions.Checkout))
+	}
+	if doc.AuthoringQuestions.Detail != "" {
+		fmt.Fprintf(&out, "; %s", followUpTerminalText(doc.AuthoringQuestions.Detail))
+	}
+	out.WriteByte('\n')
+	out.WriteString(renderFollowUpDelegatedDecisions(doc.DelegatedDecisions))
 	out.WriteString("Sources:\n")
 	for _, source := range doc.Sources {
 		fmt.Fprintf(&out, "  %s: %s", source.Name, source.State)
@@ -325,7 +355,7 @@ func renderFollowUpStatusText(doc followUpStatusDocument) string {
 			fmt.Fprintf(&out, " %d", source.Count)
 		}
 		if source.Detail != "" {
-			fmt.Fprintf(&out, ": %s", source.Detail)
+			fmt.Fprintf(&out, ": %s", followUpTerminalText(source.Detail))
 		}
 		out.WriteByte('\n')
 	}

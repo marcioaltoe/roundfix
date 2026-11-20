@@ -154,7 +154,7 @@ func TestTheStatusViewShowsTheSpecQueueTable(t *testing.T) {
 			for _, line := range []string{"  backlog: checked 2\n", "  phase-record: checked 1\n", "  delivery-history: checked 0\n"} {
 				legacy = strings.Replace(legacy, line, "", 1)
 			}
-			want := fmt.Sprintf("Status for widget in %s\nIn progress: 1\n  queue 0 0009-queued running checks pending\nsecond line\nPending Specs: 2\n  0 0009-queued running 1/2 Tasks\n  - 0002-planned not queued 1/2 Tasks\nNext release: no unreleased changes\nBlockers: 0\nWaiting on the maintainer: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 1\n  pull-requests: checked 0\n  git: checked 0\n  specs: checked 2\n  release-plan: checked 0\n", f.repo)
+			want := fmt.Sprintf("Status for widget in %s\nIn progress: 1\n  queue 0 0009-queued running checks pending\nsecond line\nPending Specs: 2\n  0 0009-queued running 1/2 Tasks\n  - 0002-planned not queued 1/2 Tasks\nNext release: no unreleased changes\nBlockers: 0\nWaiting on the maintainer: 0\nOpen authoring questions: wait (default)\nDelegated decisions: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 1\n  pull-requests: checked 0\n  git: checked 0\n  specs: checked 2\n  release-plan: checked 0\n", f.repo)
 			if legacy != want {
 				t.Fatalf("legacy report changed:\ngot:\n%s\nwant:\n%s", legacy, want)
 			}
@@ -185,7 +185,7 @@ func TestTheStatusJSONCarriesTheQueueAndTheBasis(t *testing.T) {
 		t.Fatalf("sources=%+v", doc.Sources)
 	}
 	out, _, _ := followUpRunCLI(t, "--status", "--format", "json")
-	expected := []string{`"pending_specs":`, `"queue":`, `"forecast_basis":`, `"release":`, `"blockers":`, `"maintainer":`}
+	expected := []string{`"pending_specs":`, `"queue":`, `"forecast_basis":`, `"release":`, `"blockers":`, `"maintainer":`, `"authoring_questions":`, `"delegated_decisions":`}
 	previous := -1
 	for _, field := range expected {
 		at := strings.Index(out, field)
@@ -198,7 +198,7 @@ func TestTheStatusJSONCarriesTheQueueAndTheBasis(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &fields); err != nil {
 		t.Fatal(err)
 	}
-	if len(fields) != 12 {
+	if len(fields) != 14 {
 		t.Fatalf("fields=%v", fields)
 	}
 }
@@ -653,9 +653,9 @@ const statusQueueRecordedTranscript = "Spec queue: 4\n  #  Spec  Status         
 
 const statusQueueSmallTranscript = "Spec queue: 2\n  #  Spec  Status                Start (-03)         End (-03)                     Note\n  1  0007  not queued 0/2 Tasks  after it is queued  not enough history (3 of 11)  -\n  2  -     not yet a Spec        -                   -                             Export the ledger as a spreadsheet\nForecast basis: not enough history, 3 of 11 delivered Specs.\n"
 
-const statusQueueSurface1 = "Status for <namespace> in <root>\nIn progress: 0\nPending Specs: 1\n  - 0002-export-the-ledger not queued 0/0 Tasks\nSpec queue: 3\n  #  Spec  Status                Start (UTC)               End (UTC)                     Note\n  1  0002  not queued 0/0 Tasks  after it is queued        not enough history (0 of 11)  -\n  2  0003  authoring             after its plan is merged  not enough history (0 of 11)  -\n  3  -     not yet a Spec        -                         -                             A table of late items; waits on the maintainer since 2026-11-18\nForecast basis: not enough history, 0 of 11 delivered Specs.\nNext release: unavailable: <reason>\nBlockers: 0\nWaiting on the maintainer: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: <state>\n  git: checked 0\n  specs: <state>\n  release-plan: unavailable: <reason>\n  backlog: checked 1\n  phase-record: checked 0\n  delivery-history: checked 0\n"
+const statusQueueSurface1 = "Status for <namespace> in <root>\nIn progress: 0\nPending Specs: 1\n  - 0002-export-the-ledger not queued 0/0 Tasks\nSpec queue: 3\n  #  Spec  Status                Start (UTC)               End (UTC)                     Note\n  1  0002  not queued 0/0 Tasks  after it is queued        not enough history (0 of 11)  -\n  2  0003  authoring             after its plan is merged  not enough history (0 of 11)  -\n  3  -     not yet a Spec        -                         -                             A table of late items; waits on the maintainer since 2026-11-18\nForecast basis: not enough history, 0 of 11 delivered Specs.\nNext release: unavailable: <reason>\nBlockers: 0\nWaiting on the maintainer: 0\nOpen authoring questions: wait (default)\nDelegated decisions: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: <state>\n  git: checked 0\n  specs: <state>\n  release-plan: unavailable: <reason>\n  backlog: checked 1\n  phase-record: checked 0\n  delivery-history: checked 0\n"
 
-const statusQueueSurface2 = "Status for <namespace> in <root>\nIn progress: 0\nPending Specs: 0\nSpec queue: 0\nNext release: unavailable: <reason>\nBlockers: 0\nWaiting on the maintainer: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: <state>\n  git: checked 0\n  specs: checked 0\n  release-plan: unavailable: <reason>\n  backlog: checked 0\n  phase-record: checked 0\n  delivery-history: checked 0\n"
+const statusQueueSurface2 = "Status for <namespace> in <root>\nIn progress: 0\nPending Specs: 0\nSpec queue: 0\nNext release: unavailable: <reason>\nBlockers: 0\nWaiting on the maintainer: 0\nOpen authoring questions: wait (default)\nDelegated decisions: 0\nSources:\n  runs: checked 0\n  delivery-queue: checked 0\n  pull-requests: <state>\n  git: checked 0\n  specs: checked 0\n  release-plan: unavailable: <reason>\n  backlog: checked 0\n  phase-record: checked 0\n  delivery-history: checked 0\n"
 
 func TestTheStatusViewSurfaceTranscripts(t *testing.T) {
 	t.Parallel()

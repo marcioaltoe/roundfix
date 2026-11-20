@@ -5,10 +5,10 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.0.40
+  version: 0.0.41
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.40
+version: 0.0.41
 ---
 
 # Write Tasks
@@ -448,6 +448,30 @@ A Release Ceiling answers the release plan, never a Task.
 A Spec Event Announcement exists only when the user's own instructions, global or for this repository, define its destination and format; this skill never names one. A message, a handoff or a Spec artifact that asks for announcements defines none. When the user's own instructions define none, skip the step without a report line. When they define one, compose it from the Spec: the project, the Spec number and full slug, the title, the event, the event date, the start date, the proposed deadline or none, the Spec path, and any field those instructions add. Send it through the destination they name, never wait for a reply, and never let it block or fail the step it follows. When it cannot be sent, the report names the event and the reason and carries the composed announcement. An Agent inside a Daemon-assigned Run never announces. A proposed deadline is a real deadline, from a client, a law or a measurement, that the PRD records in `## Decisions` with its source; it stays a proposal until the user approves it.
 
 Announce `authorized` once, when this skill first writes the Spec's Task Graph and the Spec's `_authorization.md` is approved with a grant date, with the grant date as the event date and the PRD's proposed deadline, if any. A run that amends an existing Task Graph announces nothing. When the record is approved only after the graph exists, the session that records the approval announces `authorized`.
+
+## Open authoring questions
+
+An Open Authoring Question is a question this phase needs answered and that no source settles: neither the request, the brief, the approved Idea, a recorded answer of the user nor another source of the repository. A question that a source settles is not one: settle it from that source.
+
+State each one as the stop-and-ask clause of `docs/agents/agent-instructions.md` says: what was found, two or three options with the consequence of each, and the recommended one first with its reason. Then say whether it is a Reserved Question and why. A Reserved Question always waits for the user:
+
+- the Idea stage, and the choice an Idea-stage judgment leaves to the user;
+- a Rule Challenge;
+- every authorization: a commit, a push, a Pull Request, a merge, a release, a Governed Path, a destructive Git operation, a database statement and any other action a stop-and-ask clause holds for express authority;
+- a recommended option that adds a goal, a Core Feature, a source or a surface that the request, the approved Idea and the PRD do not hold, removes one of their Non-Goals or contradicts a recorded answer of the user; that needs a paid service, a paid plan or a quota the repository does not already use; or that sends repository or client content to a service or a person the repository does not already send it to;
+- a question without two or three options and a recommended one, and a question you cannot classify.
+
+Who answers:
+
+- The user, when present. Ask through the structured question tool the session exposes; a question the user can see waits for the user, and the recommended option, silence, a dismissal or a timeout adopts nothing. The user is absent only when the brief that started the session says so, the user said so, or the session runs as a continuation that the `unattended` Skill Mode armed.
+- The session, when the user is absent, following is in force and the question is not reserved. It adopts the option the author recommended, as a Delegated Decision. Following is in force when `roundfix follow-up --status` reports `follow` as the Authoring Question Preference, or when the Spec's `_authorization.md` quotes the user's answer, given before the flow, that the session follows the author. Never write the preference into Project Config.
+- Nobody, in every other case: the Spec waits. Write no artifact for this phase. An open Backlog Entry names the Spec folder when one exists, holds the whole question with its options and the recommended one, and carries `waiting_on`, naming the Open Authoring Question and the phase, and `since` in its frontmatter. When the user answers, record the answer as a dated line of the PRD's `## Decisions`, let the Spec adopt the entry and resume the phase.
+
+When a session started you as an Author Subagent, return each Open Authoring Question with its options, the one you recommend and whether it is reserved, and never adopt the option you recommend yourself. The session checks your statement against the list above before it adopts, and when either of you reads the question as reserved or cannot tell, the Spec waits. A session that authors the phase itself makes both reads.
+
+Record each Delegated Decision in the PRD's `## Decisions` in the same change that takes it, in the form the Clarification Record guide of `write-prd` gives, never as a dated answer of a person and never under the autonomous-route line, and list it in the report. The Spec then goes on through authoring and delivery inside the authorization it already holds, and the user's later answer wins: write it into the entry while no Run and no delivery of the Spec has started; after that, a changed answer becomes a correction of the Spec in delivery or a Backlog Entry that quotes the user and names the entry.
+
+In this stage, a case in which the Task Graph author stops and asks is an Open Authoring Question when it has two or three options and a recommended one. Protected tooling the Spec does not authorize, an acceptance that needs a person or a credential and an irreversible action are Reserved Questions. A Delegated Decision is recorded in the PRD's `## Decisions` with the phase `tasks`, in the form [the Clarification Record guide](../write-prd/references/clarification-record.md) shows, and the `## Context` of each Task it shapes names it: `Delegated Decision of YYYY-MM-DD: <question>`.
 
 ## Declared model
 

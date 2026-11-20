@@ -263,6 +263,13 @@ resolve:
   # most of the Run on Batch turnover rather than on the fixes.
   batch_size: 20
 
+authoring:
+  # The maintainer decided on 2026-11-19 (Cycle BG): an open PRD, TechSpec or
+  # Task Graph question that no source settles follows the author's recommended
+  # option as a Delegated Decision when nobody is present. Reserved Questions
+  # still wait (Spec 0412, ADR-0442).
+  open_questions: follow
+
 skills:
   authoring:
     claude:

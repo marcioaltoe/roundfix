@@ -141,6 +141,14 @@ type: feat # Delivery Type: feat | fix | perf | refactor; a feature Spec writes 
      When no person was present, write the line
      `Autonomous route: no person present; decisions taken from <source>.`
      naming the source the author decided from. Both shapes may appear together.
+     A Delegated Decision, an option a session adopted with nobody present,
+     is a third entry and never one of those two shapes:
+     - delegated: YYYY-MM-DD, <prd|techspec|tasks>
+       - question: <the question>
+       - options: <each option, separated by semicolons>
+       - adopted: <the adopted option> — <the author's reason>
+       - under: <Project Config | the user's answer of YYYY-MM-DD>
+       - answer: none yet
      See references/clarification-record.md.
      Decisions that passed the ADR gate link to their ADR: `See ADR-0012.` -->
 

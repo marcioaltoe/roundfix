@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:d1bc19bdc5299c518aa4ca5e7cca7be622a289c5d210f9607ace515be2a6ec51",
+  "catalogDigest": "sha256:9a4b443e817f14b013fb882ed75d289b74a8d19f2b54a2ce1c88bc7f7af6d89e",
   "modules": [
     "core",
     "context-workflow",
@@ -174,7 +174,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "8e4ffe105162b45cd10005dd33fe8a6adf55dd59b79c5e7aeb136537e4750235"
+      "digest": "55f1d4dcf2973339c67314f112b2149a792ddbede211a2343e9d968d5e496f40"
     },
     {
       "id": "guide.issue-tracker",
@@ -270,5 +270,5 @@
       "declarationDigest": "sha256:387cf4f9a887b8224148bb286b78aff411273f139812ec0ffee9481dbb41bd3d"
     }
   ],
-  "roundfixVersion": "0.149.0"
+  "roundfixVersion": "0.150.0"
 }

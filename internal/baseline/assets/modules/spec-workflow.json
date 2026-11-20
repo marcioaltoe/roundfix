@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 28,
+  "version": 29,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,12 +38,13 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 16,
+      "version": 17,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
         "rule.spec.routing",
         "rule.spec.rule-challenge",
+        "rule.spec.open-authoring-question",
         "rule.spec.project-constraints"
       ],
       "references": []
@@ -145,6 +146,25 @@
           "id": "clause.spec.rule-challenge-02-answer",
           "enforcement": "mandatory",
           "guidance": "Record every Rule Challenge in the `## Rule challenges` section of the Idea or the PRD, one fielded record per question: `rule`, `imposes`, `prevents`, `asked` with the date and the phase, `answer` with keep, change, retire or waiting and the user's words, and `effect`, plus `new fact` when the rule already carried a Kept Line. An Idea and a feature PRD always carry the section, which reads `None.` when no rule blocked the goal; the PRD carries the Idea's records, and a question the TechSpec author asks is recorded in the PRD. The Spec that asked carries the answer. On change or retire, the PRD states the change of the rule as a requirement, and a Task of the same Spec changes the rule together with the work that depended on it: an ADR through the lifecycle of `docs/agents/docs-layout.md`, any other rule in its own file. On keep, a Task of the Spec adds a Kept Line after the rule's text, `Kept (YYYY-MM-DD): <what was asked>; <why it stays>.`, which names no Spec; a rule keeps every Kept Line, the newest last, and when no Spec follows, the session that asked adds the line. A rule inside `setup-context-driven` markers changes only in the Baseline, and its Kept Line goes in `docs/agents/specific-repository.md`, under a heading of its own, naming the rule; on change or retire, a repository that does not own the Baseline sends the user's decision as one message to the Baseline's owner, obeys the rule until the Baseline changes, and records the message and the scope it left out. When no person is present to answer, write no artifact for that phase and never answer for the user: only that Spec waits, as a Backlog Entry that holds the whole question, names the Spec folder when one exists and carries `waiting_on` and `since` in its frontmatter, while other work goes on. An Author Subagent returns the question to the session that started it."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.open-authoring-question",
+      "version": 1,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.open-authoring-question-01-wait-or-follow",
+          "enforcement": "stop-and-ask",
+          "guidance": "An Open Authoring Question is a question the author of a PRD, a TechSpec or a Task Graph needs answered to finish its phase and that no source settles: neither the request, the brief, the approved Idea, a recorded answer of the user nor another source of the repository. State it as the stop-and-ask clause of `docs/agents/agent-instructions.md` says, with two or three options, the recommended one first and its reason, and say whether it is a Reserved Question and why. When the user is present, ask: a question the user can see waits for the user, and a recommendation, silence, a dismissal or a timeout adopts nothing. Treat the user as absent only when the brief that started the session says so, the user said so, or the session runs as a continuation that an unattended flow armed. With the user absent the Spec waits, unless following is in force: `roundfix follow-up --status` reports `follow` as the project's Authoring Question Preference, or the Spec's `_authorization.md` quotes the user's answer, given before the flow, that the session follows the author. Never write that preference into Project Config yourself. A Reserved Question waits even then: the Idea stage and the choice an Idea-stage judgment leaves to the user; a Rule Challenge; every authorization, which is a commit, a push, a Pull Request, a merge, a release, a Governed Path, a destructive Git operation, a database statement and any other action a stop-and-ask clause holds for express authority; a recommended option that adds a goal, a feature, a source or a surface that the request, the approved Idea and the PRD do not hold, removes one of their non-goals or contradicts a recorded answer of the user, that needs a paid service, a paid plan or a quota the repository does not already use, or that sends repository or client content to a service or a person the repository does not already send it to; a question without two or three options and a recommended one; and a question you cannot classify. An author that a session started returns the question and never adopts its own recommendation; the session checks the author's statement against this list, and when either reads the question as reserved or cannot tell, the Spec waits."
+        },
+        {
+          "id": "clause.spec.open-authoring-question-02-record",
+          "enforcement": "mandatory",
+          "guidance": "When following is in force and an Open Authoring Question is not a Reserved Question, adopt the option the author recommended and go on with the phase. Record each adopted option as a Delegated Decision in the PRD's `## Decisions` section, in the same change, as one entry: the line `- delegated: YYYY-MM-DD, <phase>`, where the phase is `prd`, `techspec` or `tasks`, followed by five lines indented two spaces, `- question:`, `- options:`, `- adopted:` with the option, an em dash and the author's reason, `- under:` with `Project Config` or `the user's answer of YYYY-MM-DD`, and `- answer:` with `none yet`. Never write it as a dated answer of a person or under the autonomous-route line. A question of the TechSpec or the Tasks phase is recorded in the PRD, and that phase's artifact names the entry. List every Delegated Decision of the flow, and their count, in the session's report; `roundfix follow-up --status` lists the ones of every active Spec. The Spec goes on through authoring and delivery inside the authorization it already holds, and the user's later answer wins: write it into the entry's `answer` line as the date, `kept` or `changed`, an em dash and the user's words. A changed answer amends the plan while no Run and no delivery of the Spec has started; after that, leave the plan on the default branch as it is and make the change a correction of the Spec in delivery or a Backlog Entry, quoting the user and naming the entry. When the Spec waits, write no artifact for that phase and never answer for the user: only that Spec waits, as a Backlog Entry that names the Spec folder when one exists, holds the whole question with its options and the recommended one, and carries `waiting_on` and `since` in its frontmatter, while other work goes on. When the user answers, record the answer as a dated line of the PRD's `## Decisions`, let the Spec adopt the entry and resume the phase. The waits of the Idea stage and of a Rule Challenge keep their own rules."
         }
       ]
     },

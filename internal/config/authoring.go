@@ -9,6 +9,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	OpenQuestionsWait   = "wait"
+	OpenQuestionsFollow = "follow"
+)
+
+// Authoring contains the project's preference for open authoring questions.
+type Authoring struct {
+	OpenQuestions         string
+	OpenQuestionsDeclared bool
+}
+
+type authoringOverlay struct {
+	OpenQuestions *string `yaml:"open_questions"`
+}
+
 // Skills contains declarations applied to this repository's installed skills.
 type Skills struct {
 	Authoring AuthoringModels `yaml:"authoring"`
@@ -41,6 +56,18 @@ var authoringModelName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@\[\]-]{0
 var authoringMCPTool = regexp.MustCompile(`^mcp__[A-Za-z0-9_.*-]+$`)
 
 func prepareAuthoringConfig(document *yaml.Node, warnings *configWarnings, source ProfileSource) error {
+	if source == ProfileSourceUser && removeYAMLPath(document, []string{"authoring", "open_questions"}) {
+		const key = "authoring.open_questions"
+		if warnings != nil && !warnings.emitted[key] {
+			warnings.emitted[key] = true
+			fmt.Fprintln(warnings.stderr, "config: authoring.open_questions in User Config is ignored; set authoring.open_questions in Project Config")
+		}
+	}
+	if node, found := yamlValueAtPath(document, []string{"authoring", "open_questions"}); found {
+		if node.Kind != yaml.ScalarNode || node.Tag != "!!str" || (node.Value != OpenQuestionsWait && node.Value != OpenQuestionsFollow) {
+			return fmt.Errorf("authoring.open_questions must be wait or follow")
+		}
+	}
 	if source == ProfileSourceUser && removeYAMLPath(document, []string{"delivery", "require_defect_class"}) {
 		const key = "delivery.require_defect_class"
 		if warnings != nil && !warnings.emitted[key] {
