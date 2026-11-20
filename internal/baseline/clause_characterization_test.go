@@ -160,6 +160,8 @@ func baselineClauseForceDifferences(clauses []characterizedBaselineClause, want 
 // entry. Wording may change without changing identifiers or enforcement.
 func characterizedBaselineForce() map[string]string {
 	return map[string]string{
+		"clause.spec.open-authoring-question-01-wait-or-follow":       "stop-and-ask",
+		"clause.spec.open-authoring-question-02-record":               "mandatory",
 		"clause.python.change-dependencies-through-uv":                "mandatory",
 		"clause.python.run-tools-through-uv":                          "mandatory",
 		"clause.python.sync-the-locked-environment":                   "mandatory",

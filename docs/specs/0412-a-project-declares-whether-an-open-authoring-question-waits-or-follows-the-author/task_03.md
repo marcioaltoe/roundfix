@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -115,3 +115,17 @@ The Baseline's Spec workflow gains the rule `rule.spec.open-authoring-question`,
 - `_prd.md` → Decisions, the Delegated Decision of 2026-11-19 of the `tasks` phase: how is step 3 of the Build Order cut into Tasks?
 - [`references/2026-11-19-prototype-and-governed-paths.md`](references/2026-11-19-prototype-and-governed-paths.md), sections 2 and 3
 - ADR-0442, ADR-0257, ADR-0186, ADR-0222, ADR-0436
+
+## Result
+
+Skills loaded: implement-task, golang-testing, testing-boss, tech-writer, setup-context-driven, roundfix, evidence-gate, systematic-debugging.
+
+- Added the open-authoring-question rule, the two specified clause forces and the guide ordering; retained the prior clause texts. The Rule Challenge neighbor check now expects the inserted rule.
+- The focused `go test ./internal/baseline -run '^TestTheSpecWorkflowModuleCarriesTheOpenAuthoringQuestionClauses$' -count=1` passed (35 cases), covering rule metadata, profile exclusions and each of the 32 named guidance phrases.
+- The focused rendering test for `plan_postimage` and `formatter_golden` passed; after the Managed Refresh, the `repository_guide` subtest also passed. These checks cover the three requested rendering surfaces.
+- The sanctioned module version recorder and `make baseline-digests` exited successfully. Managed Refresh updated two files, then a repeat reported `File changes: 0`; it warned about two pre-existing nested carriers left unchanged. Full Delivery Base preservation and declared Verification remain for the Daemon to assess.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261120T001731Z_006240644ff28b8b`
+- Source commit: `a11468a28f312e509883953b3915ff4cac6068e2`
