@@ -1,0 +1,216 @@
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.delegate-through-roundfix
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.supervisor-prohibition
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.daemon-verifies-task
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.hook-strictness
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-01-qa-once
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-02-autonomous-decomposition
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-03-specify-the-hazard
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-04-verify-the-class
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-05-clean-is-not-evidence
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-06-branch-hygiene
+PASS internal/baseline/assets/modules/autonomous-work.json preserves clause.autonomous.loop-07-outlive-the-turn
+PASS internal/baseline/assets/modules/autonomous-work.json byte-identical
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.boundary-contracts
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.layered-architecture
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.thin-http-handlers
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.http-independent-use-cases
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.persistence-owner
+PASS internal/baseline/assets/modules/backend.json preserves clause.backend.prohibit-generic-buckets
+PASS internal/baseline/assets/modules/backend.json byte-identical
+PASS internal/baseline/assets/modules/bun.json preserves clause.bun.use-bun-owned-commands
+PASS internal/baseline/assets/modules/bun.json preserves clause.bun.verify-dependency-before-add
+PASS internal/baseline/assets/modules/bun.json preserves clause.bun.add-from-owning-workspace
+PASS internal/baseline/assets/modules/bun.json preserves clause.bun.prohibit-other-package-managers
+PASS internal/baseline/assets/modules/bun.json byte-identical
+PASS internal/baseline/assets/modules/cli-surface.json preserves clause.cli.public-command-contract
+PASS internal/baseline/assets/modules/cli-surface.json preserves clause.cli.separate-output-streams
+PASS internal/baseline/assets/modules/cli-surface.json preserves clause.cli.ship-the-skill-with-the-behavior
+PASS internal/baseline/assets/modules/cli-surface.json preserves clause.cli.deterministic-non-interactive
+PASS internal/baseline/assets/modules/cli-surface.json preserves clause.cli.explicit-safe-writes
+PASS internal/baseline/assets/modules/cli-surface.json byte-identical
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.read-domain-contract
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.domain.canonical-language
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.domain.layout-decision
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.domain.glossary-currency
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.adr-01-template
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.adr-02-active-status
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.adr-03-legacy-compatibility
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.docs-one-job-per-directory
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.docs-upstream-flow
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.backlog-01-operational-contract
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.backlog-02-finding-boundary
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-01-frontmatter
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-08-rollup
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-09-archive
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-02-pending
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-03-partial
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-04-deferred
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-05-done
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-06-append-evidence
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.findings-07-update-timestamp
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.inbox-01-triage
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.inbox-02-fleet-flow
+PASS internal/baseline/assets/modules/context-workflow.json preserves clause.context.inbox-03-extend-before-minting
+PASS internal/baseline/assets/modules/context-workflow.json byte-identical
+PASS internal/baseline/assets/modules/core.json preserves clause.core.keep-root-compact
+PASS internal/baseline/assets/modules/core.json preserves clause.core.fix-root-causes
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-verification-workarounds
+PASS internal/baseline/assets/modules/core.json preserves clause.core.regenerate-generated-files
+PASS internal/baseline/assets/modules/core.json preserves clause.core.keep-follow-ups-outside-slice
+PASS internal/baseline/assets/modules/core.json preserves clause.core.record-acceptance-evidence
+PASS internal/baseline/assets/modules/core.json preserves clause.core.require-fresh-evidence
+PASS internal/baseline/assets/modules/core.json preserves clause.core.run-selected-verification
+PASS internal/baseline/assets/modules/core.json preserves clause.core.verification-two-tiers
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-verification-contract-bypass
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-before-verification-configuration-change
+PASS internal/baseline/assets/modules/core.json preserves clause.core.never-let-a-pipe-hide-a-gate
+PASS internal/baseline/assets/modules/core.json preserves clause.core.assertion-reads-the-constant
+PASS internal/baseline/assets/modules/core.json preserves clause.core.flaky-tests-block
+PASS internal/baseline/assets/modules/core.json preserves clause.core.lint-warnings-block
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-test-only-production-hooks
+PASS internal/baseline/assets/modules/core.json preserves clause.core.require-tooling-authorization
+PASS internal/baseline/assets/modules/core.json preserves clause.core.tooling-commit-choreography
+PASS internal/baseline/assets/modules/core.json preserves clause.core.activate-matching-skills
+PASS internal/baseline/assets/modules/core.json preserves clause.core.use-conventional-commits
+PASS internal/baseline/assets/modules/core.json preserves clause.core.use-github-pr-workflow
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-editing-vendored-skills
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-the-person-to-start-a-person-only-skill
+PASS internal/baseline/assets/modules/core.json preserves clause.core.write-generated-guidance-in-english
+PASS internal/baseline/assets/modules/core.json preserves clause.core.research-authoritative-external-sources
+PASS internal/baseline/assets/modules/core.json preserves clause.core.research-local-code-locally
+PASS internal/baseline/assets/modules/core.json preserves clause.core.use-declared-external-research-fallback
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-external-research-for-local-code
+PASS internal/baseline/assets/modules/core.json preserves clause.core.follow-dependency-workflow
+PASS internal/baseline/assets/modules/core.json preserves clause.core.review-new-dependencies
+PASS internal/baseline/assets/modules/core.json preserves clause.core.preserve-git-scope
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-before-destructive-git
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-before-delivery
+PASS internal/baseline/assets/modules/core.json preserves clause.core.request-review-explicitly
+PASS internal/baseline/assets/modules/core.json preserves clause.core.conventional-commit-titles
+PASS internal/baseline/assets/modules/core.json preserves clause.core.plan-the-release-first
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ai-memory-is-optional
+PASS internal/baseline/assets/modules/core.json preserves clause.core.message-the-owning-project
+PASS internal/baseline/assets/modules/core.json preserves clause.core.messages-are-self-contained
+PASS internal/baseline/assets/modules/core.json preserves clause.core.consume-messages-after-recording
+PASS internal/baseline/assets/modules/core.json preserves clause.core.check-for-updates-at-session-start
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-user-answerable-decisions
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-secret-exposure
+PASS internal/baseline/assets/modules/core.json preserves clause.core.ask-before-database-mutation
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prove-the-mutation-predicate
+PASS internal/baseline/assets/modules/core.json preserves clause.core.prohibit-disguised-database-mutation
+PASS internal/baseline/assets/modules/core.json byte-identical
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.classify-before-labelling
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.move-through-mapped-states
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.ask-for-an-unmapped-label
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.needs-info-asks-and-stops
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.disclose-ai-authorship
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.record-wontfix-decisions
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.pull-request-is-an-issue-with-code
+PASS internal/baseline/assets/modules/external-triage.json preserves clause.external-triage.route-accepted-work-to-specs
+PASS internal/baseline/assets/modules/external-triage.json byte-identical
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.organize-by-system
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.public-system-boundary
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.read-design-contract-before-ui-work
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.test-user-visible-behavior
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.prohibit-incidental-ui-assertions
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.inspect-runnable-ui
+PASS internal/baseline/assets/modules/frontend.json preserves clause.frontend.follow-recorded-layout
+PASS internal/baseline/assets/modules/frontend.json byte-identical
+PASS internal/baseline/assets/modules/go.json preserves clause.go.change-module-files-through-go
+PASS internal/baseline/assets/modules/go.json preserves clause.go.keep-entry-points-thin
+PASS internal/baseline/assets/modules/go.json preserves clause.go.record-the-reason-for-a-module
+PASS internal/baseline/assets/modules/go.json preserves clause.go.own-every-goroutine
+PASS internal/baseline/assets/modules/go.json preserves clause.go.pass-context-first
+PASS internal/baseline/assets/modules/go.json preserves clause.go.wrap-errors-with-the-operation
+PASS internal/baseline/assets/modules/go.json preserves clause.go.build-every-constrained-platform
+PASS internal/baseline/assets/modules/go.json preserves clause.go.test-observable-behavior
+PASS internal/baseline/assets/modules/go.json preserves clause.go.keep-tests-hermetic
+PASS internal/baseline/assets/modules/go.json preserves clause.go.test-through-go-test
+PASS internal/baseline/assets/modules/go.json byte-identical
+PASS internal/baseline/assets/modules/monorepo.json preserves rule.monorepo.context-boundaries
+PASS internal/baseline/assets/modules/monorepo.json byte-identical
+PASS internal/baseline/assets/modules/python.json preserves clause.python.change-dependencies-through-uv
+PASS internal/baseline/assets/modules/python.json preserves clause.python.run-tools-through-uv
+PASS internal/baseline/assets/modules/python.json preserves clause.python.sync-the-locked-environment
+PASS internal/baseline/assets/modules/python.json preserves clause.python.check-the-lock-offline
+PASS internal/baseline/assets/modules/python.json preserves clause.python.iterate-with-focused-commands
+PASS internal/baseline/assets/modules/python.json preserves clause.python.ruff-findings-fail-the-gate
+PASS internal/baseline/assets/modules/python.json preserves clause.python.type-check-with-ty
+PASS internal/baseline/assets/modules/python.json preserves clause.python.select-a-new-test-by-its-node-id
+PASS internal/baseline/assets/modules/python.json preserves clause.python.keep-tests-hermetic
+PASS internal/baseline/assets/modules/python.json preserves clause.python.outside-data-skips-by-name
+PASS internal/baseline/assets/modules/python.json preserves clause.python.exercise-every-platform-branch
+PASS internal/baseline/assets/modules/python.json preserves clause.python.keep-entry-points-thin
+PASS internal/baseline/assets/modules/python.json byte-identical
+PASS internal/baseline/assets/modules/repository-extension.json byte-identical
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.change-manifests-through-cargo
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.read-current-docs
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.iterate-with-focused-cargo-commands
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.test-the-command-through-execution
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.keep-the-binary-thin
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.keep-type-erased-errors-at-the-entry-point
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.prohibit-panics-on-user-paths
+PASS internal/baseline/assets/modules/rust.json preserves clause.rust.return-typed-errors
+PASS internal/baseline/assets/modules/rust.json byte-identical
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.01-consult-triggers
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.02-query-order
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.03-decision-consultation
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.04-external-research
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.05-research-limitations
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.prohibit-writes
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.research-to-the-knowledge-owner
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.prohibit-secret-access
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.record-decision-sources
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.cite-used-files
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.escalate-durable-updates
+PASS internal/baseline/assets/modules/secondbrain.json preserves clause.secondbrain.baseline-owned-guidance
+PASS internal/baseline/assets/modules/secondbrain.json byte-identical
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.routing-01-large-initiative
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.routing-02-standard-feature
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.routing-03-refactor-bugfix
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.routing-04-trivial-change
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.routing-05-task-graph
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.verification-two-tiers
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.sources-01-group-by-shared-context
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.sources-02-bound-the-group
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.name-the-finding-a-task-answers
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.verification-fails-before-the-change
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.rule-challenge-01-ask
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.rule-challenge-02-answer
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.local-task-tracker-only
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.tracker-artifacts
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-01-active-artifacts
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-02-tooling-authorization
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-03-bounded-execution
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-04-qa-audit
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-05-legacy-and-ownership
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.project-constraints-06-outside-evidence
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.keep-artifacts-in-spec-folder
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.specs-are-downstream-artifacts
+PASS internal/baseline/assets/modules/spec-workflow.json preserves clause.spec.prohibit-tests-that-read-specs
+PASS internal/baseline/assets/modules/tui-surface.json preserves clause.tui.drive-models-synchronously
+PASS internal/baseline/assets/modules/tui-surface.json preserves clause.tui.emulate-the-terminal-last
+PASS internal/baseline/assets/modules/tui-surface.json preserves clause.tui.keep-design-policy-in-repository-guidance
+PASS internal/baseline/assets/modules/tui-surface.json byte-identical
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.read-current-authoritative-docs
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.keep-type-errors-visible
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.inspect-dependent-interfaces-before-tests
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.test-observable-failure-modes
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.prohibit-incidental-test-oracles
+PASS internal/baseline/assets/modules/typescript.json preserves clause.typescript.type-fixtures-from-the-schema
+PASS internal/baseline/assets/modules/typescript.json byte-identical
+PASS only the two declared clauses were added
+PASS internal/baseline/assets/source-baselines byte-identical to Delivery Base
+PASS internal/baseline/assets/setups byte-identical to Delivery Base
+PASS internal/speccheck/coherence.go byte-identical to Delivery Base
+PASS internal/docscontract/testdata/corpus-golden.json byte-identical to Delivery Base
+PASS internal/spec/archive_layout_characterization_test.go byte-identical to Delivery Base
+PASS docs/references/coverage-record.json byte-identical to Delivery Base
+PASS internal/baseline/assets/profiles/go-cli-typescript-monorepo.json does not require the new rule
+PASS internal/baseline/assets/profiles/standard-typescript-monorepo.json does not require the new rule
+PASS internal/baseline/assets/profiles/go-cli-tui.json does not require the new rule
+PASS internal/baseline/assets/profiles/rust-cli.json does not require the new rule
+PASS internal/baseline/assets/profiles/python.json does not require the new rule
+PASS clause characterization gains only two IDs and loses no line
+PASS head and Delivery Base public help identical
+PASS corpus and default-scope invariant tests pass

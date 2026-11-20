@@ -1,0 +1,19 @@
+command: go test -count=1 -timeout 40m -v -run '^TestTheAuthoringQuestionPreferenceIsAProjectConfigValue$/^refuses_maybe$' ./internal/config
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/sabotage-S01
+stdout:
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue
+=== RUN   TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+=== PAUSE TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+=== CONT  TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe
+    authoring_questions_test.go:81: proposal error = <nil>
+    authoring_questions_test.go:81: load error = <nil>
+--- FAIL: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue (0.00s)
+    --- FAIL: TestTheAuthoringQuestionPreferenceIsAProjectConfigValue/refuses_maybe (0.01s)
+FAIL
+suiteguard: guard cost: measured 3454 paths; fingerprint took 186.349833ms before and 164.546708ms after
+FAIL	roundfix/internal/config	0.631s
+FAIL
+stderr:
+exit: 1

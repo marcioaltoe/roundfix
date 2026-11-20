@@ -1,0 +1,12 @@
+diff --git a/internal/cli/follow_up_status_delegated.go b/internal/cli/follow_up_status_delegated.go
+index 7819658..04e44b7 100644
+--- a/internal/cli/follow_up_status_delegated.go
++++ b/internal/cli/follow_up_status_delegated.go
+@@ -38,6 +38,7 @@ func readFollowUpDelegatedDecisions(root string, active []spec.Spec, skipped []s
+ 			continue
+ 		}
+ 		for _, entry := range speccheck.DelegatedDecisions(content) {
++			if entry.Problem != "" { continue }
+ 			rows = append(rows, followUpDelegatedDecision{Spec: item.Slug, Line: entry.Line, Date: entry.Date, Phase: entry.Phase, Question: entry.Question, Options: entry.Options, Adopted: entry.Adopted, Under: entry.Under, Answer: entry.Answer, Problem: entry.Problem})
+ 		}
+ 	}

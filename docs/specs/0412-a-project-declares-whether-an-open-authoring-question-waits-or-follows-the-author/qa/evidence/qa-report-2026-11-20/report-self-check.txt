@@ -1,0 +1,5 @@
+Report: qualifying declared partial
+Rows: 40; pass: 37; environment blocked: 1; declared blocked: 2; finding blocked: 0; fail: 0; skipped: 0; pending: 0
+All rows remain in one contiguous Results table and declare typed inputs.
+Auditor fields preserved. All evidence links resolve. Evidence files decode as text and are not ignored.
+All fifteen negative probes failed assertions while compiling. Run Worktree HEAD is unchanged.

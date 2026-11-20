@@ -1,0 +1,13 @@
+diff --git a/skills/write-prd/SKILL.md b/skills/write-prd/SKILL.md
+index a733491..6cbe0b1 100644
+--- a/skills/write-prd/SKILL.md
++++ b/skills/write-prd/SKILL.md
+@@ -119,7 +119,7 @@ Who answers:
+ - The session, when the user is absent, following is in force and the question is not reserved. It adopts the option the author recommended, as a Delegated Decision. Following is in force when `roundfix follow-up --status` reports `follow` as the Authoring Question Preference, or when the Spec's `_authorization.md` quotes the user's answer, given before the flow, that the session follows the author. Never write the preference into Project Config.
+ - Nobody, in every other case: the Spec waits. Write no artifact for this phase. An open Backlog Entry names the Spec folder when one exists, holds the whole question with its options and the recommended one, and carries `waiting_on`, naming the Open Authoring Question and the phase, and `since` in its frontmatter. When the user answers, record the answer as a dated line of the PRD's `## Decisions`, let the Spec adopt the entry and resume the phase.
+ 
+-When a session started you as an Author Subagent, return each Open Authoring Question with its options, the one you recommend and whether it is reserved, and never adopt the option you recommend yourself. The session checks your statement against the list above before it adopts, and when either of you reads the question as reserved or cannot tell, the Spec waits. A session that authors the phase itself makes both reads.
++When a session started you as an Author Subagent, return each Open Authoring Question with its options, the one you recommend and whether it is reserved, and never adopt the option you recommend yourself. The session checks your statement against the list above before it adopts, and when either of you reads the question as reserved or cannot tell, the Spec waits. 
+ 
+ Record each Delegated Decision in the PRD's `## Decisions` in the same change that takes it, in the form the Clarification Record guide of `write-prd` gives, never as a dated answer of a person and never under the autonomous-route line, and list it in the report. The Spec then goes on through authoring and delivery inside the authorization it already holds, and the user's later answer wins: write it into the entry while no Run and no delivery of the Spec has started; after that, a changed answer becomes a correction of the Spec in delivery or a Backlog Entry that quotes the user and names the entry.
+ 

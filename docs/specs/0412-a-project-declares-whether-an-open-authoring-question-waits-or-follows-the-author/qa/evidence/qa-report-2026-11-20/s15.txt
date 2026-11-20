@@ -1,0 +1,17 @@
+command: go test -count=1 -timeout 40m -v -run '^TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm$/^guide$/^answer_line$' ./skills
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/sabotage-S15
+stdout:
+=== RUN   TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm
+=== PAUSE TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm
+=== CONT  TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm
+=== RUN   TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm/guide/answer_line
+=== PAUSE TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm/guide/answer_line
+=== CONT  TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm/guide/answer_line
+    delegated_decision_record_test.go:35: ../.agents/skills/write-prd/references/clarification-record.md: phrase "- answer: none yet" occurs 0 times; want once
+--- FAIL: TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm (0.00s)
+    --- FAIL: TestTheClarificationRecordGuideCarriesTheDelegatedDecisionForm/guide/answer_line (0.00s)
+FAIL
+FAIL	roundfix/skills	0.305s
+FAIL
+stderr:
+exit: 1

@@ -1,0 +1,43 @@
+command: go test -count=1 -timeout 40m -v -run '^TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs$/^an_unreadable_entry_with_its_line$' ./internal/cli
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/sabotage-S08
+stdout:
+=== RUN   TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs
+=== PAUSE TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs
+=== CONT  TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs
+=== RUN   TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs/an_unreadable_entry_with_its_line
+=== PAUSE TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs/an_unreadable_entry_with_its_line
+=== CONT  TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs/an_unreadable_entry_with_its_line
+    follow_up_status_delegated_test.go:91: stdout=Status for 001 in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecsan_unre2759442379/001
+        In progress: 0
+        Pending Specs: 1
+          - 0001-expired-imports not queued 0/1 Tasks
+        Spec queue: 1
+          #  Spec  Status                Start (UTC)         End (UTC)                     Note
+          1  0001  not queued 0/1 Tasks  after it is queued  not enough history (0 of 11)  -
+        Forecast basis: not enough history, 0 of 11 delivered Specs.
+        Next release: no unreleased changes
+        Blockers: 0
+        Waiting on the maintainer: 0
+        Open authoring questions: wait (default)
+        Delegated decisions: 0
+        Sources:
+          runs: checked 0
+          delivery-queue: checked 0
+          pull-requests: checked 0
+          git: checked 0
+          specs: checked 1
+          release-plan: checked 0
+          backlog: checked 0
+          phase-record: checked 0
+          delivery-history: checked 0
+        
+        want block=Delegated decisions: 1
+          0001-expired-imports line 6: unreadable: the head needs a YYYY-MM-DD date and the phase prd, techspec or tasks
+--- FAIL: TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs (0.00s)
+    --- FAIL: TestTheStatusViewListsTheDelegatedDecisionsOfActiveSpecs/an_unreadable_entry_with_its_line (0.14s)
+FAIL
+suiteguard: guard cost: measured 3454 paths; fingerprint took 170.473541ms before and 159.858542ms after
+FAIL	roundfix/internal/cli	0.931s
+FAIL
+stderr:
+exit: 1

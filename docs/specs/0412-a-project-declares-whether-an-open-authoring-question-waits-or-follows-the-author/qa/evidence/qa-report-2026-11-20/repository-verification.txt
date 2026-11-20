@@ -1,0 +1,5 @@
+Daemon supplied: make verify-changed
+verdict: pass
+exit: 0
+diagnostics: removed on success
+Not rerun by the QA Agent.

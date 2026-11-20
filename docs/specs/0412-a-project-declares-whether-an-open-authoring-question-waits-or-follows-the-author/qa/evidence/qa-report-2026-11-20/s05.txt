@@ -1,0 +1,18 @@
+command: go test -count=1 -timeout 40m -v -run '^TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem$/^adopted_without_em_dash$' ./internal/speccheck
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/sabotage-S05
+stdout:
+=== RUN   TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem
+=== PAUSE TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem
+=== CONT  TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem
+=== RUN   TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem/adopted_without_em_dash
+=== PAUSE TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem/adopted_without_em_dash
+=== CONT  TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem/adopted_without_em_dash
+    delegated_decision_test.go:83: entries=[{Line:2 Date:2026-11-20 Phase:prd Question:Which behavior? Options:Retry; Fail fast Adopted:Retry - preserves behavior Under:Project Config Answer:none yet Problem:}], want problem "adopted needs the option, an em dash and the author's reason"
+--- FAIL: TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem (0.00s)
+    --- FAIL: TestADelegatedDecisionThatCannotBeReadNamesItsFirstProblem/adopted_without_em_dash (0.03s)
+FAIL
+suiteguard: guard cost: measured 3454 paths; fingerprint took 168.011834ms before and 162.74025ms after
+FAIL	roundfix/internal/speccheck	0.646s
+FAIL
+stderr:
+exit: 1

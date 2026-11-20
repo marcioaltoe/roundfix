@@ -1,0 +1,7 @@
+command: make skills-sync-check
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b
+stdout:
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.185s
+stderr:
+exit: 0

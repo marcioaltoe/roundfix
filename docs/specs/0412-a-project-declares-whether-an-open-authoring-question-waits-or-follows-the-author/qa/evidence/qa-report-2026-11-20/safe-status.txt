@@ -1,0 +1,30 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b/bin/roundfix follow-up --status
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/public-repo
+stdout:
+Status for public-repo in /private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/public-repo
+In progress: 0
+Pending Specs: 1
+  - 0001-expired-imports not queued 0/0 Tasks
+Spec queue: 1
+  #  Spec  Status                Start (-03)         End (-03)                     Note
+  1  0001  not queued 0/0 Tasks  after it is queued  not enough history (0 of 11)  -
+Forecast basis: not enough history, 0 of 11 delivered Specs.
+Next release: none (no_release)
+  6218ab517800 docs: fixture
+Blockers: 0
+Waiting on the maintainer: 0
+Open authoring questions: follow (Project Config)
+Delegated decisions: 1
+  0001-expired-imports 2026-11-20 prd: which  [31mfailure [0m behavior? -> retry [2J automatically (answer: none yet)
+Sources:
+  runs: checked 0
+  delivery-queue: checked 0
+  pull-requests: unavailable: gh pr list --state open --limit 100 --json number,title,headRefName,url,isDraft: exit status 1: exit status 1
+  git: checked 0
+  specs: unavailable: Task Graph QA gate in manifest "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/public-repo/docs/specs/0001-expired-imports/_tasks.md": qa: declined requires a non-empty qa_reason
+  release-plan: checked 1
+  backlog: checked 0
+  phase-record: checked 0
+  delivery-history: checked 0
+stderr:
+exit: 0

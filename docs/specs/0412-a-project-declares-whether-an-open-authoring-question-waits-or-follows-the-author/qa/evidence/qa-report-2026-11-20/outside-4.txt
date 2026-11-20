@@ -1,0 +1,6 @@
+Source: Cuadron and Gupta, 2026
+Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
+- Cuadron and Gupta, "Built on Broken Assumptions (BOBA): Why Coding Agents Cannot Be Left Alone", 2026 (https://arxiv.org/abs/2611.02207): "complete 95% of requests taken one at a time, but when requests are chained together, they complete 51%". The study measures chains of code requests, not plans. It supports Core Features 12 and 13: an option nobody checked must be easy to see and to overturn before more is built on it.
+
+Comparison: The quoted chained-request degradation motivates visible adopted decisions and later correction. It measures coding-request chains, so it is not a measurement of this feature or authoring plans.
+Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.

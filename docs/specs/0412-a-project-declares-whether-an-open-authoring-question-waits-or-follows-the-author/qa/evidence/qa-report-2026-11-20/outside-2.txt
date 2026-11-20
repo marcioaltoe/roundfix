@@ -1,0 +1,6 @@
+Source: Feng, McDonald and Zhang, 2025
+Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
+- Feng, McDonald and Zhang, "Levels of Autonomy for AI Agents", 2025 (https://arxiv.org/abs/2506.12469): "we define five levels of escalating agent autonomy, characterized by the roles a user can take when interacting with an agent: operator, collaborator, consultant, approver, and observer". It supports Core Feature 4: autonomy is a setting someone chooses for an Agent, not a property of the Agent.
+
+Comparison: A project-selected preference makes autonomy an explicit human choice rather than an assumed property of the agent.
+Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.

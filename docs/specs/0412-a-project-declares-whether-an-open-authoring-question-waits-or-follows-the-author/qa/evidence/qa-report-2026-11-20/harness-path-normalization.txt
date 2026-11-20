@@ -1,0 +1,1 @@
+The first invalid-config assertion used the /var path spelling while the product correctly emitted its canonical /private/var spelling. Surface Transcript 3 permits any nonempty path. The harness now compares the resolved physical path; no product change or assertion relaxation to the diagnostic, stream or exit contract was made.

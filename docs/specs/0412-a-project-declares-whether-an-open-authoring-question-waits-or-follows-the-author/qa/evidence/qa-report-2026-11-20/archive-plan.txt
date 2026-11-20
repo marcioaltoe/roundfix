@@ -1,0 +1,14 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b/bin/roundfix archive 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author --plan --offline
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b
+stdout:
+archive plan for 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author: removes 189 file(s) (2622164 bytes) and writes docs/history/specs/0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author.md
+core 13 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-19.md, qa/qa-report-2026-11-20.md, references/_index.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md, task_06.md
+evidence 172 file(s) (2135143 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 35065 bytes: no advice (offline)
+candidate references/2026-11-19-how-an-open-authoring-question-is-handled-today.md 9924 bytes: no advice (offline)
+candidate references/2026-11-19-maintainer-answers.md 3919 bytes: no advice (offline)
+candidate references/2026-11-19-prototype-and-governed-paths.md 12185 bytes: no advice (offline)
+promote with: roundfix archive 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author --promote <path>
+stderr:
+exit: 0

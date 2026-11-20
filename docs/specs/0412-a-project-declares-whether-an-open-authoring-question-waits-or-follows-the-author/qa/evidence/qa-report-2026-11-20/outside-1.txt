@@ -1,0 +1,6 @@
+Source: Appelo, 2011, level 6 Inquire
+Source passages recorded as read 2026-11-19 in the PRD, Acceptance evidence.
+- Jurgen Appelo, "Leading Agile Developers: The Seven Levels of Authority (Part 2)", 2011 (https://www.informit.com/articles/article.aspx?p=1675546&seqNum=3), level 6, Inquire: "You let the team decide. And afterwards you inquire about their motivations, or you ask that they actively keep you informed." It supports Core Features 7, 10 and 12: the adopted option is reported and recorded, never hidden.
+
+Comparison: Recording and listing adopted options provides the reporting and motivation trail of delegated authority. This supports accountability; it does not prove a live agent follows the rule.
+Offline inspection only; source was not fetched again. This is published literature quoted by the Spec, not a Spec-authored rehearsal.

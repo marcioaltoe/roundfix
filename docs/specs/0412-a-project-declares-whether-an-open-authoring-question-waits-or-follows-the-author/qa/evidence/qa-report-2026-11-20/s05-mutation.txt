@@ -1,0 +1,13 @@
+diff --git a/internal/speccheck/delegated_decision.go b/internal/speccheck/delegated_decision.go
+index f38acc5..d318c8f 100644
+--- a/internal/speccheck/delegated_decision.go
++++ b/internal/speccheck/delegated_decision.go
+@@ -82,7 +82,7 @@ func delegatedProblem(entry DelegatedDecision, headOK bool, counts map[string]in
+ 			return field + " appears twice"
+ 		}
+ 	}
+-	option, reason, ok := strings.Cut(entry.Adopted, " — ")
++	option, reason, ok := strings.Cut(strings.ReplaceAll(entry.Adopted, " - ", " — "), " — ")
+ 	if !ok || strings.TrimSpace(option) == "" || strings.TrimSpace(reason) == "" {
+ 		return "adopted needs the option, an em dash and the author's reason"
+ 	}

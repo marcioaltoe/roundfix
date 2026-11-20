@@ -1,0 +1,100 @@
+PASS API 4 exact module guidance
+PASS API 4 adopter-neutral
+PASS API 4 in docs/agents/spec-routing.md
+PASS API 4 in internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+PASS API 5 exact module guidance
+PASS API 5 adopter-neutral
+PASS API 5 in docs/agents/spec-routing.md
+PASS API 5 in internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+PASS API 6 shared core in .agents/skills/write-prd/SKILL.md
+PASS API 6 shared core in .agents/skills/write-techspec/SKILL.md
+PASS API 6 shared core in .agents/skills/write-tasks/SKILL.md
+PASS API 7 stage in .agents/skills/write-prd/SKILL.md
+PASS API 7 stage in .agents/skills/write-techspec/SKILL.md
+PASS API 7 stage in .agents/skills/write-tasks/SKILL.md
+PASS API 8 record guide in .agents/skills/write-prd/references/clarification-record.md
+PASS API 9 template in .agents/skills/write-prd/references/prd-template.md
+PASS API 10 modes in .agents/skills/roundfix/references/modes.md
+PASS API 10 modes in .agents/skills/roundfix/references/modes.md
+PASS API 10 modes in .agents/skills/roundfix/references/modes.md
+PASS API 11 follow-up in .agents/skills/roundfix/references/follow-up.md
+PASS API 11 spec in .agents/skills/roundfix/references/spec.md
+PASS API 6 shared core in skills/write-prd/SKILL.md
+PASS API 6 shared core in skills/write-techspec/SKILL.md
+PASS API 6 shared core in skills/write-tasks/SKILL.md
+PASS API 7 stage in skills/write-prd/SKILL.md
+PASS API 7 stage in skills/write-techspec/SKILL.md
+PASS API 7 stage in skills/write-tasks/SKILL.md
+PASS API 8 record guide in skills/write-prd/references/clarification-record.md
+PASS API 9 template in skills/write-prd/references/prd-template.md
+PASS API 10 modes in skills/roundfix/references/modes.md
+PASS API 10 modes in skills/roundfix/references/modes.md
+PASS API 10 modes in skills/roundfix/references/modes.md
+PASS API 11 follow-up in skills/roundfix/references/follow-up.md
+PASS API 11 spec in skills/roundfix/references/spec.md
+PASS API 12 glossary in CONTEXT.md
+PASS API 12 glossary in CONTEXT.md
+PASS API 12 glossary in CONTEXT.md
+PASS API 12 glossary in CONTEXT.md
+PASS Clarification Record revision in CONTEXT.md
+PASS Follow-up Command revision in CONTEXT.md
+PASS API 13 user guide in docs/user-guide/configuration.md
+PASS API 13 user guide in docs/user-guide/commands/follow-up.md
+PASS API 13 reserved list in docs/user-guide/context-driven-development.md
+PASS API 13 check code in docs/user-guide/commands/spec.md
+PASS API 14 amendment in docs/adr/0280-a-guide-task-records-its-own-surface-fingerprint-a-prd-records-who-decided-and-the-glossary-is-held-to-its-own-rule.md
+PASS ADR-0442 accepted
+PASS canonical/mirror .agents/skills/write-prd/SKILL.md
+PASS canonical/mirror .agents/skills/write-prd/references/clarification-record.md
+PASS canonical/mirror .agents/skills/write-prd/references/glossary.md
+PASS canonical/mirror .agents/skills/write-prd/references/prd-template.md
+PASS .agents/skills/write-prd version 0.0.30 recorded
+PASS skills/write-prd version 0.0.30 recorded
+PASS canonical/mirror .agents/skills/write-techspec/SKILL.md
+PASS canonical/mirror .agents/skills/write-techspec/references/concrete-contracts.md
+PASS canonical/mirror .agents/skills/write-techspec/references/techspec-template.md
+PASS .agents/skills/write-techspec version 0.0.29 recorded
+PASS skills/write-techspec version 0.0.29 recorded
+PASS canonical/mirror .agents/skills/write-tasks/SKILL.md
+PASS canonical/mirror .agents/skills/write-tasks/references/task-template.md
+PASS .agents/skills/write-tasks version 0.0.41 recorded
+PASS skills/write-tasks version 0.0.41 recorded
+PASS write-tasks has no forbidden word
+PASS canonical/mirror .agents/skills/roundfix/SKILL.md
+PASS canonical/mirror .agents/skills/roundfix/references/storage.md
+PASS canonical/mirror .agents/skills/roundfix/references/spec-delivery.md
+PASS canonical/mirror .agents/skills/roundfix/references/corrections.md
+PASS canonical/mirror .agents/skills/roundfix/references/implement.md
+PASS canonical/mirror .agents/skills/roundfix/references/archive.md
+PASS canonical/mirror .agents/skills/roundfix/references/setup.md
+PASS canonical/mirror .agents/skills/roundfix/references/profiles.md
+PASS canonical/mirror .agents/skills/roundfix/references/deliver.md
+PASS canonical/mirror .agents/skills/roundfix/references/reconcile.md
+PASS canonical/mirror .agents/skills/roundfix/references/runs.md
+PASS canonical/mirror .agents/skills/roundfix/references/review-runs.md
+PASS canonical/mirror .agents/skills/roundfix/references/release.md
+PASS canonical/mirror .agents/skills/roundfix/references/baseline.md
+PASS canonical/mirror .agents/skills/roundfix/references/phase.md
+PASS canonical/mirror .agents/skills/roundfix/references/spec.md
+PASS canonical/mirror .agents/skills/roundfix/references/runtime.md
+PASS canonical/mirror .agents/skills/roundfix/references/modes.md
+PASS canonical/mirror .agents/skills/roundfix/references/review.md
+PASS canonical/mirror .agents/skills/roundfix/references/events.md
+PASS canonical/mirror .agents/skills/roundfix/references/settle.md
+PASS canonical/mirror .agents/skills/roundfix/references/follow-up.md
+PASS canonical/mirror .agents/skills/roundfix/references/stop.md
+PASS canonical/mirror .agents/skills/roundfix/agents/openai.yaml
+PASS .agents/skills/roundfix version 0.1.281 recorded
+PASS skills/roundfix version 0.1.281 recorded
+PASS PRD adds Open Authoring Question
+PASS PRD adds Authoring Question Preference
+PASS PRD adds Reserved Question
+PASS PRD adds Delegated Decision
+PASS PRD changes Clarification Record
+PASS PRD changes Follow-up Command
+PASS TechSpec declares no glossary change
+PASS repository config omits preference
+PASS default project config omits preference (configuration suite confirms)
+PASS Exact full API Contract 13 context-driven subsection, including table, record example and later-answer route.
+PASS ./bin/roundfix init --scope project generated Project Config without open_questions.
+PASS Exact full API Contract 14 amendment notice and updated ADR date.

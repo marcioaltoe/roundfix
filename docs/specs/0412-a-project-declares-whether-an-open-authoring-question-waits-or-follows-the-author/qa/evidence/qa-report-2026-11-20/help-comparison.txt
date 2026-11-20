@@ -1,0 +1,1 @@
+Head and Delivery Base public follow-up --help stdout, stderr and exit status are identical.

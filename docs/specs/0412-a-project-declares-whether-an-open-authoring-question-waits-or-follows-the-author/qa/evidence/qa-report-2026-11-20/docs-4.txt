@@ -1,0 +1,84 @@
+command: make verify-docs
+cwd: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author-69a06d7be4956bec-b07bc75d-04375150/run_20261120T023952Z_b466838c3bed441b
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=820aad09-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-20 00:10:40 -0300'" -o bin/roundfix ./cmd/roundfix
+go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	14.088s
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows)$' ./...
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	1.142s
+ok  	roundfix/internal/app	0.617s
+ok  	roundfix/internal/authorization	1.164s
+ok  	roundfix/internal/baseline	75.207s
+ok  	roundfix/internal/baselineacp	0.699s
+ok  	roundfix/internal/childexit	0.193s [no tests to run]
+ok  	roundfix/internal/cli	1.517s
+ok  	roundfix/internal/codex	0.666s
+ok  	roundfix/internal/config	1.301s
+ok  	roundfix/internal/corebudget	0.213s [no tests to run]
+ok  	roundfix/internal/correction	0.199s [no tests to run]
+ok  	roundfix/internal/daemon	1.362s
+ok  	roundfix/internal/delivery	0.849s [no tests to run]
+ok  	roundfix/internal/docscontract	0.690s
+ok  	roundfix/internal/gittest	1.197s
+ok  	roundfix/internal/judge	0.288s [no tests to run]
+ok  	roundfix/internal/lighttier	0.269s [no tests to run]
+ok  	roundfix/internal/mdtree	0.200s [no tests to run]
+ok  	roundfix/internal/notify	0.607s
+ok  	roundfix/internal/openrouterkey	0.197s [no tests to run]
+ok  	roundfix/internal/phaserecord	0.200s [no tests to run]
+ok  	roundfix/internal/preflight	1.050s
+ok  	roundfix/internal/queueforecast	0.204s [no tests to run]
+ok  	roundfix/internal/releaseplan	0.530s
+ok  	roundfix/internal/reviewsource	0.500s
+ok  	roundfix/internal/reviewsource/coderabbit	0.594s
+ok  	roundfix/internal/rounds	0.510s
+ok  	roundfix/internal/runcause	0.236s [no tests to run]
+ok  	roundfix/internal/runevent	0.498s
+ok  	roundfix/internal/secretscan	0.196s [no tests to run]
+ok  	roundfix/internal/sharedcache	0.192s [no tests to run]
+ok  	roundfix/internal/skillcoverage	0.210s [no tests to run]
+ok  	roundfix/internal/skillhash	0.552s
+ok  	roundfix/internal/spec	1.071s
+ok  	roundfix/internal/specaudit	1.157s
+ok  	roundfix/internal/speccheck	2.458s
+ok  	roundfix/internal/store	1.313s
+ok  	roundfix/internal/suiteguard	1.281s
+ok  	roundfix/internal/suiteguardcontract	0.209s [no tests to run]
+ok  	roundfix/internal/testfixture	0.262s [no tests to run]
+ok  	roundfix/internal/testwait	0.203s [no tests to run]
+ok  	roundfix/internal/tui	0.770s
+ok  	roundfix/internal/verifyselect	11.109s
+ok  	roundfix/internal/watch	0.727s
+ok  	roundfix/internal/worktree	1.557s
+ok  	roundfix/skills	31.231s
+go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	6.608s
+bin/roundfix spec check
+Spec 0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0410-the-baseline-owns-the-documentation-rules-and-the-secondbrain-export/_techspec.md Vocabulary Contract
+Spec 0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0412-a-project-declares-whether-an-open-authoring-question-waits-or-follows-the-author/_techspec.md Vocabulary Contract
+Spec 0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0413-a-session-runs-the-flows-own-commands-without-a-permission-prompt/_techspec.md Vocabulary Contract
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 867 idle entries (836681199 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 23401965093 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+exit: 0

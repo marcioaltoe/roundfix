@@ -1,0 +1,16 @@
+command: go test -count=1 -timeout 40m -v -run '^TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce$/^repository_guide$' ./internal/baseline
+cwd: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0412-v_e114r3/sabotage-S11
+stdout:
+=== RUN   TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce
+=== PAUSE TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce
+=== CONT  TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce
+=== RUN   TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce/repository_guide
+    open_authoring_question_clauses_test.go:180: guidance occurs 0 times
+--- FAIL: TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce (0.00s)
+    --- FAIL: TestTheSpecRoutingGuideRendersTheOpenAuthoringQuestionClausesOnce/repository_guide (0.00s)
+FAIL
+suiteguard: guard cost: measured 3454 paths; fingerprint took 187.504583ms before and 158.880833ms after
+FAIL	roundfix/internal/baseline	0.679s
+FAIL
+stderr:
+exit: 1
