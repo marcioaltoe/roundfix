@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.153.0] - 2026-11-21
+
+### The Secondbrain search needs the Indexus MCP server in the session, and a skill the dispatch names is now required
+
+- **The Secondbrain guide and `write-idea` search through the Indexus.** The Baseline's Secondbrain guide (`docs/agents/secondbrain.md`) and the owned skill `write-idea` now name the Indexus MCP tool `pesquisar_acervos` for the knowledge search and for the advisory duplicate check, and name no other search tool. An Agent session needs the `indexus` MCP server to consult the Secondbrain; without it, the Agent records that limitation and continues, and substitutes nothing. `roundfix baseline update` previews two files, the guide and the Setup Manifest, and applies them on confirmation; a repository whose Baseline has the Secondbrain turned off receives no guide text. ADR-0449 records the decision and amends ADR-0330.
+- **A skill an activation names is a required skill.** The `typescript` Baseline module now requires `solid`, which the production-code activation already named, so a repository profile without the `frontend` module reports the missing skill and accepts it for restore. Catalog validation refuses a Skill Activation whose bundle names a skill that its owner module, or a module it depends on, does not require, and one function reads the required skills for the restore, the update and Doctor. The five built-in profiles keep the same required skills. ADR-0448.
+
 ## [0.152.0] - 2026-11-20
 
 ### A session runs the flow's own commands without a permission prompt
