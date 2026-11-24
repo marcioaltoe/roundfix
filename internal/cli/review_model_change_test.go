@@ -210,3 +210,40 @@ func TestReviewRecordsTheModelOfTheSessionOfEachRound(t *testing.T) {
 		}
 	})
 }
+
+func TestReviewRoundTwoContinuesTheSessionWhenTheRecordedModelDiffersOnlyByWhitespace(t *testing.T) {
+	t.Parallel()
+	r := newSessionReviewRunner(sessionReviewFinding, "No findings.")
+	fixture := newReviewCommandFixture(t, "codex", r)
+	_, first, _, _ := runModelReview(t, fixture)
+	path := modelReviewRecordPath(fixture)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var record map[string]any
+	if err := json.Unmarshal(content, &record); err != nil {
+		t.Fatal(err)
+	}
+	lineage := record["lineage"].(map[string]any)
+	recorded, _ := lineage["model"].(string)
+	if recorded == "" {
+		t.Fatalf("round 1 recorded no model: %s", content)
+	}
+	lineage["model"] = "  " + recorded + "\n"
+	rewritten, err := json.Marshal(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, rewritten, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commitLineageFile(t, fixture, "delta.txt", "fix\n")
+	code, second, _, stderr := runModelReview(t, fixture)
+	if code != exitOK || second.Outcome != reviewOutcomeReviewed || second.Lineage.Round != 2 || !second.Lineage.Continued || stderr != "" {
+		t.Fatalf("exit=%d lineage=%+v stderr=%q", code, second.Lineage, stderr)
+	}
+	if len(r.prepares) != 2 || r.prepares[1].Session.Name != first.Lineage.Session {
+		t.Fatalf("round 2 did not continue the round-1 session: prepares=%+v", r.prepares)
+	}
+}

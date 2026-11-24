@@ -1761,7 +1761,7 @@ func runConfiguredReviewSession(
 		if prior.Selection != nil {
 			selection = *prior.Selection
 		}
-		if selection >= 0 && selection < len(selections) && prior.Model != "" && prior.Model == strings.TrimSpace(selections[selection].Model) {
+		if selection >= 0 && selection < len(selections) && strings.TrimSpace(prior.Model) != "" && strings.TrimSpace(prior.Model) == strings.TrimSpace(selections[selection].Model) {
 			runtime, runtimeErr := runtimeForProfileSelection(selections[selection])
 			if runtimeErr != nil {
 				return agent.ExecuteResult{}, specContext, false, runtimeErr
