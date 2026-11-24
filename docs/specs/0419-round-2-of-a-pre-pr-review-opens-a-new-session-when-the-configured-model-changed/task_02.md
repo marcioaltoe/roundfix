@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

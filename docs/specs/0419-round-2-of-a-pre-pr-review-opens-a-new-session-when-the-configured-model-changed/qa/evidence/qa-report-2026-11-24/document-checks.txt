@@ -1,0 +1,13 @@
+PASS: ADR-0451 status accepted; knowledge true; exact title; no Spec folder citation.
+PASS: ADR-0197 remains accepted; amended_by ends ADR-0451; updated_at equals new created_at; dated notice follows ADR-0391.
+PASS: ADR path appears exactly once within the Standard Export List; ADR paths ascending.
+.agents/skills/roundfix/SKILL.md == skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md == skills/roundfix/references/review.md
+
+status: accepted
+knowledge: true
+created_at: 2026-11-24T00:00:00Z
+updated_at: 2026-11-24T00:00:00Z
+deprecated_at: null
+superseded_by: null
+

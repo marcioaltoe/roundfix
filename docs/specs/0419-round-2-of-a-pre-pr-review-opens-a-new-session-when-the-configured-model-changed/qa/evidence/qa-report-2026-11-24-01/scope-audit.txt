@@ -1,0 +1,30 @@
+PASS: Task files match declarations (task result itself is allowed).
+PASS: exact five-file Go allowlist, including count-only 13 to 14 adjustment.
+PASS: both SKILL.md copies differ only in version fields.
+PASS: classifier function byte-identical.
+PASS: prohibited files, other skills/references, existing CLI/Delivery tests and QA settlement unchanged.
+PASS: only ADR-0197 and new accepted ADR-0451 changed.
+Task range: 7aa773db55b24af9b28cc4881a981e38f6d4639d..dd8fb178b76499ff1fbaecfffcad85b54e9fa87c
+Commit history:
+dd8fb178b76499ff1fbaecfffcad85b54e9fa87c feat: round 2 continues the reviewer session only on the recorded model, and the rule is documented
+e2f5f66cbc4aa2a2c7ee59a7992949fbe72ac1d7 docs: the 0419 QA gate accepts the declared docscontract count change
+
+Changed paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md
+.secondbrain-export
+CONTEXT.md
+docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md
+docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
+docs/references/behavior-surfaces.json
+docs/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed/task_01.md
+docs/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed/task_02.md
+docs/user-guide/commands/review.md
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_model_change_test.go
+internal/docscontract/review_model_decision_test.go
+internal/verifyselect/contracts_repository_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json

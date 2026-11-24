@@ -1,0 +1,18 @@
+Command: git diff 7aa773db55b24af9b28cc4881a981e38f6d4639d 48b0dffb77d025d24173758498c426fc4a15bb87 -- internal/verifyselect/contracts_repository_test.go
+Exit: 0
+STDOUT:
+diff --git a/internal/verifyselect/contracts_repository_test.go b/internal/verifyselect/contracts_repository_test.go
+index 806ca6e5..533472ae 100644
+--- a/internal/verifyselect/contracts_repository_test.go
++++ b/internal/verifyselect/contracts_repository_test.go
+@@ -92,7 +92,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
+ 	if len(liveDocsFiles) != 3 {
+ 		t.Fatalf("Live documentation contract files = %d, want 3: %v", len(liveDocsFiles), liveDocsFiles)
+ 	}
+-	if !foundInstallation || !foundPackage || len(docsFiles) != 13 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
++	if !foundInstallation || !foundPackage || len(docsFiles) != 14 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
+ 		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
+ 	}
+ 	contents, err := os.ReadFile(filepath.Join(root, "Makefile"))
+
+STDERR:

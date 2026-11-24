@@ -1,0 +1,8 @@
+command: /bin/zsh -c grep -q 'json:"model,omitempty"' internal/cli/review_lineage.go && go test -count=1 -timeout 20m -run 'Review|Lineage' ./internal/cli && go test -count=1 -timeout 20m ./internal/delivery
+stdout:
+ok  	roundfix/internal/cli	33.631s
+ok  	roundfix/internal/delivery	2.235s
+
+stderr:
+
+exit: 0

@@ -1,0 +1,12 @@
+Command: ./bin/roundfix-delivery-base review dispose --help
+Exit: 0
+STDOUT:
+Usage:
+  roundfix review dispose <finding-id> --dismiss --evidence <text>
+  roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
+
+Records one evidence-backed disposition for a finding in the current
+pre-PR review record. A finding accepts at most one disposition.
+A fixed disposition may also declare its Correction with a class and reason, or name an existing Correction.
+
+STDERR:

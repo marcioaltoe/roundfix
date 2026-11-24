@@ -1,0 +1,7 @@
+Command: tr -s '[:space:]' ' ' < docs/user-guide/commands/review.md | grep -qF -- "still names the recorded model" || { printf 'missing phrase in %s: %s\n' docs/user-guide/commands/review.md "still names the recorded model" >&2; exit 1; }; go test -count=1 -timeout 20m ./skills && go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+Exit: 0
+STDOUT:
+ok  	roundfix/skills	1.431s
+ok  	roundfix/internal/docscontract	5.292s
+
+STDERR:

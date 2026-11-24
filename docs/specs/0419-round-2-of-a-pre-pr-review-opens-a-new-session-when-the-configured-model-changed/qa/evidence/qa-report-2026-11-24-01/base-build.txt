@@ -1,0 +1,9 @@
+command: make build
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=915f187' -X 'roundfix/internal/app.BuildTime=2026-11-24 11:20:59 -0300'" -o bin/roundfix ./cmd/roundfix
+
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 253 idle entries (50647548 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 14884820200 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+
+exit: 0

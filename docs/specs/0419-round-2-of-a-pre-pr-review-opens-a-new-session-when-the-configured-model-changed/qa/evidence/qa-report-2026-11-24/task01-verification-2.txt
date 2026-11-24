@@ -1,0 +1,7 @@
+Command: grep -q 'json:"model,omitempty"' internal/cli/review_lineage.go && go test -count=1 -timeout 20m -run 'Review|Lineage' ./internal/cli && go test -count=1 -timeout 20m ./internal/delivery
+Exit: 0
+STDOUT:
+ok  	roundfix/internal/cli	33.001s
+ok  	roundfix/internal/delivery	2.343s
+
+STDERR:

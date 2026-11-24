@@ -1,0 +1,5 @@
+Command: git diff --exit-code
+Exit: 0
+STDOUT:
+
+STDERR:

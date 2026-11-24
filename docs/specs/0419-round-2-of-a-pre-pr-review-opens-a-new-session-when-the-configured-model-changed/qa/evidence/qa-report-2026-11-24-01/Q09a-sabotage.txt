@@ -1,0 +1,15 @@
+command: go test -count=1 -timeout 20m -v -run ^TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged$ ./internal/cli
+stdout:
+=== RUN   TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+=== PAUSE TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+=== CONT  TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+    review_model_change_test.go:124: round 2 exit=2 outcome=blocked reason="unclassifiable agent output: no-findings verdict does not account for other content" lineage=&{Round:2 Correction:false PreviousHead:9ac29807448549c1ceb807ddf678f48234d9ad33 DeltaBase: PreviousFindings:[{DataSegment:0 Segment:0 ID:F1 Text:review.txt:2 Failure: candidate defect Anchor:0x66e2078a42c0 Validation:0x66e207c02300}] PreviousDispositions:[{Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged2090440060/002 HeadCommit:9ac29807448549c1ceb807ddf678f48234d9ad33 Finding:F1 Text:review.txt:2 Failure: candidate defect Disposition:fixed Evidence: FixedBy:d5021c8a83135f31c1fb70bce3709eb16f514bd9 RecordedAt:2026-11-24T14:21:25Z CurrentHead:}] ReviewedHead: Session:roundfix-pre-pr-review-9ac298074485-mtj25qszvti4lkqwkwtpzolozh Selection:0x66e207962258 Model:gpt-6.1-sol SessionOpen:false ACPSessionIDs:[s-1 s-1] Continued:true} model="gpt-6.1-sol" stderr="roundfix: review blocked: unclassifiable agent output: no-findings verdict does not account for other content\n"
+--- FAIL: TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged (0.29s)
+FAIL
+suiteguard: guard cost: measured 3388 paths; fingerprint took 164.19425ms before and 153.486667ms after
+FAIL	roundfix/internal/cli	1.078s
+FAIL
+
+stderr:
+
+exit: 1

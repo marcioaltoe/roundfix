@@ -1,0 +1,6 @@
+command: /bin/zsh -c out="$(go test -count=1 -timeout 20m -v -run '^(TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged|TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel|TestReviewRecordsTheModelOfTheSessionOfEachRound|TestReviewRoundTwoContinuesTheRecordedSession|TestReviewRoundTwoContinuesTheRecordedFallbackSelection|TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails|TestReviewLineageChangeEndsTheOpenSession|TestACeilingRecordNamesNoSelection)$' ./internal/cli 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged/the_classifier_still_refuses_the_reported_answer TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel TestReviewRecordsTheModelOfTheSessionOfEachRound/preferred_then_continued TestReviewRecordsTheModelOfTheSessionOfEachRound/fallback TestReviewRoundTwoContinuesTheRecordedSession TestReviewRoundTwoContinuesTheRecordedFallbackSelection TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails TestReviewLineageChangeEndsTheOpenSession TestACeilingRecordNamesNoSelection; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done
+stdout:
+
+stderr:
+
+exit: 0

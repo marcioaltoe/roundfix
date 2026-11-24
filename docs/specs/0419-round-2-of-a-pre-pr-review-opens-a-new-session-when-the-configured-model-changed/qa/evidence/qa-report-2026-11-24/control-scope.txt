@@ -1,0 +1,8 @@
+Command: git diff --name-status 7aa773db55b24af9b28cc4881a981e38f6d4639d 48b0dffb77d025d24173758498c426fc4a15bb87 -- internal/cli internal/delivery
+Exit: 0
+STDOUT:
+M	internal/cli/review.go
+M	internal/cli/review_lineage.go
+A	internal/cli/review_model_change_test.go
+
+STDERR:

@@ -1,0 +1,6 @@
+command: git status --porcelain
+stdout:
+
+stderr:
+
+exit: 0

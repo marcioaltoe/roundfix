@@ -1,0 +1,26 @@
+func readReviewRecord(path string) (reviewRecord, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return reviewRecord{}, err
+	}
+	var record reviewRecord
+	if err := json.Unmarshal(content, &record); err != nil {
+		return reviewRecord{}, fmt.Errorf("decode review record: %w", err)
+	}
+	if err := validateReviewRecord(record); err != nil {
+		return reviewRecord{}, err
+	}
+	if record.OmittedPaths == nil {
+		record.OmittedPaths = []reviewOmittedPath{}
+	}
+	if record.Outcome == reviewOutcomeFindings && len(record.FindingItems) == 0 {
+		record.FindingItems = splitReviewFindings(record.Findings)
+	}
+	if record.ArchivedSpecs == nil {
+		record.ArchivedSpecs = []string{}
+	}
+	return record, nil
+}
+
+// readReviewRecordAtHead prefers the head record, falling back only when it
+// is absent to a current record that still names the requested head.

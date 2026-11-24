@@ -1,0 +1,15 @@
+command: go test -count=1 -timeout 20m -v -run ^TestReviewRoundTwoContinuesTheRecordedSession$ ./internal/cli
+stdout:
+=== RUN   TestReviewRoundTwoContinuesTheRecordedSession
+=== PAUSE TestReviewRoundTwoContinuesTheRecordedSession
+=== CONT  TestReviewRoundTwoContinuesTheRecordedSession
+    review_session_test.go:105: exit=0 record={DataSegments:[] Segments:[] FailedStep: AdapterMessage: SelectionRetries:[] EstimatedPromptTokens:0 DiffBytes:144 OmittedPaths:[] RuntimeStderrTail: PermissionRefused:false Repository:/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewRoundTwoContinuesTheRecordedSession3087070883/002 BaseCommit:9e3391400fdfa51dbb4c0b954c4e406214b99c03 BaseTipCommit:9e3391400fdfa51dbb4c0b954c4e406214b99c03 HeadCommit:72f19a117ff10ab695551e6fb1d970f148a4a294 Provider:codex Source:project Outcome:reviewed Findings: FindingItems:[] Dispositions:[] Reused:false Reason: AnswerPath:/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestReviewRoundTwoContinuesTheRecordedSession3087070883/003/artifacts/pre-pr-review/63f1770017de97cd/pre-pr-review-answer.txt Specs:[] SkippedSpecs:[] ArchivedSpecs:[] SpecContextTruncated:false Validation:0xc60afc2c5a0 Lineage:0xc60af6ea000} stderr=""
+--- FAIL: TestReviewRoundTwoContinuesTheRecordedSession (0.29s)
+FAIL
+suiteguard: guard cost: measured 3388 paths; fingerprint took 165.798459ms before and 152.121333ms after
+FAIL	roundfix/internal/cli	1.076s
+FAIL
+
+stderr:
+
+exit: 1

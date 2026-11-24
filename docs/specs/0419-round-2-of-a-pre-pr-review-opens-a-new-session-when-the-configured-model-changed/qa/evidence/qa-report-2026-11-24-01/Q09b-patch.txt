@@ -1,0 +1,18 @@
+command: git diff -- internal/cli/review.go
+stdout:
+diff --git a/internal/cli/review.go b/internal/cli/review.go
+index e63e072..d96d53b 100644
+--- a/internal/cli/review.go
++++ b/internal/cli/review.go
+@@ -933,7 +933,6 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
+ 	if promptSent {
+ 		record.Lineage.Session = specContext.session.Name
+ 		record.Lineage.Selection = &specContext.selection
+-		record.Lineage.Model = specContext.runtime.Model
+ 		record.Lineage.ACPSessionIDs = append(record.Lineage.ACPSessionIDs, result.ACPSessionID)
+ 		ids := record.Lineage.ACPSessionIDs
+ 		record.Lineage.Continued = specContext.resumed && len(ids) == 2 && ids[0] != "" && ids[0] == ids[1]
+
+stderr:
+
+exit: 0

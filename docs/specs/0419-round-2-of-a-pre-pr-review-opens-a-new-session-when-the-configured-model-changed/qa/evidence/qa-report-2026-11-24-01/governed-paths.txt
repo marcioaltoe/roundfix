@@ -1,0 +1,27 @@
+command: go test -overlay <temporary mapping> -count=1 -timeout 20m -v -run ^TestQA0419GovernedPaths$ ./internal/speccheck
+=== RUN   TestQA0419GovernedPaths
+=== PAUSE TestQA0419GovernedPaths
+=== CONT  TestQA0419GovernedPaths
+PATH .agents/skills/roundfix/SKILL.md governed=true
+PATH .agents/skills/roundfix/references/review.md governed=true
+PATH .secondbrain-export governed=false
+PATH CONTEXT.md governed=false
+PATH docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md governed=false
+PATH docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md governed=false
+PATH docs/references/behavior-surfaces.json governed=false
+PATH docs/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed/task_01.md governed=false
+PATH docs/user-guide/commands/review.md governed=false
+PATH internal/cli/review.go governed=false
+PATH internal/cli/review_lineage.go governed=false
+PATH internal/cli/review_model_change_test.go governed=false
+PATH internal/docscontract/review_model_decision_test.go governed=false
+PATH internal/verifyselect/contracts_repository_test.go governed=false
+PATH skills/roundfix/SKILL.md governed=true
+PATH skills/roundfix/references/review.md governed=false
+PATH skills/testdata/owned-skill-versions.json governed=false
+--- PASS: TestQA0419GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3482 paths; fingerprint took 161.549791ms before and 152.408958ms after
+ok  	roundfix/internal/speccheck	0.631s
+
+exit: 0

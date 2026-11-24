@@ -1,0 +1,18 @@
+Task task_01 dd8fb178b76499ff1fbaecfffcad85b54e9fa87c
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/review.md
+.secondbrain-export
+CONTEXT.md
+docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md
+docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
+docs/references/behavior-surfaces.json
+docs/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed/task_01.md
+docs/user-guide/commands/review.md
+internal/cli/review.go
+internal/cli/review_lineage.go
+internal/cli/review_model_change_test.go
+internal/docscontract/review_model_decision_test.go
+internal/verifyselect/contracts_repository_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/review.md
+skills/testdata/owned-skill-versions.json

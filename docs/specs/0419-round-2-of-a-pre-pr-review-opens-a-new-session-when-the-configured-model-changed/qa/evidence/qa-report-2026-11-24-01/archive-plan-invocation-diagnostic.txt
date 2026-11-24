@@ -1,0 +1,17 @@
+command: ./bin/roundfix archive 0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed --plan --offline
+stdout:
+
+stderr:
+Preflight failed
+
+Reason:
+  error: missing config key GIT_CONFIG_KEY_0
+fatal: unable to parse command-line config: exit status 128
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix archive --help' for usage.
+
+exit: 2

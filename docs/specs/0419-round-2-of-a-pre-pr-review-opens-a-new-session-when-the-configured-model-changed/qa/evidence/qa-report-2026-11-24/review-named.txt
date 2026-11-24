@@ -1,0 +1,60 @@
+Command: go test -count=1 -timeout 20m -v -run ^(TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged|TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel|TestReviewRecordsTheModelOfTheSessionOfEachRound|TestReviewRoundTwoContinuesTheRecordedSession|TestReviewRoundTwoContinuesTheRecordedFallbackSelection|TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails|TestReviewLineageChangeEndsTheOpenSession|TestACeilingRecordNamesNoSelection)$ ./internal/cli
+Exit: 0
+STDOUT:
+=== RUN   TestACeilingRecordNamesNoSelection
+=== PAUSE TestACeilingRecordNamesNoSelection
+=== RUN   TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+=== PAUSE TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+=== RUN   TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel
+=== PAUSE TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel
+=== RUN   TestReviewRecordsTheModelOfTheSessionOfEachRound
+=== PAUSE TestReviewRecordsTheModelOfTheSessionOfEachRound
+=== RUN   TestReviewRoundTwoContinuesTheRecordedSession
+=== PAUSE TestReviewRoundTwoContinuesTheRecordedSession
+=== RUN   TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails
+=== PAUSE TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails
+=== RUN   TestReviewLineageChangeEndsTheOpenSession
+=== PAUSE TestReviewLineageChangeEndsTheOpenSession
+=== RUN   TestReviewRoundTwoContinuesTheRecordedFallbackSelection
+=== PAUSE TestReviewRoundTwoContinuesTheRecordedFallbackSelection
+=== CONT  TestACeilingRecordNamesNoSelection
+=== CONT  TestReviewRoundTwoContinuesTheRecordedSession
+=== CONT  TestReviewLineageChangeEndsTheOpenSession
+=== CONT  TestReviewRoundTwoContinuesTheRecordedFallbackSelection
+=== CONT  TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel
+--- PASS: TestReviewLineageChangeEndsTheOpenSession (0.32s)
+=== CONT  TestReviewRecordsTheModelOfTheSessionOfEachRound
+=== RUN   TestReviewRecordsTheModelOfTheSessionOfEachRound/preferred_then_continued
+--- PASS: TestReviewRoundTwoContinuesTheRecordedFallbackSelection (0.32s)
+=== CONT  TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails
+--- PASS: TestReviewRoundTwoOpensANewSessionWhenTheRecordHoldsNoModel (0.33s)
+=== CONT  TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged
+=== RUN   TestACeilingRecordNamesNoSelection/blocked
+--- PASS: TestReviewRoundTwoContinuesTheRecordedSession (0.37s)
+=== NAME  TestACeilingRecordNamesNoSelection/blocked
+    review_lineage_selection_test.go:81: stdout: {"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACeilingRecordNamesNoSelection2472375661/002","baseCommit":"de36fac7743e61fe7b567dce40f4b15cede5686f","baseTipCommit":"de36fac7743e61fe7b567dce40f4b15cede5686f","headCommit":"af25cf4bde8214df6914a12a5824576fb2b9a206","provider":"codex","source":"project","outcome":"blocked","reason":"review round ceiling reached: round 2 reviewed 836308f5ff2dbf2ca8af8c37b15f508fe63dba6e; dispose finding F1 with roundfix review dispose","specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false,"lineage":{"round":2,"reviewedHead":"836308f5ff2dbf2ca8af8c37b15f508fe63dba6e","sessionOpen":false,"continued":false}}
+        
+        stderr: roundfix: review blocked: review round ceiling reached: round 2 reviewed 836308f5ff2dbf2ca8af8c37b15f508fe63dba6e; dispose finding F1 with roundfix review dispose
+        
+        exit: 2
+=== RUN   TestACeilingRecordNamesNoSelection/ceiling-closed
+    review_lineage_selection_test.go:81: stdout: {"diffBytes":0,"omittedPaths":[],"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACeilingRecordNamesNoSelection2472375661/002","baseCommit":"de36fac7743e61fe7b567dce40f4b15cede5686f","baseTipCommit":"de36fac7743e61fe7b567dce40f4b15cede5686f","headCommit":"af25cf4bde8214df6914a12a5824576fb2b9a206","provider":"codex","source":"project","outcome":"ceiling-closed","findings":"- review.txt:2 Failure: still broken","findingItems":[{"id":"F1","text":"review.txt:2 Failure: still broken","anchor":{"path":"review.txt","startLine":2,"endLine":2},"validation":{"status":"stands","reason":"anchored in the candidate diff"}}],"dispositions":[{"repository":"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACeilingRecordNamesNoSelection2472375661/002","headCommit":"836308f5ff2dbf2ca8af8c37b15f508fe63dba6e","finding":"F1","text":"review.txt:2 Failure: still broken","disposition":"dismissed","evidence":"checked the finding against the contract","recordedAt":"2026-11-24T13:57:45Z","currentHead":"af25cf4bde8214df6914a12a5824576fb2b9a206"}],"specs":[],"skippedSpecs":[],"archivedSpecs":[],"specContextTruncated":false,"lineage":{"round":2,"reviewedHead":"836308f5ff2dbf2ca8af8c37b15f508fe63dba6e","sessionOpen":false,"continued":false}}
+        
+        stderr: 
+        exit: 0
+--- PASS: TestACeilingRecordNamesNoSelection (0.53s)
+    --- PASS: TestACeilingRecordNamesNoSelection/blocked (0.05s)
+    --- PASS: TestACeilingRecordNamesNoSelection/ceiling-closed (0.12s)
+--- PASS: TestReviewRoundTwoFallsBackToAFreshSessionWhenPreparationFails (0.32s)
+=== RUN   TestReviewRecordsTheModelOfTheSessionOfEachRound/fallback
+=== RUN   TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged/the_classifier_still_refuses_the_reported_answer
+--- PASS: TestReviewRecordsTheModelOfTheSessionOfEachRound (0.46s)
+    --- PASS: TestReviewRecordsTheModelOfTheSessionOfEachRound/preferred_then_continued (0.32s)
+    --- PASS: TestReviewRecordsTheModelOfTheSessionOfEachRound/fallback (0.14s)
+--- PASS: TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged (0.50s)
+    --- PASS: TestReviewRoundTwoOpensANewSessionWhenTheConfiguredModelChanged/the_classifier_still_refuses_the_reported_answer (0.14s)
+PASS
+suiteguard: guard cost: measured 3404 paths; fingerprint took 165.5385ms before and 152.707084ms after
+ok  	roundfix/internal/cli	1.480s
+
+STDERR:

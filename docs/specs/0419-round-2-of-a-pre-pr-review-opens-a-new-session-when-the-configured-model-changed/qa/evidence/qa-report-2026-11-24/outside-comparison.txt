@@ -1,0 +1,9 @@
+PASS: exact measured answer equals the notice format generated for gpt-6-luna and gpt-6.1-sol plus No findings.
+Source: references/sources.md section 1; Fiscus message 01a20a55-66b6-7b31-bd03-ed4f3d6a1fbc; measured 2026-11-23 on Roundfix 0.153.0.
+Quoted passage:
+Warning: This session was recorded with model `gpt-6-luna` but is resuming with `gpt-6.1-sol`. Consider switching back to `gpt-6-luna` as it may affect Codex performance.
+
+No findings.
+
+Measured and asserted refusal reason: unclassifiable agent output: no-findings verdict does not account for other content
+Named refusal subtest passes in review-named.txt. No external lookup performed.

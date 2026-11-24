@@ -1,0 +1,29 @@
+Command: go test -count=1 -timeout 20m -overlay /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0419-overlay-eye0hlqj/overlay.json -v -run ^TestQA0419GovernedPaths$ ./internal/speccheck
+Exit: 0
+STDOUT:
+=== RUN   TestQA0419GovernedPaths
+=== PAUSE TestQA0419GovernedPaths
+=== CONT  TestQA0419GovernedPaths
+    qa0419_scope_test.go:7: .agents/skills/roundfix/SKILL.md governed=true
+    qa0419_scope_test.go:7: .agents/skills/roundfix/references/review.md governed=true
+    qa0419_scope_test.go:7: .secondbrain-export governed=false
+    qa0419_scope_test.go:7: CONTEXT.md governed=false
+    qa0419_scope_test.go:7: docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md governed=false
+    qa0419_scope_test.go:7: docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md governed=false
+    qa0419_scope_test.go:7: docs/references/behavior-surfaces.json governed=false
+    qa0419_scope_test.go:7: docs/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed/task_01.md governed=false
+    qa0419_scope_test.go:7: docs/user-guide/commands/review.md governed=false
+    qa0419_scope_test.go:7: internal/cli/review.go governed=false
+    qa0419_scope_test.go:7: internal/cli/review_lineage.go governed=false
+    qa0419_scope_test.go:7: internal/cli/review_model_change_test.go governed=false
+    qa0419_scope_test.go:7: internal/docscontract/review_model_decision_test.go governed=false
+    qa0419_scope_test.go:7: internal/verifyselect/contracts_repository_test.go governed=false
+    qa0419_scope_test.go:7: skills/roundfix/SKILL.md governed=true
+    qa0419_scope_test.go:7: skills/roundfix/references/review.md governed=false
+    qa0419_scope_test.go:7: skills/testdata/owned-skill-versions.json governed=false
+--- PASS: TestQA0419GovernedPaths (0.00s)
+PASS
+suiteguard: guard cost: measured 3437 paths; fingerprint took 597.98075ms before and 161.422541ms after
+ok  	roundfix/internal/speccheck	1.135s
+
+STDERR:

@@ -1,0 +1,5 @@
+Command: f=docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md; test -f "$f" && grep -qx 'status:.accepted' "$f" && grep -qx 'knowledge:.true' "$f" && grep -q '^amended_by:.*ADR-0451' docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md && grep -qxF -- "$f" .secondbrain-export && grep -F -- '**Reviewer Lineage**' < CONTEXT.md | grep -qE '^([-*+] )?\*\*Reviewer Lineage\*\*(:| —( |$))' && { tr -s '[:space:]' ' ' < CONTEXT.md | grep -qF -- "still names the Agent Model that session was opened with, and otherwise opening a new one with the same prompt" || { printf 'missing phrase in %s: %s\n' CONTEXT.md "still names the Agent Model that session was opened with" >&2; exit 1; }; }
+Exit: 0
+STDOUT:
+
+STDERR:

@@ -1,0 +1,79 @@
+from pathlib import Path
+import re,hashlib
+exec(next(Path('docs/specs').glob('0419-*/qa/evidence/qa-report-2026-11-24/driver.py.txt')).read_text())
+def old(path):return run(['git','show',base+':'+path]).stdout
+# Outside evidence: compare the actual quoted warning against the Go format literal.
+sources=(spec/'references/sources.md').read_text(); first=sources.split('## 1.',1)[1].split('## 2.',1)[0]
+quoted=re.search(r'"(Warning:.*?No findings\.)"',first,re.S).group(1)
+code=(root/'internal/cli/review_model_change_test.go').read_text()
+fmt=re.search(r'return fmt.Sprintf\(("(?:[^"\\]|\\.)*"), was, now, was\)',code).group(1)
+fmt=json.loads(fmt); fake=fmt.replace('%s','gpt-6-luna',1).replace('%s','gpt-6.1-sol',1).replace('%s','gpt-6-luna',1)+'No findings.'
+assert quoted==fake
+reason='unclassifiable agent output: no-findings verdict does not account for other content'
+assert reason in first and reason in code
+(ev/'outside-comparison.txt').write_text('PASS: exact measured answer equals the notice format generated for gpt-6-luna and gpt-6.1-sol plus No findings.\nSource: references/sources.md section 1; Fiscus message 01a20a55-66b6-7b31-bd03-ed4f3d6a1fbc; measured 2026-11-23 on Roundfix 0.153.0.\nQuoted passage:\n'+quoted+'\n\nMeasured and asserted refusal reason: '+reason+'\nNamed refusal subtest passes in review-named.txt. No external lookup performed.\n')
+status('Q03','pass')
+# Q05: actual diff of existing tests, goldens and fixtures is empty.
+p=run(['git','diff','--name-status',base,head,'--','internal/cli','internal/delivery']);save('control-scope',['git','diff','--name-status',base,head,'--','internal/cli','internal/delivery'],p)
+assert p.stdout.splitlines()==['M\tinternal/cli/review.go','M\tinternal/cli/review_lineage.go','A\tinternal/cli/review_model_change_test.go']
+status('Q05','pass')
+# Q07: document-specific observations are asserted, not credited merely for being read.
+adrpath='docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md'; adr=(root/adrpath).read_text(); prior=(root/'docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md').read_text()
+assert 'status: accepted' in adr and 'knowledge: true' in adr
+assert '# Round 2 of a pre-PR review opens a new session when the configured model changed' in adr
+assert 'docs/specs/' not in adr
+created=re.search(r'^created_at: (.+)$',adr,re.M).group(1)
+assert 'updated_at: '+created in prior and re.search(r'^amended_by:.*ADR-0451\]',prior,re.M)
+assert prior.index('**Amended by [ADR-0451]')>prior.index('**Amended by [ADR-0391]')
+export=(root/'.secondbrain-export').read_text(); assert export.splitlines().count(adrpath)==1
+standard=export.split('# roundfix:standard-export:begin')[1].split('# roundfix:standard-export:end')[0]; paths=[x for x in standard.splitlines() if x.startswith('docs/adr/')];assert paths==sorted(paths) and adrpath in paths
+out=[]
+for suffix in ['SKILL.md','references/review.md']:
+ a='.agents/skills/roundfix/'+suffix;b='skills/roundfix/'+suffix;p=run(['cmp',a,b]);save('cmp-'+suffix.replace('/','-'),['cmp',a,b],p);assert p.returncode==0;out.append(a+' == '+b)
+(ev/'document-checks.txt').write_text('PASS: ADR-0451 status accepted; knowledge true; exact title; no Spec folder citation.\nPASS: ADR-0197 remains accepted; amended_by ends ADR-0451; updated_at equals new created_at; dated notice follows ADR-0391.\nPASS: ADR path appears exactly once within the Standard Export List; ADR paths ascending.\n'+ '\n'.join(out)+'\n'+adr.split('---',2)[1]+'\n')
+status('Q07','pass')
+# Q11: compare every byte outside the Reviewer Lineage definition.
+context=(root/'CONTEXT.md').read_text(); earlier=old('CONTEXT.md')
+pattern=r'(?m)^\*\*Reviewer Lineage\*\*:\n(.*?)(?=\n_Avoid_)'
+entry=re.search(pattern,context,re.S).group(1); before=re.search(pattern,earlier,re.S).group(1)
+assert re.sub(pattern,'REVIEWER_LINEAGE',context,flags=re.S)==re.sub(pattern,'REVIEWER_LINEAGE',earlier,flags=re.S)
+clause='continuing the same Agent Session when the runtime can resume it and the review profile still names the Agent Model that session was opened with, and otherwise opening a new one with the same prompt.'
+assert entry.split('. ',1)[0]+'.'==entry[:entry.index('. ')+1] # sentence boundary
+assert entry[:entry.index('. ')+1].endswith(clause)
+assert entry.index('[ADR-0451]')>entry.index('[ADR-0391]')
+(ev/'glossary-check.txt').write_text('PASS: line-anchored **Reviewer Lineage** definition, first sentence ends with exact API Contract 4 clause; ADR-0451 follows ADR-0391.\nPASS: all bytes outside that definition equal Delivery Base.\nPRD and TechSpec declare only Reviewer Lineage changed. Domain vocabulary already defines Agent Model, Agent Selection, Agent Session, Pre-PR Review Record, Correction Review and Reviewer Lineage; strict spec check found no Glossary Gap.\n'+entry+'\n')
+status('Q11','pass')
+# Q12: collect all scope assertions, preserving the authored contradiction as failure.
+p=run(['git','diff-tree','--no-commit-id','--name-only','-r',head]);save('task-changed-paths',['git','diff-tree','--no-commit-id','--name-only','-r',head],p); changed=p.stdout.splitlines()
+task=(spec/'task_01.md').read_text(); declared=set(re.findall(r'^- (?:interface|creates): `([^`]+)`',task,re.M));declared.add(str((spec/'task_01.md').relative_to(root)))
+assert set(changed)<=declared,set(changed)-declared
+notes=['PASS: each actual Task commit path is declared in task_01 Context or its own Task file.','PASS: Daemon authorization audit names task_01 commit '+head+' and operative grant at '+base+'.']
+for path in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ scrub=lambda x:re.sub(r'(?m)^([ ]*version:).*$',r'\1 VERSION',x)
+ assert scrub(old(path))==scrub((root/path).read_text());notes.append('PASS: only version fields changed: '+path)
+forbidden=['Makefile','go.mod','go.sum','.roundfixrc.yml','skills-lock.json','AGENTS.md','CLAUDE.md','CHANGELOG.md','internal/app/version.go','dist/npm/roundfix/package.json','docs/references/skill-coverage.json','docs/references/coverage-record.json']
+assert not set(changed)&set(forbidden)
+assert not any(x.startswith(('.github/workflows/','docs/agents/')) for x in changed)
+assert not any(x.startswith(('.agents/skills/','skills/')) and not (x.startswith(('.agents/skills/roundfix/','skills/roundfix/')) or x=='skills/testdata/owned-skill-versions.json') for x in changed)
+assert not any('/roundfix/references/' in x and not x.endswith('/review.md') for x in changed)
+notes.append('PASS: forbidden configuration/version/guide/other-skill and other-reference paths unchanged.')
+review=(root/'internal/cli/review.go').read_text();before=old('internal/cli/review.go')
+func=lambda s: s.split('func classifyReviewCommandResult(',1)[1].split('\nfunc ',1)[0]
+assert func(review)==func(before)
+notes.append('PASS: classifyReviewCommandResult bytes identical, SHA256 '+hashlib.sha256(func(review).encode()).hexdigest())
+adrchanged=[x for x in changed if x.startswith('docs/adr/')];assert sorted(adrchanged)==sorted([adrpath,'docs/adr/0197-a-pre-pr-reviewer-lineage-spans-at-most-two-rounds.md'])
+assert 'status: accepted' in prior;notes.append('PASS: only accepted ADR-0197 changed, stays accepted; new ADR-0451 accepted.')
+for path in changed:
+ if path.endswith('.md'):
+  section=lambda s: s.split('### QA settlement\n',1)[1].split('\n### ',1)[0].split('\n## ',1)[0] if '### QA settlement\n' in s else ''
+  assert section(old(path))==section((root/path).read_text()),path
+notes.append('PASS: every QA settlement section unchanged.')
+allowed={'internal/cli/review.go','internal/cli/review_lineage.go','internal/cli/review_model_change_test.go','internal/docscontract/review_model_decision_test.go'}
+extra=set(x for x in changed if x.endswith('.go'))-allowed
+assert extra=={'internal/verifyselect/contracts_repository_test.go'}
+notes.append('FAIL F-01: task_02 Requirement 12 says the changed Go files are only review.go, review_lineage.go and the two new test files. Actual change also modifies internal/verifyselect/contracts_repository_test.go (13 -> 14 docscontract count). This is expressly declared by task_01 Requirement 12, amended before delivery, and its Context. It is not an unauthorized change; the QA requirement was not updated to allow it.')
+(ev/'scope-audit.txt').write_text('\n'.join(notes)+'\n\nActual Go change list:\n'+'\n'.join(x for x in changed if x.endswith('.go'))+'\n')
+status('Q12','fail')
+# Keep the patch showing the one-line declared exception and complete Task diff.
+for name,args in [('scope-diff',['git','diff',base,head]),('verifyselect-amendment',['git','diff',base,head,'--','internal/verifyselect/contracts_repository_test.go'])]:save(name,args,run(args))
+print('\n'.join(notes),flush=True)

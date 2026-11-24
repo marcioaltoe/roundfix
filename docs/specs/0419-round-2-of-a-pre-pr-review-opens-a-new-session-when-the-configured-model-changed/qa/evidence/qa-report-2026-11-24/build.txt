@@ -1,0 +1,4 @@
+Command: make build
+Exit: 0
+Built ./bin/roundfix at audited head 48b0dffb77d025d24173758498c426fc4a15bb87. Dirty suffix is seeded untracked qa/ content.
+gocache-bound warned existing cache exceeded its bound; build continued successfully.
