@@ -40,7 +40,8 @@ This Task delivers `_techspec.md` → Build Order 1. It answers the finding repo
    - `TestTheReviewerLineageEntryStatesTheModelRule`, which asserts the clause of API Contract 4 in the entry Reviewer Lineage and the entry's link to the record the first test found;
    - `TestTheReviewGuideAndReferenceDescribeTheModelRule`, with the subtests `guide`, `canonical_reference` and `mirror_reference`, each asserting, after whitespace is collapsed, the four phrases of the Testing Approach and the absence of "Round 2 prepares that name on that selection through acpx. If preparation".
 10. MUST change in `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` only the version fields the record command raises (`_authorization.md` → What the grant covers).
-11. MUST NOT change any other reference of the Roundfix skill, any other owned or Vendored Skill, any guide under `docs/agents/`, `docs/agents/setup-context.json`, `docs/references/skill-coverage.json`, any accepted ADR other than ADR-0197, any Go source other than the two named in requirement 1 and the two new test files, or any file `_authorization.md` → Limits names.
+11. MUST NOT change any other reference of the Roundfix skill, any other owned or Vendored Skill, any guide under `docs/agents/`, `docs/agents/setup-context.json`, `docs/references/skill-coverage.json`, any accepted ADR other than ADR-0197, any Go source other than the two named in requirement 1, the two new test files and the one count requirement 12 raises, or any file `_authorization.md` → Limits names.
+12. MUST raise by one, from the value on the tree this Task runs on, the count of `internal/docscontract` contract files that `TestRepositoryContractTestsDeclareTheirRelevance` in `internal/verifyselect/contracts_repository_test.go` pins (the `len(docsFiles) != N` condition), for the file requirement 9 adds, and change nothing else in that test. (Amended on 2026-11-24 before delivery: Spec 0418's task_03 and task_04 each failed make verify-changed on that pinned count when they added a docscontract file.)
 
 ## Subtasks
 
@@ -82,6 +83,7 @@ This Task delivers `_techspec.md` → Build Order 1. It answers the finding repo
 - interface: `skills/roundfix/SKILL.md`
 - interface: `skills/testdata/owned-skill-versions.json`
 - interface: `docs/references/behavior-surfaces.json`
+- interface: `internal/verifyselect/contracts_repository_test.go`
 - creates: `internal/cli/review_model_change_test.go`
 - creates: `internal/docscontract/review_model_decision_test.go`
 - creates: `docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md`
