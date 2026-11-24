@@ -10,7 +10,9 @@ delivery:
   # 2026-10-20: back on after `roundfix deliver lane --all` passed on main
   # a0d3d843 (Specs 0282 and 0284; ADR-0294, ADR-0297). Off 2026-10-18 to
   # 2026-10-20 while the container lacked an init, CI tools and history.
-  linux_lane: true
+  # Off since 2026-11-24 by the maintainer's decision (ai-memory 01a20d73,
+  # 09:10 BRT): the Linux checks leave for good through a Spec of their own.
+  linux_lane: false
   # Spec 0404 (ADR-0423): every delivery Correction carries a declared Defect Class;
   # the maintainer turned it on for Gesttione projects on 2026-11-17.
   require_defect_class: true
