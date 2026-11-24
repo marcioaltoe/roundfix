@@ -16,6 +16,7 @@ paths:
   - skills/roundfix/SKILL.md
   - docs/references/coverage-record.json
   - docs/agents/specific-repository.md
+  - docs/agents/setup-context.json
 operations:
   - implement
   - commit
@@ -36,7 +37,7 @@ The maintainer's decisions this record rests on are copied whole in [`references
 
 ## Where the grant comes from
 
-Two decisions of the maintainer of 2026-11-24, each delivered as a `DECISÃO DE MARCIO` block to this project's ai-memory inbox by the Praetor, the session that coordinates the software projects and puts their decision requests to the maintainer.
+Three decisions of the maintainer of 2026-11-24, each delivered as a `DECISÃO DE MARCIO` block to this project's ai-memory inbox by the Praetor, the session that coordinates the software projects and puts their decision requests to the maintainer.
 
 The Spec, its tooling paths, its delivery and its release: ai-memory message `01a20d73-109f-7bb2-a2b6-718854f6b25d`, decided 09:10 BRT (12:10 UTC). The block, verbatim:
 
@@ -60,6 +61,17 @@ alcance: o alcance do pedido 01a20d89-cf32, até o release patch: .agents/skills
 quando: 24/11/2026 17:18 BRT
 ```
 
+The Makefile digest in the setup record, granted after the Run `run_20261124T213033Z_283908b7147be213` failed `task_02` on `make verify-changed`, because `docs/agents/setup-context.json` records the `declarationDigest` of the `Makefile` and two baseline-update transcript tests require it current: ai-memory message `01a20fdb-77f4-7b23-8071-093c0aa55c56`, decided 20:18 BRT (23:18 UTC). The block, verbatim:
+
+```text
+DECISÃO DE MARCIO
+pedido: 01a20f9f-225c-7041-9c82-4793770b1ce4
+pergunta: A Spec 0420 pode regravar o docs/agents/setup-context.json, só o hash do Makefile que ele guarda, pelo comando próprio do Roundfix, como fez a Spec 0415? Opções: Sim, regravar (Recomendado); Não.
+resposta: "Sim, regravar (Recomendado)"
+alcance: repositório roundfix, Spec 0420-roundfix-stops-verifying-on-linux, até o release patch v0.153.3. Caminho docs/agents/setup-context.json, regravado só por: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text, mudando só o declarationDigest do Makefile. Inclui emendar a task_02, a QA (task_05) e o _authorization.md, na main e no branch do item, e dar o retry. Sem go.mod, lint, Baseline nem outra skill.
+quando: 24/11/2026 20:18 BRT
+```
+
 ## What the grant covers
 
 - The operations `implement`, `commit`, `push`, `pull_request`, `merge` and `release`.
@@ -73,10 +85,11 @@ quando: 24/11/2026 17:18 BRT
   - `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`: the version fields the record command raises, and nothing else;
   - `docs/references/coverage-record.json`, written only by its own command under `## Sanctioned regeneration`. The only test names it may lose are the ones the Task Graph lists, each a test of the Linux Lane, of its command, of its doctor check or of its two keys;
   - `docs/agents/specific-repository.md`: the sentence, outside the Baseline's markers, that calls continuous integration the Linux gate.
+  - `docs/agents/setup-context.json`: only the `declarationDigest` of the `Makefile`, rewritten by its own command under `## Sanctioned regeneration` (third decision).
 - The regeneration by the repository's own commands, declared under `## Sanctioned regeneration`.
 - A release at a `patch` Release Ceiling. The Spec is a `type: refactor`, which the release plan classifies by hand; the operator classifies it as a patch, with the first decision as the reason, and the Supervisor session plans it as `v0.153.3`. The release may change only the three version-only files in `release_paths`: the changelog, the npm package manifest and the application version. No Task performs it; the operator cuts it after the merge.
 
-The grant names no number of corrections and no path beyond these twelve. Anything outside this scope needs a new decision request.
+The grant names no number of corrections and no path beyond these thirteen. Anything outside this scope needs a new decision request.
 
 ## How the governed set was measured
 
@@ -90,7 +103,7 @@ The author of the PRD measured it on 2026-11-24 with `speccheck.GovernedPath`, i
   - every other reference of the Roundfix skill, and every other owned skill;
   - every Vendored Skill under `.agents/skills` and `skills-lock.json`'s entries;
   - every Baseline module, template, profile, Source Baseline and Setup Snapshot, the starter workflow `internal/baseline/assets/templates/starters/python/verify.yml` included: it names a Linux runner for an adopter's repository and stays;
-  - every other guide under `docs/agents/`, every line of `docs/agents/specific-repository.md` inside the Baseline's markers, and `docs/agents/setup-context.json`.
+  - every other guide under `docs/agents/`, and every line of `docs/agents/specific-repository.md` inside the Baseline's markers. `docs/agents/setup-context.json` is granted only for the Makefile digest (third decision).
 
 The TechSpec author and the Tasks author measure again every file their artifacts name. When that set holds a Governed Path outside the twelve above, no Run starts: the path needs a new decision of the maintainer, recorded here on the default branch before the consuming delivery.
 
@@ -104,6 +117,14 @@ The TechSpec author and the Tasks author measure again every file their artifact
 - Every planning file of this Spec and its references.
 
 ## Sanctioned regeneration
+
+```yaml
+command: go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text
+outputs:
+  - docs/agents/setup-context.json
+```
+
+This command runs after the `Makefile` change and may change only the `declarationDigest` of the `Makefile` in `docs/agents/setup-context.json` (third decision).
 
 Repository-owned commands write the skill mirror, the skill version fields and the generated records. This declaration records the regeneration that follows the approved edits and adds no source path. The commands are the ones the decision request `01a20d89-cf32` lists and the second decision grants.
 
