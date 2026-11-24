@@ -2,6 +2,14 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.153.1] - 2026-11-24
+
+### A parked Delivery Queue item recovers with a live owner and keeps its completed Tasks
+
+- **A retry ends with a live Queue Owner or fails.** `roundfix deliver retry` now exits `0` only when it hands the item to a Queue Owner it proves alive, or starts one. When it cannot, it exits `2` with a `Retry failed` report, parks the item again with its earlier blocker and retry count, and names the Tasks it carried. A retry no longer leaves an item at `running` with no owner. ADR-0450 records the decision and amends ADR-0279 and ADR-0395.
+- **A Run that failed only in its QA gate keeps its completed Tasks.** The item records every Run it ran, a Failed one included, and a Delivery Retry carries forward the completed Tasks of a QA-Only Failed Run, as it already did for an Unresolved Run. `roundfix reconcile --carry-forward` and the Implement Preflight keep their accepted outcomes.
+- **Status shows a queue nobody advances and what each running item is doing.** `roundfix deliver status` prints an `Owner:` line naming `roundfix deliver resume` when items can still advance and no owner is recorded, and one `Run:` line per item at `running` with its Active Run and the Tasks in progress. The item row keeps its four tab-separated fields.
+
 ## [0.153.0] - 2026-11-21
 
 ### The Secondbrain search needs the Indexus MCP server in the session, and a skill the dispatch names is now required
