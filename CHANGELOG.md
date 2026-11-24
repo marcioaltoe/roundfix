@@ -2,6 +2,12 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.153.2] - 2026-11-24
+
+### Round 2 of a pre-PR review opens a new reviewer session when the configured model changed
+
+- **A model change no longer blocks a clean review.** Each review round now records the model of its reviewer session in the review lineage (`lineage.model`). Round 2 continues the round-1 session only when that recorded model equals the model its Agent Selection resolves to now, compared after trimming both. Otherwise it ends the old session and opens a new one with the round-2 delta prompt, so the reviewer's answer no longer carries the Codex notice about resuming a session recorded with another model, which made a "No findings." verdict unclassifiable. A record written before this release holds no model and opens a new session. No output line, flag, exit code or config key changes. ADR-0451 records the decision and amends ADR-0197.
+
 ## [0.153.1] - 2026-11-24
 
 ### A parked Delivery Queue item recovers with a live owner and keeps its completed Tasks
