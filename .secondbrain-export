@@ -331,6 +331,7 @@ docs/adr/0445-the-flow-command-list-names-subcommands-and-holds-every-git-and-gi
 docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-context-md-needs-no-release.md
 docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md
 docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
 # roundfix:standard-export:end
 
 # This repository publishes its README, its user guide and its lessons (maintainer, 2026-11-18).

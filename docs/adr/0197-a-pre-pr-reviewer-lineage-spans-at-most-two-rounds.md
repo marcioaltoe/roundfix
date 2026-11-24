@@ -1,9 +1,9 @@
 ---
 status: accepted
 knowledge: true
-amended_by: [ADR-0286, ADR-0366, ADR-0391]
+amended_by: [ADR-0286, ADR-0366, ADR-0391, ADR-0451]
 created_at: 2026-09-30T00:00:00Z
-updated_at: 2026-11-11T18:00:00Z
+updated_at: 2026-11-24T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -62,3 +62,5 @@ ADR-0018. It supersedes none of them.
 **Amended by [ADR-0366](0366-a-conflict-free-merge-of-the-default-branch-is-a-review-delta-and-a-segment-is-measured-from-its-effective-base.md) (2026-11-05).** A conflict-free merge of the default branch into a descending head keeps the Reviewer Lineage although it moves the merge base; round 2 reviews the delta from the reviewed head carried onto the new merge base. A rebase, or a merge that brings in another branch or conflicts, still starts round 1.
 
 **Amended by [ADR-0391](0391-a-conflicting-merge-of-the-default-branch-is-a-review-delta-from-its-conflicted-carry.md) (2026-11-11).** A merge of the default branch that conflicts keeps the Reviewer Lineage too; its delta starts from the reviewed head's Conflicted Carry. A rebase or a merge that brings in another branch still starts round 1, and the two-round ceiling is unchanged.
+
+**Amended by [ADR-0451](0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md) (2026-11-24).** Round 2 continues the open round-1 session only when the recorded selection still names its recorded model; when the model changed or the record holds no model, it ends that session and opens a new one with the same round-2 delta prompt. Every round that sends a prompt records its session model in `lineage.model`; the two-round ceiling is unchanged.

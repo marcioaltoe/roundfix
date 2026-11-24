@@ -933,6 +933,7 @@ func runReviewCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if promptSent {
 		record.Lineage.Session = specContext.session.Name
 		record.Lineage.Selection = &specContext.selection
+		record.Lineage.Model = specContext.runtime.Model
 		record.Lineage.ACPSessionIDs = append(record.Lineage.ACPSessionIDs, result.ACPSessionID)
 		ids := record.Lineage.ACPSessionIDs
 		record.Lineage.Continued = specContext.resumed && len(ids) == 2 && ids[0] != "" && ids[0] == ids[1]
@@ -1760,7 +1761,7 @@ func runConfiguredReviewSession(
 		if prior.Selection != nil {
 			selection = *prior.Selection
 		}
-		if selection >= 0 && selection < len(selections) {
+		if selection >= 0 && selection < len(selections) && strings.TrimSpace(prior.Model) != "" && strings.TrimSpace(prior.Model) == strings.TrimSpace(selections[selection].Model) {
 			runtime, runtimeErr := runtimeForProfileSelection(selections[selection])
 			if runtimeErr != nil {
 				return agent.ExecuteResult{}, specContext, false, runtimeErr

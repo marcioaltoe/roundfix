@@ -20,6 +20,7 @@ type reviewLineage struct {
 	ReviewedHead         string                     `json:"reviewedHead,omitempty"`
 	Session              string                     `json:"session,omitempty"`
 	Selection            *int                       `json:"selection,omitempty"`
+	Model                string                     `json:"model,omitempty"`
 	SessionOpen          bool                       `json:"sessionOpen"`
 	ACPSessionIDs        []string                   `json:"acpSessionIds,omitempty"`
 	Continued            bool                       `json:"continued"`
