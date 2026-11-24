@@ -1324,6 +1324,19 @@ func (engine *Engine) checkFreeSpace(ctx context.Context, gitRoot string, item *
 	return nil
 }
 
+// recordRun preserves executor provenance even when the owner has stopped.
+func (engine *Engine) recordRun(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem, runID string) error {
+	runID = strings.TrimSpace(runID)
+	if runID == "" || runID == item.RunID {
+		return nil
+	}
+	item.RunID = runID
+	if err := engine.store.UpdateDeliveryQueueItem(context.WithoutCancel(ctx), gitRoot, *item); err != nil {
+		return fmt.Errorf("record Implement Run: %w", err)
+	}
+	return nil
+}
+
 func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *store.DeliveryQueueItem) error {
 	if err := engine.checkFreeSpace(ctx, gitRoot, item, "Implement Run"); err != nil {
 		return err
@@ -1333,6 +1346,9 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 		return err
 	}
 	result, err := engine.runner.RunSpec(ctx, workDir, item.SpecSlug)
+	if recordErr := engine.recordRun(ctx, gitRoot, item, result.RunID); recordErr != nil {
+		return errors.Join(err, recordErr)
+	}
 	if err != nil && engine.runSlots != nil && engine.runSlotWait > 0 {
 		var refusal *RunSlotRefusal
 		if errors.As(err, &refusal) {
@@ -1348,7 +1364,6 @@ func (engine *Engine) runCandidate(ctx context.Context, gitRoot string, item *st
 	if err != nil {
 		return fmt.Errorf("run Implement executor: %w", err)
 	}
-	item.RunID = strings.TrimSpace(result.RunID)
 	switch result.Outcome {
 	case RunOutcomeUnresolved:
 		if result.RuntimeInfrastructure != "" {
@@ -1427,6 +1442,9 @@ func (engine *Engine) waitRunSlot(ctx context.Context, gitRoot, workDir string, 
 		}
 		fmt.Fprintf(engine.log, "roundfix: Delivery Queue item %s: a Run slot is free; starting the Implement Run\n", item.SpecSlug)
 		result, runErr := engine.runner.RunSpec(ctx, workDir, item.SpecSlug)
+		if recordErr := engine.recordRun(ctx, gitRoot, item, result.RunID); recordErr != nil {
+			return RunResult{}, errors.Join(runErr, recordErr)
+		}
 		if runErr == nil {
 			return result, nil
 		}

@@ -138,7 +138,7 @@ func inspectCarryForwards(
 	acceptedOutcomes := runworktree.CarryForwardAcceptedOutcomes()
 	carried := make([]spec.CarryForward, 0)
 	for _, run := range runs.selected {
-		if !slices.Contains(acceptedOutcomes, run.State) {
+		if !slices.Contains(acceptedOutcomes, run.State) && !runs.qaOnlyFailed[run.ID] {
 			continue
 		}
 		if strings.TrimSpace(run.WorkDir) == "" {

@@ -1,8 +1,9 @@
 ---
 status: accepted
 knowledge: true
+amended_by: [ADR-0450]
 created_at: 2026-11-12T21:00:00Z
-updated_at: 2026-11-12T21:00:00Z
+updated_at: 2026-11-24T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -62,6 +63,8 @@ already uses. Otherwise the record stays, and `deliver status` reports the
 owner with the `Owner:` line of ADR-0279; `deliver resume`, `retry` and
 `start` already reclaim an owner proven gone, and `deliver stop` releases the
 record after the owner it stopped has exited.
+
+**Amended by [ADR-0450](0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md) (2026-11-24).** Keeping a stopped owner record remains required; status also reports an advanceable queue with no recorded owner. Delivery Retry now proves a live owner or restores the parked item under its guard.
 
 **An anchor may end a sentence.** A `path:line` or `path:start-end` anchor,
 backticked or not, followed by `.` or `;` reads as one followed by a space

@@ -77,6 +77,7 @@ func TestDeliverStatusReproducesSurfaceTranscriptQueueTurns(t *testing.T) {
 		"Turn: 0080-echo waiting for prerequisites: 0079-foxtrot\n" +
 		"Turn: 0081-golf waiting for the owner's turn (1 of 1 waiting)\n" +
 		"Turn: 0083-hotel waiting for the owner to read it\n" +
+		"Run: 0068-bravo no Active Run\n" +
 		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n"
 	if code != exitOK || stdout.String() != want || stderr.Len() != 0 {

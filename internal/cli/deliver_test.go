@@ -61,7 +61,7 @@ func TestDeliverStatusPrintsTheItemWorktree(t *testing.T) {
 		t.Fatalf("deliver status without worktree exit=%d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
 	if got, want := stdout.String(), implementTestSlug+"\tqueued\t-\t-\n"+
-		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n"+
+		"Owner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n"+
 		"Usage: no Runs recorded\n"; got != want {
 		t.Fatalf("deliver status without worktree = %q, want %q", got, want)
 	}

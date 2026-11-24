@@ -59,10 +59,22 @@ func TestDeliverStatusPrintsNoOwnerLineForAProvenOwner(t *testing.T) {
 	}
 }
 
-func TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner(t *testing.T) {
+func TestDeliverStatusPrintsTheOwnerLineOfAQueueWithNoRecordedOwner(t *testing.T) {
 	t.Parallel()
-	newDeliveryOwnerStatusQueue(t, 0, "", store.DeliveryStageChecking)
-	assertDeliveryOwnerStatus(t, "", "")
+	t.Run("an_item_can_advance", func(t *testing.T) {
+		t.Parallel()
+		newDeliveryOwnerStatusQueue(t, 0, "", store.DeliveryStageChecking)
+		assertDeliveryOwnerStatus(t, "Owner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\n", "")
+	})
+	t.Run("no_item_can_advance", func(t *testing.T) {
+		t.Parallel()
+		newDeliveryOwnerStatusQueue(t, 0, "", store.DeliveryStageMerged, store.DeliveryStageParked)
+		var out, diag bytes.Buffer
+		code := runCLI(t, []string{"deliver", "status"}, &out, &diag)
+		if code != exitOK || diag.Len() != 0 || strings.Contains(out.String(), "Owner:") {
+			t.Fatalf("exit=%d stdout=%q stderr=%q", code, out.String(), diag.String())
+		}
+	})
 }
 
 func TestDeliverStatusPrintsNoOwnerLineWhenNoItemCanAdvance(t *testing.T) {

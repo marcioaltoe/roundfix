@@ -122,6 +122,7 @@ func newOutsideMergeFixture(t *testing.T, recordedPR bool) *outsideMergeFixture 
 	fixture := &outsideMergeFixture{home: home, repo: repo, candidate: candidate, workflow: workflow, runner: runner, item: item}
 	runner.payload = map[string]any{"number": 404, "state": "OPEN", "headRefName": branch, "headRefOid": candidate}
 	updateCommandDependenciesForTest(t, func(deps *commandDependencies) {
+		deps.ownerProcesses = &fakeDeliveryOwnerProcesses{}
 		deps.newDeliveryEngine = func(db *store.Store, _ roundconfig.Loaded) deliveryEngine {
 			copyWorkflow := *workflow
 			copyWorkflow.store = db
@@ -129,6 +130,13 @@ func newOutsideMergeFixture(t *testing.T, recordedPR bool) *outsideMergeFixture 
 		}
 		deps.startDeliveryOwner = func(_ context.Context, _ roundconfig.Loaded, _ commandEnvironment, stdout, _ io.Writer) int {
 			fixture.starts++
+			identity, err := store.OwnerProcessIdentity(t.Context(), os.Getpid())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := db.ClaimDeliveryQueueOwner(t.Context(), repo, os.Getpid(), identity); err != nil {
+				t.Fatal(err)
+			}
 			fmt.Fprintln(stdout, "Delivery Owner: test-owner")
 			return exitOK
 		}

@@ -225,12 +225,13 @@ func (workflow *commandDeliveryWorkflow) InspectItem(
 }
 
 type deliveryCarryForwardRefusal struct {
-	runID       string
-	workDir     string
-	specSlug    string
-	carriedRuns []string
-	reason      string
-	amendments  []string
+	runID        string
+	workDir      string
+	specSlug     string
+	carriedRuns  []string
+	reason       string
+	amendments   []string
+	qaOnlyFailed bool
 }
 
 func (err deliveryCarryForwardRefusal) Error() string {
@@ -250,6 +251,9 @@ func (err deliveryCarryForwardRefusal) Error() string {
 }
 
 func (err deliveryCarryForwardRefusal) NextAction() string {
+	if err.qaOnlyFailed {
+		return fmt.Sprintf("resolve the carry-forward refusal in item worktree %q, then run `roundfix deliver retry %s`", err.workDir, err.specSlug)
+	}
 	if len(err.amendments) != 0 {
 		quotedAmendments := make([]string, 0, len(err.amendments))
 		for _, amendment := range err.amendments {
@@ -327,13 +331,29 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 	}
 
 	for _, run := range runs {
+		qaTask := ""
+		qaOnlyFailed := false
 		if !slices.Contains(runworktree.CarryForwardAcceptedOutcomes(), run.State) {
-			continue
+			if run.State != store.StateFailed {
+				continue
+			}
+			if err := resolveItem(); err != nil {
+				return delivery.CarryForwardResult{}, err
+			}
+			var err error
+			qaTask, qaOnlyFailed, err = workflow.qaOnlyFailedRun(ctx, repository, resolvedSpecsRoot, run)
+			if err != nil {
+				return delivery.CarryForwardResult{}, err
+			}
+			if !qaOnlyFailed {
+				continue
+			}
 		}
 		_, taskEvidence, err := loadReconcileTaskCoverage(ctx, workflow.store, []store.Run{run})
 		if err != nil {
 			return delivery.CarryForwardResult{}, fmt.Errorf("load Run %q Task coverage: %w", run.ID, err)
 		}
+		delete(taskEvidence[run.ID], qaTask)
 		settled := taskEvidence[run.ID]
 		settledCompleted := make(map[string]bool, len(settled))
 		for taskID, evidence := range settled {
@@ -373,12 +393,13 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 				carriedRuns = append(carriedRuns, carried.RunID)
 			}
 			return delivery.CarryForwardResult{}, deliveryCarryForwardRefusal{
-				runID:       run.ID,
-				workDir:     repository,
-				specSlug:    specSlug,
-				carriedRuns: carriedRuns,
-				reason:      reason,
-				amendments:  amendments,
+				runID:        run.ID,
+				workDir:      repository,
+				specSlug:     specSlug,
+				carriedRuns:  carriedRuns,
+				reason:       reason,
+				amendments:   amendments,
+				qaOnlyFailed: qaOnlyFailed,
 			}
 		}
 		present, err := carryForwardRunWorktreePresent(run)
@@ -395,6 +416,7 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 		candidates, err := inspectCarryForwards(ctx, repository, resolvedSpecsRoot, reconcileRunSelection{
 			selected:     []store.Run{run},
 			taskEvidence: taskEvidence,
+			qaOnlyFailed: map[string]bool{run.ID: qaOnlyFailed},
 		})
 		if err != nil {
 			return delivery.CarryForwardResult{}, fmt.Errorf("inspect Run %q carry-forward: %w", run.ID, err)
@@ -423,6 +445,33 @@ func (workflow *commandDeliveryWorkflow) CarryForward(
 		}
 	}
 	return result, nil
+}
+
+// qaOnlyFailedRun classifies only the committed graph on the local Run Branch.
+func (workflow *commandDeliveryWorkflow) qaOnlyFailedRun(ctx context.Context, repository string, specsRoot roundconfig.SpecsRoot, run store.Run) (qaTask string, ok bool, err error) {
+	if run.Kind != store.KindImplement || run.State != store.StateFailed || specsRoot.External {
+		return "", false, nil
+	}
+	head, readErr := reconcileGitText(ctx, repository, "rev-parse", "--verify", "--end-of-options", "refs/heads/"+store.RunBranchPrefix+run.ID+"^{commit}")
+	if readErr != nil {
+		return "", false, ctx.Err()
+	}
+	graph, _, loadErr := defaultLoadCommittedSpecGraph(ctx, repository, specsRoot, head, run.SpecSlug)
+	if loadErr != nil {
+		return "", false, ctx.Err()
+	}
+	if graph.QATaskID == "" {
+		return "", false, nil
+	}
+	qaPending := false
+	for _, task := range graph.Tasks {
+		if task.ID == graph.QATaskID {
+			qaPending = task.Status != spec.StatusCompleted
+		} else if task.Status != spec.StatusCompleted {
+			return "", false, nil
+		}
+	}
+	return graph.QATaskID, qaPending, nil
 }
 
 func (workflow *commandDeliveryWorkflow) deliveryCarryForwardRuns(
@@ -1190,6 +1239,9 @@ func deliveryRunResult(
 				reason = true
 			}
 		}
+	}
+	if createdRun {
+		return delivery.RunResult{RunID: afterRun.ID}, failure
 	}
 	return delivery.RunResult{}, failure
 }

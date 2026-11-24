@@ -90,7 +90,7 @@ func TestDeliverStatusPrintsNoRunsRecorded(t *testing.T) {
 	}
 	var out, diag bytes.Buffer
 	code := runCLI(t, []string{"deliver", "status"}, &out, &diag)
-	want := implementTestSlug + "\tqueued\t-\t-\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n"
+	want := implementTestSlug + "\tqueued\t-\t-\nOwner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n"
 	if code != 0 || diag.Len() != 0 || out.String() != want {
 		t.Fatalf("exit=%d stdout=%s stderr=%s", code, &out, &diag)
 	}
