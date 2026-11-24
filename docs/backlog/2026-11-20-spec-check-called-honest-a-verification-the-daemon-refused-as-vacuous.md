@@ -35,3 +35,7 @@ A command that exits zero against the unchanged tree in the Daemon's pre-work Ve
 ## Source
 
 Recorded by the operator, Cycle BG, from the 0414 delivery log and the probe output, on 2026-11-20.
+
+## Addendum, 2026-11-24
+
+The Quaestor project (message `01a1fa32-305f-7be2-9c17-bc200f117002`, 2026-11-20, inferred) also suggests that `spec check` report "Pre-work Verification vacuous" when it already runs with `--run-verification`, the same gap seen from a second repository. Its main finding, a code span in an expectation sub-bullet read as a command, is [its own entry](2026-11-24-the-verification-extractor-reads-code-spans-in-an-expected-sub-bullet-as-a-command.md).
