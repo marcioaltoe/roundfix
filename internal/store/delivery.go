@@ -624,6 +624,36 @@ WHERE git_root = ? AND spec_slug = ?`,
 	})
 }
 
+// RevertDeliveryQueueItemRetry parks a retried item again without discarding Run provenance.
+func (store *Store) RevertDeliveryQueueItemRetry(ctx context.Context, gitRoot string, before DeliveryQueueItem, retried DeliveryStage) (bool, error) {
+	commits := before.CandidateCommits
+	if commits == nil {
+		commits = []string{}
+	}
+	encoded, err := json.Marshal(commits)
+	if err != nil {
+		return false, fmt.Errorf("encode candidate commits before retry revert: %w", err)
+	}
+	reverted := false
+	err = store.withWriteTx(ctx, "Delivery Queue retry revert", func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
+UPDATE delivery_queue_items SET stage = ?, blocker = ?, retry_count = ?, candidate_commits = ?
+WHERE git_root = ? AND position = ? AND spec_slug = ? AND stage = ? AND blocker = ''
+AND EXISTS (SELECT 1 FROM delivery_queues WHERE git_root = ? AND owner_pid IS NULL)`,
+			DeliveryStageParked, before.Blocker, before.RetryCount, string(encoded), gitRoot, before.Position, before.SpecSlug, retried, gitRoot)
+		if err != nil {
+			return fmt.Errorf("revert Delivery Queue item retry: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read Delivery Queue retry revert result: %w", err)
+		}
+		reverted = affected > 0
+		return nil
+	})
+	return reverted, err
+}
+
 // RetryDeliveryQueueItem moves one parked item back to an advanceable stage
 // only when its persisted blocker still matches the operator's observation.
 func (store *Store) RetryDeliveryQueueItem(

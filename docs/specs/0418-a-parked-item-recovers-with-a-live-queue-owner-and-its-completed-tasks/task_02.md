@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -82,3 +82,34 @@ This Task delivers `_techspec.md` → Build Order 2. `roundfix deliver retry` ke
 - [`references/2026-11-23-characterization.md`](references/2026-11-23-characterization.md), sections 2, 3 and 6
 - [`references/sources.md`](references/sources.md), section 1 (reported by quaestor, 2026-11-23)
 - ADR-0373, ADR-0398, ADR-0170, ADR-0028, ADR-0395
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, systematic-debugging, no-workarounds, domain-modeling, tech-writer, evidence-gate.
+
+Implemented the retry's post-start owner proof and buffered success output. The existing recorded-owner hand-off keeps its output and identity handling. A new start must leave either no advanceable item or a recorded owner whose live PID and identity are proved. Failed starts and absent or mismatched owners produce the failure report with empty stdout; unreadable live identities retain the owner record and item. The report reads the stored stage and blocker and names carried Tasks and the applicable next command.
+
+Added the guarded store revert in one write transaction. It restores the earlier blocker, retry count and candidate commits only while the item still has the retry's stage, an empty blocker and no recorded owner. It preserves Run provenance, both queue Run links, the Item Branch and worktree. Production carry-forward remains on the branch when a later owner proof fails.
+
+Acceptance evidence:
+
+- Owner proof and exits: all three whole transcript tests and the proof subtests passed in the focused retry run below, including a missing owner record, a different identity, an unreadable identity and an owner that claims the queue, parks the item and releases its idle claim before the proof.
+- Restored parked state: the failed-start, gone-owner, missing-record and mismatched-identity cases assert the earlier blocker, count and candidates with no owner. The store test also proves refusal for a recorded owner, moved stage and changed blocker, and checks that the recorded Run, worktree and both Run links survive.
+- Transcript compatibility: Transcripts 4, 5 and 6 assert all stdout/stderr bytes and exit codes. Transcripts 4 and 6 carry five Tasks from a QA-Only Failed Run through production carry-forward and inspect their retained implementation and provenance. The outside-merge fixture now claims a live owner through the injected controller; its existing assertions and other existing retry tests are unchanged and passed in the focused run.
+- Glossary: revised Delivery Retry through domain-modeling to require a Queue Owner proven alive or failure with the item parked again. The glossary contracts below passed. The ADR-0450 link remains for task_03.
+
+Focused checks:
+
+- Red starting probe: `rtk proxy go test ./internal/store -run '^TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_' -count=1` failed to compile because the revert method did not exist.
+- Final regression check: `rtk proxy go test ./internal/cli ./internal/store -run 'Retry|ReleaseIdleDeliveryQueueOwner' -count=1 -timeout 5m` exited 0; CLI and store reported success, with no skips reported.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|ClosedListsEqualTheirConstants|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1 -timeout 3m` exited 0.
+- `rtk proxy git diff --check` exited 0.
+
+The first CLI check exposed fixture setup errors: worktree persistence requires its dedicated store method, and the outside-merge fixture's own PID requires the injected proof controller. Both fixtures were corrected without changing existing assertions. The extended store fixture likewise records its branch/worktree pair before setting its parked state.
+
+Scope audit: only this Task's six implementation/test/glossary paths and this Result were changed. The Task status change already existed on entry and was not edited. No declared Verification command, full suite, repository Verification, commit, push or pull request was run. No Task Graph, other Task, skill, user-guide page, ADR or protected tooling file was edited. Daemon Verification and settlement remain pending.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T001551Z_9b40dc21bfabfe76`
+- Source commit: `88b50e5b5c5b45403566a325f5e07271dd2a639d`

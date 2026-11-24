@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -223,6 +224,51 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 			ownerState,
 		)
 	}
+	var before store.DeliveryQueueItem
+	for _, item := range queue.Items {
+		if item.SpecSlug == specSlug {
+			before = item
+			break
+		}
+	}
+	var ownerReport bytes.Buffer
+	startCode := dependencies.startDeliveryOwner(ctx, loaded, environment, &ownerReport, stderr)
+	proof, err := proveDeliveryRetryOwner(ctx, runStore, loaded.GitRoot, before, result.Stage, startCode, dependencies.ownerProcesses)
+	if err != nil {
+		return printDeliverFailure("retry", err, stderr)
+	}
+	if !proof.Proven {
+		current, found, err := runStore.DeliveryQueue(ctx, loaded.GitRoot)
+		if err != nil {
+			return printDeliverFailure("retry", err, stderr)
+		}
+		if !found {
+			return printDeliverFailure("retry", errors.New("Delivery Queue disappeared after retry"), stderr)
+		}
+		fmt.Fprintf(stderr, "Retry failed\n\nReason:\n  %s\n", proof.Reason)
+		for _, item := range current.Items {
+			if item.SpecSlug == specSlug {
+				blocker := item.Blocker
+				if blocker == "" {
+					blocker = "-"
+				}
+				fmt.Fprintf(stderr, "\nItem:\n  stage: %s; blocker: %s\n", item.Stage, blocker)
+				break
+			}
+		}
+		if len(result.CarriedFrom.Runs) > 0 {
+			fmt.Fprint(stderr, "\nCarried forward:\n")
+			for _, carried := range result.CarriedFrom.Runs {
+				fmt.Fprintf(stderr, "  Run %s: %s\n", carried.RunID, strings.Join(carried.Carried, ", "))
+			}
+		}
+		next := "roundfix deliver status"
+		if proof.Reparked {
+			next = "roundfix deliver retry " + specSlug
+		}
+		fmt.Fprintf(stderr, "\nNext:\n  %s\n", next)
+		return exitPreflight
+	}
 	if err := closeStore(); err != nil {
 		return printDeliverFailure("retry", err, stderr)
 	}
@@ -230,7 +276,76 @@ func runDeliverRetry(ctx context.Context, args []string, stdout, stderr io.Write
 	if reviewNotice != "" {
 		fmt.Fprintln(stdout, reviewNotice)
 	}
-	return dependencies.startDeliveryOwner(ctx, loaded, environment, stdout, stderr)
+	fmt.Fprint(stdout, ownerReport.String())
+	return exitOK
+}
+
+type retryOwnerProof struct {
+	Proven   bool
+	Reason   string
+	Reparked bool
+}
+
+func proveDeliveryRetryOwner(ctx context.Context, runStore *store.Store, gitRoot string, before store.DeliveryQueueItem, retried store.DeliveryStage, startCode int, controller OwnerProcessController) (retryOwnerProof, error) {
+	queue, found, err := runStore.DeliveryQueue(ctx, gitRoot)
+	if err != nil {
+		return retryOwnerProof{}, fmt.Errorf("read Delivery Queue after retry start: %w", err)
+	}
+	if !found {
+		return retryOwnerProof{}, errors.New("Delivery Queue disappeared after retry start")
+	}
+	proof := retryOwnerProof{}
+	if startCode != exitOK {
+		proof.Reason = "the Queue Owner did not start"
+	}
+	if startCode == exitOK {
+		canAdvance := false
+		for _, item := range queue.Items {
+			if item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
+				canAdvance = true
+				break
+			}
+		}
+		if !canAdvance {
+			return retryOwnerProof{Proven: true}, nil
+		}
+		proof.Reason = "no Queue Owner holds the Delivery Queue after the start"
+	}
+	if queue.OwnerPID > 0 {
+		state := "is not running"
+		if store.ProcessAlive(queue.OwnerPID) {
+			var proofErr error
+			if controller == nil {
+				proofErr = errors.New("Delivery Queue owner process controller is required")
+			} else {
+				proofErr = controller.ProveOwner(ctx, queue.OwnerPID, queue.OwnerIdentity)
+			}
+			switch {
+			case proofErr == nil && store.ProcessAlive(queue.OwnerPID):
+				if startCode == exitOK {
+					return retryOwnerProof{Proven: true}, nil
+				}
+				return proof, nil
+			case proofErr == nil:
+			case errors.Is(proofErr, store.ErrOwnerProcessIdentityUnproven):
+				state = "has a different process identity"
+			default:
+				proof.Reason = fmt.Sprintf("Queue Owner PID %d could not be checked: %v", queue.OwnerPID, proofErr)
+				return proof, nil
+			}
+		}
+		if startCode == exitOK {
+			proof.Reason = fmt.Sprintf("Queue Owner PID %d %s", queue.OwnerPID, state)
+		}
+		if _, err := runStore.ReleaseDeliveryQueueOwner(ctx, gitRoot, queue.OwnerPID, queue.OwnerIdentity); err != nil {
+			return proof, fmt.Errorf("release gone owner after retry: %w", err)
+		}
+	}
+	proof.Reparked, err = runStore.RevertDeliveryQueueItemRetry(ctx, gitRoot, before, retried)
+	if err != nil {
+		return proof, fmt.Errorf("park item again after retry: %w", err)
+	}
+	return proof, nil
 }
 
 func missingDeliveryQueue(ctx context.Context, runStore *store.Store, gitRoot string) error {
