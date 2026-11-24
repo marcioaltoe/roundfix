@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -102,3 +102,31 @@ This Task delivers `_techspec.md` → Build Order 3. `roundfix deliver status` g
 - [`references/2026-11-23-characterization.md`](references/2026-11-23-characterization.md), sections 3, 4, 5 and 8
 - [`references/sources.md`](references/sources.md), sections 1, 2 and 3 (reported by quaestor and by the Praetor, 2026-11-23)
 - ADR-0279, ADR-0395, ADR-0365, ADR-0304, ADR-0373
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-error-handling, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds, roundfix.
+
+Implemented this Task's status and durable decision slice. The initial worktree contained only the Daemon's Task status change; that field remains untouched by the Agent.
+
+Acceptance evidence:
+
+- Owner status: `deliveryOwnerLine` counts all items outside `merged` and `parked`, names `roundfix deliver resume` when none has a recorded owner, and preserves the recorded-owner proof paths. The renamed test covers both advanceable and idle queues. Existing owner-state and read-only queue assertions pass in the focused status selection.
+- Run status: `deliveryRunLines` reads `ListRuns` and `RunEventsOfKinds` through status's existing reader, selecting the newest active Implement Run for the repository, Spec and Item Branch. It renders one line per running item after Turns and before Parks, ordering Tasks by their latest outstanding start. The three whole transcript tests first reproduced the missing lines on the unchanged implementation, then passed with the implementation. An additional focused test covers newer mismatched/terminal Runs, repository and branch filtering, queue order, restarted Tasks, skipped Tasks and closed-database failure. The ten existing affected tests gained their declared lines; correction signs retain their position before Owner.
+- Built executable: both `status_of_the_measured_queue` and `retry_whose_owner_cannot_start` pass through the real built binary with temporary HOME, repository and database. The measured status fixture has retry count 1, a Failed Run, five completed Tasks, failed QA, nine prompts and the reported token total. The failed-start fixture uses a regular artifacts file and asserts the whole startup diagnostic plus retry failure transcript, no stdout, exit 2, original parked blocker, original nonzero retry count and no owner. Retry counts are seeded with the real retry store operation, because ordinary item updates do not write that column.
+- Decision and glossary: ADR-0450 was confirmed the next free number before creation. It is accepted and knowledge-marked, records the recovery contracts and rejected alternatives, and cites the quaestor and Praetor observations without a client or Spec path. Both earlier ADRs retain all prior bytes except their authorized header changes and dated notices. The title-based docscontract test checks their amendments and the ordered, unique Standard Export List entry. All four glossary entries link the decision, and Queue Owner describes the new status behavior.
+
+Focused checks run:
+
+- `go test ./internal/cli -run '^(TestDeliverStatus|TestDeliveryRunLines|TestTheBuiltBinaryReportsTheQueueQuaestorMeasured)' -count=1` — exit 0.
+- `go test -tags docscontract ./internal/docscontract -run 'TestTheDeliveryRecoveryDecision|TestGlossary' -count=1` — exit 0.
+- `go test ./internal/verifyselect -run '^TestRepositoryContractTestsDeclareTheirRelevance$' -count=1` — exit 0; only its pinned docscontract file count changed from 11 to 12.
+- Authorized regeneration: `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1` — exit 0. Compared the regenerated JSON with HEAD: the only removed test is `TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner`; the other 68 entries are additions, including previously unrecorded tests already in this tree.
+- `git diff --check` — exit 0. A byte comparison of each earlier ADR against HEAD, excluding the authorized timestamp, amendment header and notice, found no other changes.
+
+No declared Verification command or repository Verification was run. Task status, Task Graph, other Task files, skills, user guide, Baseline guides and other generated records were not edited. No commit, push or pull request was made. Daemon Verification and settlement remain pending.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T033912Z_c4dbe04fec2c7007`
+- Source commit: `579cf57a573f74abaac66523b4f8b5cbab461262`

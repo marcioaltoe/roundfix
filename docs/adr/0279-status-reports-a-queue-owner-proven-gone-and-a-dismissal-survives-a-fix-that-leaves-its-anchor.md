@@ -1,8 +1,9 @@
 ---
 status: accepted
 knowledge: true
+amended_by: [ADR-0450]
 created_at: 2026-10-16T00:00:00Z
-updated_at: 2026-10-16T00:00:00Z
+updated_at: 2026-11-24T00:00:00Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -29,6 +30,8 @@ resume`. A live PID whose identity matches, or whose identity cannot be read,
 adds no line; an identity that cannot be read writes a diagnostic to stderr.
 Status stays read-only and never reclaims the owner record; `resume`, `retry`
 and `start` still do. A queue with no recorded owner adds no line.
+
+**Amended by [ADR-0450](0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md) (2026-11-24).** Status now reports no recorded owner while an item can still advance, and names the Active Run and Tasks of each running item. It remains read-only.
 
 **A dismissal survives a fix that leaves its anchor.** `roundfix review
 dispose <id> --dismiss` keeps accepting a dismissal at the reviewed head. It

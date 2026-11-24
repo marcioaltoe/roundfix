@@ -575,6 +575,13 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 	if ownerLive {
 		printDeliveryTurns(loaded, queue, stdout, stderr)
 	}
+	runLines, err := deliveryRunLines(ctx, runStore, loaded.GitRoot, queue)
+	if err != nil {
+		return printDeliverFailure("status", err, stderr)
+	}
+	for _, line := range runLines {
+		fmt.Fprintln(stdout, line)
+	}
 	for _, item := range queue.Items {
 		if item.Stage == store.DeliveryStageParked && item.Blocker != delivery.BlockerQueueTokenCeiling {
 			park := delivery.ClassifyPark(queue, item)
@@ -599,18 +606,17 @@ func runDeliverStatus(ctx context.Context, args []string, stdout, stderr io.Writ
 }
 
 func deliveryOwnerLine(ctx context.Context, queue store.DeliveryQueue, controller OwnerProcessController, stderr io.Writer) (string, bool) {
-	if queue.OwnerPID <= 0 {
-		return "", false
-	}
-	canAdvance := false
+	canAdvance := 0
 	for _, item := range queue.Items {
 		if item.Stage != store.DeliveryStageMerged && item.Stage != store.DeliveryStageParked {
-			canAdvance = true
-			break
+			canAdvance++
 		}
 	}
-	if !canAdvance {
+	if canAdvance == 0 {
 		return "", false
+	}
+	if queue.OwnerPID <= 0 {
+		return fmt.Sprintf("Owner: Delivery Queue has no recorded owner and %d item(s) can still advance; run roundfix deliver resume", canAdvance), false
 	}
 
 	state := "is not running"

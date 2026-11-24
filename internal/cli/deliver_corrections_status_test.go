@@ -54,7 +54,7 @@ func TestDeliverStatusShowsUndeclaredCorrectionSigns(t *testing.T) {
 				return out.String()
 			}
 			base := implementTestSlug + "\tmerging\t-\t" + f.repo + "\n" +
-				"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
+				"Owner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 				"Usage: no Runs recorded\n"
 			got := call()
 			if setting != "true" {
@@ -64,7 +64,7 @@ func TestDeliverStatusShowsUndeclaredCorrectionSigns(t *testing.T) {
 				return
 			}
 			line := "Corrections: " + implementTestSlug + " undeclared: commit " + head[:7] + ` "fix: correction before merge"; declare with roundfix corrections declare --spec ` + implementTestSlug + "\n"
-			expected := strings.Replace(base, "Limits:", line+"Limits:", 1)
+			expected := strings.Replace(base, "Owner:", line+"Owner:", 1)
 			if got != expected {
 				t.Fatalf("status=%q want %q", got, expected)
 			}

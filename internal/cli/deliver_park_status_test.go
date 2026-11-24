@@ -44,7 +44,7 @@ func TestDeliverStatusPrintsAParkLinePerParkedItem(t *testing.T) {
 	code := runCLI(t, []string{"deliver", "status"}, &stdout, &stderr)
 	want := "first\tparked\tchecks-timeout\t-\nactive\tqueued\t-\t-\nlast\tparked\treview-stale\t-\n" +
 		"Warning: first premise-changed: internal/example.go\n" +
-		"Park: first environment: resolve the blocker, then run roundfix deliver retry first\n" +
+		"Owner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nPark: first environment: resolve the blocker, then run roundfix deliver retry first\n" +
 		"Park: last review: in , merge into the item branch any commit its Pull Request's head branch holds that the item branch lacks, then run roundfix deliver retry last\n" +
 		"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\n" +
 		"Usage: no Runs recorded\n" +

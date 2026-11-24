@@ -165,7 +165,7 @@ func TestDeliverStatusNamesTheMachineCapacityHolderAndWaiters(t *testing.T) {
 	})
 	one, two := seedMachineCapacityStatus(t, home)
 	before := snapshotMachineCapacityHome(t, home)
-	assertRunsListTranscript(t, []string{"deliver", "status"}, "0003-queued\tqueued\t-\t-\n"+machineCapacityStatusBlock(one, two)+"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n", "", exitOK)
+	assertRunsListTranscript(t, []string{"deliver", "status"}, "0003-queued\tqueued\t-\t-\nOwner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\n"+machineCapacityStatusBlock(one, two)+"Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no Runs recorded\n", "", exitOK)
 	assertMachineCapacityHomeUnchanged(t, home, before)
 }
 
