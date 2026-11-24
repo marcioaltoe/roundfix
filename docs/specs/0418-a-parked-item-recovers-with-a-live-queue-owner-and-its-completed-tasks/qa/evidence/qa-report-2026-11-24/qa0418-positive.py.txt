@@ -1,7 +1,0 @@
-from pathlib import Path
-import subprocess,time
-root=Path.cwd();s=next(root.glob('docs/specs/0418-*'));e=s/'qa/evidence/qa-report-2026-11-24';report=s/'qa/qa-report-2026-11-24.md'
-def run(name,args):
- start=time.monotonic();r=subprocess.run(args,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True);(e/(name+'.txt')).write_text('command: '+' '.join(args)+'\n'+r.stdout+'\nexit: '+str(r.returncode)+'\n');print(name,r.returncode,round(time.monotonic()-start,1),flush=True);return r
-r=run('positive-packages',['go','test','-overlay=/tmp/qa0418-overlay.json','-count=1','-timeout','30m','-v','./internal/delivery','./internal/cli','./internal/worktree','./internal/store'])
-r2=run('docs-skills',['go','test','-count=1','-timeout','20m','-tags','docscontract','-v','./internal/docscontract','./skills'])

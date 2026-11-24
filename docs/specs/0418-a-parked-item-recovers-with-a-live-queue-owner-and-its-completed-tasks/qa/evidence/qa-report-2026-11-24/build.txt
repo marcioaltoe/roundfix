@@ -1,5 +1,0 @@
-command: make build
-result: exit 0
-output: go build -buildvcs=false with app.BuildCommit=6ca6f91c-dirty and app.BuildTime set by make, output bin/roundfix
-cache-bound warning: recent/busy entries exceeded the configured bound; build continued
-The full --version line is recorded in version.txt.
