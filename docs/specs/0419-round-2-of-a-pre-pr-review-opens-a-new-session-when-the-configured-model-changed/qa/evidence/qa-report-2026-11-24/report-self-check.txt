@@ -1,2 +1,0 @@
-PASS: report counts, contiguous Results rows, typed input blocks, preserved auditor identity, link existence, unignored evidence, text-only artifacts, diff whitespace and final tracked-file scope.
-Only the seeded qa/ directory is untracked; no tracked source or Task changes.

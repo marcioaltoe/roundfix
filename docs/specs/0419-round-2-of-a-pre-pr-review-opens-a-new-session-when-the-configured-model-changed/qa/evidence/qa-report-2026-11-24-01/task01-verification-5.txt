@@ -1,6 +1,0 @@
-command: /bin/zsh -c for f in docs/user-guide/commands/review.md .agents/skills/roundfix/references/review.md skills/roundfix/references/review.md; do tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'only when the selection at that index still names the recorded model' || { printf 'missing phrase in %s: %s\n' "$f" 'only when the selection at that index still names the recorded model' >&2; exit 1; }; tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'or when the record holds no model because an earlier Roundfix wrote it' || { printf 'missing phrase in %s: %s\n' "$f" 'or when the record holds no model because an earlier Roundfix wrote it' >&2; exit 1; }; if tr -s '[:space:]' ' ' < "$f" | grep -qF -- 'Round 2 prepares that name on that selection through acpx. If preparation'; then printf 'replaced sentence still in %s\n' "$f" >&2; exit 1; fi; done; cmp -s .agents/skills/roundfix/references/review.md skills/roundfix/references/review.md && cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
-stdout:
-
-stderr:
-
-exit: 0

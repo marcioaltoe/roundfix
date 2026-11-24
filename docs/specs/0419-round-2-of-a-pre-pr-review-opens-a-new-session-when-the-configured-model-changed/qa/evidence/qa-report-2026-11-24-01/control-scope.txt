@@ -1,9 +1,0 @@
-command: git diff --name-only 7aa773db55b24af9b28cc4881a981e38f6d4639d dd8fb178b76499ff1fbaecfffcad85b54e9fa87c -- internal/cli internal/delivery
-stdout:
-internal/cli/review.go
-internal/cli/review_lineage.go
-internal/cli/review_model_change_test.go
-
-stderr:
-
-exit: 0

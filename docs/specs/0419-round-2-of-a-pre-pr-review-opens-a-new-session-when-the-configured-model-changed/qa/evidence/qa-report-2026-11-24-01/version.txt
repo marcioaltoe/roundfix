@@ -1,7 +1,0 @@
-command: ./bin/roundfix --version
-stdout:
-roundfix 0.153.1 (dd8fb178-dirty, built 2026-11-24 11:18:56 -0300)
-
-stderr:
-
-exit: 0

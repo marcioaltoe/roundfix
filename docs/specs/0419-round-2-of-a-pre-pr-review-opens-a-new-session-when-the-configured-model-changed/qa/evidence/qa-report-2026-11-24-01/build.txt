@@ -1,3 +1,0 @@
-make build: exit 0
-go build -buildvcs=false -o bin/roundfix ./cmd/roundfix (version ldflags supplied by make)
-Build cache warning: bound exceeded with no further idle entries; build continued successfully.

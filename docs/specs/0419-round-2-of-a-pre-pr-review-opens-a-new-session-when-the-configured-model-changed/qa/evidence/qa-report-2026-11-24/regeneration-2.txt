@@ -1,6 +1,0 @@
-Command: go test -timeout 20m ./skills -run ^TestEveryOwnedSkillVersionIsRecorded$ -record-skill-versions
-Exit: 0
-STDOUT:
-ok  	roundfix/skills	0.310s
-
-STDERR:

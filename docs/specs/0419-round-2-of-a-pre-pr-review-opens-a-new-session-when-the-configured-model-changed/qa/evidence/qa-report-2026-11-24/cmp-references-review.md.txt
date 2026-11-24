@@ -1,5 +1,0 @@
-Command: cmp .agents/skills/roundfix/references/review.md skills/roundfix/references/review.md
-Exit: 0
-STDOUT:
-
-STDERR:

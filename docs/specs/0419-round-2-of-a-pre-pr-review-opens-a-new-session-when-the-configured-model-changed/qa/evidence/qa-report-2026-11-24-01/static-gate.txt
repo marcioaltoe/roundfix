@@ -1,3 +1,0 @@
-Daemon-supplied repository Verification: make verify-changed
-Audited head: dd8fb178b76499ff1fbaecfffcad85b54e9fa87c
-Verdict: pass; exit 0; diagnostics removed on success. Not rerun by QA.

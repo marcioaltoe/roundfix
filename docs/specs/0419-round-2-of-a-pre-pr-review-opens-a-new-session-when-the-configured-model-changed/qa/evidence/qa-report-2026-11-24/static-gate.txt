@@ -1,5 +1,0 @@
-Source: Daemon assignment at audited head 48b0dffb77d025d24173758498c426fc4a15bb87
-Command: make verify-changed
-Result: pass (exit 0)
-Diagnostics removed on success. Not rerun by QA Agent.
-Build: make build, exit 0.

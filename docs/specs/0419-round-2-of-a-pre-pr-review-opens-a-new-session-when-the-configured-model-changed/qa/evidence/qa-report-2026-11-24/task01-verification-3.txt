@@ -1,5 +1,0 @@
-Command: out="$(go test -count=1 -timeout 20m -tags docscontract -v -run '^(TestTheReviewModelDecisionAmendsTheLineageRule|TestTheReviewerLineageEntryStatesTheModelRule|TestTheReviewGuideAndReferenceDescribeTheModelRule|TestTheSkillCoverageMapIsCurrent|TestGlossaryLinksNameAcceptedADRs)$' ./internal/docscontract 2>&1)" || { printf '%s\n' "$out"; exit 1; }; for name in TestTheReviewModelDecisionAmendsTheLineageRule TestTheReviewerLineageEntryStatesTheModelRule TestTheReviewGuideAndReferenceDescribeTheModelRule/guide TestTheReviewGuideAndReferenceDescribeTheModelRule/canonical_reference TestTheReviewGuideAndReferenceDescribeTheModelRule/mirror_reference TestTheSkillCoverageMapIsCurrent TestGlossaryLinksNameAcceptedADRs; do printf '%s\n' "$out" | grep -q -- "--- PASS: $name " || { echo "missing pass: $name" >&2; exit 1; }; done
-Exit: 0
-STDOUT:
-
-STDERR:

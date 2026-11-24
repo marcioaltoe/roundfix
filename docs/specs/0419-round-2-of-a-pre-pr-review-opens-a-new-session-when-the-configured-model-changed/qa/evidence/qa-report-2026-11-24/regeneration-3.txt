@@ -1,6 +1,0 @@
-Command: go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract -run ^TestTheSkillCoverageMapIsCurrent$ -record-skill-coverage
-Exit: 0
-STDOUT:
-ok  	roundfix/internal/docscontract	0.486s
-
-STDERR:
