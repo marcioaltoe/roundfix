@@ -130,6 +130,7 @@ type reconcileDebrisSummary struct {
 }
 
 type reconcileRunSelection struct {
+	qaOnlyFailed     map[string]bool // Set only by Delivery Retry.
 	selected         []store.Run
 	all              []store.Run
 	coverage         []daemon.RunTaskCoverage

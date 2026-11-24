@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -89,3 +89,31 @@ This Task delivers `_techspec.md` → Build Order 1. The Queue Owner writes on t
 - [`references/2026-11-23-characterization.md`](references/2026-11-23-characterization.md), sections 1, 2 and 3
 - [`references/sources.md`](references/sources.md), sections 1 and 2 (reported by quaestor, 2026-11-23)
 - ADR-0170, ADR-0158, ADR-0284, ADR-0304
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, domain-modeling, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, no-workarounds, systematic-debugging, tech-writer, evidence-gate.
+
+Implemented this Task's slice:
+
+- The failed-child result now includes the created Run without changing the existing failure diagnostic. Both executor call sites record a nonempty changed Run before handling errors or outcomes. Recording uses `context.WithoutCancel`; a recording failure joins the executor error. The engine regression covers the unchanged blocker and environment Park Class, and recording after owner cancellation without parking.
+- Delivery Retry classifies a Failed Implement Run from local Git objects at its Run Branch tip using the committed-graph loader. Only a graph whose sole unfinished Task is its QA gate qualifies. The retry removes the gate's evidence and sets the new selection field before using the existing proofs and whole-set application. Failed-Run refusals name Delivery Retry as recovery and never suggest Reconcile.
+- The new CLI regressions carry five Tasks with Run/commit provenance, leave the gate pending, and assert exactly one per-Run output line. Controls cover an unfinished implementation Task (even with an uncommitted completed status), a missing branch, an unloadable committed graph, an already completed gate, stale completed gate evidence, whole-set refusal on moved inputs, unchanged Unresolved recovery, Preflight exclusion, and Reconcile's unchanged exit and accepted-outcome diagnostic.
+- `CarryForwardAcceptedOutcomes` remains unchanged. No existing test, fixture, or stale-Run assertion needed modification; `createDeliveryRetryRun` already supports the required committed graph and QA fixture.
+- Added QA-Only Failed Run next to Task Carry-Forward and revised the latter's route distinction through domain-modeling. Only the retry paragraph of the deliver guide changed. Prepended the dated review only to `command reconcile`. The sanctioned recorder changed only the deliver guide fingerprint in the Behavior Surface Record. ADR-0450 links and all other Tasks' work remain outside this diff.
+
+Focused evidence (all commands below exited 0 unless explicitly described as the initial reproduction):
+
+1. Initial regression run before production edits: `go test ./internal/delivery ./internal/cli -run 'Test(TheItemRecordsTheRunOfAFailedImplementExecutor|AFailedImplementChildNamesTheRunItCreated|ADeliveryRetryCarriesTheTasksOfAQAOnlyFailedRun)' -count=1 -timeout=4m` reproduced both stale-Run cases, the dropped child Run, and missing five-Task carry. The initial child-error expectation also exposed the existing trailing `: exit code 1` diagnostic; the test was corrected to preserve that existing contract. The same focused command passed after implementation.
+2. `go test ./internal/cli ./internal/delivery ./internal/worktree -run 'Test(ADeliveryRetryCarriesTheTasksOfAQAOnlyFailedRun|AFailedImplementChildNamesTheRunItCreated|TheItemRecordsTheRunOfAFailedImplementExecutor|CarryForward|ItemRecovery|ReconcileCarryForward|DeliveryEngine|DeliveryActions|RunSlot|DeliveryRunResult)' -count=1 -timeout=6m` passed, including unchanged Budget Exceeded acceptance, item recovery, and carry-forward compatibility checks.
+3. After strengthening the exact Reconcile refusal assertion: `go test ./internal/cli -run 'Test(ADeliveryRetryCarriesTheTasksOfAQAOnlyFailedRun|ImplementRefusesWhenCarryForwardIsAvailable|ImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry|InspectSpecCarryForwards)' -count=1 -timeout=4m` passed.
+4. `go test ./internal/delivery -run 'Test(ARunCeilingRefusalWaitsAndStartsWhenASlotFrees|ARunSlotWaitParksAsTodayAtItsDeadline|TheQueueDeadlineEndsARunSlotWait|AZeroRunSlotWaitParksAtOnce|OtherRunSpecFailuresDoNotWait|AStoppedOwnerClearsTheRunSlotWait|TwoQueuesWaitingForOneSlotStartOneRun)' -count=1 -timeout=4m` passed for the second executor call site.
+5. Required sanctioned regeneration: `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` passed and generated the record; no generated output was edited by hand.
+6. `go test -tags docscontract ./internal/docscontract -run '^TestGlossary(PhrasesAreDefinedTerms|LinksNameAcceptedADRs|ClosedListsEqualTheirConstants|AvoidLinesArePlainLists|StatesEachRuleOnce)$' -count=1` passed. `git diff --check` passed.
+
+Acceptance evidence: the first criterion is covered by the child/engine regressions and inspection of both recording call sites; the second by all retry cases above; the third by unchanged accepted-outcome source plus compatibility, Reconcile and Preflight controls; the fourth by glossary checks, scoped diff inspection and sanctioned regeneration. The fifth criterion (whole delivery, CLI and worktree packages), full documentation contracts, and every declared Verification command remain for Daemon Verification. No terminal Task verdict is claimed. The incoming Daemon-owned `in_progress` status was preserved; no manifest, other Task, skill, decision record, module or tooling file was edited. No commit, push, or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T001551Z_9b40dc21bfabfe76`
+- Source commit: `12c6950a9717b36e22ad855560f1a247b0b9c60b`

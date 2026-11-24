@@ -346,7 +346,12 @@ When an Implement Run ends `BudgetExceeded`, the queue parks its item as
 `run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>`
 considers every terminal Implement Run of the item's Spec on the item branch,
 newest first, together with the recorded Run, and carries each Run's remaining
-settled Tasks before resuming the item.
+settled Tasks before resuming the item. A Run that ended Failed is a source
+only when it is a QA-Only Failed Run: its committed Task Graph on the Run
+Branch has only the QA gate's Task not completed. That gate's Task is never
+carried. The Reconcile Command and the Implement Command's Preflight do not
+accept a QA-Only Failed Run. The item records a Run that ended Failed before
+it parks.
 
 When an unresolved Run's newest QA Report on its Run Branch is `partial`, has
 no finding-blocked rows, and has at least one environment-blocked row, including
