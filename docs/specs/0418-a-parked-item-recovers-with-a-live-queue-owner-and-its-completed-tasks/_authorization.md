@@ -7,6 +7,7 @@ paths:
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/roundfix/references/deliver.md
   - skills/roundfix/SKILL.md
+  - docs/references/coverage-record.json
 operations:
   - implement
   - commit
@@ -27,7 +28,7 @@ The messages and the maintainer's decisions this record rests on are copied whol
 
 ## Where the grant comes from
 
-Two decisions of the maintainer of 2026-11-23, each delivered as a `DECISÃO DE MARCIO` block to this project's ai-memory inbox by the Praetor, the session that coordinates the software projects and puts their decision requests to the maintainer.
+Three decisions of the maintainer of 2026-11-23, each delivered as a `DECISÃO DE MARCIO` block to this project's ai-memory inbox by the Praetor, the session that coordinates the software projects and puts their decision requests to the maintainer.
 
 The Spec, its delivery and its release: ai-memory message `01a20996-258c-7fa1-af9d-a053fbce2441`, decided 15:25 BRT (18:25 UTC). The block, verbatim:
 
@@ -51,6 +52,17 @@ alcance: repositório roundfix, Spec 0418-a-parked-item-recovers-with-a-live-que
 quando: 23/11/2026 18:42 BRT
 ```
 
+The coverage record, granted after the Run `run_20261124T001551Z_9b40dc21bfabfe76` failed `task_03` on `make verify-changed`, whose only failure was `TestCoverageEquivalence` reporting the intended removal of `TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner` as a coverage regression: ai-memory message `01a20b31-20fa-7650-8642-d4ee3b5d39a8`, decided 22:30 BRT (01:30 UTC on 2026-11-24). The block, verbatim:
+
+```text
+DECISÃO DE MARCIO
+pedido: mensagem de 23/11 22:35 BRT (0418 parada)
+pergunta: A Spec 0418 pode regravar o registro de cobertura dos testes (docs/references/coverage-record.json, arquivo protegido), que hoje acusa como regressão o teste da regra antiga que a própria 0418 substitui (ADR-0450)? (Sim, regravar; não, parar)
+resposta: "Sim, regravar (Recomendado)"
+alcance: repositório roundfix, Spec 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks, até o release patch v0.153.1. Caminho: docs/references/coverage-record.json, regenerado só por: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1. Única remoção permitida: TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner. Inclui emendar a task_03 e o _authorization.md no branch do item e roundfix deliver retry. Sem Makefile, CI, go.mod ou lint.
+quando: 23/11/2026 22:30 BRT
+```
+
 ## What the grant covers
 
 - The operations `implement`, `commit`, `push`, `pull_request`, `merge` and `release`.
@@ -58,6 +70,7 @@ quando: 23/11/2026 18:42 BRT
 - Three Governed Paths:
   - `.agents/skills/roundfix/references/deliver.md`: the sections that describe what `deliver status` prints about the Queue Owner and about a running item, and what `deliver retry` carries, prints and refuses;
   - `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`: the version fields the record command raises, and nothing else.
+- `docs/references/coverage-record.json`, written only by its own command under `## Sanctioned regeneration`; the only removal it may record is `TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner` (third decision).
 - The regeneration by the repository's own commands, declared under `## Sanctioned regeneration`.
 - A release at a `patch` Release Ceiling; the second decision names `v0.153.1`. The Spec is a `type: fix`. The release may change only the three version-only files in `release_paths`: the changelog, the npm package manifest and the application version. No Task performs it; the operator cuts it after the merge.
 
@@ -107,6 +120,12 @@ outputs:
   - docs/references/behavior-surfaces.json
 ```
 
+```yaml
+command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+outputs:
+  - docs/references/coverage-record.json
+```
+
 No mirror, version field, digest or record is hand-edited.
 
 ## Limits
@@ -117,7 +136,7 @@ No mirror, version field, digest or record is hand-edited.
   - `.roundfixrc.yml` or `skills-lock.json`;
   - any Vendored Skill, any Baseline module, template, profile, Setup Snapshot or plan golden;
   - any guide under `docs/agents/` or `docs/agents/setup-context.json`;
-  - `docs/references/coverage-record.json` and any Archive Record;
+  - any Archive Record, and `docs/references/coverage-record.json` beyond its own regeneration command;
   - any skill other than `roundfix`, and any Roundfix reference other than `deliver`;
   - the `### QA settlement` section of any skill;
   - any accepted ADR other than the one this Spec adds and ADR-0279 and ADR-0395, which gain their amendment notices.
