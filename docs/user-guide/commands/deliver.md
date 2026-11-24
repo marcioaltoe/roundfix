@@ -518,8 +518,12 @@ Owner: Delivery Queue owner PID <pid> is not running; run roundfix deliver resum
 
 If the PID is alive but its start-time identity differs from the recorded
 owner identity, the state is `has a different process identity` instead of
-`is not running`. A proven live owner, no recorded owner, or a queue whose
-items are all merged or parked adds no `Owner:` line. If the identity cannot
+`is not running`. A proven live owner or a queue whose items are all merged or parked adds no
+`Owner:` line. When no owner is recorded and items can still advance, status prints:
+
+```text
+Owner: Delivery Queue has no recorded owner and <n> item(s) can still advance; run roundfix deliver resume
+``` If the identity cannot
 be checked, status adds no `Owner:` line and writes
 `roundfix: Delivery Queue owner PID <pid> could not be checked: <error>` to
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
@@ -570,6 +574,17 @@ owner that is not proven live, a record of another PID or identity, or no
 record prints no `Turn:` line; a record that cannot be read writes
 `roundfix: Delivery Queue turn record <path> could not be read: <error>` to
 stderr, and status still exits `0`.
+
+For each item at `running`, in queue order, status prints one line after the
+`Turn:` lines and before the `Park:` lines. The Active Run is the newest
+non-terminal Implement Run for the item's Spec and Item Branch. Tasks in
+progress appear in start order:
+
+```text
+Run: <slug> no Active Run
+Run: <slug> <run-id>; Tasks in progress: <task>, <task>
+Run: <slug> <run-id>; no Task in progress
+```
 
 When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the seven the `review` guide lists; a merge of the default branch keeps the lineage, with or without a conflict, and prints nothing.
 
@@ -624,6 +639,14 @@ text prescribes the value the blocker locates, amend it in <worktree> to
 one no Secret Pattern matches (letters only, or fewer than 20 characters);
 then run roundfix deliver retry <slug>, whose rerun returns any Secret
 Match to the Agent as Verification Feedback`.
+
+If retry cannot prove the started Queue Owner is live while an item can
+advance, it exits `2` and prints `Retry failed` on standard error, with
+`Reason:`, `Item:`, an optional `Carried forward:` block for each Run carried
+from, and `Next:`. When no owner holds the queue, it parks the item again with
+its earlier blocker and retry count. If a live owner's identity cannot be
+checked, retry leaves the current state unchanged and directs the operator to
+status. No success report is printed on standard output.
 
 A Delivery Retry from `runtime-infrastructure` is not counted against the retry
 limit and re-enters as a `run-unresolved` retry does.
@@ -763,9 +786,9 @@ Any other Pull Request head parks the item `review-stale`.
 
 After the retry, a live owner whose identity Roundfix proves keeps the queue
 and stdout reports `Handed <slug> to Delivery Queue owner PID <pid>.`. If the
-recorded owner is dead or its identity is unproven, Roundfix reclaims the owner
+recorded owner is proven gone, Roundfix reclaims the owner
 record, writes the same stderr notice as `deliver resume`, and starts a new
-detached owner. With no recorded owner, it starts one directly.
+detached owner. With no recorded owner, it starts one directly, then proves a live owner holds the queue if any item can still advance.
 
 A successful retry exits `0`. When Tasks moved, stdout prints one `Carried
 forward from Run <run-id>: <task>, <task>` line per Run carried from, in

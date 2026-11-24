@@ -412,7 +412,10 @@ When an Implement Run ends `BudgetExceeded`, the queue parks its item as
 `run-budget-exceeded` with that Run's ID. `roundfix deliver retry <slug>`
 considers every terminal Implement Run of the item's Spec on the item branch,
 newest first, together with the recorded Run, and carries each Run's remaining
-settled Tasks before resuming the item.
+settled Tasks before resuming the item. A Failed Run is accepted only when it
+is a QA-Only Failed Run, whose committed Task Graph has only the QA gate
+unfinished. The QA gate's Task is never carried. The Reconcile Command and
+the Implement Command's Preflight do not accept a QA-Only Failed Run.
 
 `deliver status` prints each item's Spec slug, stage, blocker and worktree.
 When the queue records an owner PID, at least one item is neither `merged` nor
@@ -425,8 +428,12 @@ Owner: Delivery Queue owner PID <pid> is not running; run roundfix deliver resum
 
 If the PID is alive but its start-time identity differs from the recorded
 owner identity, the state is `has a different process identity` instead of
-`is not running`. A proven live owner, no recorded owner, or a queue whose
-items are all merged or parked adds no `Owner:` line. If the identity cannot
+`is not running`. A proven live owner or a queue whose items are all merged or parked adds no
+`Owner:` line. When no owner is recorded and items can still advance, status prints:
+
+```text
+Owner: Delivery Queue has no recorded owner and <n> item(s) can still advance; run roundfix deliver resume
+``` If the identity cannot
 be checked, status adds no `Owner:` line and writes
 `roundfix: Delivery Queue owner PID <pid> could not be checked: <error>` to
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
@@ -460,6 +467,17 @@ slot(s) held`, `waiting for a review slot (<n> of <m> waiting); <held> of
 to read it`. Read the `Turn:` lines before acting on a stage that looks stuck:
 an item that waits for a review slot or the owner's turn needs no retry and no
 stop.
+
+For each item at `running`, in queue order, status prints one line after the
+`Turn:` lines and before the `Park:` lines. The Active Run is the newest
+non-terminal Implement Run for the item's Spec and Item Branch. Tasks in
+progress appear in start order:
+
+```text
+Run: <slug> no Active Run
+Run: <slug> <run-id>; Tasks in progress: <task>, <task>
+Run: <slug> <run-id>; no Task in progress
+```
 
 When an item's worktree holds a Pre-PR Review Record of an earlier head and the next review of its current head will open a new Reviewer Lineage at round 1, `deliver status` prints, for a parked or reviewing item, after any `Warning:` lines and before the `Owner:` line: `Review: <slug> head <head> opens a new Reviewer Lineage at round 1, a full review of the candidate: <reason>`. The reason is one of the seven the `review` guide lists; a merge of the default branch keeps the lineage, with or without a conflict, and prints nothing.
 
@@ -509,6 +527,14 @@ text prescribes the value the blocker locates, amend it in <worktree> to
 one no Secret Pattern matches (letters only, or fewer than 20 characters);
 then run roundfix deliver retry <slug>, whose rerun returns any Secret
 Match to the Agent as Verification Feedback`.
+
+If retry cannot prove the started Queue Owner is live while an item can
+advance, it exits `2` and prints `Retry failed` on standard error, with
+`Reason:`, `Item:`, an optional `Carried forward:` block for each Run carried
+from, and `Next:`. When no owner holds the queue, it parks the item again with
+its earlier blocker and retry count. If a live owner's identity cannot be
+checked, retry leaves the current state unchanged and directs the operator to
+status. No success report is printed on standard output.
 
 A Delivery Retry from `runtime-infrastructure` is not counted against the retry
 limit and re-enters as a `run-unresolved` retry does.

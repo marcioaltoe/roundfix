@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -75,3 +75,16 @@ This Task delivers `_techspec.md` → Build Order 4. The `deliver` page of the u
 - `_techspec.md` → The decision record, the glossary, the guide and the skill; API Contract 9; Surface Transcript 1; Surface Transcript 2; Surface Transcript 3; Surface Transcript 5; Surface Transcript 6; Invariants; Coverage Map; Testing Approach; Build Order 4
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - ADR-0256, ADR-0450
+
+## Result
+
+Skills loaded: implement-task, tech-writer, golang-testing, testing-boss, evidence-gate
+
+- The guide and both reference copies now describe the owner and Run lines, retry failure, and QA-Only Failed Run. The focused `go test -tags docscontract ./internal/docscontract -run 'TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/(guide|canonical_reference|mirror_reference)'` passed all three subtests.
+- `make skills-sync`, the authorized skill version recorder, and the behavior surface recorder ran in order; the recorder was repeated after the final guide wording edit. The skill version rose from 0.1.283 to 0.1.284. `cmp` confirmed each skill copy matches its mirror; the skill diffs contain version changes only, leaving QA settlement unchanged. The coverage map was not changed.
+- Added the documentation contract and raised the pinned contract file count to 13. Focused `go test ./internal/verifyselect -run '^TestRepositoryContractTestsDeclareTheirRelevance$'` passed; the version and behavior record commands passed, and `git diff --check` passed. Full skills, documentation and coverage contracts remain for Daemon Verification.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T043440Z_39a347ec4e2091ba`
+- Source commit: `6ca6f91c1cb96a016424e536cb36a43e796eee3d`
