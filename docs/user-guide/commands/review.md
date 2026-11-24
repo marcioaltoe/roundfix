@@ -367,15 +367,19 @@ it never opens another Correction Review; a further changed head reaches the
 ceiling.
 
 When round 1 leaves standing findings, its reviewer session stays open. The
-checkout record stores the random session name, the selection index into the
-review profile's preferred selection and fallbacks, and `sessionOpen: true`.
-Round 2 prepares that name on that selection through acpx. If preparation
-fails, Roundfix ends that name and tries the normal selection loop with fresh
-random names. The round-2 prompt carries the recorded findings even when
-resume is unavailable.
+checkout record stores the random session name, the selection index into
+the review profile's preferred selection and fallbacks, the model of that
+selection as `lineage.model`, and `sessionOpen: true`. Round 2 prepares
+that name on that selection through acpx only when the selection at that
+index still names the recorded model. When the model changed, or when the
+record holds no model because an earlier Roundfix wrote it, Roundfix does
+not prepare that name: it ends it and tries the normal selection loop with
+fresh random names. It does the same when preparation fails. The round-2
+prompt carries the recorded findings even when resume is unavailable.
 
 Every round records the ACP session ID reported by its prompt stream in
-`lineage.acpSessionIds`, or an empty string when absent. `continued` is true
+`lineage.acpSessionIds`, or an empty string when absent, and the model of
+its session in `lineage.model`. `continued` is true
 only when the recorded session was prepared and both rounds report the same
 non-empty ID. Reusing a name alone does not prove continuation. Round 2 always
 ends its session, including on a blocked or findings verdict. Every other

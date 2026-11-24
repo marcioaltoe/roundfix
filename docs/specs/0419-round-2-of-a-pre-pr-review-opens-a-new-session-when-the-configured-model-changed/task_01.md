@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -111,3 +111,31 @@ This Task delivers `_techspec.md` → Build Order 1. It answers the finding repo
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/sources.md`](references/sources.md), sections 1, 5, 6 and 7 (reported by fiscus, 2026-11-23)
 - ADR-0197, ADR-0174, ADR-0256, ADR-0233, ADR-0286
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, no-workarounds, systematic-debugging, evidence-gate.
+
+- Added optional `reviewLineage.Model` immediately after `Selection`, recorded from the receiving runtime only in the `promptSent` block. Round 2 prepares the recorded session only when the recorded model is present and equals the trimmed model at the recorded selection index. The existing end-session and preferred-first selection loop handle changed or unknown models, with the existing round-2 delta prompt. No classifier code changed.
+- Added the model-notice fake runner and the three requested CLI tests, including classifier refusal, preferred continuation and fallback subtests. Every invocation through the new JSON helper compares the printed lineage with the persisted lineage, covering both outputs for preferred, fallback and round-2 models. The changed-model test asserts exact session-event order, both model names, no continuation, round 2, reviewed outcome, empty stderr and the delta prompt with its fixing commit. The missing-model test removes the JSON field from the saved record and asserts a fresh session and its recorded model.
+- Before changing production code, `rtk proxy go test ./internal/cli -run '^TestReviewRoundTwoOpensANewSessionWhen' -count=1 -timeout 3m` exited 1: round 1 held no model, and the older-record case continued the recorded session. After the implementation, `rtk proxy go test ./internal/cli -count=1 -timeout 4m -run '^Test(Review(RoundTwo|RecordsTheModel|LineageChange)|ACeilingRecordNamesNoSelection)'` exited 0. This focused selection includes all three new tests, their subtests and the five unchanged control tests, including the byte-pinned ceiling lineage.
+- Confirmed 0451 was the next free ADR identifier, then wrote accepted, knowledge-marked ADR-0451 with the Fiscus report, session and record contracts, and the five rejected alternatives. ADR-0197 gained only its amendment-list entry, updated timestamp and appended dated notice. Added the export entry and revised only the Reviewer Lineage glossary entry through domain-modeling.
+- Added three documentation contracts, discovering the decision by title rather than number, checking its header, ADR-0197's final amendment and timestamp, the complete historical body and three prior notices, dated notice placement, sorted unique export entry, glossary clause/link, and all four phrases in each review document. `rtk proxy go test -tags docscontract ./internal/docscontract -count=1 -timeout 4m -run '^TestTheReview(Model|erLineage|Guide)'` exited 0.
+- Replaced only the requested paragraph and following sentence in the guide and canonical review reference. Ran sanctioned regeneration in order: `make skills-sync` (exit 0); `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (exit 0); `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (exit 0). The recorder selected version `0.1.286`, raising both version fields in both skill copies and recording it; the Behavior Surface Record was regenerated. `docs/references/skill-coverage.json` remained byte-identical.
+- Increased only the docscontract-file count in `TestRepositoryContractTestsDeclareTheirRelevance`, from the tree's 13 to 14. `rtk proxy go test ./skills ./internal/verifyselect -count=1 -timeout 3m -run '^Test(AuthorialSkillSync|SettlementGuidanceIsOneTable|RepositoryContractTestsDeclareTheirRelevance)$'` exited 0 for both packages.
+- A focused Python byte-preservation audit against HEAD passed for ADR-0197's historical bytes, every other glossary entry, each review document outside the specified replacements, version-only changes in both SKILL.md files, identical skill/reference mirrors, unchanged coverage map and the count-only test update. `rtk proxy git diff --check` exited 0. Existing CLI and Delivery tests, fixtures and goldens were not edited; QA settlement text was not changed.
+
+The checks above use temporary repositories and fake runners; they provide no live-adapter or production evidence. The Task status and authored Verification remain Daemon-owned. No declared Verification command, repository-wide verification, commit, push, pull request, other Task edit or Task Graph edit was performed. The pre-existing Task status change was preserved.
+
+### Verification feedback repair — attempt 1
+
+- Inspected the Daemon diagnostic artifact `batch-001-attempt-1.log` under this Run's `verification/` directory. The failing repository contract was `TestEveryTestInAParallelTestPackageRunsInParallel`: all three new top-level CLI tests lacked the required first-statement `t.Parallel()`.
+- Added `t.Parallel()` as the first statement of those three tests in `internal/cli/review_model_change_test.go`, consistent with the existing review tests using the same isolated fixture. No sequential exemption, ceiling change, assertion change or production-code change was needed.
+- `rtk proxy go test ./internal/testfixture -count=1 -timeout 3m -run '^TestEveryTestInAParallelTestPackageRunsInParallel$'` exited 0.
+- `rtk proxy go test ./internal/cli -count=1 -timeout 4m -run '^TestReview(RoundTwoOpensANewSessionWhen|RecordsTheModelOfTheSessionOfEachRound)'` exited 0, exercising all three affected tests and their subtests with parallel top-level execution.
+- `rtk proxy git diff --check` exited 0 after the repair. Task status was preserved; `make verify-changed` and the declared Verification commands were not rerun. No commit, push or pull request was created. The Daemon owns the next full Verification sequence.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T132611Z_38261d5d10d65851`
+- Source commit: `48b0dffb77d025d24173758498c426fc4a15bb87`
