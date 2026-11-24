@@ -523,7 +523,9 @@ owner identity, the state is `has a different process identity` instead of
 
 ```text
 Owner: Delivery Queue has no recorded owner and <n> item(s) can still advance; run roundfix deliver resume
-``` If the identity cannot
+```
+
+If the identity cannot
 be checked, status adds no `Owner:` line and writes
 `roundfix: Delivery Queue owner PID <pid> could not be checked: <error>` to
 stderr; it still exits `0`. Status is read-only and reclaims nothing, leaving
