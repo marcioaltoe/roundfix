@@ -64,7 +64,6 @@ func TestDoctorReportsTheVerificationCoreBudget(t *testing.T) {
 			loaded := roundconfig.Loaded{HomeDir: home, GitRoot: repo, Config: roundconfig.Builtin()}
 			loaded.Config.Runs.MaxVerifying = row.maxVerifying
 			loaded.Config.Runs.MaxActive = row.maxActive
-			loaded.Config.Delivery.LinuxLane = true
 			if !row.missing {
 				seedDoctorCoreBudgetRuns(t, home, row.active)
 			}
@@ -85,9 +84,6 @@ func TestDoctorReportsTheVerificationCoreBudget(t *testing.T) {
 						return CheckResult{Name: HealthCheckVerificationCapacity, Status: CheckStatusOK}
 					}
 				}
-				deps.doctor.linuxLane = func(context.Context, roundconfig.Loaded) CheckResult {
-					return CheckResult{Name: HealthCheckLinuxLane, Status: CheckStatusOK}
-				}
 				if row.unreadable {
 					deps.gc.openStorageReader = func(context.Context, string) (*store.Store, error) {
 						return nil, errors.New("open Run Database: denied")
@@ -107,7 +103,7 @@ func TestDoctorReportsTheVerificationCoreBudget(t *testing.T) {
 				t.Fatalf("doctor exit = %d; stdout = %s; stderr = %s", code, stdout.String(), stderr.String())
 			}
 			// Comparing all stdout proves the complete line, its order and nil opt-out.
-			want := strings.Replace(baseline.String(), "linux-lane: ok\n", row.want+"linux-lane: ok\n", 1)
+			want := strings.Replace(baseline.String(), "codex: ok\n", row.want+"codex: ok\n", 1)
 			if stdout.String() != want {
 				t.Fatalf("stdout = %q, want %q", stdout.String(), want)
 			}

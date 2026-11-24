@@ -55,7 +55,7 @@ Usage:
   roundfix review dispose <finding-id> --dismiss --evidence <text>
   roundfix review dispose <finding-id> --fixed-by <commit> [--class <class> --reason <text> [--artifact <artifact>] | --correction <id>] [--spec <slug>]
   roundfix implement --spec <slug>
-  roundfix deliver <plan|start|status|resume|retry|stop|lane> [<slug> ...]
+  roundfix deliver <plan|start|status|resume|retry|stop> [<slug> ...]
   roundfix follow-up [--status] [--all] [--messages <path>] [--format <text|json>]
   roundfix phase start <phase> [--spec <slug>] [--model <identifier>] [--effort <level>] [--author-subagent]
   roundfix phase model <phase> --spec <slug>

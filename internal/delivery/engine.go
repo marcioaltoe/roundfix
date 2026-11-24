@@ -25,7 +25,6 @@ const (
 	BlockerReviewStale            = "review-stale"
 	BlockerCorrectiveSpecRequired = "corrective-spec-required"
 	BlockerGateFailed             = "gate-failed"
-	BlockerLinuxLaneContainer     = "linux-lane-container"
 	BlockerChecksFailed           = "checks-failed"
 	BlockerChecksTimeout          = "checks-timeout"
 	BlockerUnauthorized           = "unauthorized"
@@ -50,7 +49,6 @@ const BaseUpdateLimit = 3
 const WarningLowDisk = "low-disk"
 
 const WarningPremiseChanged = "premise-changed"
-const WarningLinuxLaneSkipped = "linux-lane-skipped"
 
 const cleanupWarningPrefix = "warning: cleanup failed"
 
@@ -153,26 +151,6 @@ type GateResult struct {
 	Passed  bool
 	Reason  string
 	Blocker string
-	// LaneSkip is the Queue Owner's lane reason, never an environment value.
-	// It is persisted in the item warning and published in the forge's PR body.
-	LaneSkip string
-}
-
-// LaneSkipBody tells PR readers which Linux check did not run before publication.
-func LaneSkipBody(reason string) string {
-	return "Linux Lane: not run. The Delivery Queue gate skipped it: " + reason + ". This candidate's Go packages were not tested on Linux before this pull request."
-}
-
-// laneSkipWarning splits off the last segment, whose reason can contain semicolons.
-func laneSkipWarning(warning string) (remaining, reason string) {
-	marker := WarningLinuxLaneSkipped + ": "
-	if reason, ok := strings.CutPrefix(warning, marker); ok {
-		return "", reason
-	}
-	if remaining, reason, ok := strings.Cut(warning, "; "+marker); ok {
-		return remaining, reason
-	}
-	return warning, ""
 }
 
 type Authorization struct {
@@ -1299,9 +1277,8 @@ func (engine *Engine) checkFreeSpace(ctx context.Context, gitRoot string, item *
 		return nil
 	}
 	locations := engine.freeSpace.LowFreeSpace(ctx)
-	remaining, laneSkip := laneSkipWarning(item.Warning)
 	var segments []string
-	for _, segment := range strings.Split(remaining, "; ") {
+	for _, segment := range strings.Split(item.Warning, "; ") {
 		if segment != "" && !strings.HasPrefix(segment, WarningLowDisk+":") {
 			segments = append(segments, segment)
 		}
@@ -1310,9 +1287,6 @@ func (engine *Engine) checkFreeSpace(ctx context.Context, gitRoot string, item *
 		warning := WarningLowDisk + ": " + strings.Join(locations, ", ")
 		segments = append(segments, warning)
 		fmt.Fprintf(engine.log, "roundfix: warning: Delivery Queue item %s: %s before its %s; the queue continues\n", item.SpecSlug, warning, phase)
-	}
-	if laneSkip != "" {
-		segments = append(segments, WarningLinuxLaneSkipped+": "+laneSkip)
 	}
 	warning := strings.Join(segments, "; ")
 	if warning != item.Warning {
@@ -1563,13 +1537,6 @@ func (engine *Engine) gateCandidate(ctx context.Context, gitRoot string, item *s
 		}
 		return engine.park(ctx, gitRoot, item, blocker)
 	}
-	item.Warning, _ = laneSkipWarning(item.Warning)
-	if result.LaneSkip != "" {
-		if item.Warning != "" {
-			item.Warning += "; "
-		}
-		item.Warning += WarningLinuxLaneSkipped + ": " + result.LaneSkip
-	}
 	return engine.setStage(ctx, gitRoot, item, store.DeliveryStagePublishing)
 }
 
@@ -1604,9 +1571,6 @@ func (engine *Engine) publishCandidate(ctx context.Context, gitRoot string, item
 	}
 	if item.Stage == store.DeliveryStageParked {
 		return nil
-	}
-	if _, reason := laneSkipWarning(item.Warning); reason != "" {
-		publication.Body += "\n\n" + LaneSkipBody(reason)
 	}
 	pullRequest, err := engine.createPullRequest(ctx, gitRoot, workDir, item.SpecSlug, publication, head)
 	if err != nil {

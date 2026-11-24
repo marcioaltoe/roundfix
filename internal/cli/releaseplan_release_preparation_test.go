@@ -192,7 +192,7 @@ func TestTheV0143ReleaseRangeIsReadyWithItsPreparationCommit(t *testing.T) {
 	repo := filepath.Join(t.TempDir(), "history")
 	gitReleasePlan(t, root, "clone", "--shared", "--no-checkout", root, repo)
 	gittest.Harden(t, repo)
-	// A checkout that fetched no tags, such as the Linux Lane's copy, still
+	// A checkout that fetched no tags still
 	// holds the commits: name them with the two release tags when they are absent.
 	for _, release := range [][2]string{{"v0.143.3", "251ed81e81937353af9cdf4727599257c3900e8f"}, {"v0.143.4", "4f8a5b7db8385f7b3745f63d6cb5668dd576f662"}} {
 		if gitReleasePlanOutput(t, repo, "tag", "--list", release[0]) == "" {

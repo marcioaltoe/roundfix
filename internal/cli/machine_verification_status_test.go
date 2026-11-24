@@ -28,11 +28,7 @@ func TestTheRepositoryGateHoldsTheMachineCapacityWhileItRuns(t *testing.T) {
 			t.Parallel()
 			f := newDeliveryItemFixture(t)
 			f.workflow.loaded.Config.Runs.MaxVerifying = 1
-			f.workflow.loaded.Config.Delivery.LinuxLane = false
-			// The lane reads the fetched default, not the owner's effective config.
-			mustWrite(t, filepath.Join(f.repo, ".roundfixrc.yml"), "delivery:\n  linux_lane: false\n")
 			gittest.Run(t, f.repo, "add", ".roundfixrc.yml")
-			gittest.Run(t, f.repo, "commit", "-m", "disable fixture lane")
 			f.head = strings.TrimSpace(gittest.Run(t, f.repo, "rev-parse", "HEAD"))
 			gittest.Run(t, f.repo, "update-ref", "refs/remotes/origin/main", f.head)
 			dir := filepath.Join(f.home, ".roundfix", "verification-capacity")
@@ -176,7 +172,6 @@ func TestDoctorReportsTheMachineVerificationCapacity(t *testing.T) {
 			t.Parallel()
 			home, repo := withCLIWorkspace(t)
 			loaded := roundconfig.Loaded{HomeDir: home, GitRoot: repo, Config: roundconfig.Builtin()}
-			loaded.Config.Delivery.LinuxLane = true
 			checker := newDoctorFakeHealthChecker(CheckResult{Name: HealthCheckNode, Status: CheckStatusOK}, CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK}, CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK})
 			withDoctorFakeLoadedAndReadiness(t, checker, loaded, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 				return profileProofResult{}
@@ -219,12 +214,9 @@ func TestDoctorReportsTheMachineVerificationCapacity(t *testing.T) {
 				deps.doctor.diskSpace = func(context.Context, roundconfig.Loaded) []CheckResult {
 					return []CheckResult{{Name: HealthCheckDiskSpace, Status: CheckStatusOK}}
 				}
-				deps.doctor.linuxLane = func(context.Context, roundconfig.Loaded) CheckResult {
-					return CheckResult{Name: HealthCheckLinuxLane, Status: CheckStatusOK}
-				}
 			})
 			before := snapshotMachineCapacityHome(t, home)
-			line := "disk-space: ok\nverification-capacity: " + status + " (" + detail + ")\nlinux-lane: ok\n"
+			line := "disk-space: ok\nverification-capacity: " + status + " (" + detail + ")\n"
 			want := strings.Replace(baseline.String(), "codex: ok\n", line+"codex: ok\n", 1)
 			assertRunsListTranscript(t, []string{"doctor"}, want, "", exitOK)
 			assertMachineCapacityHomeUnchanged(t, home, before)

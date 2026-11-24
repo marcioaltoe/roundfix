@@ -63,9 +63,9 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 	t.Parallel()
 	const mib int64 = 1024 * 1024
 	for _, tc := range []struct {
-		name                              string
-		available                         int64
-		unreadable, missing, lane, failed bool
+		name                        string
+		available                   int64
+		unreadable, missing, failed bool
 	}{
 		{name: "below the threshold", available: 10239 * mib},
 		{name: "at the threshold", available: 10240 * mib},
@@ -73,7 +73,7 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 		{name: "missing location", available: 10239 * mib, missing: true},
 		{name: "healthy", available: 1 << 40},
 		{name: "one byte below the threshold", available: 10240*mib - 1},
-		{name: "before linux lane", available: 10239 * mib, lane: true},
+		{name: "before agent readiness", available: 10239 * mib},
 		{name: "preserves a failed exit", available: 10239 * mib, failed: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -94,7 +94,6 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 			loaded := roundconfig.Loaded{Config: roundconfig.Builtin(), GitRoot: t.TempDir(), HomeDir: home}
 			loaded.Config.Worktree.Location = "~/" + strings.TrimPrefix(worktrees, home+string(filepath.Separator))
 			loaded.Config.Worktree.SharedCaches = []roundconfig.SharedCache{{Path: filepath.Join("{home}", strings.TrimPrefix(cache, home+string(filepath.Separator)))}}
-			loaded.Config.Delivery.LinuxLane = tc.lane
 			checker := newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
 				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
@@ -105,11 +104,6 @@ func TestDoctorWarnsWhenALocationIsLowOnDisk(t *testing.T) {
 			}
 			withDoctorFakeLoadedAndReadiness(t, checker, loaded, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 				return profileProofResult{}
-			})
-			updateCommandDependenciesForTest(t, func(deps *commandDependencies) {
-				deps.doctor.linuxLane = func(context.Context, roundconfig.Loaded) CheckResult {
-					return CheckResult{Name: HealthCheckLinuxLane, Status: CheckStatusOK}
-				}
 			})
 			var baseline, baselineErr bytes.Buffer
 			baselineCode := runCLI(t, []string{"doctor"}, &baseline, &baselineErr)

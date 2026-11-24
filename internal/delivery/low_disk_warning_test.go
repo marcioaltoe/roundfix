@@ -41,9 +41,9 @@ func TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate(t *testing.T) {
 	const laneReason = "image not present; with detail"
 	const lane = "linux-lane-skipped: " + laneReason
 	for _, tc := range []struct {
-		name, before, atRun, atGate, laneSkip string
-		locations                             [][]string
-		noChecker                             bool
+		name, before, atRun, atGate string
+		locations                   [][]string
+		noChecker                   bool
 	}{
 		{
 			name: "low before the Run and the gate", before: premise + "; low-disk: old location",
@@ -56,20 +56,20 @@ func TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate(t *testing.T) {
 		},
 		{
 			name: "low with a lane-skip warning present", before: premise + "; low-disk: old location; " + lane,
-			locations: [][]string{{runLocation}, {gateLocation, runLocation}}, laneSkip: laneReason,
-			atRun: premise + "; " + runWarning + "; " + lane, atGate: premise + "; " + gateWarning + "; " + lane,
+			locations: [][]string{{runLocation}, {gateLocation, runLocation}},
+			atRun:     premise + "; " + lane + "; " + runWarning, atGate: premise + "; " + lane + "; " + gateWarning,
 		},
 		{
 			name: "healthy removes only low-disk", before: premise + "; low-disk: old location; " + lane,
-			locations: [][]string{nil, nil}, laneSkip: laneReason,
-			atRun: premise + "; " + lane, atGate: premise + "; " + lane,
+			locations: [][]string{nil, nil},
+			atRun:     premise + "; " + lane, atGate: premise + "; " + lane,
 		},
 		{
 			name: "unchanged low-disk", before: runWarning,
 			locations: [][]string{{runLocation}, {runLocation}}, atRun: runWarning, atGate: runWarning,
 		},
 		{
-			name: "no checker", before: premise + "; low-disk: old location; " + lane, noChecker: true, laneSkip: laneReason,
+			name: "no checker", before: premise + "; low-disk: old location; " + lane, noChecker: true,
 			atRun: premise + "; low-disk: old location; " + lane, atGate: premise + "; low-disk: old location; " + lane,
 		},
 	} {
@@ -101,7 +101,7 @@ func TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate(t *testing.T) {
 				}
 			}
 			fake := newFakeDeliveryWorkflow()
-			fake.gates[item.SpecSlug] = GateResult{Passed: true, LaneSkip: tc.laneSkip}
+			fake.gates[item.SpecSlug] = GateResult{Passed: true}
 			workflow := freeSpaceTestWorkflow{
 				fakeDeliveryWorkflow: fake,
 				beforeRun: func() {
@@ -134,9 +134,6 @@ func TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate(t *testing.T) {
 				})
 			}
 			body := "deliver spec-one"
-			if tc.laneSkip != "" {
-				body += "\n\nLinux Lane: not run. The Delivery Queue gate skipped it: image not present; with detail. This candidate's Go packages were not tested on Linux before this pull request."
-			}
 			boundary := newFakeDeliveryBoundary()
 			boundary.findPullRequest = func(req PullRequestRequest) PullRequestResult {
 				publications++

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0420-roundfix-stops-verifying-on-linux
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -130,3 +130,46 @@ This Task delivers `_techspec.md` → Build Order 1, on the maintainer's decisio
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/2026-11-24-techspec-measurements.md`](references/2026-11-24-techspec-measurements.md), sections 2, 3, 4, 5, 6 and 7
 - ADR-0288, ADR-0294, ADR-0297, ADR-0303, ADR-0316, ADR-0365, ADR-0384, ADR-0385, ADR-0398, ADR-0450
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, agentic-cli-design, golang-structs-interfaces, tech-writer, evidence-gate, systematic-debugging.
+
+Implemented this Task's product slice. Status and the Task Graph remain Daemon-owned. Initial inspection found only this Task file already modified; its existing status was preserved. The executor rejected the configured symlinked writable root, including with the physical working directory; approved escalated execution provided access to the same checkout.
+
+Acceptance evidence:
+
+- **Repository gate and publication:** the gate returns immediately after repository Verification. The new gate regression uses the surviving item fixture, committed legacy configuration on the fetched default branch, a Git boundary fake that refuses configuration reads, and a recording Docker stand-in in the command environment. It asserts success, no Docker invocation, no lane log and no lane console output. The engine regression observes `publishing`, an empty warning and the publication's original body. The surviving low-disk test also proves an existing skip warning is preserved through gating and publication without a PR paragraph.
+- **Command and help:** removed both lane source files and dispatch/help entries. The new command tests pin all stdout, stderr and exit codes for `deliver lane`, `deliver lane --all HEAD`, `deliver lane --help` and `deliver --help`. The surviving root-help test pins the updated root line.
+- **Configuration:** removed the fields, overlay, validation, image pattern and merges; appended the two deprecated-key entries in the specified order. Tests exercise each key alone, both together, project/user scopes, duplicate scopes, boolean/text/mapping/list/null values, an otherwise empty delivery mapping, the unchanged unknown-key diagnostic and silent resolution at a commit. Project Config lost exactly the key and its six comment lines.
+- **Doctor:** removed its dependency, check, health name and diagnostics. Its new regression supplies legacy checkout configuration and a recording Docker stand-in, checks no lane line/code/invocation, and checks `verification-cores` immediately precedes `codex`. Other doctor fixtures retain their checks and output positions.
+- **Stored records:** the retired container blocker remains an environment park with the prescribed retry action; a change-failure blocker remains a finding. Status prints the stored warning and retired park action. Retry uses the existing owner-proof fixture, with a parked legacy item and a merged item holding a stored skip warning; it leaves parked with an empty blocker and preserves the merged item. Low-disk rewriting preserves other segments in order and appends low disk last.
+- **Records and documentation:** deleted the eight obsolete test files and the one obsolete core-budget test, keeping the other tests by name. Removed only the guide's on-demand command section and only `command deliver lane` from the map. Both generated records were written by their sanctioned commands, in the required order, after the final source/test edit. Both records now omit the removed command.
+
+Focused checks (all exited 0 on their final runs):
+
+```text
+go test ./internal/cli ./internal/config ./internal/delivery -run 'Test(TheRetiredLane|DeliverLaneReproduces|DeliverHelpReproduces|RunsListReproducesSurfaceTranscriptRetired|DoctorRunsNoLinux|TheRepositoryGateEnds|APassedGateLeaves|AStoredLaneBlocker|TheRepositoryGateCommandReceives|DoctorReportsTheVerificationCoreBudget|TheQueueWarnsOfLowDisk)' -count=1
+
+rtk proxy go test ./internal/cli ./internal/delivery ./internal/config -run 'Test(TheRetiredLane|DeliverLaneReproduces|DeliverHelpReproduces|RunsListReproducesSurfaceTranscriptRetired|DoctorRunsNoLinux|TheRepositoryGateEnds|APassedGateLeaves|AStoredLaneBlocker|StatusPrintsWhatTheLaneRecorded|ADeliveryRetryReturnsAnItemTheLaneParked)' -count=1
+
+rtk proxy go test ./internal/cli -run '^TestADeliveryRetryReturnsAnItemTheLaneParked$' -count=1
+
+go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
+
+rtk proxy git diff --check
+```
+
+A separate focused selection also exercised the surviving owner-capacity, gate-capacity, shared-cache trim, disk-space doctor, machine-capacity doctor, Park Class, gate-blocker and root-help tests; those passed. Its initial new status assertion used the wrong punctuation; the preserved command transcript established the correct `Park: <slug> environment: <next>` form, and the corrected new test passed in the replacement-test selection above. `systematic-debugging` was also used to inspect the removal's compile diagnostics and correct the orphaned syntax/imports before the passing focused runs.
+
+The generated coverage delta is **36 removed and 18 added**: all ten authored replacement tests plus eight tests already present in HEAD but absent from the starting coverage record (four review-model CLI tests and four recovery/review documentation tests from earlier work). No unrelated test was removed, no existing test source was added by this Task, and the generated output was not hand-edited. This is baseline record drift exposed by the required generator, rather than an exact ten-entry addition.
+
+A changed-path audit compared tracked and untracked changes with this Task's declared Context paths: none fell outside the declarations. A production-source scan found no `LinuxLane`, `linuxLane`, `LaneSkip`, `laneSkip`, `DR-LANE-` or `linux-lane.log` references in the three affected packages.
+
+Declared Verification, whole consumer suites, the full documentation contracts and cross-platform builds remain for the Daemon; they were not run here. The remaining guide/skill text and decision/glossary changes belong to task_03 and task_04. No commit, push, PR or ai-memory message was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T213033Z_283908b7147be213`
+- Source commit: `acf74f278ba9bf265668975a9a115a993f2a8411`

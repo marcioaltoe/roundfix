@@ -66,7 +66,6 @@ func TestDoctorChecksAnExternalSkillOnlyForPresence(t *testing.T) {
 				dependencies.doctor.residue = fixture.residue
 				dependencies.doctor.storage = fixture.storage
 				dependencies.doctor.diskSpace = nil
-				dependencies.doctor.linuxLane = nil
 				dependencies.doctor.resolveExternal = func(string) ([]string, bool, error) { return []string{"testing-boss"}, true, nil }
 				dependencies.doctor.checkSkills = skills.CheckRepositoryWithExternal
 			})
