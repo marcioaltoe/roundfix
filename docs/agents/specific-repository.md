@@ -39,8 +39,8 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   check`, and it **MUST** pass before any pull request opens. The Full Contract Run,
   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
   Relevance, and CI runs it on every push to main and before every release (ADR-0253).
-  Platform-only failures stay a known limit because CI is the
-  Linux gate. Nothing under `docs/history/` is ever validated as live work.
+  The selective gate and CI run on macOS; failures only Linux or Windows
+  produces are a known limit because those platforms are only compiled (ADR-0252). Nothing under `docs/history/` is ever validated as live work.
 - A test in a code package that reads this repository's `docs/history`, `docs/adr`, `docs/specs`, `docs/user-guide` or `.agents/skills` lives in a `docscontract` file declared `//verify:always`, so a documentation edit never invalidates the package's cached test result (ADR-0326).
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
   adapted locally; every other skill is upstream-managed and **MUST NOT** be

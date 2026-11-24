@@ -12,7 +12,36 @@ on:
         type: string
 
 jobs:
+  verify:
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The Verify gate below runs the same suite as ci-verify, and its
+          # historical authorization contracts read retained main ancestors by
+          # SHA. A shallow checkout has no such object and the gate fails with
+          # "not a tree object".
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26"
+          check-latest: true
+          cache: false
+
+      # The full local gate must pass before any build or publish.
+      - name: Verify gate
+        run: make verify
+
+      # The Full Contract Run runs before every release (ADR-0253).
+      - name: Verify every contract
+        run: make verify-contracts
+
   release:
+    needs: verify
     runs-on: ubuntu-latest
     permissions:
       id-token: write # mint the npm Trusted Publishing OIDC token
@@ -22,10 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The Verify gate below runs the same suite as ci-verify, and its
-          # historical authorization contracts read retained main ancestors by
-          # SHA. A shallow checkout has no such object and the gate fails with
-          # "not a tree object".
+          # No step in this job reads the history any more; keep the checkout
+          # options as they were.
           fetch-depth: 0
           persist-credentials: false
 
@@ -77,14 +104,6 @@ jobs:
           else
             echo "releasing $TAG"
           fi
-
-      # The full local gate must pass before any build or publish.
-      - name: Verify gate
-        run: make verify
-
-      # The Full Contract Run runs before every release (ADR-0253).
-      - name: Verify every contract
-        run: make verify-contracts
 
       - name: Publication preflight
         run: |

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0420-roundfix-stops-verifying-on-linux
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -81,3 +81,31 @@ This Task delivers `_techspec.md` → Build Order 2, on the maintainer's decisio
 - `_authorization.md` → What the grant covers; Limits
 - [`references/2026-11-24-techspec-measurements.md`](references/2026-11-24-techspec-measurements.md), sections 1, 2, 7 and 8
 - ADR-0252, ADR-0253, ADR-0285, ADR-0236, ADR-0387, ADR-0031, ADR-0250
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, crafting-effective-readmes, tech-writer, evidence-gate, setup-context-driven, roundfix.
+
+Implemented the Task 02 slice for Daemon Verification. The initial worktree had only the Daemon-owned status change in this Task file; that field remains untouched. Initial source inspection found CI on `ubuntu-latest`, release verification inside the publishing job, and a Windows-only compile contract.
+
+- Acceptance criterion 1: CI now uses `macos-26`. Added the workflow sweep and the gate identity/step-order contract. A focused Python comparison against HEAD proved every CI byte except the runner unchanged, including conditions, environments, identifiers, timeout and step order.
+- Acceptance criterion 2: release verification now runs unconditionally in a read-only `verify` job on `macos-26`, with the original checkout, full-history explanation, Go setup and verification steps. Publishing needs `verify`. Added the dependency/permissions/order contract and moved the existing Full Contract Run assertions to `verify`, retaining the publication-preflight assertion on `release`. The same Python comparison proved publishing bytes unchanged except the dependency, removal of the two verification steps and the permitted checkout comment.
+- Acceptance criterion 3: replaced the Windows-only contract with `compiledPlatforms`, `compileEveryTest` and `TestEveryTestCompilesForLinuxAndWindows`, with Linux and Windows repository subtests and the temporary-module negative probe. The negative probe passed: Linux rejects `broken_linux_test.go`, naming the file, while Windows compiles the module. Focused cross-compilation of `./internal/verifyselect` passed for Linux and Windows. Repository-wide compile subtests remain for the Daemon.
+- Acceptance criterion 4: changed only the two authorized Makefile comments and compile-contract name, preserving `SUITE_BUDGET_SECONDS ?= 420` and the historical measurements. Updated only the authorized guide sentence and added the README statement. Regenerated the Setup Manifest through the prescribed command. Its first run also advanced the writer version, outside the digest-only grant; restored the original generated file and reran with `GOFLAGS='-ldflags=-X=roundfix/internal/app.Version=0.152.0'` to preserve its recorded writer version. A JSON comparison confirmed that only the two Makefile `declarationDigest` fields changed and both match the Makefile SHA-256. The generator exited 0; its two nested-carrier warnings concern unchanged Baseline fixtures.
+
+Focused checks:
+
+- `go test -count=1 -timeout 10m ./internal/verifyselect -run 'Test(EveryVerifyingJob|TheReleaseVerifies|TheVerificationGate|MainAndRelease|TheSuiteTimeBudget|TheCIPush|TheCIPullRequest|RepositoryContractTestsDeclare|Release)'` — exit 0, 62 tests reported passed, including the new workflow contracts and the unchanged budget, relevance and release contracts.
+- `go test -count=1 -timeout 5m -tags repocontract -v ./internal/verifyselect -run '^TestEveryTestCompilesForLinuxAndWindows$/^a_file_only_linux_fails_to_compile$'` — exit 0, parent and negative-probe subtest passed.
+- `rtk proxy go test -count=1 -timeout 5m ./internal/cli -run '^TestBaselineUpdateSurfaceTranscript(ThisRepositoryIsCurrent|KeepsTheClaudeInstructionLink)$'` — exit 0.
+- `GOOS=linux go vet -tags 'repocontract docscontract' ./internal/verifyselect` and `GOOS=windows go vet -tags 'repocontract docscontract' ./internal/verifyselect` — no diagnostics, command batch exited 0.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` (final run with the writer-version GOFLAGS above) — exit 0, one generated file updated.
+- Focused Python byte/JSON preservation checks — passed; `git diff --check` — exit 0. Changed-path review found only Task 02's declared files and this Task file.
+
+No declared Verification command, selected repository Verification or incremental Verification was run. No Task status, Task Graph, other Task, Baseline asset or coverage record was edited. No commit, push or pull request was created. Live GitHub runner behavior and the first macOS suite-time measurement remain outside this local evidence.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T233515Z_e6f1359ae84a0462`
+- Source commit: `8b02fb9664d230d75dd0db901437803ecb23df64`
