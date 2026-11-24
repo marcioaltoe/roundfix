@@ -27,7 +27,8 @@ This Task delivers `_techspec.md` → Build Order 4. The `deliver` page of the u
    A version is "the next version", never a number written by hand. When another Spec changed the Roundfix skill or a guide page first, these commands regenerate on the tree this Task runs on. `docs/references/skill-coverage.json` does not change; when `TestTheSkillCoverageMapIsCurrent` asks for a change to it, stop and report it.
 3. MUST add `internal/docscontract/deliver_recovery_lines_test.go`, with the `docscontract` build tag and the `verify:always` marker the package's other files carry, holding `TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines` with the subtests `guide`, `canonical_reference` and `mirror_reference`. Each asserts, after whitespace is collapsed, that its file holds the `Owner:` line text, the three `Run:` forms, `Retry failed` and `QA-Only Failed Run`, and does not hold the sentence fragment "A proven live owner, no recorded owner, or a queue"; the `guide` subtest also asserts that the guide no longer holds "With no recorded owner, it starts one directly."
 4. MUST change in `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` only the version fields the record command raises (`_authorization.md` → What the grant covers).
-5. MUST NOT change any other reference of the Roundfix skill (the `reconcile` reference included), any other owned or Vendored Skill, any guide under `docs/agents/`, `docs/agents/setup-context.json`, `CONTEXT.md`, any decision record, any Go source outside the new test file, or any file `_authorization.md` → Limits names.
+5. MUST NOT change any other reference of the Roundfix skill (the `reconcile` reference included), any other owned or Vendored Skill, any guide under `docs/agents/`, `docs/agents/setup-context.json`, `CONTEXT.md`, any decision record, any Go source outside the new test file and the one count requirement 6 raises, or any file `_authorization.md` → Limits names.
+6. MUST raise the count of `internal/docscontract` contract files that `TestRepositoryContractTestsDeclareTheirRelevance` in `internal/verifyselect/contracts_repository_test.go` pins (`len(docsFiles) != 12`) by one, to 13, for the file this Task creates, and change nothing else in that test. (Correction of 2026-11-24: Run run_20261124T033912Z_c4dbe04fec2c7007 failed this Task on make verify-changed with "missing declarations: ... docs files=13"; raising the count to 13 on that Run's tree made the test pass.)
 
 ## Subtasks
 
@@ -53,6 +54,7 @@ This Task delivers `_techspec.md` → Build Order 4. The `deliver` page of the u
 - interface: `skills/roundfix/SKILL.md`
 - interface: `skills/testdata/owned-skill-versions.json`
 - interface: `docs/references/behavior-surfaces.json`
+- interface: `internal/verifyselect/contracts_repository_test.go`
 - creates: `internal/docscontract/deliver_recovery_lines_test.go`
 
 ## Consumers
