@@ -27,6 +27,7 @@ This Task delivers `_techspec.md` → Build Order 2, on the maintainer's decisio
    - the comment above `verify-changed`, which no longer calls continuous integration the Linux gate and says that the selective gate and continuous integration run on macOS and that a failure only Linux or Windows produces is a known limit, because those platforms are only compiled (ADR-0252);
    - the comment of `SUITE_BUDGET_SECONDS`, which keeps the measurement it states and says that those runs were on the Linux runner the gate used until this change, that the gate now runs on the standard macOS runner, where the suite has not been measured, and that the first push to main there is the measurement the number waits for; the value stays `420` (the Delegated Decision of 2026-11-24 of the `techspec` phase on the suite-time budget);
    - `REPO_CONTRACT_TESTS`, which names `TestEveryTestCompilesForLinuxAndWindows` in the place of `TestEveryTestCompilesForWindows`.
+   After the `Makefile` change, run `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` and commit `docs/agents/setup-context.json`, whose only change is the `declarationDigest` of the `Makefile` (correction of 2026-11-24: the first Run failed this Task on make verify-changed because two baseline-update transcript tests found that digest stale; granted by the third decision in `_authorization.md`).
 7. MUST change in `docs/agents/specific-repository.md` only the sentence outside the Baseline's markers that calls continuous integration the Linux gate, so that it says what requirement 6's first comment says; and add to `README.md`, after the sentence that names the platform packages, the sentence "The test suite runs on macOS only; the Linux and Windows packages are compiled and not tested." (API Contract 8).
 8. MUST keep passing unchanged `TestTheSuiteTimeBudgetIsRecordedThenJudged`, `TestTheCIPushJudgesTheSuiteTimeBudgetLast`, `TestTheCIPullRequestSkipsOnlyTheRepeatedDocumentationContracts`, `TestRepositoryContractTestsDeclareTheirRelevance` and the tests of `internal/verifyselect/release_workflow_test.go` and `internal/verifyselect/release_workflow_compare_test.go`.
 9. MUST NOT change `.github/workflows/ci-conventions.yml`, `.github/workflows/secondbrain-sync.yml`, any Baseline asset (the starter workflow and `internal/baseline/starter_files_test.go` keep `ubuntu-latest`), any other target, recipe or variable of the Makefile, any other line of `docs/agents/specific-repository.md`, `docs/references/coverage-record.json`, `go.mod`, `go.sum`, or any file `_authorization.md` → Limits names. No test reaches GitHub or the network.
@@ -55,6 +56,7 @@ This Task delivers `_techspec.md` → Build Order 2, on the maintainer's decisio
 - interface: `.github/workflows/ci-verify.yml`
 - interface: `.github/workflows/release.yml`
 - interface: `Makefile`
+- interface: `docs/agents/setup-context.json`
 - interface: `README.md`
 - interface: `docs/agents/specific-repository.md`
 - interface: `internal/verifyselect/full_contract_run_test.go`
