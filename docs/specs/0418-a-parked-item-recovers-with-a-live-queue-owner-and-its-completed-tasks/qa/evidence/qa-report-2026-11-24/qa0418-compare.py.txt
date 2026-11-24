@@ -1,0 +1,21 @@
+from pathlib import Path
+import subprocess,tempfile,os,shutil,json
+root=Path.cwd();e=next(root.glob('docs/specs/0418-*/qa/evidence/qa-report-2026-11-24'));base=Path('/tmp/qa0418-base-dir').read_text();shutil.copy2(Path(base)/'bin/roundfix',root/'bin/roundfix-delivery-base')
+en=os.environ.copy();oldhome=en['HOME']
+for k in ['GOMODCACHE','GOCACHE']:en[k]=subprocess.check_output(['go','env',k],text=True).strip()
+en.update(RUSTUP_HOME=en.get('RUSTUP_HOME',oldhome+'/.rustup'),CARGO_HOME=en.get('CARGO_HOME',oldhome+'/.cargo'))
+for k in list(en):
+ if k in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID'] or 'API_KEY' in k or 'JUDGE' in k:en.pop(k,None)
+results=[]
+with tempfile.TemporaryDirectory(prefix='qa0418-compare-') as td:
+ d=Path(td);repo=d/'repo';repo.mkdir()
+ for args in [['git','init','-q'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','--allow-empty','-qm','Empty queue fixture']]:subprocess.run(args,cwd=repo,check=True,stdout=subprocess.DEVNULL)
+ fake=d/'fake';fake.mkdir();(fake/'gh').write_text('#!/bin/sh\nexit 1\n');(fake/'gh').chmod(0o755);en['PATH']=str(fake)+':'+en['PATH']
+ commands=[(['deliver']+x+['--help']) for x in [[],['plan'],['start'],['status'],['resume'],['retry'],['stop'],['lane']]]+[['deliver','status'],['deliver','retry','0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks']]
+ for args in commands:
+  pair=[]
+  with tempfile.TemporaryDirectory(dir=d) as h,tempfile.TemporaryDirectory(dir=d) as t:
+   for binary in ['roundfix','roundfix-delivery-base']:
+    en.update(HOME=h,TMPDIR=t);r=subprocess.run([str(root/'bin'/binary)]+args,cwd=repo,env=en,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True);pair.append({'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr})
+  equal=pair[0]==pair[1];results.append({'command':'./bin/roundfix '+' '.join(args),'candidate':pair[0],'base':pair[1],'equal':equal});print(' '.join(args),equal,pair[0]['exit'],flush=True)
+(e/'binary-comparison.txt').write_text(json.dumps(results,indent=2)+'\n');assert all(x['equal'] for x in results)

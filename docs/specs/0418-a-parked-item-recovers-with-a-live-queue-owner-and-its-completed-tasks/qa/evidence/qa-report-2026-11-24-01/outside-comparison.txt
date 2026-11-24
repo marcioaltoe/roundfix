@@ -1,0 +1,9 @@
+Committed external measurement: references/sources.md section 2, Quaestor message 01a20714-ed79-7931-85a1-f4df4805f0aa, 2026-11-23 03:12 BRT.
+2) roundfix deliver status às 03:12 BRT de 23/11, com o item "running" sem dono e sem Run ativo:
+0008-livros-e-apuracao-do-icms	running	-	/Users/marcio/.roundfix/worktrees/quaestor-85a8e4c6/roundfix-deliver-0008-livros-e-apuracao-do-icms-ca939bc9c66fec9f-da65dc76
+Limits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none
+Usage: 16587262 tokens from 9 of 9 prompt(s) across 1 Run(s); cost not reported
+Sem linha Warning nem aviso de dono ausente; roundfix runs list --state active respondia "No Runs found."; nenhum processo roundfix vivo (pgrep).
+
+Observed this pass: public-cli.txt, status_of_the_measured_queue.
+The four tab-separated item fields and Limits/Usage retain their shape and bytes except the declared item-worktree placeholder. Owner and Run appear between the item and Limits lines. Both observed public CLI subtests pass, and retry preserves the persisted blocker and retry count after failure.

@@ -1,0 +1,21 @@
+COMMAND: go test -count=1 -timeout 20m -v -overlay /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks-7afc2ddceb0cf8ce-1629b739-8531bdd9/run_20261124T110220Z_6f7e761264395e3a/docs/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks/qa/evidence/qa-report-2026-11-24-01/overlay.json.txt -run ^TestTheBuiltBinaryReportsTheQueueQuaestorMeasured$ ./internal/cli
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+    deliver_quaestor_built_binary_test.go:125: public CLI [deliver retry 0001-widget-flow] exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  stat Artifact Directory \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheBuiltBinaryReportsTheQueueQuaestorMeasuredretry_whose_ow3772913646/001/.roundfix/artifacts/63ae876a1b9ba09c\": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheBuiltBinaryReportsTheQueueQuaestorMeasuredretry_whose_ow3772913646/001/.roundfix/artifacts/63ae876a1b9ba09c: not a directory\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver --help' for usage.\nRetry failed\n\nReason:\n  the Queue Owner did not start\n\nItem:\n  stage: parked; blocker: delivery-error: run Implement executor: roundfix implement failed with exit code 1\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+=== NAME  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+    deliver_quaestor_built_binary_test.go:78: public CLI [deliver status] exit=0 stdout="0008-livros-e-apuracao-do-icms\trunning\t-\t<item worktree>\nOwner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nRun: 0008-livros-e-apuracao-do-icms no Active Run\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: 16587262 tokens from 9 of 9 prompt(s) across 1 Run(s); cost not reported\n" stderr=""
+--- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured (0.00s)
+    --- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start (0.24s)
+    --- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue (0.25s)
+PASS
+suiteguard: guard cost: measured 3461 paths; fingerprint took 598.061958ms before and 157.14225ms after
+ok  	roundfix/internal/cli	1.528s
+
+exit: 0

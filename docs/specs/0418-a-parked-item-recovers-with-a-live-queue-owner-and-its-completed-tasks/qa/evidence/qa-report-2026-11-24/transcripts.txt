@@ -1,0 +1,70 @@
+command: go test -overlay=/tmp/qa0418-transcript-overlay.json -v -count=1 -timeout 10m ./internal/cli -run ^(TestTheBuiltBinaryReportsTheQueueQuaestorMeasured|TestDeliverStatusReproducesSurfaceTranscript.*|TestDeliverRetryReproducesSurfaceTranscript.*)$
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptOne
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptOne
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== RUN   TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun
+=== PAUSE TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun
+=== RUN   TestDeliverRetryReproducesSurfaceTranscriptOwnerDidNotStart
+=== PAUSE TestDeliverRetryReproducesSurfaceTranscriptOwnerDidNotStart
+=== RUN   TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== PAUSE TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptNoRecordedOwner
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptNoRecordedOwner
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptTasksInProgress
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptTasksInProgress
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptQueueTurns
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptQueueTurns
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning
+=== CONT  TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== CONT  TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptQueueTurns
+=== NAME  TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+    deliver_status_recovery_lines_test.go:25: Observed exit=0 stdout="0001-widget-flow\trunning\t-\t<item worktree>\nTurn: 0001-widget-flow advancing at running\nRun: 0001-widget-flow run_20261124T051758Z_d6237a333c713def; no Task in progress\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no prompts recorded across 1 Run(s); cost not reported\n" stderr=""
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOwnerNotRunning (0.18s)
+=== CONT  TestDeliverRetryReproducesSurfaceTranscriptOwnerDidNotStart
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress (0.19s)
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+=== RUN   TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+=== PAUSE TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptTasksInProgress
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptQueueTurns (0.24s)
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptOne
+=== NAME  TestDeliverRetryReproducesSurfaceTranscriptOwnerDidNotStart
+    deliver_retry_owner_proof_test.go:39: Observed exit=2 stdout="" stderr="owner start diagnostic\nRetry failed\n\nReason:\n  the Queue Owner did not start\n\nItem:\n  stage: parked; blocker: run-unresolved\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+--- PASS: TestDeliverRetryReproducesSurfaceTranscriptOwnerDidNotStart (0.16s)
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptNoRecordedOwner
+=== NAME  TestDeliverStatusReproducesSurfaceTranscriptTasksInProgress
+    deliver_status_recovery_lines_test.go:21: Observed exit=0 stdout="0001-widget-flow\trunning\t-\t<item worktree>\nTurn: 0001-widget-flow advancing at running\nRun: 0001-widget-flow run_20261124T051758Z_259cc1164be42b0e; Tasks in progress: task_03, task_04\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no prompts recorded across 1 Run(s); cost not reported\n" stderr=""
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptTasksInProgress (0.18s)
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptOne (0.17s)
+=== CONT  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+=== NAME  TestDeliverStatusReproducesSurfaceTranscriptNoRecordedOwner
+    deliver_status_recovery_lines_test.go:17: Observed exit=0 stdout="0001-widget-flow\trunning\t-\t<item worktree>\nOwner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nRun: 0001-widget-flow no Active Run\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no prompts recorded across 1 Run(s); cost not reported\n" stderr=""
+--- PASS: TestDeliverStatusReproducesSurfaceTranscriptNoRecordedOwner (0.16s)
+=== NAME  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue
+    deliver_quaestor_built_binary_test.go:79: Observed exit=0 stdout="0008-livros-e-apuracao-do-icms\trunning\t-\t<item worktree>\nOwner: Delivery Queue has no recorded owner and 1 item(s) can still advance; run roundfix deliver resume\nRun: 0008-livros-e-apuracao-do-icms no Active Run\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: 16587262 tokens from 9 of 9 prompt(s) across 1 Run(s); cost not reported\n" stderr=""
+=== NAME  TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start
+    deliver_quaestor_built_binary_test.go:127: Observed exit=2 stdout="" stderr="Preflight failed\n\nReason:\n  stat Artifact Directory \"/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheBuiltBinaryReportsTheQueueQuaestorMeasuredretry_whose_ow1841981430/001/.roundfix/artifacts/6401bd12b5d09eb7\": stat /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheBuiltBinaryReportsTheQueueQuaestorMeasuredretry_whose_ow1841981430/001/.roundfix/artifacts/6401bd12b5d09eb7: not a directory\n\nNo side effects:\n  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.\n\nUsage:\n  Run 'roundfix deliver --help' for usage.\nRetry failed\n\nReason:\n  the Queue Owner did not start\n\nItem:\n  stage: parked; blocker: delivery-error: run Implement executor: roundfix implement failed with exit code 1\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+--- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured (0.00s)
+    --- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/status_of_the_measured_queue (0.20s)
+    --- PASS: TestTheBuiltBinaryReportsTheQueueQuaestorMeasured/retry_whose_owner_cannot_start (0.21s)
+=== NAME  TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun
+    deliver_retry_owner_proof_test.go:27: Observed exit=0 stdout="Carried forward from Run run_20261124T051758Z_b62581ee1a690e77: task_01, task_02, task_03, task_04, task_05\nRetried 0001-widget-flow: run-unresolved -> running\nDelivery Owner: test-owner\nConsole Log: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun131343301/001/owner.log\nStatus: roundfix deliver status\nStop: roundfix deliver stop\n" stderr=""
+=== NAME  TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+    deliver_retry_owner_proof_test.go:51: Observed exit=2 stdout="" stderr="Retry failed\n\nReason:\n  Queue Owner PID 1073741824 is not running\n\nItem:\n  stage: parked; blocker: run-unresolved\n\nCarried forward:\n  Run run_20261124T051758Z_dbbd826d19f3c931: task_01, task_02, task_03, task_04, task_05\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+--- PASS: TestDeliverRetryReproducesSurfaceTranscriptAfterAQAOnlyFailedRun (2.68s)
+--- PASS: TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof (2.70s)
+PASS
+suiteguard: guard cost: measured 3403 paths; fingerprint took 286.645125ms before and 315.648875ms after
+ok  	roundfix/internal/cli	3.731s
+
+exit: 0

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

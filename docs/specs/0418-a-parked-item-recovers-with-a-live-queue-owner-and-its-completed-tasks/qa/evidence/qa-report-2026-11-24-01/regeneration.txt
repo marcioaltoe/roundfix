@@ -1,0 +1,14 @@
+COMMAND: make skills-sync
+
+exit: 0
+COMMAND: go test -timeout 20m ./skills -run ^TestEveryOwnedSkillVersionIsRecorded$ -record-skill-versions
+ok  	roundfix/skills	0.327s
+
+exit: 0
+COMMAND: go test -timeout 20m -count=1 -tags docscontract ./internal/docscontract -run ^TestTheSkillCoverageMapIsCurrent$ -record-skill-coverage
+ok  	roundfix/internal/docscontract	0.480s
+
+exit: 0
+COMMAND: git status --porcelain
+
+exit: 0

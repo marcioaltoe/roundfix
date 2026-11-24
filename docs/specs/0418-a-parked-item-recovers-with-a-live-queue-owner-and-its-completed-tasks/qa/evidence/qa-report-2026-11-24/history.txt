@@ -1,0 +1,297 @@
+Task 1 1c7f7f1101f5c122dd7d1f917852c6fd3b0ec166
+
+Changed paths:
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/skill-coverage.json
+docs/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks/task_01.md
+docs/user-guide/commands/deliver.md
+internal/cli/carryforward.go
+internal/cli/deliver_qa_only_failed_run_test.go
+internal/cli/deliver_workflow.go
+internal/cli/reconcile.go
+internal/delivery/engine.go
+internal/delivery/failed_run_record_test.go
+
+Paths absent from declarations/record: []
+
+Task 2 58c8df04f635f127dd2d0c457f0add93719a099b
+
+Changed paths:
+CONTEXT.md
+docs/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks/task_02.md
+internal/cli/deliver.go
+internal/cli/deliver_merged_outside_test.go
+internal/cli/deliver_retry_owner_proof_test.go
+internal/store/delivery.go
+internal/store/delivery_retry_revert_test.go
+
+Paths absent from declarations/record: []
+
+Task 3 631933b8a6d81fb4767bfb395c4b99df178daa11
+
+Changed paths:
+.secondbrain-export
+CONTEXT.md
+docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md
+docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md
+docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+docs/references/coverage-record.json
+docs/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks/task_03.md
+internal/cli/deliver.go
+internal/cli/deliver_corrections_status_test.go
+internal/cli/deliver_owner_status_test.go
+internal/cli/deliver_park_status_test.go
+internal/cli/deliver_quaestor_built_binary_test.go
+internal/cli/deliver_revalidate_test.go
+internal/cli/deliver_run_line.go
+internal/cli/deliver_run_slot_wait_test.go
+internal/cli/deliver_status_recovery_lines_test.go
+internal/cli/deliver_test.go
+internal/cli/deliver_turn_test.go
+internal/cli/deliver_usage_test.go
+internal/cli/machine_verification_status_test.go
+internal/docscontract/delivery_recovery_decision_record_test.go
+internal/verifyselect/contracts_repository_test.go
+
+Paths absent from declarations/record: []
+
+Task 4 6ca6f91c1cb96a016424e536cb36a43e796eee3d
+
+Changed paths:
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/deliver.md
+docs/references/behavior-surfaces.json
+docs/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks/task_04.md
+docs/user-guide/commands/deliver.md
+internal/docscontract/deliver_recovery_lines_test.go
+internal/verifyselect/contracts_repository_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/deliver.md
+skills/testdata/owned-skill-versions.json
+
+Paths absent from declarations/record: []
+
+Requirement 13 prohibited changed files: ['docs/references/coverage-record.json']
+
+NOTE: coverage-record.json has express third-decision authorization and is declared by amended task_03, but task_05 Requirement 13 still forbids its change.
+
+ADR diff docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md
+
+diff --git a/docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md b/docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md
+index f32e7596..118b2861 100644
+--- a/docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md
++++ b/docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md
+@@ -1,8 +1,9 @@
+ ---
+ status: accepted
+ knowledge: true
++amended_by: [ADR-0450]
+ created_at: 2026-10-16T00:00:00Z
+-updated_at: 2026-10-16T00:00:00Z
++updated_at: 2026-11-24T00:00:00Z
+ deprecated_at: null
+ superseded_by: null
+ ---
+@@ -30,6 +31,8 @@ adds no line; an identity that cannot be read writes a diagnostic to stderr.
+ Status stays read-only and never reclaims the owner record; `resume`, `retry`
+ and `start` still do. A queue with no recorded owner adds no line.
+ 
++**Amended by [ADR-0450](0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md) (2026-11-24).** Status now reports no recorded owner while an item can still advance, and names the Active Run and Tasks of each running item. It remains read-only.
++
+ **A dismissal survives a fix that leaves its anchor.** `roundfix review
+ dispose <id> --dismiss` keeps accepting a dismissal at the reviewed head. It
+ now also accepts one when the current HEAD descends from the reviewed head, as
+
+
+ADR diff docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md
+
+diff --git a/docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md b/docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md
+index 8689c9fd..77725dd9 100644
+--- a/docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md
++++ b/docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md
+@@ -1,8 +1,9 @@
+ ---
+ status: accepted
+ knowledge: true
++amended_by: [ADR-0450]
+ created_at: 2026-11-12T21:00:00Z
+-updated_at: 2026-11-12T21:00:00Z
++updated_at: 2026-11-24T00:00:00Z
+ deprecated_at: null
+ superseded_by: null
+ ---
+@@ -63,6 +64,8 @@ owner with the `Owner:` line of ADR-0279; `deliver resume`, `retry` and
+ `start` already reclaim an owner proven gone, and `deliver stop` releases the
+ record after the owner it stopped has exited.
+ 
++**Amended by [ADR-0450](0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md) (2026-11-24).** Keeping a stopped owner record remains required; status also reports an advanceable queue with no recorded owner. Delivery Retry now proves a live owner or restores the parked item under its guard.
++
+ **An anchor may end a sentence.** A `path:line` or `path:start-end` anchor,
+ backticked or not, followed by `.` or `;` reads as one followed by a space
+ when a space or the end of the finding comes next. `path:2.5` and `path:2.md`
+
+
+ADR diff docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+
+diff --git a/docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md b/docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+new file mode 100644
+index 00000000..15fbd1b2
+--- /dev/null
++++ b/docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+@@ -0,0 +1,88 @@
++---
++status: accepted
++knowledge: true
++created_at: 2026-11-24T00:00:00Z
++updated_at: 2026-11-24T00:00:00Z
++deprecated_at: null
++superseded_by: null
++---
++
++# A Delivery Retry ends with a live Queue Owner, and status reports a queue nobody advances
++
++## Context
++
++On 2026-11-23 quaestor reported that a Delivery Retry left an item at
++`running` for six hours with no owner and no Active Run. Status printed its
++row, limits and usage with no warning. The preceding Implement Run ended
++Failed after only its QA gate failed; its completed implementation Tasks were
++not carried forward. The item's recorded Run also lagged behind its executor.
++The Praetor reported that status exposed neither the Run nor the Tasks in
++progress, so its periodic sweep falsely reported no progress on another
++project's running item.
++
++## Decision
++
++This decision amends [ADR-0279](0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)
++and [ADR-0395](0395-a-queue-item-stops-only-for-its-own-work.md) in part.
++
++The Implement executor returns the Run its child created on every exit,
++including Failed. The Queue Owner records that identifier on the item before
++handling the result, with a context its own stop cannot cancel. A store error
++is joined with the executor error; the ensuing park keeps its blocker and
++Park Class.
++
++A QA-Only Failed Run is a terminal Failed Implement Run whose Run Branch
++exists and holds a loadable committed Task Graph with the QA gate's Task not
++completed and every other Task completed. Delivery Retry accepts it under the
++existing Task Carry-Forward proofs, removing the QA gate's evidence before
++inspection and refusing the whole set on a proof failure. A missing branch or
++unloadable graph is skipped. The Reconcile Command and Implement Preflight
++keep their accepted outcomes unchanged.
++
++After storing the re-entry stage, Delivery Retry hands the item to a proven
++live recorded owner or starts one and reads the queue again. A recorded owner
++proven gone is reclaimed; an uncheckable live identity fails with its existing
++diagnostic. Success requires a proven live owner unless every item is already
++merged or parked. Success prints the merged-outside notice, carry-forward
++lines, `Retried`, review notice and buffered owner report in their existing
++order, and exits `0`.
++
++Failure prints no standard output and exits `2`. When the start failed, no
++owner is recorded, or its recorded owner is proven gone, it releases a record
++proven gone and restores the parked item in one guarded transaction. The guard
++requires no recorded owner and the item's re-entry stage with an empty
++blocker; it restores stage, blocker, retry count and candidate commits, keeping
++the Run, Item Branch, worktree and Run links. A failed guard changes nothing.
++An uncheckable live identity changes nothing more, because that owner counts
++as present. The failure report names the reason, stored item stage and blocker
++(`-` when empty), any carried Runs, and `roundfix deliver retry <slug>` when
++reparked or `roundfix deliver status` otherwise. Reasons distinguish a failed
++start, an absent PID, a different identity, no owner after start and an identity
++that could not be checked.
++
++When an item is neither `merged` nor `parked` and no owner is recorded, status
++prints `Owner: Delivery Queue has no recorded owner and <n> item(s) can still advance; run roundfix deliver resume`, counting those items. Existing
++proven-gone owner lines and uncheckable-owner diagnostics keep their bytes;
++a proven live owner or a queue with no advanceable item adds no owner line.
++Status stays read-only and reclaims nothing.
++
++For each item at `running`, in queue order after `Turn:` and before `Park:`,
++status prints one `Run:` line independently of owner proof. Its Active Run is
++the newest non-terminal Implement Run for the repository, Spec and Item Branch,
++read with `ListRuns`. Tasks in progress come from `RunEventsOfKinds`: a Task's
++latest `started` event has no later `settled` or `skipped`, ordered by their
++starts. The forms are `Run: <slug> no Active Run`,
++`Run: <slug> <run-id>; Tasks in progress: <task>, <task>` and
++`Run: <slug> <run-id>; no Task in progress`. The QA gate has no start event and
++uses the last form. Database read errors fail status. Existing lines keep
++their bytes and relative order, rows retain four tab-separated fields, and
++help, schema, stages, commands, flags and exit codes stay unchanged.
++
++## Considered Options
++
++- Record the Run at its start. Rejected: the child creates it and the owner
++  reads its output only after it exits. Earlier recording would need polling
++  beside the child; status instead reads the Active Run directly.
++- Restart a stopped Queue Owner automatically. Rejected: recovery remains an
++  explicit operator action through resume or retry. Status reports the missing
++  owner without mutating the queue.
+
+
+Store schema/version constant diff: ''
+
+diff --git a/internal/store/delivery.go b/internal/store/delivery.go
+index aad2504e..7e18580b 100644
+--- a/internal/store/delivery.go
++++ b/internal/store/delivery.go
+@@ -624,6 +624,36 @@ WHERE git_root = ? AND spec_slug = ?`,
+ 	})
+ }
+ 
++// RevertDeliveryQueueItemRetry parks a retried item again without discarding Run provenance.
++func (store *Store) RevertDeliveryQueueItemRetry(ctx context.Context, gitRoot string, before DeliveryQueueItem, retried DeliveryStage) (bool, error) {
++	commits := before.CandidateCommits
++	if commits == nil {
++		commits = []string{}
++	}
++	encoded, err := json.Marshal(commits)
++	if err != nil {
++		return false, fmt.Errorf("encode candidate commits before retry revert: %w", err)
++	}
++	reverted := false
++	err = store.withWriteTx(ctx, "Delivery Queue retry revert", func(tx *sql.Tx) error {
++		result, err := tx.ExecContext(ctx, `
++UPDATE delivery_queue_items SET stage = ?, blocker = ?, retry_count = ?, candidate_commits = ?
++WHERE git_root = ? AND position = ? AND spec_slug = ? AND stage = ? AND blocker = ''
++AND EXISTS (SELECT 1 FROM delivery_queues WHERE git_root = ? AND owner_pid IS NULL)`,
++			DeliveryStageParked, before.Blocker, before.RetryCount, string(encoded), gitRoot, before.Position, before.SpecSlug, retried, gitRoot)
++		if err != nil {
++			return fmt.Errorf("revert Delivery Queue item retry: %w", err)
++		}
++		affected, err := result.RowsAffected()
++		if err != nil {
++			return fmt.Errorf("read Delivery Queue retry revert result: %w", err)
++		}
++		reverted = affected > 0
++		return nil
++	})
++	return reverted, err
++}
++
+ // RetryDeliveryQueueItem moves one parked item back to an advanceable stage
+ // only when its persisted blocker still matches the operator's observation.
+ func (store *Store) RetryDeliveryQueueItem(
+
+
+Skill coverage diff
+
+diff --git a/docs/references/skill-coverage.json b/docs/references/skill-coverage.json
+index dea7a446..3eb4e6ca 100644
+--- a/docs/references/skill-coverage.json
++++ b/docs/references/skill-coverage.json
+@@ -595,7 +595,7 @@
+         "docs/user-guide/commands/reconcile.md",
+         "internal/cli/reconcile.go"
+       ],
+-      "review": "2026-10-17 — Spec 0272 task_04 rewrites the retired Finding link in this guide to the Git Locator; command reconcile behavior, flags, output and exit codes are unchanged. 2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
++      "review": "2026-11-23 — Spec 0418 task_01 added a field only a Delivery Retry sets; the Reconcile Command's behavior, flags, output and exit codes are unchanged. 2026-10-17 — Spec 0272 task_04 rewrites the retired Finding link in this guide to the Git Locator; command reconcile behavior, flags, output and exit codes are unchanged. 2026-10-13 — Spec 0262 task_03: a symbolic-linked worktree.location is now resolved within its Worktree Root; no flag, key, output or exit code changes. The existing skill references already describe inspection followed by proven cleanup, so no skill text changes are needed."
+     },
+     {
+       "id": "command release plan",
+
+
+QA settlement unchanged .agents/skills/roundfix/SKILL.md: True
+
+QA settlement unchanged skills/roundfix/SKILL.md: True

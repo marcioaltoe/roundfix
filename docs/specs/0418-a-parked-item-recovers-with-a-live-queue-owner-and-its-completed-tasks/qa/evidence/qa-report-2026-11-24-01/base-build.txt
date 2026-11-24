@@ -1,0 +1,3 @@
+COMMAND: go build -buildvcs=false -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks-7afc2ddceb0cf8ce-1629b739-8531bdd9/run_20261124T110220Z_6f7e761264395e3a/bin/roundfix-delivery-base ./cmd/roundfix
+
+exit: 0

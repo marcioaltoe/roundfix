@@ -1,0 +1,13 @@
+Mutation: internal/cli/deliver_run_line.go
+command: go test -count=1 -timeout 10m -v -run ^TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress$ ./internal/cli
+=== RUN   TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+=== PAUSE TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+=== CONT  TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress
+    deliver_status_recovery_lines_test.go:25: exit=0 stdout="0001-widget-flow\trunning\t-\t<item worktree>\nTurn: 0001-widget-flow advancing at running\nRun: 0001-widget-flow run_20261124T051525Z_c67719d5d8821c8f; Tasks in progress: task_01, task_03, task_04\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no prompts recorded across 1 Run(s); cost not reported\n" stderr="" want="0001-widget-flow\trunning\t-\t<item worktree>\nTurn: 0001-widget-flow advancing at running\nRun: 0001-widget-flow run_20261124T051525Z_c67719d5d8821c8f; no Task in progress\nLimits: deadline none, retries per item none, concurrency 1, review concurrency 2, tokens none\nUsage: no prompts recorded across 1 Run(s); cost not reported\n"
+--- FAIL: TestDeliverStatusReproducesSurfaceTranscriptNoTaskInProgress (0.12s)
+FAIL
+suiteguard: guard cost: measured 3397 paths; fingerprint took 782.565ms before and 310.792125ms after
+FAIL	roundfix/internal/cli	1.648s
+FAIL
+
+exit: 1

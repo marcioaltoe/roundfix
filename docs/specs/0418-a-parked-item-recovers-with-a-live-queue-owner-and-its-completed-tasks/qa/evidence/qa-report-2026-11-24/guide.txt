@@ -1,0 +1,4 @@
+docs/user-guide/commands/deliver.md: new recovery phrases present; obsolete silence clause absent
+.agents/skills/roundfix/references/deliver.md: new recovery phrases present; obsolete silence clause absent
+skills/roundfix/references/deliver.md: new recovery phrases present; obsolete silence clause absent
+Repository command guide/reference obsolete-clause sweep: no match

@@ -1,0 +1,23 @@
+--- internal/cli/deliver.go
++++ internal/cli/deliver.go
+@@ -341,6 +341,7 @@
+ 			return proof, fmt.Errorf("release gone owner after retry: %w", err)
+ 		}
+ 	}
++	if startCode == exitOK { return retryOwnerProof{Proven: true}, nil }
+ 	proof.Reparked, err = runStore.RevertDeliveryQueueItemRetry(ctx, gitRoot, before, retried)
+ 	if err != nil {
+ 		return proof, fmt.Errorf("park item again after retry: %w", err)
+
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof$ ./internal/cli
+=== RUN   TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== PAUSE TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== CONT  TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+    deliver_retry_owner_proof_test.go:51: exit=0 stdout="Carried forward from Run run_20261124T112235Z_b90c4eaa515a4840: task_01, task_02, task_03, task_04, task_05\nRetried 0001-widget-flow: run-unresolved -> running\nDelivery Owner: test-owner\nConsole Log: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeThePr4036250859/001/owner.log\nStatus: roundfix deliver status\nStop: roundfix deliver stop\n" stderr="" want="Retry failed\n\nReason:\n  Queue Owner PID 1073741824 is not running\n\nItem:\n  stage: parked; blocker: run-unresolved\n\nCarried forward:\n  Run run_20261124T112235Z_b90c4eaa515a4840: task_01, task_02, task_03, task_04, task_05\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+--- FAIL: TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof (1.67s)
+FAIL
+suiteguard: guard cost: measured 3397 paths; fingerprint took 220.073042ms before and 211.451417ms after
+FAIL	roundfix/internal/cli	2.533s
+FAIL
+
+exit: 1

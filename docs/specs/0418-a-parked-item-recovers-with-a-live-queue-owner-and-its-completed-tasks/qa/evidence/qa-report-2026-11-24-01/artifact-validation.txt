@@ -1,0 +1,6 @@
+Results table: 21 rows; 20 pass, 1 environment-blocked, 0 failed/skipped/pending.
+All 38 local links resolve and are unignored.
+Tracked production tree unchanged; changes limited to the seeded QA report and this pass evidence.
+Native report parser and eligibility: pass; verdict=partial environment=1 finding=0 declared=0
+Native borrowed-evidence scan: pass
+Native secret scan and text evidence: pass (29 files)

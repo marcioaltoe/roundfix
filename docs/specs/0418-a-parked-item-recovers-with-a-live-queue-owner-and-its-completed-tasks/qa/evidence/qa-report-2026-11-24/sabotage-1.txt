@@ -1,0 +1,15 @@
+Mutation: internal/delivery/engine.go
+command: go test -count=1 -timeout 10m -v -run ^TestTheItemRecordsTheRunOfAFailedImplementExecutor$/^failed_executor_parks_with_its_run$ ./internal/delivery
+=== RUN   TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== PAUSE TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== CONT  TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== RUN   TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+=== PAUSE TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+=== CONT  TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+--- PASS: TestTheItemRecordsTheRunOfAFailedImplementExecutor (0.00s)
+    --- PASS: TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run (0.01s)
+PASS
+suiteguard: guard cost: measured 3397 paths; fingerprint took 370.367458ms before and 354.596125ms after
+ok  	roundfix/internal/delivery	0.990s
+
+exit: 0

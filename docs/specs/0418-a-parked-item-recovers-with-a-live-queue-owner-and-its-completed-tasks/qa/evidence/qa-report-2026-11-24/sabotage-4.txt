@@ -1,0 +1,17 @@
+Mutation: internal/store/delivery.go
+command: go test -count=1 -timeout 10m -v -run ^TestRevertDeliveryQueueItemRetryRestoresTheParkedItem$/^reverts_a_retried_item$ ./internal/store
+=== RUN   TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== PAUSE TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== CONT  TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== RUN   TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+=== PAUSE TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+=== CONT  TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+    delivery_retry_revert_test.go:86: revert=true queue={GitRoot:/tmp/revert-retry OwnerPID:0 OwnerIdentity: Limits:{Deadline:0001-01-01 00:00:00 +0000 UTC MaxRetries:0 MaxTokens:0} Items:[{SpecSlug:0173-retry Position:0 Stage:parked Blocker:run-unresolved Branch:roundfix/deliver-0173-retry Worktree:/tmp/item-worktree WorktreeProvisioned:false RunID:new-run CandidateCommits:[candidate-original] PullRequestNumber: MergeCommit: RetryCount:1 Warning:}]} want item={SpecSlug:0173-retry Position:0 Stage:parked Blocker:run-unresolved Branch:roundfix/deliver-0173-retry Worktree:/tmp/item-worktree WorktreeProvisioned:false RunID:new-run CandidateCommits:[candidate-original] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestRevertDeliveryQueueItemRetryRestoresTheParkedItem (0.00s)
+    --- FAIL: TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item (0.01s)
+FAIL
+suiteguard: guard cost: measured 3397 paths; fingerprint took 255.701042ms before and 297.56625ms after
+FAIL	roundfix/internal/store	0.826s
+FAIL
+
+exit: 1

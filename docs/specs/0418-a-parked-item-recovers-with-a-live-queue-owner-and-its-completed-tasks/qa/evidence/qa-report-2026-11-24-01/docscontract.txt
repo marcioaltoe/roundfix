@@ -1,0 +1,482 @@
+COMMAND: go test -count=1 -timeout 20m -tags docscontract -v ./internal/docscontract
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== PAUSE TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== RUN   TestCommandPathsReadSubcommandsAndAlternatives
+--- PASS: TestCommandPathsReadSubcommandsAndAlternatives (0.00s)
+=== RUN   TestEveryCommandIsNamedInTheRoundfixSkill
+--- PASS: TestEveryCommandIsNamedInTheRoundfixSkill (0.01s)
+=== RUN   TestAnUndocumentedCommandIsReported
+--- PASS: TestAnUndocumentedCommandIsReported (0.01s)
+=== RUN   TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+=== PAUSE TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+=== RUN   TestTheParkActionContractReportsAnActionInTheClassTable
+=== PAUSE TestTheParkActionContractReportsAnActionInTheClassTable
+=== RUN   TestTheParkActionContractRequiresTheNumberedFileCollision
+=== PAUSE TestTheParkActionContractRequiresTheNumberedFileCollision
+=== RUN   TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== PAUSE TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+=== RUN   TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== PAUSE TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+=== RUN   TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== PAUSE TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== RUN   TestTheDeliveryConventionContractReportsAStaleConvention
+=== PAUSE TestTheDeliveryConventionContractReportsAStaleConvention
+=== RUN   TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+=== PAUSE TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+=== RUN   TestTheEventCategoryContractReportsAMissingCategory
+=== PAUSE TestTheEventCategoryContractReportsAMissingCategory
+=== RUN   TestOwnedSkillsNameOnlyListedOrExcludedCommands
+=== PAUSE TestOwnedSkillsNameOnlyListedOrExcludedCommands
+=== RUN   TestAnUnlistedSkillCommandIsReported
+=== PAUSE TestAnUnlistedSkillCommandIsReported
+=== RUN   TestOwnedSkillCommandCollectionReadsOnlyCode
+=== PAUSE TestOwnedSkillCommandCollectionReadsOnlyCode
+=== RUN   TestCommandIndexNamesEveryCommandFile
+--- PASS: TestCommandIndexNamesEveryCommandFile (0.00s)
+=== RUN   TestCommandReferenceLinksResolve
+--- PASS: TestCommandReferenceLinksResolve (0.00s)
+=== RUN   TestCheckCorpusGolden
+--- PASS: TestCheckCorpusGolden (3.66s)
+=== RUN   TestCheckCorpusBudget
+    corpus_test.go:64: active Spec corpus sweep completed in 3.656699833s; work: 2 Check operations across 2 Specs (budget: at most 1 Check operation per Spec)
+--- PASS: TestCheckCorpusBudget (0.00s)
+=== RUN   TestCheckActiveCorpusHasNoErrors
+--- PASS: TestCheckActiveCorpusHasNoErrors (0.00s)
+=== RUN   TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== PAUSE TestTheCorpusTestsCheckEachSpecOncePerProcess
+=== RUN   TestCheckLoopOrderRepositoryAgrees
+=== PAUSE TestCheckLoopOrderRepositoryAgrees
+=== RUN   TestStageScopeDefaultSweepIsUnchanged
+=== RUN   TestStageScopeDefaultSweepIsUnchanged/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks
+=== RUN   TestStageScopeDefaultSweepIsUnchanged/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed
+--- PASS: TestStageScopeDefaultSweepIsUnchanged (3.71s)
+    --- PASS: TestStageScopeDefaultSweepIsUnchanged/specs/0418-a-parked-item-recovers-with-a-live-queue-owner-and-its-completed-tasks (1.87s)
+    --- PASS: TestStageScopeDefaultSweepIsUnchanged/specs/0419-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed (1.84s)
+=== RUN   TestCheckLoopOrderDivergent
+=== PAUSE TestCheckLoopOrderDivergent
+=== RUN   TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines
+=== RUN   TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/guide
+=== RUN   TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/canonical_reference
+=== RUN   TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/mirror_reference
+--- PASS: TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines (0.00s)
+    --- PASS: TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/guide (0.00s)
+    --- PASS: TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/canonical_reference (0.00s)
+    --- PASS: TestTheDeliverGuideAndReferenceDescribeTheRecoveryLines/mirror_reference (0.00s)
+=== RUN   TestTheDeliveryRecoveryDecisionAmendsTheOwnerStatusRules
+=== PAUSE TestTheDeliveryRecoveryDecisionAmendsTheOwnerStatusRules
+=== RUN   TestTheIndexusDecisionAmendsTheConsultationRule
+=== PAUSE TestTheIndexusDecisionAmendsTheConsultationRule
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/general
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/backend
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/frontend
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/data
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/infra
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/docs
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/test
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/chore
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/qa
+=== RUN   TestModelSelectionReferenceStatesTheShippedSnapshot/review
+--- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/general (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/backend (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/frontend (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/data (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/infra (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/docs (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/test (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/chore (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/qa (0.00s)
+    --- PASS: TestModelSelectionReferenceStatesTheShippedSnapshot/review (0.00s)
+=== RUN   TestBaselineDocumentationContract
+=== PAUSE TestBaselineDocumentationContract
+=== RUN   TestGuidanceCompositionDocumentation
+=== PAUSE TestGuidanceCompositionDocumentation
+=== RUN   TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily
+=== PAUSE TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily
+=== RUN   TestProjectConstraintDocumentation
+=== PAUSE TestProjectConstraintDocumentation
+=== RUN   TestBaselineDecisionExamples
+=== PAUSE TestBaselineDecisionExamples
+=== RUN   TestProfilesDocumentationContractMatchesPublicGuidance
+=== PAUSE TestProfilesDocumentationContractMatchesPublicGuidance
+=== RUN   TestReviewHistoryConfiguration
+=== PAUSE TestReviewHistoryConfiguration
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== PAUSE TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions
+=== PAUSE TestReviewHistoryConfigurationRequiresExclusions
+=== RUN   TestReleasePlanDocumentationContract
+=== PAUSE TestReleasePlanDocumentationContract
+=== RUN   TestTheSetupManifestIsCurrent
+=== PAUSE TestTheSetupManifestIsCurrent
+=== RUN   TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck
+--- PASS: TestTheReleaseRunbookRequiresTheSkillsAndGuidesCheck (0.00s)
+=== RUN   TestEveryCheckTheReleaseStepNamesExists
+--- PASS: TestEveryCheckTheReleaseStepNamesExists (0.04s)
+=== RUN   TestAReleaseStepThatNamesAMissingCheckIsReported
+--- PASS: TestAReleaseStepThatNamesAMissingCheckIsReported (0.00s)
+=== RUN   TestThisRepositoryExportsNoProcessPath
+--- PASS: TestThisRepositoryExportsNoProcessPath (0.00s)
+=== RUN   TestTheExportRuleRefusesAProcessPath
+=== RUN   TestTheExportRuleRefusesAProcessPath/docs_whole
+=== RUN   TestTheExportRuleRefusesAProcessPath/agents_md
+--- PASS: TestTheExportRuleRefusesAProcessPath (0.00s)
+    --- PASS: TestTheExportRuleRefusesAProcessPath/docs_whole (0.00s)
+    --- PASS: TestTheExportRuleRefusesAProcessPath/agents_md (0.00s)
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.06s)
+=== RUN   TestAStaleBehaviorSurfaceIsReported
+=== RUN   TestAStaleBehaviorSurfaceIsReported/stale
+=== RUN   TestAStaleBehaviorSurfaceIsReported/missing
+=== RUN   TestAStaleBehaviorSurfaceIsReported/extra
+--- PASS: TestAStaleBehaviorSurfaceIsReported (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/stale (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/missing (0.00s)
+    --- PASS: TestAStaleBehaviorSurfaceIsReported/extra (0.00s)
+=== RUN   TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+=== PAUSE TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+=== RUN   TestAnUnmappedBehaviorSurfaceIsReported
+=== RUN   TestAnUnmappedBehaviorSurfaceIsReported/missing
+=== RUN   TestAnUnmappedBehaviorSurfaceIsReported/extra
+--- PASS: TestAnUnmappedBehaviorSurfaceIsReported (0.00s)
+    --- PASS: TestAnUnmappedBehaviorSurfaceIsReported/missing (0.00s)
+    --- PASS: TestAnUnmappedBehaviorSurfaceIsReported/extra (0.00s)
+=== RUN   TestCommandCoverageFollowsTheRoundfixReferenceIndex
+--- PASS: TestCommandCoverageFollowsTheRoundfixReferenceIndex (0.00s)
+=== RUN   TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources
+--- PASS: TestSkillCoveragePathsRequireOwnedFilesAndMatchingSources (0.00s)
+=== RUN   TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent
+--- PASS: TestBehaviorSurfaceBytesComeFromParsedValuesAndGuideContent (0.00s)
+=== RUN   TestEveryCommandIsNamedInTheUserGuide
+--- PASS: TestEveryCommandIsNamedInTheUserGuide (0.01s)
+=== RUN   TestUserGuideLinksResolve
+--- PASS: TestUserGuideLinksResolve (0.00s)
+=== RUN   TestABrokenUserGuideLinkIsReported
+--- PASS: TestABrokenUserGuideLinkIsReported (0.00s)
+=== RUN   TestBrokenLinksHandlesDestinationDecorationsAndFences
+--- PASS: TestBrokenLinksHandlesDestinationDecorationsAndFences (0.00s)
+=== RUN   TestUserGuideNamesNoRefusedQAFlag
+--- PASS: TestUserGuideNamesNoRefusedQAFlag (0.00s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryLinksNameAcceptedADRs
+=== PAUSE TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestGlossaryClosedListsEqualTheirConstants
+=== PAUSE TestGlossaryClosedListsEqualTheirConstants
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== RUN   TestGlossaryStatesEachRuleOnce
+=== PAUSE TestGlossaryStatesEachRuleOnce
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== PAUSE TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== CONT  TestBaselineDocumentationContract
+=== RUN   TestBaselineDocumentationContract/baseline
+=== CONT  TestTheRecommendedAuthoringDeclarationMatchesThisRepository
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/repository_config
+=== RUN   TestBaselineDocumentationContract/baseline_starters
+=== CONT  TestReleasePlanDocumentationContract
+=== RUN   TestBaselineDocumentationContract/baseline_capabilities_check
+=== CONT  TestTheIndexusDecisionAmendsTheConsultationRule
+=== CONT  TestGlossaryContractReportsAPlantedViolationOfEachRule
+=== RUN   TestBaselineDocumentationContract/baseline_plan
+=== RUN   TestReleasePlanDocumentationContract/release_runbook
+=== RUN   TestReleasePlanDocumentationContract/usage_command_index
+=== RUN   TestBaselineDocumentationContract/baseline_update
+=== RUN   TestReleasePlanDocumentationContract/root_Agent_pointer
+=== RUN   TestReleasePlanDocumentationContract/canonical_release-planning_rule
+=== RUN   TestReleasePlanDocumentationContract/repository-specific_rules
+=== RUN   TestReleasePlanDocumentationContract/canonical_Roundfix_skill
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/links
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines
+=== RUN   TestBaselineDocumentationContract/baseline_apply
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split
+=== RUN   TestBaselineDocumentationContract/baseline_profile
+=== RUN   TestBaselineDocumentationContract/baseline_skills_restore
+=== RUN   TestBaselineDocumentationContract/baseline_assets_sync
+=== RUN   TestBaselineDocumentationContract/Context-Driven_user_guide
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals
+=== RUN   TestBaselineDocumentationContract/command_reference
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/idea/model
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained
+=== RUN   TestReleasePlanDocumentationContract/embedded_Roundfix_skill
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon
+=== RUN   TestBaselineDocumentationContract/README
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period
+=== RUN   TestBaselineDocumentationContract/canonical_setup_skill
+=== RUN   TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries
+=== RUN   TestBaselineDocumentationContract/canonical_Roundfix_skill
+--- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrases (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/links (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/closed_lists (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_lines (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/one_owner (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/wrapped_and_split (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/plurals (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/whole_term_over_five_words (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/possessive_ends_run (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/lowercase_suffix_ends_word (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_is_a_break (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/code_with_nested_backticks (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/link_text_is_retained (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/uncovered_singleton_piece (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/unknown_possessive (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/phrase_boundaries/punctuation_separates_runs (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/accepted (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/proposed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/rejected (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/deprecated (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/superseded (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/link_boundaries/legacy (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/defined_term_allowed (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/missing (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/duplicate (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/not_final (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/blank_item (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/semicolon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/dash (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/parenthesis (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/colon (0.00s)
+        --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/avoid_boundaries/period (0.00s)
+    --- PASS: TestGlossaryContractReportsAPlantedViolationOfEachRule/sentence_boundaries (0.00s)
+=== CONT  TestTheDeliveryRecoveryDecisionAmendsTheOwnerStatusRules
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/idea/reasoning_effort
+--- PASS: TestBaselineDocumentationContract (0.01s)
+    --- PASS: TestBaselineDocumentationContract/baseline (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_starters (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_capabilities_check (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_plan (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_update (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_apply (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_profile (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_skills_restore (0.00s)
+    --- PASS: TestBaselineDocumentationContract/baseline_assets_sync (0.00s)
+    --- PASS: TestBaselineDocumentationContract/Context-Driven_user_guide (0.00s)
+    --- PASS: TestBaselineDocumentationContract/command_reference (0.00s)
+    --- PASS: TestBaselineDocumentationContract/README (0.00s)
+    --- PASS: TestBaselineDocumentationContract/canonical_setup_skill (0.00s)
+    --- PASS: TestBaselineDocumentationContract/canonical_Roundfix_skill (0.00s)
+=== CONT  TestGlossaryStatesEachRuleOnce
+--- PASS: TestReleasePlanDocumentationContract (0.01s)
+    --- PASS: TestReleasePlanDocumentationContract/release_runbook (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/usage_command_index (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/root_Agent_pointer (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_release-planning_rule (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/repository-specific_rules (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/canonical_Roundfix_skill (0.00s)
+    --- PASS: TestReleasePlanDocumentationContract/embedded_Roundfix_skill (0.00s)
+=== CONT  TestCheckLoopOrderDivergent
+=== RUN   TestCheckLoopOrderDivergent/shipped_clause
+=== PAUSE TestCheckLoopOrderDivergent/shipped_clause
+=== RUN   TestCheckLoopOrderDivergent/repository_guide
+=== PAUSE TestCheckLoopOrderDivergent/repository_guide
+=== RUN   TestCheckLoopOrderDivergent/Baseline_module_asset
+=== PAUSE TestCheckLoopOrderDivergent/Baseline_module_asset
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== CONT  TestCheckLoopOrderRepositoryAgrees
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/prd/model
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/prd/reasoning_effort
+--- PASS: TestGlossaryStatesEachRuleOnce (0.01s)
+=== CONT  TestGlossaryClosedListsEqualTheirConstants
+--- PASS: TestTheIndexusDecisionAmendsTheConsultationRule (0.01s)
+=== CONT  TestTheCorpusTestsCheckEachSpecOncePerProcess
+--- PASS: TestGlossaryClosedListsEqualTheirConstants (0.00s)
+=== CONT  TestGlossaryLinksNameAcceptedADRs
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/techspec/model
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/techspec/reasoning_effort
+--- PASS: TestTheDeliveryRecoveryDecisionAmendsTheOwnerStatusRules (0.02s)
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/tasks/model
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/tasks/reasoning_effort
+--- PASS: TestTheCorpusTestsCheckEachSpecOncePerProcess (0.02s)
+=== CONT  TestTheStaleFingerprintProblemNamesTheProjectRegeneration
+--- PASS: TestTheStaleFingerprintProblemNamesTheProjectRegeneration (0.00s)
+=== CONT  TestTheSetupManifestIsCurrent
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/idea
+--- PASS: TestGlossaryLinksNameAcceptedADRs (0.02s)
+=== CONT  TestReviewHistoryConfigurationRejectsReachableRuleSources
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources/history_root
+=== RUN   TestReviewHistoryConfigurationRejectsReachableRuleSources/Spec-owned_review_directory
+--- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources/history_root (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRejectsReachableRuleSources/Spec-owned_review_directory (0.00s)
+=== CONT  TestProfilesDocumentationContractMatchesPublicGuidance
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/prd
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/techspec
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/tasks
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/idea
+--- PASS: TestProfilesDocumentationContractMatchesPublicGuidance (0.01s)
+=== CONT  TestReviewHistoryConfigurationRequiresExclusions
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions/history_root
+=== RUN   TestReviewHistoryConfigurationRequiresExclusions/Spec-owned_review_directory
+--- PASS: TestReviewHistoryConfigurationRequiresExclusions (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRequiresExclusions/history_root (0.00s)
+    --- PASS: TestReviewHistoryConfigurationRequiresExclusions/Spec-owned_review_directory (0.00s)
+=== CONT  TestReviewHistoryConfiguration
+--- PASS: TestReviewHistoryConfiguration (0.00s)
+=== CONT  TestTheParkActionContractRequiresTheNumberedFileCollision
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/prd
+--- PASS: TestTheParkActionContractRequiresTheNumberedFileCollision (0.00s)
+=== CONT  TestOwnedSkillCommandCollectionReadsOnlyCode
+--- PASS: TestOwnedSkillCommandCollectionReadsOnlyCode (0.00s)
+=== CONT  TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/techspec
+--- PASS: TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem (0.00s)
+=== CONT  TestAnUnlistedSkillCommandIsReported
+=== RUN   TestAnUnlistedSkillCommandIsReported/unlisted_roundfix_subcommand
+=== RUN   TestAnUnlistedSkillCommandIsReported/unlisted_git_command
+=== RUN   TestAnUnlistedSkillCommandIsReported/unlisted_gh_pr_command
+=== RUN   TestAnUnlistedSkillCommandIsReported/entry_taken_off_the_list
+=== RUN   TestAnUnlistedSkillCommandIsReported/excluded_command_is_covered
+=== RUN   TestAnUnlistedSkillCommandIsReported/exclusion_prefix_covers_its_forms
+=== RUN   TestAnUnlistedSkillCommandIsReported/unregistered_roundfix_word_is_ignored
+=== RUN   TestAnUnlistedSkillCommandIsReported/not_a_command_word_is_covered
+--- PASS: TestAnUnlistedSkillCommandIsReported (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/unlisted_roundfix_subcommand (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/unlisted_git_command (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/unlisted_gh_pr_command (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/entry_taken_off_the_list (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/excluded_command_is_covered (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/exclusion_prefix_covers_its_forms (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/unregistered_roundfix_word_is_ignored (0.00s)
+    --- PASS: TestAnUnlistedSkillCommandIsReported/not_a_command_word_is_covered (0.00s)
+=== CONT  TestOwnedSkillsNameOnlyListedOrExcludedCommands
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/tasks
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/nil
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/empty
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/search_only
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/fetch_and_mcp
+=== RUN   TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide
+--- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository (0.06s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/repository_config (0.00s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails (0.03s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/idea/model (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/idea/reasoning_effort (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/prd/model (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/prd/reasoning_effort (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/techspec/model (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/techspec/reasoning_effort (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/tasks/model (0.01s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_declared_fallback_that_differs_fails/tasks/reasoning_effort (0.00s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes (0.01s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/idea (0.01s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/prd (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/techspec (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/an_undeclared_fallback_passes/tasks (0.00s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes (0.01s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/idea (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/prd (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/techspec (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_matching_declared_fallback_passes/tasks (0.00s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/nil (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/empty (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/search_only (0.00s)
+        --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/a_research_entry_without_a_recommended_tool_fails/fetch_and_mcp (0.00s)
+    --- PASS: TestTheRecommendedAuthoringDeclarationMatchesThisRepository/configuration_guide (0.00s)
+=== CONT  TestTheEventCategoryContractReportsAMissingCategory
+--- PASS: TestTheEventCategoryContractReportsAMissingCategory (0.00s)
+=== CONT  TestTheQASecretRefusalContractRejectsTheParenthesizedForm
+--- PASS: TestOwnedSkillsNameOnlyListedOrExcludedCommands (0.02s)
+=== CONT  TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt
+--- PASS: TestTheQASecretRefusalContractRejectsTheParenthesizedForm (0.01s)
+=== CONT  TestTheParkActionContractReportsAnActionInTheClassTable
+--- PASS: TestTheParkActionContractReportsAnActionInTheClassTable (0.00s)
+=== CONT  TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem
+--- PASS: TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem (0.00s)
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== CONT  TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem
+--- PASS: TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem (0.00s)
+=== CONT  TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily
+--- PASS: TestDocsLayoutGuideNamesOnlyTheArchiveRecordFamily (0.00s)
+=== CONT  TestGuidanceCompositionDocumentation
+=== RUN   TestGuidanceCompositionDocumentation/ADR_lifecycle_template
+=== RUN   TestGuidanceCompositionDocumentation/Findings_template
+--- PASS: TestGuidanceCompositionDocumentation (0.00s)
+    --- PASS: TestGuidanceCompositionDocumentation/ADR_lifecycle_template (0.00s)
+    --- PASS: TestGuidanceCompositionDocumentation/Findings_template (0.00s)
+=== CONT  TestTheDeliveryConventionContractReportsAStaleConvention
+--- PASS: TestTheDeliveryConventionContractReportsAStaleConvention (0.00s)
+=== CONT  TestBaselineDecisionExamples
+--- PASS: TestBaselineDecisionExamples (0.00s)
+=== CONT  TestProjectConstraintDocumentation
+--- PASS: TestProjectConstraintDocumentation (0.00s)
+=== CONT  TestCheckLoopOrderDivergent/shipped_clause
+=== CONT  TestCheckLoopOrderDivergent/Baseline_module_asset
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.09s)
+=== CONT  TestCheckLoopOrderDivergent/repository_guide
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+=== RUN   TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+=== PAUSE TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths
+--- PASS: TestTheQASecretRefusalIsDocumentedAsTheDaemonPrintsIt (0.05s)
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path
+=== CONT  TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path
+--- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck (0.00s)
+    --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/empty_paths (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-prd/references/prd-template.md/Makefile_path (0.00s)
+    --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/empty_paths (0.00s)
+        --- PASS: TestTheTemplateNoMutationToolingRowPassesTheSpecCheck/.agents/skills/write-techspec/references/techspec-template.md/Makefile_path (0.00s)
+--- PASS: TestCheckLoopOrderDivergent (0.00s)
+    --- PASS: TestCheckLoopOrderDivergent/shipped_clause (0.02s)
+    --- PASS: TestCheckLoopOrderDivergent/Baseline_module_asset (0.02s)
+    --- PASS: TestCheckLoopOrderDivergent/repository_guide (0.02s)
+--- PASS: TestTheSetupManifestIsCurrent (0.15s)
+--- PASS: TestCheckLoopOrderRepositoryAgrees (1.61s)
+PASS
+ok  	roundfix/internal/docscontract	9.523s
+
+exit: 0

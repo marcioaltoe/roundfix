@@ -1,0 +1,28 @@
+--- internal/store/delivery.go
++++ internal/store/delivery.go
+@@ -640,7 +640,7 @@
+ UPDATE delivery_queue_items SET stage = ?, blocker = ?, retry_count = ?, candidate_commits = ?
+ WHERE git_root = ? AND position = ? AND spec_slug = ? AND stage = ? AND blocker = ''
+ AND EXISTS (SELECT 1 FROM delivery_queues WHERE git_root = ? AND owner_pid IS NULL)`,
+-			DeliveryStageParked, before.Blocker, before.RetryCount, string(encoded), gitRoot, before.Position, before.SpecSlug, retried, gitRoot)
++			DeliveryStageParked, before.Blocker, before.RetryCount+1, string(encoded), gitRoot, before.Position, before.SpecSlug, retried, gitRoot)
+ 		if err != nil {
+ 			return fmt.Errorf("revert Delivery Queue item retry: %w", err)
+ 		}
+
+COMMAND: go test -count=1 -timeout 20m -v -run ^TestRevertDeliveryQueueItemRetryRestoresTheParkedItem$/^reverts_a_retried_item$ ./internal/store
+=== RUN   TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== PAUSE TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== CONT  TestRevertDeliveryQueueItemRetryRestoresTheParkedItem
+=== RUN   TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+=== PAUSE TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+=== CONT  TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item
+    delivery_retry_revert_test.go:86: revert=true queue={GitRoot:/tmp/revert-retry OwnerPID:0 OwnerIdentity: Limits:{Deadline:0001-01-01 00:00:00 +0000 UTC MaxRetries:0 MaxTokens:0} Items:[{SpecSlug:0173-retry Position:0 Stage:parked Blocker:run-unresolved Branch:roundfix/deliver-0173-retry Worktree:/tmp/item-worktree WorktreeProvisioned:false RunID:new-run CandidateCommits:[candidate-original] PullRequestNumber: MergeCommit: RetryCount:1 Warning:}]} want item={SpecSlug:0173-retry Position:0 Stage:parked Blocker:run-unresolved Branch:roundfix/deliver-0173-retry Worktree:/tmp/item-worktree WorktreeProvisioned:false RunID:new-run CandidateCommits:[candidate-original] PullRequestNumber: MergeCommit: RetryCount:0 Warning:}
+--- FAIL: TestRevertDeliveryQueueItemRetryRestoresTheParkedItem (0.00s)
+    --- FAIL: TestRevertDeliveryQueueItemRetryRestoresTheParkedItem/reverts_a_retried_item (0.01s)
+FAIL
+suiteguard: guard cost: measured 3397 paths; fingerprint took 230.053375ms before and 216.39ms after
+FAIL	roundfix/internal/store	0.708s
+FAIL
+
+exit: 1

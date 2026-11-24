@@ -1,0 +1,13 @@
+Mutation: internal/cli/deliver.go
+command: go test -count=1 -timeout 10m -v -run ^TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof$ ./internal/cli
+=== RUN   TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== PAUSE TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+=== CONT  TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof
+    deliver_retry_owner_proof_test.go:51: exit=0 stdout="Carried forward from Run run_20261124T051427Z_79c11164f64ecf78: task_01, task_02, task_03, task_04, task_05\nRetried 0001-widget-flow: run-unresolved -> running\nDelivery Owner: test-owner\nConsole Log: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeThePr891018148/001/owner.log\nStatus: roundfix deliver status\nStop: roundfix deliver stop\n" stderr="" want="Retry failed\n\nReason:\n  Queue Owner PID 1073741824 is not running\n\nItem:\n  stage: parked; blocker: run-unresolved\n\nCarried forward:\n  Run run_20261124T051427Z_79c11164f64ecf78: task_01, task_02, task_03, task_04, task_05\n\nNext:\n  roundfix deliver retry 0001-widget-flow\n"
+--- FAIL: TestDeliverRetryReproducesSurfaceTranscriptOwnerEndedBeforeTheProof (1.96s)
+FAIL
+suiteguard: guard cost: measured 3397 paths; fingerprint took 749.198459ms before and 256.235125ms after
+FAIL	roundfix/internal/cli	3.403s
+FAIL
+
+exit: 1
