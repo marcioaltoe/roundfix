@@ -56,7 +56,7 @@ A command that fails only because a fresh `HOME` hid a toolchain is a gate error
     - every changed Governed Path is listed in `_authorization.md` `paths`, and the Governed Paths changed are only those three;
     - in `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` only the version fields differ from the Delivery Base;
     - the Task commit range changes none of these: the Makefile, the CI workflows, `go.mod`, `go.sum`, `.roundfixrc.yml`, `skills-lock.json`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `internal/app/version.go`, `dist/npm/roundfix/package.json`, `docs/references/skill-coverage.json`, `docs/references/coverage-record.json`, any file under `docs/agents/`, any Vendored Skill, any owned skill other than `roundfix`, and any reference of the Roundfix skill other than `review`;
-    - the Go source files changed are `internal/cli/review.go` and `internal/cli/review_lineage.go`, besides the two new test files, and the function that classifies the reviewer's answer is byte-identical to the Delivery Base's;
+    - the Go source files changed are `internal/cli/review.go` and `internal/cli/review_lineage.go`, besides the two new test files and `internal/verifyselect/contracts_repository_test.go`, whose only change is the docscontract file count task_01 requirement 12 raises by one (correction of 2026-11-24: the QA gate of the first Run failed only on finding F-01, this criterion omitting that declared change), and the function that classifies the reviewer's answer is byte-identical to the Delivery Base's;
     - no accepted ADR other than ADR-0197 changed, it stays `accepted`, and ADR-0451 is `accepted`;
     - no `### QA settlement` section changed.
 
