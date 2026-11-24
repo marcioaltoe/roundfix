@@ -33,6 +33,7 @@ This Task delivers `_techspec.md` → Build Order 3. `roundfix deliver status` g
 10. MUST revise the glossary through `domain-modeling`: **Queue Owner** says that status also reports a queue with no recorded owner while an item can still advance, and the Run of each item at `running`; and each of the entries **QA-Only Failed Run**, **Task Carry-Forward**, **Delivery Retry** and **Queue Owner** cites ADR-0450 with a link to its file (`_techspec.md` → API Contract 8).
 11. MUST keep every new top-level test calling `t.Parallel()` as its first statement; no new test waits on elapsed time, signals a process it did not start, reaches the network or reads the real home directory.
 12. MUST NOT change any skill, user-guide page, the Behavior Surface Record, the Skill Coverage Map, any other guide, `docs/agents/setup-context.json`, or any file `_authorization.md` → Limits names.
+13. MUST re-record the repository test coverage record once every test of this Task is in place, because requirement 6 renames `TestDeliverStatusPrintsNoOwnerLineWithoutARecordedOwner` on purpose (ADR-0450 inverts the rule it pinned) and `TestCoverageEquivalence` in `internal/spec` reports that removal as a regression: run `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1` from the tree this Task runs on and commit `docs/references/coverage-record.json`. The only removal the record may show is that one test name; every other change is an addition. (Correction of 2026-11-23: Run run_20261124T001551Z_9b40dc21bfabfe76 failed this Task on make verify-changed with that single coverage regression.)
 
 ## Subtasks
 
@@ -71,6 +72,7 @@ This Task delivers `_techspec.md` → Build Order 3. `roundfix deliver status` g
 - interface: `docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md`
 - interface: `.secondbrain-export`
 - interface: `CONTEXT.md`
+- interface: `docs/references/coverage-record.json`
 - creates: `internal/cli/deliver_run_line.go`
 - creates: `internal/cli/deliver_status_recovery_lines_test.go`
 - creates: `internal/cli/deliver_quaestor_built_binary_test.go`
