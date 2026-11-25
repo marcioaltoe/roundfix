@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0420-roundfix-stops-verifying-on-linux
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -85,3 +85,18 @@ This Task delivers `_techspec.md` → Build Order 4: the rules change with the w
 - `_techspec.md` → The decision record, the glossary, the guide and the skill; API Contract 11; API Contract 13; Invariants; ADR Alternatives; Testing Approach; Build Order 4; Risks & Considerations; Coverage Map (Deviations from the PRD)
 - [`references/2026-11-24-techspec-measurements.md`](references/2026-11-24-techspec-measurements.md), sections 2 and 5
 - ADR-0288, ADR-0294, ADR-0297, ADR-0303, ADR-0316, ADR-0252, ADR-0285, ADR-0295, ADR-0384, ADR-0385, ADR-0423
+
+## Result
+
+Skills loaded: implement-task, domain-modeling, tech-writer, golang-testing, testing-boss, evidence-gate.
+
+- ADR-0452 records the macOS verification decision, alternatives and test-tool rule. A focused filesystem and header check found the accepted, knowledge-marked successor and confirmed all five superseded files are absent.
+- Each of the six accepted ADRs has its dated amendment and header. A byte comparison against HEAD, removing only the new metadata and notice, reproduced all six originals.
+- Removed the four retired glossary entries and moved the two tool citations. `go test -tags docscontract -run '^TestGlossary' ./internal/docscontract` passed (42 tests).
+- A focused export check found ADR-0452 exactly once, in order, and no retired record paths.
+- The live-document scan found only the allowed deprecation-warning lines. Added the decision and live-document contract tests and raised the pinned docscontract file count from 15 to 16; `go test -tags docscontract -run '^$' ./internal/docscontract` compiled the package, and `git diff --check` passed. The Daemon owns the declared Verification commands.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T233515Z_e6f1359ae84a0462`
+- Source commit: `4c0000c6de01f08de5ac89c1fe10594a98f473a8`

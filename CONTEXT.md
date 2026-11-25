@@ -913,28 +913,12 @@ The durable, ordered set of Specs that Roundfix advances from an Implement Run t
 _Avoid_: Release queue, Batch, Run list
 
 **Base Test Tools**:
-The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0452](docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md)).
 _Avoid_: container tools, optional tools
 
 **External Test Tool**:
-A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0452](docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md)).
 _Avoid_: optional dependency, container tool
-
-**Linux Lane**:
-The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)). It reads the repository history through the object store mounted read-only, including the common directory's store for a linked worktree ([ADR-0297](docs/adr/0297-the-linux-lane-reads-the-repository-history-read-only.md)).
-_Avoid_: Linux gate, Docker gate, cross-platform Verification
-
-**Lane Environment Skip**:
-A skip of an enabled Linux Lane for any reason other than having nothing to test, or of a lane whose fetched configuration cannot be read. It passes the gate and is recorded on the item, shown by `roundfix deliver status`, the queue's pull request body and `roundfix doctor` ([ADR-0303](docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md)).
-_Avoid_: expected skip, lane failure
-
-**Lane Container Failure**:
-A Linux Lane failure caused by its container setup, command invocation, a signal or the run cap. It parks the candidate in the environment Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
-_Avoid_: change failure, generic gate failure
-
-**Lane Change Failure**:
-A Linux Lane failure attributed to the candidate: its Go test run, or the `go list` run that selects its packages exiting below 128. It parks the candidate in the finding Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), [ADR-0316](docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md)).
-_Avoid_: container failure, generic gate failure
 
 **Queue Owner**:
 The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, one item at a time through every stage except the pre-PR review, which it runs for up to its Review Capacity of items at once. It waits on each Prerequisite Spec and starts a queued item only when no earlier item is between its Implement Run and its merge; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one, and a live owner finds a retried item within 30 seconds ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)). When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)). A Queue Owner that stops while an item can still advance keeps that record, so the report names it ([ADR-0395](docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md)). Status also reports a queue with no recorded owner while an item can still advance, and the Active Run and Tasks in progress of each item at `running` ([ADR-0450](docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md)).

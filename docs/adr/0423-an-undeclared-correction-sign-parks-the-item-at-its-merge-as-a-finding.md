@@ -1,8 +1,9 @@
 ---
 status: accepted
+amended_by: [ADR-0452]
 knowledge: true
 created_at: 2026-11-17T19:30:00Z
-updated_at: 2026-11-17T20:30:00Z
+updated_at: 2026-11-24T23:35:15Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -27,6 +28,8 @@ reads one delivery setting, `delivery.linux_lane`, from the Project Config at
 the default branch head, so that an Item Branch cannot change it (ADR-0288).
 More than a dozen tests assert the lines of `roundfix deliver status` byte for
 byte.
+
+**Amended by [ADR-0452](0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md) (2026-11-24).** The lane configuration key in this context is retired.
 
 ## Decision
 

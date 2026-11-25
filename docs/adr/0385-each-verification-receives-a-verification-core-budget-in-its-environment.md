@@ -1,8 +1,9 @@
 ---
 status: accepted
+amended_by: [ADR-0452]
 knowledge: true
 created_at: 2026-11-11T01:30:00Z
-updated_at: 2026-11-11T01:30:00Z
+updated_at: 2026-11-24T23:35:15Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -44,6 +45,8 @@ Verification and Linux Lane container receive it. `roundfix spec check
 --run-verification`, `roundfix settle`, the queue's item binary build and
 derived-file regeneration, Worktree Bootstrap and the review Runs receive
 nothing new.
+
+**Amended by [ADR-0452](0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md) (2026-11-24).** The retired lane container no longer receives the budget.
 
 **`roundfix doctor` reports it against the active Runs.** One
 `verification-cores:` line names the budget, where it came from and how many
