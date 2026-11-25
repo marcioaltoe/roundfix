@@ -224,8 +224,8 @@ Publication Preflight without cutting a tag:
 3. Inspect the Publication Preflight table and any failure prefix in the run
    summary.
 
-This rehearsal is publish-free. It validates the version, runs `make verify`,
-and checks registry eligibility for the full Release Set, then stops before
+This rehearsal is publish-free. It runs `make verify` and the Full Contract Run
+on a macOS runner first, validates the version, and checks registry eligibility for the full Release Set, then stops before
 cross-compilation, npm publication, or GitHub Release creation.
 
 A coordinate already published at the version shows `published` and does not
@@ -364,8 +364,9 @@ Request.
    git push origin v<version>
    ```
 
-6. Watch the `release` workflow. In order it: validates the tag, runs
-   `make verify`, runs the Publication Preflight, cross-compiles and stages
+6. Watch the `release` workflow. It first runs `make verify` and the Full Contract
+   Run on a macOS runner, then validates the version. A wrong tag is refused
+   after verification and before publication. It runs the Publication Preflight, cross-compiles and stages
    every target, publishes the per-platform packages first and then the
    launcher, and creates the GitHub Release with the matching binary assets.
 

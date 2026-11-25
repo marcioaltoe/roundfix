@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0420-roundfix-stops-verifying-on-linux
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -90,3 +90,19 @@ This Task delivers `_techspec.md` → Build Order 3 and the Coverage Review of A
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/2026-11-24-techspec-measurements.md`](references/2026-11-24-techspec-measurements.md), sections 1, 2, 3 and 5
 - ADR-0256, ADR-0384, ADR-0385
+
+## Result
+
+Skills loaded: implement-task, tech-writer, golang-testing, testing-boss
+
+- Removed the retired lane descriptions from the three guide pages and four canonical references; `make skills-sync` propagated the reference edits. A focused Python scan of all eleven pages and references found no lane phrases except the two permitted warnings, and confirmed the skill copies are byte-identical.
+- Listed both retired keys and their exact warnings in the configuration guide and both setup references. `go test -count=1 -tags docscontract ./internal/docscontract -run 'TestTheGuideAndTheSkillListTheRetiredLaneKeys/(guide|canonical_reference|mirror_reference)$' -v` passed all three subtests. The new docscontract file is marked always relevant and the pinned docscontract file count increased from 14 to 15.
+- Updated both release runbook passages to put macOS verification and the Full Contract Run before version validation, and prepended the two dated Coverage Reviews. A focused scan confirmed both reviews and both macOS runner references.
+- Ran the sanctioned commands in order: `make skills-sync` (exit 0); `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions` (pass, recording version 0.1.287); and `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` (pass). A focused comparison found both skill copies identical and their QA settlement sections unchanged. `git diff --check` passed.
+
+The Daemon owns the declared Verification and Task status.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261124T233515Z_e6f1359ae84a0462`
+- Source commit: `2d4f4fdbe606508bb1316f9ba46336bc6fda07d3`

@@ -20,7 +20,6 @@ Each entry is `set` or `not set`, never a key value; both stages fall back
 to the shared key when their stage key is unset. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapters, configured Agent
 Selection Profiles, Repository Skill Set, process residue, storage, the
-conditional `linux-lane` check (when the checkout enables `delivery.linux_lane`), and
 codex runtime hygiene checks and prints one line per check with status `ok`,
 `warn`, `failed`, or `skipped`; residue and storage can also report `found` or
 `partial`. Adapter

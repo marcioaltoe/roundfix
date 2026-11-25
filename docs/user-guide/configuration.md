@@ -25,6 +25,8 @@ replacement or retirement:
 - `defaults.model` → `profiles.<category>.preferred.model`
 - `jev.router_min_credit_usd` — removed with the Jev Router; it is ignored
   with this warning: `config: jev.router_min_credit_usd is deprecated and ignored; the Jev Router was retired, so remove it`.
+- `delivery.linux_lane` — ignored with this warning: `config: delivery.linux_lane is deprecated and ignored; the Linux Lane was retired, so remove it`.
+- `delivery.linux_lane_image` — ignored with this warning: `config: delivery.linux_lane_image is deprecated and ignored; the Linux Lane was retired, so remove it`.
 - `secondbrain.root` — the Secondbrain inbox source was retired; it is ignored
   with this warning: `config: secondbrain.root is deprecated and ignored; the Secondbrain inbox source was retired, so remove it`.
 - `secondbrain.inbox_namespace` — the Secondbrain inbox source was retired; it is ignored
@@ -308,8 +310,7 @@ repository Verification appended at settlement, the exclusive retry after exit
 `75`, the Integrated Repository Verification and the QA Task's repository
 Verification the Daemon runs before the QA Agent. The exclusive retry takes
 the Run's whole capacity and exactly one machine unit. The Delivery Queue's
-repository gate takes one unit for its repository Verification and Linux Lane
-together.
+repository gate takes one unit for its repository Verification.
 
 Nothing a process runs inside an Agent session is gated: the QA Agent's own
 suites and an Agent's focused tests run whenever the Agent runs them.
@@ -348,8 +349,7 @@ or queue gate starts; it adds no configuration key and stores nothing.
 The budget reaches the pre-work probe, repository precondition, every Task
 attempt and retry, settlement Verification, Integrated Repository Verification
 and QA repository Verification, plus every Agent Session of that Implement
-Run. The queue's repository Verification and Linux Lane container receive it
-too, including `roundfix deliver lane`. Agent commands inherit the budget even
+Run. The queue's repository Verification receives it too. Agent commands inherit the budget even
 though the Machine Verification Capacity does not gate them. Go reads
 `GOMAXPROCS` without a repository change.
 
@@ -1149,50 +1149,6 @@ set it; a Project Config value is ignored with this warning:
 delivery.review_concurrency in User Config`. A Queue Owner reads the value
 when it starts, and `roundfix deliver start` and `roundfix deliver status`
 print it on their `Limits:` line.
-
-## Linux Lane
-
-`delivery.linux_lane` is a boolean, default `false`. Set it to `true` to run
-the Linux Lane after the Delivery Queue's repository Verification passes.
-Project Config replaces User Config for this key; an absent project key
-inherits the user value, and explicit `false` disables it. A non-boolean value
-is refused with `delivery.linux_lane must be boolean`.
-
-```yaml
-delivery:
-  linux_lane: true
-```
-
-`delivery.linux_lane_image` is a YAML string, default empty. A project value
-replaces the user value; an absent project key inherits it, and an explicit
-empty string selects the default `golang:<go.mod go version>` image. For
-example:
-
-```yaml
-delivery:
-  linux_lane: true
-  linux_lane_image: registry.example.com/team/go-ci:1.26
-```
-
-A non-empty value follows the container reference grammar `name[:tag][@digest]`
-without IPv6 hosts. An optional `domain[:port]/` precedes one or more lowercase
-path components separated by `/`. Domain components contain ASCII letters or
-digits, with hyphens allowed internally; dots separate components, and a port
-is numeric.
-Path components match `[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*`;
-a tag matches `[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}`; a digest matches
-`[A-Za-z][A-Za-z0-9]*([-_+.][A-Za-z][A-Za-z0-9]*)*:[0-9a-fA-F]{32,}`.
-Whitespace and leading `-` are forbidden. A non-string or invalid value is
-refused with `parse config "<label>": delivery.linux_lane_image must be a
-container image reference, such as golang:1.26`.
-
-The queue reads both keys from the fetched default-branch commit, with User
-Config beneath it. Neither the item branch nor the owner's checkout supplies
-the Project Config; their changes take effect after merge. The lane runs the
-candidate's changed Go packages under an init (`--init`) in the locally
-available image, with no network or image pull. See
-[deliver](commands/deliver.md#linux-lane) for skip reasons, outcomes, and the
-lane log.
 
 ## Delivery conflict recovery
 

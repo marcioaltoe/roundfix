@@ -88,10 +88,6 @@ shell configuration. Run `roundfix doctor` again after taking the next action.
 | `DR-TOOL-MISSING` | failed | `install <tool>, or change the command that names it` |
 | `DR-TOOL-UNREAD` | warn | `list the tools this command needs under verification.tools in Project Config` |
 | `DR-NODE-PRELOAD-MISSING` | warn | `remove the preload from NODE_OPTIONS where your shell sets it` |
-| `DR-LANE-DOCKER-MISSING` | warn | Docker is absent; install Docker, or set `delivery.linux_lane: false`. |
-| `DR-LANE-DOCKER-UNREACHABLE` | warn | `docker info` failed; start Docker, then re-run `roundfix doctor`. |
-| `DR-LANE-IMAGE-MISSING` | warn | The image is not local; `docker pull <image>`. |
-| `DR-LANE-IMAGE-UNKNOWN` | warn | The image cannot be resolved from `go.mod`; set `delivery.linux_lane_image`. |
 | `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |
 | `DR-DISK-LOW` | warn | Less than 10,240 MiB free where worktrees, a Shared Build Cache or the temporary directory live; `roundfix gc`, then free space on that filesystem. |
 | `DR-DISK-UNREAD` | warn | The free space could not be read; check the path, then re-run `roundfix doctor`. |
@@ -117,7 +113,7 @@ the Node.js, minimum-supported acpx, effective adapter check for every distinct
 runtime referenced by the effective required profiles, required Agent
 Selection Profiles, Repository Skill Set, process residue, storage, the
 Machine Verification Capacity and the
-conditional `light-tier`, `disk-space` and `linux-lane` checks, and codex runtime hygiene checks and
+conditional `light-tier` and `disk-space` checks, and codex runtime hygiene checks and
 exits nonzero if any check fails. Runtime entries on the aggregate `adapter:`
 line are deduplicated and sorted. Adapter failures name the effective command,
 package classification, and official install action. Profile failure names the
@@ -147,7 +143,7 @@ a process table Doctor cannot read.
   `DR-DISK-UNREAD` gives the read error. Findings are `warn` and never change
   the exit code; with enough free space everywhere the line is absent.
 - `verification-capacity:` — the read-only Machine Verification Capacity
-  check, printed after the `disk-space:` results and before `linux-lane:`.
+  check, printed after the `disk-space:` results.
   It reports `ok (runs.max_verifying <n>; <held> held, <waiting> waiting)`,
   or `ok (off; <held> held, <waiting> waiting)` at `0`. The detail adds
   `; holding: <holder description>, <step>` per holder, then
@@ -171,19 +167,6 @@ a process table Doctor cannot read.
   otherwise the active Run count, at least 1. Oversubscription warns only when
   `<total>` (`<c>` times `<cores>`) exceeds the logical CPUs. The check writes
   nothing and never changes the exit code.
-- `linux-lane:` — printed after `verification-cores:` and before `codex:` only when the
-  checkout's effective `delivery.linux_lane` is `true`. It checks Docker on
-  the command environment's PATH with `docker info`, then
-  `docker image inspect <image>`, each with a ten-second limit that cancels
-  the child. The image is `delivery.linux_lane_image` when configured,
-  otherwise `golang:<go directive>` from `go.mod` at `HEAD`, ignoring dirty
-  changes. Without a Git repository or root `go.mod`, the line is `skipped`.
-  A missing Go version reports `DR-LANE-IMAGE-UNKNOWN`. Findings are `warn`
-  and never change the exit code; a healthy setup reports
-  `ok (docker reachable; image <image> present)`. No pull, container start,
-  removal, or next action is executed, and no environment value is printed.
-  Doctor reads this checkout's configuration; the queue reads the fetched
-  default's configuration instead.
 
 ```text
 node: ok
@@ -296,12 +279,14 @@ It defaults to `1`; `0` turns the bound off. Only User Config sets it.
 
 Roundfix treats registered removed config keys as migrations, not Preflight
 Validation failures. The current deprecated keys are `resolve.concurrent` and
-`defaults.model`; each is ignored and prints exactly once per User Config or
+`defaults.model`, `delivery.linux_lane` and `delivery.linux_lane_image`; each is ignored and prints exactly once per User Config or
 Project Config load on stderr:
 
 ```text
 config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
 config: defaults.model is deprecated and ignored; use profiles.<category>.preferred.model
+config: delivery.linux_lane is deprecated and ignored; the Linux Lane was retired, so remove it
+config: delivery.linux_lane_image is deprecated and ignored; the Linux Lane was retired, so remove it
 ```
 
 Unknown keys that are not in the deprecation registry still fail strict
