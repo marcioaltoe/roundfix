@@ -1,0 +1,97 @@
+import os,sys,pathlib,subprocess,json,tempfile,shutil,re,tarfile,io
+R=pathlib.Path.cwd().resolve(); S='0420-roundfix-stops-verifying-on-linux'; D=R/'docs/specs'/S; E=D/'qa/evidence/qa-report-2026-11-24'; Q=D/'qa/qa-report-2026-11-24.md'; HEAD='4c0000c6de01f08de5ac89c1fe10594a98f473a8'; BASE='4a53079d798d043dc27b9543572356aa174bda56'
+en=os.environ.copy()
+for key in list(en):
+ if key in ['GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY','CLAUDE_CODE_SESSION_ID'] or ('ROUNDFIX_' in key and ('API_KEY' in key or 'JUDGE_KEY' in key)): en.pop(key,None)
+en.update(GOPROXY='off',GOSUMDB='off')
+def cmd(args,cwd=R,env=en):
+ p=subprocess.run(args,cwd=cwd,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ return p
+
+def save(name,p,args):
+ (E/(name+'.txt')).write_text('$ '+' '.join(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ print(name, 'exit',p.returncode,flush=True)
+
+def run(name,args,cwd=R,env=en):
+ p=cmd(args,cwd,env);save(name,p,args);return p
+
+def status(row,value,detail=''):
+ s=Q.read_text();s=re.sub(r'^\| '+re.escape(row)+r' \| [^|]+ \|', '| '+row+' | '+value+' |',s,flags=re.M)
+ if detail:s+='\n'+detail+'\n'
+ Q.write_text(s)
+
+def copytree(rev):
+ td=pathlib.Path(tempfile.mkdtemp(prefix='roundfix-qa-')); blob=subprocess.check_output(['git','archive',rev],cwd=R)
+ with tarfile.open(fileobj=io.BytesIO(blob)) as tf:tf.extractall(td,filter='data')
+ for a in [['git','init','-q'],['git','add','.'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','fixture']]:
+  p=cmd(a,td);assert p.returncode==0,p.stderr
+ return td
+
+def fresh():
+ td=pathlib.Path(tempfile.mkdtemp(prefix='roundfix-product-')); (td/'home').mkdir();(td/'tmp').mkdir();(td/'tools').mkdir();(td/'repo').mkdir()
+ for tool in ['gh','docker']:
+  f=td/'tools'/tool;f.write_text('#!/bin/sh\nexit 1\n');f.chmod(0o755)
+ e=en.copy()
+ for key in ['GOMODCACHE','GOCACHE']:e[key]=cmd(['go','env',key]).stdout.strip()
+ e['RUSTUP_HOME']=en.get('RUSTUP_HOME',str(pathlib.Path.home()/'.rustup'));e['CARGO_HOME']=en.get('CARGO_HOME',str(pathlib.Path.home()/'.cargo'))
+ e.update(HOME=str(td/'home'),TMPDIR=str(td/'tmp'),PATH=str(td/'tools')+os.pathsep+en['PATH']);return td,e
+
+def plan():
+ td,e=fresh();p=run('precondition',[str(R/'bin/roundfix'),'spec','check',S,'--strict'],R,e);v=run('version',[str(R/'bin/roundfix'),'--version'],R,e);shutil.rmtree(td)
+ assert p.returncode==0,p.stdout+p.stderr
+ s=Q.read_text().replace('verdict: pending','verdict: pending\nbuild: "'+HEAD+'"\nuser_flow_binary: '+json.dumps(v.stdout.strip())+'\nuser_flow_executables:\n  - bin/roundfix\n  - bin/roundfix-delivery-base\n  - docs/specs/'+S+'/qa/evidence/qa-report-2026-11-24/gate.py.txt')
+ rows=[('G','repository Verification')]+[(f'R{i:02}',f'Requirement {i}'+('; outside-evidence row' if i==10 else '')) for i in list(range(2,15))+[16,18]]+[(f'S{i}',f'Requirement 15.{i}') for i in range(1,10)]+[('PR','Pull Request row')]+[(f'U{i}', 'Unreachable Acceptance: '+c) for i,c in enumerate(re.findall(r'^- criterion: (.+)$',(D/'_prd.md').read_text(),re.M),1)]
+ lines='\n'.join('| '+r+' | pending | '+p+' |' for r,p in rows)
+ s=s.replace('| - | --- | --- |','| - | --- | --- |\n'+lines)
+ s+='\n## Scope and execution\n\nAudited head: `'+HEAD+'`; Delivery Base: `'+BASE+'`. Strict authoring precondition passed. All tests use explicit timeouts and offline module resolution. Product commands use isolated HOME and TMPDIR, toolchain locations preserved, inert gh/docker stand-ins, and no Judge Key Variables or TYPESAFE_API_KEY. No external service is called. Persistence is checked through independent CLI invocations and temporary store fixtures. The sandbox executor cannot start with its symlinked writable root; commands use escalation.\n'
+ for r,p in rows:
+  s+='\n### '+r+'\n\n```yaml\ninputs:\n  - kind: repository_path\n    ref: "**"\n'
+  if r in ['R04','R07','R08','R12','R13','R18','PR']:s+='  - kind: commit_range\n    ref: "'+BASE+'..'+HEAD+'"\n'
+  s+='```\n\nActor: repository maintainer. Entry: built CLI or the authored focused test/contract. Expected: '+p+'. Independent confirmation: public CLI comparison, test subtests and assertion-level negative probes as applicable. Evidence: recorded below on execution.\n'
+ Q.write_text(s);status('G','pass','Daemon static gate: `make verify-changed`, exit 0 at the audited head; diagnostics removed on success. Not rerun.')
+
+def tests():
+ jobs=[('cli-focused',['./internal/cli'],'Test(TheRepositoryGateEndsAtTheRepositoryVerification|DeliverLaneReproducesSurfaceTranscriptUnknownCommand|DeliverHelpReproducesSurfaceTranscriptWithoutTheLane|TopLevelUsageNamesDeliverRetry|RunsListReproducesSurfaceTranscriptRetiredLaneKeys|DoctorRunsNoLinuxLaneCheck|StatusPrintsWhatTheLaneRecorded|ADeliveryRetryReturnsAnItemTheLaneParked|TheRepositoryGateCommandReceivesTheCoreBudget|TheRepositoryGateHoldsTheMachineCapacityWhileItRuns|DeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification|TheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate|GateParksWithTheBlockerItNames|DoctorWarnsWhenALocationIsLowOnDisk|DoctorReportsTheVerificationCoreBudget|DoctorReportsTheMachineVerificationCapacity)',None),('config',['./internal/config'],'TestTheRetiredLaneKeysLoadWithOneWarningEach',None),('delivery',['./internal/delivery'],'Test(APassedGateLeavesNoLaneWarningAndNoPullRequestParagraph|AStoredLaneBlockerKeepsItsParkClass|ParkClassesAndNextActions|TheQueueWarnsOfLowDiskBeforeTheRunAndTheGate)',None),('workflows',['./internal/verifyselect'],None,None),('platforms',['./internal/verifyselect'],'TestEveryTestCompilesForLinuxAndWindows','repocontract'),('docs',['./internal/docscontract'],None,'docscontract'),('skills',['./skills'],None,None),('settlement',['./skills'],'TestSettlementGuidanceIsOneTable','repocontract'),('coverage',['./internal/spec'],'TestCoverageEquivalence',None),('consumers',['./internal/cli','./internal/delivery','./internal/config'],None,None)]
+ result={}
+ for name,pkgs,pat,tags in jobs:
+  a=['go','test','-count=1','-timeout','40m','-v']
+  if tags:a+=['-tags',tags]
+  if pat:a+=['-run','^('+pat+')$']
+  p=run(name,a+pkgs);result[name]=p.returncode
+  if name=='cli-focused':status('R06','pass' if not p.returncode else 'fail')
+  if name=='workflows':status('R08','pass' if not p.returncode else 'fail')
+  if name=='platforms':status('R09','pass' if not p.returncode else 'fail')
+ for row,ns in {'R02':['cli-focused','delivery'],'R05':['config','cli-focused'],'R07':['cli-focused','delivery'],'R12':['docs','skills','settlement'],'R13':['coverage'],'R16':list(result)}.items():status(row,'pass' if all(result[n]==0 for n in ns) else 'fail')
+ for goos in ['linux','windows']:
+  e=en.copy();e['GOOS']=goos;run('build-'+goos,['go','build','-buildvcs=false','./...'],env=e)
+ (E/'test-results.json.txt').write_text(json.dumps(result,indent=2))
+
+def sabotages():
+ cases=[('internal/delivery/park_class.go','\tcase retiredLaneContainerBlocker:\n\t\tclassification.Class = ParkClassEnvironment\n\t\tclassification.Next = "run roundfix deliver retry " + item.SpecSlug + "; the Linux Lane was retired, so the gate no longer runs it"\n','', './internal/delivery','TestAStoredLaneBlockerKeepsItsParkClass/container_blocker',None),('internal/config/config.go','\t{\n\t\tpath:    []string{"delivery", "linux_lane_image"},\n\t\tname:    "delivery.linux_lane_image",\n\t\tremoval: "the Linux Lane was retired, so remove it",\n\t},\n','','./internal/config','TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config',None),('internal/cli/deliver.go','Commands:\n','Commands:\n  lane    Run the Linux Lane on demand and exit with its outcome\n','./internal/cli','TestDeliverHelpReproducesSurfaceTranscriptWithoutTheLane',None),('.github/workflows/ci-verify.yml','runs-on: macos-26','runs-on: ubuntu-latest','./internal/verifyselect','TestEveryVerifyingJobRunsOnTheStandardMacOSRunner',None),('.github/workflows/release.yml','    needs: verify\n','','./internal/verifyselect','TestTheReleaseVerifiesBeforeItBuildsOrPublishes',None),('internal/verifyselect/platform_test_compile_repocontract_test.go','[]string{"linux", "windows"}','[]string{"windows"}','./internal/verifyselect','TestEveryTestCompilesForLinuxAndWindows/a_file_only_linux_fails_to_compile','repocontract'),('docs/user-guide/commands/doctor.md',None,'\n- linux-lane: printed after verification-cores: and before codex:\n','./internal/docscontract','TestNoLiveDocumentDescribesTheLinuxLane','docscontract'),('docs/adr/0385-each-verification-receives-a-verification-core-budget-in-its-environment.md',None,None,'./internal/docscontract','TestTheLinuxVerificationDecisionSupersedesTheLaneRecords/amended_records','docscontract'),('skills/roundfix/references/setup.md',None,None,'./internal/docscontract','TestTheGuideAndTheSkillListTheRetiredLaneKeys/mirror_reference','docscontract')]
+ for i,(path,old,new,pkg,test,tags) in enumerate(cases,1):
+  td=copytree(HEAD)
+  try:
+   f=td/path;s=f.read_text()
+   if i==7:s+=new
+   elif i==8:s,n=re.subn(r'^\*\*Amended by \[ADR-0452\].*\n?', '',s,flags=re.M);assert n==1
+   elif i==9:s,n=re.subn(r'^.*config: delivery\.linux_lane_image is deprecated.*\n?', '',s,flags=re.M);assert n==1
+   else:assert s.count(old)==1,(path,s.count(old));s=s.replace(old,new,1)
+   f.write_text(s)
+   a=['go','test','-count=1','-timeout','30m','-v']
+   if tags:a+=['-tags',tags]
+   a+=['-run','^'+test.replace('/','$/^')+'$',pkg];p=run('sabotage-'+str(i),a,td)
+   killed=p.returncode!=0 and ('--- FAIL: '+test) in p.stdout and '[build failed]' not in p.stdout+p.stderr
+   status('S'+str(i),'pass' if killed else 'fail','Sabotage '+str(i)+': '+('named assertion rejected mutation' if killed else 'REQUIRED MUTATION NOT REJECTED AT NAMED ASSERTION')+'; [transcript](evidence/qa-report-2026-11-24/sabotage-'+str(i)+'.txt).')
+  finally:shutil.rmtree(td)
+
+def regen():
+ td=copytree(HEAD)
+ try:
+  jobs=[['make','skills-sync'],['go','test','-timeout','20m','./skills','-run','^TestEveryOwnedSkillVersionIsRecorded$','-record-skill-versions'],['go','test','-timeout','20m','-count=1','-tags','docscontract','./internal/docscontract','-run','^TestTheSkillCoverageMapIsCurrent$','-record-skill-coverage'],['go','test','-timeout','20m','./internal/spec','-run','^TestCoverageEquivalence$','-update-coverage-record','-count=1']]
+  ok=True
+  for i,a in enumerate(jobs,1):
+   p=run('regeneration-'+str(i),a,td);d=run('regeneration-diff-'+str(i),['git','diff','--exit-code'],td);ok=ok and not p.returncode and not d.returncode
+  status('R14','pass' if ok else 'fail')
+ finally:shutil.rmtree(td)
+
+if __name__=='__main__':globals()[sys.argv[1]]()

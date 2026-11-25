@@ -1,0 +1,5 @@
+$ go test -timeout 20m ./internal/spec -run ^TestCoverageEquivalence$ -update-coverage-record -count=1
+stdout:
+ok  	roundfix/internal/spec	1.437s
+stderr:
+exit: 0

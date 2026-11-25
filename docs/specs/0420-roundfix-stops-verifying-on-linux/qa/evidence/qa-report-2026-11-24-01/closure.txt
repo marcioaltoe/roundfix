@@ -1,0 +1,4 @@
+30 rows: 26 pass, environment 1, declared 3, finding 0.
+All rows have typed inputs; no pending rows; contiguous three-column Results table.
+All 88 report-local links exist and are not ignored.
+Tracked worktree byte-identical to audited head.

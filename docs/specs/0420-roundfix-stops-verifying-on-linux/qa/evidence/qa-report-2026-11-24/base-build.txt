@@ -1,0 +1,7 @@
+$ make build BIN=/Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0420-roundfix-stops-verifying-on-linux-9667ee5887c51d9a-f923d8c7-5441ad7f/run_20261124T233515Z_e6f1359ae84a0462/bin/roundfix-delivery-base
+exit: 0
+stdout:
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=f7b1213' -X 'roundfix/internal/app.BuildTime=2026-11-24 21:41:07 -0300'" -o /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0420-roundfix-stops-verifying-on-linux-9667ee5887c51d9a-f923d8c7-5441ad7f/run_20261124T233515Z_e6f1359ae84a0462/bin/roundfix-delivery-base ./cmd/roundfix
+
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 12322620508 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues

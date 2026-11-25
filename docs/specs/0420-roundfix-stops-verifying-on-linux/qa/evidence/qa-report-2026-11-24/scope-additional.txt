@@ -1,0 +1,26 @@
+Skill coverage removes only command deliver lane: PASS
+Skill coverage changes exactly two reviews: PASS
+guide docs/user-guide/release-runbook.md preserves every field except review: PASS
+guide docs/user-guide/release-runbook.md dated review: PASS
+command release plan preserves every field except review: PASS
+command release plan dated review: PASS
+Makefile noncomment bytes change only compile-contract name: PASS
+Project config removes only six comment lines and lane line: PASS
+ADR changes exactly six amendments five deletions one addition: PASS
+Export removes only previously exported retired records and adds ADR0452 once: True; three retired records were exported at the Delivery Base, two were already absent.
+ADR0452 has no Spec folder citation: PASS
+.agents/skills/roundfix/SKILL.md QA settlement unchanged: PASS
+.agents/skills/roundfix/references/deliver.md QA settlement unchanged: PASS
+.agents/skills/roundfix/references/implement.md QA settlement unchanged: PASS
+.agents/skills/roundfix/references/runtime.md QA settlement unchanged: PASS
+.agents/skills/roundfix/references/setup.md QA settlement unchanged: PASS
+skills/roundfix/SKILL.md QA settlement unchanged: PASS
+skills/roundfix/references/deliver.md QA settlement unchanged: PASS
+skills/roundfix/references/implement.md QA settlement unchanged: PASS
+skills/roundfix/references/runtime.md QA settlement unchanged: PASS
+skills/roundfix/references/setup.md QA settlement unchanged: PASS
+skills/testdata/owned-skill-versions.json QA settlement unchanged: PASS
+
+Removed export paths: docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md, docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md, docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md
+Added export path: docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md
+README platform-limit sentence matches exactly after whitespace folding: PASS

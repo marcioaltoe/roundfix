@@ -1,0 +1,13 @@
+$ go test -count=1 -timeout 30m -v -tags docscontract -run ^TestNoLiveDocumentDescribesTheLinuxLane$ ./internal/docscontract
+exit: 1
+stdout:
+=== RUN   TestNoLiveDocumentDescribesTheLinuxLane
+=== PAUSE TestNoLiveDocumentDescribesTheLinuxLane
+=== CONT  TestNoLiveDocumentDescribesTheLinuxLane
+    linux_verification_decision_record_test.go:171: docs/user-guide/commands/doctor.md:589: contains "linux-lane"
+--- FAIL: TestNoLiveDocumentDescribesTheLinuxLane (0.01s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.422s
+FAIL
+
+stderr:

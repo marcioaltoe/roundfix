@@ -1,0 +1,50 @@
+$ git diff --exit-code
+exit: 1
+stdout:
+diff --git a/docs/references/coverage-record.json b/docs/references/coverage-record.json
+index c7148ec..f8ac97d 100644
+--- a/docs/references/coverage-record.json
++++ b/docs/references/coverage-record.json
+@@ -4057,6 +4057,7 @@
+       "TestGlossaryStatesEachRuleOnce",
+       "TestGuidanceCompositionDocumentation",
+       "TestModelSelectionReferenceStatesTheShippedSnapshot",
++      "TestNoLiveDocumentDescribesTheLinuxLane",
+       "TestOwnedSkillCommandCollectionReadsOnlyCode",
+       "TestOwnedSkillsNameOnlyListedOrExcludedCommands",
+       "TestProfilesDocumentationContractMatchesPublicGuidance",
+@@ -4075,7 +4076,9 @@
+       "TestTheEventCategoriesAreDocumentedAsTheStreamAcceptsThem",
+       "TestTheEventCategoryContractReportsAMissingCategory",
+       "TestTheExportRuleRefusesAProcessPath",
++      "TestTheGuideAndTheSkillListTheRetiredLaneKeys",
+       "TestTheIndexusDecisionAmendsTheConsultationRule",
++      "TestTheLinuxVerificationDecisionSupersedesTheLaneRecords",
+       "TestTheParkActionContractReportsAnActionInTheClassTable",
+       "TestTheParkActionContractRequiresTheNumberedFileCollision",
+       "TestTheParkActionsAreDocumentedAsTheQueueClassifiesThem",
+@@ -5774,6 +5777,7 @@
+       "TestContractSummaryNamesEveryExclusion",
+       "TestDocumentationSelectsBothSets",
+       "TestEveryDocumentationContractFileIsAlwaysSelected",
++      "TestEveryVerifyingJobRunsOnTheStandardMacOSRunner",
+       "TestFixtureChangesSelectTheOwningSet",
+       "TestMainAndReleaseRunEveryContract",
+       "TestMakeBoundsItsOwnGoBuildCache",
+@@ -5802,12 +5806,14 @@
+       "TestSelectListsStagedPaths",
+       "TestTheCIPullRequestSkipsOnlyTheRepeatedDocumentationContracts",
+       "TestTheCIPushJudgesTheSuiteTimeBudgetLast",
++      "TestTheReleaseVerifiesBeforeItBuildsOrPublishes",
+       "TestTheSkillsBumpAcceptsAnAlreadyCurrentCatalog",
+       "TestTheSkillsBumpPinsTheCatalogMainCommit",
+       "TestTheSkillsBumpRefreshesWithABinaryBuiltAfterTheDigests",
+       "TestTheSkillsBumpRefusesASilentZeroExitPreview",
+       "TestTheSkillsBumpRefusesWhatItMustNotPin",
+       "TestTheSuiteTimeBudgetIsRecordedThenJudged",
++      "TestTheVerificationGateKeepsItsNamesAndItsSteps",
+       "TestUnknownNonDocumentationPathsFailSafe",
+       "TestVerifyChangedRunsTheSelectedContracts",
+       "TestVerifyContractsRunsEveryContract",
+
+stderr:

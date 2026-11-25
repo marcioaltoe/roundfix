@@ -1,0 +1,13 @@
+{
+  "rows": 29,
+  "pass": 20,
+  "fail": 5,
+  "blocked_environment": 1,
+  "blocked_declared": 3,
+  "blocked_finding": 0,
+  "missing_links": 0,
+  "ignored_evidence_paths": 0,
+  "credential_pattern_matches": 0,
+  "pending_rows": 0,
+  "working_tree_scope": "QA directory only"
+}

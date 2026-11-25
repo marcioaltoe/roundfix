@@ -1,0 +1,19 @@
+$ go test -count=1 -timeout 30m -v -run ^TestTheRetiredLaneKeysLoadWithOneWarningEach$/^project_config$ ./internal/config
+exit: 1
+stdout:
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+    retired_lane_keys_test.go:36: single key linux_lane_image: delivery={CheckTimeout:0s ReviewConcurrency:0 DerivedPaths:[] NumberedFiles:[] ItemBinary:{Build: Path:} RequireDefectClass:false} err=parse config "/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestTheRetiredLaneKeysLoadWithOneWarningEachproject_config3509228234/003/repo/.roundfixrc.yml": yaml: unmarshal errors:
+          line 2: field linux_lane_image not found in type config.deliveryOverlay warnings=""
+--- FAIL: TestTheRetiredLaneKeysLoadWithOneWarningEach (0.00s)
+    --- FAIL: TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config (0.02s)
+FAIL
+suiteguard: guard cost: measured 3396 paths; fingerprint took 167.410667ms before and 159.518709ms after
+FAIL	roundfix/internal/config	0.602s
+FAIL
+
+stderr:

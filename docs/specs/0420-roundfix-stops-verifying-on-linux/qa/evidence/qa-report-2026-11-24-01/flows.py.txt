@@ -1,0 +1,37 @@
+from pathlib import Path
+p=Path('docs/specs/0420-roundfix-stops-verifying-on-linux/qa/evidence/qa-report-2026-11-24-01/runner.py.txt');g={'__file__':str(p.resolve())};exec(compile(p.read_text(),str(p),'exec'),g);globals().update(g)
+base=subprocess.check_output(['git','merge-base',HEAD,'origin/main'],text=True).strip()
+# The base source is outside the checkout; its newly built executable is copied into this Run.
+d=copytree(base)
+try:
+ b=run(['make','build'],'base-build',d);assert b.returncode==0
+ shutil.copy2(d/'bin/roundfix',ROOT/'bin/roundfix-delivery-base')
+finally: remove(d)
+with tempfile.TemporaryDirectory(prefix='qa0420-flow-') as t:
+ cwd=Path(t);binary=str(ROOT/'bin/roundfix')
+ ts=re.findall(r'```transcript\n(.*?)\n   ```',(SPEC/'_techspec.md').read_text(),re.S)
+ for i,block in enumerate(ts,1):
+  lines=[x[3:] if x.startswith('   ') else x for x in block.splitlines()]
+  out=lines.index('stdout:');err=lines.index('stderr:');end=next(j for j,x in enumerate(lines) if x.startswith('exit: '))
+  wantout='\n'.join(lines[out+1:err]);wantout+= '\n' if wantout else ''
+  wanterr='\n'.join(lines[err+1:end]);wanterr+='\n' if wanterr else ''
+  if i==3:
+   for args in [['git','init','-q'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','-c','core.hooksPath=/dev/null','commit','--allow-empty','-qm','fixture']]:subprocess.run(args,cwd=cwd,check=True)
+   (cwd/'.roundfixrc.yml').write_text('delivery:\n  linux_lane: true\n  linux_lane_image: golang:1.26\n')
+  cmd=lines[0].removeprefix('$ roundfix ').split()
+  r=product([binary]+cmd,'transcript-'+str(i),cwd)
+  good=(r.stdout,r.stderr,r.returncode)==(wantout,wanterr,int(lines[end][6:]));(E/f'transcript-match-{i}.txt').write_text(json.dumps({'match':good,'expected_stdout':wantout,'expected_stderr':wanterr,'observed_stdout':r.stdout,'observed_stderr':r.stderr,'exit':r.returncode},indent=2));assert good
+ status('R03','pass','Surface Transcripts 1 and 2 match both streams and exits byte for byte. Named regression subtests are also recorded in cli.txt.',['transcript-1','transcript-match-1','transcript-2','transcript-match-2','cli'])
+ (cwd/'.roundfixrc.yml').write_text('delivery: {bogus_key: true}\n')
+ r=product([binary,'runs','list'],'unknown-key',cwd);assert r.returncode!=0 and 'field bogus_key not found in type config.deliveryOverlay' in r.stderr
+ status('R05','pass','Surface Transcript 3 matches both streams and exit byte for byte. A second fresh invocation rejects bogus_key with the required strict-decode diagnostic. All seven config subtests run in config.txt.',['transcript-3','transcript-match-3','unknown-key','config','cli'])
+ (cwd/'.roundfixrc.yml').unlink()
+ removed={'  roundfix deliver lane [--all] [<revision>]','  lane    Run the Linux Lane on demand and exit with its outcome','  --all  Test every package in the Linux Lane'}
+ for name,args in [('root',['--help']),('deliver',['deliver','--help'])]+[(n,['deliver',n,'--help']) for n in ['plan','start','status','resume','retry','stop']]:
+  old=product([str(ROOT/'bin/roundfix-delivery-base')]+args,'help-base-'+name,cwd)
+  new=product([binary]+args,'help-new-'+name,cwd)
+  if name=='root': expected=old.stdout.replace('plan|start|status|resume|retry|stop|lane','plan|start|status|resume|retry|stop')
+  else:expected=''.join(x for x in old.stdout.splitlines(keepends=True) if x.rstrip('\n') not in removed)
+  good=(new.stdout,new.stderr,new.returncode)==(expected,old.stderr,old.returncode)
+  (E/('help-match-'+name+'.txt')).write_text(json.dumps({'match':good,'base_exit':old.returncode,'current_exit':new.returncode,'expected_stdout':expected,'current_stdout':new.stdout},indent=2));assert good,name
+ status('R04','pass','Freshly archived Delivery Base binary built with make and copied into this Run. Root help has only the permitted command-line change; deliver and all six nested helps lose exactly the same three permitted lines, preserving stderr and exit.',['base-build']+['help-match-'+n for n in ['root','deliver','plan','start','status','resume','retry','stop']])

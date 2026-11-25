@@ -1,0 +1,11 @@
+$ go test -count=1 -timeout 40m -v -run ^TestCoverageEquivalence$ ./internal/spec
+stdout:
+=== RUN   TestCoverageEquivalence
+=== PAUSE TestCoverageEquivalence
+=== CONT  TestCoverageEquivalence
+--- PASS: TestCoverageEquivalence (0.77s)
+PASS
+suiteguard: guard cost: measured 3488 paths; fingerprint took 243.416083ms before and 149.227041ms after
+ok  	roundfix/internal/spec	1.398s
+stderr:
+exit: 0

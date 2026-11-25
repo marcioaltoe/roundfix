@@ -1,0 +1,15 @@
+$ go test -count=1 -timeout 40m -v -tags repocontract -run ^TestEveryTestCompilesForLinuxAndWindows$/^a_file_only_linux_fails_to_compile$ ./internal/verifyselect
+stdout:
+=== RUN   TestEveryTestCompilesForLinuxAndWindows
+=== PAUSE TestEveryTestCompilesForLinuxAndWindows
+=== CONT  TestEveryTestCompilesForLinuxAndWindows
+=== RUN   TestEveryTestCompilesForLinuxAndWindows/a_file_only_linux_fails_to_compile
+    platform_test_compile_repocontract_test.go:40: compiled platforms [windows] no longer compile the tests for Linux
+--- FAIL: TestEveryTestCompilesForLinuxAndWindows (0.00s)
+    --- FAIL: TestEveryTestCompilesForLinuxAndWindows/a_file_only_linux_fails_to_compile (0.00s)
+FAIL
+suiteguard: guard cost: measured 3396 paths; fingerprint took 183.938625ms before and 152.112625ms after
+FAIL	roundfix/internal/verifyselect	0.605s
+FAIL
+stderr:
+exit: 1

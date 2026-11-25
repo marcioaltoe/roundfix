@@ -1,0 +1,4 @@
+$ cmp .agents/skills/roundfix/references/implement.md skills/roundfix/references/implement.md
+stdout:
+stderr:
+exit: 0

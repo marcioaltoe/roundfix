@@ -1,0 +1,119 @@
+from pathlib import Path
+p=Path('docs/specs/0420-roundfix-stops-verifying-on-linux/qa/evidence/qa-report-2026-11-24-01/runner.py.txt');g={'__file__':str(p.resolve())};exec(compile(p.read_text(),str(p),'exec'),g);globals().update(g)
+BASE=subprocess.check_output(['git','merge-base',HEAD,'origin/main'],text=True).strip()
+def old(path):return subprocess.check_output(['git','show',BASE+':'+path],text=True)
+def now(path):return (ROOT/path).read_text()
+log=[]
+def check(label,ok):
+ log.append(('PASS ' if ok else 'FAIL ')+label);print(log[-1]);return ok
+ok=True
+schema=lambda s:re.search(r'const schemaVersion = (\d+)',s).group(1)
+assert check('Run Database schema unchanged: '+schema(now('internal/store/store.go')),schema(now('internal/store/store.go'))==schema(old('internal/store/store.go')))
+status('R07','pass','Legacy status, retry, three stored blocker cases, park classification and low-disk preservation tests passed. Run Database schemaVersion independently compared to Delivery Base: both 23.',['cli','delivery','audit'])
+# Workflows: compare every retained release step byte for byte, allowing its checkout comment only.
+ci=old('.github/workflows/ci-verify.yml');assert check('CI only runner differs',ci.replace('runs-on: ubuntu-latest','runs-on: macos-26')==now('.github/workflows/ci-verify.yml'))
+def steps(s):
+ start=s.index('    steps:\n');s=s[start+len('    steps:\n'):]
+ parts=re.split(r'(?m)(?=      - (?:name:|uses:))',s)
+ return [x for x in parts if x.startswith('      - ')]
+b=steps(old('.github/workflows/release.yml'));n=steps(now('.github/workflows/release.yml').split('\n  release:\n')[1]);removed=[]
+# Comments introducing a subsequent step are attached to preceding step: strip comments only for comparison then retain exact step values.
+def stripcomments(s):return '\n'.join(x for x in s.splitlines() if not x.lstrip().startswith('#')).strip()
+b=[stripcomments(x) for x in b];n=[stripcomments(x) for x in n]
+retained=[x for x in b if not x.startswith('- name: Verify gate') and not x.startswith('- name: Verify every contract')]
+assert check('All retained release step bodies keep exact bytes except checkout comments',n==retained)
+# Preserve full diff so the allowed comment relocation can be audited too.
+run(['git','diff',BASE,HEAD,'--','.github/workflows/ci-verify.yml','.github/workflows/release.yml','Makefile','docs/agents/setup-context.json','.roundfixrc.yml','docs/agents/specific-repository.md','CONTEXT.md','.secondbrain-export','docs/references/skill-coverage.json'],'scope-diff')
+status('R08','pass','Full verifyselect suite passed, including all release workflow scripts and suite-time/contract ordering tests. CI differs only by runner. Every retained publishing step matches Delivery Base; only checkout commentary changes. Full raw diff retained.',['workflows','scope-diff','audit'])
+readme=' '.join(now('README.md').split());assert check('README states only macOS tested beside package platforms','The test suite runs on macOS only; the Linux and Windows packages are compiled and not tested.' in readme)
+status('R09','pass','Linux, Windows and a_file_only_linux_fails_to_compile subtests passed; README states the platform test boundary immediately after package platforms.',['platforms','audit'])
+workflow_labels=[]
+for path in ['.github/workflows/ci-verify.yml','.github/workflows/release.yml']:
+ s=now(path);label=re.search(r'  verify:\n.*?    runs-on: (\S+)',s,re.S).group(1);workflow_labels.append((path,label));assert label=='macos-26' and not label.endswith(('-large','-xlarge'))
+source=SPEC/'references/sources.md';passage='Use of the standard GitHub-hosted runners is free and unlimited on public repositories.';assert passage in source.read_text()
+(E/'outside-evidence.txt').write_text('GitHub Docs, GitHub-hosted runners reference, read 2026-11-24; offline quotation in PRD Acceptance evidence and references/sources.md section 5.\n'+passage+'\nQuoted labels: macos-latest, macos-15, macos-26, xcode-27.\n'+repr(workflow_labels)+'\nBoth match a quoted standard label, without -large/-xlarge. No lookup.\n')
+status('R10','pass','Outside-evidence row rests on GitHub Docs, GitHub-hosted runners reference, read 2026-11-24 and quoted offline in PRD Acceptance evidence and references/sources.md section 5. Both verify jobs match quoted standard label macos-26 with no paid suffix. Source passage: “Use of the standard GitHub-hosted runners is free and unlimited on public repositories.”',['outside-evidence'])
+m=now('Makefile');assert check('420 budget unchanged; historical Linux measurement awaits macOS main measurement','SUITE_BUDGET_SECONDS ?= 420' in m and 'Those runs used the Linux runner' in m and 'first push to main on that runner' in m)
+status('R11','pass','Budget remains 420; comment distinguishes historical Linux measurement from pending first macOS push-to-main measurement. The three declared criteria have separate U rows.',['scope-diff','audit'])
+# ADR amendments and removals.
+removed_ids=['0288','0294','0297','0303','0316'];amended=['0252','0285','0295','0384','0385','0423']
+adr=next((ROOT/'docs/adr').glob('0452-*'));a=adr.read_text();assert 'status: accepted' in a and 'knowledge: true' in a and 'docs/specs/' not in a
+for num in removed_ids:assert not list((ROOT/'docs/adr').glob(num+'-*'))
+for num in amended:
+ f=next((ROOT/'docs/adr').glob(num+'-*'));path=str(f.relative_to(ROOT));s=f.read_text();before=old(path)
+ assert 'status: accepted' in s and re.search(r'amended_by:.*ADR-0452',s)
+ s=re.sub(r'(?m)^amended_by:.*\n','',s);s=re.sub(r'(?m)^updated_at:.*\n','',s);before=re.sub(r'(?m)^updated_at:.*\n','',before)
+ s,n=re.subn(r'\*\*Amended by \[ADR-0452\].*?(?:\n\n|\Z)','',s,flags=re.S);assert n==1
+ assert check('ADR-'+num+' only metadata/notice changes',s.rstrip()==before.rstrip())
+export=now('.secondbrain-export').splitlines();adrs=[x for x in export if x.startswith('docs/adr/')];assert adrs==sorted(adrs) and export.count(str(adr.relative_to(ROOT)))==1
+assert all(not any(x.startswith('docs/adr/'+n+'-') for x in export) for n in removed_ids)
+for f in ['SKILL.md']+['references/'+n+'.md' for n in ['deliver','setup','implement','runtime']]:
+ r=run(['cmp','.agents/skills/roundfix/'+f,'skills/roundfix/'+f],'cmp-'+Path(f).stem);assert r.returncode==0
+status('R12','pass','Required documentation, glossary links, skill versions/sync and settlement tests passed. Independent base-byte comparison confirms all six ADR amendments add only metadata and one notice. Successor accepted/knowledge true, five retired ADRs absent, export unique/in order. No client or Spec citation in successor; five cmp pairs identical.',['docs','skills','settlement','audit','scope-diff']+['cmp-'+x for x in ['SKILL','deliver','setup','implement','runtime']])
+# Coverage exact removal and additions exist in source.
+flatten=lambda s:set(x for values in json.loads(s)['packages'].values() for x in values)
+b=flatten(old('docs/references/coverage-record.json'));n=flatten(now('docs/references/coverage-record.json'))
+req=(SPEC/'task_05.md').read_text().split('The 36 names,',1)[1].split('\n14.',1)[0];expected=set(re.findall(r'`(Test\w+)`',req));assert len(expected)==36
+lost=b-n;gained=n-b;alltests='\n'.join(x.read_text() for x in ROOT.rglob('*_test.go') if '/qa/' not in str(x))
+assert check('Coverage loses exactly 36 declared tests',lost==expected)
+for name in gained:assert re.search(r'func '+name+r'\s*\(',alltests),name
+(E/'coverage-delta.txt').write_text(json.dumps({'removed':sorted(lost),'added':sorted(gained),'removed_count':len(lost),'added_count':len(gained),'all_additions_exist':True},indent=2))
+status('R13','pass',f'Coverage loses exactly 36 declared tests and adds {len(gained)} names, each independently resolved to a current test function. TestCoverageEquivalence passes; sanctioned no-diff replay is independently measured in R14.',['coverage-delta','coverage','audit'])
+# Glossary has precisely the permitted removals and reference substitutions.
+gloss=old('CONTEXT.md')
+for term in ['Linux Lane','Lane Environment Skip','Lane Container Failure','Lane Change Failure']:
+ pattern=r'(?m)^\*\*'+re.escape(term)+r'\*\*:.*?(?=^\*\*|\Z)'
+ gloss,nsub=re.subn(pattern,'',gloss,flags=re.S);assert nsub==1,term
+# Replace the retired ADR link in surviving entries only.
+gloss=re.sub(r'\[ADR-0294\]\(docs/adr/0294-[^)]+\)', '[ADR-0452]('+str(adr.relative_to(ROOT))+')',gloss)
+assert check('Glossary only four removals and two citation substitutions',gloss==now('CONTEXT.md'))
+for term in ['Base Test Tools','External Test Tool']:
+ text=re.search(r'(?m)^\*\*'+term+r'\*\*:.*?(?=^\*\*|\Z)',now('CONTEXT.md'),re.S).group();assert '_Avoid_' in text and 'ADR-0452' in text
+status('R17','pass','Exact Delivery Base comparison allows only the four whole-entry removals and two ADR link substitutions. Both surviving entries retain their anchored definitions and Avoid lines. Glossary link contracts and strict checker report no missing term.',['audit','scope-diff','docs','precondition'])
+# All changed paths audited against per-task Context/Recorded paths, including raw diff-tree evidence.
+commits=[('task_01','7a60194d'),('task_02','e30a23b4'),('task_03','e0b95280'),('task_04','940399f1')]
+changed=set();commitlog=[]
+for task,c in commits:
+ paths=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',c],text=True).splitlines();commitlog.append((task,c,paths));changed.update(paths)
+ text=(SPEC/(task+'.md')).read_text();allowed=set(re.findall(r'`([^`\n]+)`',text))
+ outside=[x for x in paths if x not in allowed and x!='docs/specs/0420-roundfix-stops-verifying-on-linux/'+task+'.md'];assert check(task+' changed paths declared',not outside),outside
+# Correction deltas are independently bounded, not folded into Task commits.
+for c,allowed in [('6525f421',{'internal/verifyselect/platform_test_compile_repocontract_test.go'}),('56388f2d',{'docs/references/coverage-record.json'}),('7b1c9f46',{'docs/specs/0420-roundfix-stops-verifying-on-linux/task_05.md'})]:
+ paths=subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',c],text=True).splitlines();assert set(paths)==allowed;commitlog.append(('correction',c,paths))
+(E/'commit-paths.txt').write_text(json.dumps(commitlog,indent=2))
+grant=(SPEC/'_authorization.md').read_text().split('paths:\n',1)[1].split('operations:',1)[0];governed=set(re.findall(r'  - (.+)',grant));assert len(governed)==13 and governed<=changed
+# These exact bound files must match their limited edit shapes.
+assert old('.roundfixrc.yml').split('  # ADR-0288:',1)[0]+'  # Spec 0404'+old('.roundfixrc.yml').split('  # Spec 0404',1)[1]==now('.roundfixrc.yml')
+for f in ['.agents/skills/roundfix/SKILL.md','skills/roundfix/SKILL.md']:
+ strip=lambda t:re.sub(r'(?m)^(\s*version:).*$',r'\1',t)
+ assert strip(old(f))==strip(now(f))
+jold=json.loads(old('docs/agents/setup-context.json'));jnew=json.loads(now('docs/agents/setup-context.json'))
+def mask(x):
+ if isinstance(x,dict):return {k:('DIGEST' if k=='declarationDigest' and x.get('declarationPath')=='Makefile' else mask(v)) for k,v in x.items()}
+ if isinstance(x,list):return [mask(v) for v in x]
+ return x
+assert mask(jold)==mask(jnew)
+# Makefile recipes/variables unchanged apart from compile-contract name.
+noncomments=lambda s:'\n'.join(x for x in s.splitlines() if not x.startswith('#'))
+assert noncomments(old('Makefile')).replace('TestEveryTestCompilesForWindows','TestEveryTestCompilesForLinuxAndWindows')==noncomments(now('Makefile'))
+a=json.loads(old('docs/references/skill-coverage.json'));b=json.loads(now('docs/references/skill-coverage.json'))
+a['surfaces']=[x for x in a['surfaces'] if x['id']!='command deliver lane']
+for x in b['surfaces']:
+ if x['id'] in ['guide docs/user-guide/release-runbook.md','command release plan']:
+  before=next(v for v in a['surfaces'] if v['id']==x['id']);assert re.match(r'2026-11-24 — Spec 0420 task_03',x['review']) and x['review'].endswith(before['review']);x['review']=before['review']
+assert a==b
+allpaths=subprocess.check_output(['git','diff','--name-only',BASE,HEAD],text=True).splitlines()
+assert set(allpaths)<=changed|{'internal/verifyselect/platform_test_compile_repocontract_test.go','docs/references/coverage-record.json','docs/specs/0420-roundfix-stops-verifying-on-linux/task_05.md'}
+adrchanges=[x for x in allpaths if x.startswith('docs/adr/')];assert len(adrchanges)==12
+for x in allpaths:
+ if x.startswith(('.agents/skills/','skills/')) and x.endswith('.md'):
+  section=lambda s:s.split('### QA settlement',1)[1].split('\n### ',1)[0] if '### QA settlement' in s else ''
+  assert section(old(x))==section(now(x))
+status('R18','pass','Each Task commit independently audited using diff-tree against its declarations/Recorded paths; all bounded. The thirteen granted paths are owned by their declared Tasks. Correction commits touch only the compile probe, recorder output and amended gate contract. Seeded mechanical findings are none; operative Task grant audit preserved. Raw file comparisons prove permitted config, Makefile, setup digest, skill versions, ADRs, skill-map reviews and workflow changes; no excluded source or settlement text changes.',['commit-paths','scope-diff','audit','coverage-delta'])
+(E/'audit.txt').write_text('\n'.join(log)+'\n')
+# All authored Task Verification tests executed through whole suites, not a second repository gate.
+results=json.loads((E/'test-results.json.txt').read_text());assert all(x==0 for x in results.values()),results
+status('R16','pass','Every test named in Task01–04 Verification ran via full CLI/config/delivery/verifyselect/docscontract/skills suites, the cross-platform repocontract, settlement contract and coverage test. All exited 0 with explicit timeouts and fresh -count=1.',['test-results.json','cli','config','delivery','workflows','platforms','docs','skills','settlement','coverage'])
+status('PR','blocked (environment: no open Pull Request)','Pull Request row: assignment confirms no open PR. Delivery approval is the maintainer decisions quoted in _authorization.md, including the later digest grant. Checks: Daemon make verify-changed pass at '+HEAD+'. No unresolved PR threads because no PR exists. Merge-Ready acceptance has not been obtained. Claimed review ancestry/candidate is '+HEAD+'; no Review Source artifact exists yet. No network lookup.')
+u=re.findall(r'- criterion: (.+)\n  reason: (.+)\n  satisfied-by: (.+)',(SPEC/'_prd.md').read_text())
+for i,(criterion,reason,satisfied) in enumerate(u,1):status('U'+str(i),'blocked (declared: '+criterion+')', 'Reason: '+reason+'. Satisfied-by: '+satisfied+'. This offline pre-PR gate cannot observe that GitHub event; criterion remains unproven.')

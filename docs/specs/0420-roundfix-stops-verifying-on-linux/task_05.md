@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0420-roundfix-stops-verifying-on-linux
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

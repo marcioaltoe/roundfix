@@ -1,0 +1,295 @@
+$ git diff 4a53079d798d043dc27b9543572356aa174bda56 7b1c9f4661a21764ee3024f12487a4608a73e8df -- .github/workflows/ci-verify.yml .github/workflows/release.yml Makefile docs/agents/setup-context.json .roundfixrc.yml docs/agents/specific-repository.md CONTEXT.md .secondbrain-export docs/references/skill-coverage.json
+stdout:
+diff --git a/.github/workflows/ci-verify.yml b/.github/workflows/ci-verify.yml
+index eb32fdeb..39bb946f 100644
+--- a/.github/workflows/ci-verify.yml
++++ b/.github/workflows/ci-verify.yml
+@@ -20,7 +20,7 @@ concurrency:
+ jobs:
+   verify:
+     name: Verification gate
+-    runs-on: ubuntu-latest
++    runs-on: macos-26
+     timeout-minutes: 60
+     steps:
+       - uses: actions/checkout@v7
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 66333749..d7dfc35a 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -12,7 +12,36 @@ on:
+         type: string
+ 
+ jobs:
++  verify:
++    runs-on: macos-26
++    permissions:
++      contents: read
++    steps:
++      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
++        with:
++          # The Verify gate below runs the same suite as ci-verify, and its
++          # historical authorization contracts read retained main ancestors by
++          # SHA. A shallow checkout has no such object and the gate fails with
++          # "not a tree object".
++          fetch-depth: 0
++          persist-credentials: false
++
++      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
++        with:
++          go-version: "1.26"
++          check-latest: true
++          cache: false
++
++      # The full local gate must pass before any build or publish.
++      - name: Verify gate
++        run: make verify
++
++      # The Full Contract Run runs before every release (ADR-0253).
++      - name: Verify every contract
++        run: make verify-contracts
++
+   release:
++    needs: verify
+     runs-on: ubuntu-latest
+     permissions:
+       id-token: write # mint the npm Trusted Publishing OIDC token
+@@ -22,10 +51,8 @@ jobs:
+     steps:
+       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+         with:
+-          # The Verify gate below runs the same suite as ci-verify, and its
+-          # historical authorization contracts read retained main ancestors by
+-          # SHA. A shallow checkout has no such object and the gate fails with
+-          # "not a tree object".
++          # No step in this job reads the history any more; keep the checkout
++          # options as they were.
+           fetch-depth: 0
+           persist-credentials: false
+ 
+@@ -78,14 +105,6 @@ jobs:
+             echo "releasing $TAG"
+           fi
+ 
+-      # The full local gate must pass before any build or publish.
+-      - name: Verify gate
+-        run: make verify
+-
+-      # The Full Contract Run runs before every release (ADR-0253).
+-      - name: Verify every contract
+-        run: make verify-contracts
+-
+       - name: Publication preflight
+         run: |
+           set -euo pipefail
+diff --git a/.roundfixrc.yml b/.roundfixrc.yml
+index 73247701..bed12589 100644
+--- a/.roundfixrc.yml
++++ b/.roundfixrc.yml
+@@ -6,13 +6,6 @@ verification:
+   tools: [go, gofmt, git, make]
+ 
+ delivery:
+-  # ADR-0288: run the Linux Lane before publication.
+-  # 2026-10-20: back on after `roundfix deliver lane --all` passed on main
+-  # a0d3d843 (Specs 0282 and 0284; ADR-0294, ADR-0297). Off 2026-10-18 to
+-  # 2026-10-20 while the container lacked an init, CI tools and history.
+-  # Off since 2026-11-24 by the maintainer's decision (ai-memory 01a20d73,
+-  # 09:10 BRT): the Linux checks leave for good through a Spec of their own.
+-  linux_lane: false
+   # Spec 0404 (ADR-0423): every delivery Correction carries a declared Defect Class;
+   # the maintainer turned it on for Gesttione projects on 2026-11-17.
+   require_defect_class: true
+diff --git a/.secondbrain-export b/.secondbrain-export
+index d35232ac..2be15390 100644
+--- a/.secondbrain-export
++++ b/.secondbrain-export
+@@ -210,7 +210,6 @@ docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md
+ docs/adr/0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md
+ docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md
+ docs/adr/0287-a-plan-is-checked-for-undeclared-verification-paths-and-every-settlement-checks-the-setup-manifest.md
+-docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md
+ docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md
+ docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md
+ docs/adr/0291-qa-evidence-holds-text-and-images-and-the-qa-report-commit-refuses-any-other-binary.md
+@@ -222,7 +221,6 @@ docs/adr/0298-a-timed-out-profile-proof-gets-a-third-attempt-and-its-setup-deadl
+ docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md
+ docs/adr/0301-gc-sanitation-classifies-the-artifact-root-each-run-wrote-to.md
+ docs/adr/0302-a-queue-commit-names-the-spec-by-number-and-a-hook-refusal-parks-with-the-hand-commit.md
+-docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md
+ docs/adr/0304-a-queue-item-waits-for-a-run-slot-up-to-runs-slot-wait.md
+ docs/adr/0306-archive-and-cancel-refuse-a-path-whose-resolved-target-leaves-the-repository.md
+ docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md
+@@ -231,7 +229,6 @@ docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-min
+ docs/adr/0312-a-new-delivery-queue-resumes-an-archived-item-branch-at-review.md
+ docs/adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md
+ docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md
+-docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md
+ docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md
+ docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md
+ docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md
+@@ -332,6 +329,7 @@ docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-conte
+ docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md
+ docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
+ docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
++docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md
+ # roundfix:standard-export:end
+ 
+ # This repository publishes its README, its user guide and its lessons (maintainer, 2026-11-18).
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 5c3930c0..bbe09db4 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -913,29 +913,13 @@ The durable, ordered set of Specs that Roundfix advances from an Implement Run t
+ _Avoid_: Release queue, Batch, Run list
+ 
+ **Base Test Tools**:
+-The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
++The tools the repository's tests require: `go`, `gofmt`, `git`, `make`, `sh`, `cat`, `kill`, `ps`, `id`, `mkfifo` and `cmd` ([ADR-0452](docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md)).
+ _Avoid_: container tools, optional tools
+ 
+ **External Test Tool**:
+-A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
++A tool a test runs outside the Base Test Tools. A test that needs one skips naming it when it is absent from PATH ([ADR-0452](docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md)).
+ _Avoid_: optional dependency, container tool
+ 
+-**Linux Lane**:
+-The optional Linux test step of a Delivery Queue candidate's repository gate, covering its changed Go packages before publication. It also runs on demand with `roundfix deliver lane`, independently of the queue opt-in, against a checkout revision's changed Go packages or every package with `--all`. It runs under an init on the image `delivery.linux_lane_image` names, or the default image when empty ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), amending [ADR-0288](docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md)). It reads the repository history through the object store mounted read-only, including the common directory's store for a linked worktree ([ADR-0297](docs/adr/0297-the-linux-lane-reads-the-repository-history-read-only.md)).
+-_Avoid_: Linux gate, Docker gate, cross-platform Verification
+-
+-**Lane Environment Skip**:
+-A skip of an enabled Linux Lane for any reason other than having nothing to test, or of a lane whose fetched configuration cannot be read. It passes the gate and is recorded on the item, shown by `roundfix deliver status`, the queue's pull request body and `roundfix doctor` ([ADR-0303](docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md)).
+-_Avoid_: expected skip, lane failure
+-
+-**Lane Container Failure**:
+-A Linux Lane failure caused by its container setup, command invocation, a signal or the run cap. It parks the candidate in the environment Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md)).
+-_Avoid_: change failure, generic gate failure
+-
+-**Lane Change Failure**:
+-A Linux Lane failure attributed to the candidate: its Go test run, or the `go list` run that selects its packages exiting below 128. It parks the candidate in the finding Park Class ([ADR-0294](docs/adr/0294-the-linux-lane-runs-like-ci.md), [ADR-0316](docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md)).
+-_Avoid_: container failure, generic gate failure
+-
+ **Queue Owner**:
+ The `roundfix deliver` process that holds one Delivery Queue and advances its items in order, one item at a time through every stage except the pre-PR review, which it runs for up to its Review Capacity of items at once. It waits on each Prerequisite Spec and starts a queued item only when no earlier item is between its Implement Run and its merge; a Delivery Retry hands a parked item to the live Queue Owner or starts a new one, and a live owner finds a retried item within 30 seconds ([ADR-0365](docs/adr/0365-the-pre-pr-review-gets-its-own-capacity-and-status-shows-each-items-turn.md)). When an item can still advance, `roundfix deliver status` reports a recorded Queue Owner proven not running by its PID and start-time identity; status never reclaims it, so the item can still advance after `roundfix deliver resume` ([ADR-0279](docs/adr/0279-status-reports-a-queue-owner-proven-gone-and-a-dismissal-survives-a-fix-that-leaves-its-anchor.md)). A Queue Owner that stops while an item can still advance keeps that record, so the report names it ([ADR-0395](docs/adr/0395-a-queue-item-stops-only-for-its-own-work.md)). Status also reports a queue with no recorded owner while an item can still advance, and the Active Run and Tasks in progress of each item at `running` ([ADR-0450](docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md)).
+ _Avoid_: Scheduler, daemon, deliver loop
+diff --git a/Makefile b/Makefile
+index eb1861c8..29ec65fb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -96,9 +96,9 @@ VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
+ verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+ 
+ # The gate runs the Repository Contract Tests selected by their Contract Relevance;
+-# make verify-docs still runs all of them. Platform-only failures remain a known
+-# limit because CI is the Linux gate: for example, go list prints go: downloading
+-# on stderr for modules the host never fetched (ADR-0252).
++# make verify-docs still runs all of them. The selective gate and CI run on macOS.
++# Failures only Linux or Windows produces are a known limit, because those
++# platforms are only compiled (ADR-0252).
+ verify-changed: fmt-check vet build ## Verify the test sets selected by changes from VERIFY_BASE
+ 	@sets="$$( $(VERIFY_SELECT) -base "$(VERIFY_BASE)" )" || exit $$?; \
+ 	for set in $$sets; do \
+@@ -164,7 +164,7 @@ docs-test-skipped:
+ # internal/ is one of their inputs and any code change re-runs them. They are
+ # repository-consistency gates rather than code tests, so they run here at the
+ # pull request boundary instead of in every make verify.
+-REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows
++REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForLinuxAndWindows
+ 
+ repo-test: gocache-bound ## Run the repository-contract tests
+ 	$(GO) test -count=1 -tags repocontract -run '^($(REPO_CONTRACT_TESTS))$$' ./...
+@@ -204,6 +204,9 @@ test: gocache-bound ## Run Go tests
+ # 343 s, because GitHub assigns runners of different speeds: the same tree took
+ # 215 s on one and 311 s on another. 420 s is 22 % above the slowest run and
+ # fails a suite that slows by about 1.95 times on the fast runner.
++# Those runs used the Linux runner the gate used until this change. The gate now
++# runs on the standard macOS runner, where the suite has not been measured. The
++# number awaits the measurement from the first push to main on that runner.
+ # Change this deliberately, with a new measurement, and say why.
+ SUITE_BUDGET_SECONDS ?= 420
+ 
+diff --git a/docs/agents/setup-context.json b/docs/agents/setup-context.json
+index 831e499c..357df28c 100644
+--- a/docs/agents/setup-context.json
++++ b/docs/agents/setup-context.json
+@@ -258,7 +258,7 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:387cf4f9a887b8224148bb286b78aff411273f139812ec0ffee9481dbb41bd3d"
++      "declarationDigest": "sha256:7156a47f31214a801cf0fbade46c8af27f2de0a9caaf1a25cd0ddbb4810c03ee"
+     },
+     {
+       "id": "verification.incremental",
+@@ -267,7 +267,7 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:387cf4f9a887b8224148bb286b78aff411273f139812ec0ffee9481dbb41bd3d"
++      "declarationDigest": "sha256:7156a47f31214a801cf0fbade46c8af27f2de0a9caaf1a25cd0ddbb4810c03ee"
+     }
+   ],
+   "roundfixVersion": "0.152.0"
+diff --git a/docs/agents/specific-repository.md b/docs/agents/specific-repository.md
+index 0205fa6c..13031827 100644
+--- a/docs/agents/specific-repository.md
++++ b/docs/agents/specific-repository.md
+@@ -39,8 +39,8 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
+   check`, and it **MUST** pass before any pull request opens. The Full Contract Run,
+   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
+   Relevance, and CI runs it on every push to main and before every release (ADR-0253).
+-  Platform-only failures stay a known limit because CI is the
+-  Linux gate. Nothing under `docs/history/` is ever validated as live work.
++  The selective gate and CI run on macOS; failures only Linux or Windows
++  produces are a known limit because those platforms are only compiled (ADR-0252). Nothing under `docs/history/` is ever validated as live work.
+ - A test in a code package that reads this repository's `docs/history`, `docs/adr`, `docs/specs`, `docs/user-guide` or `.agents/skills` lives in a `docscontract` file declared `//verify:always`, so a documentation edit never invalidates the package's cached test result (ADR-0326).
+ - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may be
+   adapted locally; every other skill is upstream-managed and **MUST NOT** be
+diff --git a/docs/references/skill-coverage.json b/docs/references/skill-coverage.json
+index 3eb4e6ca..ad0ef121 100644
+--- a/docs/references/skill-coverage.json
++++ b/docs/references/skill-coverage.json
+@@ -258,23 +258,6 @@
+         "internal/cli/corrections.go"
+       ]
+     },
+-    {
+-      "id": "command deliver lane",
+-      "skills": [
+-        ".agents/skills/roundfix/references/deliver.md"
+-      ],
+-      "sources": [
+-        "docs/user-guide/commands/deliver.md",
+-        "internal/cli/deliver.go",
+-        "internal/cli/deliver_lane.go",
+-        "internal/cli/deliver_linux_lane.go",
+-        "internal/cli/deliver_plan.go",
+-        "internal/cli/deliver_release.go",
+-        "internal/cli/deliver_revalidate.go",
+-        "internal/cli/deliver_review_correction.go",
+-        "internal/cli/deliver_workflow.go"
+-      ]
+-    },
+     {
+       "id": "command deliver plan",
+       "skills": [
+@@ -605,7 +588,7 @@
+       "sources": [
+         "docs/user-guide/release-runbook.md"
+       ],
+-      "review": "2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
++      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+     },
+     {
+       "id": "command reopen",
+@@ -1343,7 +1326,7 @@
+       "sources": [
+         "docs/user-guide/release-runbook.md"
+       ],
+-      "review": "2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
++      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+     },
+     {
+       "id": "guide docs/user-guide/run-database-lifecycle.md",
+stderr:
+exit: 0

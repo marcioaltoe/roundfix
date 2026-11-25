@@ -1,0 +1,12 @@
+# make verify-docs still runs all of them. The selective gate and CI run on macOS.
+# two-core runner internal/cli measured 129.3s at the default and 46.4s at 16;
+# Those runs used the Linux runner the gate used until this change. The gate now
+# runs on the standard macOS runner, where the suite has not been measured. The
+# number awaits the measurement from the first push to main on that runner.
+SUITE_BUDGET_SECONDS ?= 420
+test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
+	if [ "$$elapsed" -gt "$(SUITE_BUDGET_SECONDS)" ]; then \
+		verdict="suite-time budget exceeded: the suite took $${elapsed}s against a budget of $(SUITE_BUDGET_SECONDS)s"; \
+		verdict="suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"; \
+		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \

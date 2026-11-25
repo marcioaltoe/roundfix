@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 40m -v -run ^TestAStoredLaneBlockerKeepsItsParkClass$/^container_blocker$ ./internal/delivery
+stdout:
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+    stored_lane_records_test.go:59: park={Class:unclassified Next:resolve the blocker, then run roundfix deliver retry spec-one}
+--- FAIL: TestAStoredLaneBlockerKeepsItsParkClass (0.00s)
+    --- FAIL: TestAStoredLaneBlockerKeepsItsParkClass/container_blocker (0.00s)
+FAIL
+suiteguard: guard cost: measured 3396 paths; fingerprint took 178.283334ms before and 153.566458ms after
+FAIL	roundfix/internal/delivery	0.645s
+FAIL
+stderr:
+exit: 1

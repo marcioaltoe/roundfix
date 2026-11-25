@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 30m -v -tags repocontract -run ^TestEveryTestCompilesForLinuxAndWindows$/^a_file_only_linux_fails_to_compile$ ./internal/verifyselect
+exit: 0
+stdout:
+=== RUN   TestEveryTestCompilesForLinuxAndWindows
+=== PAUSE TestEveryTestCompilesForLinuxAndWindows
+=== CONT  TestEveryTestCompilesForLinuxAndWindows
+=== RUN   TestEveryTestCompilesForLinuxAndWindows/a_file_only_linux_fails_to_compile
+--- PASS: TestEveryTestCompilesForLinuxAndWindows (0.15s)
+    --- PASS: TestEveryTestCompilesForLinuxAndWindows/a_file_only_linux_fails_to_compile (0.15s)
+PASS
+suiteguard: guard cost: measured 3396 paths; fingerprint took 185.334625ms before and 156.506584ms after
+ok  	roundfix/internal/verifyselect	0.751s
+
+stderr:

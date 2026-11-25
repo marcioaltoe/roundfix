@@ -1,0 +1,40 @@
+$ go test -count=1 -timeout 40m -v -run ^(TestTheRetiredLaneKeysLoadWithOneWarningEach)$ ./internal/config
+exit: 0
+stdout:
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/user_config
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/user_config
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/values_of_every_kind
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/values_of_every_kind
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/key_in_both_files_warns_once
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/key_in_both_files_warns_once
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/only_retired_keys_leave_an_empty_delivery
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/only_retired_keys_leave_an_empty_delivery
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/unknown_key_still_fails
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/unknown_key_still_fails
+=== RUN   TestTheRetiredLaneKeysLoadWithOneWarningEach/config_at_a_commit_prints_nothing
+=== PAUSE TestTheRetiredLaneKeysLoadWithOneWarningEach/config_at_a_commit_prints_nothing
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/only_retired_keys_leave_an_empty_delivery
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/config_at_a_commit_prints_nothing
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/values_of_every_kind
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/user_config
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/unknown_key_still_fails
+=== CONT  TestTheRetiredLaneKeysLoadWithOneWarningEach/key_in_both_files_warns_once
+--- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach (0.00s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/only_retired_keys_leave_an_empty_delivery (0.02s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/unknown_key_still_fails (0.01s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/key_in_both_files_warns_once (0.02s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/project_config (0.05s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/user_config (0.05s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/config_at_a_commit_prints_nothing (0.05s)
+    --- PASS: TestTheRetiredLaneKeysLoadWithOneWarningEach/values_of_every_kind (0.07s)
+PASS
+suiteguard: guard cost: measured 3404 paths; fingerprint took 153.305ms before and 153.102333ms after
+ok  	roundfix/internal/config	0.611s
+
+stderr:

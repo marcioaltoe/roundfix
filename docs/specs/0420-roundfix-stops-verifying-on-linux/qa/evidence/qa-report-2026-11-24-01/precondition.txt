@@ -1,0 +1,12 @@
+$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0420-roundfix-stops-verifying-on-linux-9667ee5887c51d9a-f923d8c7-5441ad7f/run_20261125T005032Z_48c3c69f69673fd5/bin/roundfix spec check 0420-roundfix-stops-verifying-on-linux --strict
+stdout:
+Spec 0420-roundfix-stops-verifying-on-linux
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0420-roundfix-stops-verifying-on-linux/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0420-roundfix-stops-verifying-on-linux/references/_index.md
+stderr:
+exit: 0

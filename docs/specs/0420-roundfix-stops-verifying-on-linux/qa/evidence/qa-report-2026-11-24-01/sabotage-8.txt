@@ -1,0 +1,14 @@
+$ go test -count=1 -timeout 40m -v -tags docscontract -run ^TestTheLinuxVerificationDecisionSupersedesTheLaneRecords$/^amended_records$ ./internal/docscontract
+stdout:
+=== RUN   TestTheLinuxVerificationDecisionSupersedesTheLaneRecords
+=== PAUSE TestTheLinuxVerificationDecisionSupersedesTheLaneRecords
+=== CONT  TestTheLinuxVerificationDecisionSupersedesTheLaneRecords
+=== RUN   TestTheLinuxVerificationDecisionSupersedesTheLaneRecords/amended_records
+    linux_verification_decision_record_test.go:95: ADR-0385 requires one amendment notice
+--- FAIL: TestTheLinuxVerificationDecisionSupersedesTheLaneRecords (0.02s)
+    --- FAIL: TestTheLinuxVerificationDecisionSupersedesTheLaneRecords/amended_records (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.439s
+FAIL
+stderr:
+exit: 1

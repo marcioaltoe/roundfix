@@ -1,0 +1,17 @@
+$ go test -count=1 -timeout 30m -v -run ^TestEveryVerifyingJobRunsOnTheStandardMacOSRunner$ ./internal/verifyselect
+exit: 1
+stdout:
+=== RUN   TestEveryVerifyingJobRunsOnTheStandardMacOSRunner
+=== PAUSE TestEveryVerifyingJobRunsOnTheStandardMacOSRunner
+=== CONT  TestEveryVerifyingJobRunsOnTheStandardMacOSRunner
+    verifying_runner_test.go:76: ci-verify.yml job verify runs "make verify-changed" on {8 0 !!str ubuntu-latest  <nil> []    23 14}, want macos-26
+    verifying_runner_test.go:76: ci-verify.yml job verify runs "make verify" on {8 0 !!str ubuntu-latest  <nil> []    23 14}, want macos-26
+    verifying_runner_test.go:76: ci-verify.yml job verify runs "make verify-docs" on {8 0 !!str ubuntu-latest  <nil> []    23 14}, want macos-26
+    verifying_runner_test.go:76: ci-verify.yml job verify runs "make verify-contracts" on {8 0 !!str ubuntu-latest  <nil> []    23 14}, want macos-26
+--- FAIL: TestEveryVerifyingJobRunsOnTheStandardMacOSRunner (0.00s)
+FAIL
+suiteguard: guard cost: measured 3396 paths; fingerprint took 184.276583ms before and 158.97925ms after
+FAIL	roundfix/internal/verifyselect	0.606s
+FAIL
+
+stderr:

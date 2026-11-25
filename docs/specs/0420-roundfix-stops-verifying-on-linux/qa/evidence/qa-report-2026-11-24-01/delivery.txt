@@ -1,0 +1,1483 @@
+$ go test -count=1 -timeout 40m -v ./internal/delivery
+stdout:
+=== RUN   TestRetryOfAnArchivedItemWithACorrectionReturnsToReview
+--- PASS: TestRetryOfAnArchivedItemWithACorrectionReturnsToReview (0.01s)
+=== RUN   TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend
+=== RUN   TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/unrelated
+=== RUN   TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/no_history
+=== RUN   TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/unreadable_history
+--- PASS: TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend (0.01s)
+    --- PASS: TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/unrelated (0.00s)
+    --- PASS: TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/no_history (0.00s)
+    --- PASS: TestRetryOfAnArchivedItemRefusesAHeadThatDoesNotDescend/unreadable_history (0.00s)
+=== RUN   TestRetryOfACorrectiveSpecParkStillRefusesAMovedHead
+--- PASS: TestRetryOfACorrectiveSpecParkStillRefusesAMovedHead (0.00s)
+=== RUN   TestANewQueueResumesAProvenArchivedItemAtReview
+=== PAUSE TestANewQueueResumesAProvenArchivedItemAtReview
+=== RUN   TestANewQueueParksAnUnprovenArchivedItem
+=== PAUSE TestANewQueueParksAnUnprovenArchivedItem
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueParksAnArchivedItemProofError
+=== PAUSE TestANewQueueParksAnArchivedItemProofError
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestABehindPullRequestReturnsToTheGateWithTheMergedHead
+=== PAUSE TestABehindPullRequestReturnsToTheGateWithTheMergedHead
+=== RUN   TestABehindPullRequestIsMergedOnlyAtItsUpdatedHead
+=== PAUSE TestABehindPullRequestIsMergedOnlyAtItsUpdatedHead
+=== RUN   TestABaseUpdateWithASourceConflictParksWithItsPaths
+=== PAUSE TestABaseUpdateWithASourceConflictParksWithItsPaths
+=== RUN   TestABaseUpdateWithNothingToMergeKeepsWaiting
+=== PAUSE TestABaseUpdateWithNothingToMergeKeepsWaiting
+=== RUN   TestAFourthBehindPullRequestParksPullRequestBehind
+=== PAUSE TestAFourthBehindPullRequestParksPullRequestBehind
+=== RUN   TestTheBaseUpdateCountStartsOverAfterAPark
+=== PAUSE TestTheBaseUpdateCountStartsOverAfterAPark
+=== RUN   TestAnOwnerWithoutABaseUpdateParksPullRequestBehind
+=== PAUSE TestAnOwnerWithoutABaseUpdateParksPullRequestBehind
+=== RUN   TestAPolicyRefusalThatComesBackBehindGetsABaseUpdate
+=== PAUSE TestAPolicyRefusalThatComesBackBehindGetsABaseUpdate
+=== RUN   TestAConflictingAndBehindPullRequestTakesTheConflictPath
+=== PAUSE TestAConflictingAndBehindPullRequestTakesTheConflictPath
+=== RUN   TestABaseUpdateErrorKeepsItsCauseAndAParkResetsTheBound
+=== PAUSE TestABaseUpdateErrorKeepsItsCauseAndAParkResetsTheBound
+=== RUN   TestRetryRequeuesAnItemParkedBeforeItHasABranch
+=== PAUSE TestRetryRequeuesAnItemParkedBeforeItHasABranch
+=== RUN   TestDeliveryParksABudgetExceededRunAsARunOutcome
+=== PAUSE TestDeliveryParksABudgetExceededRunAsARunOutcome
+=== RUN   TestDeliveryContinuesAfterABudgetParkedItem
+=== PAUSE TestDeliveryContinuesAfterABudgetParkedItem
+=== RUN   TestDeliveryRetryResumesABudgetParkedItemFromItsRun
+=== PAUSE TestDeliveryRetryResumesABudgetParkedItemFromItsRun
+=== RUN   TestDeliveryStillParksAnExecutorErrorAsADeliveryError
+=== PAUSE TestDeliveryStillParksAnExecutorErrorAsADeliveryError
+=== RUN   TestGitHubCLIInspectsAgainstTheDeliveryRemote
+--- PASS: TestGitHubCLIInspectsAgainstTheDeliveryRemote (0.00s)
+=== RUN   TestGitHubCLIRefusesAnUnsafeDeliveryRemote
+--- PASS: TestGitHubCLIRefusesAnUnsafeDeliveryRemote (0.00s)
+=== RUN   TestAFailedCheckOutsideTheChangeIsRerunOnce
+--- PASS: TestAFailedCheckOutsideTheChangeIsRerunOnce (0.00s)
+=== RUN   TestARerunCheckThatPassesRecordsAWarning
+--- PASS: TestARerunCheckThatPassesRecordsAWarning (0.00s)
+=== RUN   TestARerunCheckThatFailsAgainParksAsFlakyCheck
+--- PASS: TestARerunCheckThatFailsAgainParksAsFlakyCheck (0.00s)
+=== RUN   TestAFailedCheckInAChangedPackageParksWithoutARerun
+--- PASS: TestAFailedCheckInAChangedPackageParksWithoutARerun (0.00s)
+=== RUN   TestAnUnattributableCheckFailureParksWithoutARerun
+--- PASS: TestAnUnattributableCheckFailureParksWithoutARerun (0.00s)
+=== RUN   TestACheckPastItsFirstAttemptIsNotRerun
+--- PASS: TestACheckPastItsFirstAttemptIsNotRerun (0.00s)
+=== RUN   TestNilCheckRecoveryKeepsFailedCheckBehavior
+--- PASS: TestNilCheckRecoveryKeepsFailedCheckBehavior (0.00s)
+=== RUN   TestCancelledChecksAreNotRerun
+--- PASS: TestCancelledChecksAreNotRerun (0.00s)
+=== RUN   TestCheckInspectionErrorsDoNotRerun
+--- PASS: TestCheckInspectionErrorsDoNotRerun (0.00s)
+=== RUN   TestCheckRerunErrorsParkTheItem
+--- PASS: TestCheckRerunErrorsParkTheItem (0.00s)
+=== RUN   TestSecondCheckFailureInChangedPackageIsNotCalledFlaky
+--- PASS: TestSecondCheckFailureInChangedPackageIsNotCalledFlaky (0.00s)
+=== RUN   TestGitHubCLIAttributesAFailedCheckToGoPackages
+--- PASS: TestGitHubCLIAttributesAFailedCheckToGoPackages (0.00s)
+=== RUN   TestGitHubCLIRejectsChangedPackageAttribution
+--- PASS: TestGitHubCLIRejectsChangedPackageAttribution (0.00s)
+=== RUN   TestGitHubCLIBuildFailuresAreUnattributable
+--- PASS: TestGitHubCLIBuildFailuresAreUnattributable (0.00s)
+=== RUN   TestGitHubCLISetupFailuresAreUnattributable
+--- PASS: TestGitHubCLISetupFailuresAreUnattributable (0.00s)
+=== RUN   TestGitHubCLILogsWithoutGoPackagesAreUnattributable
+--- PASS: TestGitHubCLILogsWithoutGoPackagesAreUnattributable (0.00s)
+=== RUN   TestGitHubCLIExternalModuleFailuresAreUnattributable
+--- PASS: TestGitHubCLIExternalModuleFailuresAreUnattributable (0.00s)
+=== RUN   TestGitHubCLIRootPackageOverlapsEveryChangedPath
+--- PASS: TestGitHubCLIRootPackageOverlapsEveryChangedPath (0.00s)
+=== RUN   TestGitHubCLINonActionsCheckIsUnattributable
+--- PASS: TestGitHubCLINonActionsCheckIsUnattributable (0.00s)
+=== RUN   TestGitHubCLIRerunsOnlyFailedJobs
+--- PASS: TestGitHubCLIRerunsOnlyFailedJobs (0.00s)
+=== RUN   TestCheckRerunRestartsTheTimeout
+--- PASS: TestCheckRerunRestartsTheTimeout (0.00s)
+=== RUN   TestAnOldCheckAttemptCannotKeepResettingTheTimeout
+--- PASS: TestAnOldCheckAttemptCannotKeepResettingTheTimeout (0.00s)
+=== RUN   TestMultipleFailedJobsInOneRunAreRerunTogetherOnce
+--- PASS: TestMultipleFailedJobsInOneRunAreRerunTogetherOnce (0.00s)
+=== RUN   TestSkippedRerunDoesNotRecordAPassWarning
+--- PASS: TestSkippedRerunDoesNotRecordAPassWarning (0.00s)
+=== RUN   TestGitHubCLIRejectsMalformedAttemptResponses
+--- PASS: TestGitHubCLIRejectsMalformedAttemptResponses (0.00s)
+=== RUN   TestGitHubCLIReportsFailedLogReadErrors
+--- PASS: TestGitHubCLIReportsFailedLogReadErrors (0.00s)
+=== RUN   TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit
+=== RUN   TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit/remote_changes_excluded
+=== RUN   TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit/renamed_package_file_included
+--- PASS: TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit (0.54s)
+    --- PASS: TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit/remote_changes_excluded (0.27s)
+    --- PASS: TestGitHubCLIAttributionUsesTheRefreshedMergeBaseWithRealGit/renamed_package_file_included (0.27s)
+=== RUN   TestTheCheckWaitDefaultsToSixtyMinutes
+=== PAUSE TestTheCheckWaitDefaultsToSixtyMinutes
+=== RUN   TestTheCheckWaitUsesTheConfiguredDuration
+=== PAUSE TestTheCheckWaitUsesTheConfiguredDuration
+=== RUN   TestEachCheckWaitStartsItsOwnDeadline
+=== PAUSE TestEachCheckWaitStartsItsOwnDeadline
+=== RUN   TestThePullRequestHeadWaitUsesTheCheckWait
+=== PAUSE TestThePullRequestHeadWaitUsesTheCheckWait
+=== RUN   TestAConflictingPullRequestStopsTheCheckWaitAtOnce
+--- PASS: TestAConflictingPullRequestStopsTheCheckWaitAtOnce (0.00s)
+=== RUN   TestAnUnknownMergeableStateKeepsWaiting
+--- PASS: TestAnUnknownMergeableStateKeepsWaiting (0.00s)
+=== RUN   TestADerivedConflictReturnsTheItemToTheGate
+--- PASS: TestADerivedConflictReturnsTheItemToTheGate (0.00s)
+=== RUN   TestASourceConflictParksWithItsPaths
+--- PASS: TestASourceConflictParksWithItsPaths (0.00s)
+=== RUN   TestALaggingPullRequestHeadIsReadAgain
+--- PASS: TestALaggingPullRequestHeadIsReadAgain (0.00s)
+=== RUN   TestRetryResumesAResolvedConflictAtReview
+--- PASS: TestRetryResumesAResolvedConflictAtReview (0.00s)
+=== RUN   TestGitHubCLIReadsTheMergeableState
+--- PASS: TestGitHubCLIReadsTheMergeableState (0.00s)
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign
+=== PAUSE TestTheMergeStepParksAnUndeclaredCorrectionSign
+=== RUN   TestADefectClassParkRetriesToTheStageItsHeadSupports
+=== PAUSE TestADefectClassParkRetriesToTheStageItsHeadSupports
+=== RUN   TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired
+=== PAUSE TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired
+=== RUN   TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings
+=== PAUSE TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings
+=== RUN   TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved
+=== PAUSE TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved
+=== RUN   TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing
+=== PAUSE TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing
+=== RUN   TestAFullDiskParksTheItemAsDiskFull
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull
+=== RUN   TestADiskFullRetryIsNotCounted
+=== PAUSE TestADiskFullRetryIsNotCounted
+=== RUN   TestDeliveryEngineMergesAQueueWithoutAnOperator
+=== PAUSE TestDeliveryEngineMergesAQueueWithoutAnOperator
+=== RUN   TestDeliveryActionsRunInTheItemWorktree
+=== PAUSE TestDeliveryActionsRunInTheItemWorktree
+=== RUN   TestDeliveryEngineResumesWithoutDoubleEffects
+=== PAUSE TestDeliveryEngineResumesWithoutDoubleEffects
+=== RUN   TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge
+=== PAUSE TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge
+=== RUN   TestAFailedMergedCleanupDoesNotStopTheQueue
+=== PAUSE TestAFailedMergedCleanupDoesNotStopTheQueue
+=== RUN   TestDeliveryEngineParksAStaleReview
+=== PAUSE TestDeliveryEngineParksAStaleReview
+=== RUN   TestDeliveryEngineParksUnauthorizedBeforeExternalAction
+=== PAUSE TestDeliveryEngineParksUnauthorizedBeforeExternalAction
+=== RUN   TestDeliveryEngineParksDeclaredBlockersAndContinues
+=== PAUSE TestDeliveryEngineParksDeclaredBlockersAndContinues
+=== RUN   TestEachItemPublishesFromItsOwnBranch
+=== PAUSE TestEachItemPublishesFromItsOwnBranch
+=== RUN   TestAPullRequestOfAnotherItemIsNeverReused
+=== PAUSE TestAPullRequestOfAnotherItemIsNeverReused
+=== RUN   TestPushRefusesTheBaseBranch
+=== PAUSE TestPushRefusesTheBaseBranch
+=== RUN   TestDeliveryWaitsThroughUnreportedChecks
+=== PAUSE TestDeliveryWaitsThroughUnreportedChecks
+=== RUN   TestCheckReadErrorsAreRetriedUntilTheDeadline
+=== PAUSE TestCheckReadErrorsAreRetriedUntilTheDeadline
+=== RUN   TestPersistentCheckReadErrorsParkAtTheDeadline
+=== PAUSE TestPersistentCheckReadErrorsParkAtTheDeadline
+=== RUN   TestChecksTimeoutParksTheItem
+=== PAUSE TestChecksTimeoutParksTheItem
+=== RUN   TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers
+=== PAUSE TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers
+=== RUN   TestAnItemErrorParksAndTheQueueContinues
+=== PAUSE TestAnItemErrorParksAndTheQueueContinues
+=== RUN   TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead
+=== PAUSE TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead
+=== RUN   TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== PAUSE TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== RUN   TestGateParksWithTheBlockerItNames
+=== PAUSE TestGateParksWithTheBlockerItNames
+=== RUN   TestPushPublishesTheRecordedHeadNotTheCheckout
+--- PASS: TestPushPublishesTheRecordedHeadNotTheCheckout (0.00s)
+=== RUN   TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead
+--- PASS: TestPullRequestBoundaryRejectsAPushWithoutAnObservedRemoteHead (0.00s)
+=== RUN   TestPullRequestBoundaryObservesRemoteHeadWithoutPushing
+--- PASS: TestPullRequestBoundaryObservesRemoteHeadWithoutPushing (0.00s)
+=== RUN   TestPullRequestBoundaryReusesAnOpenPullRequest
+--- PASS: TestPullRequestBoundaryReusesAnOpenPullRequest (0.00s)
+=== RUN   TestPullRequestBoundaryCreatesOnlyWhenNoOpenPullRequestExists
+--- PASS: TestPullRequestBoundaryCreatesOnlyWhenNoOpenPullRequestExists (0.00s)
+=== RUN   TestPullRequestBoundaryReportsCurrentHeadChecks
+--- PASS: TestPullRequestBoundaryReportsCurrentHeadChecks (0.00s)
+=== RUN   TestNoChecksReportedIsAnEmptyReport
+--- PASS: TestNoChecksReportedIsAnEmptyReport (0.00s)
+=== RUN   TestCheckCommandFailuresRemainErrors
+--- PASS: TestCheckCommandFailuresRemainErrors (0.00s)
+=== RUN   TestPullRequestBoundaryReportsFailedCurrentHeadChecks
+--- PASS: TestPullRequestBoundaryReportsFailedCurrentHeadChecks (0.00s)
+=== RUN   TestPullRequestBoundaryRejectsChecksFromAMovedHead
+--- PASS: TestPullRequestBoundaryRejectsChecksFromAMovedHead (0.00s)
+=== RUN   TestPullRequestBoundaryDoesNotMergeTwice
+--- PASS: TestPullRequestBoundaryDoesNotMergeTwice (0.00s)
+=== RUN   TestPullRequestBoundaryMergesTheExpectedHead
+--- PASS: TestPullRequestBoundaryMergesTheExpectedHead (0.00s)
+=== RUN   TestPullRequestBoundaryRefusesToMergeAnUnexpectedHead
+--- PASS: TestPullRequestBoundaryRefusesToMergeAnUnexpectedHead (0.00s)
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead
+=== RUN   TestPullRequestReadTrimsTheBaseBranch
+=== PAUSE TestPullRequestReadTrimsTheBaseBranch
+=== RUN   TestCurrentHeadChecksKeepsWorkflowEventsSeparate
+=== PAUSE TestCurrentHeadChecksKeepsWorkflowEventsSeparate
+=== RUN   TestExpectedWorkflowsFollowTheTriggerRule
+=== PAUSE TestExpectedWorkflowsFollowTheTriggerRule
+=== RUN   TestExpectedWorkflowsSkipUnsupportedTriggers
+=== PAUSE TestExpectedWorkflowsSkipUnsupportedTriggers
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== PAUSE TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== PAUSE TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks
+=== PAUSE TestAFailedWorkflowRunWithoutAFailingCheckParks
+=== RUN   TestTheChecksTimeoutNamesWhatItWaitedFor
+=== PAUSE TestTheChecksTimeoutNamesWhatItWaitedFor
+=== RUN   TestAReadErrorIsLoggedOnce
+=== PAUSE TestAReadErrorIsLoggedOnce
+=== RUN   TestEveryFailedHeadMemberIsNamed
+=== PAUSE TestEveryFailedHeadMemberIsNamed
+=== RUN   TestAWorkflowRunWaitsAfterItsCheckPasses
+=== PAUSE TestAWorkflowRunWaitsAfterItsCheckPasses
+=== RUN   TestARequestedRerunWaitsForANewerWorkflowAttempt
+=== PAUSE TestARequestedRerunWaitsForANewerWorkflowAttempt
+=== RUN   TestCheckReadErrorsKeepTheLastSuccessfulWaitAndResetTheirLog
+=== PAUSE TestCheckReadErrorsKeepTheLastSuccessfulWaitAndResetTheirLog
+=== RUN   TestAQueuedItemParksAtTheDeadlineWithoutAWorktree
+=== PAUSE TestAQueuedItemParksAtTheDeadlineWithoutAWorktree
+=== RUN   TestAQueuedItemStartsBeforeTheDeadline
+=== PAUSE TestAQueuedItemStartsBeforeTheDeadline
+=== RUN   TestAnItemPastQueuedAdvancesAfterTheDeadline
+=== PAUSE TestAnItemPastQueuedAdvancesAfterTheDeadline
+=== RUN   TestRetryRefusesAQueueDeadlineItem
+=== PAUSE TestRetryRefusesAQueueDeadlineItem
+=== RUN   TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward
+=== PAUSE TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward
+=== RUN   TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== PAUSE TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== RUN   TestALoopClauseThatArchivesBeforeReviewIsRefused
+=== PAUSE TestALoopClauseThatArchivesBeforeReviewIsRefused
+=== RUN   TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+=== PAUSE TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+=== RUN   TestAnUnmappedDeliveryActionIsRefused
+=== PAUSE TestAnUnmappedDeliveryActionIsRefused
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== RUN   TestPullRequestReadCarriesTheMergeState
+=== PAUSE TestPullRequestReadCarriesTheMergeState
+=== RUN   TestAPolicyRefusalIsTypedFromGhStderr
+=== PAUSE TestAPolicyRefusalIsTypedFromGhStderr
+=== RUN   TestCheckingWaitsWhileTheMergeStateIsBlocked
+=== PAUSE TestCheckingWaitsWhileTheMergeStateIsBlocked
+=== RUN   TestCheckingWaitsWhileTheMergeStateIsUnknown
+=== PAUSE TestCheckingWaitsWhileTheMergeStateIsUnknown
+=== RUN   TestABlockedMergeStateParksAtTheChecksTimeout
+=== PAUSE TestABlockedMergeStateParksAtTheChecksTimeout
+=== RUN   TestAnEmptyMergeStateKeepsTheListedChecksDecision
+=== PAUSE TestAnEmptyMergeStateKeepsTheListedChecksDecision
+=== RUN   TestAPolicyRefusedMergeReturnsToChecking
+=== PAUSE TestAPolicyRefusedMergeReturnsToChecking
+=== RUN   TestASecondPolicyRefusalAtTheSameHeadParks
+=== PAUSE TestASecondPolicyRefusalAtTheSameHeadParks
+=== RUN   TestADeliveryErrorRetryAtAnUnchangedArchivedHeadResumesChecking
+=== PAUSE TestADeliveryErrorRetryAtAnUnchangedArchivedHeadResumesChecking
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace
+=== PAUSE TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace
+=== RUN   TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling
+=== PAUSE TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling
+=== RUN   TestARetryDoesNotAppendAnAlreadyNewestMergedHead
+=== PAUSE TestARetryDoesNotAppendAnAlreadyNewestMergedHead
+=== RUN   TestARetryOfAClosedUnmergedPullRequestIsRefusedAndLeavesTheItemParked
+=== PAUSE TestARetryOfAClosedUnmergedPullRequestIsRefusedAndLeavesTheItemParked
+=== RUN   TestARetryWhoseMergeObservationFailsIsRefused
+=== PAUSE TestARetryWhoseMergeObservationFailsIsRefused
+=== RUN   TestARetryOfAnUnmergedItemFollowsTheExistingRules
+=== PAUSE TestARetryOfAnUnmergedItemFollowsTheExistingRules
+=== RUN   TestAMergeObserverIsNeverAskedForAnItemThatIsNotParked
+=== PAUSE TestAMergeObserverIsNeverAskedForAnItemThatIsNotParked
+=== RUN   TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests
+=== PAUSE TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests
+=== RUN   TestEngineReleasesMergedRunsBeforeRemovingTheItemBranch
+=== PAUSE TestEngineReleasesMergedRunsBeforeRemovingTheItemBranch
+=== RUN   TestEngineRecordsACleanupWarningWhenAMergedRunIsKept
+=== PAUSE TestEngineRecordsACleanupWarningWhenAMergedRunIsKept
+=== RUN   TestEngineClearsTheCleanupWarningAfterACleanRelease
+=== PAUSE TestEngineClearsTheCleanupWarningAfterACleanRelease
+=== RUN   TestEngineJoinsRunReleaseAndItemBranchCleanupFailures
+=== PAUSE TestEngineJoinsRunReleaseAndItemBranchCleanupFailures
+=== RUN   TestEngineReleasesNothingForAnUnmergedItem
+=== PAUSE TestEngineReleasesNothingForAnUnmergedItem
+=== RUN   TestFindNumberedFileCollisions
+=== PAUSE TestFindNumberedFileCollisions
+=== RUN   TestNumberedFileReportRendersTheBlocker
+=== PAUSE TestNumberedFileReportRendersTheBlocker
+=== RUN   TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview
+=== RUN   TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/run-unresolved
+=== RUN   TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/qa-environment-partial
+=== RUN   TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/run-budget-exceeded
+--- PASS: TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview (0.01s)
+    --- PASS: TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/run-unresolved (0.00s)
+    --- PASS: TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/qa-environment-partial (0.00s)
+    --- PASS: TestRetryResumesAnOperatorArchivedItemWithoutACandidateAtReview/run-budget-exceeded (0.00s)
+=== RUN   TestRetryRefusesAnArchiveWithoutCandidateOrOverride
+=== RUN   TestRetryRefusesAnArchiveWithoutCandidateOrOverride/no_override
+=== RUN   TestRetryRefusesAnArchiveWithoutCandidateOrOverride/not_descended
+--- PASS: TestRetryRefusesAnArchiveWithoutCandidateOrOverride (0.01s)
+    --- PASS: TestRetryRefusesAnArchiveWithoutCandidateOrOverride/no_override (0.00s)
+    --- PASS: TestRetryRefusesAnArchiveWithoutCandidateOrOverride/not_descended (0.00s)
+=== RUN   TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory
+=== RUN   TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory/run-unresolved
+=== RUN   TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory/qa-environment-partial
+--- PASS: TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory (0.01s)
+    --- PASS: TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory/run-unresolved (0.00s)
+    --- PASS: TestRetryRefusesAnOperatorArchiveWithoutCandidateOrHistory/qa-environment-partial (0.00s)
+=== RUN   TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial
+=== RUN   TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial/environment
+=== RUN   TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial/unresolved
+--- PASS: TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial (0.01s)
+    --- PASS: TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial/environment (0.00s)
+    --- PASS: TestAnEnvironmentOnlyPartialParksAsQAEnvironmentPartial/unresolved (0.00s)
+=== RUN   TestRetryResumesAnOperatorArchivedItemAtReview
+=== RUN   TestRetryResumesAnOperatorArchivedItemAtReview/candidate_anchor
+=== RUN   TestRetryResumesAnOperatorArchivedItemAtReview/Run_start_anchor
+--- PASS: TestRetryResumesAnOperatorArchivedItemAtReview (0.01s)
+    --- PASS: TestRetryResumesAnOperatorArchivedItemAtReview/candidate_anchor (0.00s)
+    --- PASS: TestRetryResumesAnOperatorArchivedItemAtReview/Run_start_anchor (0.00s)
+=== RUN   TestRetryRefusesAnOperatorArchiveWithoutAQAOverride
+--- PASS: TestRetryRefusesAnOperatorArchiveWithoutAQAOverride (0.00s)
+=== RUN   TestRetryRefusesAnArchivedHeadThatDoesNotDescendFromTheAnchor
+--- PASS: TestRetryRefusesAnArchivedHeadThatDoesNotDescendFromTheAnchor (0.00s)
+=== RUN   TestOperatorArchiveRetryRequiresHistory
+--- PASS: TestOperatorArchiveRetryRequiresHistory (0.00s)
+=== RUN   TestOperatorArchiveRetryRefusesUnreadableHistory
+--- PASS: TestOperatorArchiveRetryRefusesUnreadableHistory (0.00s)
+=== RUN   TestTheArchiveStagePassesAnAlreadyArchivedSpec
+--- PASS: TestTheArchiveStagePassesAnAlreadyArchivedSpec (0.00s)
+=== RUN   TestAdvanceItemRecordsTheOwnerWarningAndKeepsRunning
+=== PAUSE TestAdvanceItemRecordsTheOwnerWarningAndKeepsRunning
+=== RUN   TestRetryKeepsTheRecordedOwnerWarning
+=== PAUSE TestRetryKeepsTheRecordedOwnerWarning
+=== RUN   TestEveryBlockerHasAParkClass
+--- PASS: TestEveryBlockerHasAParkClass (0.01s)
+=== RUN   TestParkClassesAndNextActions
+=== RUN   TestParkClassesAndNextActions/numbered-file-collision
+=== RUN   TestParkClassesAndNextActions/disk-full
+=== RUN   TestParkClassesAndNextActions/pull-request-behind
+=== RUN   TestParkClassesAndNextActions/linux-lane-container
+=== RUN   TestParkClassesAndNextActions/checks-timeout
+=== RUN   TestParkClassesAndNextActions/item-worktree-missing
+=== RUN   TestParkClassesAndNextActions/delivery-error
+=== RUN   TestParkClassesAndNextActions/archived-item-unproven
+=== RUN   TestParkClassesAndNextActions/defect-class-undeclared
+=== RUN   TestParkClassesAndNextActions/secret-found
+=== RUN   TestParkClassesAndNextActions/run-unresolved
+=== RUN   TestParkClassesAndNextActions/review-findings
+=== RUN   TestParkClassesAndNextActions/corrective-spec-required
+=== RUN   TestParkClassesAndNextActions/gate-failed
+=== RUN   TestParkClassesAndNextActions/checks-failed
+=== RUN   TestParkClassesAndNextActions/revalidation-failed
+=== RUN   TestParkClassesAndNextActions/run-budget-exceeded
+=== RUN   TestParkClassesAndNextActions/queue-deadline
+=== RUN   TestParkClassesAndNextActions/review-blocked
+=== RUN   TestParkClassesAndNextActions/review-stale
+=== RUN   TestParkClassesAndNextActions/unauthorized
+=== RUN   TestParkClassesAndNextActions/flaky-check
+=== RUN   TestParkClassesAndNextActions/unknown
+--- PASS: TestParkClassesAndNextActions (0.00s)
+    --- PASS: TestParkClassesAndNextActions/numbered-file-collision (0.00s)
+    --- PASS: TestParkClassesAndNextActions/disk-full (0.00s)
+    --- PASS: TestParkClassesAndNextActions/pull-request-behind (0.00s)
+    --- PASS: TestParkClassesAndNextActions/linux-lane-container (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-timeout (0.00s)
+    --- PASS: TestParkClassesAndNextActions/item-worktree-missing (0.00s)
+    --- PASS: TestParkClassesAndNextActions/delivery-error (0.00s)
+    --- PASS: TestParkClassesAndNextActions/archived-item-unproven (0.00s)
+    --- PASS: TestParkClassesAndNextActions/defect-class-undeclared (0.00s)
+    --- PASS: TestParkClassesAndNextActions/secret-found (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-unresolved (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-findings (0.00s)
+    --- PASS: TestParkClassesAndNextActions/corrective-spec-required (0.00s)
+    --- PASS: TestParkClassesAndNextActions/gate-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/checks-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/revalidation-failed (0.00s)
+    --- PASS: TestParkClassesAndNextActions/run-budget-exceeded (0.00s)
+    --- PASS: TestParkClassesAndNextActions/queue-deadline (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-blocked (0.00s)
+    --- PASS: TestParkClassesAndNextActions/review-stale (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unauthorized (0.00s)
+    --- PASS: TestParkClassesAndNextActions/flaky-check (0.00s)
+    --- PASS: TestParkClassesAndNextActions/unknown (0.00s)
+=== RUN   TestParkClassRequiresAnExactBlockerOrColonPrefix
+--- PASS: TestParkClassRequiresAnExactBlockerOrColonPrefix (0.00s)
+=== RUN   TestExistingGenericParkAnswersAreUnchanged
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/run-unresolved
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/review-findings
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/corrective-spec-required
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/gate-failed
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/checks-failed
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/checks-timeout
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/unauthorized
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/delivery-error
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/item-worktree-missing
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/run-budget-exceeded
+=== RUN   TestExistingGenericParkAnswersAreUnchanged/review-blocked
+--- PASS: TestExistingGenericParkAnswersAreUnchanged (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/run-unresolved (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/review-findings (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/corrective-spec-required (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/gate-failed (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/checks-failed (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/checks-timeout (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/unauthorized (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/delivery-error (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/item-worktree-missing (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/run-budget-exceeded (0.00s)
+    --- PASS: TestExistingGenericParkAnswersAreUnchanged/review-blocked (0.00s)
+=== RUN   TestAReviewStaleParkNamesItsNextAction
+=== PAUSE TestAReviewStaleParkNamesItsNextAction
+=== RUN   TestAnItemWaitsForAPrerequisiteAheadInTheQueue
+--- PASS: TestAnItemWaitsForAPrerequisiteAheadInTheQueue (0.01s)
+=== RUN   TestAnItemParksWhenItsPrerequisiteIsParked
+=== RUN   TestAnItemParksWhenItsPrerequisiteIsParked/parked
+=== RUN   TestAnItemParksWhenItsPrerequisiteIsParked/merged
+=== RUN   TestAnItemParksWhenItsPrerequisiteIsParked/absent
+--- PASS: TestAnItemParksWhenItsPrerequisiteIsParked (0.01s)
+    --- PASS: TestAnItemParksWhenItsPrerequisiteIsParked/parked (0.00s)
+    --- PASS: TestAnItemParksWhenItsPrerequisiteIsParked/merged (0.00s)
+    --- PASS: TestAnItemParksWhenItsPrerequisiteIsParked/absent (0.00s)
+=== RUN   TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges
+=== RUN   TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges/after_merge
+=== RUN   TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges/start_of_pass
+--- PASS: TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges (0.02s)
+    --- PASS: TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges/after_merge (0.01s)
+    --- PASS: TestTheOwnerReleasesADependencyParkWhenThePrerequisiteMerges/start_of_pass (0.01s)
+=== RUN   TestRetryReturnsADependencyParkToTheQueue
+--- PASS: TestRetryReturnsADependencyParkToTheQueue (0.00s)
+=== RUN   TestAnItemWithoutPrerequisitesStartsAsBefore
+--- PASS: TestAnItemWithoutPrerequisitesStartsAsBefore (0.01s)
+=== RUN   TestPrerequisiteReadErrorDoesNotStartAnItem
+--- PASS: TestPrerequisiteReadErrorDoesNotStartAnItem (0.00s)
+=== RUN   TestPrerequisiteParkGuidesTheOperator
+--- PASS: TestPrerequisiteParkGuidesTheOperator (0.00s)
+=== RUN   TestDependencyParkRemainsUntilEveryPrerequisiteIsMet
+--- PASS: TestDependencyParkRemainsUntilEveryPrerequisiteIsMet (0.00s)
+=== RUN   TestPushRefusesAHistoryThatAddsASecret
+--- PASS: TestPushRefusesAHistoryThatAddsASecret (0.16s)
+=== RUN   TestEnginePushParksSecretFound
+=== PAUSE TestEnginePushParksSecretFound
+=== RUN   TestPushRefusesAFailedHistoryRead
+=== PAUSE TestPushRefusesAFailedHistoryRead
+=== RUN   TestPendingQuestionIsTheLowestPositionParkedItem
+=== PAUSE TestPendingQuestionIsTheLowestPositionParkedItem
+=== RUN   TestPendingQuestionAnswersEachBlockerClass
+=== PAUSE TestPendingQuestionAnswersEachBlockerClass
+=== RUN   TestNoPendingQuestionWithoutAParkedItem
+=== PAUSE TestNoPendingQuestionWithoutAParkedItem
+=== RUN   TestAPendingQuestionSurvivesOwnerPassesAndTime
+=== PAUSE TestAPendingQuestionSurvivesOwnerPassesAndTime
+=== RUN   TestDeliveryRecordsThePullRequestBeforeChecks
+=== PAUSE TestDeliveryRecordsThePullRequestBeforeChecks
+=== RUN   TestDeliveryRetryAdoptsAPullRequestRecordCommit
+=== PAUSE TestDeliveryRetryAdoptsAPullRequestRecordCommit
+=== RUN   TestDeliveryParksAnInexactPullRequestRecordCommit
+=== PAUSE TestDeliveryParksAnInexactPullRequestRecordCommit
+=== RUN   TestDeliveryParksWhenThePullRequestCannotBeRecorded
+=== PAUSE TestDeliveryParksWhenThePullRequestCannotBeRecorded
+=== RUN   TestAnUnresolvedRunParksWithItsRunID
+=== PAUSE TestAnUnresolvedRunParksWithItsRunID
+=== RUN   TestRetryCarriesForwardBeforeReenteringTheRun
+=== PAUSE TestRetryCarriesForwardBeforeReenteringTheRun
+=== RUN   TestRetryRecordsTheNewestRunItCarriedFrom
+=== PAUSE TestRetryRecordsTheNewestRunItCarriedFrom
+=== RUN   TestRetryReentersTheRunWhenATaskIsUnfinished
+=== PAUSE TestRetryReentersTheRunWhenATaskIsUnfinished
+=== RUN   TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished
+=== PAUSE TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished
+=== RUN   TestRetryAfterArchiveReentersGatingWithoutAPullRequest
+=== PAUSE TestRetryAfterArchiveReentersGatingWithoutAPullRequest
+=== RUN   TestRetryAfterArchiveReentersCheckingWithAPullRequest
+=== PAUSE TestRetryAfterArchiveReentersCheckingWithAPullRequest
+=== RUN   TestRetriedArchivedItemPublishesAndMergesOnce
+=== PAUSE TestRetriedArchivedItemPublishesAndMergesOnce
+=== RUN   TestRetryRefusesAnArchivedItemWhoseHeadMoved
+=== PAUSE TestRetryRefusesAnArchivedItemWhoseHeadMoved
+=== RUN   TestRetryRefusesWhenCarryForwardRefuses
+=== PAUSE TestRetryRefusesWhenCarryForwardRefuses
+=== RUN   TestRetryRefusesAnItemThatIsNotParked
+=== PAUSE TestRetryRefusesAnItemThatIsNotParked
+=== RUN   TestRetryRefusesAnItemWhoseBranchIsGone
+=== PAUSE TestRetryRefusesAnItemWhoseBranchIsGone
+=== RUN   TestRetryRefusesAnItemMissingFromTheQueue
+=== PAUSE TestRetryRefusesAnItemMissingFromTheQueue
+=== RUN   TestRevalidationParksAnItemWhoseStartingMainFailsTheCheck
+=== PAUSE TestRevalidationParksAnItemWhoseStartingMainFailsTheCheck
+=== RUN   TestAChangedPremiseWarnsAndContinues
+=== PAUSE TestAChangedPremiseWarnsAndContinues
+=== RUN   TestNoChangedPremiseRecordsNoWarning
+=== PAUSE TestNoChangedPremiseRecordsNoWarning
+=== RUN   TestRevalidationReceivesEarlierMergeCommitsInQueueOrder
+=== PAUSE TestRevalidationReceivesEarlierMergeCommitsInQueueOrder
+=== RUN   TestARevalidationErrorParksTheItemAsADeliveryError
+=== PAUSE TestARevalidationErrorParksTheItemAsADeliveryError
+=== RUN   TestRetryOfAnItemWithoutARunRefusesWhileFindingsRemain
+=== PAUSE TestRetryOfAnItemWithoutARunRefusesWhileFindingsRemain
+=== RUN   TestRetryOfAnItemWithoutARunProceedsOnceTheCheckIsClean
+=== PAUSE TestRetryOfAnItemWithoutARunProceedsOnceTheCheckIsClean
+=== RUN   TestRetryKeepsTheRecordedPremiseWarning
+=== PAUSE TestRetryKeepsTheRecordedPremiseWarning
+=== RUN   TestEngineRefusesToRunWithoutARevalidator
+=== PAUSE TestEngineRefusesToRunWithoutARevalidator
+=== RUN   TestRevalidationParksANumberedFileCollisionBeforeTheRun
+=== PAUSE TestRevalidationParksANumberedFileCollisionBeforeTheRun
+=== RUN   TestStrictFindingsParkBeforeANumberedFileCollision
+=== PAUSE TestStrictFindingsParkBeforeANumberedFileCollision
+=== RUN   TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides
+=== PAUSE TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason
+=== RUN   TestRetryReturnsAReviewOnlyCorrectionToReview
+--- PASS: TestRetryReturnsAReviewOnlyCorrectionToReview (0.00s)
+=== RUN   TestRetryRefusesACorrectionTheProofRejects
+=== RUN   TestRetryRefusesACorrectionTheProofRejects/refused
+=== RUN   TestRetryRefusesACorrectionTheProofRejects/error
+--- PASS: TestRetryRefusesACorrectionTheProofRejects (0.01s)
+    --- PASS: TestRetryRefusesACorrectionTheProofRejects/refused (0.00s)
+    --- PASS: TestRetryRefusesACorrectionTheProofRejects/error (0.00s)
+=== RUN   TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements
+=== PAUSE TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements
+=== RUN   TestReviewCapacityBoundsConcurrentReviews
+=== PAUSE TestReviewCapacityBoundsConcurrentReviews
+=== RUN   TestAQueuedItemWaitsForAnEarlierItemInReview
+=== PAUSE TestAQueuedItemWaitsForAnEarlierItemInReview
+=== RUN   TestAFailedReviewParksOnlyItsItem
+=== PAUSE TestAFailedReviewParksOnlyItsItem
+=== RUN   TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+=== PAUSE TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+=== RUN   TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees
+=== PAUSE TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees
+=== RUN   TestARunSlotWaitParksAsTodayAtItsDeadline
+=== PAUSE TestARunSlotWaitParksAsTodayAtItsDeadline
+=== RUN   TestTheQueueDeadlineEndsARunSlotWait
+=== PAUSE TestTheQueueDeadlineEndsARunSlotWait
+=== RUN   TestAZeroRunSlotWaitParksAtOnce
+=== PAUSE TestAZeroRunSlotWaitParksAtOnce
+=== RUN   TestOtherRunSpecFailuresDoNotWait
+=== PAUSE TestOtherRunSpecFailuresDoNotWait
+=== RUN   TestAStoppedOwnerClearsTheRunSlotWait
+=== PAUSE TestAStoppedOwnerClearsTheRunSlotWait
+=== RUN   TestTwoQueuesWaitingForOneSlotStartOneRun
+=== PAUSE TestTwoQueuesWaitingForOneSlotStartOneRun
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks
+=== RUN   TestRuntimeInfrastructureParksTheItem
+--- PASS: TestRuntimeInfrastructureParksTheItem (0.00s)
+=== RUN   TestClassifyParkRuntimeInfrastructure
+--- PASS: TestClassifyParkRuntimeInfrastructure (0.00s)
+=== RUN   TestRuntimeInfrastructureRetryIsNotCounted
+--- PASS: TestRuntimeInfrastructureRetryIsNotCounted (0.00s)
+=== RUN   TestRetryAcceptsASecretRewriteOfAnArchivedItem
+=== PAUSE TestRetryAcceptsASecretRewriteOfAnArchivedItem
+=== RUN   TestRetryRefusesARejectedSecretRewriteWithItsRule
+=== PAUSE TestRetryRefusesARejectedSecretRewriteWithItsRule
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths
+=== RUN   TestARetryAfterTheDefaultBranchMovedRerunsTheStaleCheckAndMerges
+--- PASS: TestARetryAfterTheDefaultBranchMovedRerunsTheStaleCheckAndMerges (0.00s)
+=== RUN   TestAStaleCheckKeepsPollingWhileGitHubReportsTheAttemptItReran
+--- PASS: TestAStaleCheckKeepsPollingWhileGitHubReportsTheAttemptItReran (0.00s)
+=== RUN   TestAStaleRerunThatFailsOnTheCurrentTipGetsTheOutsideChangeRerun
+--- PASS: TestAStaleRerunThatFailsOnTheCurrentTipGetsTheOutsideChangeRerun (0.00s)
+=== RUN   TestAStaleCheckWhoseRerunIsRefusedParksChecksFailed
+--- PASS: TestAStaleCheckWhoseRerunIsRefusedParksChecksFailed (0.00s)
+=== RUN   TestGitHubCLIJudgesAFailedCheckByTheTipItTested
+=== RUN   TestGitHubCLIJudgesAFailedCheckByTheTipItTested/older_tip
+=== RUN   TestGitHubCLIJudgesAFailedCheckByTheTipItTested/unknown_commit
+=== RUN   TestGitHubCLIJudgesAFailedCheckByTheTipItTested/current_tip
+=== RUN   TestGitHubCLIJudgesAFailedCheckByTheTipItTested/contains_current_tip
+--- PASS: TestGitHubCLIJudgesAFailedCheckByTheTipItTested (0.35s)
+    --- PASS: TestGitHubCLIJudgesAFailedCheckByTheTipItTested/older_tip (0.04s)
+    --- PASS: TestGitHubCLIJudgesAFailedCheckByTheTipItTested/unknown_commit (0.04s)
+    --- PASS: TestGitHubCLIJudgesAFailedCheckByTheTipItTested/current_tip (0.06s)
+    --- PASS: TestGitHubCLIJudgesAFailedCheckByTheTipItTested/contains_current_tip (0.05s)
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/absent
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/other_annotation
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/malformed
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/uppercase
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/ambiguous
+=== RUN   TestGitHubCLIWithoutATestedBaseInspectsAsBefore/valid_and_malformed
+--- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/absent (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/other_annotation (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/malformed (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/uppercase (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/ambiguous (0.00s)
+    --- PASS: TestGitHubCLIWithoutATestedBaseInspectsAsBefore/valid_and_malformed (0.00s)
+=== RUN   TestGitHubCLIRerunsAStaleFailurePastItsFirstAttempt
+--- PASS: TestGitHubCLIRerunsAStaleFailurePastItsFirstAttempt (0.00s)
+=== RUN   TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce
+--- PASS: TestStaleRerunsAreBoundedPerTipAndRestartTheTimeoutOnlyOnce (0.00s)
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/annotation_read
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/default_resolution
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/fetch
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/tip_resolution
+=== RUN   TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/ancestry
+--- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog (0.00s)
+    --- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/annotation_read (0.00s)
+    --- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/default_resolution (0.00s)
+    --- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/fetch (0.00s)
+    --- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/tip_resolution (0.00s)
+    --- PASS: TestStaleInspectionErrorsAreReportedBeforeReadingTheLog/ancestry (0.00s)
+=== RUN   TestActionsLinkWithoutAJobKeepsThePreviousInspection
+--- PASS: TestActionsLinkWithoutAJobKeepsThePreviousInspection (0.00s)
+=== RUN   TestOutsideChangePassAfterAStaleRerunKeepsTheExistingWarning
+--- PASS: TestOutsideChangePassAfterAStaleRerunKeepsTheExistingWarning (0.00s)
+=== RUN   TestAPassedGateLeavesNoLaneWarningAndNoPullRequestParagraph
+=== PAUSE TestAPassedGateLeavesNoLaneWarningAndNoPullRequestParagraph
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass
+=== RUN   TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree
+=== PAUSE TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree
+=== RUN   TestAQueuedItemStartsBelowTheTokenCeiling
+=== PAUSE TestAQueuedItemStartsBelowTheTokenCeiling
+=== RUN   TestNoTokenCeilingNeverParks
+=== PAUSE TestNoTokenCeilingNeverParks
+=== RUN   TestARunningItemContinuesAboveTheTokenCeiling
+=== PAUSE TestARunningItemContinuesAboveTheTokenCeiling
+=== RUN   TestARetryIsRefusedAtTheTokenCeiling
+=== PAUSE TestARetryIsRefusedAtTheTokenCeiling
+=== RUN   TestPendingQuestionAnswersTheTokenCeiling
+=== PAUSE TestPendingQuestionAnswersTheTokenCeiling
+=== RUN   TestTokenCeilingHasABudgetParkClass
+=== PAUSE TestTokenCeilingHasABudgetParkClass
+=== RUN   TestTurnLinesNameEachItemsTurn
+=== PAUSE TestTurnLinesNameEachItemsTurn
+=== RUN   TestTurnLinesNameTheChecksAnItemWaitsFor
+=== PAUSE TestTurnLinesNameTheChecksAnItemWaitsFor
+=== RUN   TestTheOwnerRecordsTheChecksAnItemWaitsFor
+=== PAUSE TestTheOwnerRecordsTheChecksAnItemWaitsFor
+=== RUN   TestTheOwnerRecordsEachItemsTurn
+=== PAUSE TestTheOwnerRecordsEachItemsTurn
+=== RUN   TestCheckingReturnsACandidateThePullRequestLacksToTheGate
+=== PAUSE TestCheckingReturnsACandidateThePullRequestLacksToTheGate
+=== CONT  TestRetryRefusesAnItemWhoseBranchIsGone
+=== CONT  TestAReadErrorIsLoggedOnce
+=== CONT  TestRetryRefusesAnItemThatIsNotParked
+=== CONT  TestANewQueueResumesAProvenArchivedItemAtReview
+=== CONT  TestEveryFailedHeadMemberIsNamed
+--- PASS: TestRetryRefusesAnItemWhoseBranchIsGone (0.01s)
+=== CONT  TestAZeroRunSlotWaitParksAtOnce
+=== RUN   TestAZeroRunSlotWaitParksAtOnce/false
+--- PASS: TestAReadErrorIsLoggedOnce (0.01s)
+=== CONT  TestCheckingReturnsACandidateThePullRequestLacksToTheGate
+=== RUN   TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate
+=== PAUSE TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate
+=== RUN   TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head
+=== PAUSE TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head
+=== CONT  TestTheOwnerRecordsEachItemsTurn
+--- PASS: TestEveryFailedHeadMemberIsNamed (0.01s)
+=== CONT  TestTheOwnerRecordsTheChecksAnItemWaitsFor
+--- PASS: TestRetryRefusesAnItemThatIsNotParked (0.01s)
+=== CONT  TestTurnLinesNameTheChecksAnItemWaitsFor
+=== RUN   TestTurnLinesNameTheChecksAnItemWaitsFor/no_checks
+--- PASS: TestTurnLinesNameTheChecksAnItemWaitsFor (0.00s)
+    --- PASS: TestTurnLinesNameTheChecksAnItemWaitsFor/no_checks (0.00s)
+=== CONT  TestTurnLinesNameEachItemsTurn
+=== RUN   TestTurnLinesNameEachItemsTurn/nothing_advancing
+=== RUN   TestTurnLinesNameEachItemsTurn/advancing_stage_moves
+--- PASS: TestTurnLinesNameEachItemsTurn (0.00s)
+    --- PASS: TestTurnLinesNameEachItemsTurn/nothing_advancing (0.00s)
+    --- PASS: TestTurnLinesNameEachItemsTurn/advancing_stage_moves (0.00s)
+=== CONT  TestTokenCeilingHasABudgetParkClass
+=== RUN   TestTokenCeilingHasABudgetParkClass/#00
+=== RUN   TestTokenCeilingHasABudgetParkClass/:_details
+--- PASS: TestTokenCeilingHasABudgetParkClass (0.00s)
+    --- PASS: TestTokenCeilingHasABudgetParkClass/#00 (0.00s)
+    --- PASS: TestTokenCeilingHasABudgetParkClass/:_details (0.00s)
+=== CONT  TestPendingQuestionAnswersTheTokenCeiling
+--- PASS: TestPendingQuestionAnswersTheTokenCeiling (0.00s)
+=== CONT  TestARetryIsRefusedAtTheTokenCeiling
+=== RUN   TestARetryIsRefusedAtTheTokenCeiling/queue-token-ceiling
+--- PASS: TestANewQueueResumesAProvenArchivedItemAtReview (0.01s)
+=== CONT  TestARunningItemContinuesAboveTheTokenCeiling
+=== RUN   TestAZeroRunSlotWaitParksAtOnce/true
+--- PASS: TestTheOwnerRecordsTheChecksAnItemWaitsFor (0.01s)
+=== CONT  TestNoTokenCeilingNeverParks
+=== RUN   TestARetryIsRefusedAtTheTokenCeiling/queue-deadline
+--- PASS: TestAZeroRunSlotWaitParksAtOnce (0.01s)
+    --- PASS: TestAZeroRunSlotWaitParksAtOnce/false (0.01s)
+    --- PASS: TestAZeroRunSlotWaitParksAtOnce/true (0.01s)
+=== CONT  TestAQueuedItemStartsBelowTheTokenCeiling
+--- PASS: TestARunningItemContinuesAboveTheTokenCeiling (0.01s)
+=== CONT  TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree
+=== RUN   TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree/5000000
+=== RUN   TestARetryIsRefusedAtTheTokenCeiling/run-unresolved
+--- PASS: TestNoTokenCeilingNeverParks (0.01s)
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass/change_failure_blocker
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass/change_failure_blocker
+=== RUN   TestAStoredLaneBlockerKeepsItsParkClass/skip_segment_survives_the_low_disk_rewrite
+=== PAUSE TestAStoredLaneBlockerKeepsItsParkClass/skip_segment_survives_the_low_disk_rewrite
+=== CONT  TestAPassedGateLeavesNoLaneWarningAndNoPullRequestParagraph
+=== RUN   TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree/5639755
+--- PASS: TestAQueuedItemStartsBelowTheTokenCeiling (0.01s)
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths/other_blocker
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths/other_blocker
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths/lookalike_blocker
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths/lookalike_blocker
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths/no_prover
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths/no_prover
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths/unchanged_candidate
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths/unchanged_candidate
+=== RUN   TestSecretRewriteRetryKeepsExistingPaths/descending_head
+=== PAUSE TestSecretRewriteRetryKeepsExistingPaths/descending_head
+=== CONT  TestRetryRefusesARejectedSecretRewriteWithItsRule
+=== RUN   TestRetryRefusesARejectedSecretRewriteWithItsRule/rule
+=== PAUSE TestRetryRefusesARejectedSecretRewriteWithItsRule/rule
+=== RUN   TestRetryRefusesARejectedSecretRewriteWithItsRule/prover_error
+=== PAUSE TestRetryRefusesARejectedSecretRewriteWithItsRule/prover_error
+=== RUN   TestRetryRefusesARejectedSecretRewriteWithItsRule/missing_history
+=== PAUSE TestRetryRefusesARejectedSecretRewriteWithItsRule/missing_history
+=== RUN   TestRetryRefusesARejectedSecretRewriteWithItsRule/unreadable_Run_start
+=== PAUSE TestRetryRefusesARejectedSecretRewriteWithItsRule/unreadable_Run_start
+=== CONT  TestRetryAcceptsASecretRewriteOfAnArchivedItem
+=== RUN   TestARetryIsRefusedAtTheTokenCeiling/prerequisite-unmerged:_spent
+--- PASS: TestAPassedGateLeavesNoLaneWarningAndNoPullRequestParagraph (0.01s)
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/secret_refusal
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/secret_refusal
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/two_failures_without_skips
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/two_failures_without_skips
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/nothing_failed_or_skipped
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/nothing_failed_or_skipped
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/normalized_unicode_reason
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/normalized_unicode_reason
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/runtime_infrastructure_takes_precedence
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/runtime_infrastructure_takes_precedence
+=== RUN   TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/QA_environment_partial_takes_precedence
+=== PAUSE TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/QA_environment_partial_takes_precedence
+=== CONT  TestTwoQueuesWaitingForOneSlotStartOneRun
+=== RUN   TestTheOwnerRecordsEachItemsTurn/prerequisite_wait
+=== PAUSE TestTheOwnerRecordsEachItemsTurn/prerequisite_wait
+=== RUN   TestTheOwnerRecordsEachItemsTurn/recorder_failure
+=== PAUSE TestTheOwnerRecordsEachItemsTurn/recorder_failure
+=== CONT  TestAStoppedOwnerClearsTheRunSlotWait
+=== RUN   TestAStoppedOwnerClearsTheRunSlotWait/sleep
+--- PASS: TestRetryAcceptsASecretRewriteOfAnArchivedItem (0.01s)
+=== CONT  TestOtherRunSpecFailuresDoNotWait
+=== RUN   TestOtherRunSpecFailuresDoNotWait/other_refusal
+--- PASS: TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree (0.02s)
+    --- PASS: TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree/5000000 (0.01s)
+    --- PASS: TestAQueuedItemParksAtTheTokenCeilingWithoutAWorktree/5639755 (0.01s)
+=== CONT  TestEngineReleasesMergedRunsBeforeRemovingTheItemBranch
+--- PASS: TestARetryIsRefusedAtTheTokenCeiling (0.04s)
+    --- PASS: TestARetryIsRefusedAtTheTokenCeiling/queue-token-ceiling (0.01s)
+    --- PASS: TestARetryIsRefusedAtTheTokenCeiling/queue-deadline (0.01s)
+    --- PASS: TestARetryIsRefusedAtTheTokenCeiling/run-unresolved (0.01s)
+    --- PASS: TestARetryIsRefusedAtTheTokenCeiling/prerequisite-unmerged:_spent (0.02s)
+=== CONT  TestRetryRefusesWhenCarryForwardRefuses
+=== RUN   TestOtherRunSpecFailuresDoNotWait/failure_after_free
+=== RUN   TestAStoppedOwnerClearsTheRunSlotWait/slot_reader
+--- PASS: TestEngineReleasesMergedRunsBeforeRemovingTheItemBranch (0.02s)
+=== CONT  TestRetryRefusesAnArchivedItemWhoseHeadMoved
+--- PASS: TestTwoQueuesWaitingForOneSlotStartOneRun (0.02s)
+=== CONT  TestRetriedArchivedItemPublishesAndMergesOnce
+--- PASS: TestRetryRefusesWhenCarryForwardRefuses (0.01s)
+=== CONT  TestRetryAfterArchiveReentersCheckingWithAPullRequest
+=== RUN   TestOtherRunSpecFailuresDoNotWait/reader_failure
+--- PASS: TestAStoppedOwnerClearsTheRunSlotWait (0.03s)
+    --- PASS: TestAStoppedOwnerClearsTheRunSlotWait/sleep (0.01s)
+    --- PASS: TestAStoppedOwnerClearsTheRunSlotWait/slot_reader (0.01s)
+=== CONT  TestRetryAfterArchiveReentersGatingWithoutAPullRequest
+--- PASS: TestRetryRefusesAnArchivedItemWhoseHeadMoved (0.01s)
+=== CONT  TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished
+--- PASS: TestRetryAfterArchiveReentersCheckingWithAPullRequest (0.01s)
+=== CONT  TestRetryReentersTheRunWhenATaskIsUnfinished
+--- PASS: TestRetriedArchivedItemPublishesAndMergesOnce (0.01s)
+=== CONT  TestRetryRecordsTheNewestRunItCarriedFrom
+--- PASS: TestRetryAfterArchiveReentersGatingWithoutAPullRequest (0.01s)
+=== CONT  TestRetryCarriesForwardBeforeReenteringTheRun
+--- PASS: TestOtherRunSpecFailuresDoNotWait (0.04s)
+    --- PASS: TestOtherRunSpecFailuresDoNotWait/other_refusal (0.01s)
+    --- PASS: TestOtherRunSpecFailuresDoNotWait/failure_after_free (0.01s)
+    --- PASS: TestOtherRunSpecFailuresDoNotWait/reader_failure (0.01s)
+=== CONT  TestAnUnresolvedRunParksWithItsRunID
+--- PASS: TestRetryReentersTheRunWhenATaskIsUnfinished (0.01s)
+=== CONT  TestDeliveryParksWhenThePullRequestCannotBeRecorded
+--- PASS: TestRetryRecordsTheNewestRunItCarriedFrom (0.01s)
+=== CONT  TestDeliveryParksAnInexactPullRequestRecordCommit
+=== RUN   TestDeliveryParksAnInexactPullRequestRecordCommit/inexact
+--- PASS: TestRetryReReviewsTheCurrentHeadWhenNoTaskIsUnfinished (0.01s)
+=== CONT  TestDeliveryRetryAdoptsAPullRequestRecordCommit
+--- PASS: TestRetryCarriesForwardBeforeReenteringTheRun (0.01s)
+=== CONT  TestDeliveryRecordsThePullRequestBeforeChecks
+--- PASS: TestDeliveryParksWhenThePullRequestCannotBeRecorded (0.01s)
+=== CONT  TestAPendingQuestionSurvivesOwnerPassesAndTime
+--- PASS: TestAnUnresolvedRunParksWithItsRunID (0.01s)
+=== CONT  TestNoPendingQuestionWithoutAParkedItem
+--- PASS: TestNoPendingQuestionWithoutAParkedItem (0.00s)
+=== CONT  TestPendingQuestionAnswersEachBlockerClass
+=== RUN   TestPendingQuestionAnswersEachBlockerClass/revalidation_failure
+=== RUN   TestPendingQuestionAnswersEachBlockerClass/queue_deadline
+=== RUN   TestPendingQuestionAnswersEachBlockerClass/other_blocker
+--- PASS: TestPendingQuestionAnswersEachBlockerClass (0.00s)
+    --- PASS: TestPendingQuestionAnswersEachBlockerClass/revalidation_failure (0.00s)
+    --- PASS: TestPendingQuestionAnswersEachBlockerClass/queue_deadline (0.00s)
+    --- PASS: TestPendingQuestionAnswersEachBlockerClass/other_blocker (0.00s)
+=== CONT  TestPendingQuestionIsTheLowestPositionParkedItem
+--- PASS: TestPendingQuestionIsTheLowestPositionParkedItem (0.00s)
+=== CONT  TestPushRefusesAFailedHistoryRead
+=== RUN   TestPushRefusesAFailedHistoryRead/runner_error
+=== PAUSE TestPushRefusesAFailedHistoryRead/runner_error
+=== RUN   TestPushRefusesAFailedHistoryRead/nonzero_exit
+=== PAUSE TestPushRefusesAFailedHistoryRead/nonzero_exit
+=== RUN   TestPushRefusesAFailedHistoryRead/partial_patch
+=== PAUSE TestPushRefusesAFailedHistoryRead/partial_patch
+=== CONT  TestEnginePushParksSecretFound
+=== RUN   TestDeliveryParksAnInexactPullRequestRecordCommit/archived
+--- PASS: TestDeliveryRetryAdoptsAPullRequestRecordCommit (0.01s)
+=== CONT  TestAReviewStaleParkNamesItsNextAction
+=== RUN   TestAReviewStaleParkNamesItsNextAction/review-stale
+=== PAUSE TestAReviewStaleParkNamesItsNextAction/review-stale
+=== RUN   TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+=== PAUSE TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+=== CONT  TestRetryKeepsTheRecordedOwnerWarning
+--- PASS: TestAPendingQuestionSurvivesOwnerPassesAndTime (0.01s)
+=== CONT  TestAdvanceItemRecordsTheOwnerWarningAndKeepsRunning
+--- PASS: TestDeliveryRecordsThePullRequestBeforeChecks (0.01s)
+=== CONT  TestNumberedFileReportRendersTheBlocker
+--- PASS: TestNumberedFileReportRendersTheBlocker (0.00s)
+=== CONT  TestFindNumberedFileCollisions
+=== RUN   TestFindNumberedFileCollisions/ahead_item
+=== PAUSE TestFindNumberedFileCollisions/ahead_item
+=== RUN   TestFindNumberedFileCollisions/default_branch
+=== PAUSE TestFindNumberedFileCollisions/default_branch
+=== RUN   TestFindNumberedFileCollisions/same_path
+=== PAUSE TestFindNumberedFileCollisions/same_path
+=== RUN   TestFindNumberedFileCollisions/by_value
+=== PAUSE TestFindNumberedFileCollisions/by_value
+=== RUN   TestFindNumberedFileCollisions/other_directory
+=== PAUSE TestFindNumberedFileCollisions/other_directory
+=== RUN   TestFindNumberedFileCollisions/no_leading_digit
+=== PAUSE TestFindNumberedFileCollisions/no_leading_digit
+=== RUN   TestFindNumberedFileCollisions/next_free_above_every_claim
+=== PAUSE TestFindNumberedFileCollisions/next_free_above_every_claim
+=== RUN   TestFindNumberedFileCollisions/several
+=== PAUSE TestFindNumberedFileCollisions/several
+=== RUN   TestFindNumberedFileCollisions/empty
+=== PAUSE TestFindNumberedFileCollisions/empty
+=== RUN   TestFindNumberedFileCollisions/root_and_digit_limit
+=== PAUSE TestFindNumberedFileCollisions/root_and_digit_limit
+=== RUN   TestFindNumberedFileCollisions/sorted_distinct_subjects_and_rendered_owners
+=== PAUSE TestFindNumberedFileCollisions/sorted_distinct_subjects_and_rendered_owners
+=== CONT  TestEngineReleasesNothingForAnUnmergedItem
+--- PASS: TestDeliveryParksAnInexactPullRequestRecordCommit (0.02s)
+    --- PASS: TestDeliveryParksAnInexactPullRequestRecordCommit/inexact (0.01s)
+    --- PASS: TestDeliveryParksAnInexactPullRequestRecordCommit/archived (0.01s)
+=== CONT  TestEngineJoinsRunReleaseAndItemBranchCleanupFailures
+--- PASS: TestEnginePushParksSecretFound (0.01s)
+=== CONT  TestEngineClearsTheCleanupWarningAfterACleanRelease
+--- PASS: TestRetryKeepsTheRecordedOwnerWarning (0.01s)
+=== CONT  TestEngineRecordsACleanupWarningWhenAMergedRunIsKept
+--- PASS: TestAdvanceItemRecordsTheOwnerWarningAndKeepsRunning (0.01s)
+=== CONT  TestCheckingWaitsWhileTheMergeStateIsBlocked
+--- PASS: TestEngineReleasesNothingForAnUnmergedItem (0.01s)
+=== CONT  TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests
+=== RUN   TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests/MERGED
+=== RUN   TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests/CLOSED
+--- PASS: TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests (0.00s)
+    --- PASS: TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests/MERGED (0.00s)
+    --- PASS: TestGitHubCLIViewPullRequestReportsMergedAndClosedPullRequests/CLOSED (0.00s)
+=== CONT  TestAMergeObserverIsNeverAskedForAnItemThatIsNotParked
+--- PASS: TestEngineJoinsRunReleaseAndItemBranchCleanupFailures (0.01s)
+=== CONT  TestARetryOfAnUnmergedItemFollowsTheExistingRules
+=== RUN   TestARetryOfAnUnmergedItemFollowsTheExistingRules/false
+--- PASS: TestEngineClearsTheCleanupWarningAfterACleanRelease (0.01s)
+=== CONT  TestARetryWhoseMergeObservationFailsIsRefused
+=== RUN   TestARetryWhoseMergeObservationFailsIsRefused/read_failure
+--- PASS: TestEngineRecordsACleanupWarningWhenAMergedRunIsKept (0.01s)
+=== CONT  TestARetryOfAClosedUnmergedPullRequestIsRefusedAndLeavesTheItemParked
+--- PASS: TestAMergeObserverIsNeverAskedForAnItemThatIsNotParked (0.01s)
+=== CONT  TestARetryDoesNotAppendAnAlreadyNewestMergedHead
+--- PASS: TestCheckingWaitsWhileTheMergeStateIsBlocked (0.01s)
+=== CONT  TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling
+=== RUN   TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling/retry_limit_and_expired_deadline
+=== RUN   TestARetryOfAnUnmergedItemFollowsTheExistingRules/true
+=== RUN   TestARetryWhoseMergeObservationFailsIsRefused/missing_merge_commit
+--- PASS: TestARetryOfAClosedUnmergedPullRequestIsRefusedAndLeavesTheItemParked (0.01s)
+=== CONT  TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/checks-failed
+--- PASS: TestARetryDoesNotAppendAnAlreadyNewestMergedHead (0.01s)
+=== CONT  TestADeliveryErrorRetryAtAnUnchangedArchivedHeadResumesChecking
+=== RUN   TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling/token_ceiling
+--- PASS: TestARetryOfAnUnmergedItemFollowsTheExistingRules (0.01s)
+    --- PASS: TestARetryOfAnUnmergedItemFollowsTheExistingRules/false (0.01s)
+    --- PASS: TestARetryOfAnUnmergedItemFollowsTheExistingRules/true (0.01s)
+=== CONT  TestASecondPolicyRefusalAtTheSameHeadParks
+=== RUN   TestARetryWhoseMergeObservationFailsIsRefused/missing_head
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/item-worktree-missing
+--- PASS: TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling (0.02s)
+    --- PASS: TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling/retry_limit_and_expired_deadline (0.01s)
+    --- PASS: TestARetryRecordsAMergeAtTheRetryLimitDeadlineAndTokenCeiling/token_ceiling (0.01s)
+=== CONT  TestAPolicyRefusedMergeReturnsToChecking
+--- PASS: TestASecondPolicyRefusalAtTheSameHeadParks (0.01s)
+=== CONT  TestAnEmptyMergeStateKeepsTheListedChecksDecision
+--- PASS: TestADeliveryErrorRetryAtAnUnchangedArchivedHeadResumesChecking (0.01s)
+=== CONT  TestABlockedMergeStateParksAtTheChecksTimeout
+=== RUN   TestARetryWhoseMergeObservationFailsIsRefused/blank_evidence
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/prerequisite-unmerged:_prerequisite
+--- PASS: TestAPolicyRefusedMergeReturnsToChecking (0.01s)
+=== CONT  TestCheckingWaitsWhileTheMergeStateIsUnknown
+--- PASS: TestAnEmptyMergeStateKeepsTheListedChecksDecision (0.01s)
+=== CONT  TestStrictFindingsParkBeforeANumberedFileCollision
+--- PASS: TestARetryWhoseMergeObservationFailsIsRefused (0.03s)
+    --- PASS: TestARetryWhoseMergeObservationFailsIsRefused/read_failure (0.01s)
+    --- PASS: TestARetryWhoseMergeObservationFailsIsRefused/missing_merge_commit (0.01s)
+    --- PASS: TestARetryWhoseMergeObservationFailsIsRefused/missing_head (0.01s)
+    --- PASS: TestARetryWhoseMergeObservationFailsIsRefused/blank_evidence (0.01s)
+=== CONT  TestTheQueueDeadlineEndsARunSlotWait
+--- PASS: TestABlockedMergeStateParksAtTheChecksTimeout (0.01s)
+=== CONT  TestARunSlotWaitParksAsTodayAtItsDeadline
+=== RUN   TestARunSlotWaitParksAsTodayAtItsDeadline/false
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/corrective-spec-required:_archived-spec
+--- PASS: TestCheckingWaitsWhileTheMergeStateIsUnknown (0.01s)
+=== CONT  TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees
+--- PASS: TestStrictFindingsParkBeforeANumberedFileCollision (0.01s)
+=== CONT  TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing
+--- PASS: TestTheQueueDeadlineEndsARunSlotWait (0.01s)
+=== CONT  TestAFailedReviewParksOnlyItsItem
+=== RUN   TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/pull-request-conflict
+=== RUN   TestARunSlotWaitParksAsTodayAtItsDeadline/true
+--- PASS: TestStoppingTheOwnerLeavesAnItemInReviewAtReviewing (0.01s)
+=== CONT  TestAQueuedItemWaitsForAnEarlierItemInReview
+--- PASS: TestARunCeilingRefusalWaitsAndStartsWhenASlotFrees (0.01s)
+=== CONT  TestReviewCapacityBoundsConcurrentReviews
+--- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace (0.04s)
+    --- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/checks-failed (0.01s)
+    --- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/item-worktree-missing (0.01s)
+    --- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/prerequisite-unmerged:_prerequisite (0.01s)
+    --- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/corrective-spec-required:_archived-spec (0.01s)
+    --- PASS: TestARetryRecordsAMergedPullRequestWithoutTouchingTheWorkspace/pull-request-conflict (0.01s)
+=== CONT  TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements
+--- PASS: TestAFailedReviewParksOnlyItsItem (0.02s)
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/empty
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/empty
+=== RUN   TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+=== PAUSE TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+=== CONT  TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides
+--- PASS: TestARunSlotWaitParksAsTodayAtItsDeadline (0.02s)
+    --- PASS: TestARunSlotWaitParksAsTodayAtItsDeadline/false (0.01s)
+    --- PASS: TestARunSlotWaitParksAsTodayAtItsDeadline/true (0.01s)
+=== CONT  TestARevalidationErrorParksTheItemAsADeliveryError
+=== RUN   TestAQueuedItemWaitsForAnEarlierItemInReview/an_earlier_blocker_ends_during_the_pass
+=== RUN   TestReviewCapacityBoundsConcurrentReviews/capacity_below_one
+=== PAUSE TestReviewCapacityBoundsConcurrentReviews/capacity_below_one
+=== CONT  TestRevalidationParksANumberedFileCollisionBeforeTheRun
+--- PASS: TestARevalidationErrorParksTheItemAsADeliveryError (0.00s)
+=== CONT  TestEngineRefusesToRunWithoutARevalidator
+--- PASS: TestRetryOfAnItemWithoutARunRefusesWhileANumberedFileCollides (0.01s)
+=== CONT  TestRetryKeepsTheRecordedPremiseWarning
+--- PASS: TestRevalidationParksANumberedFileCollisionBeforeTheRun (0.00s)
+=== CONT  TestRetryOfAnItemWithoutARunProceedsOnceTheCheckIsClean
+--- PASS: TestEngineRefusesToRunWithoutARevalidator (0.00s)
+=== CONT  TestRetryOfAnItemWithoutARunRefusesWhileFindingsRemain
+--- PASS: TestRetryKeepsTheRecordedPremiseWarning (0.01s)
+=== CONT  TestADiskFullRetryIsNotCounted
+=== RUN   TestADiskFullRetryIsNotCounted/below_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/below_limit
+=== RUN   TestADiskFullRetryIsNotCounted/at_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/at_limit
+=== RUN   TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== PAUSE TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== CONT  TestTheChecksTimeoutNamesWhatItWaitedFor
+=== RUN   TestTheChecksTimeoutNamesWhatItWaitedFor/no_check_reported
+--- PASS: TestRetryOfAnItemWithoutARunProceedsOnceTheCheckIsClean (0.00s)
+=== CONT  TestAFailedWorkflowRunWithoutAFailingCheckParks
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/failure
+--- PASS: TestRetryOfAnItemWithoutARunRefusesWhileFindingsRemain (0.00s)
+=== CONT  TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/no_run_yet
+=== RUN   TestTheChecksTimeoutNamesWhatItWaitedFor/merge_state
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/timed_out
+--- PASS: TestAReviewHandedToTheQueueStartsWhileAnotherItemImplements (0.02s)
+=== CONT  TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails
+=== RUN   TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/the_run_arrives
+=== RUN   TestTheChecksTimeoutNamesWhatItWaitedFor/pending_check
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/cancelled
+--- PASS: TestAQueuedItemWaitsForAnEarlierItemInReview (0.03s)
+    --- PASS: TestAQueuedItemWaitsForAnEarlierItemInReview/an_earlier_blocker_ends_during_the_pass (0.02s)
+=== CONT  TestExpectedWorkflowsSkipUnsupportedTriggers
+--- PASS: TestExpectedWorkflowsSkipUnsupportedTriggers (0.00s)
+=== CONT  TestExpectedWorkflowsFollowTheTriggerRule
+=== RUN   TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/every_member_passes
+--- PASS: TestExpectedWorkflowsFollowTheTriggerRule (0.00s)
+=== CONT  TestCurrentHeadChecksKeepsWorkflowEventsSeparate
+--- PASS: TestCurrentHeadChecksKeepsWorkflowEventsSeparate (0.00s)
+=== CONT  TestPullRequestReadTrimsTheBaseBranch
+--- PASS: TestPullRequestReadTrimsTheBaseBranch (0.00s)
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/incomplete_page
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/incomplete_page
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_read_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_read_fails
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_fails
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_fails
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_malformed
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_malformed
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_runner_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_runner_fails
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_runner_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_runner_fails
+=== RUN   TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_runner_fails
+=== PAUSE TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_runner_fails
+=== CONT  TestGateParksWithTheBlockerItNames
+=== RUN   TestGateParksWithTheBlockerItNames/repository
+=== PAUSE TestGateParksWithTheBlockerItNames/repository
+=== CONT  TestTheItemRecordsTheRunOfAFailedImplementExecutor
+=== RUN   TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+=== PAUSE TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+=== RUN   TestTheItemRecordsTheRunOfAFailedImplementExecutor/stopped_owner_still_records_the_run
+=== PAUSE TestTheItemRecordsTheRunOfAFailedImplementExecutor/stopped_owner_still_records_the_run
+=== CONT  TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead
+--- PASS: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting (0.02s)
+    --- PASS: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/no_run_yet (0.00s)
+    --- PASS: TestAnExpectedWorkflowWithoutARunKeepsTheItemWaiting/the_run_arrives (0.01s)
+=== CONT  TestAnItemErrorParksAndTheQueueContinues
+=== RUN   TestTheChecksTimeoutNamesWhatItWaitedFor/unknown_mergeability
+--- PASS: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered (0.01s)
+    --- PASS: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/backend_fails (0.01s)
+    --- PASS: TestTheQueueWaitsForWorkflowRunsWhoseChecksHaveNotRegistered/every_member_passes (0.01s)
+=== CONT  TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/action_required
+--- PASS: TestAnAlreadyMergedPullRequestMustCarryTheReviewedHead (0.01s)
+=== CONT  TestChecksTimeoutParksTheItem
+--- PASS: TestAnItemErrorParksAndTheQueueContinues (0.01s)
+=== CONT  TestPersistentCheckReadErrorsParkAtTheDeadline
+--- PASS: TestTheChecksTimeoutNamesWhatItWaitedFor (0.03s)
+    --- PASS: TestTheChecksTimeoutNamesWhatItWaitedFor/no_check_reported (0.00s)
+    --- PASS: TestTheChecksTimeoutNamesWhatItWaitedFor/merge_state (0.01s)
+    --- PASS: TestTheChecksTimeoutNamesWhatItWaitedFor/pending_check (0.01s)
+    --- PASS: TestTheChecksTimeoutNamesWhatItWaitedFor/unknown_mergeability (0.01s)
+=== CONT  TestCheckReadErrorsAreRetriedUntilTheDeadline
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/startup_failure
+--- PASS: TestUnmatchedPushIntentRetriesWhenTheRemoteDiffers (0.01s)
+=== CONT  TestDeliveryWaitsThroughUnreportedChecks
+--- PASS: TestChecksTimeoutParksTheItem (0.01s)
+=== CONT  TestPushRefusesTheBaseBranch
+--- PASS: TestPersistentCheckReadErrorsParkAtTheDeadline (0.01s)
+=== CONT  TestAPullRequestOfAnotherItemIsNeverReused
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/stale
+--- PASS: TestPushRefusesTheBaseBranch (0.01s)
+=== CONT  TestEachItemPublishesFromItsOwnBranch
+--- PASS: TestDeliveryWaitsThroughUnreportedChecks (0.01s)
+=== CONT  TestDeliveryEngineParksDeclaredBlockersAndContinues
+--- PASS: TestCheckReadErrorsAreRetriedUntilTheDeadline (0.01s)
+=== CONT  TestDeliveryEngineParksUnauthorizedBeforeExternalAction
+--- PASS: TestAPullRequestOfAnotherItemIsNeverReused (0.01s)
+=== CONT  TestDeliveryEngineParksAStaleReview
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/neutral
+--- PASS: TestDeliveryEngineParksUnauthorizedBeforeExternalAction (0.01s)
+=== CONT  TestAFailedMergedCleanupDoesNotStopTheQueue
+--- PASS: TestEachItemPublishesFromItsOwnBranch (0.01s)
+=== CONT  TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge
+--- PASS: TestDeliveryEngineParksDeclaredBlockersAndContinues (0.02s)
+=== CONT  TestDeliveryEngineResumesWithoutDoubleEffects
+=== RUN   TestDeliveryEngineResumesWithoutDoubleEffects/push_intent
+=== PAUSE TestDeliveryEngineResumesWithoutDoubleEffects/push_intent
+=== RUN   TestDeliveryEngineResumesWithoutDoubleEffects/pull_request_intent
+=== PAUSE TestDeliveryEngineResumesWithoutDoubleEffects/pull_request_intent
+=== RUN   TestDeliveryEngineResumesWithoutDoubleEffects/merge_intent
+=== PAUSE TestDeliveryEngineResumesWithoutDoubleEffects/merge_intent
+=== CONT  TestDeliveryActionsRunInTheItemWorktree
+--- PASS: TestDeliveryEngineParksAStaleReview (0.02s)
+=== CONT  TestDeliveryEngineMergesAQueueWithoutAnOperator
+=== RUN   TestAFailedWorkflowRunWithoutAFailingCheckParks/skipped
+--- PASS: TestDeliveryEngineRetriesMergedItemCleanupWithoutReplayingMerge (0.01s)
+=== CONT  TestDeliveryParksABudgetExceededRunAsARunOutcome
+--- PASS: TestAFailedMergedCleanupDoesNotStopTheQueue (0.02s)
+=== CONT  TestAFullDiskParksTheItemAsDiskFull
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/Run
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/Run
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/review
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/review
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/gate
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/gate
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_review_error
+=== RUN   TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== PAUSE TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing
+--- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks (0.07s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/failure (0.00s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/timed_out (0.01s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/cancelled (0.01s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/action_required (0.01s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/startup_failure (0.01s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/stale (0.01s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/neutral (0.02s)
+    --- PASS: TestAFailedWorkflowRunWithoutAFailingCheckParks/skipped (0.01s)
+=== CONT  TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved
+--- PASS: TestDeliveryActionsRunInTheItemWorktree (0.01s)
+=== CONT  TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings
+--- PASS: TestDeliveryParksABudgetExceededRunAsARunOutcome (0.01s)
+=== CONT  TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired
+--- PASS: TestRetryReturnsAnUnchangedCorrectiveSpecItemToReviewing (0.01s)
+=== CONT  TestADefectClassParkRetriesToTheStageItsHeadSupports
+=== RUN   TestADefectClassParkRetriesToTheStageItsHeadSupports/unchanged
+--- PASS: TestRetryRefusesACorrectiveSpecItemWhoseHeadMoved (0.01s)
+=== CONT  TestTheMergeStepParksAnUndeclaredCorrectionSign
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/on_undeclared
+--- PASS: TestDeliveryEngineMergesAQueueWithoutAnOperator (0.01s)
+=== CONT  TestThePullRequestHeadWaitUsesTheCheckWait
+--- PASS: TestDeliveryEngineParksFindingsWithoutArchiveAsReviewFindings (0.01s)
+=== CONT  TestEachCheckWaitStartsItsOwnDeadline
+--- PASS: TestThePullRequestHeadWaitUsesTheCheckWait (0.01s)
+=== CONT  TestTheCheckWaitUsesTheConfiguredDuration
+--- PASS: TestDeliveryEngineParksFindingsAfterArchiveAsCorrectiveSpecRequired (0.01s)
+=== CONT  TestTheCheckWaitDefaultsToSixtyMinutes
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/on_covered
+=== RUN   TestADefectClassParkRetriesToTheStageItsHeadSupports/moved
+--- PASS: TestEachCheckWaitStartsItsOwnDeadline (0.01s)
+=== CONT  TestDeliveryStillParksAnExecutorErrorAsADeliveryError
+--- PASS: TestTheCheckWaitDefaultsToSixtyMinutes (0.01s)
+=== CONT  TestDeliveryRetryResumesABudgetParkedItemFromItsRun
+--- PASS: TestTheCheckWaitUsesTheConfiguredDuration (0.01s)
+=== CONT  TestDeliveryContinuesAfterABudgetParkedItem
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/on_not-a-correction
+--- PASS: TestDeliveryStillParksAnExecutorErrorAsADeliveryError (0.01s)
+=== CONT  TestABaseUpdateWithNothingToMergeKeepsWaiting
+=== RUN   TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean
+=== PAUSE TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean
+=== RUN   TestABaseUpdateWithNothingToMergeKeepsWaiting/times_out_with_the_merge_state
+=== PAUSE TestABaseUpdateWithNothingToMergeKeepsWaiting/times_out_with_the_merge_state
+=== CONT  TestRetryRequeuesAnItemParkedBeforeItHasABranch
+--- PASS: TestADefectClassParkRetriesToTheStageItsHeadSupports (0.02s)
+    --- PASS: TestADefectClassParkRetriesToTheStageItsHeadSupports/unchanged (0.01s)
+    --- PASS: TestADefectClassParkRetriesToTheStageItsHeadSupports/moved (0.01s)
+=== CONT  TestABaseUpdateErrorKeepsItsCauseAndAParkResetsTheBound
+--- PASS: TestDeliveryRetryResumesABudgetParkedItemFromItsRun (0.01s)
+=== CONT  TestAConflictingAndBehindPullRequestTakesTheConflictPath
+--- PASS: TestRetryRequeuesAnItemParkedBeforeItHasABranch (0.01s)
+=== CONT  TestAPolicyRefusalThatComesBackBehindGetsABaseUpdate
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/off_with_sign
+--- PASS: TestDeliveryContinuesAfterABudgetParkedItem (0.01s)
+=== CONT  TestAnOwnerWithoutABaseUpdateParksPullRequestBehind
+--- PASS: TestABaseUpdateErrorKeepsItsCauseAndAParkResetsTheBound (0.01s)
+=== CONT  TestTheBaseUpdateCountStartsOverAfterAPark
+--- PASS: TestAConflictingAndBehindPullRequestTakesTheConflictPath (0.01s)
+=== CONT  TestAFourthBehindPullRequestParksPullRequestBehind
+--- PASS: TestAPolicyRefusalThatComesBackBehindGetsABaseUpdate (0.01s)
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== RUN   TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== PAUSE TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestABaseUpdateWithASourceConflictParksWithItsPaths
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/nil_dependency
+--- PASS: TestAnOwnerWithoutABaseUpdateParksPullRequestBehind (0.01s)
+=== CONT  TestABehindPullRequestIsMergedOnlyAtItsUpdatedHead
+--- PASS: TestAFourthBehindPullRequestParksPullRequestBehind (0.01s)
+=== CONT  TestABehindPullRequestReturnsToTheGateWithTheMergedHead
+--- PASS: TestTheBaseUpdateCountStartsOverAfterAPark (0.01s)
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== RUN   TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== PAUSE TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+=== CONT  TestANewQueueParksAnArchivedItemProofError
+=== RUN   TestANewQueueParksAnArchivedItemProofError/proof_error
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/proof_error
+=== RUN   TestANewQueueParksAnArchivedItemProofError/empty_head
+=== PAUSE TestANewQueueParksAnArchivedItemProofError/empty_head
+=== CONT  TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward
+--- PASS: TestABaseUpdateWithASourceConflictParksWithItsPaths (0.01s)
+=== CONT  TestAPolicyRefusalIsTypedFromGhStderr
+=== RUN   TestAPolicyRefusalIsTypedFromGhStderr/the_base_branch_policy_prohibits_the_merge
+=== RUN   TestAPolicyRefusalIsTypedFromGhStderr/THE_BASE_BRANCH_POLICY_PROHIBITS_THE_MERGE
+=== RUN   TestAPolicyRefusalIsTypedFromGhStderr/permission_denied
+--- PASS: TestAPolicyRefusalIsTypedFromGhStderr (0.00s)
+    --- PASS: TestAPolicyRefusalIsTypedFromGhStderr/the_base_branch_policy_prohibits_the_merge (0.00s)
+    --- PASS: TestAPolicyRefusalIsTypedFromGhStderr/THE_BASE_BRANCH_POLICY_PROHIBITS_THE_MERGE (0.00s)
+    --- PASS: TestAPolicyRefusalIsTypedFromGhStderr/permission_denied (0.00s)
+=== CONT  TestPullRequestReadCarriesTheMergeState
+--- PASS: TestPullRequestReadCarriesTheMergeState (0.00s)
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+=== RUN   TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== PAUSE TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+=== CONT  TestAnUnmappedDeliveryActionIsRefused
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/on_error
+--- PASS: TestABehindPullRequestIsMergedOnlyAtItsUpdatedHead (0.02s)
+=== CONT  TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused
+--- PASS: TestRetryRefusesAnItemAtItsRetryLimitBeforeCarryForward (0.02s)
+=== CONT  TestALoopClauseThatArchivesBeforeReviewIsRefused
+--- PASS: TestABehindPullRequestReturnsToTheGateWithTheMergedHead (0.02s)
+=== CONT  TestTheLoopClauseOrderMatchesTheDeliveryQueue
+=== RUN   TestTheMergeStepParksAnUndeclaredCorrectionSign/off_error
+--- PASS: TestAnUnmappedDeliveryActionIsRefused (0.02s)
+=== CONT  TestAQueuedItemParksAtTheDeadlineWithoutAWorktree
+--- PASS: TestArchiveBeforeReviewWithAllDeliveryActionsIsRefused (0.01s)
+=== CONT  TestRetryRefusesAQueueDeadlineItem
+--- PASS: TestAQueuedItemParksAtTheDeadlineWithoutAWorktree (0.01s)
+=== CONT  TestAnItemPastQueuedAdvancesAfterTheDeadline
+--- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign (0.07s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/on_undeclared (0.01s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/on_covered (0.01s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/on_not-a-correction (0.01s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/off_with_sign (0.01s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/nil_dependency (0.01s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/on_error (0.02s)
+    --- PASS: TestTheMergeStepParksAnUndeclaredCorrectionSign/off_error (0.01s)
+=== CONT  TestAQueuedItemStartsBeforeTheDeadline
+--- PASS: TestTheLoopClauseOrderMatchesTheDeliveryQueue (0.02s)
+=== CONT  TestAChangedPremiseWarnsAndContinues
+--- PASS: TestALoopClauseThatArchivesBeforeReviewIsRefused (0.02s)
+=== CONT  TestRevalidationReceivesEarlierMergeCommitsInQueueOrder
+--- PASS: TestRetryRefusesAQueueDeadlineItem (0.01s)
+=== CONT  TestNoChangedPremiseRecordsNoWarning
+--- PASS: TestAnItemPastQueuedAdvancesAfterTheDeadline (0.01s)
+=== CONT  TestARequestedRerunWaitsForANewerWorkflowAttempt
+--- PASS: TestAQueuedItemStartsBeforeTheDeadline (0.01s)
+=== CONT  TestCheckReadErrorsKeepTheLastSuccessfulWaitAndResetTheirLog
+--- PASS: TestNoChangedPremiseRecordsNoWarning (0.01s)
+=== CONT  TestAWorkflowRunWaitsAfterItsCheckPasses
+=== RUN   TestAWorkflowRunWaitsAfterItsCheckPasses/success
+--- PASS: TestAChangedPremiseWarnsAndContinues (0.01s)
+=== CONT  TestANewQueueParksAnUnprovenArchivedItem
+--- PASS: TestRevalidationReceivesEarlierMergeCommitsInQueueOrder (0.01s)
+=== CONT  TestRevalidationParksAnItemWhoseStartingMainFailsTheCheck
+--- PASS: TestARequestedRerunWaitsForANewerWorkflowAttempt (0.01s)
+=== CONT  TestRetryRefusesAnItemMissingFromTheQueue
+--- PASS: TestCheckReadErrorsKeepTheLastSuccessfulWaitAndResetTheirLog (0.01s)
+=== CONT  TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate
+=== RUN   TestAWorkflowRunWaitsAfterItsCheckPasses/failure
+--- PASS: TestANewQueueParksAnUnprovenArchivedItem (0.01s)
+=== CONT  TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head
+--- PASS: TestRevalidationParksAnItemWhoseStartingMainFailsTheCheck (0.01s)
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass/container_blocker
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass/skip_segment_survives_the_low_disk_rewrite
+--- PASS: TestRetryRefusesAnItemMissingFromTheQueue (0.01s)
+=== CONT  TestAStoredLaneBlockerKeepsItsParkClass/change_failure_blocker
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths/other_blocker
+=== CONT  TestRetryRefusesARejectedSecretRewriteWithItsRule/rule
+--- PASS: TestAWorkflowRunWaitsAfterItsCheckPasses (0.01s)
+    --- PASS: TestAWorkflowRunWaitsAfterItsCheckPasses/success (0.01s)
+    --- PASS: TestAWorkflowRunWaitsAfterItsCheckPasses/failure (0.01s)
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths/descending_head
+--- PASS: TestCheckingReturnsACandidateThePullRequestLacksToTheGate (0.00s)
+    --- PASS: TestCheckingReturnsACandidateThePullRequestLacksToTheGate/earlier_candidate (0.01s)
+    --- PASS: TestCheckingReturnsACandidateThePullRequestLacksToTheGate/foreign_head (0.01s)
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths/unchanged_candidate
+--- PASS: TestAStoredLaneBlockerKeepsItsParkClass (0.00s)
+    --- PASS: TestAStoredLaneBlockerKeepsItsParkClass/container_blocker (0.00s)
+    --- PASS: TestAStoredLaneBlockerKeepsItsParkClass/change_failure_blocker (0.00s)
+    --- PASS: TestAStoredLaneBlockerKeepsItsParkClass/skip_segment_survives_the_low_disk_rewrite (0.01s)
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths/no_prover
+=== CONT  TestSecretRewriteRetryKeepsExistingPaths/lookalike_blocker
+=== CONT  TestRetryRefusesARejectedSecretRewriteWithItsRule/missing_history
+=== CONT  TestRetryRefusesARejectedSecretRewriteWithItsRule/unreadable_Run_start
+=== CONT  TestRetryRefusesARejectedSecretRewriteWithItsRule/prover_error
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/secret_refusal
+--- PASS: TestSecretRewriteRetryKeepsExistingPaths (0.00s)
+    --- PASS: TestSecretRewriteRetryKeepsExistingPaths/other_blocker (0.01s)
+    --- PASS: TestSecretRewriteRetryKeepsExistingPaths/descending_head (0.01s)
+    --- PASS: TestSecretRewriteRetryKeepsExistingPaths/unchanged_candidate (0.01s)
+    --- PASS: TestSecretRewriteRetryKeepsExistingPaths/no_prover (0.01s)
+    --- PASS: TestSecretRewriteRetryKeepsExistingPaths/lookalike_blocker (0.01s)
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/normalized_unicode_reason
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/QA_environment_partial_takes_precedence
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/runtime_infrastructure_takes_precedence
+--- PASS: TestRetryRefusesARejectedSecretRewriteWithItsRule (0.00s)
+    --- PASS: TestRetryRefusesARejectedSecretRewriteWithItsRule/rule (0.01s)
+    --- PASS: TestRetryRefusesARejectedSecretRewriteWithItsRule/missing_history (0.01s)
+    --- PASS: TestRetryRefusesARejectedSecretRewriteWithItsRule/unreadable_Run_start (0.01s)
+    --- PASS: TestRetryRefusesARejectedSecretRewriteWithItsRule/prover_error (0.01s)
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/nothing_failed_or_skipped
+=== CONT  TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/two_failures_without_skips
+=== CONT  TestTheOwnerRecordsEachItemsTurn/prerequisite_wait
+=== CONT  TestTheOwnerRecordsEachItemsTurn/recorder_failure
+=== CONT  TestPushRefusesAFailedHistoryRead/runner_error
+=== CONT  TestPushRefusesAFailedHistoryRead/partial_patch
+=== CONT  TestPushRefusesAFailedHistoryRead/nonzero_exit
+--- PASS: TestPushRefusesAFailedHistoryRead (0.00s)
+    --- PASS: TestPushRefusesAFailedHistoryRead/runner_error (0.00s)
+    --- PASS: TestPushRefusesAFailedHistoryRead/partial_patch (0.00s)
+    --- PASS: TestPushRefusesAFailedHistoryRead/nonzero_exit (0.00s)
+=== CONT  TestAReviewStaleParkNamesItsNextAction/review-stale
+=== CONT  TestAReviewStaleParkNamesItsNextAction/review-stale:_details
+--- PASS: TestAReviewStaleParkNamesItsNextAction (0.00s)
+    --- PASS: TestAReviewStaleParkNamesItsNextAction/review-stale (0.00s)
+    --- PASS: TestAReviewStaleParkNamesItsNextAction/review-stale:_details (0.00s)
+=== CONT  TestFindNumberedFileCollisions/ahead_item
+=== CONT  TestFindNumberedFileCollisions/next_free_above_every_claim
+=== CONT  TestFindNumberedFileCollisions/sorted_distinct_subjects_and_rendered_owners
+=== CONT  TestFindNumberedFileCollisions/root_and_digit_limit
+=== CONT  TestFindNumberedFileCollisions/empty
+=== CONT  TestFindNumberedFileCollisions/several
+=== CONT  TestFindNumberedFileCollisions/by_value
+=== CONT  TestFindNumberedFileCollisions/no_leading_digit
+=== CONT  TestFindNumberedFileCollisions/other_directory
+=== CONT  TestFindNumberedFileCollisions/same_path
+=== CONT  TestFindNumberedFileCollisions/default_branch
+--- PASS: TestFindNumberedFileCollisions (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/ahead_item (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/next_free_above_every_claim (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/sorted_distinct_subjects_and_rendered_owners (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/root_and_digit_limit (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/empty (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/several (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/by_value (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/no_leading_digit (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/other_directory (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/same_path (0.00s)
+    --- PASS: TestFindNumberedFileCollisions/default_branch (0.00s)
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/two_lines
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/blank_first_line
+--- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks (0.00s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/secret_refusal (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/QA_environment_partial_takes_precedence (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/normalized_unicode_reason (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/runtime_infrastructure_takes_precedence (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/long_reason (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/nothing_failed_or_skipped (0.01s)
+    --- PASS: TestARunUnresolvedParkNamesItsFailedAndSkippedTasks/two_failures_without_skips (0.01s)
+=== CONT  TestReviewBlockedParkCarriesTheReviewReason/empty
+=== CONT  TestReviewCapacityBoundsConcurrentReviews/capacity_below_one
+=== CONT  TestADiskFullRetryIsNotCounted/below_limit
+=== CONT  TestADiskFullRetryIsNotCounted/archived_gate_at_limit
+=== CONT  TestADiskFullRetryIsNotCounted/at_limit
+--- PASS: TestTheOwnerRecordsEachItemsTurn (0.04s)
+    --- PASS: TestTheOwnerRecordsEachItemsTurn/prerequisite_wait (0.02s)
+    --- PASS: TestTheOwnerRecordsEachItemsTurn/recorder_failure (0.02s)
+--- PASS: TestReviewBlockedParkCarriesTheReviewReason (0.00s)
+    --- PASS: TestReviewBlockedParkCarriesTheReviewReason/two_lines (0.01s)
+    --- PASS: TestReviewBlockedParkCarriesTheReviewReason/blank_first_line (0.02s)
+    --- PASS: TestReviewBlockedParkCarriesTheReviewReason/empty (0.03s)
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs
+=== CONT  TestGateParksWithTheBlockerItNames/repository
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_runner_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_runner_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_runner_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_malformed
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_read_fails
+=== CONT  TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/incomplete_page
+=== CONT  TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run
+=== CONT  TestTheItemRecordsTheRunOfAFailedImplementExecutor/stopped_owner_still_records_the_run
+--- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/reads_head_runs (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_runner_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_runner_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_runner_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_malformed (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/git_show_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/ls-tree_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/runs_read_fails (0.00s)
+    --- PASS: TestCurrentHeadChecksReadsTheWorkflowRunsOfTheHead/incomplete_page (0.00s)
+--- PASS: TestADiskFullRetryIsNotCounted (0.00s)
+    --- PASS: TestADiskFullRetryIsNotCounted/below_limit (0.01s)
+    --- PASS: TestADiskFullRetryIsNotCounted/archived_gate_at_limit (0.01s)
+    --- PASS: TestADiskFullRetryIsNotCounted/at_limit (0.02s)
+=== CONT  TestDeliveryEngineResumesWithoutDoubleEffects/push_intent
+=== CONT  TestDeliveryEngineResumesWithoutDoubleEffects/merge_intent
+=== CONT  TestDeliveryEngineResumesWithoutDoubleEffects/pull_request_intent
+--- PASS: TestTheItemRecordsTheRunOfAFailedImplementExecutor (0.00s)
+    --- PASS: TestTheItemRecordsTheRunOfAFailedImplementExecutor/stopped_owner_still_records_the_run (0.02s)
+    --- PASS: TestTheItemRecordsTheRunOfAFailedImplementExecutor/failed_executor_parks_with_its_run (0.02s)
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/Run
+--- PASS: TestGateParksWithTheBlockerItNames (0.00s)
+    --- PASS: TestGateParksWithTheBlockerItNames/repository (0.02s)
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_Run_error
+--- PASS: TestReviewCapacityBoundsConcurrentReviews (0.02s)
+    --- PASS: TestReviewCapacityBoundsConcurrentReviews/capacity_below_one (0.04s)
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_gate_failure
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/other_review_error
+--- PASS: TestDeliveryEngineResumesWithoutDoubleEffects (0.00s)
+    --- PASS: TestDeliveryEngineResumesWithoutDoubleEffects/push_intent (0.02s)
+    --- PASS: TestDeliveryEngineResumesWithoutDoubleEffects/merge_intent (0.01s)
+    --- PASS: TestDeliveryEngineResumesWithoutDoubleEffects/pull_request_intent (0.01s)
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/gate
+=== CONT  TestAFullDiskParksTheItemAsDiskFull/review
+=== CONT  TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean
+=== RUN   TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head=""
+=== PAUSE TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head=""
+=== RUN   TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head="candidate"
+=== PAUSE TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head="candidate"
+=== CONT  TestABaseUpdateWithNothingToMergeKeepsWaiting/times_out_with_the_merge_state
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker
+=== CONT  TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof
+=== CONT  TestANewQueueParksAnArchivedItemProofError/proof_error
+=== CONT  TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover
+--- PASS: TestAFullDiskParksTheItemAsDiskFull (0.00s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_Run_error (0.01s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/Run (0.01s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_gate_failure (0.01s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/other_review_error (0.01s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/gate (0.01s)
+    --- PASS: TestAFullDiskParksTheItemAsDiskFull/review (0.01s)
+=== CONT  TestANewQueueParksAnArchivedItemProofError/empty_head
+--- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued (0.00s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/bare_blocker (0.01s)
+    --- PASS: TestARetryReturnsAnUnprovenArchivedItemToQueued/with_cause (0.01s)
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker
+--- PASS: TestANewQueueParksAnArchivedItemProofError (0.00s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/proof_error (0.01s)
+    --- PASS: TestANewQueueParksAnArchivedItemProofError/empty_head (0.01s)
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk
+--- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive (0.00s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/zero_proof (0.01s)
+    --- PASS: TestANewQueueRevalidatesAnItemWithoutAnArchive/nil_prover (0.01s)
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present
+=== CONT  TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate
+=== CONT  TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head=""
+=== CONT  TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head="candidate"
+--- PASS: TestABaseUpdateWithNothingToMergeKeepsWaiting (0.00s)
+    --- PASS: TestABaseUpdateWithNothingToMergeKeepsWaiting/times_out_with_the_merge_state (0.01s)
+    --- PASS: TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean (0.00s)
+        --- PASS: TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head="" (0.01s)
+        --- PASS: TestABaseUpdateWithNothingToMergeKeepsWaiting/merges_once_clean/head="candidate" (0.01s)
+--- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate (0.00s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_before_the_Run_and_the_gate (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_removes_only_low-disk (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/no_checker (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/unchanged_low-disk (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/low_with_a_lane-skip_warning_present (0.01s)
+    --- PASS: TestTheQueueWarnsOfLowDiskBeforeTheRunAndTheGate/healthy_at_the_gate (0.01s)
+PASS
+suiteguard: guard cost: measured 3482 paths; fingerprint took 165.919ms before and 162.550375ms after
+ok  	roundfix/internal/delivery	2.374s
+stderr:
+exit: 0

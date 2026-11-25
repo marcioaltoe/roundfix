@@ -1,0 +1,5 @@
+GitHub Docs, GitHub-hosted runners reference, read 2026-11-24; offline quotation in PRD Acceptance evidence and references/sources.md section 5.
+Use of the standard GitHub-hosted runners is free and unlimited on public repositories.
+Quoted labels: macos-latest, macos-15, macos-26, xcode-27.
+[('.github/workflows/ci-verify.yml', 'macos-26'), ('.github/workflows/release.yml', 'macos-26')]
+Both match a quoted standard label, without -large/-xlarge. No lookup.

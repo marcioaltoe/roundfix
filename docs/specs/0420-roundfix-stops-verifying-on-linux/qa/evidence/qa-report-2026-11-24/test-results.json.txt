@@ -1,0 +1,12 @@
+{
+  "cli-focused": 0,
+  "config": 0,
+  "delivery": 0,
+  "workflows": 0,
+  "platforms": 0,
+  "docs": 0,
+  "skills": 0,
+  "settlement": 0,
+  "coverage": 0,
+  "consumers": 0
+}
