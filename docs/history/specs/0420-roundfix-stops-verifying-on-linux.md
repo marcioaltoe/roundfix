@@ -36,9 +36,10 @@ regeneration:
     outputs:
       - docs/references/coverage-record.json
 promoted: []
+pull_request: "958"
 type: refactor
 ---
 
 # Roundfix stops verifying on Linux
 
-The maintainer runs Roundfix only on macOS, and Roundfix verifies on Linux in three places: the Delivery Queue's optional Linux Lane, which tests a candidate's changed Go packages in a Docker container before publication, the job that verifies every pull request and every push to main, a…
+The maintainer runs Roundfix only on macOS, and Roundfix verifies on Linux in three places: the Delivery Queue's optional Linux Lane, which tests a candidate's changed Go packages in a Docker container before publication, the job that verifies every pull request and e…
