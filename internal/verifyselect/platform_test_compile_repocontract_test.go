@@ -10,6 +10,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -35,16 +36,24 @@ func TestEveryTestCompilesForLinuxAndWindows(t *testing.T) {
 		})
 	}
 	t.Run("a_file_only_linux_fails_to_compile", func(t *testing.T) {
+		if !slices.Contains(compiledPlatforms, "linux") {
+			t.Fatalf("compiled platforms %v no longer compile the tests for Linux", compiledPlatforms)
+		}
 		dir := t.TempDir()
 		writeFile(t, dir, "go.mod", "module compilefixture\n\ngo 1.26\n")
 		writeFile(t, dir, "fixture.go", "package compilefixture\n")
 		writeFile(t, dir, "broken_linux_test.go", "//go:build linux\n\npackage compilefixture\nimport \"testing\"\nfunc TestBroken(t *testing.T) { undefinedLinuxSymbol() }\n")
-		output, err := compileEveryTest(t.Context(), dir, "linux")
-		if err == nil || !strings.Contains(string(output), "broken_linux_test.go") {
-			t.Fatalf("Linux must reject broken_linux_test.go: %v\n%s", err, output)
-		}
-		if output, err := compileEveryTest(t.Context(), dir, "windows"); err != nil {
-			t.Fatalf("Windows must compile without the Linux-only file: %v\n%s", err, output)
+		for _, platform := range compiledPlatforms {
+			output, err := compileEveryTest(t.Context(), dir, platform)
+			if platform == "linux" {
+				if err == nil || !strings.Contains(string(output), "broken_linux_test.go") {
+					t.Fatalf("Linux must reject broken_linux_test.go: %v\n%s", err, output)
+				}
+				continue
+			}
+			if err != nil {
+				t.Fatalf("%s must compile without the Linux-only file: %v\n%s", platform, err, output)
+			}
 		}
 	})
 }
