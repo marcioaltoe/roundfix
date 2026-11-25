@@ -2,6 +2,13 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.153.3] - 2026-11-25
+
+### Roundfix stops verifying on Linux
+
+- **The Linux Lane is gone.** The Delivery Queue's repository gate no longer runs the changed Go packages in a Linux container before the pull request, `roundfix deliver lane` is no longer a command, and `roundfix doctor` no longer checks the lane image. The keys `delivery.linux_lane` and `delivery.linux_lane_image` still load, each with one warning, and are ignored. A status line or Park Class of an item the lane parked before this release still reads, with `roundfix deliver retry` as its next step. ADR-0452 records the decision and supersedes the lane's records.
+- **Pull requests and pushes to main verify on macOS.** The `Verification gate` job keeps its name and steps on the standard macOS runner. Linux and Windows are compiled, not tested: one contract compiles every test for both. Until the test-suite performance work of Spec 0421 lands, the release workflow's verify job runs on Linux by the maintainer's override of 2026-11-25, because the full suite exceeds go test's 10-minute default on the standard macOS runner.
+
 ## [0.153.2] - 2026-11-24
 
 ### Round 2 of a pre-PR review opens a new reviewer session when the configured model changed
