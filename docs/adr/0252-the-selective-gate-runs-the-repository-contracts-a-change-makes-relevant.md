@@ -1,8 +1,9 @@
 ---
 status: accepted
+amended_by: [ADR-0452]
 knowledge: false
 created_at: 2026-10-07T00:00:00Z
-updated_at: 2026-10-07T00:00:00Z
+updated_at: 2026-11-24T23:35:15Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -80,3 +81,6 @@ a few seconds on a typical change. We rejected two alternatives. Running every
 contract on every change would cost about 45 s even for a typical change.
 Keeping a central list of tests and paths in `cmd/verify-select` would drift
 from the tests it describes.
+
+
+**Amended by [ADR-0452](0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md) (2026-11-24).** The selective gate and continuous integration now run on macOS.

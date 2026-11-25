@@ -19,7 +19,8 @@ Pocock's **skills** work — see
 ## Install
 
 Roundfix ships through npm as a `roundfix` launcher with per-platform binary
-packages (darwin/linux `x64`+`arm64`, windows `x64`):
+packages (darwin/linux `x64`+`arm64`, windows `x64`).
+The test suite runs on macOS only; the Linux and Windows packages are compiled and not tested.
 
 ```bash
 npx roundfix --version        # run once without installing

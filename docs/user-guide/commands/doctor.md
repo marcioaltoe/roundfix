@@ -122,7 +122,7 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   `DR-DISK-UNREAD` gives the read error. Findings are `warn` and never change
   the exit code; with enough free space everywhere the line is absent.
 - `verification-capacity:` — the read-only Machine Verification Capacity
-  check, printed after the `disk-space:` results and before `linux-lane:`.
+  check, printed after the `disk-space:` results.
   It reports `ok (runs.max_verifying <n>; <held> held, <waiting> waiting)`,
   or `ok (off; <held> held, <waiting> waiting)` at `0`. The detail adds
   `; holding: <holder description>, <step>` per holder, then
@@ -146,19 +146,6 @@ roundfix: notice: NODE_OPTIONS preload "<path>" does not exist; Roundfix left it
   otherwise the active Run count, at least 1. Oversubscription warns only when
   `<total>` (`<c>` times `<cores>`) exceeds the logical CPUs. The check writes
   nothing and never changes the exit code.
-- `linux-lane:` — printed after `verification-cores:` and before `codex:` only when the
-  checkout's effective `delivery.linux_lane` is `true`. It checks Docker on
-  the command environment's PATH with `docker info`, then
-  `docker image inspect <image>`, each with a ten-second limit that cancels
-  the child. The image is `delivery.linux_lane_image` when configured,
-  otherwise `golang:<go directive>` from `go.mod` at `HEAD`, ignoring dirty
-  changes. Without a Git repository or root `go.mod`, the line is `skipped`.
-  A missing Go version reports `DR-LANE-IMAGE-UNKNOWN`. Findings are `warn`
-  and never change the exit code; a healthy setup reports
-  `ok (docker reachable; image <image> present)`. No pull, container start,
-  removal, or next action is executed, and no environment value is printed.
-  Doctor reads this checkout's configuration; the queue reads the fetched
-  default's configuration instead.
 - `codex:` — macOS-only runtime hygiene: inspects `com.apple.quarantine` (the
   real XProtect trigger) and code-signature validity, resolving `CODEX_PATH`
   first and then `codex` on `PATH`. It does not use `spctl --assess`, which
@@ -387,10 +374,6 @@ Child diagnostics are not forwarded, protecting credentials and identity values.
 | `DR-REMOTE-MISSING` | failed | The delivery remote is absent; `git remote add <remote> <url>`. |
 | `DR-REMOTE-FORGE` | failed | Remote form or host is not a GitHub forge; point `<remote>` at the repository's GitHub URL, or set `watch.push_remote`. |
 | `DR-REMOTE-UNREACHABLE` | warn | Remote read did not answer; re-run roundfix doctor when `<host>` is reachable. |
-| `DR-LANE-DOCKER-MISSING` | warn | Docker is absent; install Docker, or set `delivery.linux_lane: false`. |
-| `DR-LANE-DOCKER-UNREACHABLE` | warn | `docker info` failed; start Docker, then re-run `roundfix doctor`. |
-| `DR-LANE-IMAGE-MISSING` | warn | The image is not local; `docker pull <image>`. |
-| `DR-LANE-IMAGE-UNKNOWN` | warn | The image cannot be resolved from `go.mod`; set `delivery.linux_lane_image`. |
 | `DR-LIGHT-ACCESS-MODE` | warn | No light runtime offers a full-access mode; set `openrouter.light_models: []` in User Config, or `defaults.agent_full_access: false`. |
 | `DR-DISK-LOW` | warn | Less than 10,240 MiB free where worktrees, a Shared Build Cache or the temporary directory live; `roundfix gc`, then free space on that filesystem. |
 | `DR-DISK-UNREAD` | warn | The free space could not be read; check the path, then re-run `roundfix doctor`. |

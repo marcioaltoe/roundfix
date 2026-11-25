@@ -6,6 +6,10 @@ import (
 	"roundfix/internal/store"
 )
 
+// retiredLaneContainerBlocker is a blocker that only versions before the
+// Linux Lane was retired recorded. Nothing produces it.
+const retiredLaneContainerBlocker = "linux-lane-container"
+
 type ParkClass string
 
 const (
@@ -60,9 +64,9 @@ func ClassifyPark(queue store.DeliveryQueue, item store.DeliveryQueueItem) ParkC
 	case BlockerDiskFull:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry " + item.SpecSlug + "; a retry from disk-full is not counted"
-	case BlockerLinuxLaneContainer:
+	case retiredLaneContainerBlocker:
 		classification.Class = ParkClassEnvironment
-		classification.Next = "repair the Linux Lane container cause in the blocker (Docker, the image, or delivery.linux_lane_image on the default branch), then run roundfix deliver retry " + item.SpecSlug
+		classification.Next = "run roundfix deliver retry " + item.SpecSlug + "; the Linux Lane was retired, so the gate no longer runs it"
 	case BlockerQAEnvironmentPartial:
 		classification.Class = ParkClassEnvironment
 		classification.Next = "(cd " + item.Worktree + " && roundfix reconcile " + item.RunID +

@@ -1810,46 +1810,6 @@ func (workflow *commandDeliveryWorkflow) Gate(ctx context.Context, gitRoot, spec
 		}
 		return delivery.GateResult{}, err
 	}
-	// The item and the owner's checkout may both carry an unmerged opt-in.
-	// Read the same immutable, fetched default used for delivery declarations.
-	// The lane only adds a check: when that default cannot be read, it is
-	// skipped with its reason and the repository gate's result stands.
-	// Both this unreadable reason and lane.Skip are computed on the Queue Owner.
-	// They reach the stored item warning and forge PR body, never environment values.
-	enabled, image, unreadable, err := workflow.linuxLaneOptIn(ctx, gitRoot)
-	if err != nil {
-		return delivery.GateResult{}, err
-	}
-	if unreadable != "" {
-		if err := workflow.recordLinuxLaneSkip(specSlug, unreadable); err != nil {
-			return delivery.GateResult{}, err
-		}
-		return delivery.GateResult{Passed: true, LaneSkip: unreadable}, nil
-	}
-	if enabled {
-		artifactDir, err := roundconfig.ValidateArtifactDirectory(workflow.loaded.Config.Defaults.ArtifactDir, workflow.loaded.GitRoot, workflow.loaded.HomeDir)
-		if err != nil {
-			return delivery.GateResult{}, err
-		}
-		lane, err := workflow.runLinuxLane(ctx, linuxLaneRequest{
-			WorkDir: gitRoot, Head: head, Image: image,
-			Cores:   cores,
-			Label:   "Delivery Queue item " + specSlug + ": ",
-			LogPath: filepath.Join(artifactDir, "delivery", specSlug, "linux-lane.log"),
-			Name:    fmt.Sprintf("roundfix-linux-lane-%.40s-%d", specSlug, os.Getpid()),
-		})
-		if err != nil {
-			return delivery.GateResult{}, err
-		}
-		if lane.Ran && !lane.Passed {
-			return delivery.GateResult{Passed: false, Reason: lane.Reason, Blocker: lane.Blocker}, nil
-		}
-		// This owner's lane text reaches the Run Database warning and the forge's
-		// PR body. Carry only the lane's reason, never environment values.
-		if lane.Skip != "" && !lane.SkipExpected {
-			return delivery.GateResult{Passed: true, LaneSkip: lane.Skip}, nil
-		}
-	}
 	return delivery.GateResult{Passed: true}, nil
 }
 

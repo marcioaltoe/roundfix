@@ -210,7 +210,6 @@ docs/adr/0283-a-run-marker-keeps-the-judge-silent-inside-a-run.md
 docs/adr/0284-carry-forward-binds-a-task-to-the-planning-text-it-references.md
 docs/adr/0286-a-fixed-round-2-finding-gets-one-correction-review-of-its-fix.md
 docs/adr/0287-a-plan-is-checked-for-undeclared-verification-paths-and-every-settlement-checks-the-setup-manifest.md
-docs/adr/0288-the-delivery-queue-gate-runs-the-changed-go-packages-in-a-linux-lane.md
 docs/adr/0289-a-delivered-specs-dirty-run-is-superseded-under-its-declared-directories-and-a-kept-one-names-why.md
 docs/adr/0290-merged-items-give-back-their-item-binaries-and-run-worktrees-leave-only-by-proof.md
 docs/adr/0291-qa-evidence-holds-text-and-images-and-the-qa-report-commit-refuses-any-other-binary.md
@@ -222,7 +221,6 @@ docs/adr/0298-a-timed-out-profile-proof-gets-a-third-attempt-and-its-setup-deadl
 docs/adr/0299-the-history-conversion-rewrites-every-citation-it-lists-and-the-check-reports-a-removed-history-file-cited-without-a-git-locator.md
 docs/adr/0301-gc-sanitation-classifies-the-artifact-root-each-run-wrote-to.md
 docs/adr/0302-a-queue-commit-names-the-spec-by-number-and-a-hook-refusal-parks-with-the-hand-commit.md
-docs/adr/0303-a-linux-lane-skipped-for-its-environment-is-shown-where-the-delivery-is-read.md
 docs/adr/0304-a-queue-item-waits-for-a-run-slot-up-to-runs-slot-wait.md
 docs/adr/0306-archive-and-cancel-refuse-a-path-whose-resolved-target-leaves-the-repository.md
 docs/adr/0308-an-archive-rebases-the-unproven-links-it-records-and-the-record-link-repair-points-a-promoted-target-at-its-copy.md
@@ -231,7 +229,6 @@ docs/adr/0311-the-delivery-queues-check-wait-is-a-user-config-duration-sixty-min
 docs/adr/0312-a-new-delivery-queue-resumes-an-archived-item-branch-at-review.md
 docs/adr/0313-a-proven-owner-identity-mismatch-releases-a-terminal-runs-owner-record-without-a-signal.md
 docs/adr/0314-a-light-tier-that-cannot-serve-the-run-yields-to-the-category-profile.md
-docs/adr/0316-the-linux-lane-names-a-failed-go-list-apart-from-go-test.md
 docs/adr/0317-a-result-status-note-of-a-completed-task-is-dismissed-without-the-validator.md
 docs/adr/0319-the-follow-up-order-is-code-over-four-jev-yes-no-answers.md
 docs/adr/0320-a-question-call-carries-up-to-three-independent-questions.md
@@ -332,6 +329,7 @@ docs/adr/0447-in-an-adopter-a-change-to-the-files-roundfix-manages-or-to-a-conte
 docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-indexus-with-no-second-path.md
 docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
 docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
+docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md
 # roundfix:standard-export:end
 
 # This repository publishes its README, its user guide and its lessons (maintainer, 2026-11-18).

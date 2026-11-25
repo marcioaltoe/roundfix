@@ -1,8 +1,9 @@
 ---
 status: accepted
+amended_by: [ADR-0452]
 knowledge: false
 created_at: 2026-10-17T20:40:00Z
-updated_at: 2026-10-17T20:40:00Z
+updated_at: 2026-11-24T23:35:15Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -35,6 +36,8 @@ compiler's diagnostics. It keeps the default Contract Relevance, so the Full
 Contract Run on main and before each release runs it, and a change to its own
 package selects it; it costs about 5 s with a warm build cache and 12 s with a
 cold one on the maintainer's machine.
+
+**Amended by [ADR-0452](0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md) (2026-11-24).** The contract also compiles every test for Linux.
 
 ## Considered Options
 

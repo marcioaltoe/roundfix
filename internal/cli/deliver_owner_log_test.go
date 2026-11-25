@@ -40,9 +40,7 @@ func TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate(t *testing.T) {
 	t.Parallel()
 	f := newDeliveryItemFixture(t)
 	setCommandEnvironmentForTest(t, f.home, f.repo)
-	mustWrite(t, filepath.Join(f.repo, ".roundfixrc.yml"), "delivery:\n  linux_lane: false\n")
 	gittest.Run(t, f.repo, "add", ".roundfixrc.yml")
-	gittest.Run(t, f.repo, "commit", "-m", "disable lane")
 	f.head = strings.TrimSpace(gittest.Run(t, f.repo, "rev-parse", "HEAD"))
 	gittest.Run(t, f.repo, "update-ref", "refs/remotes/origin/main", f.head)
 	f.workflow.loaded.UserConfigPath = filepath.Join(f.home, ".roundfix", "config.yml")
@@ -73,7 +71,7 @@ func TestTheQueueOwnerLogsAMachineCapacityWaitAndPassesItsGate(t *testing.T) {
 		t.Fatalf("workflow type=%T engine log=%T; expected a command workflow with the owner's log", dependencies.Gate, dependencies.Log)
 	}
 	result, err := dependencies.Gate.Gate(ctx, f.repo, "widget", f.head)
-	if err != nil || !result.Passed || result.LaneSkip != "" {
+	if err != nil || !result.Passed {
 		t.Fatalf("gate=%+v err=%v", result, err)
 	}
 	want := fmt.Sprintf("roundfix: Delivery Queue item widget: waiting for the Machine Verification Capacity; 1 of 1 held by Run %s of 0096-other in %s, Task task_qa Verification attempt 1\n", holder.RunID, f.repo)

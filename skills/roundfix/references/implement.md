@@ -305,7 +305,7 @@ the largest carriable Task set, breaking ties with the newest Run.
    Integrated Repository Verification and QA Task's repository Verification.
    The exclusive retry takes the Run's whole capacity and one machine unit.
    The Delivery Queue's repository gate takes one machine unit for repository
-   Verification and its Linux Lane together. Commands inside Agent sessions,
+   Verification. Commands inside Agent sessions,
    including QA suites and focused tests, remain ungated.
 
    Every Verification and every Agent Session of an Implement Run receives

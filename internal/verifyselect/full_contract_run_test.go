@@ -85,6 +85,7 @@ func TestMainAndReleaseRunEveryContract(t *testing.T) {
 		} `yaml:"on"`
 		Jobs map[string]struct {
 			Steps []step `yaml:"steps"`
+			Needs string `yaml:"needs"`
 		} `yaml:"jobs"`
 	}
 	read := func(name string) workflow {
@@ -131,14 +132,11 @@ func TestMainAndReleaseRunEveryContract(t *testing.T) {
 		}
 	}
 	release := read("release.yml")
-	gateIndex, preflightIndex := -1, -1
+	gateIndex := -1
 	contractIndex, contractCount = -1, 0
-	for i, s := range release.Jobs["release"].Steps {
+	for i, s := range release.Jobs["verify"].Steps {
 		if s.Run == "make verify" {
 			gateIndex = i
-		}
-		if s.Name == "Publication preflight" {
-			preflightIndex = i
 		}
 		if s.Run == "make verify-contracts" {
 			contractIndex = i
@@ -148,7 +146,17 @@ func TestMainAndReleaseRunEveryContract(t *testing.T) {
 			}
 		}
 	}
-	if contractCount != 1 || gateIndex < 0 || contractIndex != gateIndex+1 || preflightIndex <= contractIndex {
-		t.Errorf("release contract steps = %d, indexes gate=%d contracts=%d preflight=%d; want one after gate and before preflight", contractCount, gateIndex, contractIndex, preflightIndex)
+	if contractCount != 1 || gateIndex < 0 || contractIndex != gateIndex+1 {
+		t.Errorf("release verification contract steps = %d, indexes gate=%d contracts=%d; want one directly after gate", contractCount, gateIndex, contractIndex)
+	}
+	if release.Jobs["release"].Needs != "verify" {
+		t.Error("release must need verify")
+	}
+	preflight := false
+	for _, s := range release.Jobs["release"].Steps {
+		preflight = preflight || s.Name == "Publication preflight"
+	}
+	if !preflight {
+		t.Error("release must hold Publication preflight")
 	}
 }

@@ -96,9 +96,9 @@ VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
 verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
 
 # The gate runs the Repository Contract Tests selected by their Contract Relevance;
-# make verify-docs still runs all of them. Platform-only failures remain a known
-# limit because CI is the Linux gate: for example, go list prints go: downloading
-# on stderr for modules the host never fetched (ADR-0252).
+# make verify-docs still runs all of them. The selective gate and CI run on macOS.
+# Failures only Linux or Windows produces are a known limit, because those
+# platforms are only compiled (ADR-0252).
 verify-changed: fmt-check vet build ## Verify the test sets selected by changes from VERIFY_BASE
 	@sets="$$( $(VERIFY_SELECT) -base "$(VERIFY_BASE)" )" || exit $$?; \
 	for set in $$sets; do \
@@ -164,7 +164,7 @@ docs-test-skipped:
 # internal/ is one of their inputs and any code change re-runs them. They are
 # repository-consistency gates rather than code tests, so they run here at the
 # pull request boundary instead of in every make verify.
-REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForWindows
+REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForLinuxAndWindows
 
 repo-test: gocache-bound ## Run the repository-contract tests
 	$(GO) test -count=1 -tags repocontract -run '^($(REPO_CONTRACT_TESTS))$$' ./...
@@ -204,6 +204,9 @@ test: gocache-bound ## Run Go tests
 # 343 s, because GitHub assigns runners of different speeds: the same tree took
 # 215 s on one and 311 s on another. 420 s is 22 % above the slowest run and
 # fails a suite that slows by about 1.95 times on the fast runner.
+# Those runs used the Linux runner the gate used until this change. The gate now
+# runs on the standard macOS runner, where the suite has not been measured. The
+# number awaits the measurement from the first push to main on that runner.
 # Change this deliberately, with a new measurement, and say why.
 SUITE_BUDGET_SECONDS ?= 420
 

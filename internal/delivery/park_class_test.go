@@ -79,7 +79,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 		{BlockerNumberedFileCollision, ParkClassConflict},
 		{BlockerDiskFull, ParkClassEnvironment},
 		{BlockerPullRequestBehind, ParkClassEnvironment},
-		{BlockerLinuxLaneContainer, ParkClassEnvironment}, // linux-lane-container
+		{retiredLaneContainerBlocker, ParkClassEnvironment}, // linux-lane-container
 		{BlockerChecksTimeout, ParkClassEnvironment}, {BlockerItemWorktreeMissing, ParkClassEnvironment}, {BlockerDeliveryError, ParkClassEnvironment},
 		{BlockerArchivedItemUnproven, ParkClassFinding}, // archived-item-unproven
 		{BlockerDefectClassUndeclared, ParkClassFinding},
@@ -113,7 +113,7 @@ func TestParkClassesAndNextActions(t *testing.T) {
 				if tt.blocker == BlockerDiskFull && park.Next != "free space on the filesystem that holds the path the blocker names: run roundfix gc to trim declared Shared Build Caches and reclaim ended Runs, and remove other files there; then run roundfix deliver retry example; a retry from disk-full is not counted" {
 					t.Fatalf("disk-full next action = %q", park.Next)
 				}
-				if tt.blocker == BlockerLinuxLaneContainer && park.Next != "repair the Linux Lane container cause in the blocker (Docker, the image, or delivery.linux_lane_image on the default branch), then run roundfix deliver retry example" {
+				if tt.blocker == retiredLaneContainerBlocker && park.Next != "run roundfix deliver retry example; the Linux Lane was retired, so the gate no longer runs it" {
 					t.Fatalf("linux-lane-container next action = %q", park.Next)
 				}
 				question, found := PendingQuestionFor(queue)

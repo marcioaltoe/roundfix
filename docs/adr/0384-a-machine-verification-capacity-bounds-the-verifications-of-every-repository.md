@@ -1,8 +1,9 @@
 ---
 status: accepted
+amended_by: [ADR-0452]
 knowledge: true
 created_at: 2026-11-10T23:30:00Z
-updated_at: 2026-11-10T23:30:00Z
+updated_at: 2026-11-24T23:35:15Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -43,6 +44,8 @@ an Agent's focused tests run whenever the Agent runs them. `roundfix spec
 check --run-verification`, `roundfix settle`, the item binary build and the
 derived-file regeneration of the queue, Worktree Bootstrap, and the
 Verification of review Runs (`fetch`, `resolve`, `watch`) are not gated.
+
+**Amended by [ADR-0452](0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md) (2026-11-24).** The gate unit now covers the repository Verification alone.
 
 **The capacity is a set of entry files, not a table.** Each waiter and holder
 writes one entry under `verification-capacity/` in the Roundfix Home, naming

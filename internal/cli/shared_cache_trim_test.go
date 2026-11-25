@@ -1,7 +1,7 @@
 // Suite: automatic Shared Build Cache trims at Run start and the repository gate.
 // Invariant: trims preserve active entries and never decide the Run or gate outcome.
 // Boundary IN: command harness, real cache files, SQLite events and gate Verification.
-// Boundary OUT: Agent execution and Linux Lane tools use their existing fixtures.
+// Boundary OUT: Agent execution use their existing fixtures.
 package cli
 
 import (
@@ -31,8 +31,6 @@ func sharedCacheImplementWorkspace(t *testing.T) (sharedCacheFixture, string, st
 	home, repo := env.homeDir, env.workDir
 	gittest.InitRepo(t, repo, "--initial-branch=main")
 	writeImplementSpec(t, repo, implementTestSlug, []implementSeed{{id: "task_01", title: "Build the widget"}})
-	// Give the gate an immutable default with Linux Lane disabled.
-	mustWrite(t, filepath.Join(repo, ".roundfixrc.yml"), mustRead(t, filepath.Join(repo, ".roundfixrc.yml"))+"delivery:\n  linux_lane: false\n")
 	gitImplement(t, repo, "add", "-A")
 	gitImplement(t, repo, "commit", "-m", "seed cache and spec")
 	gitImplement(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
@@ -230,7 +228,7 @@ func TestDeliveryGateTrimsTheSharedBuildCacheBeforeItsVerification(t *testing.T)
 			workflow := commandDeliveryWorkflow{loaded: loaded, log: &log}
 			ctx := commandContextForTest(t, t.Context())
 			result, err := workflow.Gate(ctx, repo, implementTestSlug, "HEAD")
-			if err != nil || !result.Passed || result.LaneSkip != "" {
+			if err != nil || !result.Passed {
 				t.Fatalf("gate=%+v err=%v log=%q", result, err, log.String())
 			}
 			line := fmt.Sprintf("roundfix: Delivery Queue item %s: Shared Build Cache %s: removed 2 idle entries (2097152 bytes) before the repository gate\n", implementTestSlug, f.root)

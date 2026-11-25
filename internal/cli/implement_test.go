@@ -286,6 +286,14 @@ exit 0
 	writeScriptFixture(t, adapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n")
 	claudeAdapterPath := filepath.Join(filepath.Dir(path), "claude-agent-acp")
 	writeScriptFixture(t, claudeAdapterPath, "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/claude-agent-acp "+agent.PinnedClaudeAdapterVersion+"'\n")
+	// On macOS the acpx launch resolves a clean codex on PATH; ship a fixture
+	// codex beside the fake acpx so the test never reaches the machine's own
+	// codex (the macOS CI runner has none).
+	if runtime.GOOS == "darwin" {
+		codexPath := filepath.Join(filepath.Dir(path), "codex")
+		buildMacroCodexExecutable(t, codexPath)
+		assertMacroCodexExecutableHygiene(t, codexPath)
+	}
 	// Bind each runtime to its own isolated adapter; one command override cannot
 	// prove the lineage of both runtimes in the built-in Fallback Chain.
 	configPath := filepath.Join(commandEnvironmentForTest(t).homeDir, ".acpx", "config.json")
