@@ -1,1 +1,0 @@
-Authorized byte comparison: True

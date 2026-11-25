@@ -1,8 +1,0 @@
-{
-  "match": true,
-  "expected_stdout": "",
-  "expected_stderr": "roundfix: unknown deliver command \"lane\"\nRun 'roundfix deliver --help' for usage.\n",
-  "observed_stdout": "",
-  "observed_stderr": "roundfix: unknown deliver command \"lane\"\nRun 'roundfix deliver --help' for usage.\n",
-  "exit": 2
-}

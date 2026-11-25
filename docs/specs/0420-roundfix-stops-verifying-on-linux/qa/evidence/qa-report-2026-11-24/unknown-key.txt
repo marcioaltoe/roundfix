@@ -1,8 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0420-roundfix-stops-verifying-on-linux-9667ee5887c51d9a-f923d8c7-5441ad7f/run_20261124T233515Z_e6f1359ae84a0462/bin/roundfix runs list
-exit: 2
-stdout:
-
-stderr:
-roundfix: runs list failed: parse config "/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/roundfix-product-p1f_fyym/repo/.roundfixrc.yml": yaml: unmarshal errors:
-  line 1: field bogus_key not found in type config.deliveryOverlay
-Run 'roundfix runs list --help' for usage.

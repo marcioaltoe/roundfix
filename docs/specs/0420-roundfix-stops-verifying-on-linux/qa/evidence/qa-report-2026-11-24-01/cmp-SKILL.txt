@@ -1,4 +1,0 @@
-$ cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
-stdout:
-stderr:
-exit: 0

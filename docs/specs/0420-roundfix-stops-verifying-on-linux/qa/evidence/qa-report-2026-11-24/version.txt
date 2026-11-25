@@ -1,6 +1,0 @@
-$ /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0420-roundfix-stops-verifying-on-linux-9667ee5887c51d9a-f923d8c7-5441ad7f/run_20261124T233515Z_e6f1359ae84a0462/bin/roundfix --version
-exit: 0
-stdout:
-roundfix 0.153.2 (4c0000c6-dirty, built 2026-11-24 21:33:22 -0300)
-
-stderr:

@@ -1,8 +1,0 @@
-{
-  "match": true,
-  "expected_stdout": "No Runs found.\n",
-  "expected_stderr": "config: delivery.linux_lane is deprecated and ignored; the Linux Lane was retired, so remove it\nconfig: delivery.linux_lane_image is deprecated and ignored; the Linux Lane was retired, so remove it\n",
-  "observed_stdout": "No Runs found.\n",
-  "observed_stderr": "config: delivery.linux_lane is deprecated and ignored; the Linux Lane was retired, so remove it\nconfig: delivery.linux_lane_image is deprecated and ignored; the Linux Lane was retired, so remove it\n",
-  "exit": 0
-}

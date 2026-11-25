@@ -1,8 +1,0 @@
-$ go test -count=1 -timeout 40m -v -tags repocontract -run ^TestSettlementGuidanceIsOneTable$ ./skills
-stdout:
-=== RUN   TestSettlementGuidanceIsOneTable
---- PASS: TestSettlementGuidanceIsOneTable (0.00s)
-PASS
-ok  	roundfix/skills	0.324s
-stderr:
-exit: 0

@@ -1,9 +1,0 @@
-Source: GitHub Docs, GitHub-hosted runners reference, read 2026-11-24; offline quoted passage in PRD Acceptance evidence.
-
-
-The outside-evidence row of Success Metric 9 rests on published literature, read on 2026-11-24 and copied in `references/sources.md`, section 5. GitHub Docs, "GitHub-hosted runners reference": "Use of the standard GitHub-hosted runners is free and unlimited on public repositories." The same page lists, for the standard macOS runner on arm64, the workflow labels `macos-latest`, `macos-15`, `macos-26` and `xcode-27`, with 3 processors and 7 GB of memory. GitHub Docs, "GitHub Actions billing": "Larger runners are billed for public repositories." The repository is public: the GitHub CLI answered `"visibility":"PUBLIC"` on 2026-11-24. The QA gate checks the row by reading the two workflow files against the labels quoted here, without the network.
-
-Published practice names the state Linux is left in. Rust, "Platform Support", separates a platform that is tested from one that is only built: for Tier 1, "automated testing ensures that each tier 1 target builds and passes tests after each change", and for Tier 2, "Automated tests are not always run so it's not guaranteed to produce a working build". After this Spec macOS is in the first state, and Linux and Windows are in the second.
-
-Observed verification runner labels: macos-26, macos-26
-No -large or -xlarge suffix. No network lookup.

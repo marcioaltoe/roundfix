@@ -1,5 +1,0 @@
-$ git diff --exit-code
-exit: 0
-stdout:
-
-stderr:

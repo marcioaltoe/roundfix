@@ -1,4 +1,0 @@
-$ cmp .agents/skills/roundfix/references/deliver.md skills/roundfix/references/deliver.md
-stdout:
-stderr:
-exit: 0
