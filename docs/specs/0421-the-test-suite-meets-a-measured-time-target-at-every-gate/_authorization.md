@@ -146,6 +146,17 @@ How it is held:
 
 Nothing else is missing. The Task Graph phase measured the Governed Paths again over every file the Tasks declare and needs none beyond the nine.
 
+The maintainer then confirmed the Praetor's application and the wider regeneration as his own decision: ai-memory message `01a2140b-ac0f-7261-8134-ffeea8fa78a8`, from `default/praetor`, decided 2026-11-25 ~15:52 BRT. The block, verbatim:
+
+```text
+DECISÃO DE MARCIO
+pedido: 01a213f4-0314-78a2-b943-0d600d695d59
+pergunta: Confirma, como decisão sua, dois pontos aplicados sem pergunta? (a) O release deixa de rodar testes e passa a conferir pela API do GitHub que a tag é o squash merge de um PR com a mesma árvore, cujo "Verification gate" passou; qualquer outra situação recusa o release. (b) A regravação condicional do registro de superfícies vale também para a edição do runbook de release na task_04. Opções: confirmar os dois; só (b) e release com testes; não confirmar.
+resposta: "Confirmar os dois (Recomendado)"
+alcance: o descrito no pedido 01a213f4: no release.yml, só o job verify (sai make verify, make verify-contracts e o setup do Go; entra o passo de procedência com o token do workflow; runner ubuntu-latest; permissões só de leitura); o job de publicação igual; notas de emenda na ADR-0253 e na ADR-0452 pela ADR-0453; runbook com atualização do branch do PR de release antes do merge e disparo manual antes da tag; a regravação de docs/references/behavior-surfaces.json pelo comando próprio também quando a task_04 editar o runbook.
+quando: 25/11/2026 ~15:52 BRT
+```
+
 ## What the grant covers
 
 The nine paths above are the Governed Paths among the files the plan changes or may change. The author measured them on 2026-11-25 at `33ece0cf` with `speccheck.GovernedPath`, in a `go test -overlay` probe that wrote nothing to the repository; `references/sources.md`, section 8, holds that measurement. The TechSpec measured twice more at `3f621ac6`, the last time over the 122 paths its revised design creates, edits or deletes: the same nine, and six governed paths it leaves unchanged. Section 9.3 of the same file holds it. The Task Graph phase measured again on 2026-11-25, at `3f621ac6`, over every file the five Tasks declare, in the same kind of probe: the nine paths above are the only governed ones the Tasks declare, and `_tasks.md` names which Task declares each. A path no Task needs stays untouched.
