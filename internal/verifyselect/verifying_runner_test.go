@@ -52,6 +52,21 @@ func readVerifyingWorkflow(t *testing.T, path string) verifyingWorkflow {
 	return workflow
 }
 
+// releaseVerifyRunnerOverride is the runner the release's verify job uses
+// under the maintainer's override of 2026-11-25 (DECISÃO DE MARCIO, ai-memory
+// 01a21237, 06:58 BRT): the full suite exceeds go test's 10-minute default on
+// the standard macOS runner, so the release verifies on Linux until Spec 0421
+// (test-suite performance) removes this exception and returns it to macOS.
+const releaseVerifyRunnerOverride = "ubuntu-latest"
+
+// wantVerifyingRunner is the runner a verifying job of workflow must name.
+func wantVerifyingRunner(workflow, job string) string {
+	if workflow == "release.yml" && job == "verify" {
+		return releaseVerifyRunnerOverride
+	}
+	return verifyingRunner
+}
+
 func TestEveryVerifyingJobRunsOnTheStandardMacOSRunner(t *testing.T) {
 	t.Parallel()
 	dir := filepath.Join(findRepositoryRoot(t), ".github", "workflows")
@@ -72,8 +87,8 @@ func TestEveryVerifyingJobRunsOnTheStandardMacOSRunner(t *testing.T) {
 					continue
 				}
 				jobs++
-				if job.Runner.Kind != yaml.ScalarNode || job.Runner.Value != verifyingRunner {
-					t.Errorf("%s job %s runs %q on %v, want %s", entry.Name(), name, step.Run, job.Runner, verifyingRunner)
+				if want := wantVerifyingRunner(entry.Name(), name); job.Runner.Kind != yaml.ScalarNode || job.Runner.Value != want {
+					t.Errorf("%s job %s runs %q on %v, want %s", entry.Name(), name, step.Run, job.Runner, want)
 				}
 			}
 		}
@@ -90,7 +105,7 @@ func TestTheReleaseVerifiesBeforeItBuildsOrPublishes(t *testing.T) {
 	if !exists {
 		t.Fatal("release workflow has no verify job")
 	}
-	if verify.Runner.Value != verifyingRunner || !reflect.DeepEqual(verify.Permissions, map[string]string{"contents": "read"}) {
+	if verify.Runner.Value != wantVerifyingRunner("release.yml", "verify") || !reflect.DeepEqual(verify.Permissions, map[string]string{"contents": "read"}) {
 		t.Errorf("verify runner/permissions = %s/%v", verify.Runner.Value, verify.Permissions)
 	}
 	if len(verify.Steps) != 4 {

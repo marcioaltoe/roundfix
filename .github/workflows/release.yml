@@ -13,7 +13,11 @@ on:
 
 jobs:
   verify:
-    runs-on: macos-26
+    # Override of 2026-11-25 (DECISÃO DE MARCIO, ai-memory 01a21237, 06:58 BRT):
+    # the full suite exceeds go test's 10-minute default on the standard macOS
+    # runner, so the release verifies on Linux until Spec 0421 (test-suite
+    # performance) returns this job to macos-26.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
