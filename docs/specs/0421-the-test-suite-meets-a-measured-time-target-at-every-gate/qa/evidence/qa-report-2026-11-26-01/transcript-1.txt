@@ -1,7 +1,0 @@
-$ go run -buildvcs=false ./cmd/verify-select -plan
-stdout:
-stderr:
-verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
-
-exit: 0
-wall_seconds: 0.060

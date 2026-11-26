@@ -1,8 +1,0 @@
-command: ./bin/gate-time report -gate pull-request -job cli-2 -seconds 412
-working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
-exit: 0
-wall seconds: 0.009
-stdout:
-gate time: pull request, job cli-2 412s (target: median 480s, p95 600s)
-
-stderr:

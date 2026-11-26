@@ -1,9 +1,0 @@
-command: make build
-working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
-exit: 0
-wall seconds: 1.767
-stdout:
-go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=32f9632e-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 03:27:39 -0300'" -o bin/roundfix ./cmd/roundfix
-
-stderr:
-gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 20527082753 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues

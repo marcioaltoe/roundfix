@@ -1,8 +1,0 @@
-command: go test -count=1 -tags docscontract -run '^(TestCheckCorpusGolden|TestCheckCorpusBudget|TestCheckActiveCorpusHasNoErrors)$' ./internal/docscontract
-working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-all-tags-preflight-9sphzigb
-exit: 0
-wall seconds: 6.226
-stdout:
-ok  	roundfix/internal/docscontract	2.348s
-
-stderr:

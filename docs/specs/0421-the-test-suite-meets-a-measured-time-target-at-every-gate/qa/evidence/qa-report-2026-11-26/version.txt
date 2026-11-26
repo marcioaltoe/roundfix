@@ -1,8 +1,0 @@
-command: ./bin/roundfix --version
-working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
-exit: 0
-wall seconds: 0.448
-stdout:
-roundfix 0.153.3 (32f9632e-dirty, built 2026-11-26 03:27:39 -0300)
-
-stderr:

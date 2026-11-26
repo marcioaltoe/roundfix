@@ -1,8 +1,0 @@
-command: go run -buildvcs=false ./cmd/verify-select -plan
-working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-select-specs-slg7_3zf
-exit: 0
-wall seconds: 0.749
-stdout:
-
-stderr:
-verify-select: packages: packages reached by the changes

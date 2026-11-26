@@ -1,2 +1,0 @@
-internal/baselineacp/suiteguard_repocontract_test.go
-['roundfix/cmd/roundfix', 'roundfix/internal/baselineacp', 'roundfix/internal/cli']

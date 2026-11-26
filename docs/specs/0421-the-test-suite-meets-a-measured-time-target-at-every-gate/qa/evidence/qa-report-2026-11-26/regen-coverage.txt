@@ -1,8 +1,0 @@
-command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
-working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-regeneration-35_r9u1w
-exit: 0
-wall seconds: 2.444
-stdout:
-ok  	roundfix/internal/spec	1.426s
-
-stderr:

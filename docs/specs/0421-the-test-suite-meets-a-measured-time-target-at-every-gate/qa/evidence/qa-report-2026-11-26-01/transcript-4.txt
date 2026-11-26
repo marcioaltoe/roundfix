@@ -1,7 +1,0 @@
-$ ./bin/gate-time report -gate pull-request -job cli-2 -seconds 412
-stdout:
-gate time: pull request, job cli-2 412s (target: median 480s, p95 600s)
-stderr:
-
-exit: 0
-wall_seconds: 0.010

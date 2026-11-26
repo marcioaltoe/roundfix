@@ -1,8 +1,0 @@
-command: go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage
-working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-regeneration-35_r9u1w
-exit: 0
-wall seconds: 4.696
-stdout:
-ok  	roundfix/internal/docscontract	0.483s
-
-stderr:

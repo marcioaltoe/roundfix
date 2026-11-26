@@ -1,9 +1,0 @@
-$ go run -buildvcs=false ./cmd/verify-select -packages baseline
-stdout:
-./internal/baseline
-./internal/baselineacp
-./skills
-stderr:
-
-exit: 0
-wall_seconds: 0.314

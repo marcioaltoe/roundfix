@@ -1,5 +1,0 @@
-Machine model: Mac16,10
-Architecture: arm64
-GOMAXPROCS: 5
-HOME and TMPDIR retained for test and make commands.
-Audited head: 00bd628317cd969a5a69a82eff386c258e59807b

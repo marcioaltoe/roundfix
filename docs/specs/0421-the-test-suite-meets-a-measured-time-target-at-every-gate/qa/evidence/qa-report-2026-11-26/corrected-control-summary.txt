@@ -1,5 +1,0 @@
-{
-  "budget": true,
-  "relevance": true,
-  "coverage": true
-}

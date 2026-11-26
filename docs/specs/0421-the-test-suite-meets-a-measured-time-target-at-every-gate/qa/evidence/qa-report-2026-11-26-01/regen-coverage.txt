@@ -1,7 +1,0 @@
-$ go test ./internal/spec -run ^TestCoverageEquivalence$ -update-coverage-record -count=1
-stdout:
-ok  	roundfix/internal/spec	1.492s
-stderr:
-
-exit: 0
-wall_seconds: 2.523

@@ -1,7 +1,0 @@
-$ ./bin/gate-time report -gate complete-suite-run -seconds 352
-stdout:
-gate time: complete suite run 352s (target: 360s)
-stderr:
-
-exit: 0
-wall_seconds: 0.012
