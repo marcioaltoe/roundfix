@@ -34,9 +34,10 @@ regeneration:
     outputs:
       - docs/references/behavior-surfaces.json
 promoted: []
+pull_request: "962"
 type: perf
 ---
 
 # The test suite meets a measured time target at every gate
 
-The gate exercises the lightweight Task settlement, the archive candidate’s Complete Suite Run, dependency selection, CI and release fixtures, and reporting f…
+The gate exercises the lightweight Task settlement, the archive candidate’s Complete Suite Run, dependency selection, CI and release fixtu…
