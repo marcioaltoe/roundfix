@@ -2,6 +2,15 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.153.4] - 2026-11-26
+
+### The test suite meets a measured time target at every gate
+
+- **A Task settles on the light checks.** In this repository, a Run's Task settlement runs format, vet, build, the contracts and the record and golden tests; the package tests run once per Spec, as the Complete Suite Run at the Delivery Queue's repository gate, and a pull request runs the changed packages and their importers. No configuration key or product behavior changed: `make verify-changed` tells the gates apart.
+- **Continuous integration runs only for a pull request, in parallel jobs.** The `Verification gate` check keeps its name and gathers five parallel parts on the standard macOS runner; nothing runs after a merge to main. The release no longer runs tests: it proves the Release Provenance of the release commit (the squash merge of a pull request into main whose branch held main's tip, with the same tree, and whose `Verification gate` passed) before building or publishing. The Linux override of 2026-11-25 is gone.
+- **Each gate reports its time.** Every gate prints a Gate Time Report line against its target, and `make gate-times` reads the windows that the final Gate Time Rule will be written from. ADR-0453 retires the single suite-time budget (ADR-0387) and the one-job and runner sentences of ADR-0452.
+- **Faster tests.** Code tests no longer run the Go tool over other packages or build a binary per test, tests share what they only read, and four tests that waited on wall-clock time now wait on their event.
+
 ## [0.153.3] - 2026-11-25
 
 ### Roundfix stops verifying on Linux
