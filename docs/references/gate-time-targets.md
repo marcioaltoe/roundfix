@@ -29,8 +29,9 @@ Keep the commands' exit status and distinguish failed checks from measurements.
 
 ## Windows
 
-Both windows are open, with no start or closing date recorded. After the first
-delivery merges, record the start in the JSON document. `make gate-times`, or
+Both windows are open. They started on 2026-11-26 at 10:58:57 UTC, when Spec
+0421's delivering pull request (#962) merged; no closing date is recorded yet.
+The start is recorded in the JSON document. `make gate-times`, or
 `go run -buildvcs=false ./cmd/gate-time windows`, reads both windows: the first
 30 passing Task settlement checks from the Run Database and the first 20 passing
 pull request runs of `CI | Verify` from GitHub. It pairs each verification start

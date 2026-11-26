@@ -19,7 +19,7 @@
         "kind": "passing",
         "event": "Run settlement",
         "size": 30,
-        "since": null,
+        "since": "2026-11-26T10:58:57Z",
         "passing": 0,
         "closed": null
       },
@@ -81,7 +81,7 @@
         "kind": "passing",
         "event": "pull_request",
         "size": 20,
-        "since": null,
+        "since": "2026-11-26T10:58:57Z",
         "passing": 0,
         "closed": null
       },
