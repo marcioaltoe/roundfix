@@ -31,6 +31,7 @@ const (
 type detachPhaseTimeouts struct {
 	liveness    time.Duration
 	runCreation time.Duration
+	newTimer    func(time.Duration) (<-chan time.Time, func())
 }
 
 var detachTimeouts = detachPhaseTimeouts{
@@ -246,7 +247,7 @@ func runDetachedCommandWithReport(
 		readDetachedHandshakeEvents(readPipe, handshakeCh)
 	}()
 
-	liveness, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.liveness)
+	liveness, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.liveness, timeouts.newTimer)
 	if !ok {
 		return handleDetachedHandshakeTimeout(cmd, leaderIdentity, stderr, tempPath, detachPhaseLiveness, timeouts.liveness)
 	}
@@ -254,7 +255,7 @@ func runDetachedCommandWithReport(
 		return handleDetachedHandshakeFailure(cmd, leaderIdentity, stderr, tempPath, detachPhaseLiveness, detachHandshakeFailureCause(detachPhaseLiveness, liveness))
 	}
 
-	created, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.runCreation)
+	created, ok := waitDetachedHandshakeEvent(handshakeCh, timeouts.runCreation, timeouts.newTimer)
 	if !ok {
 		return handleDetachedHandshakeTimeout(cmd, leaderIdentity, stderr, tempPath, detachPhaseRunCreation, timeouts.runCreation)
 	}
@@ -311,13 +312,19 @@ func detachedConsoleLogPath(artifactDir string, runID string) string {
 	return filepath.Join(artifactDir, "runs", runID, "console.log")
 }
 
-func waitDetachedHandshakeEvent(events <-chan detachHandshakeEvent, timeout time.Duration) (detachHandshakeEvent, bool) {
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
+func waitDetachedHandshakeEvent(events <-chan detachHandshakeEvent, timeout time.Duration, newTimer func(time.Duration) (<-chan time.Time, func())) (detachHandshakeEvent, bool) {
+	if newTimer == nil {
+		newTimer = func(duration time.Duration) (<-chan time.Time, func()) {
+			timer := time.NewTimer(duration)
+			return timer.C, func() { timer.Stop() }
+		}
+	}
+	expired, stop := newTimer(timeout)
+	defer stop()
 	select {
 	case event := <-events:
 		return event, true
-	case <-timer.C:
+	case <-expired:
 		return detachHandshakeEvent{}, false
 	}
 }

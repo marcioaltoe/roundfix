@@ -126,7 +126,7 @@ func TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning(t *testing.T) {
 			residueReadErrors{{PID: unreadablePID, Err: unreadable}}
 	}
 	var output bytes.Buffer
-	found := checkHelperResidueWithScan(mark, &output, scan)
+	found := checkHelperResidueWithWait(mark, &output, scan, func() bool { return reads < 2 })
 	t.Log(output.String())
 	if !found {
 		t.Errorf("residue check returned false beside an unreadable process")
@@ -195,13 +195,13 @@ func TestHelperResidueSkipsUnreadableProcessesWithoutResidue(t *testing.T) {
 	t.Parallel()
 	var output bytes.Buffer
 	reads := 0
-	found := checkHelperResidueWithScan("fixture", &output, func(string, int) ([]residueProcess, error) {
+	found := checkHelperResidueWithWait("fixture", &output, func(string, int) ([]residueProcess, error) {
 		reads++
 		return nil, residueReadErrors{
 			{PID: 2, Err: errors.New("second unreadable process")},
 			{PID: 1, Err: errResidueProcessChanging},
 		}
-	})
+	}, func() bool { return reads < 2 })
 	want := fmt.Sprintf("suiteguard: helper residue check skipped an unreadable process: pid 1: %v\n", errResidueProcessChanging) +
 		"suiteguard: helper residue check skipped an unreadable process: pid 2: second unreadable process\n"
 	if found || reads < 2 || output.String() != want {

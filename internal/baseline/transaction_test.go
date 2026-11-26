@@ -194,7 +194,10 @@ func TestTransactionFailureMatrix(t *testing.T) {
 			transactionFaultPoint{Phase: transactionPhaseVerifying, Path: postimage.Path},
 		)
 	}
-	_ = templateRepo
+	template, err := readAssetsSyncTemplate(templateRepo)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, point := range points {
 		point := point
@@ -203,10 +206,12 @@ func TestTransactionFailureMatrix(t *testing.T) {
 			name += "/" + strings.ReplaceAll(point.Path, "/", "_")
 		}
 		t.Run(name, func(t *testing.T) {
-			// Each case builds its own repository and shares no mutable
-			// state, so the 57 fault points overlap instead of queueing.
+			// Each fault point copies the prepared bytes and modes into its own
+			// repository, so concurrent cases share no mutable state.
 			t.Parallel()
-			repo, plan := newTransactionRepository(t)
+			repo := t.TempDir()
+			writeAssetsSyncTemplate(t, template, repo)
+			plan := templatePlan
 			before := snapshotVisibleTree(t, repo)
 			hook := failTransactionOnce(point.Phase, point.Path, fmt.Errorf("injected %s failure", point.Phase))
 			if point.Phase == transactionPhaseJournaled {
@@ -230,7 +235,9 @@ func TestTransactionFailureMatrix(t *testing.T) {
 	}
 
 	t.Run("incomplete rollback remains blocking", func(t *testing.T) {
-		repo, plan := newTransactionRepository(t)
+		repo := t.TempDir()
+		writeAssetsSyncTemplate(t, template, repo)
+		plan := templatePlan
 		tx := beginTestTransaction(t, repo, plan)
 		replaced := false
 		tx.phaseHook = func(point transactionFaultPoint) error {

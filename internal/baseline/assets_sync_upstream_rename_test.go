@@ -90,11 +90,7 @@ func TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift(t *testing.T) {
 			name = "check"
 		}
 		t.Run(name, func(t *testing.T) {
-			repo, root := newAssetsSyncTarget(t)
-			source, _ := newAssetsSyncSource(t, root)
-			if _, err := syncAssets(context.Background(), AssetsSyncRequest{SourceDir: source}, assetsSyncDependencies{repository: repo, assetRoot: root}); err != nil {
-				t.Fatal(err)
-			}
+			repo, root, source := newPreparedAssetsSync(t)
 			renameAssetsSyncTargetSkill(t, root)
 			assertAssetsSyncRenameRefusal(t, repo, root, source, check, "Go-owned canonical Baseline assets are invalid", "Fix the canonical Baseline catalog before synchronizing.")
 		})

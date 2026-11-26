@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -79,3 +79,32 @@ This Task delivers `_techspec.md` → Build Order 2. The pinned history is extra
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/sources.md`](references/sources.md), sections 5.2 and 5.3
 - ADR-0259, ADR-0271, ADR-0281
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-concurrency, golang-cli, golang-context, golang-error-handling, tech-writer, systematic-debugging, no-workarounds, evidence-gate.
+
+Implementation:
+
+- `PinnedHistory` caches each normalized path set under the physical repository identity, serializes extraction, and returns the same directory to every caller. Files and directories are read-only throughout every caller's test lifetime. Reader accounting restores directory permissions after the last reader ends so the Go tool can clean its build directory; later callers reuse and protect the existing extraction. Its signature and consumers are unchanged. The new test checks shared identity, different path sets, failed directory/file writes, reordered/duplicate paths, and reuse after the first reader ends.
+- Baseline tests that inspect a later sync step copy an immutable, once-prepared synced repository: composed-component rewriting, unchanged composition, and invalid-catalog refusal without drift. Tests asserting sync normalization, provenance, rollback, membership, retirement, or rename still exercise their original sync boundary. The new equivalence test compares both bytes and modes against a fresh sync. Every transaction fault point copies one prepared repository and reuses its portable plan; all existing cases and assertions remain.
+- The detach fixture expires its old liveness timer before releasing the child's Run-creation report. Production timer defaults remain unchanged. Residue tests control retry permission or give the fixture guard zero cleanup grace; production still uses its original grace, scan, diagnostics and proven kill. No Real-Time Budget or ceiling was added.
+- Prepended the required dated Coverage Review to `command resolve` and `command watch`. Re-recording the Behavior Surface Record produced identical bytes, consistent with unchanged command behavior. Re-recorded the coverage inventory last through its sanctioned recorder: exactly the two required new tests were added, no test was removed, and all three recorded platforms remain.
+
+Focused checks (all commands used `rtk proxy`):
+
+- `go test -count=1 -json -run 'Test.*(AssetsSync|AssetSync|Transaction|ComposedSetup|ComponentsThat)' ./internal/baseline`: exit 0; 35 top-level tests, including prepared/fresh equivalence, and all 61 transaction matrix subcases passed. Package elapsed 46.180 s. An earlier invocation's assertions passed but suiteguard rejected concurrent source edits; the reported invocation ran on a stable tree.
+- `go test -race -count=1 -json -run 'TestPinnedHistory|TestRunDetachedCommand|TestHelperResidue|TestGuardReportsAndKillsHelperResidue' ./internal/gittest ./internal/cli ./internal/suiteguard`: exit 0 for all three packages. The four target waits took 0.07 s (detach), 0.14 s (guard residue), 0.06 s (unreadable beside residue), and 0.00 s (unreadable without residue). Shared-cache identity, protection and later-reader reuse passed with race detection.
+- `go test -count=1 -json -run 'TestPinnedHistory|Test.*Grouping|Test.*Question' ./internal/gittest ./internal/judge`: exit 0; exercises unchanged pinned-history consumers, including a package without suiteguard lifecycle cleanup.
+- `go test -count=1 -json ./internal/suiteguard`: exit 0; repository boundary, residue killing, unreadable-process handling and regeneration diagnostics passed.
+- `go test -count=1 -json -run 'TestEveryRealTimeBudgetIsWithinItsFileCeiling|TestRealTimeBudgetRuleRejectsSeededViolations' ./internal/testfixture`: exit 0; existing ceilings and their negative probes passed unchanged.
+- `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: exit 0 after the final detach source edit; Skill Coverage Map and Behavior Surface Record are current.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`: exit 0. A separate parsed comparison against `HEAD` confirmed exactly `roundfix/internal/gittest: TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly` and `roundfix/internal/baseline: TestAPreparedAssetSyncMatchesAFreshSync` added, zero removed, and unchanged platforms. Neither generated record was hand-edited.
+
+The declared Verification commands and repository Verification remain for the Daemon. Task status, the Task Graph and other Task files were not edited. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261126T024343Z_4d6d0cf3419b8574`
+- Source commit: `e89f17afd558553fe65a28717091040a983e835d`

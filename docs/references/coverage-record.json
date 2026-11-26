@@ -372,6 +372,7 @@
       "TestANonBooleanPartOfGateIsRefused",
       "TestAPartReachedThroughARecipeInvocationCounts",
       "TestAPlanRecordsItsWriterVersionOnlyWithAFileChange",
+      "TestAPreparedAssetSyncMatchesAFreshSync",
       "TestAProfileHTTPDefaultThatDisagreesIsReported",
       "TestAProfileWithoutTheIncrementalDecisionHasOneGap",
       "TestARecordedBetterAuthBasePathMovesTheProviderException",
@@ -4117,6 +4118,7 @@
       "TestHardenedRepositoryNeverStartsAFilesystemMonitor",
       "TestInitRepoDisablesAutomaticMaintenance",
       "TestInitRepoKeepsCommitFromSpawningDetachedMaintenance",
+      "TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly",
       "TestPinnedHistoryMaterializesThePinnedPaths"
     ],
     "roundfix/internal/judge": [
