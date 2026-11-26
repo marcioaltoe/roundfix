@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: Hard Link repository rule.
 // Invariant: no module test creates a hard link, preserving Single-Name Test Binaries.
 // Boundary IN: named, aliased and dot-imported hard-link references in module *_test.go files.
 // Boundary OUT: testdata, hidden and underscore directories; shadowed names, declarations, fields, struct keys, labels, symbolic links and link reads.
+//
+//verify:always
 package testfixture
 
 import (

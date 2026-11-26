@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: Nested Go Tool repository rule.
 // Invariant: code tests do not start nested Go test or vet runs.
 // Boundary IN: module test sources, exec calls and contract build constraints.
 // Boundary OUT: testdata, production sources and the frozen migration inventory.
+//
+//verify:always
 package testfixture
 
 import (
@@ -20,8 +24,7 @@ import (
 
 // Frozen inventory: entries may only shrink.
 var nestedGoToolInventory = map[string]string{
-	"internal/verifyselect/verifyselect_test.go": "TestPartitionFollowsTheMakefileRecipes changes in task_03",
-	"internal/spec/coverage_test.go":             "only the platform docscontract calls the toolchain listing",
+	"internal/spec/coverage_test.go": "only the platform docscontract calls the toolchain listing",
 }
 
 func TestNoCodeTestStartsAGoTestOrGoVetRun(t *testing.T) {

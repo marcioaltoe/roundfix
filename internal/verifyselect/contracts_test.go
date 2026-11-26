@@ -272,11 +272,11 @@ func TestBoundary(t *testing.T) {}`))
 			t.Fatalf("Run() = %d, stdout %q, stderr %q, want diagnostic %q", code, out.String(), diagnostic.String(), want)
 		}
 	})
-	for _, conflict := range [][]string{{"-packages", "core"}, {"-packages="}, {"-baseline-cli-pattern"}, {"-baseline-cli-pattern=false"}} {
+	for _, conflict := range [][]string{{"-job", "packages"}, {"-job=packages"}, {"-plan"}, {"-plan=false"}} {
 		t.Run("conflict "+strings.Join(conflict, " "), func(t *testing.T) {
 			var out, diagnostic bytes.Buffer
 			code := verifyselect.Run(t.Context(), append(append([]string{}, args...), conflict...), &out, &diagnostic)
-			want := "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"
+			want := "verify-select: incompatible flags\n"
 			if code != 2 || out.Len() != 0 || diagnostic.String() != want {
 				t.Fatalf("Run() = %d, stdout %q, stderr %q", code, out.String(), diagnostic.String())
 			}
@@ -348,11 +348,11 @@ func TestRunRefusesAllOutsideTheContractMode(t *testing.T) {
 		{"without contracts", []string{"-all"}, "verify-select: -all requires -contracts\n"},
 		{"explicit base", []string{"-contracts", "-all", "-base", "main"}, "verify-select: -all cannot be combined with -base\n"},
 		{"empty base", []string{"-contracts", "-all", "-base="}, "verify-select: -all cannot be combined with -base\n"},
-		{"packages", []string{"-contracts", "-all", "-packages", "core"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
-		{"empty packages", []string{"-contracts", "-all", "-packages="}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
-		{"baseline pattern", []string{"-contracts", "-all", "-baseline-cli-pattern"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
-		{"false baseline pattern", []string{"-contracts", "-all", "-baseline-cli-pattern=false"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
-		{"conflict before base", []string{"-contracts", "-all", "-base", "main", "-packages", "core"}, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern\n"},
+		{"packages", []string{"-contracts", "-all", "-job", "packages"}, "verify-select: incompatible flags\n"},
+		{"empty packages", []string{"-contracts", "-all", "-job=packages"}, "verify-select: incompatible flags\n"},
+		{"baseline pattern", []string{"-contracts", "-all", "-plan"}, "verify-select: incompatible flags\n"},
+		{"false baseline pattern", []string{"-contracts", "-all", "-plan=false"}, "verify-select: incompatible flags\n"},
+		{"conflict before base", []string{"-contracts", "-all", "-base", "main", "-job", "packages"}, "verify-select: incompatible flags\n"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

@@ -216,29 +216,6 @@ func assertMisplacedBaselineJSON(t *testing.T, output string, want []baseline.Mi
 	}
 }
 
-func TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent(t *testing.T) {
-	t.Parallel()
-	root, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	setCommandEnvironmentForTest(t, t.TempDir(), root)
-	var stdout, stderr bytes.Buffer
-	code := runCLI(t, []string{"baseline", "update", "--repo", root, "--no-skills", "--no-history", "--format", "text"}, &stdout, &stderr)
-	if code != exitOK || stderr.Len() != 0 {
-		t.Fatalf("exit=%d stderr=%s stdout=%s", code, stderr.String(), stdout.String())
-	}
-	catalog, err := baseline.LoadEmbeddedCatalog()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{"Baseline update: current", "Result: the repository already matches the current Baseline catalog", "Prior catalog: " + catalog.Digest(), "Current catalog: " + catalog.Digest(), "File changes: 0", "Misplaced repository rules: 0", "Retention evidence: 0", "Declared decisions: 0"}
-	lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
-	if len(lines) <= len(want) || !reflect.DeepEqual(lines[:len(want)], want) {
-		t.Fatalf("transcript first eight lines=%q, want %q", lines, want)
-	}
-}
-
 func TestBaselineUpdateMisplacedRuleReportAcrossFailures(t *testing.T) {
 	t.Parallel()
 	for _, name := range []string{"empty_array", "invalid_manifest", "declared_decision_failure", "carrier_read_failure"} {

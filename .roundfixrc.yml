@@ -54,8 +54,8 @@ defaults:
   # codex-acp 2.x), and the QA gate drives browsers through the chrome-devtools
   # MCP server.
   agent_full_access: false
-  # Selective repository Verification for review Batches and Run QA gates.
-  # Use `make verify` for the complete gate on main and releases.
+  # Package-plan Verification: light checks at settlements, package reach for
+  # review Batches, and the Complete Suite Run after the archive commit.
   verification: make verify-changed
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""

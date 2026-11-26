@@ -4,6 +4,19 @@ Roundfix picks up Work Items — Review Issues from pull request reviews and Tas
 
 ## Language
 
+**Gate Time Target**:
+The approved time objective of a repository verification gate on its named machine, judged by its measurement window or lab protocol.
+_Avoid_: Timeout, suite budget, enforced number
+
+**Gate Time Report**:
+The elapsed time of one verification gate compared with its approved target or recorded number, without failing that execution for time alone.
+_Avoid_: Time verdict, timeout error, benchmark
+
+**Complete Suite Run**:
+The run of every package test with fresh results before a Spec's pull request opens, carried by the repository gate after its archive commit.
+_Avoid_: Task verification, selected package run, full contract run
+
+
 **Carried Decision**:
 A recorded Setup Manifest decision that a profile change preserves because the
 selected profile accepts it and no explicit answer overrides it ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).

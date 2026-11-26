@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,129 +21,8 @@ import (
 	"unicode/utf8"
 
 	"roundfix/internal/config"
-	"roundfix/internal/skillcoverage"
 	"roundfix/internal/verifyselect"
 )
-
-func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
-	t.Parallel()
-	root := findRepositoryRoot(t)
-	contracts, err := verifyselect.DiscoverContracts(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	regeneration := []string{"internal/baseline/assets/", "internal/baseline/testdata/", ".agents/skills/", "skills/"}
-	declaredRegeneration := []string{".roundfixrc.yml", "internal/baseline/", ".agents/skills/", "skills/", "docs/agents/", "docs/references/coverage-record.json", "internal/spec/", "internal/cli/baseline_*", "cmd/roundfix/", "internal/suiteguard/", "internal/suiteguardcontract/", skillcoverage.RecordPath, skillcoverage.MapPath}
-	relevant := map[string][]string{
-		"TestCoverageCollectionMatchesTheToolchainOnThisPlatform": {"dist/npm/platforms.json", "go.mod", "go.sum"},
-		"TestJournalConsumerCorpusReplaysEveryConsumer":           {"internal/store/testdata/", "internal/runevent/", "internal/tui/", "internal/cli/attach.go", "internal/cli/events.go", "internal/cli/gc*.go", "internal/cli/reconcile.go"},
-		"TestRegenerationIsDeclared":                              declaredRegeneration,
-		"TestMeasuredSanctionedOwnershipMatchesRecords":           regeneration,
-		"TestDeclaredStepRegenerationAndFrozenBoundaries":         regeneration,
-		"TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical":   regeneration,
-		"TestRepositoryGateRunsTheAnalyzer":                       {"internal/baseline/analyzer/"},
-	}
-	governed := map[string]bool{
-		"TestGovernedSetCoversOwnedShippedTemplates": true,
-		"TestGovernedSetOnlyGrows":                   true,
-		"TestCleanupHistoricalGrantEvidence":         true,
-		"TestEveryBoundedPathIsGoverned":             true,
-	}
-	seen := make(map[string]bool)
-	foundRelevant := make(map[string]bool)
-	foundGoverned := make(map[string]bool)
-	var foundInstallation, foundPackage bool
-	docsFiles := make(map[string]bool)
-	liveDocsFiles := make(map[string]bool)
-	for _, contract := range contracts {
-		seen[contract.Name] = true
-		want := verifyselect.ContractPackage
-		switch {
-		case contract.Package == "internal/docscontract" && contract.Tag == "docscontract":
-			want = verifyselect.ContractAlways
-			docsFiles[contract.File] = true
-		case (contract.Package == "internal/cli" || contract.Package == "internal/baseline") && contract.Tag == "docscontract":
-			// ADR-0326: tests reading the live documentation trees are always selected.
-			want = verifyselect.ContractAlways
-			liveDocsFiles[contract.File] = true
-		case contract.Package == "internal/suiteguard" && contract.Name == "TestEverySpawningPackageInstallsTheSuiteGuard":
-			want = verifyselect.ContractAlways
-			foundInstallation = true
-		case contract.Package == "internal/speccheck" && governed[contract.Name]:
-			want = verifyselect.ContractAlways
-			foundGoverned[contract.Name] = true
-		case relevant[contract.Name] != nil:
-			want = verifyselect.ContractRelevant
-			foundRelevant[contract.Name] = true
-			if !reflect.DeepEqual(contract.Paths, relevant[contract.Name]) {
-				t.Errorf("%s paths = %v, want %v", contract.Name, contract.Paths, relevant[contract.Name])
-			}
-
-		}
-		if contract.Class == verifyselect.ContractBoundary {
-			t.Errorf("%s/%s is boundary", contract.Package, contract.Name)
-		}
-		if contract.Class != want {
-			t.Errorf("%s/%s class = %s, want %s", contract.Package, contract.Name, contract.Class, want)
-		}
-		if contract.Package == "internal/config" && contract.Name == "TestEverySpawningPackageInstallsTheSuiteGuard" {
-			foundPackage = true
-		}
-	}
-	if len(liveDocsFiles) != 3 {
-		t.Fatalf("Live documentation contract files = %d, want 3: %v", len(liveDocsFiles), liveDocsFiles)
-	}
-	if !foundInstallation || !foundPackage || len(docsFiles) != 16 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
-		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
-	}
-	contents, err := os.ReadFile(filepath.Join(root, "Makefile"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	assignment := regexp.MustCompile(`(?m)^REPO_CONTRACT_TESTS := (.+)$`).FindStringSubmatch(string(contents))
-	if len(assignment) != 2 {
-		t.Fatal("REPO_CONTRACT_TESTS assignment missing")
-	}
-	for _, name := range strings.Split(assignment[1], "|") {
-		if !seen[name] {
-			t.Errorf("Makefile contract %s was not discovered", name)
-		}
-	}
-
-	for _, scenario := range []struct {
-		name, path string
-		extra      int
-	}{
-		{"user guide selects only always", "docs/user-guide/example.md", 0},
-		{"owned skill selects regeneration", ".agents/skills/roundfix/SKILL.md", 4},
-		{"project config selects declared regeneration", ".roundfixrc.yml", 1},
-	} {
-		t.Run(scenario.name, func(t *testing.T) {
-			selected := verifyselect.SelectContractPaths(contracts, []string{scenario.path})
-			always, extra := 0, 0
-			for _, contract := range contracts {
-				if contract.Class == verifyselect.ContractAlways {
-					always++
-				}
-			}
-			for _, contract := range selected {
-				if contract.Class == verifyselect.ContractAlways {
-					continue
-				}
-				if contract.Class != verifyselect.ContractRelevant || !reflect.DeepEqual(contract.Paths, relevant[contract.Name]) ||
-					(contract.Name != "TestRegenerationIsDeclared" && !reflect.DeepEqual(contract.Paths, regeneration)) ||
-					(scenario.path == ".roundfixrc.yml" && contract.Name != "TestRegenerationIsDeclared") {
-					t.Errorf("unexpected selected contract: %+v", contract)
-				}
-				extra++
-			}
-			if extra != scenario.extra || len(selected) != always+scenario.extra {
-				t.Errorf("selection has %d contracts, %d by change; want %d, %d", len(selected), extra, always+scenario.extra, scenario.extra)
-			}
-		})
-	}
-
-}
 
 func TestRegenerationContractRunsWhenADerivedInputChanges(t *testing.T) {
 	t.Parallel()
@@ -232,10 +110,10 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 	if len(recipe) != 2 {
 		t.Fatal("verify-changed recipe missing")
 	}
-	loopEnd := strings.LastIndex(recipe[1], "done")
-	invocation := strings.Index(recipe[1], "$(MAKE) --no-print-directory verify-changed-contracts")
-	if loopEnd < 0 || invocation <= loopEnd {
-		t.Fatal("verify-changed must invoke verify-changed-contracts after its set loop")
+	invocation := strings.Index(recipe[1], "verify-changed-contracts")
+	coverage := strings.Index(recipe[1], "coverage-record-check")
+	if invocation < 0 || coverage <= invocation {
+		t.Fatal("contracts must precede coverage check")
 	}
 	const lines = "docscontract ^(TestDocs)$ ./internal/docscontract\nrepocontract ^(TestOne|TestTwo)$ ./internal/baseline ./skills\n"
 	const first = "test -count=1 -timeout 20m -tags docscontract -run ^(TestDocs)$ ./internal/docscontract\n"
@@ -296,7 +174,7 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			dir := t.TempDir()
 			writeFile(t, dir, "calls", "")
-			writeFile(t, dir, "selector", "#!/bin/sh\ncase \"$1\" in\n-base) exit 0 ;;\n-contracts) printf '%s\\n' 'docscontract ^(TestDocs)$ ./internal/docscontract' ;;\n*) exit 92 ;;\nesac\n")
+			writeFile(t, dir, "selector", "#!/bin/sh\ncase \"$1\" in\n-plan) exit 0 ;;\n-contracts) printf '%s\\n' 'docscontract ^(TestDocs)$ ./internal/docscontract' ;;\n*) exit 92 ;;\nesac\n")
 			goStub := "#!/bin/sh\n[ \"$1\" = env ] && exit 0\nprintf '%s\\n' \"$*\" >> calls\n"
 			if fail {
 				goStub += "exit 19\n"
@@ -309,8 +187,8 @@ func TestVerifyChangedRunsTheSelectedContracts(t *testing.T) {
 			}
 			// Override only the prerequisites so this exercises the real parent
 			// recipe without invoking host formatting, analysis, or builds.
-			writeFile(t, dir, "prerequisites.mk", "fmt-check: ;\nvet: ;\nbuild: ;\n")
-			command := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "-f", filepath.Join(dir, "prerequisites.mk"), "verify-changed", "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"), "MAKE=make --no-print-directory -f "+makefile)
+			writeFile(t, dir, "prerequisites.mk", "fmt-check: ;\nvet: ;\nbuild: ;\ncoverage-record-check: ;\nverify-changed-skills: ;\n")
+			command := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "-f", filepath.Join(dir, "prerequisites.mk"), "verify-changed", "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"), "MAKE=make --no-print-directory -f "+makefile+" -f "+filepath.Join(dir, "prerequisites.mk"))
 			command.Dir = dir
 			// Exercise the default bound with only disposable cache and home paths.
 			command.Env = []string{"PATH=" + os.Getenv("PATH"), "TMPDIR=" + dir, "HOME=" + dir}

@@ -66,6 +66,7 @@ func TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped(t *testing.T) 
 					}
 				case strings.HasPrefix(line, "test ") && strings.Contains(line, "-tags repocontract "):
 					repo++
+				case strings.Contains(line, "./cmd/gate-time report -gate before-pull-request"):
 				case line == "spec check":
 					spec++
 				default:

@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: Real-Time Budgets.
 // Invariant: each test file stays within its ceiling of short constant budgets.
 // Boundary IN: timeout calls, named fields and assignments, and same-package budget parameters.
 // Boundary OUT: production constants, dynamic durations, sleeps and excluded fixture/tool directories.
+//
+//verify:always
 package testfixture
 
 import (

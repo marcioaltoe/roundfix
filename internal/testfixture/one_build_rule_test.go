@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: One Build repository rule.
 // Invariant: tests build binaries only through the package fixture helpers.
 // Boundary IN: Go test sources and exec calls.
 // Boundary OUT: testfixture's implementation and the frozen governed exception.
+//
+//verify:always
 package testfixture
 
 import (

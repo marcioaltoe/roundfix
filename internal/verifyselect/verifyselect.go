@@ -1,4 +1,4 @@
-// Package verifyselect maps repository changes to the test sets they can affect.
+// Package verifyselect maps repository changes to the packages and contracts they can affect.
 package verifyselect
 
 import (
@@ -8,88 +8,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 )
-
-// Set is a bit set of test sets selected by a path or change list.
-type Set uint8
-
-// NoSet selects no tests.
-const NoSet Set = 0
-
-const (
-	// CoreSet selects the core tests.
-	CoreSet Set = 1 << iota
-	// BaselineSet selects the Baseline and skill tests.
-	BaselineSet
-	// BothSets selects every test set.
-	BothSets = CoreSet | BaselineSet
-)
-
-// Selection is the changed-path evidence and the test sets it selects.
-type Selection struct {
-	Paths []string
-	Sets  Set
-}
-
-// Names returns the selected set names in execution order.
-func (sets Set) Names() []string {
-	names := make([]string, 0, 2)
-	if sets&CoreSet != 0 {
-		names = append(names, "core")
-	}
-	if sets&BaselineSet != 0 {
-		names = append(names, "baseline")
-	}
-	return names
-}
-
-// ClassifyPath returns the test sets a repository-relative path can affect.
-func ClassifyPath(path string) Set {
-	path = strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
-	switch {
-	case path == "go.mod", path == "go.sum", path == "Makefile":
-		return BothSets
-	case inDirectory(path, "internal/baseline"),
-		inDirectory(path, "internal/baselineacp"),
-		inDirectory(path, "skills"),
-		inDirectory(path, ".agents/skills"),
-		strings.HasPrefix(path, "internal/cli/baseline_"):
-		return BaselineSet
-	case inDirectory(path, "cmd"), inDirectory(path, "internal"), strings.HasSuffix(path, ".go"):
-		return CoreSet
-	default:
-		return BothSets
-	}
-}
-
-// SelectPaths classifies and combines a fixture or previously listed change set.
-func SelectPaths(paths []string) Selection {
-	unique := make(map[string]struct{}, len(paths))
-	for _, path := range paths {
-		path = strings.TrimPrefix(filepath.ToSlash(filepath.Clean(path)), "./")
-		if path == "." || path == "" {
-			continue
-		}
-		unique[path] = struct{}{}
-	}
-
-	selected := Selection{Paths: make([]string, 0, len(unique))}
-	for path := range unique {
-		selected.Paths = append(selected.Paths, path)
-		selected.Sets |= ClassifyPath(path)
-	}
-	sort.Strings(selected.Paths)
-	return selected
-}
 
 // ChangedPaths lists committed changes since the merge base with baseRef,
 // staged changes, unstaged changes, and untracked files. Returned paths are
@@ -127,123 +50,7 @@ func ChangedPaths(ctx context.Context, repoRoot, baseRef string) ([]string, erro
 		}
 		paths = append(paths, splitNUL(output)...)
 	}
-	return SelectPaths(paths).Paths, nil
-}
-
-// Select lists and classifies changes. If Git cannot produce the change list,
-// the returned selection contains both sets together with the diagnostic error.
-func Select(ctx context.Context, repoRoot, baseRef string) (Selection, error) {
-	paths, err := ChangedPaths(ctx, repoRoot, baseRef)
-	if err != nil {
-		return Selection{Sets: BothSets}, err
-	}
-	selection := SelectPaths(paths)
-	if selection.Sets != BaselineSet {
-		return selection, nil
-	}
-
-	listed, root, err := listGoPackages(ctx, repoRoot)
-	if err != nil {
-		selection.Sets = BothSets
-		return selection, fmt.Errorf("select dependent test sets: %w", err)
-	}
-	importsBaseline, err := coreImportsBaseline(listed, root)
-	if err != nil {
-		selection.Sets = BothSets
-		return selection, fmt.Errorf("select dependent test sets: %w", err)
-	}
-	if importsBaseline {
-		selection.Sets |= CoreSet
-	}
-	return selection, nil
-}
-
-// Packages returns the concrete go test package arguments owned by one set.
-func Packages(ctx context.Context, repoRoot string, set Set) ([]string, error) {
-	if set != CoreSet && set != BaselineSet {
-		return nil, fmt.Errorf("list packages: set must be core or baseline")
-	}
-	repoRoot = strings.TrimSpace(repoRoot)
-	if repoRoot == "" {
-		return nil, errors.New("list packages: repository root is required")
-	}
-
-	listed, root, err := listGoPackages(ctx, repoRoot)
-	if err != nil {
-		return nil, fmt.Errorf("list packages: %w", err)
-	}
-
-	packages := make([]string, 0)
-	for _, listedPackage := range listed {
-		relative, relErr := filepath.Rel(root, listedPackage.Dir)
-		if relErr != nil {
-			return nil, fmt.Errorf("list packages: make %q relative to repository: %w", listedPackage.Dir, relErr)
-		}
-		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return nil, fmt.Errorf("list packages: package directory %q is outside repository", listedPackage.Dir)
-		}
-		packageSet := packageSetForDirectory(filepath.ToSlash(relative))
-		if packageSet != set {
-			continue
-		}
-		if relative == "." {
-			packages = append(packages, ".")
-			continue
-		}
-		packages = append(packages, "./"+filepath.ToSlash(relative))
-	}
-	sort.Strings(packages)
-	return packages, nil
-}
-
-// BaselineCLITestNames returns the tests declared in
-// internal/cli/baseline_*_test.go.
-func BaselineCLITestNames(repoRoot string) ([]string, error) {
-	pattern := filepath.Join(repoRoot, "internal", "cli", "baseline_*_test.go")
-	files, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("derive Baseline CLI tests: glob files: %w", err)
-	}
-	if len(files) == 0 {
-		return nil, fmt.Errorf("derive Baseline CLI tests: no files match %s", pattern)
-	}
-
-	names := make(map[string]struct{})
-	fileSet := token.NewFileSet()
-	for _, path := range files {
-		parsed, parseErr := parser.ParseFile(fileSet, path, nil, 0)
-		if parseErr != nil {
-			return nil, fmt.Errorf("derive Baseline CLI tests: parse %s: %w", path, parseErr)
-		}
-		for _, declaration := range parsed.Decls {
-			function, ok := declaration.(*ast.FuncDecl)
-			if !ok || function.Recv != nil || !strings.HasPrefix(function.Name.Name, "Test") {
-				continue
-			}
-			names[function.Name.Name] = struct{}{}
-		}
-	}
-
-	result := make([]string, 0, len(names))
-	for name := range names {
-		result = append(result, name)
-	}
-	sort.Strings(result)
-	return result, nil
-}
-
-// BaselineCLITestPattern returns an anchored go test -run pattern containing
-// exactly the Baseline CLI test declarations.
-func BaselineCLITestPattern(repoRoot string) (string, error) {
-	names, err := BaselineCLITestNames(repoRoot)
-	if err != nil {
-		return "", err
-	}
-	quoted := make([]string, len(names))
-	for index, name := range names {
-		quoted[index] = regexp.QuoteMeta(name)
-	}
-	return "^(" + strings.Join(quoted, "|") + ")$", nil
+	return uniquePaths(paths), nil
 }
 
 // Run executes the verify-select command and returns its process exit code.
@@ -252,8 +59,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	flags.SetOutput(stderr)
 	baseRef := flags.String("base", "main", "base ref used to select changed tests")
 	repoRoot := flags.String("repo", ".", "repository root")
-	packageSet := flags.String("packages", "", "print packages in core or baseline")
-	baselinePattern := flags.Bool("baseline-cli-pattern", false, "print the Baseline internal/cli test pattern")
+	planFlag := flags.Bool("plan", false, "print the package plan")
+	job := flags.String("job", "", "print arguments for packages, cli-1 or cli-2")
+	tag := flags.String("tag", "", "restrict contracts to docscontract or repocontract")
 	contracts := flags.Bool("contracts", false, "print relevant Repository Contract Test invocations")
 	allContracts := flags.Bool("all", false, "print every Repository Contract Test invocation (requires -contracts)")
 	if err := flags.Parse(args); err != nil {
@@ -263,18 +71,19 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "verify-select: positional arguments are not supported")
 		return 2
 	}
-	conflictingContractFlag := false
-	explicitBase := false
+	explicitBase, explicitPlan, explicitJob := false, false, false
 	flags.Visit(func(f *flag.Flag) {
-		if f.Name == "packages" || f.Name == "baseline-cli-pattern" {
-			conflictingContractFlag = true
-		}
-		if f.Name == "base" {
+		switch f.Name {
+		case "base":
 			explicitBase = true
+		case "plan":
+			explicitPlan = true
+		case "job":
+			explicitJob = true
 		}
 	})
-	if *contracts && conflictingContractFlag {
-		fmt.Fprintln(stderr, "verify-select: -contracts cannot be combined with -packages or -baseline-cli-pattern")
+	if *contracts && (explicitPlan || explicitJob) {
+		fmt.Fprintln(stderr, "verify-select: incompatible flags")
 		return 2
 	}
 	if *allContracts && !*contracts {
@@ -285,11 +94,22 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "verify-select: -all cannot be combined with -base")
 		return 2
 	}
-	if *packageSet != "" && *baselinePattern {
-		fmt.Fprintln(stderr, "verify-select: -packages and -baseline-cli-pattern are mutually exclusive")
+	if (*tag != "" && *tag != "docscontract" && *tag != "repocontract") || (*tag != "" && !*contracts) || (*allContracts && !*contracts) || (*contracts && (*planFlag || *job != "")) {
+		fmt.Fprintln(stderr, "verify-select: incompatible flags")
 		return 2
 	}
-
+	filter := func(items []ContractTest) []ContractTest {
+		if *tag == "" {
+			return items
+		}
+		var result []ContractTest
+		for _, item := range items {
+			if item.Tag == *tag {
+				result = append(result, item)
+			}
+		}
+		return result
+	}
 	if *contracts {
 		if *allContracts {
 			all, err := DiscoverContracts(*repoRoot)
@@ -297,7 +117,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "verify-select: %v\n", err)
 				return 1
 			}
-			for _, invocation := range ContractInvocations(all) {
+			for _, invocation := range ContractInvocations(filter(all)) {
 				fmt.Fprintln(stdout, invocation)
 			}
 			fmt.Fprintf(stderr, "verify-select: contracts: %d selected (every Repository Contract Test), 0 not selected\n", len(all))
@@ -311,7 +131,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			}
 			fmt.Fprintf(stderr, "verify-select: %v; selecting every contract that is not boundary\n", err)
 		}
-		for _, invocation := range ContractInvocations(selected) {
+		for _, invocation := range ContractInvocations(filter(selected)) {
 			fmt.Fprintln(stdout, invocation)
 		}
 		always := 0
@@ -343,39 +163,26 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 
-	if *baselinePattern {
-		pattern, err := BaselineCLITestPattern(*repoRoot)
-		if err != nil {
-			fmt.Fprintf(stderr, "verify-select: %v\n", err)
-			return 1
-		}
-		fmt.Fprintln(stdout, pattern)
-		return 0
+	if *job != "" && *job != "packages" && *job != "cli-1" && *job != "cli-2" {
+		fmt.Fprintln(stderr, "verify-select: unknown job")
+		return 2
 	}
-
-	if *packageSet != "" {
-		set, ok := parseSet(*packageSet)
-		if !ok {
-			fmt.Fprintf(stderr, "verify-select: unknown package set %q; want core or baseline\n", *packageSet)
-			return 2
-		}
-		packages, err := Packages(ctx, *repoRoot, set)
-		if err != nil {
-			fmt.Fprintf(stderr, "verify-select: %v\n", err)
-			return 1
-		}
-		for _, packagePath := range packages {
-			fmt.Fprintln(stdout, packagePath)
-		}
-		return 0
-	}
-
-	selection, err := Select(ctx, *repoRoot, *baseRef)
+	plan, err := Select(ctx, *repoRoot, *baseRef)
 	if err != nil {
-		fmt.Fprintf(stderr, "verify-select: %v; selecting core and baseline\n", err)
+		fmt.Fprintf(stderr, "verify-select: %v\n", err)
+		return 1
 	}
-	for _, name := range selection.Sets.Names() {
-		fmt.Fprintln(stdout, name)
+	fmt.Fprintln(stderr, "verify-select: packages: "+plan.Reason)
+	arguments := plan.Packages
+	if *job != "" {
+		arguments, err = JobArguments(*repoRoot, plan, *job)
+		if err != nil {
+			fmt.Fprintln(stderr, err)
+			return 1
+		}
+	}
+	for _, argument := range arguments {
+		fmt.Fprintln(stdout, argument)
 	}
 	return 0
 }
@@ -421,60 +228,6 @@ func listGoPackages(ctx context.Context, repoRoot string) ([]goListPackage, stri
 		return nil, "", err
 	}
 	return listed, root, nil
-}
-
-func coreImportsBaseline(packages []goListPackage, root string) (bool, error) {
-	baselinePackages := make(map[string]struct{})
-	for _, listedPackage := range packages {
-		relative, err := filepath.Rel(root, listedPackage.Dir)
-		if err != nil {
-			return false, fmt.Errorf("make %q relative to repository: %w", listedPackage.Dir, err)
-		}
-		if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return false, fmt.Errorf("package directory %q is outside repository", listedPackage.Dir)
-		}
-		if packageSetForDirectory(filepath.ToSlash(relative)) == BaselineSet {
-			baselinePackages[listedPackage.ImportPath] = struct{}{}
-		}
-	}
-
-	for _, listedPackage := range packages {
-		relative, err := filepath.Rel(root, listedPackage.Dir)
-		if err != nil {
-			return false, fmt.Errorf("make %q relative to repository: %w", listedPackage.Dir, err)
-		}
-		if packageSetForDirectory(filepath.ToSlash(relative)) != CoreSet {
-			continue
-		}
-		for _, imports := range [][]string{listedPackage.Imports, listedPackage.TestImports, listedPackage.XTestImports} {
-			for _, imported := range imports {
-				if _, ok := baselinePackages[imported]; ok {
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
-}
-
-func packageSetForDirectory(directory string) Set {
-	if inDirectory(directory, "internal/baseline") ||
-		inDirectory(directory, "internal/baselineacp") ||
-		inDirectory(directory, "skills") {
-		return BaselineSet
-	}
-	return CoreSet
-}
-
-func parseSet(name string) (Set, bool) {
-	switch strings.ToLower(strings.TrimSpace(name)) {
-	case "core":
-		return CoreSet, true
-	case "baseline":
-		return BaselineSet, true
-	default:
-		return NoSet, false
-	}
 }
 
 func splitNUL(output []byte) []string {

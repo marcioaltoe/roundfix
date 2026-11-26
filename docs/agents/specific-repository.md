@@ -37,8 +37,9 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `make verify` excludes the checks whose inputs are the repository itself —
   markdown contracts and the derived-artifact regeneration gates — so an
   ordinary commit does not re-run them. `make verify-changed`, the Verification
-  of Runs and of the QA gate, runs the Repository Contract Tests that their
-  Contract Relevance selects (ADR-0252). `make verify-docs` runs the
+  of Runs and of the QA gate, runs format, vet, build, the Repository Contract
+  Tests that their Contract Relevance selects, and the coverage record comparison
+  at a Task settlement, with no package tests (ADR-0252). `make verify-docs` runs the
   `internal/docscontract` tests, the contracts `repo-test` lists and `roundfix spec
   check`, and it **MUST** pass before any pull request opens. The Full Contract Run,
   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
@@ -85,6 +86,10 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 - Measure the `paths:` of `_authorization.md`, never guess them: run `speccheck.GovernedPath` over every file the Tasks declare in a `go test -overlay` probe that writes nothing to the repository, and record `paths: []` when none is governed.
 - The release plan the baseline requires is `roundfix release plan`, and the
   maintainer decisions it defers to live in `docs/user-guide/release-runbook.md`.
+
+## Verification gates
+
+- **mandatory**: A Task settlement runs format, vet, build, selected Repository Contract Tests and the coverage record comparison. The Complete Suite Run happens at the Delivery Queue repository gate after the archive commit, with every package tested fresh. A Run delivered outside the Delivery Queue gets the Complete Suite Run from `make verify-changed` on the branch after the archive commit.
 
 ## Anti-patterns (immediate rejection)
 

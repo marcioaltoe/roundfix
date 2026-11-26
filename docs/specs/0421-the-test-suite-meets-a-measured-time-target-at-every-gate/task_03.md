@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -127,3 +127,35 @@ This Task delivers `_techspec.md` → Build Order 3. `make verify-changed`, the 
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/sources.md`](references/sources.md), sections 3, 4.1, 4.1.1 and 5
 - ADR-0252, ADR-0253, ADR-0257, ADR-0283, ADR-0326, ADR-0342
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, agentic-cli-design, golang-cli, golang-context, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, domain-modeling, tech-writer, setup-context-driven, roundfix, evidence-gate, systematic-debugging, no-workarounds, knowledge-workspace.
+
+Implemented the package plan, CLI shards, contract moves, gate-time tool and five verification parts within this Task's declared paths. The pre-change inspection found no package plan or gate-time package and found the retired set recipes. The only pre-existing change was the Daemon's `status: in_progress` in this Task; it was preserved.
+
+Acceptance evidence:
+
+- Package selection: `PlanPackages` settles only with the matching marker and Run branch, otherwise selects the fresh Complete Suite Run for an added direct Archive Record or computes importer reach from ordinary, test and external-test imports. Unknown paths and Git discovery failures select every package; the four documentation trees select none. Release paths and skill reach have explicit cases. `ChangedPaths` and `AddedPaths` are exercised with isolated Git repositories initialized through `gittest`. `TestSurfaceTranscriptThePackagePlanAtASettlement` asserts stdout, stderr and exit together.
+- Recipes and reports: real-Makefile tests with disposable command stubs prove no package test at settlement, exactly one fresh `./...` invocation for a candidate, coverage comparison, ordered contracts and every gate's report. The five parts run selected packages, complementary CLI shards and contracts restricted by tag. Their JSON-event renderer reports failed-test output, slowest tests and the slowest binary, preserving the test exit status. Seeded recipe substitutions detect missing and duplicate CLI membership. The existing plain `test` recipe, parallel setting and timeouts are preserved.
+- Repository contracts: all required rule scans and both Baseline-record checks retain their names and assertions under always-selected docscontract files. The relevance contract pins the added live-document files. The shard contract checks counts 1, 2, 3 and 7, includes an unlisted test caught by the last shard, and rejects seeded zero and duplicate membership. The Nested Go Tool inventory no longer lists the selector test file.
+- Timing and records: the tool's in-process tests assert all five required timing transcripts, number validation, unknown-gate refusal, sample pairing by Task/attempt and exclusion of Runs predating the window. A disposable SQLite database proves the reporting connection refuses writes. No test calls GitHub or opens the real Run Database. The target-table contract and glossary checks cover the JSON, reference table and three definitions, including each final plain `_Avoid_:` list. Setup and coverage records were written only by their sanctioned commands.
+
+Focused checks (all exited 0 on their final runs):
+
+- `go test ./internal/verifyselect -run 'Test(Plan|The|AFixture|ASkill|Unknown|SelectLists|Run|Surface|ChangedPaths|Verify|EveryVerification)'` — package-plan, retained API cases, recipe reports and seeded recipe checks.
+- `go test ./internal/verifyselect -run '^TestPlanFailsSafeToEveryPackage$'` — final diagnostic normalization and fail-safe selection.
+- `go test ./internal/gatetime ./cmd/gate-time -run 'Test(Number|Validate|Report|Tests|Surface|Windows|TheRun|Settlement)'` — timing invariants, whole transcripts, read-only connection and command compilation.
+- `go test -tags docscontract ./internal/verifyselect ./internal/testfixture ./internal/cli ./internal/docscontract -run '^(TestCLIShardsCoverEveryTestExactlyOnce|TestRepositoryContractTestsDeclareTheirRelevance|TestEveryExternalTestToolGoesThroughRequireTool|TestTheExternalTestToolRuleReportsALiteralLookup|TestNoTestCreatesAHardLink|TestEveryTestInAParallelTestPackageRunsInParallel|TestEveryRealTimeBudgetIsWithinItsFileCeiling|TestRealTimeBudgetRuleRejectsSeededViolations|TestEverySignalGoesToAProvenProcess|TestNoTestWritesAnExecutableOutsideTheResidue|TestNoCodeTestStartsAGoTestOrGoVetRun|TestTheNestedGoToolRuleReportsSeededViolations|TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace|TestTheOneBuildRuleReportsSeededViolations|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink|TestTheGateTimeTargetsHoldTheApprovedTargets|TestGlossary.*)$'` — all four packages passed their selected contracts.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text` — applied one setup-record change; inspection confirmed only the two Makefile declaration digests and `roundfixVersion` changed. It reported the existing nested-carrier advisory warnings; no other artifact changed.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1` — re-recorded coverage after the final code/test edits. A read-only comparison with HEAD found exactly the eleven specified retired names removed and 37 new names added, with moved names preserved.
+- `git diff --check` and a read-only changed-path postflight — no whitespace errors; all 39 changed paths are declared by this Task.
+
+During development, one selector run overlapped the sanctioned Baseline refresh: its test assertions passed, but suiteguard rejected the concurrent setup-record mutation. The refresh and guarded checks were then run sequentially, producing the evidence above. Recipe fixtures and retired-flag expectations were corrected from their failing transcripts; no diagnostic was suppressed.
+
+Not run: the Task's declared Verification commands, `make verify`, `make verify-changed`, the complete repository suite, live GitHub window collection or the real Run Database query. Those Verification commands and Task settlement remain Daemon-owned. No commit, push, pull request, Task Graph edit or other Task-file edit was performed. Workflow changes and retirement of the existing suite-time budget remain task_04's slice.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261126T034925Z_0f411cb0c691adae`
+- Source commit: `8ca89a94e6d2e0420d617177d4fbe38fa1fa8608`
