@@ -60,7 +60,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: gocache-bound docs-test-skipped help bootstrap verify verify-changed verify-changed-contracts verify-contracts coverage-record-check verify-part gate-times verify-incremental spec-check spec-budget fmt fmt-check vet test test-race suite-budget-check baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: gocache-bound help bootstrap verify verify-changed verify-changed-contracts verify-contracts coverage-record-check verify-part gate-times verify-incremental spec-check spec-budget fmt fmt-check vet test test-race baseline-digests build install run version clean deps skills-third-party-bump skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -87,15 +87,12 @@ gocache-bound: ## Trim the Makefile's Go build cache above GOCACHE_BOUND_MB, idl
 		}; \
 	fi
 
-# CI selects test-budget here, so the suite's wall clock is a live fitness
-# function there; the local default stays the plain cached test target.
-VERIFY_TEST_TARGET ?= test
 VERIFY_BASE ?= main
 VERIFY_SELECT := $(GO) run $(RUN_FLAGS) ./cmd/verify-select
 GATE_TIME := $(GO) run $(RUN_FLAGS) ./cmd/gate-time
 GATE_START := $(shell date +%s)
 
-verify: fmt-check vet $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+verify: fmt-check vet test skills-sync-check skills-check build ## Run the required local verification gate
 
 # A Task settlement runs format, vet, build, selected contracts and coverage.
 # An archive candidate runs the Complete Suite Run; other changes run their reach.
@@ -130,7 +127,7 @@ verify-changed-contracts: gocache-bound ## Run the Repository Contract Tests sel
 	done
 
 # The Full Contract Run uses discovery rather than a list to decide the set.
-# CI runs it on every push to main and before every release (ADR-0253).
+# CI runs it once per pull request, in its two contract parts (ADR-0453).
 verify-contracts: gocache-bound ## Run the Full Contract Run of every discovered Repository Contract Test
 	@invocations="$$( $(VERIFY_SELECT) -contracts -all )" || exit $$?; \
 	printf '%s\n' "$$invocations" | while read -r tag tests packages; do \
@@ -155,7 +152,7 @@ verify-part: gocache-bound ## Run one verification part and report its job and b
 	 *) arguments=$$( $(VERIFY_SELECT) -job "$(PART)" -base "$(VERIFY_BASE)" ) || exit $$?; \
 	 if [ -n "$$arguments" ]; then $(GO) test -json -parallel $(GO_TEST_PARALLEL) $$arguments > "$$events" || status=$$?; fi;; esac; \
 	$(GATE_TIME) tests -events "$$events" -job "$(PART)" $${GITHUB_STEP_SUMMARY:+-summary "$$GITHUB_STEP_SUMMARY"} || exit $$?; \
-	if [ "$$status" -eq 0 ] && [ "$(PART)" = contracts-docs ]; then $(MAKE) --no-print-directory build coverage-record-check spec-budget spec-check || status=$$?; fi; \
+	if [ "$$status" -eq 0 ] && [ "$(PART)" = contracts-docs ]; then $(MAKE) --no-print-directory build coverage-record-check spec-check || status=$$?; fi; \
 	$(GATE_TIME) report -gate pull-request -job "$(PART)" -since $(GATE_START) || exit $$?; \
 	exit "$$status"
 
@@ -164,17 +161,11 @@ gate-times: ## Read the recorded settlement and pull request windows
 
 verify-incremental: fmt-check vet test skills-sync-check skills-check build ## Run fast local verification with reusable caches
 
-# Pull request CI already ran every internal/docscontract test in make
-# verify-changed because each of their files is //verify:always.
-VERIFY_DOCS_TEST ?= docs-test
-verify-docs: build $(VERIFY_DOCS_TEST) repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
+verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 	@$(GATE_TIME) report -gate before-pull-request -since $(GATE_START)
 
 docs-test: gocache-bound ## Run the repository-markdown contract tests
 	$(GO) test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
-
-docs-test-skipped:
-	@echo "docs-test: skipped; make verify-changed ran internal/docscontract earlier in this job"
 
 # The regeneration gates copy the whole repository, so every file under
 # internal/ is one of their inputs and any code change re-runs them. They are
@@ -214,58 +205,6 @@ GO_TEST_PARALLEL ?= 16
 
 test: gocache-bound ## Run Go tests
 	$(GO) test -parallel $(GO_TEST_PARALLEL) $(PKGS)
-
-# The full suite's wall clock on a fresh CI run, in seconds (ADR-0387). The
-# pushes to main of 2026-11-06 to 2026-11-10 passed every test in 209 s to
-# 343 s, because GitHub assigns runners of different speeds: the same tree took
-# 215 s on one and 311 s on another. 420 s is 22 % above the slowest run and
-# fails a suite that slows by about 1.95 times on the fast runner.
-# Those runs used the Linux runner the gate used until this change. The gate now
-# runs on the standard macOS runner, where the suite has not been measured. The
-# number awaits the measurement from the first push to main on that runner.
-# Change this deliberately, with a new measurement, and say why.
-SUITE_BUDGET_SECONDS ?= 420
-
-# With SUITE_BUDGET_VERDICT naming a file, test-budget writes its verdict there
-# and suite-budget-check judges it later, so a slow suite does not skip the
-# steps that follow it; without it, an overrun fails at once.
-test-budget: gocache-bound ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
-	@if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then rm -f "$(SUITE_BUDGET_VERDICT)" || exit $$?; fi; \
-	start=$$(date +%s); \
-	$(GO) test -count=1 -parallel $(GO_TEST_PARALLEL) $(PKGS) || exit $$?; \
-	elapsed=$$(( $$(date +%s) - start )); \
-	if [ "$$elapsed" -gt "$(SUITE_BUDGET_SECONDS)" ]; then \
-		verdict="suite-time budget exceeded: the suite took $${elapsed}s against a budget of $(SUITE_BUDGET_SECONDS)s"; \
-	else \
-		verdict="suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"; \
-	fi; \
-	echo "$$verdict"; \
-	if [ -n "$(SUITE_BUDGET_VERDICT)" ]; then \
-		printf '%s\n' "$$verdict" > "$(SUITE_BUDGET_VERDICT)" || exit $$?; \
-		echo "suite-time verdict recorded in $(SUITE_BUDGET_VERDICT); make suite-budget-check judges it"; \
-		exit 0; \
-	fi; \
-	case "$$verdict" in "suite-time budget exceeded:"*) \
-		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
-		exit 1;; \
-	esac
-
-suite-budget-check: ## Fail if the verdict test-budget recorded in SUITE_BUDGET_VERDICT exceeds the budget
-	@if [ -z "$(SUITE_BUDGET_VERDICT)" ] || [ ! -f "$(SUITE_BUDGET_VERDICT)" ]; then \
-		echo "suite-time budget: no verdict recorded at '$(SUITE_BUDGET_VERDICT)'; run make test-budget with SUITE_BUDGET_VERDICT set first"; \
-		exit 1; \
-	fi; \
-	verdict=$$(cat "$(SUITE_BUDGET_VERDICT)") || exit $$?; \
-	echo "$$verdict"; \
-	case "$$verdict" in \
-	"suite-time budget exceeded:"*) \
-		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
-		exit 1;; \
-	"suite-time budget: "*) ;; \
-	*) \
-		echo "suite-time budget: unreadable verdict at '$(SUITE_BUDGET_VERDICT)'"; \
-		exit 1;; \
-	esac
 
 test-race: gocache-bound ## Run Go tests with the race detector
 	$(GO) test -race -parallel $(GO_TEST_PARALLEL) $(PKGS)

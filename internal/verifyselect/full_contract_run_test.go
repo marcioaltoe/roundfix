@@ -1,17 +1,19 @@
 // Suite: Full Contract Run wiring.
-// Invariant: discovery drives ordered contract execution on main and before releases.
+// Invariant: discovery drives ordered contract execution once per pull request.
 // Boundary IN: the repository Makefile with temporary command stubs and workflow YAML.
 // Boundary OUT: real contract execution, workflow dispatch, publication, and network access.
 package verifyselect_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"roundfix/internal/verifyselect"
 	"strconv"
+	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestVerifyContractsRunsEveryContract(t *testing.T) {
@@ -69,94 +71,94 @@ func TestVerifyContractsRunsEveryContract(t *testing.T) {
 	}
 }
 
-func TestMainAndReleaseRunEveryContract(t *testing.T) {
+func TestEveryPullRequestRunsEveryContractOnce(t *testing.T) {
 	t.Parallel()
 	root := findRepositoryRoot(t)
-	type step struct {
-		Name string `yaml:"name"`
-		Run  string `yaml:"run"`
-		If   string `yaml:"if"`
+	contracts, err := verifyselect.DiscoverContracts(root)
+	if err != nil {
+		t.Fatal(err)
 	}
-	type workflow struct {
-		On struct {
-			Push struct {
-				Branches []string `yaml:"branches"`
-			} `yaml:"push"`
-		} `yaml:"on"`
-		Jobs map[string]struct {
-			Steps []step `yaml:"steps"`
-			Needs string `yaml:"needs"`
-		} `yaml:"jobs"`
+	if len(contracts) == 0 {
+		t.Fatal("no contracts discovered")
 	}
-	read := func(name string) workflow {
-		t.Helper()
-		contents, err := os.ReadFile(filepath.Join(root, ".github", "workflows", name))
+	workflow := readVerifyingWorkflow(t, filepath.Join(root, ".github/workflows/ci-verify.yml"))
+	counts := make(map[string]int)
+	for _, part := range workflow.Jobs["parts"].Strategy.Matrix.Part {
+		if !strings.HasPrefix(part, "contracts-") {
+			continue
+		}
+		tag := strings.Replace(part, "contracts-", "", 1) + "contract"
+		var selected []verifyselect.ContractTest
+		for _, c := range contracts {
+			if c.Tag == tag {
+				selected = append(selected, c)
+			}
+		}
+		dir := t.TempDir()
+		selector := "#!/bin/sh\n[ \"$*\" = '-contracts -all -tag " + tag + "' ] || exit 92\ncat '" + filepath.Join(dir, "selection") + "'\n"
+		writeFile(t, dir, "selection", strings.Join(verifyselect.ContractInvocations(selected), "\n")+"\n")
+		writeFile(t, dir, "selector", selector)
+		writeFile(t, dir, "calls", "")
+		writeFile(t, dir, "go", `#!/bin/sh
+[ "$1" = env ] && exit 0
+printf '%s\n' "$*" >> "$CALLS"
+case "$1" in test) printf '%s\n' '{"Action":"pass","Package":"fixture","Elapsed":0}';; esac
+`)
+		for _, name := range []string{"selector", "go"} {
+			if err := os.Chmod(filepath.Join(dir, name), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		makefile := filepath.Join(root, "Makefile")
+		cmd := exec.CommandContext(t.Context(), "make", "--no-print-directory", "-f", makefile, "verify-part", "PART="+part, "VERIFY_SELECT="+filepath.Join(dir, "selector"), "GO="+filepath.Join(dir, "go"), "BIN="+filepath.Join(dir, "go"), "MAKE=make --no-print-directory -f "+makefile, "GOCACHE_BOUND_MB=0")
+		cmd.Dir = dir
+		cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + dir, "TMPDIR=" + dir, "GOCACHE=" + dir, "CALLS=" + filepath.Join(dir, "calls"), "GOFLAGS=-count=1"}
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%s: %v\n%s", part, err, out)
+		}
+		calls, err := os.ReadFile(filepath.Join(dir, "calls"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		var result workflow
-		if err := yaml.Unmarshal(contents, &result); err != nil {
-			t.Fatal(err)
-		}
-		return result
-	}
-	ci := read("ci-verify.yml")
-	mainPush := false
-	for _, branch := range ci.On.Push.Branches {
-		mainPush = mainPush || branch == "main"
-	}
-	if !mainPush {
-		t.Error("CI must trigger on pushes to main")
-	}
-	docsIndex, contractIndex, contractCount := -1, -1, 0
-	for i, s := range ci.Jobs["verify"].Steps {
-		if s.Name == "Verify docs" {
-			docsIndex = i
-		}
-		if s.Run == "make verify-contracts" {
-			contractIndex = i
-			contractCount++
-			if s.Name != "Verify every contract" || s.If != "github.event_name == 'push'" {
-				t.Errorf("CI contract step must be named and restricted to push, got %+v", s)
+		for _, line := range strings.Split(string(calls), "\n") {
+			fields := strings.Fields(line)
+			if len(fields) == 0 || fields[0] != "test" {
+				continue
+			}
+			runTag, pattern := "", ".*"
+			for i, arg := range fields {
+				if i+1 < len(fields) {
+					switch arg {
+					case "-tags":
+						runTag = fields[i+1]
+					case "-run":
+						pattern = fields[i+1]
+					}
+				}
+			}
+			if runTag == "" {
+				continue
+			}
+			match, err := regexp.Compile(pattern)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, c := range contracts {
+				if c.Tag == runTag && match.MatchString(c.Name) {
+					for _, arg := range fields {
+						if arg == "./"+c.Package || arg == "./..." {
+							counts[c.Tag+"/"+c.Package+"/"+c.Name]++
+						}
+					}
+				}
 			}
 		}
 	}
-	if contractCount != 1 || docsIndex < 0 || contractIndex != docsIndex+1 {
-		t.Errorf("CI contract steps = %d, indexes docs=%d contracts=%d; want one directly after docs", contractCount, docsIndex, contractIndex)
-	}
-	for jobName, job := range ci.Jobs {
-		for _, s := range job.Steps {
-			if s.Run == "make verify-contracts" && s.If != "github.event_name == 'push'" {
-				t.Errorf("job %s has a contract step that is not restricted to push: %+v", jobName, s)
-			}
+	for _, c := range contracts {
+		key := fmt.Sprintf("%s/%s/%s", c.Tag, c.Package, c.Name)
+		if counts[key] != 1 {
+			t.Errorf("%s runs %d times, want once", key, counts[key])
 		}
-	}
-	release := read("release.yml")
-	gateIndex := -1
-	contractIndex, contractCount = -1, 0
-	for i, s := range release.Jobs["verify"].Steps {
-		if s.Run == "make verify" {
-			gateIndex = i
-		}
-		if s.Run == "make verify-contracts" {
-			contractIndex = i
-			contractCount++
-			if s.Name != "Verify every contract" || s.If != "" {
-				t.Errorf("release contract step must be named and unconditional, got %+v", s)
-			}
-		}
-	}
-	if contractCount != 1 || gateIndex < 0 || contractIndex != gateIndex+1 {
-		t.Errorf("release verification contract steps = %d, indexes gate=%d contracts=%d; want one directly after gate", contractCount, gateIndex, contractIndex)
-	}
-	if release.Jobs["release"].Needs != "verify" {
-		t.Error("release must need verify")
-	}
-	preflight := false
-	for _, s := range release.Jobs["release"].Steps {
-		preflight = preflight || s.Name == "Publication preflight"
-	}
-	if !preflight {
-		t.Error("release must hold Publication preflight")
 	}
 }

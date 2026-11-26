@@ -588,7 +588,7 @@
       "sources": [
         "docs/user-guide/release-runbook.md"
       ],
-      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+      "review": "2026-11-26 — Spec 0421 task_04: the runbook now states that the release runs no test and proves its Release Provenance, with the steps before the merge and the tag; the release reference names neither the workflow's steps nor their order, so it needs no text change. 2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
     },
     {
       "id": "command reopen",
@@ -1326,7 +1326,7 @@
       "sources": [
         "docs/user-guide/release-runbook.md"
       ],
-      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+      "review": "2026-11-26 — Spec 0421 task_04: the runbook now states that the release runs no test and proves its Release Provenance, with the steps before the merge and the tag; the release reference names neither the workflow's steps nor their order, so it needs no text change. 2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
     },
     {
       "id": "guide docs/user-guide/run-database-lifecycle.md",

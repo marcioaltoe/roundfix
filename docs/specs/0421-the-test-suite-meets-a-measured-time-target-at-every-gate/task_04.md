@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -98,3 +98,25 @@ This Task delivers `_techspec.md` → Build Order 4. The verification workflow r
 - `_authorization.md` → The release; What the grant covers; Sanctioned regeneration; Limits
 - [`references/sources.md`](references/sources.md), sections 4.2, 6 and 9
 - ADR-0452, ADR-0387, ADR-0253, ADR-0252, ADR-0259, ADR-0257, ADR-0182, ADR-0311, ADR-0326
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, domain-modeling, tech-writer
+
+This session continued the working tree an earlier Agent Session left when it ended on a provider error. It kept that session's changes, removed a duplicated scenario switch from the provenance test, and completed the remaining work.
+
+- **CI only for a pull request, five parts (req. 1).** `.github/workflows/ci-verify.yml` has one trigger, `pull_request` into main (opened, reopened, synchronize). The matrix job `parts` runs `packages`, `cli-1`, `cli-2`, `contracts-repo` and `contracts-docs` with `fail-fast: false` on `macos-26`, each with `GOFLAGS=-count=1`, the GOCACHE alignment, the base merge and `make verify-part PART=<part>`. That target writes the `gate-time tests` per-test times to the job summary and the Gate Time Report. The gathering job `verify` / `Verification gate` runs on `macos-26`, needs `parts`, runs with `if: ${{ always() }}` and fails unless `needs.parts.result` is `success`. The 60-minute timeout, name, permissions and concurrency stay. `contracts-docs` no longer calls `spec-budget` after discovery, because `TestCheckCorpusBudget` is itself a `docscontract` contract that discovery already ran, and a second call would run it twice.
+- **Release provenance (req. 2, 3).** The release job `verify` runs on `ubuntu-latest` with `contents/checks/pull-requests: read` and a full-history checkout. Its one step, `Release provenance`, uses `gh api` and the workflow token, and prints the API Contract 10 line on success or `::error::provenance: <reason>` with exit 1. The Go setup, `make verify`, `make verify-contracts` and the override comment are gone, and the job `release` is byte-identical. The harness gained `jobStep(job, name)`. `TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge` has the 8 required subtests and 13 adversarial ones, such as an older success with a newer failure, a foreign app, a different tree and malformed pages.
+- **Budget and switch removed (req. 4).** `SUITE_BUDGET_SECONDS`, `test-budget`, `suite-budget-check`, `VERIFY_TEST_TARGET`, `docs-test-skipped` and `VERIFY_DOCS_TEST` are gone from the `Makefile`, and its comments are rewritten. `suite_budget_test.go` is deleted. `baseline update` changed only the two `declarationDigest` values of `Makefile` in `docs/agents/setup-context.json`; `roundfixVersion` stayed `0.153.3`.
+- **Tests (req. 5).** The three runner tests are rewritten. `TestContinuousIntegrationRunsOnlyForAPullRequest` is added; it also asserts that no retired budget token and no `-timeout` other than `20m` is in the workflows or the `Makefile`. The other three tests are renamed as required.
+- **ADR-0453 (req. 6, 7).** ADR-0453 is accepted with `knowledge: false` and carries the supersession sentence, the interval limits, the targets file, each gate's content, the pull-request-only CI, the release proof, the merge risk and the later Gate Time Rule. ADR-0387 is deleted. ADR-0452, 0253, 0252, 0259, 0257 and 0182 each carry `ADR-0453` in `amended_by` and one dated notice of 2026-11-26. In ADR-0259, `ADR-0387` and its notice are replaced.
+- **Contract (req. 8).** `internal/docscontract/time_rules_retirement_decision_record_test.go` has its 4 subtests, and the `docsFiles` pin goes from 17 to 18.
+- **Glossary, guide, runbook (req. 9–11).** **Gate Time Rule**, **Measured Dossier** and **Release Provenance** are added, **Full Contract Run** is revised, and all seven terms link ADR-0453. `TestGlossaryPhrasesAreDefinedTerms` refused "GitHub Actions" inside the Release Provenance definition, so that definition says "latest Verification gate check passed". `specific-repository.md` carries the contracts rule pointing to ADR-0453 and a new section, "Continuous integration and gate time". The runbook's rehearsal and "Cutting a release" steps state the provenance proof, updating the branch before the merge, `make gate-times`, the manual dispatch before the tag, and the next patch version after a refusal. "The workflow re-runs the full gate" is gone.
+- **Records (req. 12, 13).** The dated `2026-11-26 — Spec 0421 task_04` sentence is prepended to both runbook entries (count 2). `-record-skill-coverage` changed only the runbook's fingerprint. `-update-coverage-record` removed exactly the 5 names and added the 6.
+
+Focused checks run: `go test -count=1 ./internal/verifyselect` passed; `go test -count=1 -timeout 20m -tags "docscontract repocontract" ./internal/verifyselect` passed; `go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract` passed, including `TestTheTimeRulesRetirementDecisionRecord` and its 4 subtests; `make verify-docs` exited 0 with a gate time of 87s; release, asset, head-check and classifier tests in `internal/cli`, `internal/delivery` and `internal/releaseplan` passed; `go vet` and `gofmt -l` were clean.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261126T034925Z_0f411cb0c691adae`
+- Source commit: `32f9632e516f49f31cf8f0342834d12a5382c081`

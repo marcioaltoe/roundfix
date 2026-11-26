@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: [ADR-0453]
 knowledge: false
 created_at: 2026-10-07T00:00:00Z
 updated_at: 2026-10-07T00:00:00Z
@@ -44,6 +45,8 @@ publication. Published practice does the same: CircleCI's test impact
 analysis runs all tests on the default branch and only impacted tests on
 feature branches, and the usual safety net under affected-test selection is a
 full run on every push to the default branch.
+
+**Amended by [ADR-0453](0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md) (2026-11-26).** The run on every push to main and the release verification clause are withdrawn. Every pull request runs the Full Contract Run once in its two contract parts. The release runs no test and first proves its Release Provenance.
 
 **Exclusions are named.** In its selective mode the selector's summary line
 keeps its counts and adds the name and package of each `relevant` contract it

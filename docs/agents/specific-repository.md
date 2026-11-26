@@ -43,7 +43,7 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/docscontract` tests, the contracts `repo-test` lists and `roundfix spec
   check`, and it **MUST** pass before any pull request opens. The Full Contract Run,
   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
-  Relevance, and CI runs it on every push to main and before every release (ADR-0253).
+  Relevance, and CI runs it once in the two contract parts of every pull request ([ADR-0453](../adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
   The selective gate and CI run on macOS; failures only Linux or Windows
   produces are a known limit because those platforms are only compiled (ADR-0252). Nothing under `docs/history/` is ever validated as live work.
 - A test in a code package that reads this repository's `docs/history`, `docs/adr`, `docs/specs`, `docs/user-guide` or `.agents/skills` lives in a `docscontract` file declared `//verify:always`, so a documentation edit never invalidates the package's cached test result (ADR-0326).
@@ -90,6 +90,14 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
 ## Verification gates
 
 - **mandatory**: A Task settlement runs format, vet, build, selected Repository Contract Tests and the coverage record comparison. The Complete Suite Run happens at the Delivery Queue repository gate after the archive commit, with every package tested fresh. A Run delivered outside the Delivery Queue gets the Complete Suite Run from `make verify-changed` on the branch after the archive commit.
+
+## Continuous integration and gate time
+
+- **mandatory**: Continuous integration runs only for a pull request into main, with five parallel parts on `macos-26`: selected package tests, two CLI shards and the Full Contract Run in two contract parts. Every contract runs once, and the gathering `Verification gate` passes only when every part succeeds. Nothing verifies a push to main after merge. A release runs no test and first proves its Release Provenance ([ADR-0453](../adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
+
+- **mandatory**: The Gate Time Rule's numbers live in `docs/references/gate-time-targets.json`. A single run never fails for its time. Before each release read the windows with `make gate-times`; a gate over its number holds the release until its time returns or the maintainer decides on a Measured Dossier.
+
+- **mandatory**: A number rises, or the shape of verification changes, only by the maintainer's decision on a Measured Dossier, requested as a Rule Challenge of the Gate Time Rule only in the Idea or PRD of a large new feature's Spec. A longer timeout or another kind of runner changes the shape. A number may fall on a new measurement without a decision. A change of machine, such as a runner image or mini, measures the same suite again and goes to the maintainer; it is not a relaxation. The dossier names the feature, the gate's time before and after on the named machine, what was already cut, merged or moved to a less frequent gate, and the measured new number. Never request it during a Run, in a corrective Spec or on the day of an overrun; without it the work must fit.
 
 ## Anti-patterns (immediate rejection)
 

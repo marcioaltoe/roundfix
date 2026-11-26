@@ -90,7 +90,7 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 	if len(liveDocsFiles) != 4 {
 		t.Fatalf("Live documentation contract files = %d, want 4: %v", len(liveDocsFiles), liveDocsFiles)
 	}
-	if !foundInstallation || !foundPackage || len(docsFiles) != 17 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
+	if !foundInstallation || !foundPackage || len(docsFiles) != 18 || len(foundRelevant) != len(relevant) || len(foundGoverned) != len(governed) {
 		t.Fatalf("missing declarations: installation=%t package=%t docs files=%d relevant=%v governed=%v", foundInstallation, foundPackage, len(docsFiles), foundRelevant, foundGoverned)
 	}
 	contents, err := os.ReadFile(filepath.Join(root, "Makefile"))

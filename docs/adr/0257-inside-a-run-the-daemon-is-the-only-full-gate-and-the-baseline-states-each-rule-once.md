@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: [ADR-0453]
 knowledge: true
 created_at: 2026-10-08T00:00:00Z
 updated_at: 2026-10-08T00:00:00Z
@@ -40,6 +41,8 @@ mode fails on gap findings.
 Request and the Daemon runs at settlement. The catalog stops proposing an
 `rtk`-prefixed command, because `rtk` is a local output filter, not part of any
 repository's gate.
+
+**Amended by [ADR-0453](0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md) (2026-11-26).** In this repository a Task settlement runs format, vet, build, selected Repository Contract Tests and the coverage record comparison, with no package tests. The Complete Suite Run happens once per Spec at the repository gate after archive. Continuous integration runs only for a pull request and nothing on a push to main.
 
 **The runtime decisions stay, and the guide says who decides.** Retiring
 `runtime.backend` and `runtime.design` would make every adopter answer or drop

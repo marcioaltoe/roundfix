@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: [ADR-0453]
 knowledge: true
 created_at: 2026-09-30T00:00:00Z
 updated_at: 2026-10-27T15:00:00Z
@@ -53,6 +54,8 @@ Each settlement costs one more run of that command, measured at 206 to 223
 seconds on this repository, and `verification.repository_at_settlement: false`
 turns that one check off. The two in-process checks have no switch: they cost
 under a second and the gate refuses the same facts.
+
+**Amended by [ADR-0453](0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md) (2026-11-26).** In this repository a settlement now costs format, vet, build, selected Repository Contract Tests and the coverage record comparison, with no package tests; the Complete Suite Run happens once per Spec after archive. Its Gate Time Targets are median 120 seconds and p95 240 seconds in the field, with lab targets of 45 seconds or 150 seconds when regeneration contracts are selected. These are targets, not new measurements.
 
 Settlement Checks see one Task's tree. Two Tasks of one Wave can each pass and
 still integrate into a red tree, which the next settlement or the gate finds.

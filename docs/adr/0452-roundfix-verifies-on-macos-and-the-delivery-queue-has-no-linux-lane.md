@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended_by: [ADR-0453]
 knowledge: true
 created_at: 2026-11-24T23:35:15Z
 updated_at: 2026-11-24T23:35:15Z
@@ -26,6 +27,8 @@ The keys `delivery.linux_lane` and `delivery.linux_lane_image` are deprecated an
 A stored `linux-lane-container:` blocker keeps its environment Park Class and directs the operator to `roundfix deliver retry <slug>` because the lane was retired. A stored `gate-failed: Linux Lane change failure:` blocker remains a finding with the normal gate-failed action. The retry counts against the item retry limit. Status prints a stored `linux-lane-skipped:` warning unchanged; no new code reads, writes or removes that segment. Low-disk warning updates preserve the other segments and place the low-disk segment last. Existing lane logs are neither read nor deleted.
 
 The CI Verification gate runs its existing steps on `macos-26`. Release verification and the Full Contract Run execute in a `macos-26` job with read-only contents permission, full-history checkout and no persisted credentials; the unchanged publication job needs that job to succeed. The verification job uses the existing Go setup and the existing Verify gate and Verify every contract steps for both tag pushes and manual dispatches. The publication job retains its runner, permissions, environment and step order, including checkout, Go and Node setup, runtime guard, tag validation, preflight, cross-compilation, package comparison, publication and GitHub Release. Tag validation therefore follows verification. The test compile contract runs `go vet -tags "repocontract docscontract" ./...` for Linux and Windows without executing tests on either platform, and detects a Linux-only test compile error. The selective gate and continuous integration run on macOS; failures only Linux or Windows produce remain a known limit. The suite-time budget stays 420 seconds until the suite is measured on the macOS runner.
+
+**Amended by [ADR-0453](0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md) (2026-11-26).** The grouping in one verification job, the runner-type restriction, the 420-second budget and the sentences on the release verification job are withdrawn. CI runs only for a pull request, in five macOS parts gathered by the required check; the release runs no test and proves its Release Provenance on ubuntu-latest. Every other decision remains in force.
 
 A test that needs an External Test Tool skips naming it when absent. A tool outside the Base Test Tools is resolved through `testfixture.RequireTool`; the rule in `internal/testfixture` refuses other ways.
 
