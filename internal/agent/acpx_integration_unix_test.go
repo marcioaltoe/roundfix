@@ -203,19 +203,7 @@ func sinkContainsPayload(sink *captureSink, needle string) bool {
 
 func buildRealACPXEchoAgent(t *testing.T, dir string) string {
 	t.Helper()
-	source := filepath.Join(dir, "echo-agent.go")
-	binary := filepath.Join(dir, "echo-agent")
-	if err := os.WriteFile(source, []byte(realACPXEchoAgentSource), 0o644); err != nil {
-		t.Fatalf("write echo agent source: %v", err)
-	}
-	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "build", "-o", binary, source)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build echo agent: %v\n%s", err, string(output))
-	}
-	return binary
+	return testfixture.FixtureBinary(t, "echo-agent", realACPXEchoAgentSource)
 }
 
 func waitForLogLine(t *testing.T, path string, needle string) {

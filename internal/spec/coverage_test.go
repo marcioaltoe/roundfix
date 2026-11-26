@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"unicode"
 	"unicode/utf8"
@@ -48,10 +49,14 @@ type coverageComparison struct {
 	Additions   []string
 }
 
+var sharedCoverageRecord = sync.OnceValues(func() (CoverageRecord, error) {
+	return collectCoverageRecord(filepath.Join("..", ".."))
+})
+
 func TestCoverageEquivalence(t *testing.T) {
 	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join("..", ".."))
-	actual, err := collectCoverageRecord(repoRoot)
+	actual, err := sharedCoverageRecord()
 	if err != nil {
 		t.Fatalf("collect coverage record: %v", err)
 	}
@@ -659,7 +664,7 @@ func TestCoverageRecordCountsNoPackageUnderDocs(t *testing.T) {
 			t.Errorf("documentation package counted: %s", packagePath)
 		}
 	}
-	actual, err := collectCoverageRecord(filepath.Join("..", ".."))
+	actual, err := sharedCoverageRecord()
 	if err != nil {
 		t.Fatal(err)
 	}

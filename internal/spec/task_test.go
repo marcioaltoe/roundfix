@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -442,27 +441,6 @@ func derivedQAReportFixture(verdict string, extraFrontmatter ...string) string {
 		frontmatter = strings.Join(extraFrontmatter, "\n") + "\n"
 	}
 	return "---\nverdict: " + verdict + "\n" + frontmatter + "---\n"
-}
-
-func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {
-	t.Parallel()
-	_, testFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller could not locate the repository")
-	}
-	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
-
-	// internal/speccheck imports internal/spec, so run the checker-side
-	// integration test in a subprocess instead of introducing an import cycle.
-	command := exec.Command(
-		"go", "test", "-count=1", "./internal/speccheck",
-		"-run", "^TestDerivedQAVerificationIsAcceptedByTaskStageChecker$",
-	)
-	command.Dir = repoRoot
-	output, err := command.CombinedOutput()
-	if err != nil {
-		t.Fatalf("derived QA Verification checker contract: %v\n%s", err, output)
-	}
 }
 
 func TestReloadTaskDerivesOnlyQAVerification(t *testing.T) {

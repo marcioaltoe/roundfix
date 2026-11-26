@@ -729,6 +729,59 @@ func newAssetsSyncTarget(t *testing.T) (string, string) {
 	return repository, filepath.Join(repository, "internal", "baseline", "assets")
 }
 
+// The snapshot contains only bytes and modes, so no caller can mutate another
+// test's prepared repository. The temporary repositories are gone before use.
+var preparedAssetsSync = struct {
+	once    sync.Once
+	entries []assetsSyncTemplateEntry
+	err     error
+}{}
+
+func newPreparedAssetsSync(t *testing.T) (string, string, string) {
+	t.Helper()
+	preparedAssetsSync.once.Do(func() {
+		repository, root := newAssetsSyncTarget(t)
+		source, _ := newAssetsSyncSource(t, root)
+		if _, err := syncAssets(t.Context(), AssetsSyncRequest{SourceDir: source}, assetsSyncDependencies{repository: repository, assetRoot: root}); err != nil {
+			preparedAssetsSync.err = err
+			return
+		}
+		preparedAssetsSync.entries, preparedAssetsSync.err = readAssetsSyncTemplate(repository)
+	})
+	if preparedAssetsSync.err != nil {
+		t.Fatal(preparedAssetsSync.err)
+	}
+	repository := t.TempDir()
+	writeAssetsSyncTemplate(t, preparedAssetsSync.entries, repository)
+	root := filepath.Join(repository, "internal", "baseline", "assets")
+	source, _ := newAssetsSyncSource(t, root)
+	return repository, root, source
+}
+
+func TestAPreparedAssetSyncMatchesAFreshSync(t *testing.T) {
+	t.Parallel()
+	_, prepared, _ := newPreparedAssetsSync(t)
+	repository, fresh := newAssetsSyncTarget(t)
+	source, _ := newAssetsSyncSource(t, fresh)
+	if _, err := syncAssets(t.Context(), AssetsSyncRequest{SourceDir: source}, assetsSyncDependencies{repository: repository, assetRoot: fresh}); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(captureAssetsSyncTree(t, prepared), captureAssetsSyncTree(t, fresh)) {
+		t.Fatal("prepared asset tree differs from fresh sync")
+	}
+	preparedEntries, err := readAssetsSyncTemplate(prepared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	freshEntries, err := readAssetsSyncTemplate(fresh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(preparedEntries, freshEntries) {
+		t.Fatal("prepared tree bytes or modes differ from fresh sync")
+	}
+}
+
 func newAssetsSyncSource(t *testing.T, assetRoot string) (string, string) {
 	t.Helper()
 	_, revision := assetsSyncTemplateRoot(t)

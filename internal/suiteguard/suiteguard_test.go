@@ -35,6 +35,9 @@ func TestMain(m *testing.M) {
 	if root == "" {
 		root = filepath.Join("..", "..")
 	}
+	if os.Getenv(fixtureModeEnv) == "residue" {
+		os.Exit(suiteguard.Main(m, root, 0))
+	}
 	os.Exit(suiteguard.Main(m, root))
 }
 
@@ -169,7 +172,7 @@ func TestGuardFixture(t *testing.T) {
 			}
 		} else {
 			// Retain the writer until the guard runs. EOF at process exit cannot
-			// rescue a missing guard: its ten-second scan happens before that exit.
+			// rescue a missing guard: the residue scan happens before that exit.
 			residueFixtureWriter = writer
 		}
 	case "mark":

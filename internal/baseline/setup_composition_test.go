@@ -168,12 +168,8 @@ func TestComponentsThatDisagreeOnASkillAreAConflict(t *testing.T) {
 
 func TestAnAssetSyncRewritesTheComposedSetupWithItsComponents(t *testing.T) {
 	t.Parallel()
-	repository, root := newAssetsSyncTarget(t)
-	source, _ := newAssetsSyncSource(t, root)
+	repository, root, source := newPreparedAssetsSync(t)
 	dependencies := assetsSyncDependencies{repository: repository, assetRoot: root}
-	if _, err := syncAssets(t.Context(), AssetsSyncRequest{SourceDir: source}, dependencies); err != nil {
-		t.Fatal(err)
-	}
 	before := captureAssetsSyncTree(t, root)
 	var goSetup assetsSyncSnapshot
 	readAssetsSyncJSON(t, filepath.Join(root, "setups", "go.json"), &goSetup)
@@ -241,12 +237,8 @@ func TestAnAssetSyncRewritesTheComposedSetupWithItsComponents(t *testing.T) {
 
 func TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup(t *testing.T) {
 	t.Parallel()
-	repository, root := newAssetsSyncTarget(t)
-	source, _ := newAssetsSyncSource(t, root)
+	repository, root, source := newPreparedAssetsSync(t)
 	dependencies := assetsSyncDependencies{repository: repository, assetRoot: root}
-	if _, err := syncAssets(t.Context(), AssetsSyncRequest{SourceDir: source}, dependencies); err != nil {
-		t.Fatal(err)
-	}
 	before := captureAssetsSyncTree(t, root)
 	payload, err := syncAssets(t.Context(), AssetsSyncRequest{SourceDir: source}, dependencies)
 	if err != nil || !payload.OK || len(payload.Findings) != 0 {

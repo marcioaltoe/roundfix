@@ -67,12 +67,23 @@ func (errs residueReadErrors) Unwrap() []error {
 	return causes
 }
 
-func checkHelperResidue(mark string, output io.Writer) bool {
-	return checkHelperResidueWithScan(mark, output, helperResidue)
+func checkHelperResidueWithScan(mark string, output io.Writer, scan func(string, int) ([]residueProcess, error)) bool {
+	return checkHelperResidueWithGrace(mark, output, scan, helperResidueGrace)
 }
 
-func checkHelperResidueWithScan(mark string, output io.Writer, scan func(string, int) ([]residueProcess, error)) bool {
-	deadline := time.Now().Add(helperResidueGrace)
+func checkHelperResidueWithGrace(mark string, output io.Writer, scan func(string, int) ([]residueProcess, error), grace time.Duration) bool {
+	deadline := time.Now().Add(grace)
+	return checkHelperResidueWithWait(mark, output, scan, func() bool {
+		if time.Until(deadline) <= 0 {
+			return false
+		}
+		time.Sleep(min(50*time.Millisecond, time.Until(deadline)))
+		return true
+	})
+}
+
+// wait allows another scan while the cleanup grace remains.
+func checkHelperResidueWithWait(mark string, output io.Writer, scan func(string, int) ([]residueProcess, error), wait func() bool) bool {
 	for {
 		processes, err := scan(mark, os.Getpid())
 		if err != nil {
@@ -84,8 +95,7 @@ func checkHelperResidueWithScan(mark string, output io.Writer, scan func(string,
 			// Argument memory can change before the process table records exit.
 			// Retry unreadable processes inside the same grace while retaining
 			// readable residue, then report each skip without signalling it.
-			if time.Until(deadline) > 0 {
-				time.Sleep(min(50*time.Millisecond, time.Until(deadline)))
+			if wait() {
 				continue
 			}
 			sort.Slice(unreadable, func(i, j int) bool { return unreadable[i].PID < unreadable[j].PID })
@@ -96,8 +106,7 @@ func checkHelperResidueWithScan(mark string, output io.Writer, scan func(string,
 		if len(processes) == 0 {
 			return false
 		}
-		if time.Until(deadline) > 0 {
-			time.Sleep(min(50*time.Millisecond, time.Until(deadline)))
+		if wait() {
 			continue
 		}
 		sort.Slice(processes, func(i, j int) bool { return processes[i].PID < processes[j].PID })

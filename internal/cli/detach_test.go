@@ -31,6 +31,7 @@ const (
 	detachTestPIDPathEnv               = "ROUNDFIX_DETACH_TEST_PID_PATH"
 	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
 	detachTestRunCreationDelayEnv      = "ROUNDFIX_DETACH_TEST_RUN_CREATION_DELAY"
+	detachTestRunCreationReleaseEnv    = "ROUNDFIX_DETACH_TEST_RUN_CREATION_RELEASE"
 )
 
 func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
@@ -110,7 +111,13 @@ func runDetachTestChild(mode string) int {
 				return exitRunFailed
 			}
 		}
-		time.Sleep(delay)
+		if release := os.Getenv(detachTestRunCreationReleaseEnv); release != "" {
+			if code := waitForDetachTestPath(release); code != exitOK {
+				return code
+			}
+		} else {
+			time.Sleep(delay)
+		}
 		consoleLog := filepath.Join(filepath.Dir(os.Getenv(detachConsoleTempEnv)), detachTestRunID, "console.log")
 		if _, err := fmt.Fprintf(handshake, "%s\t%s\n", detachTestRunID, consoleLog); err != nil {
 			return exitRunFailed
@@ -188,6 +195,14 @@ func waitForDetachTestSentinel() int {
 	sentinelPath := strings.TrimSpace(os.Getenv(detachTestSentinelPathEnv))
 	if sentinelPath == "" {
 		fmt.Fprintln(os.Stderr, "detached test child sentinel path is empty")
+		return exitRunFailed
+	}
+	return waitForDetachTestPath(sentinelPath)
+}
+
+func waitForDetachTestPath(sentinelPath string) int {
+	ownerPID, err := strconv.Atoi(os.Getenv(detachTestOwnerPIDEnv))
+	if err != nil || ownerPID <= 0 {
 		return exitRunFailed
 	}
 	ticker := time.NewTicker(10 * time.Millisecond)

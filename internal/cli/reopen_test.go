@@ -24,17 +24,7 @@ import (
 // Boundary OUT: Daemon execution and publication, which reopen must never start.
 func TestReopenThroughTheBuiltBinary(t *testing.T) {
 	t.Parallel()
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatalf("resolve project root: %v", err)
-	}
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = projectRoot
-	build.Env = isolatedGitEnvForTest()
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build roundfix CLI: %v\n%s", err, output)
-	}
+	binary := testfixture.ProductBinary(t)
 
 	run := func(t *testing.T, binary string, homeDir string, repoDir string) (string, string, int) {
 		t.Helper()

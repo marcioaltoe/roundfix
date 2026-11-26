@@ -89,26 +89,6 @@ func (helper) TestMethod(t *check.T) {}
 	t.Logf("all release platforms collected without foreign execution on %s", runtime.GOOS)
 }
 
-func TestCoverageCollectionMatchesTheToolchainOnThisPlatform(t *testing.T) {
-	t.Parallel()
-	root := filepath.Join("..", "..")
-	actual, err := collectCoverageRecordFor(root, []string{runtime.GOOS})
-	if err != nil {
-		t.Fatal(err)
-	}
-	toolchain, err := collectToolchainCoverage(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The unchanged toolchain parser describes this host's one platform.
-	toolchain.Platforms = []string{runtime.GOOS}
-	comparison := compareCoverageRecords(toolchain, actual)
-	for _, difference := range append(comparison.Regressions, comparison.Additions...) {
-		t.Error(difference)
-	}
-	t.Logf("static collection and go test -list compared on %s", runtime.GOOS)
-}
-
 func TestCompareCoverageRecordsReportsAPlatformRegression(t *testing.T) {
 	t.Parallel()
 	platforms := []string{"darwin", "linux", "windows"}

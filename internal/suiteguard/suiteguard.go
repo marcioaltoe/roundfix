@@ -40,9 +40,14 @@ func DeclareSanctionedRegeneration(command string) {
 
 // Main fingerprints repoRoot, runs the package's tests, fingerprints again,
 // and fails the package naming every path the tests created, modified, or
-// removed. Install it from the package's TestMain.
-func Main(m *testing.M, repoRoot string) int {
-	return run(m.Run, repoRoot, os.Stderr)
+// removed. Install it from the package's TestMain. An optional residue grace
+// overrides the production allowance for a fixture that controls helper exit.
+func Main(m *testing.M, repoRoot string, residueGrace ...time.Duration) int {
+	grace := helperResidueGrace
+	if len(residueGrace) > 0 {
+		grace = residueGrace[0]
+	}
+	return run(m.Run, repoRoot, os.Stderr, grace)
 }
 
 type fileState struct {
@@ -50,7 +55,7 @@ type fileState struct {
 	digest string
 }
 
-func run(runTests func() int, repoRoot string, output io.Writer) int {
+func run(runTests func() int, repoRoot string, output io.Writer, grace time.Duration) int {
 	root, err := filepath.Abs(repoRoot)
 	if err != nil {
 		fmt.Fprintf(output, "suiteguard: resolve repository root: %v\n", err)
@@ -70,7 +75,7 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 		fmt.Fprintf(output, "suiteguard: helper residue check unavailable: %v\n", markErr)
 	}
 	testCode := runTests()
-	if markErr == nil && checkHelperResidue(mark, output) {
+	if markErr == nil && checkHelperResidueWithGrace(mark, output, helperResidue, grace) {
 		testCode = 1
 	}
 

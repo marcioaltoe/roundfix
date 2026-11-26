@@ -19,6 +19,7 @@ import (
 )
 
 var guardedSpawningPackages = []string{
+	"internal/testfixture",
 	"internal/agent",
 	"internal/authorization",
 	"internal/baseline",

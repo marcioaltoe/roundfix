@@ -128,6 +128,11 @@ func (h *releaseWorkflowHarness) packument(t *testing.T, coordinate, body string
 
 func (h *releaseWorkflowHarness) step(t *testing.T, name string) (string, int) {
 	t.Helper()
+	return h.jobStep(t, "release", name)
+}
+
+func (h *releaseWorkflowHarness) jobStep(t *testing.T, job, name string) (string, int) {
+	t.Helper()
 	contents, err := os.ReadFile(filepath.Join(findRepositoryRoot(t), ".github/workflows/release.yml"))
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +148,7 @@ func (h *releaseWorkflowHarness) step(t *testing.T, name string) (string, int) {
 	if err := yaml.Unmarshal(contents, &workflow); err != nil {
 		t.Fatal(err)
 	}
-	for _, step := range workflow.Jobs["release"].Steps {
+	for _, step := range workflow.Jobs[job].Steps {
 		if step.Name == name {
 			return h.script(t, step.Run)
 		}

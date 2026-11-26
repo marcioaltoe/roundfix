@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "allowancePercent": 25,
+  "rule": null,
+  "gates": [
+    {
+      "id": "task-settlement",
+      "name": "task settlement",
+      "machine": "the mini",
+      "approved": {
+        "medianSeconds": 120,
+        "p95Seconds": 240
+      },
+      "lab": {
+        "seconds": 45,
+        "regenerationSeconds": 150
+      },
+      "window": {
+        "kind": "passing",
+        "event": "Run settlement",
+        "size": 30,
+        "since": null,
+        "passing": 0,
+        "closed": null
+      },
+      "measured": null,
+      "number": null
+    },
+    {
+      "id": "complete-suite-run",
+      "name": "complete suite run",
+      "machine": "the mini",
+      "approved": {
+        "seconds": 360
+      },
+      "lab": {
+        "seconds": 360
+      },
+      "window": {
+        "kind": "passing",
+        "event": "",
+        "size": 0,
+        "since": null,
+        "passing": 0,
+        "closed": null
+      },
+      "measured": null,
+      "number": null
+    },
+    {
+      "id": "before-pull-request",
+      "name": "before pull request",
+      "machine": "the mini",
+      "approved": {
+        "seconds": 90
+      },
+      "lab": {
+        "seconds": 90
+      },
+      "window": {
+        "kind": "passing",
+        "event": "",
+        "size": 0,
+        "since": null,
+        "passing": 0,
+        "closed": null
+      },
+      "measured": null,
+      "number": null
+    },
+    {
+      "id": "pull-request",
+      "name": "pull request",
+      "machine": "standard macOS runner",
+      "approved": {
+        "medianSeconds": 480,
+        "p95Seconds": 600
+      },
+      "lab": null,
+      "window": {
+        "kind": "passing",
+        "event": "pull_request",
+        "size": 20,
+        "since": null,
+        "passing": 0,
+        "closed": null
+      },
+      "measured": null,
+      "number": null
+    },
+    {
+      "id": "test-binary",
+      "name": "test binary",
+      "machine": "standard macOS runner",
+      "approved": {
+        "seconds": 300
+      },
+      "lab": null,
+      "window": {
+        "kind": "passing",
+        "event": "",
+        "size": 0,
+        "since": null,
+        "passing": 0,
+        "closed": null
+      },
+      "measured": null,
+      "number": null
+    }
+  ]
+}

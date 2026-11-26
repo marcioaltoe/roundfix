@@ -6,11 +6,13 @@ package verifyselect_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -23,11 +25,13 @@ type verifyingWorkflowStep struct {
 	Uses string            `yaml:"uses"`
 	Run  string            `yaml:"run"`
 	If   string            `yaml:"if"`
+	Env  map[string]string `yaml:"env"`
 	With map[string]string `yaml:"with"`
 }
 
 type verifyingWorkflow struct {
-	Name string `yaml:"name"`
+	Name string               `yaml:"name"`
+	On   map[string]yaml.Node `yaml:"on"`
 	Jobs map[string]struct {
 		Name        string                  `yaml:"name"`
 		Runner      yaml.Node               `yaml:"runs-on"`
@@ -36,6 +40,13 @@ type verifyingWorkflow struct {
 		Timeout     int                     `yaml:"timeout-minutes"`
 		Permissions map[string]string       `yaml:"permissions"`
 		Steps       []verifyingWorkflowStep `yaml:"steps"`
+		Env         map[string]string       `yaml:"env"`
+		Strategy    struct {
+			FailFast *bool `yaml:"fail-fast"`
+			Matrix   struct {
+				Part []string `yaml:"part"`
+			} `yaml:"matrix"`
+		} `yaml:"strategy"`
 	} `yaml:"jobs"`
 }
 
@@ -52,21 +63,6 @@ func readVerifyingWorkflow(t *testing.T, path string) verifyingWorkflow {
 	return workflow
 }
 
-// releaseVerifyRunnerOverride is the runner the release's verify job uses
-// under the maintainer's override of 2026-11-25 (DECISÃO DE MARCIO, ai-memory
-// 01a21237, 06:58 BRT): the full suite exceeds go test's 10-minute default on
-// the standard macOS runner, so the release verifies on Linux until Spec 0421
-// (test-suite performance) removes this exception and returns it to macOS.
-const releaseVerifyRunnerOverride = "ubuntu-latest"
-
-// wantVerifyingRunner is the runner a verifying job of workflow must name.
-func wantVerifyingRunner(workflow, job string) string {
-	if workflow == "release.yml" && job == "verify" {
-		return releaseVerifyRunnerOverride
-	}
-	return verifyingRunner
-}
-
 func TestEveryVerifyingJobRunsOnTheStandardMacOSRunner(t *testing.T) {
 	t.Parallel()
 	dir := filepath.Join(findRepositoryRoot(t), ".github", "workflows")
@@ -74,7 +70,7 @@ func TestEveryVerifyingJobRunsOnTheStandardMacOSRunner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verification := regexp.MustCompile(`\b(?:make[ \t]+verify(?:-changed|-docs|-contracts)?|go[ \t]+(?:test|vet))(?:[\s;|&]|$)`)
+	verification := regexp.MustCompile(`\b(?:make[ \t]+verify(?:-changed|-docs|-contracts|-part)?|go[ \t]+(?:test|vet))(?:[\s;|&]|$)`)
 	jobs := 0
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -87,7 +83,7 @@ func TestEveryVerifyingJobRunsOnTheStandardMacOSRunner(t *testing.T) {
 					continue
 				}
 				jobs++
-				if want := wantVerifyingRunner(entry.Name(), name); job.Runner.Kind != yaml.ScalarNode || job.Runner.Value != want {
+				if want := verifyingRunner; job.Runner.Kind != yaml.ScalarNode || job.Runner.Value != want {
 					t.Errorf("%s job %s runs %q on %v, want %s", entry.Name(), name, step.Run, job.Runner, want)
 				}
 			}
@@ -105,22 +101,25 @@ func TestTheReleaseVerifiesBeforeItBuildsOrPublishes(t *testing.T) {
 	if !exists {
 		t.Fatal("release workflow has no verify job")
 	}
-	if verify.Runner.Value != wantVerifyingRunner("release.yml", "verify") || !reflect.DeepEqual(verify.Permissions, map[string]string{"contents": "read"}) {
+	if verify.Runner.Value != "ubuntu-latest" || !reflect.DeepEqual(verify.Permissions, map[string]string{"contents": "read", "checks": "read", "pull-requests": "read"}) {
 		t.Errorf("verify runner/permissions = %s/%v", verify.Runner.Value, verify.Permissions)
 	}
-	if len(verify.Steps) != 4 {
-		t.Fatalf("verify steps = %d, want checkout, Go setup and two gates", len(verify.Steps))
+	if len(verify.Steps) != 2 {
+		t.Fatalf("verify steps = %d, want checkout and provenance", len(verify.Steps))
 	}
-	checkout, setup := verify.Steps[0], verify.Steps[1]
+	checkout := verify.Steps[0]
 	if !strings.HasPrefix(checkout.Uses, "actions/checkout@") || !reflect.DeepEqual(checkout.With, map[string]string{"fetch-depth": "0", "persist-credentials": "false"}) {
 		t.Errorf("verify checkout = %+v", checkout)
 	}
-	if !strings.HasPrefix(setup.Uses, "actions/setup-go@") || !reflect.DeepEqual(setup.With, map[string]string{"go-version": "1.26", "check-latest": "true", "cache": "false"}) {
-		t.Errorf("verify Go setup = %+v", setup)
+	proof := verify.Steps[1]
+	if proof.Name != "Release provenance" || !strings.Contains(proof.Run, "gh api") || proof.Env["GH_TOKEN"] != "${{ github.token }}" {
+		t.Errorf("missing token-bound provenance: %+v", proof)
 	}
-	for i, want := range []verifyingWorkflowStep{{Name: "Verify gate", Run: "make verify"}, {Name: "Verify every contract", Run: "make verify-contracts"}} {
-		if got := verify.Steps[i+2]; got.Name != want.Name || got.Run != want.Run || got.If != "" {
-			t.Errorf("verification step = %+v, want %+v unconditionally", got, want)
+	for name, job := range workflow.Jobs {
+		for _, step := range job.Steps {
+			if regexp.MustCompile(`\b(make verify(?:-[a-z]+)?|go test|go vet)\b`).MatchString(step.Run) {
+				t.Errorf("release job %s runs a test: %s", name, step.Run)
+			}
 		}
 	}
 	release, exists := workflow.Jobs["release"]
@@ -158,12 +157,32 @@ func TestTheVerificationGateKeepsItsNamesAndItsSteps(t *testing.T) {
 	t.Parallel()
 	workflow := readVerifyingWorkflow(t, filepath.Join(findRepositoryRoot(t), ".github/workflows/ci-verify.yml"))
 	job, exists := workflow.Jobs["verify"]
-	if !exists || workflow.Name != "CI | Verify" || job.Name != "Verification gate" || job.Timeout != 60 {
-		t.Fatalf("CI identity = %q, job = %q, timeout = %d", workflow.Name, job.Name, job.Timeout)
+	if !exists || workflow.Name != "CI | Verify" || job.Name != "Verification gate" || job.Timeout != 60 || job.Runner.Value != verifyingRunner || job.Needs != "parts" || job.If != "${{ always() }}" {
+		t.Fatalf("gathering job = %+v", job)
 	}
-	want := []string{"actions/checkout", "actions/setup-go", "Align GOCACHE with the restored cache", "Merge the current base branch", "Verify changed", "Verify", "Verify docs", "Verify every contract", "Check the suite-time budget"}
+	if len(job.Steps) != 1 {
+		t.Fatalf("gathering steps = %d", len(job.Steps))
+	}
+	// Execute the real condition for all GitHub dependency outcomes.
+	for _, result := range []string{"success", "failure", "cancelled", "skipped", ""} {
+		script := strings.ReplaceAll(job.Steps[0].Run, "${{ needs.parts.result }}", result)
+		cmd := exec.CommandContext(t.Context(), "sh", "-c", script)
+		out, err := cmd.CombinedOutput()
+		if (err == nil) != (result == "success") {
+			t.Errorf("parts %q: %v, %s", result, err, out)
+		}
+	}
+	parts, exists := workflow.Jobs["parts"]
+	if !exists || parts.Runner.Value != verifyingRunner || parts.Timeout != 60 || parts.Strategy.FailFast == nil || *parts.Strategy.FailFast || parts.Env["GOFLAGS"] != "-count=1" {
+		t.Fatalf("parts job = %+v", parts)
+	}
+	wantParts := []string{"packages", "cli-1", "cli-2", "contracts-repo", "contracts-docs"}
+	if !reflect.DeepEqual(parts.Strategy.Matrix.Part, wantParts) {
+		t.Errorf("matrix = %v", parts.Strategy.Matrix.Part)
+	}
+	want := []string{"actions/checkout", "actions/setup-go", "Align GOCACHE with the restored cache", "Merge the current base branch", "Verify part"}
 	var got []string
-	for _, step := range job.Steps {
+	for _, step := range parts.Steps {
 		name := step.Name
 		if name == "" {
 			name = strings.Split(step.Uses, "@")[0]
@@ -171,6 +190,52 @@ func TestTheVerificationGateKeepsItsNamesAndItsSteps(t *testing.T) {
 		got = append(got, name)
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("CI steps = %v, want %v", got, want)
+		t.Errorf("parts steps = %v, want %v", got, want)
+	}
+	if parts.Steps[len(parts.Steps)-1].Run != "make verify-part PART=${{ matrix.part }}" {
+		t.Error("matrix does not execute its part")
+	}
+}
+
+func TestContinuousIntegrationRunsOnlyForAPullRequest(t *testing.T) {
+	t.Parallel()
+	root := findRepositoryRoot(t)
+	workflow := readVerifyingWorkflow(t, filepath.Join(root, ".github/workflows/ci-verify.yml"))
+	if len(workflow.On) != 1 {
+		t.Fatalf("triggers = %v", workflow.On)
+	}
+	var trigger struct {
+		Branches []string `yaml:"branches"`
+		Types    []string `yaml:"types"`
+	}
+	node, ok := workflow.On["pull_request"]
+	if !ok {
+		t.Fatal("missing pull_request trigger")
+	}
+	if err := node.Decode(&trigger); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(trigger.Branches, []string{"main"}) || !reflect.DeepEqual(trigger.Types, []string{"opened", "reopened", "synchronize"}) {
+		t.Fatalf("trigger = %+v", trigger)
+	}
+	// The executable gate surfaces retain only the existing 20m contract timeout.
+	timeout := regexp.MustCompile(`-timeout(?:[ =]+)([0-9]+[a-z]+)`)
+	for _, path := range []string{"Makefile", ".github/workflows/ci-verify.yml", ".github/workflows/release.yml"} {
+		b, err := os.ReadFile(filepath.Join(root, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(b)
+		for _, retired := range []string{"SUITE_BUDGET", "test-budget", "suite-budget-check", "docs-test-skipped", "VERIFY_DOCS_TEST"} {
+			if strings.Contains(text, retired) {
+				t.Errorf("%s keeps %s", path, retired)
+			}
+		}
+		for _, match := range timeout.FindAllStringSubmatch(text, -1) {
+			d, err := time.ParseDuration(match[1])
+			if err != nil || d > 20*time.Minute || path != "Makefile" {
+				t.Errorf("%s: forbidden timeout %s", path, match[0])
+			}
+		}
 	}
 }

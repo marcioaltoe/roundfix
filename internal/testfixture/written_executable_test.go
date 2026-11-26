@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: written executable residue.
 // Invariant: literal executable writes in internal tests match the frozen inventory exactly.
 // Boundary IN: os.WriteFile and os.OpenFile calls with integer literal modes in internal/**/*_test.go.
 // Boundary OUT: modes held in constants, computed modes and os.Chmod calls.
+//
+//verify:always
 package testfixture
 
 import (

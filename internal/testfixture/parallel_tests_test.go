@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: Parallel Test Packages.
 // Invariant: every top-level test is parallel first or names why it must be sequential, within its package ceiling.
 // Boundary IN: test declarations and leading comments in listed package directories.
 // Boundary OUT: contract-tagged files, subtests, helpers and unlisted packages.
+//
+//verify:always
 package testfixture
 
 import (

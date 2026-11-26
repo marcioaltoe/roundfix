@@ -229,7 +229,24 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	childEnvironment = detachTestOwnerEnvironment(t, childEnvironment)
 	var survivor *detachTestSurvivor
 	if childMode == detachTestChildRunCreated {
-		childEnvironment = withEnvValue(childEnvironment, detachTestRunCreationDelayEnv, livenessTimeout.String())
+		release := filepath.Join(t.TempDir(), "release-run-creation")
+		childEnvironment = withEnvValue(childEnvironment, detachTestRunCreationReleaseEnv, release)
+		first := true
+		expired := make(chan time.Time)
+		environment.dependencies.detachTimeouts.newTimer = func(time.Duration) (<-chan time.Time, func()) {
+			if first {
+				first = false
+				return expired, func() {
+					// Expire the old allowance before the child may report Run creation.
+					close(expired)
+					if err := os.WriteFile(release, nil, 0o600); err != nil {
+						t.Error(err)
+					}
+				}
+			}
+			timer := time.NewTimer(detachTestBound(t))
+			return timer.C, func() { timer.Stop() }
+		}
 		survivor = newDetachTestSurvivor(t)
 		childEnvironment = withEnvValue(childEnvironment, detachTestPIDPathEnv, survivor.pidPath)
 		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, survivor.sentinelPath)

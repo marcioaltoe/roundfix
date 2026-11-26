@@ -73,3 +73,7 @@ The maintainer, on 2026-11-25. The times are the ones the decision records state
 ## Source
 
 Minted on 2026-11-25 by the Idea stage of Spec 0421, `0421-the-test-suite-meets-a-measured-time-target-at-every-gate`, from the second decision above. No open Backlog Entry or unresolved Finding fitted this intent: the fourteen entries open that day concern other components, and `docs/findings/` was empty. Nature: measured as to the numbers under `## Measured`; the targets and the shape are not decided.
+
+## Addendum 2026-11-26: the Complete Suite Run target
+
+Spec 0421's QA measured the Complete Suite Run, once per Spec at the Delivery Queue's repository gate on the mini, at 433.80 s, 426.40 s and 424.02 s (median 426.40 s) against its approved lab target of 360 s; the former `make verify` took 376 s. The maintainer accepted the miss as a declared deviation of that delivery and kept the target (DECISÃO DE MARCIO, 2026-11-26 06:18 BRT, ai-memory 01a21726-5a16-7992-a120-5b4a759f3885): "estender a entrada de backlog da segunda Spec (agrupar os processos Git e dividir o pacote da CLI) com o objetivo de trazer a suíte completa para baixo de 360 s." This Spec's goal therefore includes bringing the Complete Suite Run under 360 s on the mini under the lab protocol.

@@ -224,9 +224,11 @@ Publication Preflight without cutting a tag:
 3. Inspect the Publication Preflight table and any failure prefix in the run
    summary.
 
-This rehearsal is publish-free. It runs `make verify` and the Full Contract Run
-on a macOS runner first, validates the version, and checks registry eligibility for the full Release Set, then stops before
-cross-compilation, npm publication, or GitHub Release creation.
+This rehearsal is publish-free. The release workflow runs no test: it first
+proves the Release Provenance of the release commit, the commit that last
+changed the launcher version, with the same proof a tag run uses. It then
+validates the version and checks registry eligibility for the full Release Set,
+and stops before cross-compilation, npm publication, or GitHub Release creation.
 
 A coordinate already published at the version shows `published` and does not
 stop the rehearsal; only a tag run compares its content with a build.
@@ -349,31 +351,44 @@ Request.
    `failed`. Resolve the blocking check even after version approval.
    Use the proposed version as `<version>` only after the plan is
    `ready` or the required human approval has been given.
-2. Land all release content on `main` and confirm `make verify` is green
-   locally. The workflow re-runs the full gate and refuses to publish if it
-   fails. No Spec merges without a passing QA Report in its `qa/` directory —
-   `roundfix archive` enforces the same rule later, but the gap must be caught
-   at merge time, not at archive time.
+2. Land all release content on `main` through pull requests whose
+   `Verification gate` passed. No Spec merges without a passing QA Report in
+   its `qa/` directory — `roundfix archive` enforces the same rule later, but
+   the gap must be caught at merge time, not at archive time.
 3. Before the release Pull Request, complete the mandatory
    [skills and guides check](#checking-skills-and-guides-before-the-release).
-4. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
-5. Tag and push:
+4. Read the Gate Time Report windows with `make gate-times`. A gate over its
+   number in `docs/references/gate-time-targets.json` holds the release until
+   its time returns or the maintainer decides on a Measured Dossier.
+5. Add or finalize the `## [<version>]` section in `CHANGELOG.md` in the
+   release Pull Request. Update that pull request's branch with `main` right
+   before merging it, so its `Verification gate` runs on main's tip, and
+   squash-merge it. A release merged behind `main` fails its Release
+   Provenance.
+6. Run the manual dispatch described in
+   [Rehearsing the Publication Preflight](#rehearsing-the-publication-preflight).
+   It publishes nothing and runs the same Release Provenance proof as a tag run.
+7. Tag the release commit and push:
 
    ```bash
    git tag v<version>
    git push origin v<version>
    ```
 
-6. Watch the `release` workflow. It first runs `make verify` and the Full Contract
-   Run on a macOS runner, then validates the version. A wrong tag is refused
-   after verification and before publication. It runs the Publication Preflight, cross-compiles and stages
-   every target, publishes the per-platform packages first and then the
-   launcher, and creates the GitHub Release with the matching binary assets.
+8. Watch the `release` workflow. It runs no test. It first proves the Release
+   Provenance of the release commit: the tag points at it, it is the squash
+   merge of one pull request into `main` whose branch held main's tip and has
+   the same tree, and that pull request's latest `Verification gate` passed.
+   It then validates the version, runs the Publication Preflight,
+   cross-compiles and stages every target, publishes the per-platform packages
+   first and then the launcher, and creates the GitHub Release with the
+   matching binary assets.
 
 The per-platform packages publish before the launcher so the launcher's
-`optionalDependencies` resolve the moment it goes live. A failed `make verify`,
-a disagreeing tag, or a blocked Publication Preflight stops the run before
-anything is published.
+`optionalDependencies` resolve the moment it goes live. A refused Release
+Provenance, a disagreeing tag, or a blocked Publication Preflight stops the run
+before anything is published. A release commit the provenance refuses is never
+published: cut the release again as the next patch version.
 
 ## How assets feed the Upgrade Command
 

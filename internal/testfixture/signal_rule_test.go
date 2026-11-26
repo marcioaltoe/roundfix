@@ -1,7 +1,11 @@
+//go:build docscontract
+
 // Suite: Proven Signal repository rule.
 // Invariant: recorded PID signals use an identity proof, including in tests.
 // Boundary IN: every Go source file and isolated seeded source trees.
 // Boundary OUT: skipped artifact directories and child handles returned by Start.
+//
+//verify:always
 package testfixture
 
 import (

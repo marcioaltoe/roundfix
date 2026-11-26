@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	"roundfix/internal/testfixture"
 	runworktree "roundfix/internal/worktree"
 )
 
@@ -289,18 +289,8 @@ func TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch(t 
 		t.Fatalf("close Run Database before CLI invocation: %v", err)
 	}
 
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("resolve characterization test source path")
-	}
-	moduleRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = moduleRoot
-	buildOutput, err := build.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build Roundfix CLI: %v\n%s", err, buildOutput)
-	}
+	binary := testfixture.ProductBinary(t)
+
 	cachePath := filepath.Join(homeDir, ".roundfix", "version-check.json")
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
 		t.Fatalf("create version cache directory: %v", err)
