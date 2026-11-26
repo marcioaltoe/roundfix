@@ -19,17 +19,8 @@ import (
 func TestReopenReopensALateDependencyThroughTheBuiltBinary(t *testing.T) {
 	t.Parallel()
 	home, repo, report := lateDependencyWorkspace(t, true, true)
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	root, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = root
-	build.Env = isolatedGitEnvForTest()
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, out)
-	}
+	binary := testfixture.ProductBinary(t)
+
 	beforeReport := mustRead(t, report)
 	beforeDependency := mustRead(t, implementTaskPath(repo, "task_03"))
 	command := exec.Command(binary, "reopen", "--spec", implementTestSlug)

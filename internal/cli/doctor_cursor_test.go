@@ -7,15 +7,13 @@ package cli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"os"
-	"os/exec"
-	"path/filepath"
+	"fmt"
 	"strings"
 	"testing"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/testfixture"
 )
 
 // Keep the other Doctor boundaries offline while exercising the real adapter check.
@@ -31,11 +29,6 @@ func (checker cursorDoctorHealthChecker) Adapter(ctx context.Context, runtime ag
 func TestDoctorAdapterNamesTheCursorLogin(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	binary := filepath.Join(dir, "agent.test")
-	build := exec.CommandContext(t.Context(), "go", "test", "-c", "-o", binary, "../agent")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("compile agent fixture: %v\n%s", err, output)
-	}
 	for _, test := range []struct {
 		name, output string
 		exit         int
@@ -44,19 +37,11 @@ func TestDoctorAdapterNamesTheCursorLogin(t *testing.T) {
 		{name: "exit", output: "private account sentinel", exit: 1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "cursor-agent")
-			provision := exec.CommandContext(t.Context(), binary)
-			provision.Env = append(os.Environ(), "ROUNDFIX_FAKE_ADAPTER_PROVISION="+path, "ROUNDFIX_FAKE_ADAPTER_ARGV0=true")
-			if output, err := provision.CombinedOutput(); err != nil {
-				t.Fatalf("provision agent fixture: %v\n%s", err, output)
-			}
-			payload, err := json.Marshal(map[string]any{"status_output": test.output, "status_exit_code": test.exit})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(path+".fixture.json", payload, 0o600); err != nil {
-				t.Fatal(err)
-			}
+			source := fmt.Sprintf(`package main
+import ("fmt"; "os")
+func main() { fmt.Print(%q); os.Exit(%d) }
+`, test.output, test.exit)
+			path := testfixture.FixtureBinary(t, "cursor-agent", source)
 			checker := cursorDoctorHealthChecker{
 				doctorFakeHealthChecker: newDoctorFakeHealthChecker(
 					CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},

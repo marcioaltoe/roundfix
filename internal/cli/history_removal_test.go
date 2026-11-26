@@ -248,12 +248,8 @@ func TestUpgradeNoticeNamesReducedEntriesAsPending(t *testing.T) {
 
 func historyRemovalBinary(t *testing.T, h historyFixture, args ...string) (int, string, string) {
 	t.Helper()
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	build := exec.CommandContext(t.Context(), "go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = filepath.Join("..", "..")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, output)
-	}
+	binary := testfixture.ProductBinary(t)
+
 	command := exec.CommandContext(t.Context(), binary, append([]string{"history"}, args...)...)
 	command.Dir = h.repo
 	command.Env = withEnvValue(gittest.IsolatedEnv(), "HOME", h.home)

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -97,3 +97,25 @@ None. `testfixture.FixtureBinary` keeps its signature and returns an executable 
 - `_authorization.md` → What the grant covers; Sanctioned regeneration; Limits
 - [`references/sources.md`](references/sources.md), section 5.2
 - ADR-0252, ADR-0259, ADR-0271, ADR-0281, ADR-0326
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-testing, testing-boss, golang-concurrency, golang-cli, golang-error-handling, golang-structs-interfaces, systematic-debugging, tech-writer, evidence-gate.
+
+Implemented only this Task's slice. The pre-existing change at entry was this Task's Daemon-owned status; it was preserved. No Task Graph or other Task file was changed.
+
+- Contract discovery: moved both nested-run tests into their declared relevant docscontract files and registered exactly their directive inputs. A comparison against HEAD confirmed both moved function bodies are byte-identical. Focused execution of both tagged contracts passed: `go test -tags docscontract ./internal/spec ./internal/store -run 'Test(CoverageCollectionMatches|JournalConsumerCorpusReplays)' -count=1`. The focused `TestRepositoryContractTestsDeclareTheirRelevance` run also passed.
+- Nested runs and builds: removed the derived-QA subprocess wrapper while preserving the existing checker-side test and every assertion. Added the Nested Go Tool and One Build AST rules, frozen reasoned inventories, and seeded positive/negative cases, including variadic arguments and contract constraints. Both rules pass on the repository and their seeded cases. Added only the two requested guide rules. `go test ./internal/testfixture -tags repocontract -count=1` passed, including the existing executable-write, hard-link, timing and parallelism rules and the new suite guard installation contract.
+- Shared executables: added process-wide, concurrency-safe ProductBinary and name/source-keyed FixtureBinary caches. Each output has a fresh path in the Go test build directory; individual test cleanup cannot remove it. Windows executable suffixes are preserved. The macro Codex fixture copies the cached executable through the existing fork-safe executable writer before use. The six new tests passed; focused cache and seeded-rule tests also passed with `-race`.
+- Migrated consumers: focused checks passed for the Baseline real CLI, both built-binary reopen tests, both Doctor login cases, version-cache preservation, both history transcripts, the agent-selection macro, measured Quaestor queue, daemon unintegrated-branch preflight and derived-QA checker. The actual local echo-agent integration passed with `ROUNDFIX_REAL_ACPX=1 go test ./internal/agent -run '^TestRealACPXCommandOverrideRoundTripCancelCrashResume$' -count=1 -v`; it exercised cancellation, crash recovery and teardown. Non-test packages compiled for Linux (`internal/agent` and `internal/testfixture`) and Windows (`internal/testfixture`).
+- Coverage: after the final source edit, ran the sanctioned command unchanged: `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`. It passed. A JSON comparison against HEAD proved exactly TestDerivedQAVerificationPassesTheChecker was removed from roundfix/internal/spec, exactly the six requested tests were added to roundfix/internal/testfixture, and every other record value is unchanged. Both moved names remain recorded. `go test ./internal/spec -race -run 'TestCoverage(Equivalence|RecordCountsNoPackageUnderDocs)$' -count=1` passed.
+- Scope checks: the three expressly frozen files (baseline_release_gate_test.go, internal/gittest/gittest.go and internal/baseline/plan_test.go) are byte-identical to HEAD. Formatting and `git diff --check` checks passed.
+
+One intermediate macro check had passing assertions but was rejected by suiteguard because source edits overlapped its run. It was rerun with the tree held still and passed. Move-related unused imports found by the initial compile check were removed.
+
+Declared Verification and Task settlement remain with the Daemon. No commit, push or pull request was made.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261126T024343Z_4d6d0cf3419b8574`
+- Source commit: `3de59336950189bd0f40f23ce165661244ec2e7b`

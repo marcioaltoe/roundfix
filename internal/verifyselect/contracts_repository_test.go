@@ -36,11 +36,13 @@ func TestRepositoryContractTestsDeclareTheirRelevance(t *testing.T) {
 	regeneration := []string{"internal/baseline/assets/", "internal/baseline/testdata/", ".agents/skills/", "skills/"}
 	declaredRegeneration := []string{".roundfixrc.yml", "internal/baseline/", ".agents/skills/", "skills/", "docs/agents/", "docs/references/coverage-record.json", "internal/spec/", "internal/cli/baseline_*", "cmd/roundfix/", "internal/suiteguard/", "internal/suiteguardcontract/", skillcoverage.RecordPath, skillcoverage.MapPath}
 	relevant := map[string][]string{
-		"TestRegenerationIsDeclared":                            declaredRegeneration,
-		"TestMeasuredSanctionedOwnershipMatchesRecords":         regeneration,
-		"TestDeclaredStepRegenerationAndFrozenBoundaries":       regeneration,
-		"TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical": regeneration,
-		"TestRepositoryGateRunsTheAnalyzer":                     {"internal/baseline/analyzer/"},
+		"TestCoverageCollectionMatchesTheToolchainOnThisPlatform": {"dist/npm/platforms.json", "go.mod", "go.sum"},
+		"TestJournalConsumerCorpusReplaysEveryConsumer":           {"internal/store/testdata/", "internal/runevent/", "internal/tui/", "internal/cli/attach.go", "internal/cli/events.go", "internal/cli/gc*.go", "internal/cli/reconcile.go"},
+		"TestRegenerationIsDeclared":                              declaredRegeneration,
+		"TestMeasuredSanctionedOwnershipMatchesRecords":           regeneration,
+		"TestDeclaredStepRegenerationAndFrozenBoundaries":         regeneration,
+		"TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical":   regeneration,
+		"TestRepositoryGateRunsTheAnalyzer":                       {"internal/baseline/analyzer/"},
 	}
 	governed := map[string]bool{
 		"TestGovernedSetCoversOwnedShippedTemplates": true,

@@ -24,6 +24,7 @@ import (
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 	"roundfix/internal/gittest"
+	"roundfix/internal/testfixture"
 )
 
 func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
@@ -313,24 +314,14 @@ func TestBaselinePlanPreflightRealCLI(t *testing.T) {
 	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "real CLI policy\n")
 	commitBaselinePlanTestRepository(t, repo)
 
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatalf("resolve project root: %v", err)
-	}
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = projectRoot
-	build.Env = os.Environ()
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build real roundfix CLI: %v\n%s", err, output)
-	}
+	binary := testfixture.ProductBinary(t)
 
 	command := exec.Command(binary, "baseline", "plan", "--repo", repo, "--format=json")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
-	err = command.Run()
+	err := command.Run()
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != exitUnverified {
 		t.Fatalf("real CLI error = %v stdout=%q stderr=%q, want exit %d", err, stdout.String(), stderr.String(), exitUnverified)

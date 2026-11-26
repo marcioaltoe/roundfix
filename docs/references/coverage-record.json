@@ -4632,7 +4632,6 @@
       "TestCriterionNamedMatchesTextOrLeadingLabel",
       "TestDeclaredTaskPathsReadsCreatesInterfaceAndRecordedPaths",
       "TestDerivedQAVerificationInvokesNoRoundfixBinary",
-      "TestDerivedQAVerificationPassesTheChecker",
       "TestDerivedQAVerificationProvesNewestVerdictReadable",
       "TestDerivedQAVerificationQuotesTheSpecPath",
       "TestEnvironmentRowsNeedingOverrideCountsOnlyNonExemptRows",
@@ -5618,13 +5617,19 @@
       "TestEveryExternalTestToolGoesThroughRequireTool",
       "TestEveryRealTimeBudgetIsWithinItsFileCeiling",
       "TestEverySignalGoesToAProvenProcess",
+      "TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace",
       "TestEveryTestInAParallelTestPackageRunsInParallel",
+      "TestFixtureBinaryIsBuiltOncePerNameAndSource",
+      "TestNoCodeTestStartsAGoTestOrGoVetRun",
       "TestNoTestCreatesAHardLink",
       "TestNoTestWritesAnExecutableOutsideTheResidue",
+      "TestProductBinaryIsBuiltOncePerTestBinary",
       "TestRealTimeBudgetRuleRejectsSeededViolations",
       "TestRequireToolReturnsAToolOnPath",
       "TestRequireToolSkipsNamingAnAbsentTool",
-      "TestTheExternalTestToolRuleReportsALiteralLookup"
+      "TestTheExternalTestToolRuleReportsALiteralLookup",
+      "TestTheNestedGoToolRuleReportsSeededViolations",
+      "TestTheOneBuildRuleReportsSeededViolations"
     ],
     "roundfix/internal/testwait": [
       "TestBoundFallsBackWithoutATestDeadline",

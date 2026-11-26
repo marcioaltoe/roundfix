@@ -6812,18 +6812,7 @@ type macroStreamRecord struct {
 
 func buildRoundfixBinaryForMacro(t *testing.T) string {
 	t.Helper()
-	repoRoot := repoRootForMacro(t)
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	cmd.Dir = repoRoot
-	cmd.Env = isolatedGitEnvForTest()
-	var output bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("build roundfix binary: %v\n%s", err, output.String())
-	}
-	return binary
+	return testfixture.ProductBinary(t)
 }
 
 func repoRootForMacro(t *testing.T) string {
@@ -6874,18 +6863,17 @@ func buildMacroCodexExecutable(t *testing.T, destination string) {
 		writeScriptFixture(t, destination, "#!/bin/sh\nexit 0\n")
 		return
 	}
-	sourceDir := t.TempDir()
-	sourcePath := filepath.Join(sourceDir, "main.go")
-	if err := os.WriteFile(sourcePath, []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
-		t.Fatalf("write codex fixture source: %v", err)
+	source := testfixture.FixtureBinary(t, "codex", "package main\n\nfunc main() {}\n")
+	data, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatal(err)
 	}
-	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", destination, sourcePath)
-	cmd.Env = isolatedGitEnvForTest()
-	var output bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("build signed codex fixture executable: %v\n%s", err, output.String())
+	copyPath, err := writeDeliveryItemBinary(filepath.Dir(destination), data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(copyPath, destination); err != nil {
+		t.Fatal(err)
 	}
 }
 
