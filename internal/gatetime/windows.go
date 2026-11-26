@@ -157,13 +157,17 @@ func readSources(doc Document, latest bool) (Source, error) {
 	if err != nil {
 		return nil, err
 	}
-	var runs []struct {
-		DatabaseID int
-		CreatedAt  time.Time
-	}
+	var runs []ciRun
 	if err = json.Unmarshal(data, &runs); err != nil {
 		return nil, err
 	}
+	var pullRequest *Gate
+	for i := range doc.Gates {
+		if doc.Gates[i].ID == "pull-request" {
+			pullRequest = &doc.Gates[i]
+		}
+	}
+	runs = runsInWindow(runs, pullRequest)
 	for _, run := range runs {
 		data, err := exec.Command("gh", "run", "view", fmt.Sprint(run.DatabaseID), "--json", "jobs").Output()
 		if err != nil {
@@ -182,4 +186,31 @@ func readSources(doc Document, latest bool) (Source, error) {
 		source["pull-request"] = append(source["pull-request"], Sample{At: run.CreatedAt, Seconds: seconds})
 	}
 	return source, nil
+}
+
+// ciRun is one listed run of the pull request verification workflow.
+type ciRun struct {
+	DatabaseID int
+	CreatedAt  time.Time
+}
+
+// runsInWindow keeps the runs a window can count: those created at or after its
+// start, oldest first, at most its size. Each kept run costs one GitHub API
+// call, so reading every listed run would exhaust the rate limit.
+func runsInWindow(runs []ciRun, gate *Gate) []ciRun {
+	if gate == nil {
+		return nil
+	}
+	kept := make([]ciRun, 0, len(runs))
+	for _, run := range runs {
+		if gate.Window.Since != nil && run.CreatedAt.Before(*gate.Window.Since) {
+			continue
+		}
+		kept = append(kept, run)
+	}
+	sort.SliceStable(kept, func(i, j int) bool { return kept[i].CreatedAt.Before(kept[j].CreatedAt) })
+	if gate.Window.Size > 0 && len(kept) > gate.Window.Size {
+		kept = kept[:gate.Window.Size]
+	}
+	return kept
 }

@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -128,7 +129,52 @@ func TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded(t *testing.T) {
 }
 func TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements(t *testing.T) {
 	t.Parallel()
-	transcript(t, []string{"windows", "-targets", "../../docs/references/gate-time-targets.json", "-fixture", "testdata/windows-fixture.json"}, "gate times: task settlement, 30 of 30 passing: median 104s of 120s, p95 212s of 240s, within\ngate times: pull request, 14 of 20 passing: window open\n", 0)
+	transcript(t, []string{"windows", "-targets", openWindowsTargets(t), "-fixture", "testdata/windows-fixture.json"}, "gate times: task settlement, 30 of 30 passing: median 104s of 120s, p95 212s of 240s, within\ngate times: pull request, 14 of 20 passing: window open\n", 0)
+}
+
+// openWindowsTargets copies the live targets with every window start cleared,
+// so the recorded fixture is read whatever start the live document records.
+func openWindowsTargets(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("../../docs/references/gate-time-targets.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err = json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	for _, gate := range doc["gates"].([]any) {
+		gate.(map[string]any)["window"].(map[string]any)["since"] = nil
+	}
+	data, err = json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "targets.json")
+	if err = os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestRunsInWindowKeepsTheOldestRunsSinceTheStart(t *testing.T) {
+	t.Parallel()
+	start := time.Date(2026, 11, 26, 10, 58, 57, 0, time.UTC)
+	gate := &Gate{Window: Window{Size: 2, Since: &start}}
+	runs := []ciRun{
+		{DatabaseID: 4, CreatedAt: start.Add(3 * time.Hour)},
+		{DatabaseID: 3, CreatedAt: start.Add(2 * time.Hour)},
+		{DatabaseID: 2, CreatedAt: start.Add(time.Hour)},
+		{DatabaseID: 1, CreatedAt: start.Add(-time.Hour)},
+	}
+	got := runsInWindow(runs, gate)
+	if len(got) != 2 || got[0].DatabaseID != 2 || got[1].DatabaseID != 3 {
+		t.Fatalf("runsInWindow = %+v, want runs 2 and 3", got)
+	}
+	if runsInWindow(runs, nil) != nil {
+		t.Fatal("no pull request gate must keep no run")
+	}
 }
 func TestWindowsHoldsAReleaseOnlyWithARule(t *testing.T) {
 	t.Parallel()
