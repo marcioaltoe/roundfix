@@ -23,3 +23,11 @@ Answer the Vortex project (`default/gesttione-solutions-vortex`) with that decis
 ## Source
 
 Cross-project message `01a20b17-73b6-7481-bbc2-be217b275724` from the Vortex project, 2026-11-24. Nature: reported. Recorded by triage on 2026-11-24.
+
+## Addendum 2026-11-26: second report from Vortex
+
+On 2026-11-25, Vortex (a Bun/TypeScript monorepo with about 2,300 backend files) ran `roundfix release plan --from v0.70.0 --to HEAD --impact minor` and got `baseline: failed: collect bounded HTTP route candidates: HTTP candidate source bytes exceed 2097152`. The check never runs in that repository, so the plan always asks for the manual check. Expected by the sender: split the batch, or a configurable ceiling.
+
+This answers part of the open question above: the limit is the aggregate `maxHTTPSourceBytes` at `internal/baseline/profile_alignment.go:28`, summed over every route-bearing source file, not a per-source limit.
+
+Source: cross-project message `01a2147a-6d14-7d93-9c98-00da08f5009c` from the Vortex project, 2026-11-25. Nature: reported. Recorded by triage on 2026-11-26.
