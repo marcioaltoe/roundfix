@@ -1,0 +1,18 @@
+command: go test -count=1 -tags docscontract -v -run '^(TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink)$' ./internal/cli
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
+exit: 0
+wall seconds: 1.342
+stdout:
+=== RUN   TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== PAUSE TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== CONT  TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== CONT  TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+--- PASS: TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink (0.20s)
+--- PASS: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.20s)
+PASS
+suiteguard: guard cost: measured 3447 paths; fingerprint took 164.345ms before and 152.634667ms after
+ok  	roundfix/internal/cli	0.843s
+
+stderr:

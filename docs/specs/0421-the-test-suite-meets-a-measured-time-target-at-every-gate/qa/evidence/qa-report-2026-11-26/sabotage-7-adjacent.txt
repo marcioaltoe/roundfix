@@ -1,0 +1,24 @@
+command: go test -count=1 -v -run '^TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge$/^(merged_behind_main|different_tree)$' ./internal/verifyselect
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage7-diagnostic-o2ewqn4y
+exit: 1
+wall seconds: 1.746
+stdout:
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+    release_provenance_test.go:157: exit=0 want=1, output="provenance: 8fd40464fc747719753911e78a427346a0d47a6e is the squash merge of pull request #7, and Verification gate passed on its tree\n" want="::error::provenance: the pull request merged behind main\n"
+--- FAIL: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge (0.00s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main (0.39s)
+    --- FAIL: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree (0.40s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 177.19275ms before and 156.666167ms after
+FAIL	roundfix/internal/verifyselect	1.028s
+FAIL
+
+stderr:

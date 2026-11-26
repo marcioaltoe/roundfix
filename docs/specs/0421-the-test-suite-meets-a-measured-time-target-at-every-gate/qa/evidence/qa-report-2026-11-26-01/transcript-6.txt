@@ -1,0 +1,8 @@
+$ ./bin/gate-time windows -fixture internal/gatetime/testdata/windows-fixture.json
+stdout:
+gate times: task settlement, 30 of 30 passing: median 104s of 120s, p95 212s of 240s, within
+gate times: pull request, 14 of 20 passing: window open
+stderr:
+
+exit: 0
+wall_seconds: 0.008

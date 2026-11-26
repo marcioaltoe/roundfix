@@ -1,0 +1,7 @@
+$ go run -buildvcs=false ./cmd/verify-select -plan
+stdout:
+stderr:
+verify-select: packages: packages reached by the changes
+
+exit: 0
+wall_seconds: 0.371

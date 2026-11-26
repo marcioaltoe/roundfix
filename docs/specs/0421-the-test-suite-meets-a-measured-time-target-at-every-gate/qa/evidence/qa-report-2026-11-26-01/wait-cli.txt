@@ -1,0 +1,13 @@
+$ go test -count=1 -v -run ^TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline$ ./internal/cli
+stdout:
+=== RUN   TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline
+=== PAUSE TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline
+=== CONT  TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline
+--- PASS: TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline (0.02s)
+PASS
+suiteguard: guard cost: measured 3574 paths; fingerprint took 197.782625ms before and 157.92725ms after
+ok  	roundfix/internal/cli	0.846s
+stderr:
+
+exit: 0
+wall_seconds: 6.209

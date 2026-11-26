@@ -1,0 +1,28 @@
+$ go test -count=1 -v -run ^(TestBaselinePlanCharacterization|TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration)$ ./internal/baseline ./internal/cli
+stdout:
+=== RUN   TestBaselinePlanCharacterization
+=== PAUSE TestBaselinePlanCharacterization
+=== CONT  TestBaselinePlanCharacterization
+=== RUN   TestBaselinePlanCharacterization/clean-adoption
+=== RUN   TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply
+=== RUN   TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities
+=== RUN   TestBaselinePlanCharacterization/advisory-only-divergences
+=== RUN   TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests
+--- PASS: TestBaselinePlanCharacterization (10.24s)
+    --- PASS: TestBaselinePlanCharacterization/clean-adoption (0.62s)
+    --- PASS: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (4.20s)
+    --- PASS: TestBaselinePlanCharacterization/unsatisfied-blocking-capabilities (2.50s)
+    --- PASS: TestBaselinePlanCharacterization/advisory-only-divergences (0.67s)
+    --- PASS: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (2.24s)
+PASS
+suiteguard: guard cost: measured 3654 paths; fingerprint took 1.977807833s before and 2.209947084s after
+ok  	roundfix/internal/baseline	14.821s
+=== RUN   TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== PAUSE TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+=== CONT  TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration
+--- PASS: TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration (2.93s)
+PASS
+suiteguard: guard cost: measured 3654 paths; fingerprint took 902.223042ms before and 2.739745666s after
+ok  	roundfix/internal/cli	7.114s
+stderr:
+exit: 0

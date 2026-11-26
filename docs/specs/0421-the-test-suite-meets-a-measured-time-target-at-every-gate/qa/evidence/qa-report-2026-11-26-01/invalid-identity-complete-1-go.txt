@@ -1,0 +1,7 @@
+env -changed GOCACHE
+env GOCACHE
+run -buildvcs=false ./cmd/gocache-bound -dir /Volumes/Brain-SSD/cache/go-build -max-mb 10240 -idle 2h
+vet ./...
+build -buildvcs=false -ldflags -X 'roundfix/internal/app.BuildCommit=1244e82f-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:43:45 -0300' -o bin/roundfix ./cmd/roundfix
+run -buildvcs=false ./cmd/verify-select -plan -base main
+test -count=1 -parallel 16 ./...

@@ -1,0 +1,102 @@
+$ make verify-changed
+stdout:
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=390201c7-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:37:52 -0300'" -o bin/roundfix ./cmd/roundfix
+ok  	roundfix/internal/agent	1.263s
+ok  	roundfix/internal/app	0.607s
+ok  	roundfix/internal/authorization	1.207s
+--- FAIL: TestMeasuredSanctionedOwnershipMatchesRecords (80.15s)
+    derived_regeneration_repocontract_test.go:56: declared command "make baseline-digests" did not restore claimed artifact "testdata/plan-characterization/clean-adoption.golden.json": first byte 8276, want length 159073 and "cf988b766ae4c81c52a2c103ad8d02e15d31077f\"\n        ],\n        \"digest\": \"sha256:8", got length 159073 and "bcafb1ab94673a46a174e21d71efe4a25ca46e41\"\n        ],\n        \"digest\": \"sha256:9"
+--- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries (104.18s)
+    --- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries/dedicated/synthetic_plan_characterization (11.09s)
+        derived_regeneration_repocontract_test.go:195: declared command "go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization" did not restore claimed artifact "testdata/plan-characterization/advisory-only-divergences.golden.json": first byte 8930, want length 159447 and "64cb8e19742b4671721904629eab3a31135352c0\"\n        ],\n        \"digest\": \"sha256:9", got length 159447 and "e81a10c5a39e86334e484c4bde2cb0c3da2ffcef\"\n        ],\n        \"digest\": \"sha256:b"
+    --- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries/sanctioned_command_rewrites_sanctioned_and_preserves_frozen (68.89s)
+        derived_regeneration_repocontract_test.go:248: declared command "make baseline-digests" did not restore claimed artifact "testdata/plan-characterization/clean-adoption.golden.json": first byte 8276, want length 159073 and "cf988b766ae4c81c52a2c103ad8d02e15d31077f\"\n        ],\n        \"digest\": \"sha256:8", got length 159073 and "bcafb1ab94673a46a174e21d71efe4a25ca46e41\"\n        ],\n        \"digest\": \"sha256:9"
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 286.724291ms before and 517.32225ms after
+FAIL	roundfix/internal/baseline	105.807s
+ok  	roundfix/internal/baselineacp	0.681s
+--- FAIL: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.61s)
+    baseline_record_docscontract_test.go:31: exit=3 stderr= stdout=Baseline update: plan ready
+        Category: approval
+        Result: managed-refresh plan is ready; repository bytes are unchanged
+        Prior catalog: sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4
+        Current catalog: sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4
+        File changes: 1
+        - update docs/agents/setup-context.json (1 managed entries)
+        Misplaced repository rules: 0
+        Retention evidence: 0
+        Declared decisions: 0
+        Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+        Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+        Skills: not run
+        Skills installed: 0
+        Skills restored: 0
+        Skills drifted: 0
+        Plan Digest: sha256:dac4804c68cc3aa505902d64036321570f09baccea19dd78aa6f2fabe067a8e1
+        Next action: review the plan and rerun with --confirm-plan sha256:dac4804c68cc3aa505902d64036321570f09baccea19dd78aa6f2fabe067a8e1, or use --yes to approve the digest computed in one invocation
+--- FAIL: TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink (0.51s)
+    baseline_record_docscontract_test.go:62: exit=3 stderr= stdout=Baseline update: plan ready
+        Category: approval
+        Result: managed-refresh plan is ready; repository bytes are unchanged
+        Prior catalog: sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4
+        Current catalog: sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4
+        File changes: 1
+        - update docs/agents/setup-context.json (1 managed entries)
+        Misplaced repository rules: 0
+        Retention evidence: 0
+        Declared decisions: 0
+        Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+        Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+        Skills: not run
+        Skills installed: 0
+        Skills restored: 0
+        Skills drifted: 0
+        Plan Digest: sha256:dac4804c68cc3aa505902d64036321570f09baccea19dd78aa6f2fabe067a8e1
+        Next action: review the plan and rerun with --confirm-plan sha256:dac4804c68cc3aa505902d64036321570f09baccea19dd78aa6f2fabe067a8e1, or use --yes to approve the digest computed in one invocation
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 301.031375ms before and 270.179417ms after
+FAIL	roundfix/internal/cli	10.451s
+ok  	roundfix/internal/codex	0.710s
+ok  	roundfix/internal/config	112.606s
+ok  	roundfix/internal/daemon	1.586s
+--- FAIL: TestTheSetupManifestIsCurrent (0.36s)
+    publicdocs_test.go:1294: Setup Manifest is stale; Managed Refresh proposes changes:
+        docs/agents/setup-context.json
+        regenerate with go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --yes
+FAIL
+FAIL	roundfix/internal/docscontract	12.671s
+ok  	roundfix/internal/gittest	1.199s
+ok  	roundfix/internal/notify	0.564s
+ok  	roundfix/internal/preflight	1.579s
+ok  	roundfix/internal/releaseplan	0.780s
+ok  	roundfix/internal/reviewsource	0.755s
+ok  	roundfix/internal/reviewsource/coderabbit	0.831s
+ok  	roundfix/internal/rounds	0.654s
+ok  	roundfix/internal/runevent	0.658s
+ok  	roundfix/internal/skillhash	0.849s
+ok  	roundfix/internal/spec	45.016s
+ok  	roundfix/internal/specaudit	1.628s
+ok  	roundfix/internal/speccheck	3.280s
+ok  	roundfix/internal/store	38.271s
+ok  	roundfix/internal/suiteguard	2.067s
+ok  	roundfix/internal/testfixture	7.063s
+ok  	roundfix/internal/tui	1.070s
+ok  	roundfix/internal/verifyselect	32.471s
+ok  	roundfix/internal/watch	0.791s
+ok  	roundfix/internal/worktree	2.086s
+--- FAIL: TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (31.93s)
+    owned_skill_edit_repocontract_test.go:82: derived Baseline artifact internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json changed after an owned skill edit
+FAIL
+FAIL	roundfix/skills	32.239s
+FAIL
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 1916 idle entries (221264391 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 10794909028 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
+verify-select: contracts: 144 selected (108 always, 36 by change), 0 not selected, 0 boundary
+make[1]: *** [verify-changed-contracts] Error 1
+make: *** [verify-changed] Error 2
+
+exit: 2
+wall_seconds: 136.487

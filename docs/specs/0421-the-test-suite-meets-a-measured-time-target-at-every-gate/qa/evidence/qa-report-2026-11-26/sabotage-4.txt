@@ -1,0 +1,15 @@
+command: go test -count=1 -v -tags docscontract -run '^TestTheGateTimeTargetsHoldTheApprovedTargets$' ./internal/docscontract
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage4-dvct3__5
+exit: 1
+wall seconds: 4.402
+stdout:
+=== RUN   TestTheGateTimeTargetsHoldTheApprovedTargets
+=== PAUSE TestTheGateTimeTargetsHoldTheApprovedTargets
+=== CONT  TestTheGateTimeTargetsHoldTheApprovedTargets
+    gate_time_targets_test.go:34: changed approved target pull-request
+--- FAIL: TestTheGateTimeTargetsHoldTheApprovedTargets (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.408s
+FAIL
+
+stderr:

@@ -1,0 +1,25 @@
+$ make verify-changed
+stdout:
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=1ce7c7b4-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:34:54 -0300'" -o bin/roundfix ./cmd/roundfix
+ok  	roundfix/internal/baseline	1.232s
+ok  	roundfix/internal/cli	7.626s
+ok  	roundfix/internal/config	65.629s
+--- FAIL: TestTheSkillCoverageMapIsCurrent (0.01s)
+    skill_coverage_test.go:53: surface "command archive" fingerprint: expected sha256: and 64 lowercase hex digits
+FAIL
+FAIL	roundfix/internal/docscontract	9.152s
+ok  	roundfix/internal/speccheck	2.101s
+ok  	roundfix/internal/suiteguard	1.002s
+ok  	roundfix/internal/testfixture	4.107s
+ok  	roundfix/internal/verifyselect	3.415s
+FAIL
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 356 idle entries (109785283 bytes)
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
+verify-select: contracts: 109 selected (108 always, 1 by change), 35 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestCoverageCollectionMatchesTheToolchainOnThisPlatform (internal/spec), TestJournalConsumerCorpusReplaysEveryConsumer (internal/store), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)
+make[1]: *** [verify-changed-contracts] Error 1
+make: *** [verify-changed] Error 2
+
+exit: 2
+wall_seconds: 83.163

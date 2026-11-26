@@ -1,0 +1,75 @@
+command: make verify-changed GO=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-complete-valid-history-wxcugqu7
+exit: 0
+wall seconds: 433.801
+stdout:
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace vet ./...
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=5dbe1c15' -X 'roundfix/internal/app.BuildTime=2026-11-26 03:05:48 -0300'" -o bin/roundfix ./cmd/roundfix
+?   	roundfix/cmd/gate-time	[no test files]
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	4.329s
+ok  	roundfix/internal/app	0.196s
+ok  	roundfix/internal/authorization	0.805s
+ok  	roundfix/internal/baseline	174.644s
+ok  	roundfix/internal/baselineacp	0.239s
+ok  	roundfix/internal/childexit	0.184s
+ok  	roundfix/internal/cli	404.475s
+ok  	roundfix/internal/codex	0.298s
+ok  	roundfix/internal/config	18.005s
+ok  	roundfix/internal/corebudget	0.324s
+ok  	roundfix/internal/correction	0.274s
+ok  	roundfix/internal/daemon	169.970s
+ok  	roundfix/internal/delivery	26.345s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/flowpermissions	1.326s
+ok  	roundfix/internal/gatetime	0.384s
+ok  	roundfix/internal/gittest	7.043s
+ok  	roundfix/internal/judge	8.607s
+ok  	roundfix/internal/lighttier	0.542s
+ok  	roundfix/internal/mdtree	0.202s
+ok  	roundfix/internal/notify	0.229s
+ok  	roundfix/internal/openrouterkey	0.223s
+ok  	roundfix/internal/phaserecord	0.392s
+ok  	roundfix/internal/preflight	6.608s
+ok  	roundfix/internal/queueforecast	1.544s
+ok  	roundfix/internal/releaseplan	0.214s
+ok  	roundfix/internal/reviewsource	0.222s
+ok  	roundfix/internal/reviewsource/coderabbit	0.293s
+ok  	roundfix/internal/rounds	0.583s
+ok  	roundfix/internal/runcause	3.104s
+ok  	roundfix/internal/runevent	0.221s
+ok  	roundfix/internal/secretscan	0.247s
+ok  	roundfix/internal/sharedcache	0.513s
+ok  	roundfix/internal/skillcoverage	0.232s
+ok  	roundfix/internal/skillhash	0.236s
+ok  	roundfix/internal/spec	103.361s
+ok  	roundfix/internal/specaudit	17.905s
+ok  	roundfix/internal/speccheck	78.544s
+ok  	roundfix/internal/store	36.227s
+ok  	roundfix/internal/suiteguard	6.465s
+ok  	roundfix/internal/suiteguardcontract	0.383s
+ok  	roundfix/internal/testfixture	6.705s
+ok  	roundfix/internal/testwait	0.834s
+ok  	roundfix/internal/tui	0.620s
+ok  	roundfix/internal/verifyselect	19.580s
+ok  	roundfix/internal/watch	0.260s
+ok  	roundfix/internal/worktree	68.563s
+ok  	roundfix/skills	8.163s
+ok  	roundfix/internal/baseline	1.179s
+ok  	roundfix/internal/cli	5.463s
+ok  	roundfix/internal/docscontract	8.780s
+ok  	roundfix/internal/speccheck	2.205s
+ok  	roundfix/internal/suiteguard	0.899s
+ok  	roundfix/internal/testfixture	3.849s
+ok  	roundfix/internal/verifyselect	3.801s
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace test -run '^(TestCoverageEquivalence|TestCoverageRecordCountsNoPackageUnderDocs)$' ./internal/spec
+ok  	roundfix/internal/spec	(cached)
+gate time: complete suite run 434s (target: 360s)
+
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 1 idle entries (175 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 21493463517 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: every package with fresh results for the Complete Suite Run
+verify-select: contracts: 108 selected (108 always, 0 by change), 36 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestRegenerationIsDeclared (internal/config), TestCoverageCollectionMatchesTheToolchainOnThisPlatform (internal/spec), TestJournalConsumerCorpusReplaysEveryConsumer (internal/store), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)

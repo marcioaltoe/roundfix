@@ -1,0 +1,56 @@
+$ go test -count=1 -v ./internal/gatetime
+stdout:
+=== RUN   TestNumberAddsTheAllowanceAndNeverPassesTheTarget
+=== PAUSE TestNumberAddsTheAllowanceAndNeverPassesTheTarget
+=== RUN   TestValidateRefusesAChangedTargetAndAWrongNumber
+=== PAUSE TestValidateRefusesAChangedTargetAndAWrongNumber
+=== RUN   TestReportRefusesAnUnknownGate
+=== PAUSE TestReportRefusesAnUnknownGate
+=== RUN   TestTheRunDatabaseIsOpenedForReadingOnly
+=== PAUSE TestTheRunDatabaseIsOpenedForReadingOnly
+=== RUN   TestTestsListsTheSlowestTestsOfARun
+=== PAUSE TestTestsListsTheSlowestTestsOfARun
+=== RUN   TestSurfaceTranscriptTheGateTimeReportOfATaskSettlement
+=== PAUSE TestSurfaceTranscriptTheGateTimeReportOfATaskSettlement
+=== RUN   TestSurfaceTranscriptTheGateTimeReportOfTheCompleteSuiteRun
+=== PAUSE TestSurfaceTranscriptTheGateTimeReportOfTheCompleteSuiteRun
+=== RUN   TestSurfaceTranscriptTheGateTimeReportOfAVerificationJob
+=== PAUSE TestSurfaceTranscriptTheGateTimeReportOfAVerificationJob
+=== RUN   TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded
+=== PAUSE TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded
+=== RUN   TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements
+=== PAUSE TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements
+=== RUN   TestWindowsHoldsAReleaseOnlyWithARule
+=== PAUSE TestWindowsHoldsAReleaseOnlyWithARule
+=== RUN   TestSettlementSamplesPairTaskAndAttempt
+=== PAUSE TestSettlementSamplesPairTaskAndAttempt
+=== CONT  TestNumberAddsTheAllowanceAndNeverPassesTheTarget
+=== CONT  TestSurfaceTranscriptTheGateTimeReportOfTheCompleteSuiteRun
+--- PASS: TestNumberAddsTheAllowanceAndNeverPassesTheTarget (0.00s)
+=== CONT  TestSurfaceTranscriptTheGateTimeReportOfATaskSettlement
+=== CONT  TestTestsListsTheSlowestTestsOfARun
+=== CONT  TestTheRunDatabaseIsOpenedForReadingOnly
+=== CONT  TestReportRefusesAnUnknownGate
+--- PASS: TestTestsListsTheSlowestTestsOfARun (0.00s)
+=== CONT  TestValidateRefusesAChangedTargetAndAWrongNumber
+--- PASS: TestSurfaceTranscriptTheGateTimeReportOfTheCompleteSuiteRun (0.00s)
+--- PASS: TestReportRefusesAnUnknownGate (0.00s)
+=== CONT  TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements
+--- PASS: TestSurfaceTranscriptTheGateTimeReportOfATaskSettlement (0.00s)
+=== CONT  TestWindowsHoldsAReleaseOnlyWithARule
+--- PASS: TestValidateRefusesAChangedTargetAndAWrongNumber (0.00s)
+=== CONT  TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded
+--- PASS: TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded (0.00s)
+--- PASS: TestWindowsHoldsAReleaseOnlyWithARule (0.00s)
+=== CONT  TestSettlementSamplesPairTaskAndAttempt
+=== CONT  TestSurfaceTranscriptTheGateTimeReportOfAVerificationJob
+--- PASS: TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements (0.00s)
+--- PASS: TestSurfaceTranscriptTheGateTimeReportOfAVerificationJob (0.00s)
+--- PASS: TestTheRunDatabaseIsOpenedForReadingOnly (0.01s)
+--- PASS: TestSettlementSamplesPairTaskAndAttempt (0.01s)
+PASS
+ok  	roundfix/internal/gatetime	0.289s
+stderr:
+
+exit: 0
+wall_seconds: 0.506

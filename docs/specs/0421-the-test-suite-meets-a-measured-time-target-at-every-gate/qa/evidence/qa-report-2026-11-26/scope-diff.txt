@@ -1,0 +1,373 @@
+diff --git a/.github/workflows/ci-verify.yml b/.github/workflows/ci-verify.yml
+index 39bb946f..f3c2b238 100644
+--- a/.github/workflows/ci-verify.yml
++++ b/.github/workflows/ci-verify.yml
+@@ -7,8 +7,6 @@ on:
+       - opened
+       - reopened
+       - synchronize
+-  push:
+-    branches: [main]
+ 
+ permissions:
+   contents: read
+@@ -18,14 +16,20 @@ concurrency:
+   cancel-in-progress: true
+ 
+ jobs:
+-  verify:
+-    name: Verification gate
++  parts:
++    name: Part (${{ matrix.part }})
+     runs-on: macos-26
+     timeout-minutes: 60
++    strategy:
++      fail-fast: false
++      matrix:
++        part: [packages, cli-1, cli-2, contracts-repo, contracts-docs]
++    env:
++      GOFLAGS: -count=1
+     steps:
+       - uses: actions/checkout@v7
+         with:
+-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
++          ref: ${{ github.event.pull_request.head.sha }}
+           # Historical authorization contracts read retained main ancestors.
+           fetch-depth: 0
+           persist-credentials: false
+@@ -47,7 +51,6 @@ jobs:
+         run: echo "GOCACHE=$(go env GOCACHE)" >> "$GITHUB_ENV"
+ 
+       - name: Merge the current base branch
+-        if: github.event_name == 'pull_request'
+         env:
+           BASE_REF: ${{ github.base_ref }}
+         run: |
+@@ -56,44 +59,17 @@ jobs:
+           echo "VERIFY_BASE=$base_sha" >> "$GITHUB_ENV"
+           echo "::notice title=tested-base::$base_sha"
+ 
+-      # Pull requests run the sets affected since the base branch head. The
+-      # full-history checkout above lets the selector resolve their merge base.
+-      - name: Verify changed
+-        if: github.event_name == 'pull_request'
+-        env:
+-          GOFLAGS: -count=1
+-        run: make verify-changed
++      # Each part reports its Gate Time Report and writes the per-test times
++      # from gate-time tests to GITHUB_STEP_SUMMARY through verify-part.
++      - name: Verify part
++        run: make verify-part PART=${{ matrix.part }}
+ 
+-      # Pushes to main owe a fresh verdict on the whole tree. -count=1 disables
+-      # the result cache. test-budget times the suite and records its verdict;
+-      # the last step judges it, so a slow runner never skips the docs and
+-      # contract runs (ADR-0387). The budget is the Makefile's.
+-      - name: Verify
+-        id: verify
+-        if: github.event_name == 'push'
+-        env:
+-          GOFLAGS: -count=1
+-          VERIFY_TEST_TARGET: test-budget
+-          SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
+-        run: make verify
+-
+-      # Repository-markdown contracts run at the pull request boundary. CI is
+-      # that boundary's fail-closed enforcement: a PR whose prose lies about
+-      # the binary, or whose Spec corpus is inconsistent, fails here.
+-      - name: Verify docs
+-        env:
+-          VERIFY_DOCS_TEST: ${{ github.event_name == 'pull_request' && 'docs-test-skipped' || 'docs-test' }}
+-        run: make verify-docs
+-
+-      # The Full Contract Run runs on every push to main (ADR-0253).
+-      - name: Verify every contract
+-        if: github.event_name == 'push'
+-        run: make verify-contracts
+-
+-      # The suite-time budget is judged last, whenever the timed suite passed,
+-      # even when the docs or contract runs failed (ADR-0387).
+-      - name: Check the suite-time budget
+-        if: ${{ !cancelled() && github.event_name == 'push' && steps.verify.outcome == 'success' }}
+-        env:
+-          SUITE_BUDGET_VERDICT: ${{ runner.temp }}/suite-budget-verdict
+-        run: make suite-budget-check
++  verify:
++    name: Verification gate
++    runs-on: macos-26
++    timeout-minutes: 60
++    needs: parts
++    if: ${{ always() }}
++    steps:
++      - name: Gather verification parts
++        run: test '${{ needs.parts.result }}' = success
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index c0824dd9..fff630c8 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -13,36 +13,56 @@ on:
+ 
+ jobs:
+   verify:
+-    # Override of 2026-11-25 (DECISÃO DE MARCIO, ai-memory 01a21237, 06:58 BRT):
+-    # the full suite exceeds go test's 10-minute default on the standard macOS
+-    # runner, so the release verifies on Linux until Spec 0421 (test-suite
+-    # performance) returns this job to macos-26.
+     runs-on: ubuntu-latest
+     permissions:
+       contents: read
++      checks: read
++      pull-requests: read
+     steps:
+       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+         with:
+-          # The Verify gate below runs the same suite as ci-verify, and its
+-          # historical authorization contracts read retained main ancestors by
+-          # SHA. A shallow checkout has no such object and the gate fails with
+-          # "not a tree object".
++          # Provenance compares the release commit with its pull request head.
+           fetch-depth: 0
+           persist-credentials: false
+ 
+-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+-        with:
+-          go-version: "1.26"
+-          check-latest: true
+-          cache: false
+-
+-      # The full local gate must pass before any build or publish.
+-      - name: Verify gate
+-        run: make verify
+-
+-      # The Full Contract Run runs before every release (ADR-0253).
+-      - name: Verify every contract
+-        run: make verify-contracts
++      - name: Release provenance
++        env:
++          GH_TOKEN: ${{ github.token }}
++        run: |
++          set -euo pipefail
++          refuse() { echo "::error::provenance: $1"; exit 1; }
++          trap 'refuse "GitHub could not be read"' ERR
++          release_commit="$(git log -1 --format=%H HEAD -- dist/npm/roundfix/package.json)"
++          [ -n "$release_commit" ] || refuse 'the commit is not the squash merge of one pull request into main'
++          if [ "$GITHUB_EVENT_NAME" = push ]; then
++            tag_commit="$(git rev-parse "refs/tags/$GITHUB_REF_NAME^{commit}")"
++            [ "$tag_commit" = "$release_commit" ] || refuse 'the tag is not on the release commit'
++          fi
++          # Pin the API version that supplies merge_commit_sha.
++          pulls="$(gh api -H 'X-GitHub-Api-Version: 2022-11-28' --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$release_commit/pulls?per_page=100" 2>/dev/null)"
++          candidates="$(jq -ce --arg commit "$release_commit" --arg repo "$GITHUB_REPOSITORY" '
++            if type != "array" or any(.[]; type != "array") then error("invalid pull requests") else add // [] end
++            | map(select(.merged_at != null and .merge_commit_sha == $commit and .base.ref == "main" and .base.repo.full_name == $repo))
++          ' <<< "$pulls" 2>/dev/null)"
++          [ "$(jq length <<< "$candidates")" = 1 ] || refuse 'the commit is not the squash merge of one pull request into main'
++          number="$(jq -er '.[0].number | select(type == "number" and . > 0 and floor == .)' <<< "$candidates" 2>/dev/null)"
++          head="$(jq -er '.[0].head.sha | select(type == "string" and test("^[0-9a-f]{40}$"))' <<< "$candidates" 2>/dev/null)"
++          # A full-history checkout may still need the PR head object.
++          if ! git cat-file -e "$head^{commit}" 2>/dev/null; then
++            git fetch --no-tags origin "$head" >/dev/null 2>&1
++          fi
++          parents="$(git rev-list --parents -n 1 "$release_commit")"
++          [ "$(wc -w <<< "$parents" | tr -d ' ')" = 2 ] || refuse 'the commit is not the squash merge of one pull request into main'
++          git merge-base --is-ancestor "$release_commit^" "$head" || refuse 'the pull request merged behind main'
++          [ "$(git rev-parse "$release_commit^{tree}")" = "$(git rev-parse "$head^{tree}")" ] || refuse 'the pull request merged behind main'
++          checks="$(gh api -H 'X-GitHub-Api-Version: 2022-11-28' --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$head/check-runs?per_page=100&filter=all" 2>/dev/null)"
++          latest="$(jq -c --arg head "$head" '
++            if type != "array" or any(.[]; (.check_runs | type) != "array") then error("invalid checks") else [.[].check_runs[]] end
++            | map(select(.name == "Verification gate" and .app.slug == "github-actions" and .head_sha == $head))
++            | max_by(.id)
++          ' <<< "$checks" 2>/dev/null)"
++          [ "$(jq -r '.status == "completed" and .conclusion == "success"' <<< "$latest")" = true ] || refuse 'the check did not pass or is missing'
++          echo "provenance: $release_commit is the squash merge of pull request #$number, and Verification gate passed on its tree"
+ 
+   release:
+     needs: verify
+diff --git a/.roundfixrc.yml b/.roundfixrc.yml
+index bed12589..61d39949 100644
+--- a/.roundfixrc.yml
++++ b/.roundfixrc.yml
+@@ -54,8 +54,8 @@ defaults:
+   # codex-acp 2.x), and the QA gate drives browsers through the chrome-devtools
+   # MCP server.
+   agent_full_access: false
+-  # Selective repository Verification for review Batches and Run QA gates.
+-  # Use `make verify` for the complete gate on main and releases.
++  # Package-plan Verification: light checks at settlements, package reach for
++  # review Batches, and the Complete Suite Run after the archive commit.
+   verification: make verify-changed
+   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+   artifact_dir: ""
+diff --git a/CONTEXT.md b/CONTEXT.md
+index bbe09db4..d2d581e9 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -4,6 +4,31 @@ Roundfix picks up Work Items — Review Issues from pull request reviews and Tas
+ 
+ ## Language
+ 
++**Gate Time Target**:
++The approved time objective of a repository verification gate on its named machine, judged by its measurement window or lab protocol ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Timeout, suite budget, enforced number
++
++**Gate Time Report**:
++The elapsed time of one verification gate compared with its approved target or recorded number, without failing that execution for time alone ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Time verdict, timeout error, benchmark
++
++**Complete Suite Run**:
++The run of every package test with fresh results before a Spec's pull request opens, carried by the repository gate after its archive commit ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Task verification, selected package run, full contract run
++
++
++**Gate Time Rule**:
++The decision that fixes each gate's machine, measured number and verification shape after its measurement window, and permits a rise or a change of shape only by the maintainer's decision on a Measured Dossier ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Timeout increase, suite budget, automatic relaxation
++
++**Measured Dossier**:
++The evidence for a large new feature's Rule Challenge: its gate time before and after on the named machine, work already cut, merged or moved, and the measured new number, put to the maintainer only in the feature's Idea or PRD ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Exception request, corrective overrun, runtime waiver
++
++**Release Provenance**:
++The proof that a release commit is the squash merge of one pull request into main whose branch held main's tip, has the same tree and whose latest Verification gate check passed; a pushed tag must point at that release commit ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++_Avoid_: Repeated suite, trusted tag, publication preflight
++
+ **Carried Decision**:
+ A recorded Setup Manifest decision that a profile change preserves because the
+ selected profile accepts it and no explicit answer overrides it ([ADR-0341](docs/adr/0341-a-profile-change-carries-the-recorded-decisions-and-a-restore-keeps-the-claude-skill-links.md)).
+@@ -746,7 +771,7 @@ The declaration in a Repository Contract Test's source that decides when `make v
+ _Avoid_: test tags, impact map, test filter
+ 
+ **Full Contract Run**:
+-`make verify-contracts`: one run of every Repository Contract Test that `cmd/verify-select` discovers, whatever its Contract Relevance, with no hand-kept list. CI runs it on every push to main and before every release, so a contract the selective gate leaves out of a pull request still runs before the change ships ([ADR-0253](docs/adr/0253-every-repository-contract-test-runs-on-main-and-before-a-release.md)).
++One run of every Repository Contract Test that discovery finds, whatever its Contract Relevance, with no hand-kept list; it runs in the two contract parts of every pull request ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
+ _Avoid_: full suite, nightly run, repo-test
+ 
+ **Incremental Verification**:
+diff --git a/docs/agents/setup-context.json b/docs/agents/setup-context.json
+index 357df28c..d6cd6e0e 100644
+--- a/docs/agents/setup-context.json
++++ b/docs/agents/setup-context.json
+@@ -258,7 +258,7 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:7156a47f31214a801cf0fbade46c8af27f2de0a9caaf1a25cd0ddbb4810c03ee"
++      "declarationDigest": "sha256:b157e2f531924e090c3e38f1322436b5abf0819542cba8823e4ec9ab5678a76c"
+     },
+     {
+       "id": "verification.incremental",
+@@ -267,8 +267,8 @@
+       "classification": "repository-command",
+       "repositoryExecutable": true,
+       "declarationPath": "Makefile",
+-      "declarationDigest": "sha256:7156a47f31214a801cf0fbade46c8af27f2de0a9caaf1a25cd0ddbb4810c03ee"
++      "declarationDigest": "sha256:b157e2f531924e090c3e38f1322436b5abf0819542cba8823e4ec9ab5678a76c"
+     }
+   ],
+-  "roundfixVersion": "0.152.0"
++  "roundfixVersion": "0.153.3"
+ }
+diff --git a/docs/agents/specific-repository.md b/docs/agents/specific-repository.md
+index 13031827..359b1c32 100644
+--- a/docs/agents/specific-repository.md
++++ b/docs/agents/specific-repository.md
+@@ -11,6 +11,10 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
+ 
+ ## Repository rules
+ 
++- A code test starts neither `go test` nor `go vet`; the Nested Go Tool rule in `internal/testfixture` enforces it.
++
++- A test builds a binary only through `testfixture.ProductBinary` or `testfixture.FixtureBinary`, once for its test binary; the One Build rule in `internal/testfixture` enforces it.
++
+ - A test that rewrites a derived record under its record flag calls `suiteguard.DeclareSanctionedRegeneration` with the exact command that runs it, only while that flag is set and before it writes. The suite guard then exempts only the outputs that an authorization record or an Archive Record in the tree lists for that command ([ADR-0345](../adr/0345-a-derived-record-writer-names-its-command-to-the-suite-guard.md)).
+ 
+ - A test that runs an External Test Tool, a tool outside the Base Test Tools, resolves it with `testfixture.RequireTool`, which skips naming the tool when it is absent; the External Test Tool rule in `internal/testfixture` enforces it.
+@@ -33,12 +37,13 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
+   `make verify` excludes the checks whose inputs are the repository itself —
+   markdown contracts and the derived-artifact regeneration gates — so an
+   ordinary commit does not re-run them. `make verify-changed`, the Verification
+-  of Runs and of the QA gate, runs the Repository Contract Tests that their
+-  Contract Relevance selects (ADR-0252). `make verify-docs` runs the
++  of Runs and of the QA gate, runs format, vet, build, the Repository Contract
++  Tests that their Contract Relevance selects, and the coverage record comparison
++  at a Task settlement, with no package tests (ADR-0252). `make verify-docs` runs the
+   `internal/docscontract` tests, the contracts `repo-test` lists and `roundfix spec
+   check`, and it **MUST** pass before any pull request opens. The Full Contract Run,
+   `make verify-contracts`, runs every Repository Contract Test whatever its Contract
+-  Relevance, and CI runs it on every push to main and before every release (ADR-0253).
++  Relevance, and CI runs it once in the two contract parts of every pull request ([ADR-0453](../adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
+   The selective gate and CI run on macOS; failures only Linux or Windows
+   produces are a known limit because those platforms are only compiled (ADR-0252). Nothing under `docs/history/` is ever validated as live work.
+ - A test in a code package that reads this repository's `docs/history`, `docs/adr`, `docs/specs`, `docs/user-guide` or `.agents/skills` lives in a `docscontract` file declared `//verify:always`, so a documentation edit never invalidates the package's cached test result (ADR-0326).
+@@ -82,6 +87,18 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
+ - The release plan the baseline requires is `roundfix release plan`, and the
+   maintainer decisions it defers to live in `docs/user-guide/release-runbook.md`.
+ 
++## Verification gates
++
++- **mandatory**: A Task settlement runs format, vet, build, selected Repository Contract Tests and the coverage record comparison. The Complete Suite Run happens at the Delivery Queue repository gate after the archive commit, with every package tested fresh. A Run delivered outside the Delivery Queue gets the Complete Suite Run from `make verify-changed` on the branch after the archive commit.
++
++## Continuous integration and gate time
++
++- **mandatory**: Continuous integration runs only for a pull request into main, with five parallel parts on `macos-26`: selected package tests, two CLI shards and the Full Contract Run in two contract parts. Every contract runs once, and the gathering `Verification gate` passes only when every part succeeds. Nothing verifies a push to main after merge. A release runs no test and first proves its Release Provenance ([ADR-0453](../adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).
++
++- **mandatory**: The Gate Time Rule's numbers live in `docs/references/gate-time-targets.json`. A single run never fails for its time. Before each release read the windows with `make gate-times`; a gate over its number holds the release until its time returns or the maintainer decides on a Measured Dossier.
++
++- **mandatory**: A number rises, or the shape of verification changes, only by the maintainer's decision on a Measured Dossier, requested as a Rule Challenge of the Gate Time Rule only in the Idea or PRD of a large new feature's Spec. A longer timeout or another kind of runner changes the shape. A number may fall on a new measurement without a decision. A change of machine, such as a runner image or mini, measures the same suite again and goes to the maintainer; it is not a relaxation. The dossier names the feature, the gate's time before and after on the named machine, what was already cut, merged or moved to a less frequent gate, and the measured new number. Never request it during a Run, in a corrective Spec or on the day of an overrun; without it the work must fit.
++
+ ## Anti-patterns (immediate rejection)
+ 
+ 1. Introducing Cobra, testify, or any dependency the stdlib covers.
+diff --git a/docs/references/behavior-surfaces.json b/docs/references/behavior-surfaces.json
+index 8e4d8acb..0d8c2bbd 100644
+--- a/docs/references/behavior-surfaces.json
++++ b/docs/references/behavior-surfaces.json
+@@ -111,7 +111,7 @@
+     "guide docs/user-guide/commands/window.md": "sha256:014d27df6f10984a662548bd543b4d888a3547325487e9cbd574824454bfe004",
+     "guide docs/user-guide/configuration.md": "sha256:b9749f82302fdba3915da08cfc997e4d60672bc1bae065999d27b0f18e3f0d97",
+     "guide docs/user-guide/context-driven-development.md": "sha256:84a5041ec24f00064c9e0b54919c079ba1e3ec5429b4b5fc50c29030171ddcb6",
+-    "guide docs/user-guide/release-runbook.md": "sha256:f4653ec2e1803d087a07bacab37b2648366dfa8cb7904c0f23fa8f17c57daea6",
++    "guide docs/user-guide/release-runbook.md": "sha256:02d1379f518f4fdb5fb31e1e2e3c1ddd05c9088a15cb71294fe3d508419e3a81",
+     "guide docs/user-guide/run-database-lifecycle.md": "sha256:b6be401ecef6c94df9d725cbd1da2d362c9b78f47a73766c142651f5582ca1b6",
+     "guide docs/user-guide/usage.md": "sha256:b4cf11ef89d4e07fa055e0c45ba918c00bbcd75463afec875eec35f2446836e5"
+   }
+diff --git a/docs/references/skill-coverage.json b/docs/references/skill-coverage.json
+index ad0ef121..a06fc7d3 100644
+--- a/docs/references/skill-coverage.json
++++ b/docs/references/skill-coverage.json
+@@ -588,7 +588,7 @@
+       "sources": [
+         "docs/user-guide/release-runbook.md"
+       ],
+-      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
++      "review": "2026-11-26 — Spec 0421 task_04: the runbook now states that the release runs no test and proves its Release Provenance, with the steps before the merge and the tag; the release reference names neither the workflow's steps nor their order, so it needs no text change. 2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+     },
+     {
+       "id": "command reopen",
+@@ -609,7 +609,7 @@
+         "docs/user-guide/commands/resolve.md",
+         "internal/cli/detach.go"
+       ],
+-      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
++      "review": "2026-11-26 — Spec 0421 task_02 changes only a test's allowance for the detach handshake, with no flag, output, exit code or detached behavior changed, so the review-runs reference needs no text change. 2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
+     },
+     {
+       "id": "command review",
+@@ -837,7 +837,7 @@
+         "docs/user-guide/commands/watch.md",
+         "internal/cli/detach.go"
+       ],
+-      "review": "2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
++      "review": "2026-11-26 — Spec 0421 task_02 changes only a test's allowance for the detach handshake, with no flag, output, exit code or detached behavior changed, so the review-runs reference needs no text change. 2026-10-12 — Spec 0259 task_01: only the detached child's group kill now goes through a Proven Signal; no flag, output or exit code changes."
+     },
+     {
+       "id": "command window clear",
+@@ -1326,7 +1326,7 @@
+       "sources": [
+         "docs/user-guide/release-runbook.md"
+       ],
+-      "review": "2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
++      "review": "2026-11-26 — Spec 0421 task_04: the runbook now states that the release runs no test and proves its Release Provenance, with the steps before the merge and the tag; the release reference names neither the workflow's steps nor their order, so it needs no text change. 2026-11-24 — Spec 0420 task_03: The runbook now states that the release verifies on a macOS runner before it validates the version; the release reference names neither the workflow steps nor their order, so it needs no text change. 2026-11-06 — Spec 0364 task_01: the runbook gains the procedure that finishes a partial npm publication and the refusals of the release workflow's Compare published packages step; the release reference describes the release plan and the tag-triggered workflow without naming its publication steps, so it needs no text change."
+     },
+     {
+       "id": "guide docs/user-guide/run-database-lifecycle.md",

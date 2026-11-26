@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run '^TestTheReleaseVerifiesBeforeItBuildsOrPublishes$' ./internal/verifyselect
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage8-54j5m2nj
+exit: 1
+wall seconds: 1.341
+stdout:
+=== RUN   TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+=== PAUSE TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+=== CONT  TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+    verifying_runner_test.go:127: release must need verify
+--- FAIL: TestTheReleaseVerifiesBeforeItBuildsOrPublishes (0.00s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 183.124792ms before and 160.276459ms after
+FAIL	roundfix/internal/verifyselect	0.626s
+FAIL
+
+stderr:

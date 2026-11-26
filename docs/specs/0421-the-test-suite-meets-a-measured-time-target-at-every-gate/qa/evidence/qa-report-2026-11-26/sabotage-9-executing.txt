@@ -1,0 +1,16 @@
+command: go test -count=1 -tags docscontract -v -run '^TestNoCodeTestStartsAGoTestOrGoVetRun$' ./internal/testfixture
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage-executing-9-35kkqdxf
+exit: 1
+wall seconds: 1.215
+stdout:
+=== RUN   TestNoCodeTestStartsAGoTestOrGoVetRun
+=== PAUSE TestNoCodeTestStartsAGoTestOrGoVetRun
+=== CONT  TestNoCodeTestStartsAGoTestOrGoVetRun
+    nested_go_tool_test.go:37: internal/spec/qa_executing_test.go:9: starts go test outside the frozen inventory
+--- FAIL: TestNoCodeTestStartsAGoTestOrGoVetRun (0.22s)
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 190.949916ms before and 158.352083ms after
+FAIL	roundfix/internal/testfixture	0.859s
+FAIL
+
+stderr:

@@ -1,0 +1,61 @@
+$ make verify-part PART=contracts-repo GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go
+stdout:
+pass roundfix/internal/app 0.51s
+pass roundfix/internal/authorization 0.86s
+pass roundfix/internal/agent 0.86s
+pass roundfix/internal/baselineacp 0.53s
+pass roundfix/internal/codex 0.51s
+pass roundfix/internal/cli 1.13s
+pass roundfix/internal/docscontract 0.53s
+pass roundfix/internal/config 1.02s
+pass roundfix/internal/daemon 1.09s
+pass roundfix/internal/notify 0.54s
+pass roundfix/internal/gittest 1.01s
+pass roundfix/internal/releaseplan 0.55s
+pass roundfix/internal/reviewsource 0.66s
+pass roundfix/internal/preflight 1.31s
+pass roundfix/internal/reviewsource/coderabbit 0.97s
+pass roundfix/internal/rounds 0.88s
+pass roundfix/internal/runevent 0.72s
+pass roundfix/internal/skillhash 0.71s
+pass roundfix/internal/spec 1.22s
+pass roundfix/internal/specaudit 1.22s
+pass roundfix/internal/store 1.28s
+pass roundfix/internal/suiteguard 1.28s
+pass roundfix/internal/testfixture 1.29s
+pass roundfix/internal/tui 0.82s
+pass roundfix/internal/speccheck 2.50s
+pass roundfix/internal/watch 0.75s
+pass roundfix/internal/worktree 1.26s
+pass roundfix/internal/verifyselect 3.05s
+pass roundfix/skills 26.07s
+pass roundfix/internal/baseline 67.56s
+slowest tests:
+66.25s roundfix/internal/baseline/TestMeasuredSanctionedOwnershipMatchesRecords
+61.62s roundfix/internal/baseline/TestDeclaredStepRegenerationAndFrozenBoundaries
+33.77s roundfix/internal/baseline/TestDeclaredStepRegenerationAndFrozenBoundaries/sanctioned_command_rewrites_sanctioned_and_preserves_frozen
+25.78s roundfix/skills/TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical
+12.80s roundfix/internal/baseline/TestDeclaredStepRegenerationAndFrozenBoundaries/frozen_resolved_path_rejects_rewrite
+8.59s roundfix/internal/baseline/TestDeclaredStepRegenerationAndFrozenBoundaries/dedicated/synthetic_plan_characterization
+4.01s roundfix/internal/baseline/TestDeclaredStepRegenerationAndFrozenBoundaries/failure/declared_flag_is_wrong
+1.84s roundfix/internal/verifyselect/TestEveryTestCompilesForLinuxAndWindows
+1.10s roundfix/internal/speccheck/TestCleanupHistoricalGrantEvidence
+0.88s roundfix/internal/verifyselect/TestEveryTestCompilesForLinuxAndWindows/windows
+0.82s roundfix/internal/verifyselect/TestEveryTestCompilesForLinuxAndWindows/linux
+0.74s roundfix/internal/reviewsource/coderabbit/TestEverySpawningPackageInstallsTheSuiteGuard
+0.67s roundfix/internal/rounds/TestEverySpawningPackageInstallsTheSuiteGuard
+0.53s roundfix/internal/tui/TestEverySpawningPackageInstallsTheSuiteGuard
+0.52s roundfix/internal/watch/TestEverySpawningPackageInstallsTheSuiteGuard
+0.51s roundfix/internal/runevent/TestEverySpawningPackageInstallsTheSuiteGuard
+0.51s roundfix/internal/worktree/TestEverySpawningPackageInstallsTheSuiteGuard
+0.50s roundfix/internal/suiteguard/TestEverySpawningPackageInstallsTheSuiteGuard/repository_installations
+0.50s roundfix/internal/suiteguard/TestEverySpawningPackageInstallsTheSuiteGuard
+0.49s roundfix/internal/skillhash/TestEverySpawningPackageInstallsTheSuiteGuard
+gate time: test binary, job contracts-repo 68s (target: 300s)
+gate time: pull request, job contracts-repo 70s (target: median 480s, p95 600s)
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 19126918447 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: contracts: 144 selected (every Repository Contract Test), 0 not selected
+
+exit: 0
+wall_seconds: 69.372

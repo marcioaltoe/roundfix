@@ -1,0 +1,8 @@
+command: go run -buildvcs=false ./cmd/verify-select -plan
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
+exit: 0
+wall seconds: 0.057
+stdout:
+
+stderr:
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec

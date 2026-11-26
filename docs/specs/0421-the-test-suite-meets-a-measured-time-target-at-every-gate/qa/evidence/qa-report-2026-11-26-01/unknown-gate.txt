@@ -1,0 +1,7 @@
+$ ./bin/gate-time report -gate unknown -seconds 1
+stdout:
+stderr:
+gate-time: unknown gate "unknown"
+
+exit: 2
+wall_seconds: 0.007

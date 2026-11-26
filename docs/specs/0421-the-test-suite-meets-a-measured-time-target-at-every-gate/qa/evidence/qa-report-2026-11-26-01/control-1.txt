@@ -1,0 +1,15 @@
+$ make verify-changed
+stdout:
+go vet ./...
+stderr:
+./internal/cli/cli.go:5:1: imports must appear before other declarations
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 5192 idle entries (2344386919 bytes)
+# roundfix/internal/cli
+internal/cli/cli.go:5:1: syntax error: imports must appear before other declarations
+# roundfix/internal/cli
+# [roundfix/internal/cli]
+vet: internal/cli/cli.go:5:1: imports must appear before other declarations
+make: *** [vet] Error 1
+
+exit: 2
+wall_seconds: 6.287

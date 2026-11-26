@@ -1,0 +1,5 @@
+DORA, Capabilities: Continuous integration, read 2026-11-25 (offline quotation in PRD Acceptance evidence and references/sources.md section 6): The tests should not take more than a few minutes to run, with an upper limit of about 10 minutes according to DORA’s research (PDF).
+GitHub Docs, GitHub-hosted runners reference, read 2026-11-25: Use of the standard GitHub-hosted runners is free and unlimited on public repositories.
+The recorded standard macOS labels include macos-latest, macos-15, macos-26 and xcode-27.
+Observed PR target median 480s, p95 600s; both are at or below 600s. Observed runner labels: macos-26, macos-26.
+No live lookup attempted.

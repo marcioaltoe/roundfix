@@ -1,0 +1,34 @@
+command: make verify-part PART=cli-2 GO=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-033uwyw3/go-trace
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
+exit: 0
+wall seconds: 131.795
+stdout:
+pass roundfix/internal/cli 129.26s
+slowest tests:
+38.15s roundfix/internal/cli/TestBaselineUpdateRefusesAnUndeclarableDecision
+34.88s roundfix/internal/cli/TestBaselineUpdateRefusesAnInvalidPromotion
+30.39s roundfix/internal/cli/TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict
+30.37s roundfix/internal/cli/TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated
+28.62s roundfix/internal/cli/TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+27.49s roundfix/internal/cli/TestReconcileKeepsTheItemBranchOfALiveQueueItem
+26.74s roundfix/internal/cli/TestReviewDisposeRefusalLeavesTheLedgerAndTheRecord
+22.11s roundfix/internal/cli/TestReviewValidatorFailureLeavesEveryAskedFindingStanding
+21.73s roundfix/internal/cli/TestBaselineUpdateFleetSweep
+18.82s roundfix/internal/cli/TestDeliveryRefusesATamperedRelinkedFile
+16.28s roundfix/internal/cli/TestReconcileWithARunIDOmitsItemBranchCandidates
+16.09s roundfix/internal/cli/TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater
+15.58s roundfix/internal/cli/TestRunImplementQAVerdictMatrix
+15.50s roundfix/internal/cli/TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+15.21s roundfix/internal/cli/TestBaselineUpdateMisplacedRuleReportAcrossFailures
+14.99s roundfix/internal/cli/TestDoctorNamesAMissingRequiredSkill
+13.96s roundfix/internal/cli/TestReconcileDiscardDirtyRecordsThenRemovesTheConfirmedRuns
+12.92s roundfix/internal/cli/TestGuidanceCompositionJourney
+12.73s roundfix/internal/cli/TestBaselineUpdateNamesEveryFileItWillRemove
+12.44s roundfix/internal/cli/TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches
+gate time: test binary, job cli-2 130s (target: 300s)
+gate time: pull request, job cli-2 132s (target: median 480s, p95 600s)
+
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 17 idle entries (1289549 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 17316969512 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: packages reached by the changes

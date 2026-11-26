@@ -1,0 +1,11 @@
+command: go run -buildvcs=false ./cmd/verify-select -plan
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-select-cli-reach-a6b2sxws
+exit: 0
+wall seconds: 0.740
+stdout:
+./cmd/roundfix
+./internal/baselineacp
+./internal/cli
+
+stderr:
+verify-select: packages: packages reached by the changes

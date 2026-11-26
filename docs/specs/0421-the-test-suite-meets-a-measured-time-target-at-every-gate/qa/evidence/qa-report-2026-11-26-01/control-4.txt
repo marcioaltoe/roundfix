@@ -1,0 +1,26 @@
+$ make verify-changed
+stdout:
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=12c1bd74-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:36:50 -0300'" -o bin/roundfix ./cmd/roundfix
+ok  	roundfix/internal/baseline	1.446s
+ok  	roundfix/internal/cli	7.036s
+ok  	roundfix/internal/docscontract	8.386s
+ok  	roundfix/internal/speccheck	2.706s
+ok  	roundfix/internal/suiteguard	1.035s
+ok  	roundfix/internal/testfixture	3.069s
+--- FAIL: TestRepositoryContractTestsDeclareTheirRelevance (0.09s)
+    repository_rules_docscontract_test.go:84: internal/docscontract/TestQARelevance class = package, want always
+    repository_rules_docscontract_test.go:94: missing declarations: installation=true package=true docs files=19 relevant=map[TestCoverageCollectionMatchesTheToolchainOnThisPlatform:true TestDeclaredStepRegenerationAndFrozenBoundaries:true TestJournalConsumerCorpusReplaysEveryConsumer:true TestMeasuredSanctionedOwnershipMatchesRecords:true TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical:true TestRegenerationIsDeclared:true TestRepositoryGateRunsTheAnalyzer:true] governed=map[TestCleanupHistoricalGrantEvidence:true TestEveryBoundedPathIsGoverned:true TestGovernedSetCoversOwnedShippedTemplates:true TestGovernedSetOnlyGrows:true]
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 229.230083ms before and 240.573125ms after
+FAIL	roundfix/internal/verifyselect	3.178s
+FAIL
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 883 idle entries (333620044 bytes)
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
+verify-select: contracts: 110 selected (108 always, 2 by change), 35 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestRegenerationIsDeclared (internal/config), TestCoverageCollectionMatchesTheToolchainOnThisPlatform (internal/spec), TestJournalConsumerCorpusReplaysEveryConsumer (internal/store), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)
+make[1]: *** [verify-changed-contracts] Error 1
+make: *** [verify-changed] Error 2
+
+exit: 2
+wall_seconds: 26.146

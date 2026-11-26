@@ -1,0 +1,76 @@
+{
+  "settlement": [
+    {
+      "exit": 0,
+      "seconds": 29.186
+    },
+    {
+      "exit": 0,
+      "seconds": 10.985
+    },
+    {
+      "exit": 0,
+      "seconds": 10.81
+    }
+  ],
+  "run_no_package": [
+    {
+      "exit": 0,
+      "seconds": 10.913
+    },
+    {
+      "exit": 0,
+      "seconds": 10.981
+    }
+  ],
+  "complete": [
+    {
+      "exit": 0,
+      "seconds": 425.298
+    },
+    {
+      "exit": 0,
+      "seconds": 431.716
+    },
+    {
+      "exit": 0,
+      "seconds": 421.341
+    }
+  ],
+  "before_pr": [
+    {
+      "exit": 0,
+      "seconds": 81.69676125003025
+    },
+    {
+      "exit": 0,
+      "seconds": 80.17528341710567
+    },
+    {
+      "exit": 0,
+      "seconds": 81.05833204195369
+    }
+  ],
+  "parts": {
+    "packages": {
+      "exit": 0,
+      "seconds": 168.7850852078991
+    },
+    "cli-1": {
+      "exit": 0,
+      "seconds": 128.9740815840196
+    },
+    "cli-2": {
+      "exit": 0,
+      "seconds": 113.44852570805233
+    },
+    "contracts-repo": {
+      "exit": 0,
+      "seconds": 69.371880916995
+    },
+    "contracts-docs": {
+      "exit": 0,
+      "seconds": 79.06589029100724
+    }
+  }
+}

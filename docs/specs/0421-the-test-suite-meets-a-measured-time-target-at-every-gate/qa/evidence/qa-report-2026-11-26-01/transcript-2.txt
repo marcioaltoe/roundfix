@@ -1,0 +1,7 @@
+$ ./bin/gate-time report -gate task-settlement -seconds 31
+stdout:
+gate time: task settlement 31s (target: median 120s, p95 240s)
+stderr:
+
+exit: 0
+wall_seconds: 0.330

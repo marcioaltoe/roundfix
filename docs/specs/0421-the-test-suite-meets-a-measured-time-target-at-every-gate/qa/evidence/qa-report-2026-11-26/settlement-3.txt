@@ -1,0 +1,22 @@
+command: make verify-changed GO=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-correct-history-preflight-c_jj2xks
+exit: 0
+wall seconds: 11.213
+stdout:
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace vet ./...
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=63c642a6-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 03:04:54 -0300'" -o bin/roundfix ./cmd/roundfix
+ok  	roundfix/internal/baseline	0.885s
+ok  	roundfix/internal/cli	6.790s
+ok  	roundfix/internal/docscontract	8.190s
+ok  	roundfix/internal/speccheck	2.200s
+ok  	roundfix/internal/suiteguard	0.837s
+ok  	roundfix/internal/testfixture	3.970s
+ok  	roundfix/internal/verifyselect	2.640s
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-we1wvmvb/go-trace test -run '^(TestCoverageEquivalence|TestCoverageRecordCountsNoPackageUnderDocs)$' ./internal/spec
+ok  	roundfix/internal/spec	(cached)
+gate time: task settlement 11s (target: median 120s, p95 240s)
+
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 21148067436 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
+verify-select: contracts: 109 selected (108 always, 1 by change), 35 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestRegenerationIsDeclared (internal/config), TestCoverageCollectionMatchesTheToolchainOnThisPlatform (internal/spec), TestJournalConsumerCorpusReplaysEveryConsumer (internal/store), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)

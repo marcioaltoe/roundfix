@@ -1,0 +1,16 @@
+$ go test -count=1 -v -tags docscontract -run ^TestTheTimeRulesRetirementDecisionRecord/amended_records$ ./internal/docscontract
+stdout:
+=== RUN   TestTheTimeRulesRetirementDecisionRecord
+=== PAUSE TestTheTimeRulesRetirementDecisionRecord
+=== CONT  TestTheTimeRulesRetirementDecisionRecord
+=== RUN   TestTheTimeRulesRetirementDecisionRecord/amended_records
+    time_rules_retirement_decision_record_test.go:80: ADR-0257 header: {Frontmatter:true Status:accepted Knowledge:0x2060e54180ac AmendedBy:[]}
+--- FAIL: TestTheTimeRulesRetirementDecisionRecord (0.01s)
+    --- FAIL: TestTheTimeRulesRetirementDecisionRecord/amended_records (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.376s
+FAIL
+stderr:
+
+exit: 1
+wall_seconds: 4.697

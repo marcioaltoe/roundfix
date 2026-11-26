@@ -1,0 +1,24 @@
+$ go test -count=1 -v ./internal/testfixture
+stdout:
+=== RUN   TestRequireToolReturnsAToolOnPath
+--- PASS: TestRequireToolReturnsAToolOnPath (0.07s)
+=== RUN   TestRequireToolSkipsNamingAnAbsentTool
+=== RUN   TestRequireToolSkipsNamingAnAbsentTool/absent
+    external_tool_test.go:36: requires rustfmt, which is not on PATH
+--- PASS: TestRequireToolSkipsNamingAnAbsentTool (0.00s)
+    --- SKIP: TestRequireToolSkipsNamingAnAbsentTool/absent (0.00s)
+=== RUN   TestProductBinaryIsBuiltOncePerTestBinary
+=== PAUSE TestProductBinaryIsBuiltOncePerTestBinary
+=== RUN   TestFixtureBinaryIsBuiltOncePerNameAndSource
+=== PAUSE TestFixtureBinaryIsBuiltOncePerNameAndSource
+=== CONT  TestProductBinaryIsBuiltOncePerTestBinary
+=== CONT  TestFixtureBinaryIsBuiltOncePerNameAndSource
+--- PASS: TestProductBinaryIsBuiltOncePerTestBinary (0.77s)
+--- PASS: TestFixtureBinaryIsBuiltOncePerNameAndSource (0.94s)
+PASS
+suiteguard: guard cost: measured 3568 paths; fingerprint took 188.952125ms before and 174.068458ms after
+ok  	roundfix/internal/testfixture	1.628s
+stderr:
+
+exit: 0
+wall_seconds: 1.798

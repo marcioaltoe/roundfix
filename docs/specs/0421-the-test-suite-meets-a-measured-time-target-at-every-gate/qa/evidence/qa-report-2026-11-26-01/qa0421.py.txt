@@ -1,0 +1,73 @@
+import os,sys,pathlib,subprocess,tempfile,time,tarfile,io,json,re,statistics,shutil
+R=pathlib.Path.cwd(); S=next(R.glob('docs/specs/0421*')); E=S/'qa/evidence/qa-report-2026-11-26-01'; REPORT=S/'qa/qa-report-2026-11-26-01.md'; HEAD='00bd628317cd969a5a69a82eff386c258e59807b';BASE='3efb72459c31356615baaac636f745ffad559942';SPAN=BASE+'..'+HEAD
+ENV=os.environ.copy();ENV.update(GOPROXY='off',GOSUMDB='off',GOMAXPROCS='5',GIT_CONFIG_NOSYSTEM='1',GIT_CONFIG_GLOBAL='/dev/null')
+for k in list(ENV):
+ if k in ('GH_TOKEN','GITHUB_TOKEN','TYPESAFE_API_KEY') or k.endswith('_API_KEY') or ('JUDGE' in k and 'KEY' in k):ENV.pop(k,None)
+STATE=E/'state.json'
+def run(name,args,cwd=R,env=None):
+ print('START',name,flush=True);start=time.monotonic()
+ p=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,stdin=subprocess.DEVNULL);dt=time.monotonic()-start
+ (E/(name+'.txt')).write_text('$ '+' '.join(args)+'\nstdout:\n'+p.stdout+'stderr:\n'+p.stderr+f'\nexit: {p.returncode}\nwall_seconds: {dt:.3f}\n')
+ print('DONE',name,p.returncode,round(dt,2),flush=True)
+ return p,dt
+
+def mark(row,status,detail,files=[]):
+ text=REPORT.read_text();text=re.sub(r'(?m)^\| '+re.escape(row)+r' \| pending \|',f'| {row} | {status} |',text)
+ text+='\n### '+row+' evidence\n\n```yaml\ninputs:\n  - kind: repository_path\n    ref: "**"\n  - kind: commit_range\n    ref: "'+SPAN+'"\n```\n\n'+detail+'\n\n'+ ' '.join('['+f+'](evidence/qa-report-2026-11-26-01/'+f+')' for f in files)+'\n';REPORT.write_text(text)
+
+def git(cwd,*args):return subprocess.check_output(['git','-c','user.name=QA fixture','-c','user.email=qa@example.invalid','-c','commit.gpgsign=false',*args],cwd=cwd,env=ENV,stderr=subprocess.DEVNULL,text=True).strip()
+def copy(label,rev=HEAD,runbranch=False):
+ d=pathlib.Path(tempfile.mkdtemp(prefix='qa0421-'+label+'-')).resolve();data=subprocess.check_output(['git','archive',rev],cwd=R)
+ with tarfile.open(fileobj=io.BytesIO(data)) as t:t.extractall(d,filter='data')
+ git(d,'init','-b','main');git(d,'config','core.hooksPath','/dev/null');git(d,'add','-f','-A');git(d,'commit','-qm','fixture from '+rev)
+ # PinnedHistory consumers require the pinned tag objects, not the fresh fixture commit.
+ git(d,'fetch','--quiet','--no-tags',str(R),rev,'+refs/tags/*:refs/tags/*')
+ # Receipt locators resolve removed ADRs through actual ancestry.
+ tree=git(d,'rev-parse','HEAD^{tree}');snapshot=git(d,'commit-tree',tree,'-p',rev,'-m','QA archived snapshot');git(d,'update-ref','refs/heads/main',snapshot)
+ git(d,'checkout','-qb','roundfix/run-qa0421' if runbranch else 'test/qa0421')
+ return d
+
+def change(d,file,old,new):
+ p=d/file;s=p.read_text();assert old in s,(file,old);p.write_text(s.replace(old,new,1))
+def test(name,pkgs,pattern=None,tag=None,cwd=R):
+ a=['go','test','-count=1','-v']
+ if tag:a+=['-tags',tag]
+ if pattern:a+=['-run',pattern]
+ return run(name,a+pkgs,cwd)
+
+def init():
+ old=REPORT.read_text();prior=(S/'qa/qa-report-2026-11-26.md').read_text();rows=[]
+ for line in prior.splitlines():
+  if re.match(r'\| (Q\d+|T\d+|U\d+) \|',line):
+   parts=line.split('|');rid=parts[1].strip();prov=parts[3].strip().split('; inputs:')[0]
+   if rid=='Q19':prov='task_05 Requirement 19'
+   # Transcript rows are required coverage of the declared verification requirement.
+   prov=re.sub(r'; TechSpec Surface Transcript \d','',prov)
+   rows.append('| '+rid+' | pending | '+prov+'; inputs: repository_path: **; commit_range: '+SPAN+' |')
+ old=old.replace('verdict: pending','verdict: pending\nstatus: in-progress\nspec: '+S.name+'\ndate: 2026-11-26\nbuild: "'+HEAD+'"\nsurfaces: [backend, infra, docs]\nuser_flow_binary: '+json.dumps((E/'version.txt').read_text().split('stdout:\n')[1].splitlines()[0])+'\nuser_flow_executables: [bin/roundfix, bin/gate-time]')
+ old=old.replace('| - | --- | --- |\n\n## Mechanical skips','| - | --- | --- |\n'+'\n'.join(rows)+'\n\n## Mechanical skips')
+ old+='\n## Scope and environment\n\nOffline gate using only this Run Worktree and freshly archived, Git-initialized copies. Strict precondition passed; the listed missing-artifact detectors are retained for manual review. No carried rows. All test and make commands retain session HOME and TMPDIR; GOMAXPROCS is 5, GOPROXY and GOSUMDB disable network. Product commands use fresh temporary homes and retained Go toolchains. The executor requires escalation because its configured writable root contains a symlink. Logs are captured outside the checkout until a command exits, then saved here. No message, provider, real gh, network, or runtime session is invoked.\n\n## Static gate\n\nThe Daemon supplied `make verify-changed`: pass, exit 0 at the audited head, diagnostics removed on success. Not rerun in this Run Worktree. Its timing line was not supplied. `make build` exited 0 and built bin/roundfix at the audited head; the dirty suffix reflects seeded untracked QA files. No source repairs.\n\n## Row evidence\n'
+ REPORT.write_text(old);mark('Q01','pass','The Run build succeeded. The static gate is the supplied Daemon result; no duration is inferred.',['version.txt','precondition.txt'])
+
+if __name__=='__main__':
+ phase=sys.argv[1]
+ if phase=='init':init()
+ if phase=='focused':
+  groups=[('fixture-contracts',['./internal/testfixture'],None,'docscontract'),('fixture-code',['./internal/testfixture'],None,None),('history',['./internal/gittest'],None,None),('selector',['./internal/verifyselect'],None,None),('selector-contracts',['./internal/verifyselect'],None,'docscontract'),('gatetime',['./internal/gatetime'],None,None),('docscontracts',['./internal/docscontract'],None,'docscontract'),('wait-cli',['./internal/cli'],'^TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline$',None),('wait-guard',['./internal/suiteguard'],'^(TestGuardReportsAndKillsHelperResidue|TestHelperResidueSkipsAnUnreadableProcessAndKeepsScanning|TestHelperResidueSkipsUnreadableProcessesWithoutResidue)$',None),('coverage',['./internal/spec'],'^(TestCoverageEquivalence|TestCoverageRecordCountsNoPackageUnderDocs)$',None)]
+  results={}
+  for name,pkg,pat,tag in groups:
+   p,dt=test(name,pkg,pat,tag);results[name]=p.returncode
+  STATE.write_text(json.dumps(results))
+  for row,files in [('Q07',['fixture-contracts','fixture-code','history','selector-contracts']),('Q08',['wait-cli','wait-guard']),('Q09',['selector']),('Q10',['selector']),('Q11',['selector','gatetime']),('Q12',['docscontracts']),('Q14',['docscontracts']),('Q15',['coverage'])]:
+   good=all(results[f]==0 for f in files);mark(row,'pass' if good else 'fail','Named tests ran fresh with verbose output. Additional Git scope facts are recorded in audit-facts.txt below.',[f+'.txt' for f in files])
+ if phase=='transcripts':
+  p,_=run('build-gate-time',['go','build','-buildvcs=false','-o','bin/gate-time','./cmd/gate-time']);assert p.returncode==0
+  specs=[(['report','-gate','task-settlement','-seconds','31'],'gate time: task settlement 31s (target: median 120s, p95 240s)\n'),(['report','-gate','complete-suite-run','-seconds','352'],'gate time: complete suite run 352s (target: 360s)\n'),(['report','-gate','pull-request','-job','cli-2','-seconds','412'],'gate time: pull request, job cli-2 412s (target: median 480s, p95 600s)\n'),(['report','-targets','internal/gatetime/testdata/targets-with-rule.json','-gate','task-settlement','-seconds','31'],'gate time: task settlement 31s (number: median 120s, p95 240s; within the measured result)\n'),(['windows','-fixture','internal/gatetime/testdata/windows-fixture.json'],'gate times: task settlement, 30 of 30 passing: median 104s of 120s, p95 212s of 240s, within\ngate times: pull request, 14 of 20 passing: window open\n')]
+  env=ENV.copy()
+  for k in ('GOMODCACHE','GOCACHE'):env[k]=subprocess.check_output(['go','env',k],text=True).strip()
+  with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+   env.update(HOME=h,TMPDIR=t)
+   p,_=run('transcript-1',['go','run','-buildvcs=false','./cmd/verify-select','-plan']);ok=p.returncode==0 and not p.stdout and p.stderr=='verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec\n';mark('T1','pass' if ok else 'fail','Compared stdout, stderr and exit code byte for byte.',['transcript-1.txt'])
+   for i,(a,want) in enumerate(specs,2):
+    p,_=run('transcript-'+str(i),['./bin/gate-time']+a,env=env);mark('T'+str(i),'pass' if p.returncode==0 and p.stdout==want and not p.stderr else 'fail','Compared stdout, stderr and exit code byte for byte; compiled from this Run, as the self-audit contract requires.',['transcript-'+str(i)+'.txt'])
+   p,_=run('unknown-gate',['./bin/gate-time','report','-gate','unknown','-seconds','1'],env=env);assert p.returncode==2

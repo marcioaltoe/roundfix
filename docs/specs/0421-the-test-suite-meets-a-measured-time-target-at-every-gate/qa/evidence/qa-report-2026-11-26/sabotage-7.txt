@@ -1,0 +1,18 @@
+command: go test -count=1 -v -run '^TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge$/^merged_behind_main$' ./internal/verifyselect
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage7-z0h3jvio
+exit: 0
+wall seconds: 1.679
+stdout:
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+--- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge (0.00s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main (0.37s)
+PASS
+suiteguard: guard cost: measured 3426 paths; fingerprint took 181.159042ms before and 156.748375ms after
+ok  	roundfix/internal/verifyselect	0.990s
+
+stderr:

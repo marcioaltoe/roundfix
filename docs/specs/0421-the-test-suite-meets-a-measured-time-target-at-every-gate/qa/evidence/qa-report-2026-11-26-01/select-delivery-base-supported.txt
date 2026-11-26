@@ -1,0 +1,8 @@
+$ go run -buildvcs=false ./cmd/verify-select
+stdout:
+core
+baseline
+stderr:
+
+exit: 0
+wall_seconds: 0.717

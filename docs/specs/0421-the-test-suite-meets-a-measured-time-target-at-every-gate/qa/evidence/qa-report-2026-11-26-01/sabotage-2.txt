@@ -1,0 +1,15 @@
+$ go test -count=1 -v -tags docscontract -run ^TestCLIShardsCoverEveryTestExactlyOnce$ ./internal/verifyselect
+stdout:
+=== RUN   TestCLIShardsCoverEveryTestExactlyOnce
+=== PAUSE TestCLIShardsCoverEveryTestExactlyOnce
+=== CONT  TestCLIShardsCoverEveryTestExactlyOnce
+    repository_rules_docscontract_test.go:186: "TestACeilingRecordNamesNoSelection" is selected by 0 shards, want exactly 1
+--- FAIL: TestCLIShardsCoverEveryTestExactlyOnce (0.16s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 178.726625ms before and 153.539667ms after
+FAIL	roundfix/internal/verifyselect	0.775s
+FAIL
+stderr:
+
+exit: 1
+wall_seconds: 1.594

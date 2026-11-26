@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run '^TestPlanPackagesSettlesOnlyOnTheRunsBranch$' ./internal/verifyselect
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage1-tfuapx3_
+exit: 1
+wall seconds: 1.308
+stdout:
+=== RUN   TestPlanPackagesSettlesOnlyOnTheRunsBranch
+=== PAUSE TestPlanPackagesSettlesOnlyOnTheRunsBranch
+=== CONT  TestPlanPackagesSettlesOnlyOnTheRunsBranch
+    plan_test.go:114: {marker:a branch: want:reach}: {Mode:settlement Reason:none at a settlement; the Complete Suite Run runs them once per Spec Packages:[] Fresh:false} <nil>
+--- FAIL: TestPlanPackagesSettlesOnlyOnTheRunsBranch (0.00s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 180.424916ms before and 154.286291ms after
+FAIL	roundfix/internal/verifyselect	0.611s
+FAIL
+
+stderr:

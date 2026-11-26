@@ -1,0 +1,41 @@
+$ go test -count=1 -v ./internal/gittest
+stdout:
+=== RUN   TestInitRepoDisablesAutomaticMaintenance
+=== RUN   TestInitRepoDisablesAutomaticMaintenance/worktree
+=== RUN   TestInitRepoDisablesAutomaticMaintenance/bare
+--- PASS: TestInitRepoDisablesAutomaticMaintenance (0.05s)
+    --- PASS: TestInitRepoDisablesAutomaticMaintenance/worktree (0.03s)
+    --- PASS: TestInitRepoDisablesAutomaticMaintenance/bare (0.02s)
+=== RUN   TestInitRepoKeepsCommitFromSpawningDetachedMaintenance
+--- PASS: TestInitRepoKeepsCommitFromSpawningDetachedMaintenance (0.02s)
+=== RUN   TestHardenedRepositoryNeverStartsAFilesystemMonitor
+=== PAUSE TestHardenedRepositoryNeverStartsAFilesystemMonitor
+=== RUN   TestPinnedHistoryMaterializesThePinnedPaths
+=== PAUSE TestPinnedHistoryMaterializesThePinnedPaths
+=== RUN   TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly
+=== PAUSE TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly
+=== CONT  TestHardenedRepositoryNeverStartsAFilesystemMonitor
+=== CONT  TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly
+=== CONT  TestPinnedHistoryMaterializesThePinnedPaths
+=== RUN   TestHardenedRepositoryNeverStartsAFilesystemMonitor/InitRepo
+=== RUN   TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly/first_reader
+=== RUN   TestHardenedRepositoryNeverStartsAFilesystemMonitor/Harden
+--- PASS: TestPinnedHistoryMaterializesThePinnedPaths (0.08s)
+=== RUN   TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly/later_reader
+--- PASS: TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly (0.08s)
+    --- PASS: TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly/first_reader (0.02s)
+    --- PASS: TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly/later_reader (0.00s)
+=== RUN   TestHardenedRepositoryNeverStartsAFilesystemMonitor/bare
+=== RUN   TestHardenedRepositoryNeverStartsAFilesystemMonitor/linked-worktree
+--- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor (0.29s)
+    --- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor/InitRepo (0.07s)
+    --- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor/Harden (0.06s)
+    --- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor/bare (0.03s)
+    --- PASS: TestHardenedRepositoryNeverStartsAFilesystemMonitor/linked-worktree (0.12s)
+PASS
+suiteguard: guard cost: measured 3569 paths; fingerprint took 187.52975ms before and 156.029542ms after
+ok  	roundfix/internal/gittest	0.941s
+stderr:
+
+exit: 0
+wall_seconds: 1.078

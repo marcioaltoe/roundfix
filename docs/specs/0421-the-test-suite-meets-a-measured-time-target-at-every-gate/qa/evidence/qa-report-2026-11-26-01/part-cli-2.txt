@@ -1,0 +1,32 @@
+$ make verify-part PART=cli-2 GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go
+stdout:
+pass roundfix/internal/cli 111.31s
+slowest tests:
+50.23s roundfix/internal/cli/TestQAReportAcceptArchiveAndSettleAgreeOnEveryPartialShape
+37.93s roundfix/internal/cli/TestBaselineUpdateRefusesAnUndeclarableDecision
+36.72s roundfix/internal/cli/TestBaselineUpdateRefusesAnInvalidPromotion
+33.17s roundfix/internal/cli/TestAnArchivedItemWithoutTheSanctionKeepsItsDerivedRecordConflict
+33.03s roundfix/internal/cli/TestAnArchivedItemsDerivedRecordConflictIsMergedAndRegenerated
+27.98s roundfix/internal/cli/TestReconcileKeepsTheItemBranchOfALiveQueueItem
+20.94s roundfix/internal/cli/TestDeliveryRefusesATamperedRelinkedFile
+18.31s roundfix/internal/cli/TestReviewValidatorFailureLeavesEveryAskedFindingStanding
+16.19s roundfix/internal/cli/TestGuidanceCompositionJourney
+15.66s roundfix/internal/cli/TestReconcileWithARunIDOmitsItemBranchCandidates
+15.40s roundfix/internal/cli/TestReconcileReleasesAMergedSpecRunWhoseFilesDivergedLater
+15.40s roundfix/internal/cli/TestBaselineUpdateFleetSweep
+15.00s roundfix/internal/cli/TestRunImplementQAVerdictMatrix
+13.76s roundfix/internal/cli/TestDoctorNamesAMissingRequiredSkill
+13.66s roundfix/internal/cli/TestTheQueueOwnerRecordsTheSignsOfAnItemBeforeItsMerge
+13.60s roundfix/internal/cli/TestBaselineUpdatePreviewReportsAnOlderOwnedSkill
+13.49s roundfix/internal/cli/TestBaselineUpdateMisplacedRuleReportAcrossFailures
+13.42s roundfix/internal/cli/TestBaselineUpdateRewritesBrokenRecordLinks
+13.40s roundfix/internal/cli/TestReviewDisposeRefusalLeavesTheLedgerAndTheRecord
+13.21s roundfix/internal/cli/TestReconcileDiscardDirtyRecordsThenRemovesTheConfirmedRuns
+gate time: test binary, job cli-2 112s (target: 300s)
+gate time: pull request, job cli-2 113s (target: median 480s, p95 600s)
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 19084620465 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: every package with fresh results for the Complete Suite Run
+
+exit: 0
+wall_seconds: 113.449

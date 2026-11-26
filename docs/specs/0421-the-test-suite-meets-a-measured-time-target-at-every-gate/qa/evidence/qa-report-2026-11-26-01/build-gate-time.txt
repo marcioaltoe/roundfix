@@ -1,0 +1,6 @@
+$ go build -buildvcs=false -o bin/gate-time ./cmd/gate-time
+stdout:
+stderr:
+
+exit: 0
+wall_seconds: 0.227

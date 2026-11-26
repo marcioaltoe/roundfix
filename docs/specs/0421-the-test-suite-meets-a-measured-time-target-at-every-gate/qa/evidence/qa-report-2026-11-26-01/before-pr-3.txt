@@ -1,0 +1,75 @@
+$ make verify-docs GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go
+stdout:
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=8410bc45-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 07:21:54 -0300'" -o bin/roundfix ./cmd/roundfix
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	5.677s
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForLinuxAndWindows)$' ./...
+?   	roundfix/cmd/gate-time	[no test files]
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.867s
+ok  	roundfix/internal/app	0.463s
+ok  	roundfix/internal/authorization	1.154s
+ok  	roundfix/internal/baseline	67.877s
+ok  	roundfix/internal/baselineacp	0.515s
+ok  	roundfix/internal/childexit	0.189s [no tests to run]
+ok  	roundfix/internal/cli	1.030s
+ok  	roundfix/internal/codex	0.389s
+ok  	roundfix/internal/config	0.894s
+ok  	roundfix/internal/corebudget	0.069s [no tests to run]
+ok  	roundfix/internal/correction	0.067s [no tests to run]
+ok  	roundfix/internal/daemon	0.940s
+ok  	roundfix/internal/delivery	0.571s [no tests to run]
+ok  	roundfix/internal/docscontract	0.405s
+ok  	roundfix/internal/flowpermissions	0.076s [no tests to run]
+ok  	roundfix/internal/gatetime	0.104s [no tests to run]
+ok  	roundfix/internal/gittest	0.967s
+ok  	roundfix/internal/judge	0.136s [no tests to run]
+ok  	roundfix/internal/lighttier	0.112s [no tests to run]
+ok  	roundfix/internal/mdtree	0.059s [no tests to run]
+ok  	roundfix/internal/notify	0.424s
+ok  	roundfix/internal/openrouterkey	0.058s [no tests to run]
+ok  	roundfix/internal/phaserecord	0.063s [no tests to run]
+ok  	roundfix/internal/preflight	1.318s
+ok  	roundfix/internal/queueforecast	0.058s [no tests to run]
+ok  	roundfix/internal/releaseplan	0.799s
+ok  	roundfix/internal/reviewsource	0.788s
+ok  	roundfix/internal/reviewsource/coderabbit	0.806s
+ok  	roundfix/internal/rounds	0.527s
+ok  	roundfix/internal/runcause	0.118s [no tests to run]
+ok  	roundfix/internal/runevent	0.515s
+ok  	roundfix/internal/secretscan	0.062s [no tests to run]
+ok  	roundfix/internal/sharedcache	0.061s [no tests to run]
+ok  	roundfix/internal/skillcoverage	0.067s [no tests to run]
+ok  	roundfix/internal/skillhash	0.506s
+ok  	roundfix/internal/spec	1.166s
+ok  	roundfix/internal/specaudit	1.208s
+ok  	roundfix/internal/speccheck	2.373s
+ok  	roundfix/internal/store	1.215s
+ok  	roundfix/internal/suiteguard	1.164s
+ok  	roundfix/internal/suiteguardcontract	0.078s [no tests to run]
+ok  	roundfix/internal/testfixture	1.167s
+ok  	roundfix/internal/testwait	0.075s [no tests to run]
+ok  	roundfix/internal/tui	0.681s
+ok  	roundfix/internal/verifyselect	2.949s
+ok  	roundfix/internal/watch	0.653s
+ok  	roundfix/internal/worktree	1.143s
+ok  	roundfix/skills	25.731s
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	2.184s
+bin/roundfix spec check
+Spec 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/references/_index.md
+gate time: before pull request 81s (target: 90s)
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 18193506125 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+
+exit: 0
+wall_seconds: 81.058

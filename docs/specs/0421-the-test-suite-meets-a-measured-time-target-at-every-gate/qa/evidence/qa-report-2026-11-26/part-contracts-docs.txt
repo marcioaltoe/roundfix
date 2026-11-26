@@ -1,0 +1,53 @@
+command: make verify-part PART=contracts-docs GO=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-033uwyw3/go-trace
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
+exit: 0
+wall seconds: 72.099
+stdout:
+pass roundfix/internal/baseline 0.64s
+pass roundfix/internal/store 4.69s
+pass roundfix/internal/cli 8.11s
+pass roundfix/internal/testfixture 3.95s
+pass roundfix/internal/spec 9.74s
+pass roundfix/internal/docscontract 10.64s
+pass roundfix/internal/verifyselect 2.91s
+pass roundfix/internal/config 65.86s
+slowest tests:
+65.26s roundfix/internal/config/TestRegenerationIsDeclared
+9.03s roundfix/internal/spec/TestCoverageCollectionMatchesTheToolchainOnThisPlatform
+7.08s roundfix/internal/cli/TestReleasePlanChecksOnAnAdoptedRepository
+4.58s roundfix/internal/config/TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused
+4.01s roundfix/internal/cli/TestReleasePlanChecksOnAnAdoptedRepository/false
+3.97s roundfix/internal/store/TestJournalConsumerCorpusReplaysEveryConsumer
+3.95s roundfix/internal/cli/TestBaselineUpdatePreviewIgnoresASetupSnapshotDifference
+3.91s roundfix/internal/docscontract/TestStageScopeDefaultSweepIsUnchanged/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate
+3.91s roundfix/internal/docscontract/TestStageScopeDefaultSweepIsUnchanged
+3.66s roundfix/internal/cli/TestBaselineUpdateReachesCurrentWithARepositoryProfile
+3.14s roundfix/internal/cli/TestReleasePlanChecksWriteNothing
+3.07s roundfix/internal/cli/TestReleasePlanChecksOnAnAdoptedRepository/true
+3.03s roundfix/internal/docscontract/TestCheckLoopOrderRepositoryAgrees
+2.98s roundfix/internal/cli/TestBaselineUpdatePreviewIgnoresADifferenceWithARepositoryProfile
+2.87s roundfix/internal/docscontract/TestCheckCorpusGolden
+2.81s roundfix/internal/cli/TestDoctorChecksARepositoryProfileSkillOnlyForPresence
+2.57s roundfix/internal/cli/TestBaselineUpdateReachesCurrentWithARepositoryProfile/copied_skills=true
+2.39s roundfix/internal/cli/TestBaselineUpdateSkillsStageRefreshesSkillsWithARepositoryProfile
+2.26s roundfix/internal/store/TestJournalConsumerCorpusReplaysEveryConsumer/events_Attach_reconcile_and_gc_preserve_pre-change_observations
+2.10s roundfix/internal/verifyselect/TestCLIShardsCoverEveryTestExactlyOnce
+gate time: test binary, job contracts-docs 66s (target: 300s)
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-033uwyw3/go-trace build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=32f9632e-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 02:59:50 -0300'" -o bin/roundfix ./cmd/roundfix
+/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-tools-033uwyw3/go-trace test -run '^(TestCoverageEquivalence|TestCoverageRecordCountsNoPackageUnderDocs)$' ./internal/spec
+ok  	roundfix/internal/spec	1.263s
+bin/roundfix spec check
+Spec 0421-the-test-suite-meets-a-measured-time-target-at-every-gate
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-FINDING-LIFECYCLE: missing docs/findings Finding
+  SC-ROLLUP-MEMBER: missing docs/findings rollup
+  SC-ARCHIVE-LICENSE: missing docs/history/findings
+  vocabulary documentation detector: missing docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/references/_index.md
+gate time: pull request, job contracts-docs 72s (target: median 480s, p95 600s)
+
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 66 idle entries (83746693 bytes)
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 18253705623 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: contracts: 144 selected (every Repository Contract Test), 0 not selected

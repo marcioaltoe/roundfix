@@ -1,0 +1,28 @@
+$ make verify-changed
+stdout:
+go vet ./...
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=6b75538f-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:37:20 -0300'" -o bin/roundfix ./cmd/roundfix
+ok  	roundfix/internal/baseline	1.226s
+ok  	roundfix/internal/cli	7.007s
+ok  	roundfix/internal/docscontract	8.345s
+ok  	roundfix/internal/speccheck	2.466s
+ok  	roundfix/internal/suiteguard	0.988s
+ok  	roundfix/internal/testfixture	3.175s
+ok  	roundfix/internal/verifyselect	3.182s
+go test -run '^(TestCoverageEquivalence|TestCoverageRecordCountsNoPackageUnderDocs)$' ./internal/spec
+--- FAIL: TestCoverageEquivalence (0.84s)
+    coverage_test.go:82: coverage addition: package "roundfix/internal/cli" now executes "TestQARenamedACommandRefusesARepositoryRecordedByANewerRoundfix"
+    coverage_test.go:85: coverage regression: package "roundfix/internal/cli" no longer executes "TestACommandRefusesARepositoryRecordedByANewerRoundfix"
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 193.322666ms before and 157.254667ms after
+FAIL	roundfix/internal/spec	1.510s
+FAIL
+stderr:
+gocache-bound: /Volumes/Brain-SSD/cache/go-build: removed 660 idle entries (371968801 bytes)
+verify-select: packages: none at a settlement; the Complete Suite Run runs them once per Spec
+verify-select: contracts: 109 selected (108 always, 1 by change), 35 not selected, 0 boundary; relevant not selected: TestDeclaredStepRegenerationAndFrozenBoundaries (internal/baseline), TestMeasuredSanctionedOwnershipMatchesRecords (internal/baseline), TestRepositoryGateRunsTheAnalyzer (internal/baseline), TestRegenerationIsDeclared (internal/config), TestCoverageCollectionMatchesTheToolchainOnThisPlatform (internal/spec), TestJournalConsumerCorpusReplaysEveryConsumer (internal/store), TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (skills)
+make[1]: *** [coverage-record-check] Error 1
+make: *** [verify-changed] Error 2
+
+exit: 2
+wall_seconds: 28.691

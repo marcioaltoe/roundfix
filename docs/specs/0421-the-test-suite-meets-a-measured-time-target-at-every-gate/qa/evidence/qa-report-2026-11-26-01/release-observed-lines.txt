@@ -1,0 +1,138 @@
+$ go test -overlay=/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/tmpq99vh6xy/overlay.json -count=1 -v -run ^TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge$ ./internal/verifyselect
+stdout:
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/squash_merge_of_a_branch_that_held_main
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/squash_merge_of_a_branch_that_held_main
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/manual_dispatch_evaluates_the_release_commit
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/manual_dispatch_evaluates_the_release_commit
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/failed_check
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/failed_check
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/missing_check
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/missing_check
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/commit_no_pull_request_merged
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/commit_no_pull_request_merged
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/tag_on_another_commit
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/tag_on_another_commit
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/github_unreadable
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/github_unreadable
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_success_newer_failure
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_success_newer_failure
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_failure_newer_success
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_failure_newer_success
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/foreign_app_check
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/foreign_app_check
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_head_check
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_head_check
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/incomplete_check
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/incomplete_check
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_base
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_base
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_merge_commit
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_merge_commit
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/unmerged_pull_request
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/unmerged_pull_request
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/ambiguous_pull_requests
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/ambiguous_pull_requests
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_pulls
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_pulls
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_checks
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_checks
+=== RUN   TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/checks_unreadable
+=== PAUSE TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/checks_unreadable
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/squash_merge_of_a_branch_that_held_main
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_checks
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/foreign_app_check
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/checks_unreadable
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/commit_no_pull_request_merged
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the commit is not the squash merge of one pull request into main\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_failure_newer_success
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/squash_merge_of_a_branch_that_held_main
+    release_provenance_test.go:150: observed exit=0 output="provenance: f62902a81f7f657e28e5defdde982ea5dfc46177 is the squash merge of pull request #7, and Verification gate passed on its tree\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/foreign_app_check
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/checks_unreadable
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: GitHub could not be read\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_success_newer_failure
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/github_unreadable
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_checks
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: GitHub could not be read\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/tag_on_another_commit
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/failed_check
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/tag_on_another_commit
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the tag is not on the release commit\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/missing_check
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/github_unreadable
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: GitHub could not be read\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_merge_commit
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_failure_newer_success
+    release_provenance_test.go:150: observed exit=0 output="provenance: 8dd37c6c591ea977f092a15d716fba4f4fdc4160 is the squash merge of pull request #7, and Verification gate passed on its tree\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_pulls
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_success_newer_failure
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/ambiguous_pull_requests
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/failed_check
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/unmerged_pull_request
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/missing_check
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_merge_commit
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the commit is not the squash merge of one pull request into main\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_pulls
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: GitHub could not be read\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/manual_dispatch_evaluates_the_release_commit
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/ambiguous_pull_requests
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the commit is not the squash merge of one pull request into main\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_base
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/unmerged_pull_request
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the commit is not the squash merge of one pull request into main\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/incomplete_check
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the pull request merged behind main\n"
+=== CONT  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_head_check
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_base
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the commit is not the squash merge of one pull request into main\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the pull request merged behind main\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/manual_dispatch_evaluates_the_release_commit
+    release_provenance_test.go:150: observed exit=0 output="provenance: 8dd37c6c591ea977f092a15d716fba4f4fdc4160 is the squash merge of pull request #7, and Verification gate passed on its tree\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/incomplete_check
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+=== NAME  TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_head_check
+    release_provenance_test.go:150: observed exit=1 output="::error::provenance: the check did not pass or is missing\n"
+--- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge (0.00s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/commit_no_pull_request_merged (0.37s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/foreign_app_check (0.45s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/squash_merge_of_a_branch_that_held_main (0.45s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/checks_unreadable (0.46s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_checks (0.47s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/tag_on_another_commit (0.15s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/github_unreadable (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_failure_newer_success (0.41s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/older_success_newer_failure (0.38s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/failed_check (0.39s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/missing_check (0.36s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_merge_commit (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/malformed_pulls (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/ambiguous_pull_requests (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/unmerged_pull_request (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/merged_behind_main (0.34s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_base (0.32s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/different_tree (0.38s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/manual_dispatch_evaluates_the_release_commit (0.39s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/incomplete_check (0.36s)
+    --- PASS: TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge/wrong_head_check (0.37s)
+PASS
+suiteguard: guard cost: measured 3639 paths; fingerprint took 184.501458ms before and 159.157542ms after
+ok  	roundfix/internal/verifyselect	2.316s
+stderr:
+
+exit: 0
+wall_seconds: 2.630

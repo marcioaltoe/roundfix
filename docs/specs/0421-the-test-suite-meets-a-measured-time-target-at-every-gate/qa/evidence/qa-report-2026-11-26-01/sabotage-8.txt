@@ -1,0 +1,15 @@
+$ go test -count=1 -v -run ^TestTheReleaseVerifiesBeforeItBuildsOrPublishes$ ./internal/verifyselect
+stdout:
+=== RUN   TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+=== PAUSE TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+=== CONT  TestTheReleaseVerifiesBeforeItBuildsOrPublishes
+    verifying_runner_test.go:127: release must need verify
+--- FAIL: TestTheReleaseVerifiesBeforeItBuildsOrPublishes (0.00s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 175.466792ms before and 163.521834ms after
+FAIL	roundfix/internal/verifyselect	0.618s
+FAIL
+stderr:
+
+exit: 1
+wall_seconds: 1.324

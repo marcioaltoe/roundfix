@@ -1,0 +1,10 @@
+env -changed GOCACHE
+env GOCACHE
+run -buildvcs=false ./cmd/gocache-bound -dir /Volumes/Brain-SSD/cache/go-build -max-mb 10240 -idle 2h
+build -buildvcs=false -ldflags -X 'roundfix/internal/app.BuildCommit=abccfd93-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 07:17:57 -0300' -o bin/roundfix ./cmd/roundfix
+test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+test -count=1 -tags repocontract -run ^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForLinuxAndWindows)$ ./...
+test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
+test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
+test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
+test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1

@@ -1,0 +1,32 @@
+$ make verify-part PART=cli-1 GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go
+stdout:
+pass roundfix/internal/cli 126.39s
+slowest tests:
+62.28s roundfix/internal/cli/TestPhaseModelKeepsTheFallbackForItsSpecAndModel
+56.12s roundfix/internal/cli/TestAgentSelectionProfilesMacro
+40.92s roundfix/internal/cli/TestReconcileItemBranchSafety
+39.22s roundfix/internal/cli/TestBaselineUpdateDocumentationPart
+31.27s roundfix/internal/cli/TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream
+30.67s roundfix/internal/cli/TestBaselineUpdateNamesMisplacedRepositoryRules
+25.25s roundfix/internal/cli/TestBaselineUpdateWarnsAboutTheClaudeInstructionLink
+24.89s roundfix/internal/cli/TestBaselineUpdateApprovedApplyDeletesTheRetiredSkills
+23.71s roundfix/internal/cli/TestBaselineUpdateWithoutSkillsOmitsRetiredSkills
+21.72s roundfix/internal/cli/TestBaselineUpdatePreviewNamesAMissingRequiredSkill
+21.50s roundfix/internal/cli/TestBaselineUpdateRecordsADeclaredDecision
+19.66s roundfix/internal/cli/TestBaselineUpdateHistoryPlanningBoundaries
+17.44s roundfix/internal/cli/TestDoctorReportsTheClaudeInstructionLink
+17.44s roundfix/internal/cli/TestDeliveryWorkflowRefusesARecordCommitThatChangesAnotherPath
+17.43s roundfix/internal/cli/TestReconcileDryRunListsTheDirtyDiscardPathsAndDigest
+15.39s roundfix/internal/cli/TestDoctorReportsMisplacedRepositoryRules
+15.33s roundfix/internal/cli/TestAgentSelectionProfilesMacro/a_selection_failure_activates_the_fallback_chain
+15.19s roundfix/internal/cli/TestBaselineMacroJourneysPublicCLI
+14.70s roundfix/internal/cli/TestReconcileDiscardDirtyRefusesAChangedDigestWithoutChangingAnything
+13.60s roundfix/internal/cli/TestReconcileListsAndReleasesAnItemBranchOfAMergedSpec
+gate time: test binary, job cli-1 127s (target: 300s)
+gate time: pull request, job cli-1 129s (target: median 480s, p95 600s)
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 19084388913 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: every package with fresh results for the Complete Suite Run
+
+exit: 0
+wall_seconds: 128.974

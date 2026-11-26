@@ -1,0 +1,17 @@
+$ go test -count=1 -v -tags docscontract -run ^(TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink)$ ./internal/cli
+stdout:
+=== RUN   TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== PAUSE TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== RUN   TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== PAUSE TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+=== CONT  TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent
+=== CONT  TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink
+--- PASS: TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent (0.20s)
+--- PASS: TestBaselineUpdateSurfaceTranscriptKeepsTheClaudeInstructionLink (0.20s)
+PASS
+suiteguard: guard cost: measured 3638 paths; fingerprint took 171.900417ms before and 163.7985ms after
+ok  	roundfix/internal/cli	0.867s
+stderr:
+
+exit: 0
+wall_seconds: 1.411

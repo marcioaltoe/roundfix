@@ -1,0 +1,14 @@
+$ go test -count=1 -v -tags docscontract -run ^TestTheGateTimeTargetsHoldTheApprovedTargets$ ./internal/docscontract
+stdout:
+=== RUN   TestTheGateTimeTargetsHoldTheApprovedTargets
+=== PAUSE TestTheGateTimeTargetsHoldTheApprovedTargets
+=== CONT  TestTheGateTimeTargetsHoldTheApprovedTargets
+    gate_time_targets_test.go:34: changed approved target pull-request
+--- FAIL: TestTheGateTimeTargetsHoldTheApprovedTargets (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.401s
+FAIL
+stderr:
+
+exit: 1
+wall_seconds: 4.817

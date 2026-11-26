@@ -1,0 +1,13 @@
+$ ./bin/roundfix archive 0421-the-test-suite-meets-a-measured-time-target-at-every-gate --plan --offline
+stdout:
+archive plan for 0421-the-test-suite-meets-a-measured-time-target-at-every-gate: removes 267 file(s) (3137495 bytes) and writes docs/history/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate.md
+core 11 file(s): _authorization.md, _prd.md, _tasks.md, _techspec.md, qa/qa-report-2026-11-26-01.md, qa/qa-report-2026-11-26.md, task_01.md, task_02.md, task_03.md, task_04.md, task_05.md
+evidence 254 file(s) (2673461 bytes) under qa/evidence/
+judge: skipped (offline)
+candidate _idea.md 52171 bytes: no advice (offline)
+candidate references/sources.md 36423 bytes: no advice (offline)
+promote with: roundfix archive 0421-the-test-suite-meets-a-measured-time-target-at-every-gate --promote <path>
+stderr:
+
+exit: 0
+wall_seconds: 3.605

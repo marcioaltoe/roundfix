@@ -1,0 +1,15 @@
+command: go test -count=1 -v -tags docscontract -run '^TestTheTimeRulesRetirementDecisionRecord$/^amended_records$' ./internal/docscontract
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage11-vp408yk_
+exit: 0
+wall seconds: 4.414
+stdout:
+=== RUN   TestTheTimeRulesRetirementDecisionRecord
+=== PAUSE TestTheTimeRulesRetirementDecisionRecord
+=== CONT  TestTheTimeRulesRetirementDecisionRecord
+=== RUN   TestTheTimeRulesRetirementDecisionRecord/amended_records
+--- PASS: TestTheTimeRulesRetirementDecisionRecord (0.02s)
+    --- PASS: TestTheTimeRulesRetirementDecisionRecord/amended_records (0.00s)
+PASS
+ok  	roundfix/internal/docscontract	0.427s
+
+stderr:

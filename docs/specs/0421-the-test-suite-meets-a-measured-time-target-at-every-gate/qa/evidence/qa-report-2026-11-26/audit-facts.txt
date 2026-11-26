@@ -1,0 +1,396 @@
+[
+  {
+    "check": "task 1 exact scope",
+    "pass": true,
+    "detail": {
+      "changed": [
+        "docs/agents/specific-repository.md",
+        "docs/references/coverage-record.json",
+        "docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/task_01.md",
+        "internal/agent/acpx_integration_unix_test.go",
+        "internal/cli/baseline_plan_test.go",
+        "internal/cli/doctor_cursor_test.go",
+        "internal/cli/history_removal_test.go",
+        "internal/cli/implement_test.go",
+        "internal/cli/reopen_late_dependency_test.go",
+        "internal/cli/reopen_test.go",
+        "internal/daemon/run_disposition_characterization_test.go",
+        "internal/spec/coverage_platform_docscontract_test.go",
+        "internal/spec/coverage_platform_test.go",
+        "internal/spec/coverage_test.go",
+        "internal/spec/task_test.go",
+        "internal/store/journal_consumer_corpus_docscontract_test.go",
+        "internal/store/journal_consumer_corpus_test.go",
+        "internal/suiteguardcontract/contract.go",
+        "internal/testfixture/fixture.go",
+        "internal/testfixture/fixture_test.go",
+        "internal/testfixture/main_test.go",
+        "internal/testfixture/nested_go_tool_test.go",
+        "internal/testfixture/one_build_rule_test.go",
+        "internal/testfixture/suiteguard_repocontract_test.go",
+        "internal/verifyselect/contracts_repository_test.go"
+      ],
+      "undeclared": []
+    }
+  },
+  {
+    "check": "task 2 exact scope",
+    "pass": true,
+    "detail": {
+      "changed": [
+        "docs/references/coverage-record.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/task_02.md",
+        "internal/baseline/assets_sync_test.go",
+        "internal/baseline/assets_sync_upstream_rename_test.go",
+        "internal/baseline/setup_composition_test.go",
+        "internal/baseline/transaction_test.go",
+        "internal/cli/detach.go",
+        "internal/cli/detach_test.go",
+        "internal/cli/detach_unix_test.go",
+        "internal/gittest/pinned_history.go",
+        "internal/gittest/pinned_history_test.go",
+        "internal/suiteguard/residue.go",
+        "internal/suiteguard/residue_test.go",
+        "internal/suiteguard/suiteguard.go",
+        "internal/suiteguard/suiteguard_test.go"
+      ],
+      "undeclared": []
+    }
+  },
+  {
+    "check": "task 3 exact scope",
+    "pass": true,
+    "detail": {
+      "changed": [
+        ".roundfixrc.yml",
+        "CONTEXT.md",
+        "Makefile",
+        "cmd/gate-time/main.go",
+        "docs/agents/setup-context.json",
+        "docs/agents/specific-repository.md",
+        "docs/references/coverage-record.json",
+        "docs/references/gate-time-targets.json",
+        "docs/references/gate-time-targets.md",
+        "docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/task_03.md",
+        "internal/cli/baseline_record_docscontract_test.go",
+        "internal/cli/baseline_update_claude_link_test.go",
+        "internal/cli/baseline_update_misplaced_rules_test.go",
+        "internal/docscontract/gate_time_targets_test.go",
+        "internal/gatetime/gatetime.go",
+        "internal/gatetime/gatetime_test.go",
+        "internal/gatetime/testdata/targets-with-rule.json",
+        "internal/gatetime/testdata/windows-fixture.json",
+        "internal/gatetime/windows.go",
+        "internal/testfixture/external_tool_rule_docscontract_test.go",
+        "internal/testfixture/external_tool_test.go",
+        "internal/testfixture/hard_link_rule_test.go",
+        "internal/testfixture/nested_go_tool_test.go",
+        "internal/testfixture/one_build_rule_test.go",
+        "internal/testfixture/parallel_tests_test.go",
+        "internal/testfixture/real_time_budget_test.go",
+        "internal/testfixture/signal_rule_test.go",
+        "internal/testfixture/written_executable_test.go",
+        "internal/verifyselect/contracts_repository_test.go",
+        "internal/verifyselect/contracts_test.go",
+        "internal/verifyselect/gate_time_makefile_test.go",
+        "internal/verifyselect/plan.go",
+        "internal/verifyselect/plan_test.go",
+        "internal/verifyselect/repository_rules_docscontract_test.go",
+        "internal/verifyselect/shards.go",
+        "internal/verifyselect/shards_test.go",
+        "internal/verifyselect/verify_docs_makefile_test.go",
+        "internal/verifyselect/verifyselect.go",
+        "internal/verifyselect/verifyselect_test.go"
+      ],
+      "undeclared": []
+    }
+  },
+  {
+    "check": "task 4 exact scope",
+    "pass": true,
+    "detail": {
+      "changed": [
+        ".github/workflows/ci-verify.yml",
+        ".github/workflows/release.yml",
+        "CONTEXT.md",
+        "Makefile",
+        "docs/adr/0182-a-task-settles-on-the-facts-its-gate-will-check.md",
+        "docs/adr/0252-the-selective-gate-runs-the-repository-contracts-a-change-makes-relevant.md",
+        "docs/adr/0253-every-repository-contract-test-runs-on-main-and-before-a-release.md",
+        "docs/adr/0257-inside-a-run-the-daemon-is-the-only-full-gate-and-the-baseline-states-each-rule-once.md",
+        "docs/adr/0259-a-test-runs-in-parallel-unless-it-names-why-it-cannot.md",
+        "docs/adr/0387-the-suite-time-budget-is-measured-on-ci-and-judged-after-the-contract-runs.md",
+        "docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md",
+        "docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md",
+        "docs/agents/setup-context.json",
+        "docs/agents/specific-repository.md",
+        "docs/references/behavior-surfaces.json",
+        "docs/references/coverage-record.json",
+        "docs/references/skill-coverage.json",
+        "docs/specs/0421-the-test-suite-meets-a-measured-time-target-at-every-gate/task_04.md",
+        "docs/user-guide/release-runbook.md",
+        "internal/docscontract/time_rules_retirement_decision_record_test.go",
+        "internal/verifyselect/full_contract_run_test.go",
+        "internal/verifyselect/release_provenance_test.go",
+        "internal/verifyselect/release_workflow_test.go",
+        "internal/verifyselect/repository_rules_docscontract_test.go",
+        "internal/verifyselect/suite_budget_test.go",
+        "internal/verifyselect/verify_docs_makefile_test.go",
+        "internal/verifyselect/verifying_runner_test.go"
+      ],
+      "undeclared": []
+    }
+  },
+  {
+    "check": "unchanged go.mod",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged go.sum",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged .github/workflows/ci-conventions.yml",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged .github/workflows/secondbrain-sync.yml",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged skills-lock.json",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged AGENTS.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged CLAUDE.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged CHANGELOG.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged internal/app/version.go",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged internal/cli/baseline_release_gate_test.go",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged internal/gittest/gittest.go",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged internal/baseline/plan_test.go",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged docs/agents/agent-instructions.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "unchanged docs/agents/autonomous-work.md",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "exact seventeen lost names",
+    "pass": true,
+    "detail": [
+      "TestBaselineCLITestPatternIsDerived",
+      "TestBaselineSelectionAlsoRunsTheCoreSet",
+      "TestClassifyPath",
+      "TestDerivedQAVerificationPassesTheChecker",
+      "TestDocumentationSelectsBothSets",
+      "TestFixtureChangesSelectTheOwningSet",
+      "TestMainAndReleaseRunEveryContract",
+      "TestPackagesAreAPartition",
+      "TestPartitionCoversEveryTestExactlyOnce",
+      "TestPartitionFollowsTheMakefileRecipes",
+      "TestRootMarkdownSelectsBothSets",
+      "TestSelectClassifiesFixtureChangeSets",
+      "TestSelectFailsSafeToBothSets",
+      "TestTheCIPullRequestSkipsOnlyTheRepeatedDocumentationContracts",
+      "TestTheCIPushJudgesTheSuiteTimeBudgetLast",
+      "TestTheSuiteTimeBudgetIsRecordedThenJudged",
+      "TestVerifyDocsRunsTheDocumentationContractsOnceUnlessSkipped"
+    ]
+  },
+  {
+    "check": "every gained test exists",
+    "pass": true,
+    "detail": [
+      "TestAFixtureChangeSelectsItsPackageAndItsImporters",
+      "TestAPreparedAssetSyncMatchesAFreshSync",
+      "TestASkillChangeSelectsTheBaselinePackagesAndTheirImporters",
+      "TestCLIShardsCoverEveryTestExactlyOnce",
+      "TestChangedPathsNameTheAddedArchiveRecord",
+      "TestContinuousIntegrationRunsOnlyForAPullRequest",
+      "TestEveryPullRequestRunsEveryContractOnce",
+      "TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace",
+      "TestEveryVerificationPartPrintsItsGateTimeReport",
+      "TestFixtureBinaryIsBuiltOncePerNameAndSource",
+      "TestNoCodeTestStartsAGoTestOrGoVetRun",
+      "TestNumberAddsTheAllowanceAndNeverPassesTheTarget",
+      "TestPinnedHistoryExtractsEachPathSetOnceAndReadOnly",
+      "TestPlanFailsSafeToEveryPackage",
+      "TestPlanMapsEachChangedPathToItsPackage",
+      "TestPlanPackagesRunsTheCompleteSuiteForAnArchiveRecord",
+      "TestPlanPackagesSettlesOnlyOnTheRunsBranch",
+      "TestPlanSelectsTheReachOfAChangeSet",
+      "TestProductBinaryIsBuiltOncePerTestBinary",
+      "TestReleaseProvenanceAcceptsOnlyAVerifiedSquashMerge",
+      "TestReportRefusesAnUnknownGate",
+      "TestRootMarkdownSelectsEveryPackage",
+      "TestRunPrintsTheContractsOfOneBuildTag",
+      "TestSettlementSamplesPairTaskAndAttempt",
+      "TestSurfaceTranscriptTheGateTimeReportOfATaskSettlement",
+      "TestSurfaceTranscriptTheGateTimeReportOfAVerificationJob",
+      "TestSurfaceTranscriptTheGateTimeReportOfTheCompleteSuiteRun",
+      "TestSurfaceTranscriptTheGateTimeReportOnceARuleIsRecorded",
+      "TestSurfaceTranscriptThePackagePlanAtASettlement",
+      "TestSurfaceTranscriptTheWindowsFromRecordedRunsAndSettlements",
+      "TestTestsListsTheSlowestTestsOfARun",
+      "TestTheCIPullRequestRunsEachDocumentationContractOnce",
+      "TestTheCLIShardPatternsAreDerivedFromTheSource",
+      "TestTheCompleteSuiteRunPrintsItsGateTimeReport",
+      "TestTheCompleteSuiteRunRunsEveryPackageOnceWithFreshResults",
+      "TestTheGateTimeTargetsHoldTheApprovedTargets",
+      "TestTheJobsPartitionTheSelectedPackages",
+      "TestTheLiveDocumentationTreesSelectNoPackage",
+      "TestTheNestedGoToolRuleReportsSeededViolations",
+      "TestTheOneBuildRuleReportsSeededViolations",
+      "TestTheRunDatabaseIsOpenedForReadingOnly",
+      "TestTheSettlementBranchPrefixIsTheStores",
+      "TestTheSettlementPrintsItsGateTimeReport",
+      "TestTheSettlementStartsNoPackageTest",
+      "TestTheTimeRulesRetirementDecisionRecord",
+      "TestTheVersionFilesOfAReleaseSelectEveryPackage",
+      "TestValidateRefusesAChangedTargetAndAWrongNumber",
+      "TestVerifyDocsPrintsItsGateTimeReport",
+      "TestVerifyDocsRunsTheDocumentationContractsOnce",
+      "TestVerifyPartRunsThePartsThePlanPrints",
+      "TestWindowsHoldsAReleaseOnlyWithARule"
+    ]
+  },
+  {
+    "check": "glossary Gate Time Target",
+    "pass": true,
+    "detail": {
+      "line": 7,
+      "definition": "**Gate Time Target**:\nThe approved time objective of a repository verification gate on its named machine, judged by its measurement window or lab protocol ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Timeout, suite budget, enforced number"
+    }
+  },
+  {
+    "check": "glossary Gate Time Report",
+    "pass": true,
+    "detail": {
+      "line": 11,
+      "definition": "**Gate Time Report**:\nThe elapsed time of one verification gate compared with its approved target or recorded number, without failing that execution for time alone ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Time verdict, timeout error, benchmark"
+    }
+  },
+  {
+    "check": "glossary Gate Time Rule",
+    "pass": true,
+    "detail": {
+      "line": 20,
+      "definition": "**Gate Time Rule**:\nThe decision that fixes each gate's machine, measured number and verification shape after its measurement window, and permits a rise or a change of shape only by the maintainer's decision on a Measured Dossier ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Timeout increase, suite budget, automatic relaxation"
+    }
+  },
+  {
+    "check": "glossary Complete Suite Run",
+    "pass": true,
+    "detail": {
+      "line": 15,
+      "definition": "**Complete Suite Run**:\nThe run of every package test with fresh results before a Spec's pull request opens, carried by the repository gate after its archive commit ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Task verification, selected package run, full contract run"
+    }
+  },
+  {
+    "check": "glossary Measured Dossier",
+    "pass": true,
+    "detail": {
+      "line": 24,
+      "definition": "**Measured Dossier**:\nThe evidence for a large new feature's Rule Challenge: its gate time before and after on the named machine, work already cut, merged or moved, and the measured new number, put to the maintainer only in the feature's Idea or PRD ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Exception request, corrective overrun, runtime waiver"
+    }
+  },
+  {
+    "check": "glossary Release Provenance",
+    "pass": true,
+    "detail": {
+      "line": 28,
+      "definition": "**Release Provenance**:\nThe proof that a release commit is the squash merge of one pull request into main whose branch held main's tip, has the same tree and whose latest Verification gate check passed; a pushed tag must point at that release commit ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: Repeated suite, trusted tag, publication preflight"
+    }
+  },
+  {
+    "check": "glossary Full Contract Run",
+    "pass": true,
+    "detail": {
+      "line": 773,
+      "definition": "**Full Contract Run**:\nOne run of every Repository Contract Test that discovery finds, whatever its Contract Relevance, with no hand-kept list; it runs in the two contract parts of every pull request ([ADR-0453](docs/adr/0453-two-time-rules-are-retired-until-the-gate-time-rule-is-written.md)).\n_Avoid_: full suite, nightly run, repo-test"
+    }
+  },
+  {
+    "check": "release publication job byte identical",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "release outside verify identical",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0452",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0253",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0252",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0259",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0257",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "accepted amendment 0182",
+    "pass": true,
+    "detail": ""
+  },
+  {
+    "check": "no skills/modules/production-daemon/archive changes",
+    "pass": true,
+    "detail": "The only daemon change is the declared run_disposition_characterization_test.go fixture. detach.go did change, so the conditional resolve/watch reviews are permitted."
+  }
+]

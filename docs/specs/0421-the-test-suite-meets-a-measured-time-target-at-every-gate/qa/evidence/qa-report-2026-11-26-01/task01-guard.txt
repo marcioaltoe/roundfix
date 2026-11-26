@@ -1,0 +1,11 @@
+$ go test -count=1 -v -tags repocontract -run ^TestEverySpawningPackageInstallsTheSuiteGuard$ ./internal/testfixture
+stdout:
+=== RUN   TestEverySpawningPackageInstallsTheSuiteGuard
+--- PASS: TestEverySpawningPackageInstallsTheSuiteGuard (0.22s)
+PASS
+suiteguard: guard cost: measured 3634 paths; fingerprint took 184.822958ms before and 156.904167ms after
+ok  	roundfix/internal/testfixture	0.801s
+stderr:
+
+exit: 0
+wall_seconds: 0.986

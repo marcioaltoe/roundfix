@@ -1,0 +1,16 @@
+command: go test -count=1 -v -run '^TestContinuousIntegrationRunsOnlyForAPullRequest$' ./internal/verifyselect
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage5-jboos_j8
+exit: 1
+wall seconds: 1.322
+stdout:
+=== RUN   TestContinuousIntegrationRunsOnlyForAPullRequest
+=== PAUSE TestContinuousIntegrationRunsOnlyForAPullRequest
+=== CONT  TestContinuousIntegrationRunsOnlyForAPullRequest
+    verifying_runner_test.go:205: triggers = map[pull_request:{4 0 !!map   <nil> [0x27231872a820 0x27231872a8c0 0x27231872aa00 0x27231872aaa0]    7 5} push:{4 0 !!map   <nil> [0x27231872a500 0x27231872a5a0]    5 5}]
+--- FAIL: TestContinuousIntegrationRunsOnlyForAPullRequest (0.00s)
+FAIL
+suiteguard: guard cost: measured 3426 paths; fingerprint took 181.010167ms before and 156.12525ms after
+FAIL	roundfix/internal/verifyselect	0.621s
+FAIL
+
+stderr:

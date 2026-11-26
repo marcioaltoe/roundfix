@@ -1,0 +1,94 @@
+$ make verify-changed GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-sxoz1fok-tools/go
+stdout:
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-sxoz1fok-tools/go vet ./...
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-sxoz1fok-tools/go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=1244e82f-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 06:43:45 -0300'" -o bin/roundfix ./cmd/roundfix
+?   	roundfix/cmd/gate-time	[no test files]
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	4.400s
+ok  	roundfix/internal/app	0.196s
+ok  	roundfix/internal/authorization	1.000s
+--- FAIL: TestBaselinePlanCharacterization (19.53s)
+    --- FAIL: TestBaselinePlanCharacterization/clean-adoption (0.96s)
+        plan_characterization_test.go:132: shape "clean-adoption" changed at $.outcome.Plan.planDigest:
+            - want "sha256:60f0b6fa204adbccb04cb703ec9e5487e346ff00e02ff1d4ee3bb81e88e78e42"
+            + got  "sha256:f40f1fce26e78f1f346fc158c1b12e976ad29706120eee0cb212d2c222e07b72"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/idempotent-replan-after-verified-apply (7.84s)
+        plan_characterization_test.go:132: shape "idempotent-replan-after-verified-apply" changed at $.outcome.Plan.planDigest:
+            - want "sha256:9fbec7b6baac174f46ec2272224b77ca7a1e89df3e09706885be6413b04f7dfd"
+            + got  "sha256:51194d638b18f3caf7c44d06ad98348c284a066475570a05d9dea6d6de13158a"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/advisory-only-divergences (2.83s)
+        plan_characterization_test.go:132: shape "advisory-only-divergences" changed at $.outcome.Plan.planDigest:
+            - want "sha256:f3494d88862fadaf980df1baf0b68fa4d70daea932c84eec87ad28c99f7af37a"
+            + got  "sha256:54615092b0efccfab258efaad59c5db3972f725c5d3fb701a1517eb93149cdec"
+            run 'make baseline-digests'
+    --- FAIL: TestBaselinePlanCharacterization/same-baseline-changed-profile-and-catalog-digests (6.66s)
+        plan_characterization_test.go:132: shape "same-baseline-changed-profile-and-catalog-digests" changed at $.outcome.Plan.planDigest:
+            - want "sha256:9549e27d6276e18759a2b9c3c0a44074f48a4f292930b16ac364304f14961848"
+            + got  "sha256:d36feb85a1cbd767b678a9f9790994a5a764e9fa3792709f4d70e54b8268726c"
+            run 'make baseline-digests'
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 293.680709ms before and 934.599209ms after
+FAIL	roundfix/internal/baseline	179.781s
+ok  	roundfix/internal/baselineacp	0.248s
+ok  	roundfix/internal/childexit	0.189s
+suiteguard: guard cost: measured 3427 paths; fingerprint took 1.007357416s before and 1.430476792s after
+suiteguard: guard cost: measured 3427 paths; fingerprint took 1.1925765s before and 590.050417ms after
+roundfix: Delivery Queue item widget: implement runs the item binary /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestRunSpecReturnsARunSlotRefusalWithItsHolders3041874531/001/artifacts/delivery/widget/item-binary/170b2822d4ee1d7f/roundfix
+--- FAIL: TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration (0.57s)
+    follow_up_waiting_test.go:65: format=json stdout="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"follow-up\",\"state\":\"work_found\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration855748515/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"ai-memory-messages\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"backlog\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"findings\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"repository-inbox\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"}],\"judge\":{\"state\":\"unavailable\",\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\",\"model\":null,\"calls\":0,\"cost_usd\":0},\"items\":[{\"rank\":1,\"priority\":2,\"priority_name\":\"health\",\"kind\":\"finding\",\"ref\":\"docs/findings/pending.md\",\"type\":\"finding\",\"date\":\"2026-10-18\",\"title\":\"Broken widget\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":2,\"priority\":2,\"priority_name\":\"health\",\"kind\":\"message\",\"ref\":\"message:one\",\"type\":\"fix\",\"date\":\"2026-10-20\",\"title\":\"Handed-in message\",\"requested_by\":\"fluxus\",\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":3,\"priority\":3,\"priority_name\":\"feature\",\"kind\":\"backlog\",\"ref\":\"docs/backlog/open.md\",\"type\":\"feat\",\"date\":\"2026-10-19\",\"title\":\"Export widget\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":4,\"priority\":4,\"priority_name\":\"other\",\"kind\":\"note\",\"ref\":\"docs/_inbox/2026-10-21-note.md\",\"type\":\"note\",\"date\":\"2026-10-21\",\"title\":\"Visible note\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"}],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"3764d39\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}}}\n" want="{\"schema\":\"roundfix/follow-up/v1\",\"view\":\"follow-up\",\"state\":\"work_found\",\"repository\":{\"root\":\"/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestFollowUpKeepsItsBytesWithoutAWaitingDeclaration855748515/001\",\"namespace\":\"widget\"},\"sources\":[{\"name\":\"ai-memory-messages\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"backlog\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"findings\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"repository-inbox\",\"state\":\"checked\",\"count\":1,\"detail\":\"\"},{\"name\":\"specs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"runs\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"delivery-queue\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"pull-requests\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"},{\"name\":\"git\",\"state\":\"checked\",\"count\":0,\"detail\":\"\"}],\"judge\":{\"state\":\"unavailable\",\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\",\"model\":null,\"calls\":0,\"cost_usd\":0},\"items\":[{\"rank\":1,\"priority\":2,\"priority_name\":\"health\",\"kind\":\"finding\",\"ref\":\"docs/findings/pending.md\",\"type\":\"finding\",\"date\":\"2026-10-18\",\"title\":\"Broken widget\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":2,\"priority\":2,\"priority_name\":\"health\",\"kind\":\"message\",\"ref\":\"message:one\",\"type\":\"fix\",\"date\":\"2026-10-20\",\"title\":\"Handed-in message\",\"requested_by\":\"fluxus\",\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":3,\"priority\":3,\"priority_name\":\"feature\",\"kind\":\"backlog\",\"ref\":\"docs/backlog/open.md\",\"type\":\"feat\",\"date\":\"2026-10-19\",\"title\":\"Export widget\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"},{\"rank\":4,\"priority\":4,\"priority_name\":\"other\",\"kind\":\"note\",\"ref\":\"docs/_inbox/2026-10-21-note.md\",\"type\":\"note\",\"date\":\"2026-10-21\",\"title\":\"Visible note\",\"requested_by\":null,\"blocks\":null,\"basis\":\"type\",\"answers\":null,\"reason\":\"ROUNDFIX_OPENROUTER_JUDGE_API_KEY is not set\"}],\"in_progress\":{\"runs\":[],\"delivery_queue\":[],\"pull_requests\":[],\"git\":{\"branch\":\"main\",\"head\":\"76cb09c\",\"upstream\":\"\",\"unpushed_commits\":0,\"changed_paths\":[]}}}\n"
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 265.252125ms before and 711.481917ms after
+FAIL	roundfix/internal/cli	397.781s
+ok  	roundfix/internal/codex	0.231s
+ok  	roundfix/internal/config	29.488s
+ok  	roundfix/internal/corebudget	0.231s
+ok  	roundfix/internal/correction	0.422s
+ok  	roundfix/internal/daemon	169.965s
+ok  	roundfix/internal/delivery	53.350s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/flowpermissions	4.441s
+ok  	roundfix/internal/gatetime	0.577s
+ok  	roundfix/internal/gittest	9.459s
+ok  	roundfix/internal/judge	11.153s
+ok  	roundfix/internal/lighttier	0.537s
+ok  	roundfix/internal/mdtree	0.230s
+ok  	roundfix/internal/notify	0.258s
+ok  	roundfix/internal/openrouterkey	0.233s
+ok  	roundfix/internal/phaserecord	0.377s
+ok  	roundfix/internal/preflight	6.539s
+ok  	roundfix/internal/queueforecast	1.234s
+ok  	roundfix/internal/releaseplan	0.270s
+ok  	roundfix/internal/reviewsource	0.243s
+ok  	roundfix/internal/reviewsource/coderabbit	0.295s
+ok  	roundfix/internal/rounds	0.422s
+ok  	roundfix/internal/runcause	3.389s
+ok  	roundfix/internal/runevent	0.241s
+ok  	roundfix/internal/secretscan	0.229s
+ok  	roundfix/internal/sharedcache	0.520s
+ok  	roundfix/internal/skillcoverage	0.241s
+ok  	roundfix/internal/skillhash	0.230s
+ok  	roundfix/internal/spec	102.122s
+ok  	roundfix/internal/specaudit	17.818s
+ok  	roundfix/internal/speccheck	78.988s
+ok  	roundfix/internal/store	30.328s
+ok  	roundfix/internal/suiteguard	6.912s
+ok  	roundfix/internal/suiteguardcontract	0.442s
+ok  	roundfix/internal/testfixture	10.688s
+ok  	roundfix/internal/testwait	0.851s
+ok  	roundfix/internal/tui	0.748s
+ok  	roundfix/internal/verifyselect	17.078s
+ok  	roundfix/internal/watch	0.372s
+ok  	roundfix/internal/worktree	66.822s
+ok  	roundfix/skills	9.984s
+FAIL
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 14283559626 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+verify-select: packages: every package with fresh results for the Complete Suite Run
+make: *** [verify-changed] Error 1
+
+exit: 2
+wall_seconds: 417.144

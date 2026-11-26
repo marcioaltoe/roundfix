@@ -1,0 +1,10 @@
+$ go run -buildvcs=false ./cmd/verify-select -plan
+stdout:
+./cmd/roundfix
+./internal/baselineacp
+./internal/cli
+stderr:
+verify-select: packages: packages reached by the changes
+
+exit: 0
+wall_seconds: 0.771

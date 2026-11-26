@@ -1,0 +1,120 @@
+$ make verify-docs GO=/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go
+stdout:
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=abccfd93-dirty' -X 'roundfix/internal/app.BuildTime=2026-11-26 07:17:29 -0300'" -o bin/roundfix ./cmd/roundfix
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go test -count=1 -timeout 20m -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	5.654s
+/private/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-lab-d8hk73gk-tools/go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryGateRunsTheAnalyzer|TestEverySpawningPackageInstallsTheSuiteGuard|TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestCleanupHistoricalGrantEvidence|TestEveryBoundedPathIsGoverned|TestEveryTestCompilesForLinuxAndWindows)$' ./...
+?   	roundfix/cmd/gate-time	[no test files]
+?   	roundfix/cmd/gocache-bound	[no test files]
+?   	roundfix/cmd/roundfix	[no test files]
+?   	roundfix/cmd/verify-select	[no test files]
+ok  	roundfix/internal/agent	0.765s
+ok  	roundfix/internal/app	0.386s
+ok  	roundfix/internal/authorization	0.713s
+--- FAIL: TestMeasuredSanctionedOwnershipMatchesRecords (9.58s)
+    derived_regeneration_repocontract_test.go:56: run declared command "make baseline-digests": exit status 2
+        PASS
+        suiteguard: guard cost: measured 2873 paths; fingerprint took 227.055209ms before and 253.081959ms after
+        suiteguard: read sanctioned-regeneration declaration: archive record "qa0421-lab.md" has unknown schema ""
+        FAIL	roundfix/internal/baseline	0.845s
+        FAIL
+        baseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture
+        {"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+        make[1]: *** [baseline-digests] Error 1
+        
+--- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries (19.21s)
+    --- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries/dedicated/synthetic_plan_characterization (7.70s)
+        derived_regeneration_repocontract_test.go:195: run declared command "go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization": exit status 1
+            PASS
+            suiteguard: guard cost: measured 2875 paths; fingerprint took 218.499875ms before and 163.116459ms after
+            suiteguard: read sanctioned-regeneration declaration: archive record "qa0421-lab.md" has unknown schema ""
+            FAIL	roundfix/internal/baseline	2.296s
+            FAIL
+            
+    --- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries/sanctioned_command_rewrites_sanctioned_and_preserves_frozen (3.19s)
+        derived_regeneration_repocontract_test.go:248: run declared command "make baseline-digests": exit status 2
+            PASS
+            suiteguard: guard cost: measured 2875 paths; fingerprint took 168.403083ms before and 139.1545ms after
+            suiteguard: read sanctioned-regeneration declaration: archive record "qa0421-lab.md" has unknown schema ""
+            FAIL	roundfix/internal/baseline	0.676s
+            FAIL
+            baseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture
+            {"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+            make[1]: *** [baseline-digests] Error 1
+            
+    --- FAIL: TestDeclaredStepRegenerationAndFrozenBoundaries/frozen_resolved_path_rejects_rewrite (2.67s)
+        derived_regeneration_repocontract_test.go:283: frozen rewrite error = run declared command "make baseline-digests": exit status 2
+            PASS
+            suiteguard: guard cost: measured 2875 paths; fingerprint took 166.084958ms before and 144.087583ms after
+            suiteguard: read sanctioned-regeneration declaration: archive record "qa0421-lab.md" has unknown schema ""
+            FAIL	roundfix/internal/baseline	0.683s
+            FAIL
+            baseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture
+            {"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+            make[1]: *** [baseline-digests] Error 1
+            , want rewritten frozen artifact failure
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 162.542292ms before and 159.944625ms after
+FAIL	roundfix/internal/baseline	20.027s
+ok  	roundfix/internal/baselineacp	0.358s
+ok  	roundfix/internal/childexit	0.058s [no tests to run]
+ok  	roundfix/internal/cli	1.033s
+ok  	roundfix/internal/codex	0.367s
+ok  	roundfix/internal/config	0.922s
+ok  	roundfix/internal/corebudget	0.067s [no tests to run]
+ok  	roundfix/internal/correction	0.060s [no tests to run]
+ok  	roundfix/internal/daemon	0.934s
+ok  	roundfix/internal/delivery	0.551s [no tests to run]
+ok  	roundfix/internal/docscontract	0.400s
+ok  	roundfix/internal/flowpermissions	0.074s [no tests to run]
+ok  	roundfix/internal/gatetime	0.111s [no tests to run]
+ok  	roundfix/internal/gittest	1.025s
+ok  	roundfix/internal/judge	0.142s [no tests to run]
+ok  	roundfix/internal/lighttier	0.124s [no tests to run]
+ok  	roundfix/internal/mdtree	0.061s [no tests to run]
+ok  	roundfix/internal/notify	0.458s
+ok  	roundfix/internal/openrouterkey	0.060s [no tests to run]
+ok  	roundfix/internal/phaserecord	0.061s [no tests to run]
+ok  	roundfix/internal/preflight	1.431s
+ok  	roundfix/internal/queueforecast	0.067s [no tests to run]
+ok  	roundfix/internal/releaseplan	0.593s
+ok  	roundfix/internal/reviewsource	0.798s
+ok  	roundfix/internal/reviewsource/coderabbit	0.765s
+ok  	roundfix/internal/rounds	0.610s
+ok  	roundfix/internal/runcause	0.133s [no tests to run]
+ok  	roundfix/internal/runevent	0.589s
+ok  	roundfix/internal/secretscan	0.072s [no tests to run]
+ok  	roundfix/internal/sharedcache	0.060s [no tests to run]
+ok  	roundfix/internal/skillcoverage	0.061s [no tests to run]
+ok  	roundfix/internal/skillhash	0.545s
+ok  	roundfix/internal/spec	1.140s
+ok  	roundfix/internal/specaudit	1.096s
+ok  	roundfix/internal/speccheck	2.410s
+ok  	roundfix/internal/store	1.207s
+ok  	roundfix/internal/suiteguard	1.107s
+ok  	roundfix/internal/suiteguardcontract	0.084s [no tests to run]
+ok  	roundfix/internal/testfixture	1.184s
+ok  	roundfix/internal/testwait	0.072s [no tests to run]
+ok  	roundfix/internal/tui	0.688s
+ok  	roundfix/internal/verifyselect	3.082s
+ok  	roundfix/internal/watch	0.670s
+ok  	roundfix/internal/worktree	1.120s
+--- FAIL: TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical (7.92s)
+    owned_skill_edit_repocontract_test.go:79: regenerate derived artifacts after owned skill edit: exit status 2
+        PASS
+        suiteguard: guard cost: measured 3408 paths; fingerprint took 211.419167ms before and 247.053292ms after
+        suiteguard: read sanctioned-regeneration declaration: archive record "qa0421-lab.md" has unknown schema ""
+        FAIL	roundfix/internal/baseline	0.836s
+        FAIL
+        baseline-digests: regeneration failed at ./internal/baseline:TestReadoptionCompatibilityMaintainedFixture
+        {"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"regeneration_failed","stage":"./internal/baseline:TestReadoptionCompatibilityMaintainedFixture","retryable":false,"nextSteps":"Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."}
+        make[1]: *** [baseline-digests] Error 1
+FAIL
+FAIL	roundfix/skills	8.046s
+FAIL
+stderr:
+gocache-bound: warning: /Volumes/Brain-SSD/cache/go-build holds 15945742227 bytes, above its 10737418240-byte bound, and no other entry is idle for 2h0m0s; the build continues
+make: *** [repo-test] Error 1
+
+exit: 2
+wall_seconds: 27.989

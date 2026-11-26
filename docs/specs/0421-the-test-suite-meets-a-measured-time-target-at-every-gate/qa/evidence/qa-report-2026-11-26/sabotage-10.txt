@@ -1,0 +1,16 @@
+command: go test -count=1 -v -tags docscontract -run '^TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace$' ./internal/testfixture
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage10-lqxpsf3k
+exit: 1
+wall seconds: 1.136
+stdout:
+=== RUN   TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace
+=== PAUSE TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace
+=== CONT  TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace
+    one_build_rule_test.go:30: internal/store/qa_build_test.go:3: starts go build outside the frozen inventory
+--- FAIL: TestEveryTestBuildsABinaryOnlyThroughItsPackagesOnePlace (0.22s)
+FAIL
+suiteguard: guard cost: measured 3427 paths; fingerprint took 188.269917ms before and 159.277167ms after
+FAIL	roundfix/internal/testfixture	0.809s
+FAIL
+
+stderr:

@@ -1,0 +1,13 @@
+$ go test -count=1 -v -run ^TestDerivedQAVerificationIsAcceptedByTaskStageChecker$ ./internal/speccheck
+stdout:
+=== RUN   TestDerivedQAVerificationIsAcceptedByTaskStageChecker
+=== PAUSE TestDerivedQAVerificationIsAcceptedByTaskStageChecker
+=== CONT  TestDerivedQAVerificationIsAcceptedByTaskStageChecker
+--- PASS: TestDerivedQAVerificationIsAcceptedByTaskStageChecker (0.01s)
+PASS
+suiteguard: guard cost: measured 3636 paths; fingerprint took 172.921625ms before and 157.201333ms after
+ok  	roundfix/internal/speccheck	0.646s
+stderr:
+
+exit: 0
+wall_seconds: 0.883

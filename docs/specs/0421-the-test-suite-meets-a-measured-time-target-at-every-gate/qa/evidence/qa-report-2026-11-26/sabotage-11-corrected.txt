@@ -1,0 +1,17 @@
+command: go test -count=1 -tags docscontract -v -run '^TestTheTimeRulesRetirementDecisionRecord$/^amended_records$' ./internal/docscontract
+working directory: /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0421-sabotage11-corrected-hj8cyzim
+exit: 1
+wall seconds: 4.415
+stdout:
+=== RUN   TestTheTimeRulesRetirementDecisionRecord
+=== PAUSE TestTheTimeRulesRetirementDecisionRecord
+=== CONT  TestTheTimeRulesRetirementDecisionRecord
+=== RUN   TestTheTimeRulesRetirementDecisionRecord/amended_records
+    time_rules_retirement_decision_record_test.go:84: ADR-0257 requires one amendment notice
+--- FAIL: TestTheTimeRulesRetirementDecisionRecord (0.02s)
+    --- FAIL: TestTheTimeRulesRetirementDecisionRecord/amended_records (0.00s)
+FAIL
+FAIL	roundfix/internal/docscontract	0.425s
+FAIL
+
+stderr:

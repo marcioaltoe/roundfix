@@ -1,0 +1,276 @@
+command: go test -count=1 -v -run '^(TestAPreparedAssetSyncMatchesAFreshSync|TestTransactionFailureMatrix|TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift|TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup|TestAnAssetSyncRewritesTheComposedSetupWithItsComponents)$' ./internal/baseline
+working directory: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0421-the-test-suite-meets-a-measured-time-target-at-every-gate-44a14e62ee30df02-fe6a1323-cc9e1314/run_20261126T034925Z_0f411cb0c691adae
+exit: 0
+wall seconds: 23.454
+stdout:
+=== RUN   TestAPreparedAssetSyncMatchesAFreshSync
+=== PAUSE TestAPreparedAssetSyncMatchesAFreshSync
+=== RUN   TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift
+=== PAUSE TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift
+=== RUN   TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== PAUSE TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== RUN   TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== PAUSE TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== RUN   TestTransactionFailureMatrix
+=== PAUSE TestTransactionFailureMatrix
+=== CONT  TestAPreparedAssetSyncMatchesAFreshSync
+=== CONT  TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup
+=== CONT  TestTransactionFailureMatrix
+=== CONT  TestAnAssetSyncRewritesTheComposedSetupWithItsComponents
+=== CONT  TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift
+=== RUN   TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift/refresh
+=== RUN   TestTransactionFailureMatrix/journaled
+=== PAUSE TestTransactionFailureMatrix/journaled
+=== RUN   TestTransactionFailureMatrix/staged
+=== PAUSE TestTransactionFailureMatrix/staged
+=== RUN   TestTransactionFailureMatrix/preimages_validated
+=== PAUSE TestTransactionFailureMatrix/preimages_validated
+=== RUN   TestTransactionFailureMatrix/committing
+=== PAUSE TestTransactionFailureMatrix/committing
+=== RUN   TestTransactionFailureMatrix/staging/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== PAUSE TestTransactionFailureMatrix/staging/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== RUN   TestTransactionFailureMatrix/replacing/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== PAUSE TestTransactionFailureMatrix/replacing/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== RUN   TestTransactionFailureMatrix/replaced/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== PAUSE TestTransactionFailureMatrix/replaced/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== RUN   TestTransactionFailureMatrix/verifying/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== PAUSE TestTransactionFailureMatrix/verifying/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== RUN   TestTransactionFailureMatrix/staging/AGENTS.md
+=== PAUSE TestTransactionFailureMatrix/staging/AGENTS.md
+=== RUN   TestTransactionFailureMatrix/replacing/AGENTS.md
+=== PAUSE TestTransactionFailureMatrix/replacing/AGENTS.md
+=== RUN   TestTransactionFailureMatrix/replaced/AGENTS.md
+=== PAUSE TestTransactionFailureMatrix/replaced/AGENTS.md
+=== RUN   TestTransactionFailureMatrix/verifying/AGENTS.md
+=== PAUSE TestTransactionFailureMatrix/verifying/AGENTS.md
+=== RUN   TestTransactionFailureMatrix/staging/CLAUDE.md
+=== PAUSE TestTransactionFailureMatrix/staging/CLAUDE.md
+=== RUN   TestTransactionFailureMatrix/replacing/CLAUDE.md
+=== PAUSE TestTransactionFailureMatrix/replacing/CLAUDE.md
+=== RUN   TestTransactionFailureMatrix/replaced/CLAUDE.md
+=== PAUSE TestTransactionFailureMatrix/replaced/CLAUDE.md
+=== RUN   TestTransactionFailureMatrix/verifying/CLAUDE.md
+=== PAUSE TestTransactionFailureMatrix/verifying/CLAUDE.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_agent-instructions.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_agent-instructions.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_agent-instructions.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_agent-instructions.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_agent-instructions.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_agent-instructions.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_agent-instructions.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_agent-instructions.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_autonomous-work.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_autonomous-work.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_autonomous-work.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_autonomous-work.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_autonomous-work.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_autonomous-work.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_autonomous-work.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_autonomous-work.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_cli.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_cli.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_cli.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_cli.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_cli.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_cli.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_cli.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_cli.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_docs-layout.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_docs-layout.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_docs-layout.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_docs-layout.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_docs-layout.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_docs-layout.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_docs-layout.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_docs-layout.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_domain.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_domain.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_domain.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_domain.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_domain.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_domain.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_domain.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_domain.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_go.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_go.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_go.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_go.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_go.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_go.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_go.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_go.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_issue-tracker.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_issue-tracker.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_issue-tracker.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_issue-tracker.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_issue-tracker.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_issue-tracker.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_issue-tracker.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_issue-tracker.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_setup-context.json
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_setup-context.json
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_setup-context.json
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_setup-context.json
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_setup-context.json
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_setup-context.json
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_setup-context.json
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_setup-context.json
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_skill-dispatch.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_skill-dispatch.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_skill-dispatch.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_skill-dispatch.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_skill-dispatch.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_skill-dispatch.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_skill-dispatch.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_skill-dispatch.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_spec-routing.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_spec-routing.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_spec-routing.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_spec-routing.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_spec-routing.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_spec-routing.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_spec-routing.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_spec-routing.md
+=== RUN   TestTransactionFailureMatrix/staging/docs_agents_tui.md
+=== PAUSE TestTransactionFailureMatrix/staging/docs_agents_tui.md
+=== RUN   TestTransactionFailureMatrix/replacing/docs_agents_tui.md
+=== PAUSE TestTransactionFailureMatrix/replacing/docs_agents_tui.md
+=== RUN   TestTransactionFailureMatrix/replaced/docs_agents_tui.md
+=== PAUSE TestTransactionFailureMatrix/replaced/docs_agents_tui.md
+=== RUN   TestTransactionFailureMatrix/verifying/docs_agents_tui.md
+=== PAUSE TestTransactionFailureMatrix/verifying/docs_agents_tui.md
+=== RUN   TestTransactionFailureMatrix/incomplete_rollback_remains_blocking
+=== CONT  TestTransactionFailureMatrix/journaled
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_docs-layout.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_tui.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_tui.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_tui.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_issue-tracker.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_setup-context.json
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_issue-tracker.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_tui.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_issue-tracker.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_issue-tracker.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_go.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_go.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_spec-routing.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_go.md
+=== RUN   TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift/check
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_go.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_domain.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_domain.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_spec-routing.md
+--- PASS: TestAPreparedAssetSyncMatchesAFreshSync (8.86s)
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_spec-routing.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_spec-routing.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_skill-dispatch.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_domain.md
+--- PASS: TestAnAssetSyncRewritesTheComposedSetupWithItsComponents (10.67s)
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_skill-dispatch.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_skill-dispatch.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_domain.md
+--- PASS: TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift (11.44s)
+    --- PASS: TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift/refresh (7.11s)
+    --- PASS: TestAssetSyncStillRefusesAnInvalidCatalogWithoutDrift/check (4.33s)
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_docs-layout.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_skill-dispatch.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_setup-context.json
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_setup-context.json
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_setup-context.json
+=== CONT  TestTransactionFailureMatrix/staging/AGENTS.md
+=== CONT  TestTransactionFailureMatrix/verifying/CLAUDE.md
+=== CONT  TestTransactionFailureMatrix/replaced/CLAUDE.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_docs-layout.md
+--- PASS: TestAnAssetSyncWithNoSourceChangeLeavesTheComposedSetup (14.42s)
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_docs-layout.md
+=== CONT  TestTransactionFailureMatrix/replacing/CLAUDE.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_cli.md
+=== CONT  TestTransactionFailureMatrix/staging/CLAUDE.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_cli.md
+=== CONT  TestTransactionFailureMatrix/verifying/AGENTS.md
+=== CONT  TestTransactionFailureMatrix/replaced/AGENTS.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_cli.md
+=== CONT  TestTransactionFailureMatrix/replacing/AGENTS.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_cli.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_autonomous-work.md
+=== CONT  TestTransactionFailureMatrix/preimages_validated
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_autonomous-work.md
+=== CONT  TestTransactionFailureMatrix/committing
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_autonomous-work.md
+=== CONT  TestTransactionFailureMatrix/replacing/docs_agents_agent-instructions.md
+=== CONT  TestTransactionFailureMatrix/replaced/docs_agents_agent-instructions.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_agent-instructions.md
+=== CONT  TestTransactionFailureMatrix/staging/docs_agents_autonomous-work.md
+=== CONT  TestTransactionFailureMatrix/replaced/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== CONT  TestTransactionFailureMatrix/verifying/docs_agents_agent-instructions.md
+=== CONT  TestTransactionFailureMatrix/replacing/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== CONT  TestTransactionFailureMatrix/staged
+=== CONT  TestTransactionFailureMatrix/staging/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+=== CONT  TestTransactionFailureMatrix/verifying/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md
+--- PASS: TestTransactionFailureMatrix (0.32s)
+    --- PASS: TestTransactionFailureMatrix/incomplete_rollback_remains_blocking (0.23s)
+    --- PASS: TestTransactionFailureMatrix/journaled (0.06s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_docs-layout.md (0.49s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_tui.md (0.72s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_tui.md (0.63s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_tui.md (0.60s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_issue-tracker.md (0.64s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_setup-context.json (0.08s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_issue-tracker.md (0.72s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_tui.md (0.14s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_issue-tracker.md (0.55s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_issue-tracker.md (0.11s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_go.md (0.67s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_go.md (0.49s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_spec-routing.md (0.67s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_go.md (0.57s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_go.md (0.16s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_domain.md (0.72s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_domain.md (0.48s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_spec-routing.md (1.23s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_spec-routing.md (1.19s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_spec-routing.md (0.20s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_domain.md (0.91s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_skill-dispatch.md (1.17s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_domain.md (0.33s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_skill-dispatch.md (1.43s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_skill-dispatch.md (0.61s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_skill-dispatch.md (1.48s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_docs-layout.md (2.13s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_setup-context.json (1.70s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_setup-context.json (1.65s)
+    --- PASS: TestTransactionFailureMatrix/staging/AGENTS.md (0.33s)
+    --- PASS: TestTransactionFailureMatrix/replaced/CLAUDE.md (0.86s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_setup-context.json (2.11s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_docs-layout.md (0.61s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_docs-layout.md (1.38s)
+    --- PASS: TestTransactionFailureMatrix/replacing/CLAUDE.md (0.89s)
+    --- PASS: TestTransactionFailureMatrix/staging/CLAUDE.md (0.53s)
+    --- PASS: TestTransactionFailureMatrix/verifying/CLAUDE.md (1.88s)
+    --- PASS: TestTransactionFailureMatrix/replaced/AGENTS.md (1.01s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_cli.md (1.51s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_cli.md (2.24s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_cli.md (1.46s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_cli.md (0.41s)
+    --- PASS: TestTransactionFailureMatrix/replacing/AGENTS.md (0.66s)
+    --- PASS: TestTransactionFailureMatrix/verifying/AGENTS.md (1.96s)
+    --- PASS: TestTransactionFailureMatrix/preimages_validated (0.54s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_autonomous-work.md (1.36s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_agent-instructions.md (1.16s)
+    --- PASS: TestTransactionFailureMatrix/replacing/docs_agents_autonomous-work.md (1.39s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_autonomous-work.md (2.12s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_agent-instructions.md (0.44s)
+    --- PASS: TestTransactionFailureMatrix/committing (2.06s)
+    --- PASS: TestTransactionFailureMatrix/staging/docs_agents_autonomous-work.md (0.39s)
+    --- PASS: TestTransactionFailureMatrix/replaced/docs_agents_agent-instructions.md (1.11s)
+    --- PASS: TestTransactionFailureMatrix/replaced/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md (0.67s)
+    --- PASS: TestTransactionFailureMatrix/replacing/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md (0.51s)
+    --- PASS: TestTransactionFailureMatrix/staged (0.51s)
+    --- PASS: TestTransactionFailureMatrix/staging/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md (0.33s)
+    --- PASS: TestTransactionFailureMatrix/verifying/docs_agents_agent-instructions.md (1.48s)
+    --- PASS: TestTransactionFailureMatrix/verifying/AGENTS.c687337a5ce29d4a544a2a014122f1fa903eaa63745578825cf05d5c201e80e4.md (1.15s)
+PASS
+suiteguard: guard cost: measured 3445 paths; fingerprint took 179.450041ms before and 164.504125ms after
+ok  	roundfix/internal/baseline	21.603s
+
+stderr:
