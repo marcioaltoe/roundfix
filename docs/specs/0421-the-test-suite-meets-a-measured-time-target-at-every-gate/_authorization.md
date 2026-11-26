@@ -193,7 +193,7 @@ outputs:
   - docs/agents/setup-context.json
 ```
 
-This command runs after the `Makefile` change and may change only the `declarationDigest` of the `Makefile` in `docs/agents/setup-context.json`.
+This command runs after the `Makefile` change and may change only the `declarationDigest` of the `Makefile` and the `roundfixVersion` field it writes in `docs/agents/setup-context.json`. The `roundfixVersion` field was added by the Praetor's technical decision of 2026-11-26 00:45 BRT (ai-memory `01a215f3-19a7-75a0-a1cb-58252825a010`), answering a request the first Run raised: the command writes the version of the binary that runs it together with the digest, and no other edit of the record is allowed.
 
 ```yaml
 command: go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
