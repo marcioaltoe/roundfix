@@ -7,8 +7,8 @@
     "baseline": "baseline.go-cli-tui-0.0.1"
   },
   "profile": "go-cli-tui",
-  "profileDigest": "sha256:cb467b58c7f696caeb49e242b38bd05f9aacf3167147694b7d610e49bce34d65",
-  "catalogDigest": "sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4",
+  "profileDigest": "sha256:6867b0c395c609d594fef82c9909705090cef44c7235d95c17cf91b494f9a2c5",
+  "catalogDigest": "sha256:ef38d977b353d2146e9ccb80be36c07d3734742a12fe6f0d32e7a02d7c86eb02",
   "modules": [
     "core",
     "context-workflow",
@@ -31,6 +31,9 @@
       "value": "single-context"
     },
     "language.generated": {
+      "value": "English"
+    },
+    "language.reader": {
       "value": "English"
     },
     "repository.extension.enabled": {
@@ -156,7 +159,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "5b0fb3a2bacbfb1ce3bb92219f649727b94ec144cc345d3a1afc38456c33af19"
+      "digest": "ce0bbad2a98515c2add4a32a0c16950f4349cf3b96640960f43e9b16f2ab6301"
     },
     {
       "id": "root.cli-surface",
@@ -201,7 +204,7 @@
       "module": "context-workflow",
       "template": "template.guide.domain.single-context",
       "version": "0.0.1",
-      "digest": "cc969b44097582875117ee2b920c2a19accdfd6cdc6b18cb01a4442d5cab87dc"
+      "digest": "cf930ad517a4099014987c921a3f56a6cfa8e2bc464417530c126e020507fbc0"
     },
     {
       "id": "root.tui-surface",
@@ -270,5 +273,5 @@
       "declarationDigest": "sha256:b157e2f531924e090c3e38f1322436b5abf0819542cba8823e4ec9ab5678a76c"
     }
   ],
-  "roundfixVersion": "0.153.3"
+  "roundfixVersion": "0.153.4"
 }

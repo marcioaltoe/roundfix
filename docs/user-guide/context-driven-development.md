@@ -10,6 +10,25 @@ from the files alone.
 The method is adapted from Matt Pocock's **skills** work; see
 [Source and attribution](#source-and-attribution).
 
+### Language Rule
+
+The Baseline's Language Rule requires English for new code and infrastructure
+names, while each repository declares its Reader Language for product text with
+`language.reader`. Specs, ADRs, agent guides, commits and pull requests keep the
+repository's existing language. A business term without a faithful translation
+keeps its official acronym or its original form without accents inside an
+English name.
+
+When a term is translated or kept without accents, its Glossary Definition
+records the Name in Code on an `_In code_:` line, with the name in backticks,
+after the definition and before `_Avoid_`. The Spec that introduces or touches
+the term records it; existing entries are not swept.
+
+A Code Language Exception (`language.code_exception`) records the language and
+the source of the owner's decision to keep an existing codebase's language.
+It covers that existing codebase only; the Reader Language and Name in Code
+still apply. See [Baseline decisions](commands/baseline.md).
+
 ## Why "CONTEXT-driven"
 
 The name points at the artifact at the center of the method: `CONTEXT.md`, the
@@ -379,6 +398,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Decision | Suggested value |
 | --- | --- |
 | Generated language | `English` |
+| Reader Language | `English`; answer with the language the product's users read |
 | Verification gate | `make verify` |
 | Incremental Verification | `make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
@@ -717,6 +737,10 @@ repository owner's answers:
     },
     {
       "id": "language.generated",
+      "value": "English"
+    },
+    {
+      "id": "language.reader",
       "value": "English"
     },
     {

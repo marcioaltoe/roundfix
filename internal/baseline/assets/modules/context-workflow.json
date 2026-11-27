@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 32,
+  "version": 33,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -225,7 +225,7 @@
         {
           "id": "clause.domain.canonical-language",
           "enforcement": "mandatory",
-          "guidance": "Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym."
+          "guidance": "Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. In a code name, a term takes its Name in Code: the term itself, or the name its Glossary Definition records on a line `_In code_:` when the term was translated to English or kept without accents. A Spec that introduces or changes such a term writes that line. Call out a missing term instead of inventing a competing synonym."
         },
         {
           "id": "clause.domain.layout-decision",

@@ -330,6 +330,7 @@ docs/adr/0449-the-secondbrain-search-and-the-duplicate-check-go-through-the-inde
 docs/adr/0450-a-delivery-retry-ends-with-a-live-queue-owner-and-status-reports-a-queue-nobody-advances.md
 docs/adr/0451-round-2-of-a-pre-pr-review-opens-a-new-session-when-the-configured-model-changed.md
 docs/adr/0452-roundfix-verifies-on-macos-and-the-delivery-queue-has-no-linux-lane.md
+docs/adr/0454-code-is-written-in-english-and-each-repository-declares-its-reader-language.md
 # roundfix:standard-export:end
 
 # This repository publishes its README, its user guide and its lessons (maintainer, 2026-11-18).

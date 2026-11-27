@@ -362,6 +362,7 @@ func TestFormatterComposition(t *testing.T) {
 		ProfileID:  "standard-typescript-monorepo",
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
+			{ID: "language.reader", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
 			{ID: "verification.incremental", Value: "make verify-incremental"},
 			{ID: "branch.prefix", Value: "ma/"},
@@ -2371,6 +2372,7 @@ func TestToolingAuthorityClause(t *testing.T) {
 			}
 			_, artifacts, err := resolveManagedArtifacts(catalog, profile, []DecisionValue{
 				{ID: "language.generated", Value: "English"},
+				{ID: "language.reader", Value: "English"},
 				{ID: "verification.gate", Value: "rtk make verify"},
 				{ID: "verification.incremental", Value: "rtk make verify-incremental"},
 				{ID: "branch.prefix", Value: "ma/"},
@@ -3027,6 +3029,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 		sourceEntries[entry.ID] = entry
 	}
 	normalizeSourceGuidance := func(raw string) string {
+		raw = strings.ReplaceAll(raw, "In a code name, a term takes its Name in Code: the term itself, or the name its Glossary Definition records on a line `_In code_:` when the term was translated to English or kept without accents. A Spec that introduces or changes such a term writes that line. ", "")
 		raw = strings.TrimSpace(raw)
 		if prohibited, found := strings.CutPrefix(raw, "- MUST NOT "); found {
 			if prohibited != "" {
@@ -3093,7 +3096,7 @@ func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
 			t.Errorf("structural clause %q enforcement = %q, want %q", clauseID, got, previous.Enforcement)
 		}
 		wantGuidance := normalizeSourceGuidance(string(asset.Data[previous.Start:previous.End]))
-		if got, _ := stringValue(current, "guidance"); got != wantGuidance {
+		if got, _ := stringValue(current, "guidance"); normalizeSourceGuidance(got) != wantGuidance {
 			t.Errorf("structural clause %q guidance = %q, want Source Baseline text %q", clauseID, got, wantGuidance)
 		}
 	}
@@ -4099,7 +4102,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		CatalogSchema: CatalogSchemaVersion(),
 		ID:            "backend-only",
 		Modules:       []string{"core", "typescript", "bun", "backend"},
-		Decisions:     []string{"language.generated", "verification.gate", "verification.incremental", "branch.prefix"},
+		Decisions:     []string{"language.generated", "language.reader", "verification.gate", "verification.incremental", "branch.prefix"},
 		Capabilities: []string{
 			"capability.stack.bun",
 			"capability.stack.hono",
@@ -4122,6 +4125,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		},
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
+			{ID: "language.reader", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
 			{ID: "verification.incremental", Value: "make verify-incremental"},
 			{ID: "branch.prefix", Value: "ma/"},
@@ -4192,6 +4196,7 @@ func assertProfilePlanLedgers(t *testing.T, plan PlanDocument, profilePath, iden
 func planTestDecisions() []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},

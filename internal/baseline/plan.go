@@ -1447,7 +1447,12 @@ func classifySourceClauseTransition(
 						}
 						gate, _ := objectValue(clause["appliesWhen"])
 						decisionID, _ := stringValue(gate, "decision")
-						if value, answered := recorded[decisionID]; answered {
+						if present, gated := gate["present"].(bool); gated {
+							_, recordedPresence := recorded[decisionID]
+							disposition = ClauseReasonedRejection
+							targets = []string{decisionID}
+							reason = fmt.Sprintf("The repository recorded presence of %s = %t; this clause applies only when presence is %t.", decisionID, recordedPresence, present)
+						} else if value, answered := recorded[decisionID]; answered {
 							disposition = ClauseReasonedRejection
 							targets = []string{decisionID}
 							reason = fmt.Sprintf("The repository recorded %s = %s; this clause applies only when it is %s.", decisionID, renderDecisionValue(value), renderDecisionValue(gate["equals"]))
@@ -3479,6 +3484,9 @@ func clauseApplies(catalog *Catalog, clause document, recorded map[string]any) b
 	}
 	id, _ := stringValue(gate, "decision")
 	value, answered := recorded[id]
+	if present, gated := gate["present"].(bool); gated {
+		return answered == present
+	}
 	if !answered && decisionOptional(catalog.decisions[id]) {
 		value = catalog.decisions[id]["default"]
 	}

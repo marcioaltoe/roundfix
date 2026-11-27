@@ -7,6 +7,7 @@ instruction file.
 The root instruction file is `AGENTS.md`; `CLAUDE.md` is a symbolic link to it, which `roundfix baseline` creates and keeps, never a file of its own.
 The selected repository Verification is {{verification.gate}}.
 The selected incremental Verification is {{verification.incremental}}.
+The Reader Language is {{language.reader}}.{{language.code_exception}}
 {{branch.prefix}}
 
 {{artifact.rules}}

@@ -36,6 +36,7 @@ func newDocumentationFixture(t *testing.T, on bool) documentationFixture {
 	f.env.environ = withEnvValue(f.env.environ, "HOME", f.env.homeDir)
 	decisions := []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"}, {ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "<type>/"}, {ID: "spec.scaffold", Value: true}, {ID: "domain.layout", Value: "single-context"},
 		{ID: "triage.external", Value: false}, {ID: "autonomous.enabled", Value: true}, {ID: "runtime.backend", Value: "codex gpt-5.5 xhigh"},

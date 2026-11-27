@@ -30,7 +30,7 @@ func TestBaselinePlanNamesEveryMissingAnswerInOneRefusal(t *testing.T) {
 	if code != exitUnverified || result.Category != "decision" {
 		t.Fatalf("exit=%d result=%+v stderr=%s", code, result, &diagnostics)
 	}
-	for _, want := range []string{"required Baseline decisions are missing: autonomous.enabled, domain.layout, language.generated, repository.extension.enabled, secondbrain.enabled, spec.scaffold, triage.external, verification.gate, verification.incremental", "required when autonomous.enabled is true: runtime.backend, runtime.design", "instruction-preservation mode is required"} {
+	for _, want := range []string{"required Baseline decisions are missing: autonomous.enabled, domain.layout, language.generated, language.reader, repository.extension.enabled, secondbrain.enabled, spec.scaffold, triage.external, verification.gate, verification.incremental", "required when autonomous.enabled is true: runtime.backend, runtime.design", "instruction-preservation mode is required"} {
 		if !strings.Contains(result.Message, want) {
 			t.Errorf("message missing %q: %s", want, result.Message)
 		}

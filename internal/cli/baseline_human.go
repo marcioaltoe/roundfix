@@ -976,6 +976,13 @@ func promptBaselineDecisions(
 		if _, fixed := profile.Values[id]; fixed {
 			continue
 		}
+		if id == "language.code_exception" {
+			if value, recorded := state.currentDecisions[id]; recorded {
+				answers = append(answers, baseline.DecisionValue{ID: id, Value: value})
+				answered[id] = struct{}{}
+			}
+			continue
+		}
 		// The optional base path is recorded deliberately through baseline update.
 		if id == "auth.base_path" {
 			if _, recorded := state.currentDecisions[id]; !recorded {

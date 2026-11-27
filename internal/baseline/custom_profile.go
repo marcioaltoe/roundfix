@@ -969,6 +969,9 @@ func validateDecisionValue(decision document, value any) error {
 		if !ok || strings.TrimSpace(text) == "" {
 			return errors.New("must be a non-empty string")
 		}
+	case codeLanguageExceptionDecisionType:
+		_, err := normalizeCodeLanguageException(value)
+		return err
 	case "http-contract":
 		_, err := normalizeHTTPContract(value, decision)
 		return err

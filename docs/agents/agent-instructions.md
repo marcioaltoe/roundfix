@@ -9,6 +9,7 @@ instruction file.
 The root instruction file is `AGENTS.md`; `CLAUDE.md` is a symbolic link to it, which `roundfix baseline` creates and keeps, never a file of its own.
 The selected repository Verification is `make verify`.
 The selected incremental Verification is `make verify-changed`.
+The Reader Language is English.
 The branch-prefix pattern is `<type>/`; `<type>` is replaced by the
 work's purpose, never used literally. Use `<type>/` as the portable decision
 value. Legacy personal-prefix values must be revised through Baseline and do
@@ -52,6 +53,14 @@ branches follow their tool's documented namespace.
 - **mandatory**: Land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates. Read an express grant from the consuming Spec's `<spec-root>/<slug>/_authorization.md`; a proposed, absent, contradictory, or withdrawn record grants no governed mutation and no delivery operation. `roundfix implement` still runs a Spec that changes no Governed Path, and `roundfix deliver start` refuses a Spec whose record does not grant `implement`, `commit`, `push`, `pull_request`, and `merge`. An executor cannot widen the grant it depends on.
 
 - **mandatory**: Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers.
+
+- **mandatory**: Write code and infrastructure names in English: variables, functions, classes, files and folders, code comments, database tables, columns and indexes, buckets, prefixes, environment variables, queues, API routes and technical logs.
+
+- **mandatory**: A business term with no faithful English translation keeps its original form inside an English name: an official acronym as it is (`icms_amount`), another term without accents (`apuracao_summary`). Brazilian fiscal and legal terms are the usual case.
+
+- **mandatory**: A new name follows this rule. An existing name changes only when its code is touched, a large rename takes a Spec of its own, and nothing is renamed in bulk without a request. The Pre-PR Review reports a new name that breaks the rule, and the QA gate reports text a user reads outside the Reader Language.
+
+- **mandatory**: Write what the product's users read in the Reader Language named above: screens, user messages, e-mails, PDFs, user documentation, and the names, descriptions and parameters of MCP tools. Specs, ADRs, agent guides, commits and pull requests keep the language they already have.
 
 - **prohibited**: Do not use external research tools to discover or infer local repository code or behavior, and never put credentials, private client records, or proprietary source code in an external search query.
 

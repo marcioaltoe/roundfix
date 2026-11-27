@@ -274,7 +274,7 @@ func editBaselineModule(t *testing.T, repository string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	old := []byte("Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym.")
+	old := []byte("Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. In a code name, a term takes its Name in Code: the term itself, or the name its Glossary Definition records on a line `_In code_:` when the term was translated to English or kept without accents. A Spec that introduces or changes such a term writes that line. Call out a missing term instead of inventing a competing synonym.")
 	if !bytes.Contains(data, old) {
 		t.Fatal("baseline module guidance clause was not found")
 	}

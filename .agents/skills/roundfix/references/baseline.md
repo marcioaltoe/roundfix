@@ -73,6 +73,27 @@ writes nothing. A declared decision also answers a new decision without
 `--adopt-suggested`. A repository that mounts Better Auth at `/auth` runs
 `roundfix baseline update --decision auth.base_path=/auth`.
 
+`language.reader` is the required Reader Language for text the product's users
+read, including MCP tool names, descriptions and parameters. An update without
+a recorded answer stops with exit `3` and writes nothing; answer with
+`roundfix baseline update --decision language.reader=<language>`.
+`--adopt-suggested` records `English`, so use it only for a product whose users
+read English.
+
+`language.code_exception` declares that an existing codebase keeps its language
+for code and infrastructure names, citing the source of its owner's decision:
+
+```bash
+roundfix baseline update --decision 'language.code_exception={"language":"<language>","source":"<source>"}'
+```
+
+A missing source is refused with exit `2` and writes nothing: no source, no
+exception. The exception covers only the codebase that existed when its owner
+decided, never a new codebase; the Reader Language and Name in Code still apply.
+A repository-owned profile must list `language.reader` in its `decisions`, and
+must list `language.code_exception` before it can declare an exception.
+
+
 `roundfix baseline update` also keeps a repository's documentation to the Baseline's
 rules, in a `documentation` part of its plan that the Plan Digest covers and the same
 confirmation applies. Where the Setup Manifest has the Secondbrain turned on, it writes

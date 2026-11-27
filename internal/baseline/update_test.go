@@ -477,6 +477,9 @@ func manifestInputDecisionsForProfile(
 		if _, fixed := profile.Values[id]; fixed {
 			continue
 		}
+		if id == codeLanguageExceptionDecisionID {
+			continue
+		}
 		input = append(input, DecisionValue{ID: id, Value: manifestInputCatalogSuggestion(t, catalog, id)})
 		selected[id] = struct{}{}
 	}
