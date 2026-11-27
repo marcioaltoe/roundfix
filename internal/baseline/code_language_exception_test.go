@@ -12,7 +12,7 @@ func TestACodeLanguageExceptionSwapsTheCodeClauses(t *testing.T) {
 	for _, name := range []string{"a_declared_exception_states_the_language_and_the_source", "a_declaration_without_a_source_is_refused", "no_declaration_states_english"} {
 		t.Run(name, func(t *testing.T) {
 			repository := newProjectDecisionPlanRepository(t)
-			before := snapshotManifestInputRepository(t, repository)
+			before := snapshotWorkingTree(t, repository)
 			decisions := standardTypeScriptDecisions("make verify")
 			if name != "no_declaration_states_english" {
 				value := map[string]any{"language": "Portuguese"}
@@ -26,7 +26,7 @@ func TestACodeLanguageExceptionSwapsTheCodeClauses(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), "no source, no exception") {
 					t.Fatalf("refusal = %v", err)
 				}
-				if !reflect.DeepEqual(snapshotManifestInputRepository(t, repository), before) {
+				if !reflect.DeepEqual(snapshotWorkingTree(t, repository), before) {
 					t.Fatal("refusal wrote files")
 				}
 				return
@@ -96,13 +96,13 @@ func TestACodeLanguageExceptionValueIsRefused(t *testing.T) {
 				t.Fatalf("decision = %v", err)
 			}
 			repository := newProjectDecisionPlanRepository(t)
-			before := snapshotManifestInputRepository(t, repository)
+			before := snapshotWorkingTree(t, repository)
 			decisions := append(standardTypeScriptDecisions("make verify"), DecisionValue{ID: codeLanguageExceptionDecisionID, Value: tc.value})
 			outcome, err := BuildPlan(context.Background(), PlanRequest{Repository: repository, ProfileID: "standard-typescript-monorepo", Decisions: decisions, Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield}})
 			if err == nil || !strings.HasSuffix(err.Error(), tc.reason) || outcome.Plan != nil {
 				t.Fatalf("plan refusal: %v %+v", err, outcome)
 			}
-			if !reflect.DeepEqual(snapshotManifestInputRepository(t, repository), before) {
+			if !reflect.DeepEqual(snapshotWorkingTree(t, repository), before) {
 				t.Fatal("invalid declaration wrote files")
 			}
 
@@ -171,4 +171,18 @@ func TestTheCatalogRefusesADefaultForACodeLanguageException(t *testing.T) {
 			}
 		})
 	}
+}
+
+// snapshotWorkingTree records every file of the repository outside .git. A plan
+// may run git status, which can rewrite .git/index when a file's timestamp is
+// racily clean; that refresh is no write of the repository's files.
+func snapshotWorkingTree(t *testing.T, repository string) map[string]manifestInputFileSnapshot {
+	t.Helper()
+	snapshot := snapshotManifestInputRepository(t, repository)
+	for path := range snapshot {
+		if strings.HasPrefix(path, ".git/") {
+			delete(snapshot, path)
+		}
+	}
+	return snapshot
 }
