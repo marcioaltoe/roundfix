@@ -1,6 +1,0 @@
-import runpy,pathlib,json
-X=runpy.run_path('docs/specs/0417-the-baseline-carries-the-language-rule/qa/evidence/qa-report-2026-11-27/runner.py.txt',run_name='helper');OUT=pathlib.Path('/tmp/qa0417-results');X['record'].__globals__['E']=OUT;d=X['copyrev'](X['HEAD'])
-try:
- f=d/'internal/baseline/plan.go';s=f.read_text();prefix,body=s.split('func clauseApplies(',1);body=body.replace('if present, gated := gate["present"].(bool); gated {','if present, gated := gate["present"].(bool); gated {\n        if !answered { _, answered = catalog.decisions[id]["default"] }',1);f.write_text(prefix+'func clauseApplies('+body)
- args=['go','test','-count=1','-timeout','20m','-v','-run','^TestAClauseGateOnPresence$/^a_default_is_not_presence$','./internal/baseline'];p=X['run'](args,d,X['ENV']);X['record']('sabotage-3',args,p);print((p.stdout+p.stderr)[-3000:]);(OUT/'probe3-result.json').write_text(json.dumps({'ok':p.returncode!=0 and '--- FAIL: TestAClauseGateOnPresence/a_default_is_not_presence' in p.stdout and '[build failed]' not in p.stdout+p.stderr}))
-finally:X['clean'](d)

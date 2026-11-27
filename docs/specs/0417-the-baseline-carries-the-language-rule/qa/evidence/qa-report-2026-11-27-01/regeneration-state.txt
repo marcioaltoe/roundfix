@@ -1,2 +1,0 @@
-Seven sanctioned regeneration stages finished.
-git status --porcelain:

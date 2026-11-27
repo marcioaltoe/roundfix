@@ -1,2 +1,0 @@
-No complete superseded canonical-domain clause remains in active guides, user documentation or relevant skill copies.
-Exercised CLI output and human-facing documentation are English; fixture language declarations and permitted domain terms are intentional.

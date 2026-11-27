@@ -1,6 +1,0 @@
-command: ['go', 'test', './skills', '-timeout', '20m', '-run', '^TestEveryOwnedSkillVersionIsRecorded$', '-record-skill-versions']
-exit: 0
-stdout:
-ok  	roundfix/skills	0.169s
-
-stderr:

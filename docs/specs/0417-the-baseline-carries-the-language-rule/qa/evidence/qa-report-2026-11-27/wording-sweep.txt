@@ -1,2 +1,0 @@
-command: rg -n -F <prior canonical-domain clause> docs/agents docs/user-guide .agents/skills skills
-exit: 1

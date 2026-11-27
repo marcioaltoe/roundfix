@@ -1,4 +1,0 @@
-command: git ls-tree / git show guide Markdown bytes | wc -c
-Delivery Base: 96009
-Audited head: 97440
-Difference: 1431

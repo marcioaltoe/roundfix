@@ -1,3 +1,0 @@
- M docs/agents/agent-instructions.md
- M docs/agents/domain.md
- M docs/agents/setup-context.json

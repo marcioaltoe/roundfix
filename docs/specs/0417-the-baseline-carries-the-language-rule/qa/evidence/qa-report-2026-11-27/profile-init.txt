@@ -1,9 +1,0 @@
-command: ['./bin/roundfix', 'baseline', 'profile', 'init', '--id', 'own-profile', '--from', 'go-cli-tui']
-exit: 0
-stdout:
-Created repository-owned Baseline Profile own-profile
-Path: .roundfix/baseline/profiles/own-profile.json
-Built-in source: go-cli-tui
-Digest: sha256:f0c62ee5d7cfe860e787d7c5b65cfc456516c5797b1511dbcb13893e925fa44f
-
-stderr:

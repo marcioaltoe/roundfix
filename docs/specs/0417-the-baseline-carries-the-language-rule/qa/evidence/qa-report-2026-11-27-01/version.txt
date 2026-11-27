@@ -1,5 +1,0 @@
-command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0417-the-baseline-carries-the-language-rule-10ace5c8acd1ac56-66229771-ed3806f5/run_20261127T181612Z_6e339d0bde0e5ce4/bin/roundfix --version
-exit: 0
-stdout:
-roundfix 0.153.4 (328e5a1e-dirty, built 2026-11-27 15:20:02 -0300)
-stderr:
