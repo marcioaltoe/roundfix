@@ -2,6 +2,16 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.154.0] - 2026-11-27
+
+### The Baseline carries the language rule for code, data and products
+
+- **Code and infrastructure names are written in English.** Every built-in profile's agent-instructions guide gains a rule: variables, functions, classes, files and folders, code comments, database tables, columns and indexes, buckets, prefixes, environment variables, queues, API routes and technical logs are named in English. A business term with no faithful English translation, such as a Brazilian fiscal or legal term, keeps its form inside an English name: an official acronym as it is, any other term without accents. A new name follows the rule; an existing name changes only when its code is touched, and nothing is renamed in bulk.
+- **Each repository declares its Reader Language.** The new required decision `language.reader` names the language of what a person reads in the product: screens, messages, e-mails, PDFs and its user documentation. `roundfix baseline update` stops until it is answered (`--decision language.reader=<language>`); the suggested value is `English`. Specs, ADRs, agent guides, commits and pull requests keep the language each repository already uses.
+- **The glossary records the Name in Code.** The domain guide's canonical-terms clause now says a code name uses the term's Name in Code, the line `_In code_:` of its Glossary Definition when the term was translated or kept without accents.
+- **A codebase that keeps its language declares a Code Language Exception.** The optional decision `language.code_exception` records the kept language and the source of the owner's decision; without a source it is refused, and it covers the existing code only.
+- **Review and QA report what breaks the rule.** The pre-PR review reports a name the candidate adds outside the rule, and the QA gate reports user-facing text in a language other than the Reader Language. ADR-0454 records the decision.
+
 ## [0.153.4] - 2026-11-26
 
 ### The test suite meets a measured time target at every gate
