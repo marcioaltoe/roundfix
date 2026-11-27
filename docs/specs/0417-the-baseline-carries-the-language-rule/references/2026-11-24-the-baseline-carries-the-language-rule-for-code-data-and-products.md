@@ -1,8 +1,8 @@
 ---
 type: feat
-status: open
+status: promoted
 created: 2026-11-24
-spec: null
+spec: 0417-the-baseline-carries-the-language-rule
 reason: null
 ---
 
