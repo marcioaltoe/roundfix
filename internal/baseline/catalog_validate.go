@@ -963,13 +963,14 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 		decisionType, _ := stringValue(decision, "type")
 		l.validateOptionalDecision(decisionID, decision)
 		structuredRenderer := containsString(
-			[]string{"auth-provider", "http-contract", "identifier-strategy"},
+			[]string{"auth-provider", "http-contract", "identifier-strategy", codeLanguageExceptionDecisionType},
 			decisionType,
 		)
 		renderBindingCount := 0
 		if !containsString(
 			[]string{
 				"auth-provider",
+				codeLanguageExceptionDecisionType,
 				"boolean",
 				"enum",
 				"http-contract",
@@ -1771,7 +1772,12 @@ func (l *catalogLoader) validateOptionalDecision(id string, decision document) {
 		return
 	}
 	value, declared := decision["default"]
-	if !declared || validateDecisionValue(decision, value) != nil {
+	if decision["type"] == codeLanguageExceptionDecisionType {
+		_, suggested := decision["suggestion"]
+		if declared || suggested {
+			l.add("catalog.decision.optional.invalid", id, "a code-language-exception accepts neither a default nor a suggestion")
+		}
+	} else if !declared || validateDecisionValue(decision, value) != nil {
 		l.add("catalog.decision.optional.invalid", id, "an optional decision requires a valid default")
 	}
 	for _, effect := range objectsOrEmpty(decision["effects"]) {
@@ -1793,14 +1799,22 @@ func (l *catalogLoader) validateClauseGate(catalog *Catalog, id string, clause d
 		return
 	}
 	gate, ok := objectValue(raw)
-	if !ok || len(gate) != 2 {
-		l.add("catalog.clause.applies-when.invalid", id, "appliesWhen must contain only decision and equals")
+	_, equals := gate["equals"]
+	_, presence := gate["present"]
+	if !ok || len(gate) != 2 || equals == presence {
+		l.add("catalog.clause.applies-when.invalid", id, "appliesWhen must contain decision and exactly one of equals and present")
 		return
 	}
 	decisionID, ok := stringValue(gate, "decision")
 	decision, known := catalog.decisions[decisionID]
 	if !ok || !known {
 		l.add("catalog.clause.applies-when.invalid", id, "gate decision is unknown")
+		return
+	}
+	if presence {
+		if _, ok := gate["present"].(bool); !ok || !decisionOptional(decision) {
+			l.add("catalog.clause.applies-when.invalid", id, "gate present must be a boolean for an optional decision")
+		}
 		return
 	}
 	if decision["type"] != "enum" || !decisionOptional(decision) {

@@ -17,6 +17,12 @@ func renderProjectDecision(
 	declaration document,
 ) (string, error) {
 	switch decisionID {
+	case codeLanguageExceptionDecisionID:
+		exception, err := normalizeCodeLanguageException(value)
+		if err != nil {
+			return "", err
+		}
+		return "\nThe Code Language Exception: code and infrastructure names are written in " + escapeMarkdownText(exception.Language) + ", as the existing code is. Source of the owner's decision: " + markdownCode(exception.Source) + ".", nil
 	case "language.reader":
 		return escapeMarkdownText(renderDecisionValue(value)), nil
 	case branchPrefixDecisionID:
@@ -244,7 +250,7 @@ func markdownCode(value string) string {
 
 func renderUnrecordedProjectDecision(decisionID string, declaration document) (string, error) {
 	switch decisionID {
-	case authBasePathDecisionID:
+	case authBasePathDecisionID, codeLanguageExceptionDecisionID:
 		return "", nil
 	case branchPrefixDecisionID:
 		return strings.Join([]string{

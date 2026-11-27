@@ -30,6 +30,7 @@
   "entryDecisions": [
     "language.generated",
     "language.reader",
+    "language.code_exception",
     "verification.gate",
     "verification.incremental",
     "branch.prefix",

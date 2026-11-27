@@ -354,6 +354,27 @@
       ]
     },
     {
+      "id": "language.code_exception",
+      "version": 1,
+      "optional": true,
+      "type": "code-language-exception",
+      "summary": "The Code Language Exception: the language an existing codebase keeps for code and infrastructure names, with the source of its owner's decision.",
+      "effects": [
+        {
+          "when": {
+            "present": true
+          },
+          "renderBindings": [
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
+              "token": "language.code_exception"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "secondbrain.enabled",
       "version": 1,
       "type": "boolean",

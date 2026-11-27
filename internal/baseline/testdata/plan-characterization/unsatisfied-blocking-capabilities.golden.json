@@ -27,6 +27,7 @@
       "decisions": [
         "language.generated",
         "language.reader",
+        "language.code_exception",
         "verification.gate",
         "verification.incremental",
         "branch.prefix",
@@ -67,7 +68,7 @@
         "template.root.tui-surface"
       ],
       "values": {},
-      "digest": "sha256:34bcdea4279472bedd4a27d065a9b50314725124cf669eb36c6319e57fd9af9d"
+      "digest": "sha256:6867b0c395c609d594fef82c9909705090cef44c7235d95c17cf91b494f9a2c5"
     },
     "decisions": [
       {

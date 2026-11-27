@@ -7,8 +7,8 @@
     "baseline": "baseline.go-cli-tui-0.0.1"
   },
   "profile": "go-cli-tui",
-  "profileDigest": "sha256:34bcdea4279472bedd4a27d065a9b50314725124cf669eb36c6319e57fd9af9d",
-  "catalogDigest": "sha256:6894674a2031927da69bc4e4a22951ceb799b2eaace97c5b035d7df3cd2ad56b",
+  "profileDigest": "sha256:6867b0c395c609d594fef82c9909705090cef44c7235d95c17cf91b494f9a2c5",
+  "catalogDigest": "sha256:ef38d977b353d2146e9ccb80be36c07d3734742a12fe6f0d32e7a02d7c86eb02",
   "modules": [
     "core",
     "context-workflow",

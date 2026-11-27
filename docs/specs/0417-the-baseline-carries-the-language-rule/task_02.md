@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0417-the-baseline-carries-the-language-rule
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -106,3 +106,42 @@ This Task delivers `_techspec.md` → Build Order 2: the optional decision `lang
 - `_authorization.md` → Sanctioned regeneration
 - [`references/2026-11-27-characterization.md`](references/2026-11-27-characterization.md), section 8
 - ADR-0118, ADR-0222, ADR-0250, ADR-0263
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-error-handling, golang-structs-interfaces, golang-testing, testing-boss, agentic-cli-design, setup-context-driven, roundfix, tech-writer, evidence-gate.
+
+Implemented the optional Code Language Exception with its owner-decision source, the presence gate, the mutually exclusive code clauses, and the guide token. All five built-in profiles select the exception after the Reader Language. Interactive collection skips it when absent and carries its recorded value unchanged. Existing clause guidance and interactive scripted answers were preserved.
+
+Acceptance evidence:
+
+- Declared exception: `TestACodeLanguageExceptionSwapsTheCodeClauses/a_declared_exception_states_the_language_and_the_source` renders the language, source and mandatory existing-codebase clause while excluding all three English code clauses. The same test checks Markdown escaping and a source containing backticks.
+- Refusals and no writes: `TestACodeLanguageExceptionValueIsRefused` checks all seven named cases against their exact reasons at normalization and decision validation, then checks plan refusal and unchanged repository snapshots for each. `TestAnExceptionWithoutASourceIsRefused` compares the complete Surface Transcript 2 stdout, stderr and exit 2 and checks unchanged repository contents.
+- Absence and gates: `no_declaration_states_english` retains the three English clauses and excludes the exception clause. `TestAClauseGateOnPresence` checks recorded and absent states, opposite states, defaults excluded from presence, unchanged equals behavior, invalid gates, and presence-naming Source Baseline rejection evidence. `TestTheCatalogRefusesADefaultForACodeLanguageException` checks default and suggestion rejection.
+- Interactive behavior: both named cases of `TestTheInteractiveFlowAsksNothingForTheCodeLanguageException` assert no exception prompt and exact carried-value equality when recorded.
+- Generated artifacts: all four sanctioned commands below exited 0 in order. The recorder selected core version 36. Managed Refresh reported exactly one changed file, `docs/agents/setup-context.json`; the guide remains unchanged with English and no exception. The coverage diff adds exactly the six named tests and removes none. No generated output was edited by hand; unchanged formatter and diagnostics goldens were left untouched.
+
+Focused checks (all exited 0; `rtk proxy` preserved command output):
+
+```text
+go test ./internal/baseline -run '^(TestACodeLanguageException|TestAClauseGateOnPresence|TestTheCatalogRefusesADefault)' -count=1
+go test ./internal/cli -run '^(TestAnExceptionWithoutASourceIsRefused|TestTheInteractiveFlowAsksNothingForTheCodeLanguageException)$' -count=1
+go test ./internal/baseline -run '^(TestEveryBuiltInProfileRendersTheLanguageRule|TestBaselineClauseForceIsCharacterized|TestPlanDeterminismAndNoMutation|TestFormatterComposition|TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule|TestAClauseARecordedLayoutTurnsOffIsAReasonedRejection|TestBaselineUpdate.*)$' -count=1
+go test ./internal/cli -run '^(TestAnExceptionWithoutASourceIsRefused|TestTheInteractiveFlowAsksNothingForTheCodeLanguageException|TestTheUpdateNamesTheReaderLanguageDecision|TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles|TestARepositoryProfileWithoutTheReaderLanguageIsRefused|TestProjectDecisionReuse|TestHumanBaselineAdoption)$' -count=1
+```
+
+Sanctioned regeneration (all exited 0, in this order):
+
+```text
+go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1
+make baseline-digests
+go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text --decision language.reader=English
+go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1
+```
+
+Postflight: `git diff --check` exited 0. Comparing changed and untracked paths against this Task's interfaces and creates found all 30 paths within scope. The initial worktree had only the Daemon's Task status change; its `in_progress` value was preserved. Commands required escalation because the executor rejects the configured writable root's symlink, including when selecting the physical worktree as the working directory. No declared Verification command, selected repository Verification, commit, push or pull request was run. Daemon Verification and settlement remain outstanding. No follow-up scope was added.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261127T170815Z_a9d44cef510b3683`
+- Source commit: `2e1a59f06ca2624574e4fbe66ea29baeb7652e26`

@@ -293,6 +293,7 @@ func characterizedBaselineForce() map[string]string {
 		"clause.core.use-github-pr-workflow":                          "mandatory",
 		"clause.core.verification-two-tiers":                          "mandatory",
 		"clause.core.write-generated-guidance-in-english":             "mandatory",
+		"clause.core.code-names-follow-the-existing-codebase":         "mandatory",
 		"clause.core.code-names-in-english":                           "mandatory",
 		"clause.core.code-names-keep-untranslated-terms":              "mandatory",
 		"clause.core.code-names-new-only":                             "mandatory",

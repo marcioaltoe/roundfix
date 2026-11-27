@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 35,
+  "version": 36,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -567,18 +567,30 @@
       "clauses": [
         {
           "id": "clause.core.code-names-in-english",
+          "appliesWhen": {"decision": "language.code_exception", "present": false},
           "enforcement": "mandatory",
           "guidance": "Write code and infrastructure names in English: variables, functions, classes, files and folders, code comments, database tables, columns and indexes, buckets, prefixes, environment variables, queues, API routes and technical logs."
         },
         {
           "id": "clause.core.code-names-keep-untranslated-terms",
+          "appliesWhen": {"decision": "language.code_exception", "present": false},
           "enforcement": "mandatory",
           "guidance": "A business term with no faithful English translation keeps its original form inside an English name: an official acronym as it is (`icms_amount`), another term without accents (`apuracao_summary`). Brazilian fiscal and legal terms are the usual case."
         },
         {
           "id": "clause.core.code-names-new-only",
+          "appliesWhen": {"decision": "language.code_exception", "present": false},
           "enforcement": "mandatory",
           "guidance": "A new name follows this rule. An existing name changes only when its code is touched, a large rename takes a Spec of its own, and nothing is renamed in bulk without a request. The Pre-PR Review reports a new name that breaks the rule, and the QA gate reports text a user reads outside the Reader Language."
+        },
+        {
+          "id": "clause.core.code-names-follow-the-existing-codebase",
+          "enforcement": "mandatory",
+          "appliesWhen": {
+            "decision": "language.code_exception",
+            "present": true
+          },
+          "guidance": "Write new code and infrastructure names in the language of the existing code, as the Code Language Exception named above declares. The exception covers the codebase that existed when its owner took the cited decision and never starts a new codebase in another language; that owner answers for it. The Pre-PR Review reports a new name in another language, and the QA gate reports text a user reads outside the Reader Language."
         },
         {
           "id": "clause.core.reader-language",
