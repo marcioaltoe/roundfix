@@ -24,7 +24,11 @@ func renderProjectDecision(
 		}
 		return "\nThe Code Language Exception: code and infrastructure names are written in " + escapeMarkdownText(exception.Language) + ", as the existing code is. Source of the owner's decision: " + markdownCode(exception.Source) + ".", nil
 	case "language.reader":
-		return escapeMarkdownText(renderDecisionValue(value)), nil
+		text := renderDecisionValue(value)
+		if err := validateStructuredRenderText("reader language", text, false); err != nil {
+			return "", err
+		}
+		return escapeMarkdownText(text), nil
 	case branchPrefixDecisionID:
 		return strings.Join([]string{
 			"The branch-prefix pattern is `" + renderDecisionValue(value) + "`; `<type>` is replaced by the",

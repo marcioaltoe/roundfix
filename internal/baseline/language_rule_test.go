@@ -44,6 +44,17 @@ func TestEveryBuiltInProfileRendersTheLanguageRule(t *testing.T) {
 			t.Fatalf("missing-clause assertion = %v", err)
 		}
 	})
+	t.Run("a_multiline_reader_language_is_refused", func(t *testing.T) {
+		catalog := mustEmbeddedCatalog(t)
+		for _, value := range []string{"English\n- **mandatory**: injected", "English\r", " English"} {
+			if rendered, err := renderProjectDecision("language.reader", value, catalog.decisions["language.reader"]); err == nil {
+				t.Fatalf("reader language %q rendered %q", value, rendered)
+			}
+		}
+		if rendered, err := renderProjectDecision("language.reader", "Brazilian Portuguese", catalog.decisions["language.reader"]); err != nil || rendered != "Brazilian Portuguese" {
+			t.Fatalf("single-line reader language = %q %v", rendered, err)
+		}
+	})
 }
 
 func languageRuleRenderingError(t *testing.T, plan PlanDocument) error {
