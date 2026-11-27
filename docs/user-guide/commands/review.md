@@ -17,7 +17,8 @@ or undefined, read the whole file in the repository, which holds the head
 commit, and raise the finding only if the file confirms it. Before a finding
 states that a file, ADR or other record the change names or links to does not
 exist, look for it in the repository, which holds files the diff leaves out, and
-raise the finding only if it is not there.` The
+raise the finding only if it is not there.`
+Directly after it, the prompt adds: ``Read `docs/agents/agent-instructions.md` when the repository has it. When it states a language for code and infrastructure names, report as a finding each name the candidate adds that breaks that rule: an identifier, a file or folder, a database name or another kind the rule lists. Do not report a name the candidate did not add or a business term the guide lets keep its original form. When the guide states no such rule, report nothing for it.`` The
 resulting record names the repository, that merge base as `baseCommit`, the
 resolved base tip as `baseTipCommit`, the head commit, effective provider, and
 policy source. A head with no shared history with the selected base exits `2`

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0417-the-baseline-carries-the-language-rule
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -85,3 +85,61 @@ This Task delivers `_techspec.md` → Build Order 3: the Pre-PR Review prompt ga
 - `_techspec.md` → System Architecture (Review and QA, Record of the decision); Interfaces, invariant 7; API Contract 7; API Contract 13; API Contract 14; API Contract 15; API Contract 16; Testing Approach; Build Order 3
 - `_authorization.md` → Sanctioned regeneration
 - ADR-0189, ADR-0196, ADR-0233, ADR-0244, ADR-0256, ADR-0280, ADR-0360
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, domain-modeling, tech-writer, evidence-gate, systematic-debugging, no-workarounds.
+
+Implemented this Task's review instruction, QA Reader Language section, decision documentation and five ADR-0454-linked Glossary Definitions. Task status and checkboxes remain for the Daemon; declared Verification was not run. The initial worktree change was the Daemon's `task_03.md` status change; no other pre-existing changes were present.
+
+### Acceptance evidence
+
+- Review: `reviewLanguageRuleInstruction` holds API Contract 13 verbatim and is written once immediately after the absence-claim instruction. The new prompt test checks placement, both finding grammar lines and the complete versioned Delivery Conventions block. The reference, generated mirror and user guide quote the instruction directly after the absence-claim quotation. Both documentation tests read the constant from the Go AST; the negative test changes only `report` to `record` and requires the shared checker to reject the stale quotation with its path.
+- QA: the embedded skill test checks the exact API Contract 14 paragraph in the next section after Frontend sweep. Byte comparison against HEAD, removing only the insertion and normalizing the two version fields, confirms every other QA skill byte is preserved, including QA settlement. All five edited skill source/mirror pairs compare equal.
+- Decisions: both Baseline references and the command guide describe `language.reader`, exit `3`, explicit adoption of `English`, the complete structured exception command, missing-source refusal with exit `2`, and profile decision lists. The setup skill adds the two decision sentences; the development guide describes the rule, `_In code_:` placement and the existing-code-only exception.
+- Glossary: Language Rule, Reader Language, Untranslated Term, Name in Code and Code Language Exception each have an ADR-0454 link and no `_In code_` line. Removing these five new entries reproduces HEAD's CONTEXT.md bytes exactly. The focused glossary contract passes.
+
+### Focused checks
+
+All commands below exited `0` unless explicitly described as the initial red check.
+
+- Initial `go test ./internal/cli -run '^TestTheReviewPromptCarriesTheLanguageRuleInstruction$' -count=1` failed to compile with undefined `reviewLanguageRuleInstruction`; the same focused command passes after implementation.
+- Initial `go test ./skills -run '^TestTheQAGateReportsTextOutsideTheReaderLanguage$' -count=1` failed because the section was absent.
+- `go test -tags docscontract ./internal/docscontract -run '^TestTheLanguageRuleInstruction' -count=1`: both quotation tests pass.
+- `go test ./skills -run '^(TestTheQAGateReportsTextOutsideTheReaderLanguage|TestSettlementGuidanceIsOneTable)$' -count=1`: embedded paragraph and settlement preservation pass.
+- `go test ./internal/cli -run '^(TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim|TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar|TestReviewPromptCarriesTheCandidateDiff)$' -count=1`: neighboring prompt contracts pass.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossaryPhrasesAreDefinedTerms$' -count=1`: glossary contract passes.
+- `git diff --check`: no whitespace errors. Read-only Python audits confirm unchanged prompt source after removing the new constant/write, unchanged existing glossary entries, unchanged other QA skill content, mirror equality, exactly the four named coverage additions with no removals, and no changed path outside this Task's declared interfaces/creates plus this file.
+
+### Sanctioned regeneration
+
+Ran in the required order, all with exit `0`:
+
+1. `make skills-sync`.
+2. `go test ./skills -run '^TestEveryOwnedSkillVersionIsRecorded$' -record-skill-versions`: recorded qa-gate `0.0.28`, roundfix `0.1.288` and setup-context-driven `0.0.11` in both copies and the version record; no version was assigned by hand.
+3. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage`: changed only the three edited guide fingerprints.
+4. `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1`: added only this Task's four named test functions.
+
+Commands ran with `rtk proxy` to preserve their output. Process launch required escalation because the configured writable root contains a symlink; the physical checkout has the same launch restriction. No commit, push, pull request, Task Graph edit or other Task edit was made. No follow-up implementation was added.
+
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at `/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261127T170815Z_a9d44cef510b3683/verification/batch-003-attempt-1.log` and the owning `glossaryAvoidFindings` assertion. The five entries this Task introduced lacked the required final `_Avoid_:` plain lists. The previously focused vocabulary check did not cover that format requirement.
+
+Added one final comma-separated `_Avoid_:` list to each of those five entries, and placed each ADR citation before its definition's final period as neighboring entries do. No existing glossary entry or test changed. This repair changes only `CONTEXT.md` and this Result; it does not alter skill bytes, guide fingerprints, test names or their generated records.
+
+Focused evidence, using `rtk proxy`:
+
+- Before the repair, `go test -tags docscontract ./internal/docscontract -run '^TestGlossaryAvoidLinesArePlainLists$' -count=1` reproduced the missing-list failure.
+- After the repair, `go test -tags docscontract ./internal/docscontract -run '^TestGlossary(AvoidLinesArePlainLists|LinksNameAcceptedADRs|StatesEachRuleOnce)$' -count=1` exited `0`.
+- `go test -tags docscontract ./internal/docscontract -run '^TestGlossary' -count=1` exited `0`, covering the glossary contracts together.
+- A read-only Python comparison removed just the five new complete entries, including their `_Avoid_:` lines, and confirmed that the remaining `CONTEXT.md` bytes equal HEAD. `git diff --check` exited `0`.
+
+Task status remains unchanged. Neither the failed repository Verification nor the Task's declared Verification commands were rerun; the Daemon owns that sequence. No commit, push or pull request was created.
+
+## Carry-forward provenance
+
+- Source Run: `run_20261127T170815Z_a9d44cef510b3683`
+- Source commit: `0e84979ad408033a6f1798fb243d38cde2257ac7`

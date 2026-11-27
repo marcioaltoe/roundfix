@@ -960,3 +960,85 @@ func TestOwnedSkillCommandCollectionReadsOnlyCode(t *testing.T) {
 		t.Fatalf("commands = %q, want %q", got, want)
 	}
 }
+
+func TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt(t *testing.T) {
+	t.Parallel()
+	root := baselineDocumentationRepoRoot()
+	instruction := reviewLanguageRuleSource(t, root)
+	var docs []documentedText
+	for _, path := range []string{
+		".agents/skills/roundfix/references/review.md",
+		"skills/roundfix/references/review.md",
+		"docs/user-guide/commands/review.md",
+	} {
+		docs = append(docs, documentedText{path: path, content: readContractDocument(t, filepath.Join(root, path))})
+	}
+	if err := checkLanguageRuleDocumentation(docs, instruction); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTheLanguageRuleInstructionContractReportsAStaleQuotation(t *testing.T) {
+	t.Parallel()
+	root := baselineDocumentationRepoRoot()
+	instruction := reviewLanguageRuleSource(t, root)
+	const path = ".agents/skills/roundfix/references/review.md"
+	text := strings.Join(strings.Fields(readContractDocument(t, filepath.Join(root, path))), " ")
+	if err := checkLanguageRuleDocumentation([]documentedText{{path: path, content: text}}, instruction); err != nil {
+		t.Fatal(err)
+	}
+	staleInstruction := strings.Replace(instruction, "report as a finding", "record as a finding", 1)
+	if staleInstruction == instruction {
+		t.Fatal("cannot plant one-word stale quotation")
+	}
+	stale := strings.Replace(text, strings.Join(strings.Fields(instruction), " "), staleInstruction, 1)
+	err := checkLanguageRuleDocumentation([]documentedText{{path: path, content: stale}}, instruction)
+	if err == nil || !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "language-rule") {
+		t.Fatalf("stale quotation must report %s and language-rule, got %v", path, err)
+	}
+}
+
+func reviewLanguageRuleSource(t *testing.T, root string) string {
+	t.Helper()
+	const path = "internal/cli/review.go"
+	parsed, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, path), nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	for _, declaration := range parsed.Decls {
+		group, ok := declaration.(*ast.GenDecl)
+		if !ok || group.Tok != token.CONST {
+			continue
+		}
+		for _, spec := range group.Specs {
+			value := spec.(*ast.ValueSpec)
+			for i, name := range value.Names {
+				if name.Name != "reviewLanguageRuleInstruction" || i >= len(value.Values) {
+					continue
+				}
+				literal, ok := value.Values[i].(*ast.BasicLit)
+				if !ok || literal.Kind != token.STRING {
+					t.Fatal("language-rule instruction is not a string constant")
+				}
+				instruction, err := strconv.Unquote(literal.Value)
+				if err != nil || instruction == "" {
+					t.Fatalf("unquote language-rule instruction: %v", err)
+				}
+				return instruction
+			}
+		}
+	}
+	t.Fatalf("%s: missing reviewLanguageRuleInstruction", path)
+	return ""
+}
+
+func checkLanguageRuleDocumentation(docs []documentedText, instruction string) error {
+	instruction = strings.Join(strings.Fields(instruction), " ")
+	for _, doc := range docs {
+		text := strings.Join(strings.Fields(doc.content), " ")
+		if strings.Count(text, instruction) != 1 {
+			return fmt.Errorf("%s: missing, repeated or stale language-rule instruction", doc.path)
+		}
+	}
+	return nil
+}

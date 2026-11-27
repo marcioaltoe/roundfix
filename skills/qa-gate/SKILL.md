@@ -4,10 +4,10 @@ description: Execute the self-contained final QA gate as a Spec's authored termi
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.27
+  version: 0.0.28
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.27
+version: 0.0.28
 ---
 
 # QA Gate
@@ -583,6 +583,10 @@ When `frontend` is declared, cover all of these in the matrix:
 - **Runtime health:** exercised flows leave no unexplained console errors/warnings or failed requests. Run a focused accessibility or Lighthouse audit when available; disclose when unavailable.
 
 For a TUI, map the same sweep to small/large/degenerate terminal sizes, keyboard flows, focus/follow behavior, color-independent readability, aligned output, and clean interrupt handling.
+
+### Reader Language
+
+When `docs/agents/agent-instructions.md` names a Reader Language, read the text a user reads on every surface the Spec declares: screen copy, command output, messages, e-mails, PDFs, user documentation, and the names, descriptions and parameters of MCP tools. Record each text written in another language as a finding with the surface, the text and the expected language, and classify it by user impact as any other finding. A business term the guide lets keep its original form is not a finding. When the guide names no Reader Language, report nothing for it.
 
 ### Browser driver inside a sandbox
 

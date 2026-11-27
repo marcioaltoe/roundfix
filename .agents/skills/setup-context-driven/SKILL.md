@@ -4,10 +4,10 @@ description: Adopt, update, or verify a repository's Context-Driven Baseline thr
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.0.10
+  version: 0.0.11
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.10
+version: 0.0.11
 ---
 
 # Setup Context-Driven
@@ -239,6 +239,14 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 The CLI owns project-decision collection and rendering. This skill does not
 collect, derive, validate, or render decisions; it explains the public result
 and sends every correction back through `roundfix baseline`.
+
+`language.reader` declares the required Reader Language for product text; an
+update without it stops with exit `3`, and `--adopt-suggested` records `English`,
+which is right only for a product whose users read English.
+`language.code_exception` declares an existing codebase's language and the source
+of its owner's decision through `roundfix baseline update --decision 'language.code_exception={"language":"<language>","source":"<source>"}'`,
+refuses a missing source with exit `2`, and requires a repository-owned profile
+to list it before declaration, alongside the required `language.reader`.
 
 `verification.incremental` names the selected fast local check that generated
 guidance publishes. It is required independently of `verification.gate`, which
