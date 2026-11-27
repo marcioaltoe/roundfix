@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0417-the-baseline-carries-the-language-rule
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,2 @@
+exits: [0, 0, 0, 0, 0, 0, 0]
+git status --porcelain:

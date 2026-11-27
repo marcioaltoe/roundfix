@@ -1,0 +1,12 @@
+diff --git a/internal/baseline/plan.go b/internal/baseline/plan.go
+index 4e5500b..994a0ef 100644
+--- a/internal/baseline/plan.go
++++ b/internal/baseline/plan.go
+@@ -3485,6 +3485,7 @@ func clauseApplies(catalog *Catalog, clause document, recorded map[string]any) b
+ 	id, _ := stringValue(gate, "decision")
+ 	value, answered := recorded[id]
+ 	if present, gated := gate["present"].(bool); gated {
++		if !answered && catalog.decisions[id]["default"] != nil { answered = true }
+ 		return answered == present
+ 	}
+ 	if !answered && decisionOptional(catalog.decisions[id]) {

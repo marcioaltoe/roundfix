@@ -1,0 +1,26 @@
+command: git diff-tree --no-commit-id --name-only -r 5d1400b0cd97f0c4c4ec88493520319567a55954
+exit: 0
+stdout:
+.agents/skills/qa-gate/SKILL.md
+.agents/skills/roundfix/SKILL.md
+.agents/skills/roundfix/references/baseline.md
+.agents/skills/roundfix/references/review.md
+.agents/skills/setup-context-driven/SKILL.md
+CONTEXT.md
+docs/references/behavior-surfaces.json
+docs/references/coverage-record.json
+docs/specs/0417-the-baseline-carries-the-language-rule/task_03.md
+docs/user-guide/commands/baseline.md
+docs/user-guide/commands/review.md
+docs/user-guide/context-driven-development.md
+internal/cli/review.go
+internal/cli/review_language_rule_test.go
+internal/docscontract/command_documentation_test.go
+skills/qa-gate/SKILL.md
+skills/qa_gate_reader_language_test.go
+skills/roundfix/SKILL.md
+skills/roundfix/references/baseline.md
+skills/roundfix/references/review.md
+skills/setup-context-driven/SKILL.md
+skills/testdata/owned-skill-versions.json
+stderr:

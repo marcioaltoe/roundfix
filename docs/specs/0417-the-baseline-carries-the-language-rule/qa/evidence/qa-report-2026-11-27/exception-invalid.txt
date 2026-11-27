@@ -1,0 +1,20 @@
+command: ['./bin/roundfix', 'baseline', 'update', '--repo', '/var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/qa0417-jafzp1jf', '--no-skills', '--no-history', '--format', 'text', '--decision', 'language.reader=pt-BR', '--decision', 'language.code_exception={"language":"Portuguese"}']
+exit: 2
+stdout:
+Baseline update: failed
+Category: invalid
+Result: declare Setup Manifest decisions: resolve Setup Manifest decisions: normalize Baseline decision "language.code_exception": requires a source, the recorded decision of the owner that keeps the codebase's language: no source, no exception
+Prior catalog: sha256:d7e65987f31a6bbff0d205f0a6976d1a36e11090f935488a5a14884865e7f9a4
+Current catalog: sha256:ef38d977b353d2146e9ccb80be36c07d3734742a12fe6f0d32e7a02d7c86eb02
+File changes: 0
+Misplaced repository rules: 0
+Retention evidence: 0
+Declared decisions: 0
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Next action: correct the declared decisions and rerun roundfix baseline update
+
+stderr:
+roundfix: baseline update failed: declare Setup Manifest decisions: resolve Setup Manifest decisions: normalize Baseline decision "language.code_exception": requires a source, the recorded decision of the owner that keeps the codebase's language: no source, no exception

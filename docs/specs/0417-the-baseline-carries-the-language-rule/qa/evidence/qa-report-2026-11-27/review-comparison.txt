@@ -1,0 +1,3 @@
+instruction: Read `docs/agents/agent-instructions.md` when the repository has it. When it states a language for code and infrastructure names, report as a finding each name the candidate adds that breaks that rule: an identifier, a file or folder, a database name or another kind the rule lists. Do not report a name the candidate did not add or a business term the guide lets keep its original form. When the guide states no such rule, report nothing for it.
+finding grammar byte-identical: True
+Delivery Conventions file byte-identical: True

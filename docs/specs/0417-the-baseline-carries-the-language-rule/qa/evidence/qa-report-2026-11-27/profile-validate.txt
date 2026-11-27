@@ -1,0 +1,7 @@
+command: ['./bin/roundfix', 'baseline', 'profile', 'validate', 'own-profile']
+exit: 2
+stdout:
+
+stderr:
+roundfix: baseline profile.validate failed: custom.profile.decision.template-required: profile own-profile does not list decision language.reader, which template template.guide.agent-instructions requires; add "language.reader" to "decisions" in .roundfix/baseline/profiles/own-profile.json, then run roundfix baseline update --decision 'language.reader=English'
+Run 'roundfix baseline profile --help' for usage.

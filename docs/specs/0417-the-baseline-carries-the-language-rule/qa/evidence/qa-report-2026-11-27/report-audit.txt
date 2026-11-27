@@ -1,0 +1,1 @@
+22 contiguous Results rows, all with typed inputs; zero pending. All linked files exist and are unignored. Evidence files are text. Repository Secret Patterns: zero matches. Six required positive test commands exited 0. Five sabotages compiled and exited 1 on their named assertions.

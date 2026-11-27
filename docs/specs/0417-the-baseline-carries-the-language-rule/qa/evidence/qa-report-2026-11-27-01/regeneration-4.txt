@@ -1,0 +1,4 @@
+command: make skills-sync
+exit: 0
+stdout:
+stderr:

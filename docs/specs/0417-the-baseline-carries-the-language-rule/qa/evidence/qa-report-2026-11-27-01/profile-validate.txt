@@ -1,0 +1,6 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0417-the-baseline-carries-the-language-rule-10ace5c8acd1ac56-66229771-ed3806f5/run_20261127T181612Z_6e339d0bde0e5ce4/bin/roundfix baseline profile validate own-profile
+exit: 2
+stdout:
+stderr:
+roundfix: baseline profile.validate failed: custom.profile.decision.template-required: profile own-profile does not list decision language.reader, which template template.guide.agent-instructions requires; add "language.reader" to "decisions" in .roundfix/baseline/profiles/own-profile.json, then run roundfix baseline update --decision 'language.reader=English'
+Run 'roundfix baseline profile --help' for usage.

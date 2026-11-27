@@ -1,0 +1,44 @@
+import os,sys,subprocess,tempfile,pathlib,shutil,json,re,tarfile,io
+ROOT=pathlib.Path.cwd(); SPEC=ROOT/'docs/specs/0417-the-baseline-carries-the-language-rule'; E=SPEC/'qa/evidence/qa-report-2026-11-27'; REPORT=SPEC/'qa/qa-report-2026-11-27.md'
+BASE='2e2cedb161cae1d115ee5644c76ccada1d2c43be'; HEAD='0e84979ad408033a6f1798fb243d38cde2257ac7'
+ENV=os.environ.copy()
+for k in list(ENV):
+ if k.endswith('API_KEY') or k in ['GH_TOKEN','GITHUB_TOKEN','CLAUDE_CODE_SESSION_ID']: ENV.pop(k)
+for k in ['GOMODCACHE','GOCACHE']: ENV[k]=subprocess.check_output(['go','env',k],text=True).strip()
+ENV['RUSTUP_HOME']=os.environ.get('RUSTUP_HOME',os.path.expanduser('~/.rustup')); ENV['CARGO_HOME']=os.environ.get('CARGO_HOME',os.path.expanduser('~/.cargo')); ENV['GOPROXY']='off'; ENV['GOSUMDB']='off'
+def run(args,cwd=ROOT,env=None):
+ p=subprocess.run(args,cwd=cwd,env=env,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ return p
+
+def record(name,args,p):
+ (E/(name+'.txt')).write_text('command: '+repr(args)+'\nexit: '+str(p.returncode)+'\nstdout:\n'+p.stdout+'\nstderr:\n'+p.stderr)
+ print(name,'exit',p.returncode,flush=True)
+
+def cli(name,args,cwd=ROOT):
+ with tempfile.TemporaryDirectory() as h,tempfile.TemporaryDirectory() as t:
+  env=ENV.copy(); env.update(HOME=h,TMPDIR=t); b=pathlib.Path(t)/'tools'; b.mkdir(); g=b/'gh';g.write_text('#!/bin/sh\nexit 1\n');g.chmod(0o755);env['PATH']=str(b)+os.pathsep+env['PATH']
+  cmd=[str(ROOT/'bin/roundfix')]+args; p=run(cmd,cwd,env);record(name,['./bin/roundfix']+args,p);return p
+
+def copyrev(rev):
+ d=pathlib.Path(tempfile.mkdtemp(prefix='qa0417-')); data=subprocess.check_output(['git','archive',rev]);tarfile.open(fileobj=io.BytesIO(data)).extractall(d,filter='data')
+ for a in [['git','init','-q'],['git','add','.'],['git','-c','user.name=QA','-c','user.email=qa@example.invalid','commit','-qm','QA fixture']]:
+  p=run(a,d);assert p.returncode==0,p.stderr
+ return d
+
+def clean(d):
+ subprocess.run(['chmod','-R','u+w',str(d)],check=True);shutil.rmtree(d)
+def status(d):return run(['git','status','--porcelain'],d).stdout
+
+def finish(row,ok,detail):
+ s=REPORT.read_text();s=s.replace('| '+row+' | pending |','| '+row+' | '+('pass' if ok else 'fail')+' |'); s=s.replace('### '+row+'\n','### '+row+'\n\n'+detail+'\n',1);REPORT.write_text(s);print(row,ok,flush=True)
+
+def tests():
+ texts='\n'.join((SPEC/('task_0'+str(i)+'.md')).read_text() for i in [1,2,3]);names=set(re.findall(r'\bTest[A-Za-z0-9_]+',texts))
+ for path in set(re.findall(r'(?:internal|skills)/[A-Za-z0-9_./-]+_test\.go',texts)):
+  if (ROOT/path).exists():names.update(re.findall(r'^func (Test\w+)\(', (ROOT/path).read_text(),re.M))
+ pattern='^('+'|'.join(sorted(names))+')$'
+ jobs=[('focused',['go','test','-count=1','-timeout','30m','-v','-tags','docscontract','-run',pattern,'./internal/baseline','./internal/cli','./skills','./internal/docscontract','./internal/config']),('baseline-suite',['go','test','-count=1','-timeout','30m','-v','./internal/baseline']),('cli-suite',['go','test','-count=1','-timeout','30m','-v','./internal/cli']),('skills-suite',['go','test','-count=1','-timeout','20m','-v','./skills']),('docs-suite',['go','test','-count=1','-timeout','30m','-v','-tags','docscontract','./internal/docscontract']),('coverage',['go','test','-count=1','-timeout','20m','-run','^TestCoverageEquivalence$','./internal/spec'])]
+ for name,args in jobs:
+  print('starting',name,flush=True);p=run(args,env=ENV);record(name,args,p)
+  if p.returncode: print((p.stdout+p.stderr)[-5000:],flush=True)
+if __name__=='__main__':tests()

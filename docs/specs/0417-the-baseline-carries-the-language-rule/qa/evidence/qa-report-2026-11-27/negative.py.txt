@@ -1,0 +1,42 @@
+import runpy,json,re,pathlib
+X=runpy.run_path('docs/specs/0417-the-baseline-carries-the-language-rule/qa/evidence/qa-report-2026-11-27/runner.py.txt',run_name='helper'); OUT=pathlib.Path('/tmp/qa0417-results');X['cli'].__globals__['E']=OUT
+run=X['run'];record=X['record'];copyrev=X['copyrev'];clean=X['clean'];ENV=X['ENV'];HEAD=X['HEAD'];cli=X['cli'];ROOT=X['ROOT'];SPEC=X['SPEC']
+results={}
+def done(k,ok,detail):
+ results[k]={'ok':bool(ok),'detail':detail};(OUT/'negative-results.json').write_text(json.dumps(results,indent=2));print(k,ok,flush=True)
+# Compare captured public outputs after removing only Markdown block indentation.
+text=(SPEC/'_techspec.md').read_text();blocks=re.findall(r'```transcript\n(.*?)```',text,re.S)
+for number,name in [(1,'update-stop'),(2,'exception-invalid')]:
+ raw=(OUT/(name+'.txt')).read_text(); out=raw.split('stdout:\n')[1].split('\nstderr:\n')[0];err=raw.split('\nstderr:\n')[1];block=blocks[number-1];expectedOut=block.split('stdout:\n')[1].split('stderr:\n')[0];expectedErr=block.split('stderr:\n')[1].split('exit:')[0]
+ def match(a,b):
+  a='\n'.join(x[3:] if x.startswith('   ') else x for x in a.splitlines()).strip();b=b.strip(); aa=a.splitlines();bb=b.splitlines();return len(aa)==len(bb) and all(re.fullmatch('.+'.join(re.escape(z) for z in re.split(r'<[^>]+>',x)),y) for x,y in zip(aa,bb))
+ done('transcript'+str(number),match(expectedOut,out) and match(expectedErr,err),'Compared stdout and stderr separately; only <digest> placeholders vary; exits 3/2 observed.')
+d=copyrev(HEAD)
+try:
+ p=cli('profile-init',['baseline','profile','init','--id','own-profile','--from','go-cli-tui'],d);assert p.returncode==0,p.stderr
+ f=d/'.roundfix/baseline/profiles/own-profile.json'; obj=json.loads(f.read_text());obj['decisions']=[x for x in obj['decisions'] if x!='language.reader'];f.write_text(json.dumps(obj));p=cli('profile-validate',['baseline','profile','validate','own-profile'],d)
+ done('Q06',p.returncode==2 and all(s in p.stdout+p.stderr for s in ['language.reader','template.guide.agent-instructions','decisions']),'Fresh committed repository; remove language.reader from generated profile; validation exit 2 names decision, template and repair entry.')
+finally:clean(d)
+for n,test,pkg in [(1,'TestEveryBuiltInProfileRendersTheLanguageRule','./internal/baseline'),(2,'TestACodeLanguageExceptionValueIsRefused/no_source','./internal/baseline'),(3,'TestAClauseGateOnPresence/a_default_is_not_presence','./internal/baseline'),(4,'TestTheReviewPromptCarriesTheLanguageRuleInstruction','./internal/cli'),(5,'TestTheQAGateReportsTextOutsideTheReaderLanguage','./skills')]:
+ d=copyrev(HEAD)
+ try:
+  if n==1:
+   f=d/'internal/baseline/assets/modules/core.json';obj=json.loads(f.read_text())
+   for rule in obj['rules']:
+    if rule['id']=='rule.core.code-and-reader-language':rule['clauses']=[c for c in rule['clauses'] if c['id']!='clause.core.code-names-in-english']
+   f.write_text(json.dumps(obj))
+  if n==2:
+   f=d/'internal/baseline/code_language_exception.go';s=f.read_text();s=s.replace('if strings.TrimSpace(source) == "" {','if false {',1);f.write_text(s)
+  if n==3:
+   f=d/'internal/baseline/plan.go';s=f.read_text();s=s.replace('if present, gated := gate["present"].(bool); gated {','if present, gated := gate["present"].(bool); gated {\n        if !answered { _, answered = catalog.decisions[id]["default"] }',1);f.write_text(s)
+  if n==4:
+   f=d/'internal/cli/review.go';s=f.read_text();s=s.replace('prompt.WriteString(reviewLanguageRuleInstruction + "\\n")','',1);f.write_text(s)
+  if n==5:
+   for name in ['.agents/skills/qa-gate/SKILL.md','skills/qa-gate/SKILL.md']:
+    f=d/name;s=f.read_text();s=re.sub(r'### Reader Language\n.*?(?=### )','',s,flags=re.S);f.write_text(s)
+  args=['go','test','-count=1','-timeout','20m','-v','-run','^'+test+'$' ,pkg];p=run(args,d,ENV);record('sabotage-'+str(n),args,p)
+  expected='--- FAIL: '+test
+  ok=p.returncode!=0 and expected in p.stdout and '[build failed]' not in p.stdout+p.stderr
+  done('Q13'+chr(96+n),ok,'Assertion failure required at '+test+'; observed '+str(ok))
+  if not ok:print((p.stdout+p.stderr)[-2500:],flush=True)
+ finally:clean(d)

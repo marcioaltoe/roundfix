@@ -1,0 +1,169 @@
+command: go test -count=1 -timeout 20m -v -run '^(TestAClauseARecordedLayoutTurnsOffIsAReasonedRejection|TestAClauseGateOnPresence|TestACodeLanguageException|TestACodeLanguageExceptionSwapsTheCodeClauses|TestACodeLanguageExceptionValueIsRefused|TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestARecordedBranchPrefix|TestARepositoryProfileWithoutTheReaderLanguageIsRefused|TestAnExceptionWithoutASourceIsRefused|TestAnUnrecordedBranchPrefix|TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule|TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles|TestAuthorialSkillSync|TestBaselineApply|TestBaselineClauseForceIsCharacterized|TestBaselineDecisionExamples|TestBaselineFindingRegressionsHumanReview|TestBaselineHuman|TestBaselineHumanProfileChangeRemainsReachable|TestBaselineMacroJourneysPublicCLI|TestBaselinePlan|TestBaselineProfileChange|TestBaselineRelease|TestBaselineUpdate|TestBaselineUpdateFleetSweep|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestCatalogCompatibility|TestConsolidatedReview|TestConsolidatedReviewEditsManagedClassification|TestCoverageEquivalence|TestEveryBaselineModuleVersionIsRecorded|TestEveryBuiltInProfileRendersTheLanguageRule|TestEveryOwnedSkillVersionIsRecorded|TestFormatterComposition|TestGlossary|TestGlossaryAvoidLinesArePlainLists|TestGlossaryPhrasesAreDefinedTerms|TestHuman|TestHumanAutomationPlanParity|TestHumanBaselineAdoption|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestHumanBaselineInvokesSemanticSegmentationAndClassification|TestPlanDeterminismAndNoMutation|TestProjectConstraintDocumentation|TestProjectDecisionParity|TestProjectDecisionReuse|TestRegenerationIsDeclared|TestRejectedPlanRevision|TestRepeatedPlanRevisionDeterminism|TestReviewPromptCarriesTheCandidateDiff|TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar|TestRunsInWindowKeepsTheOldestRunsSinceTheStart|TestSettlementGuidanceIsOneTable|TestStandardTypeScriptStructuralClauseRetention|TestTheCatalogRefusesADefault|TestTheCatalogRefusesADefaultForACodeLanguageException|TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem|TestTheInteractiveFlowAsksNothingForTheCodeLanguageException|TestTheLanguageRuleInstruction|TestTheLanguageRuleInstructionContractReportsAStaleQuotation|TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt|TestTheQAGateReportsTextOutsideTheReaderLanguage|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim|TestTheReviewPromptCarriesTheLanguageRuleInstruction|TestTheSkillCoverageMapIsCurrent|TestTheUpdateNamesTheReaderLanguageDecision|TestToolingAuthorityNoPrompt|Testing)$' ./internal/cli
+exit: 0
+stdout:
+=== RUN   TestAnExceptionWithoutASourceIsRefused
+=== PAUSE TestAnExceptionWithoutASourceIsRefused
+=== RUN   TestTheInteractiveFlowAsksNothingForTheCodeLanguageException
+=== PAUSE TestTheInteractiveFlowAsksNothingForTheCodeLanguageException
+=== RUN   TestHumanBaselineAdoption
+=== PAUSE TestHumanBaselineAdoption
+=== RUN   TestBaselineHumanProfileChangeRemainsReachable
+=== PAUSE TestBaselineHumanProfileChangeRemainsReachable
+=== RUN   TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== PAUSE TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+=== RUN   TestToolingAuthorityNoPrompt
+=== PAUSE TestToolingAuthorityNoPrompt
+=== RUN   TestProjectDecisionParity
+=== PAUSE TestProjectDecisionParity
+=== RUN   TestProjectDecisionReuse
+=== PAUSE TestProjectDecisionReuse
+=== RUN   TestConsolidatedReview
+=== PAUSE TestConsolidatedReview
+=== RUN   TestHumanBaselineInvokesSemanticSegmentationAndClassification
+=== PAUSE TestHumanBaselineInvokesSemanticSegmentationAndClassification
+=== RUN   TestConsolidatedReviewEditsManagedClassification
+=== PAUSE TestConsolidatedReviewEditsManagedClassification
+=== RUN   TestHumanAutomationPlanParity
+=== PAUSE TestHumanAutomationPlanParity
+=== RUN   TestRejectedPlanRevision
+=== PAUSE TestRejectedPlanRevision
+=== RUN   TestRepeatedPlanRevisionDeterminism
+=== PAUSE TestRepeatedPlanRevisionDeterminism
+=== RUN   TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles
+=== PAUSE TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles
+=== RUN   TestTheUpdateNamesTheReaderLanguageDecision
+=== PAUSE TestTheUpdateNamesTheReaderLanguageDecision
+=== RUN   TestARepositoryProfileWithoutTheReaderLanguageIsRefused
+=== PAUSE TestARepositoryProfileWithoutTheReaderLanguageIsRefused
+=== RUN   TestBaselineMacroJourneysPublicCLI
+=== PAUSE TestBaselineMacroJourneysPublicCLI
+=== RUN   TestBaselineFindingRegressionsHumanReview
+=== PAUSE TestBaselineFindingRegressionsHumanReview
+=== RUN   TestBaselineUpdateFleetSweep
+=== PAUSE TestBaselineUpdateFleetSweep
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== RUN   TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+=== PAUSE TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+=== RUN   TestTheReviewPromptCarriesTheLanguageRuleInstruction
+=== PAUSE TestTheReviewPromptCarriesTheLanguageRuleInstruction
+=== RUN   TestReviewPromptCarriesTheCandidateDiff
+=== PAUSE TestReviewPromptCarriesTheCandidateDiff
+=== RUN   TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+=== PAUSE TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+=== CONT  TestAnExceptionWithoutASourceIsRefused
+=== CONT  TestRepeatedPlanRevisionDeterminism
+=== CONT  TestBaselineUpdateFleetSweep
+=== CONT  TestTheUpdateNamesTheReaderLanguageDecision
+=== CONT  TestARepositoryProfileWithoutTheReaderLanguageIsRefused
+=== RUN   TestBaselineUpdateFleetSweep/manifest-predates-managed-regions
+--- PASS: TestARepositoryProfileWithoutTheReaderLanguageIsRefused (0.18s)
+=== CONT  TestBaselineFindingRegressionsHumanReview
+=== RUN   TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== PAUSE TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== RUN   TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+=== PAUSE TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+=== CONT  TestBaselineMacroJourneysPublicCLI
+--- PASS: TestRepeatedPlanRevisionDeterminism (0.54s)
+=== CONT  TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles
+=== RUN   TestBaselineMacroJourneysPublicCLI/greenfield_automation_apply_and_empty_reapply
+--- PASS: TestTheUpdateNamesTheReaderLanguageDecision (1.50s)
+=== CONT  TestProjectDecisionReuse
+--- PASS: TestAnExceptionWithoutASourceIsRefused (1.55s)
+=== CONT  TestRejectedPlanRevision
+--- PASS: TestRejectedPlanRevision (0.35s)
+=== CONT  TestHumanAutomationPlanParity
+=== RUN   TestBaselineUpdateFleetSweep/structural-clauses-missing
+--- PASS: TestHumanAutomationPlanParity (0.51s)
+=== CONT  TestConsolidatedReviewEditsManagedClassification
+--- PASS: TestProjectDecisionReuse (1.31s)
+=== CONT  TestHumanBaselineInvokesSemanticSegmentationAndClassification
+--- PASS: TestConsolidatedReviewEditsManagedClassification (0.49s)
+=== CONT  TestConsolidatedReview
+=== RUN   TestBaselineMacroJourneysPublicCLI/preservation
+--- PASS: TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles (2.42s)
+=== CONT  TestHumanBaselineFirstAdoptionPromptSequenceCharacterization
+--- PASS: TestHumanBaselineInvokesSemanticSegmentationAndClassification (0.26s)
+=== CONT  TestProjectDecisionParity
+--- PASS: TestHumanBaselineFirstAdoptionPromptSequenceCharacterization (0.19s)
+=== CONT  TestToolingAuthorityNoPrompt
+=== RUN   TestToolingAuthorityNoPrompt/go-cli-tui
+--- PASS: TestConsolidatedReview (0.27s)
+=== CONT  TestHumanBaselineAdoption
+=== RUN   TestToolingAuthorityNoPrompt/go-cli-typescript-monorepo
+=== RUN   TestToolingAuthorityNoPrompt/python
+=== RUN   TestToolingAuthorityNoPrompt/rust-cli
+=== RUN   TestToolingAuthorityNoPrompt/standard-typescript-monorepo
+--- PASS: TestToolingAuthorityNoPrompt (0.02s)
+    --- PASS: TestToolingAuthorityNoPrompt/go-cli-tui (0.00s)
+    --- PASS: TestToolingAuthorityNoPrompt/go-cli-typescript-monorepo (0.01s)
+    --- PASS: TestToolingAuthorityNoPrompt/python (0.00s)
+    --- PASS: TestToolingAuthorityNoPrompt/rust-cli (0.00s)
+    --- PASS: TestToolingAuthorityNoPrompt/standard-typescript-monorepo (0.00s)
+=== CONT  TestBaselineHumanProfileChangeRemainsReachable
+--- PASS: TestProjectDecisionParity (0.25s)
+=== CONT  TestTheReviewPromptCarriesTheLanguageRuleInstruction
+--- PASS: TestTheReviewPromptCarriesTheLanguageRuleInstruction (0.00s)
+=== CONT  TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar
+--- PASS: TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar (0.00s)
+=== CONT  TestReviewPromptCarriesTheCandidateDiff
+--- PASS: TestReviewPromptCarriesTheCandidateDiff (0.62s)
+=== CONT  TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim
+--- PASS: TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim (0.00s)
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== RUN   TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== PAUSE TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== CONT  TestTheInteractiveFlowAsksNothingForTheCodeLanguageException
+=== RUN   TestTheInteractiveFlowAsksNothingForTheCodeLanguageException/nothing_recorded
+=== RUN   TestBaselineMacroJourneysPublicCLI/update_and_profile_change
+--- PASS: TestHumanBaselineAdoption (1.49s)
+=== CONT  TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review
+=== RUN   TestTheInteractiveFlowAsksNothingForTheCodeLanguageException/a_recorded_exception_is_carried
+--- PASS: TestTheInteractiveFlowAsksNothingForTheCodeLanguageException (0.81s)
+    --- PASS: TestTheInteractiveFlowAsksNothingForTheCodeLanguageException/nothing_recorded (0.72s)
+    --- PASS: TestTheInteractiveFlowAsksNothingForTheCodeLanguageException/a_recorded_exception_is_carried (0.09s)
+=== CONT  TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers
+--- PASS: TestBaselineHumanProfileChangeRemainsReachable (1.57s)
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two
+=== CONT  TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review
+=== RUN   TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve
+--- PASS: TestBaselineFindingRegressionsHumanReview (0.00s)
+    --- PASS: TestBaselineFindingRegressionsHumanReview/decisions_use_one_consolidated_review (0.15s)
+    --- PASS: TestBaselineFindingRegressionsHumanReview/file_projection_precedes_canonical_ledgers (0.17s)
+=== RUN   TestBaselineUpdateFleetSweep/already-current
+=== RUN   TestBaselineMacroJourneysPublicCLI/stale_plan
+=== RUN   TestBaselineMacroJourneysPublicCLI/cross-clone_apply
+--- PASS: TestBaselineUpdateFleetSweep (6.60s)
+    --- PASS: TestBaselineUpdateFleetSweep/manifest-predates-managed-regions (2.25s)
+    --- PASS: TestBaselineUpdateFleetSweep/structural-clauses-missing (2.61s)
+    --- PASS: TestBaselineUpdateFleetSweep/recorded-profile-does-not-resolve (0.88s)
+    --- PASS: TestBaselineUpdateFleetSweep/already-current (0.82s)
+--- PASS: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage (0.00s)
+    --- PASS: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/round_two (1.36s)
+    --- PASS: TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage/correction_review (1.81s)
+=== RUN   TestBaselineMacroJourneysPublicCLI/unsafe_carrier
+=== RUN   TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+=== PAUSE TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+=== RUN   TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== PAUSE TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== RUN   TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+=== PAUSE TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+=== CONT  TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity
+=== CONT  TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review
+=== CONT  TestBaselineMacroJourneysPublicCLI/rejected-plan_revision
+--- PASS: TestBaselineMacroJourneysPublicCLI (6.99s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/greenfield_automation_apply_and_empty_reapply (1.98s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/preservation (1.71s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/update_and_profile_change (1.48s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/stale_plan (0.27s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/cross-clone_apply (0.68s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/unsafe_carrier (0.10s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review (0.14s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/interactive_and_automation_parity (0.14s)
+    --- PASS: TestBaselineMacroJourneysPublicCLI/rejected-plan_revision (0.19s)
+PASS
+suiteguard: guard cost: measured 3498 paths; fingerprint took 173.790083ms before and 217.481166ms after
+ok  	roundfix/internal/cli	8.176s
+stderr:

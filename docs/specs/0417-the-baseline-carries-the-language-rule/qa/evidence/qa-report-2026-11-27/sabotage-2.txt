@@ -1,0 +1,16 @@
+command: ['go', 'test', '-count=1', '-timeout', '20m', '-v', '-run', '^TestACodeLanguageExceptionValueIsRefused/no_source$', './internal/baseline']
+exit: 1
+stdout:
+=== RUN   TestACodeLanguageExceptionValueIsRefused
+=== PAUSE TestACodeLanguageExceptionValueIsRefused
+=== CONT  TestACodeLanguageExceptionValueIsRefused
+=== RUN   TestACodeLanguageExceptionValueIsRefused/no_source
+    code_language_exception_test.go:92: normalize = structured render code language exception source is non-canonical, want requires a source, the recorded decision of the owner that keeps the codebase's language: no source, no exception
+--- FAIL: TestACodeLanguageExceptionValueIsRefused (0.00s)
+    --- FAIL: TestACodeLanguageExceptionValueIsRefused/no_source (0.00s)
+FAIL
+suiteguard: guard cost: measured 3439 paths; fingerprint took 188.848084ms before and 195.296875ms after
+FAIL	roundfix/internal/baseline	0.668s
+FAIL
+
+stderr:

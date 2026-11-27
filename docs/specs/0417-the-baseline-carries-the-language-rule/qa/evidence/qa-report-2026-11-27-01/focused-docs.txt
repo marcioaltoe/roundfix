@@ -1,0 +1,51 @@
+command: go test -count=1 -timeout 30m -v -tags docscontract -run '^(TestAClauseARecordedLayoutTurnsOffIsAReasonedRejection|TestAClauseGateOnPresence|TestACodeLanguageException|TestACodeLanguageExceptionSwapsTheCodeClauses|TestACodeLanguageExceptionValueIsRefused|TestAConflictingMergeOfTheDefaultBranchKeepsTheReviewerLineage|TestARecordedBranchPrefix|TestARepositoryProfileWithoutTheReaderLanguageIsRefused|TestAnExceptionWithoutASourceIsRefused|TestAnUnrecordedBranchPrefix|TestAnUnrecordedBranchPrefixStatesTheCommitTypeRule|TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles|TestAuthorialSkillSync|TestBaselineApply|TestBaselineClauseForceIsCharacterized|TestBaselineDecisionExamples|TestBaselineFindingRegressionsHumanReview|TestBaselineHuman|TestBaselineHumanProfileChangeRemainsReachable|TestBaselineMacroJourneysPublicCLI|TestBaselinePlan|TestBaselineProfileChange|TestBaselineRelease|TestBaselineUpdate|TestBaselineUpdateFleetSweep|TestBaselineUpdateSurfaceTranscriptThisRepositoryIsCurrent|TestCatalogCompatibility|TestConsolidatedReview|TestConsolidatedReviewEditsManagedClassification|TestCoverageEquivalence|TestEveryBaselineModuleVersionIsRecorded|TestEveryBuiltInProfileRendersTheLanguageRule|TestEveryOwnedSkillVersionIsRecorded|TestFormatterComposition|TestGlossary|TestGlossaryAvoidLinesArePlainLists|TestGlossaryPhrasesAreDefinedTerms|TestHuman|TestHumanAutomationPlanParity|TestHumanBaselineAdoption|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestHumanBaselineInvokesSemanticSegmentationAndClassification|TestPlanDeterminismAndNoMutation|TestProjectConstraintDocumentation|TestProjectDecisionParity|TestProjectDecisionReuse|TestRegenerationIsDeclared|TestRejectedPlanRevision|TestRepeatedPlanRevisionDeterminism|TestReviewPromptCarriesTheCandidateDiff|TestReviewPromptCarriesTheDeliveryConventionsAndTheFindingGrammar|TestRunsInWindowKeepsTheOldestRunsSinceTheStart|TestSettlementGuidanceIsOneTable|TestStandardTypeScriptStructuralClauseRetention|TestTheCatalogRefusesADefault|TestTheCatalogRefusesADefaultForACodeLanguageException|TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem|TestTheInteractiveFlowAsksNothingForTheCodeLanguageException|TestTheLanguageRuleInstruction|TestTheLanguageRuleInstructionContractReportsAStaleQuotation|TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt|TestTheQAGateReportsTextOutsideTheReaderLanguage|TestTheReviewPromptAsksToReadTheFileBeforeAnAbsenceClaim|TestTheReviewPromptCarriesTheLanguageRuleInstruction|TestTheSkillCoverageMapIsCurrent|TestTheUpdateNamesTheReaderLanguageDecision|TestToolingAuthorityNoPrompt|Testing)$' ./internal/docscontract ./internal/config
+exit: 0
+stdout:
+=== RUN   TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== PAUSE TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== RUN   TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt
+=== PAUSE TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt
+=== RUN   TestTheLanguageRuleInstructionContractReportsAStaleQuotation
+=== PAUSE TestTheLanguageRuleInstructionContractReportsAStaleQuotation
+=== RUN   TestProjectConstraintDocumentation
+=== PAUSE TestProjectConstraintDocumentation
+=== RUN   TestBaselineDecisionExamples
+=== PAUSE TestBaselineDecisionExamples
+=== RUN   TestTheSkillCoverageMapIsCurrent
+--- PASS: TestTheSkillCoverageMapIsCurrent (0.07s)
+=== RUN   TestGlossaryPhrasesAreDefinedTerms
+=== PAUSE TestGlossaryPhrasesAreDefinedTerms
+=== RUN   TestGlossaryAvoidLinesArePlainLists
+=== PAUSE TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem
+=== CONT  TestGlossaryAvoidLinesArePlainLists
+=== CONT  TestProjectConstraintDocumentation
+=== CONT  TestTheLanguageRuleInstructionContractReportsAStaleQuotation
+=== CONT  TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt
+--- PASS: TestGlossaryAvoidLinesArePlainLists (0.00s)
+=== CONT  TestGlossaryPhrasesAreDefinedTerms
+--- PASS: TestTheDeliveryConventionsAreDocumentedAsTheReviewerPromptsThem (0.00s)
+=== CONT  TestBaselineDecisionExamples
+--- PASS: TestTheLanguageRuleInstructionContractReportsAStaleQuotation (0.00s)
+--- PASS: TestTheLanguageRuleInstructionIsDocumentedAsTheReviewerPromptsIt (0.00s)
+--- PASS: TestProjectConstraintDocumentation (0.02s)
+--- PASS: TestBaselineDecisionExamples (0.02s)
+--- PASS: TestGlossaryPhrasesAreDefinedTerms (0.06s)
+PASS
+ok  	roundfix/internal/docscontract	0.519s
+=== RUN   TestRegenerationIsDeclared
+=== RUN   TestRegenerationIsDeclared/declaration_1_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_2_is_required
+=== RUN   TestRegenerationIsDeclared/declaration_3_is_required
+=== RUN   TestRegenerationIsDeclared/an_undeclared_backlog_write_is_refused
+=== RUN   TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused
+--- PASS: TestRegenerationIsDeclared (65.46s)
+    --- PASS: TestRegenerationIsDeclared/declaration_1_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_2_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/declaration_3_is_required (0.00s)
+    --- PASS: TestRegenerationIsDeclared/an_undeclared_backlog_write_is_refused (0.00s)
+    --- PASS: TestRegenerationIsDeclared/an_unsanctioned_coverage_write_is_refused (5.42s)
+PASS
+suiteguard: guard cost: measured 3498 paths; fingerprint took 191.567959ms before and 159.169708ms after
+ok  	roundfix/internal/config	66.028s
+stderr:

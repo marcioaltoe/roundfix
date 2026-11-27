@@ -1,0 +1,8 @@
+command: /Volumes/Brain-SSD/cache/.roundfix/worktrees/roundfix-deliver-0417-the-baseline-carries-the-language-rule-10ace5c8acd1ac56-66229771-ed3806f5/run_20261127T181612Z_6e339d0bde0e5ce4/bin/roundfix baseline profile init --id own-profile --from go-cli-tui
+exit: 0
+stdout:
+Created repository-owned Baseline Profile own-profile
+Path: .roundfix/baseline/profiles/own-profile.json
+Built-in source: go-cli-tui
+Digest: sha256:f0c62ee5d7cfe860e787d7c5b65cfc456516c5797b1511dbcb13893e925fa44f
+stderr:

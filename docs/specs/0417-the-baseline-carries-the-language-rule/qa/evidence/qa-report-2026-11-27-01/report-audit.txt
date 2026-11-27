@@ -1,0 +1,1 @@
+22 contiguous Results rows; 18 pass, 1 environment-blocked, 3 declared-blocked. Zero pending. One frontmatter. Every local report link resolves and is not ignored. All rows have typed inputs; history-dependent rows have commit_range. Auditor identity preserved. Fresh binary and driver listed.

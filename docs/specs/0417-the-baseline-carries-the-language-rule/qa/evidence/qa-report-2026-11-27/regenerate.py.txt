@@ -1,0 +1,12 @@
+import runpy,pathlib,json
+X=runpy.run_path('docs/specs/0417-the-baseline-carries-the-language-rule/qa/evidence/qa-report-2026-11-27/runner.py.txt',run_name='helper');OUT=pathlib.Path('/tmp/qa0417-results');X['record'].__globals__['E']=OUT
+d=X['copyrev'](X['HEAD']);results=[]
+try:
+ jobs=[['go','test','./internal/baseline','-timeout','20m','-run','^TestEveryBaselineModuleVersionIsRecorded$','-record-module-versions','-count=1'],['make','baseline-digests'],['managed-refresh'],['make','skills-sync'],['go','test','./skills','-timeout','20m','-run','^TestEveryOwnedSkillVersionIsRecorded$','-record-skill-versions'],['go','test','-count=1','-timeout','20m','-tags','docscontract','./internal/docscontract','-run','^TestTheSkillCoverageMapIsCurrent$','-record-skill-coverage'],['go','test','./internal/spec','-timeout','20m','-run','^TestCoverageEquivalence$','-update-coverage-record','-count=1']]
+ for i,args in enumerate(jobs):
+  if args==['managed-refresh']:p=X['cli']('regeneration-3',['baseline','update','--repo',str(d),'--no-skills','--no-history','--yes','--format','text','--decision','language.reader=English'],d)
+  else:p=X['run'](args,d,X['ENV']);X['record']('regeneration-'+str(i+1),args,p)
+  results.append(p.returncode)
+  if p.returncode:print((p.stdout+p.stderr)[-4000:],flush=True)
+ st=X['status'](d);(OUT/'regeneration-state.txt').write_text('exits: '+repr(results)+'\ngit status --porcelain:\n'+st);print('regeneration complete',results,repr(st),flush=True)
+finally:X['clean'](d)
