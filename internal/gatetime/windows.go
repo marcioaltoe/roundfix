@@ -77,7 +77,7 @@ func settlementSamples(db *sql.DB, root string, since *time.Time) ([]Sample, err
 	if since != nil {
 		sinceText = since.UTC().Format(time.RFC3339Nano)
 	}
-	rows, err := db.Query(`SELECT e.run_id,e.created_at,e.payload FROM run_events e JOIN runs r ON r.id=e.run_id WHERE e.kind='daemon.verification' AND r.git_root=? AND r.created_at>=? ORDER BY e.created_at,e.cursor`, root, sinceText)
+	rows, err := db.Query(`SELECT e.run_id,e.created_at,e.payload FROM run_events e JOIN runs r ON r.id=e.run_id WHERE e.kind='daemon.verification' AND (r.repository_root=? OR r.git_root=?) AND r.created_at>=? ORDER BY e.created_at,e.cursor`, root, root, sinceText)
 	if err != nil {
 		return nil, err
 	}
