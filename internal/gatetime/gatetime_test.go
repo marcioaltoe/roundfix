@@ -206,7 +206,10 @@ func TestSettlementSamplesPairTaskAndAttempt(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer writer.Close()
-	for _, statement := range []string{"CREATE TABLE runs (id TEXT,git_root TEXT,created_at TEXT)", "CREATE TABLE run_events (run_id TEXT,created_at TEXT,payload TEXT,kind TEXT,cursor INTEGER)", "INSERT INTO runs VALUES ('run','/repo','2026-11-26T00:00:00Z')"} {
+	for _, statement := range []string{"CREATE TABLE runs (id TEXT,git_root TEXT,created_at TEXT,repository_root TEXT NOT NULL DEFAULT '')", "CREATE TABLE run_events (run_id TEXT,created_at TEXT,payload TEXT,kind TEXT,cursor INTEGER)", "INSERT INTO runs VALUES ('run','/repo','2026-11-26T00:00:00Z','')",
+		// A Delivery Queue Run settles in the Item Worktree; its repository_root names the checkout.
+		"INSERT INTO runs VALUES ('queued','/home/.roundfix/worktrees/repo-1/item','2026-11-26T00:01:00Z','/repo')",
+		"INSERT INTO runs VALUES ('other','/home/.roundfix/worktrees/other-2/item','2026-11-26T00:01:00Z','/other')"} {
 		if _, err := writer.Exec(statement); err != nil {
 			t.Fatal(err)
 		}
@@ -220,18 +223,26 @@ func TestSettlementSamplesPairTaskAndAttempt(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	for i, run := range []string{"queued", "other"} {
+		for j, event := range []struct{ at, phase string }{{"2026-11-26T00:01:10Z", "started"}, {"2026-11-26T00:03:10Z", "command-passed"}} {
+			payload := `{"command":"make verify-changed","phase":"` + event.phase + `","task":"task_01","attempt":1}`
+			if _, err := writer.Exec("INSERT INTO run_events VALUES (?,?,?,'daemon.verification',?)", run, event.at, payload, 10+2*i+j); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 	reader, err := openRunDatabase(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer reader.Close()
 	samples, err := settlementSamples(reader, "/repo", nil)
-	if err != nil || len(samples) != 1 || samples[0].Seconds != 31 {
-		t.Fatal(samples, err)
+	if err != nil || len(samples) != 2 || samples[0].Seconds != 31 || samples[1].Seconds != 120 {
+		t.Fatal("the checkout's Run and its Delivery Queue Run, not another repository's", samples, err)
 	}
 	since := time.Date(2026, 11, 26, 0, 0, 10, 0, time.UTC)
 	samples, err = settlementSamples(reader, "/repo", &since)
-	if err != nil || len(samples) != 0 {
+	if err != nil || len(samples) != 1 || samples[0].Seconds != 120 {
 		t.Fatal("Run started before the window", samples, err)
 	}
 }
