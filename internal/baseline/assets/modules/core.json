@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 33,
+  "version": 35,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -152,6 +152,7 @@
   ],
   "requiredDecisions": [
     "language.generated",
+    "language.reader",
     "verification.gate",
     "verification.incremental"
   ],
@@ -339,6 +340,7 @@
         "rule.core.verification-integrity",
         "rule.core.tooling-authority",
         "rule.core.english-guidance",
+        "rule.core.code-and-reader-language",
         "rule.core.research-authority",
         "rule.core.dependency-discipline",
         "rule.core.git-delivery",
@@ -553,6 +555,35 @@
           "id": "clause.core.write-generated-guidance-in-english",
           "enforcement": "mandatory",
           "guidance": "Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.code-and-reader-language",
+      "version": 1,
+      "coverage": [
+        "coverage.language"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.code-names-in-english",
+          "enforcement": "mandatory",
+          "guidance": "Write code and infrastructure names in English: variables, functions, classes, files and folders, code comments, database tables, columns and indexes, buckets, prefixes, environment variables, queues, API routes and technical logs."
+        },
+        {
+          "id": "clause.core.code-names-keep-untranslated-terms",
+          "enforcement": "mandatory",
+          "guidance": "A business term with no faithful English translation keeps its original form inside an English name: an official acronym as it is (`icms_amount`), another term without accents (`apuracao_summary`). Brazilian fiscal and legal terms are the usual case."
+        },
+        {
+          "id": "clause.core.code-names-new-only",
+          "enforcement": "mandatory",
+          "guidance": "A new name follows this rule. An existing name changes only when its code is touched, a large rename takes a Spec of its own, and nothing is renamed in bulk without a request. The Pre-PR Review reports a new name that breaks the rule, and the QA gate reports text a user reads outside the Reader Language."
+        },
+        {
+          "id": "clause.core.reader-language",
+          "enforcement": "mandatory",
+          "guidance": "Write what the product's users read in the Reader Language named above: screens, user messages, e-mails, PDFs, user documentation, and the names, descriptions and parameters of MCP tools. Specs, ADRs, agent guides, commits and pull requests keep the language they already have."
         }
       ]
     },

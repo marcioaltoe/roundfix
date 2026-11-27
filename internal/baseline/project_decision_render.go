@@ -17,6 +17,8 @@ func renderProjectDecision(
 	declaration document,
 ) (string, error) {
 	switch decisionID {
+	case "language.reader":
+		return escapeMarkdownText(renderDecisionValue(value)), nil
 	case branchPrefixDecisionID:
 		return strings.Join([]string{
 			"The branch-prefix pattern is `" + renderDecisionValue(value) + "`; `<type>` is replaced by the",

@@ -333,6 +333,27 @@
       ]
     },
     {
+      "id": "language.reader",
+      "version": 1,
+      "type": "string",
+      "suggestion": "English",
+      "summary": "The Reader Language: the language of what the product's users read.",
+      "effects": [
+        {
+          "when": {
+            "present": true
+          },
+          "renderBindings": [
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
+              "token": "language.reader"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "secondbrain.enabled",
       "version": 1,
       "type": "boolean",

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0417-the-baseline-carries-the-language-rule
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -117,3 +117,63 @@ This Task delivers `_techspec.md` → Build Order 1: the `core` module gains the
 - `_authorization.md` → Sanctioned regeneration
 - [`references/2026-11-27-characterization.md`](references/2026-11-27-characterization.md), sections 2, 3, 4 and 8
 - ADR-0118, ADR-0186, ADR-0203, ADR-0222, ADR-0250, ADR-0257, ADR-0280, ADR-0372, ADR-0438, ADR-0439
+
+
+## Result
+
+Skills loaded: implement-task, coding-guidelines, golang-cli, golang-testing, testing-boss, tech-writer, domain-modeling, roundfix, setup-context-driven, evidence-gate, systematic-debugging, no-workarounds, ai-memory-messaging.
+
+Additional bounded authorization: Praetor message `01a21e04-2eef-7b73-8676-cc635f39e83f`, replying to request `01a21e01-8ad4-7482-8062-b9579708ce61`, carries Marcio's decision "Incluir o arquivo (Recomendado)" and adds `internal/baseline/project_decision_render.go` solely for the `language.reader` case returning `escapeMarkdownText(renderDecisionValue(value))`. The generic string renderer otherwise adds backticks and cannot produce the Task's required opening sentence. This case is implemented; every other decision keeps its existing rendering. The Supervisor owns propagation of this authorization into the Spec's authorization paths.
+
+Implementation and acceptance evidence:
+
+- Built-in profiles: the required `language.reader` decision, its single render binding and template token, the four mandatory ungated clauses, and the insertion-only canonical-terms wording are implemented. All five named profile subtests and `a_catalog_without_a_clause_fails` pass. The assertion checks complete mandatory clause text and the exact plain Reader Language sentence; removing a clause breaks that same assertion. No rule was added to profile `requiredRules`; static comparison confirms that each profile changes only its entry decision and, for Standard TypeScript, its generated golden digest.
+- Update flow: `TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles` passes against the existing adoption fixtures with reconstructed prior managed text and decision set. It checks exit 3 and no writes before the answer, exactly the two guides and manifest in the applied change list, no unaccounted Source Baseline clause, mandatory canonical-language retention, and a subsequent zero-change current plan. `TestTheUpdateNamesTheReaderLanguageDecision` passes with complete stdout/stderr comparison and only catalog digest substitutions.
+- Repository-owned profile: `TestARepositoryProfileWithoutTheReaderLanguageIsRefused` passes. The actual CLI refuses the missing entry with the decision, template and repair entry; adding the entry and answer renders the whole rule and exact Reader Language opening sentence.
+- Fixtures: explicit answer lists and scripted interactive sequences now carry English in the new prompt position; preservation indices and profile-change answer counts were adjusted. The force characterization, insertion-aware structural retention comparison, fleet text and module-edit text fixtures are updated. The focused run below includes interactive flows, release/parity, plan/apply, fleet, structural-retention and unchanged branch-prefix contracts. It passes 10 Baseline and 31 CLI top-level tests (66 and 62 including subtests). Complete changed-file tests and declared Verification remain for the Daemon.
+- Documentation and repository refresh: ADR 0454 is accepted, has `knowledge: true`, and is the sole added export-list line after ADR 0452. The published Decision Document and suggested-values table include the Reader Language; its two documentation tests pass with 17 decisions. The repository's guide states `The Reader Language is English.`; the final repeat Managed Refresh reports `File changes: 0` and `Idempotence: verified`. Guide growth measured against HEAD is 1,431 bytes, below 1,500.
+
+Sanctioned regeneration, executed in the required order after the final source edits, each exiting 0:
+
+1. `go test ./internal/baseline -run '^TestEveryBaselineModuleVersionIsRecorded$' -record-module-versions -count=1` — the recorder selected the versions; no version or record was authored by hand.
+2. `make baseline-digests` — regenerated catalog snapshots, diagnostics, plan goldens and formatter/profile pins.
+3. `go run -buildvcs=false ./cmd/roundfix baseline update --repo . --no-skills --no-history --yes --format text --decision language.reader=English` — refreshed this repository. The initial refresh changed the two guides and manifest; the refresh after the authorized renderer correction changed the agent guide and manifest. A final repeat changed no files.
+4. `go test -count=1 -tags docscontract ./internal/docscontract -run '^TestTheSkillCoverageMapIsCurrent$' -record-skill-coverage` — recorded the changed user-guide surface.
+5. `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record -count=1` — recorded the four new top-level tests, and exposed the inherited coverage-row discrepancy below.
+
+Focused checks after all implementation and regeneration changes:
+
+- `rtk proxy go test -json ./internal/baseline ./internal/cli -run 'TestEveryBuiltInProfileRendersTheLanguageRule|TestARepositoryProfileWithoutTheReaderLanguageIsRefused|TestStandardTypeScriptStructuralClauseRetention|TestBaselineClauseForceIsCharacterized|TestAnUnrecordedBranchPrefix|TestARecordedBranchPrefix|TestAnUpdateStopsForTheReaderLanguageAndThenChangesThreeFiles|TestTheUpdateNamesTheReaderLanguageDecision|TestBaselineHuman|TestProjectDecisionParity|TestBaselineRelease|TestBaselineUpdateFleetSweep|TestBaselineProfileChange|TestBaselineApply|TestBaselinePlan|TestToolingAuthorityNoPrompt' -count=1` — exit 0; 41 top-level tests, 128 including subtests.
+- `rtk proxy go test -tags docscontract ./internal/docscontract -run 'TestBaselineDecisionExamples|TestProjectConstraintDocumentation' -count=1` — exit 0.
+- Static inspections confirm catalog adjacency, four mandatory clauses without gates, the exact Reader Language opening line, unchanged Source Baseline/parity-corpus files, preserved existing test identities, exactly four new untagged top-level tests, and no Task Graph or other Task edits. `git diff --check` exits 0.
+
+Implementation-check repairs: an initial catalog serialization expanded source arrays required by an exact diagnostic fixture; original formatting was preserved before rerunning the sanctioned recorder. New fixtures were corrected to initialize Git, select only their profile's decisions and exercise refusal at the CLI boundary. A focused run overlapping the Managed Refresh was rejected by suiteguard; its result was discarded and the final focused run above ran without repository mutations. No assertion, guard or check was weakened.
+
+Follow-up for the Supervisor: the sanctioned coverage recorder also adds `roundfix/internal/gatetime/TestRunsInWindowKeepsTheOldestRunsSinceTheStart`, already present at HEAD in `internal/gatetime/gatetime_test.go:161` but absent from the base coverage record. No Gate Time code, target, measurement or workflow changed. The generated output is retained, with no manual record edit. Praetor decision request `01a21e07-fb65-73f2-9203-c21255e1ac46` asks whether to preserve this single inherited row or separate its correction before integration, because the current authorization limits additions to Task Graph names.
+
+The pre-existing Task status edit remains Daemon-owned. Declared Verification and repository settlement gates were not run; no commit, push, pull request, skill change, code-language exception, review/QA instruction or glossary entry was added.
+
+### Verification Feedback repair — attempt 1
+
+Inspected the Daemon diagnostic artifact at `/Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20261127T170815Z_a9d44cef510b3683/verification/batch-001-attempt-1.log`. The reported failures share one source: `humanBaselineAdoptionAnswers` placed the Reader Language answer at the profile-selection prompt. Adoption first asks for preservation, then a profile, then Generated language; Reader Language is the fourth prompt. The misplaced answer shifted subsequent fields and prevented adoption, preservation review, parity and revision flows from reaching their asserted boundaries. The earlier focused selector included `TestBaselineHuman...` but missed several consumers named `TestHuman...`, so its evidence did not cover this shared-helper defect.
+
+Moved `English` after the three initial selection answers, documented their prompt roles inline, and added the Reader Language label directly after Generated language in `TestHumanBaselineFirstAdoptionPromptSequenceCharacterization`'s expected sequence. No production behaviour, assertion strength, test identity, test count or derived record changed in this repair.
+
+Focused repair check:
+
+`rtk proxy go test -json -count=1 -run '^(TestRepeatedPlanRevisionDeterminism|TestRejectedPlanRevision|TestHumanAutomationPlanParity|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestConsolidatedReviewEditsManagedClassification|TestHumanBaselineInvokesSemanticSegmentationAndClassification|TestConsolidatedReview|TestHumanBaselineAdoption|TestBaselineFindingRegressionsHumanReview|TestBaselineMacroJourneysPublicCLI|TestBaselineHumanProfileChangeRemainsReachable)$' ./internal/cli`
+
+Exit 0: 11 top-level tests, 22 tests including subtests, with no failures or suiteguard boundary violation. This explicitly selects every failing top-level consumer named in the diagnostic, plus the profile-change flow. It covers the full expected adoption prompt sequence, successful adoption, semantic segmentation/classification, consolidated preservation review, managed-classification edits, human/automation parity, rejected and repeated revision determinism, and the public CLI wrappers.
+
+`git diff --check` exits 0. Only `internal/cli/baseline_human_test.go` and this Task's Result were changed during the repair. The Task status remains Daemon-owned; none of the declared Verification commands was rerun, and no commit, push or pull request was created. The Daemon retains the full configured Verification rerun and settlement.
+
+## Recorded paths
+
+The Daemon recorded these paths, which this Task changed without declaring them in `## Context`.
+
+- `internal/baseline/project_decision_render.go`
+
+## Carry-forward provenance
+
+- Source Run: `run_20261127T170815Z_a9d44cef510b3683`
+- Source commit: `2a7f536b7fd950e5220a5b5f7c4dadc0315f413e`

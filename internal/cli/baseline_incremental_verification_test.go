@@ -118,6 +118,7 @@ func TestBaselinePlanWithoutIncrementalDecisionExitsThree(t *testing.T) {
 		"baseline", "plan", "--repo", repository, "--profile", "go-cli-tui",
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
+		"--decision", "language.reader=English",
 		"--decision", "verification.gate=make verify",
 		"--decision", "branch.prefix=ma/",
 		"--decision", "spec.scaffold=true",

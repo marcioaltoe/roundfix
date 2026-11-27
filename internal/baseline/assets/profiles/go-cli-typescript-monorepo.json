@@ -8,6 +8,7 @@
   "formatter": {"kind": "none"},
   "entryDecisions": [
     "language.generated",
+    "language.reader",
     "verification.gate",
     "verification.incremental",
     "branch.prefix",

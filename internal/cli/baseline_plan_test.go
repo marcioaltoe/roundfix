@@ -350,6 +350,7 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 		"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui",
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
+		"--decision", "language.reader=English",
 		"--decision", "verification.gate=make verify",
 		"--decision", "verification.incremental=make verify-incremental",
 		"--decision", "branch.prefix=ma/",
@@ -679,6 +680,7 @@ func baselinePlanCharacterizationArgs(repo, preservationMode string) []string {
 func baselinePlanCharacterizationDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
@@ -743,6 +745,7 @@ func baselinePlanProfileFileFixture(
 	}
 	decisions := []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},

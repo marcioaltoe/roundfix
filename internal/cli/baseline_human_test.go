@@ -113,9 +113,9 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	// answers: change to "Decision area to revisit" (3), select
 	// "Change Baseline Profile" (1), confirm three "1" changes,
 	// decline two "2" re-ask confirmations, then answer "1" to
-	// every remaining prompt (12x) and decline recomputed Plan (2).
+	// every remaining prompt (13x) and decline recomputed Plan (2).
 	changeAnswers := []string{"3", "1", "1", "1", "2", "3"}
-	for range 12 {
+	for range 13 {
 		changeAnswers = append(changeAnswers, "1")
 	}
 	changeAnswers = append(changeAnswers, "2")
@@ -271,6 +271,7 @@ func TestHumanBaselineFirstAdoptionPromptSequenceCharacterization(t *testing.T) 
 		"Instruction preservation",
 		"Select exactly one Baseline Profile",
 		"The language used for generated repository content.",
+		"The Reader Language: the language of what the product's users read. (language.reader)",
 		"The repository verification command named by generated guidance. (verification.gate)",
 		"The repository incremental verification command named by generated guidance. (verification.incremental)",
 		"The required prefix for agent-created branches, named by generated guidance. (branch.prefix)",
@@ -594,7 +595,7 @@ func TestToolingAuthorityNoPrompt(t *testing.T) {
 			answers, err := promptBaselineDecisions(
 				context.Background(),
 				&baselineHumanPrompt{
-					reader: bufioReader("\n\nmake verify-incremental\n" + strings.Repeat("\n", 64)),
+					reader: bufioReader("\nEnglish\n\nmake verify-incremental\n" + strings.Repeat("\n", 64)),
 					writer: &output,
 				},
 				catalog,
@@ -1287,7 +1288,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
-	answers := "\n5\n\n\nmake verify-incremental\n" +
+	answers := "\n5\n\nEnglish\n\nmake verify-incremental\n" +
 		strings.Repeat("\n", 32) +
 		"2\n" +
 		"1\n" +
@@ -1672,6 +1673,7 @@ func divergencePromptResult(t *testing.T, answer string) baseline.Result {
 func standardTypeScriptDivergenceDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
@@ -1742,7 +1744,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 }
 
 func projectDecisionHumanAnswers() string {
-	return "\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n\n2\n2\n2\n"
+	return "\nEnglish\nmake verify\nmake verify-incremental\n\n\n\n\n\n\n\n\n2\n2\n2\n"
 }
 
 func archivedFindingHTTPContractDecision() map[string]any {
@@ -1865,6 +1867,7 @@ func removeHumanBaselineManifestDecision(t *testing.T, repo string, id string) {
 func humanBaselineFixtureDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},
@@ -2026,9 +2029,10 @@ func (analyzer *countingBaselineSemanticAnalyzer) TakeFindings() []baseline.Find
 
 func humanBaselineAdoptionAnswers(final string) string {
 	answers := []string{
-		"1",
-		"1",
-		"1",
+		"1",       // instruction preservation
+		"1",       // Baseline Profile
+		"1",       // generated language
+		"English", // Reader Language
 		"make verify",
 		"make verify-incremental",
 		"ma/",
@@ -2050,7 +2054,7 @@ func humanBaselineAdoptionAnswers(final string) string {
 func humanBaselinePreservationAnswers() string {
 	answers := strings.Split(strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n"), "\n")
 	answers[0] = "2"
-	answers[11] = "1"
+	answers[12] = "1"
 	return strings.Join(answers, "\n") + "\n1\n2\n"
 }
 

@@ -1619,6 +1619,7 @@ func typeScriptPackageJSON(includeBetterAuth, includeProfileScripts bool) string
 func standardTypeScriptDecisions(verification string) []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
+		{ID: "language.reader", Value: "English"},
 		{ID: "verification.gate", Value: verification},
 		{ID: "verification.incremental", Value: "make verify-incremental"},
 		{ID: "branch.prefix", Value: "ma/"},

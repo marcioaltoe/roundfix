@@ -743,6 +743,7 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 	decisions := []string{
 		"preservation.mode=" + preservation,
 		"language.generated=English",
+		"language.reader=English",
 		"verification.gate=make verify",
 		"verification.incremental=make verify-incremental",
 		"branch.prefix=ma/",

@@ -10,6 +10,7 @@
   },
   "entryDecisions": [
     "language.generated",
+    "language.reader",
     "verification.gate",
     "verification.incremental",
     "branch.prefix",

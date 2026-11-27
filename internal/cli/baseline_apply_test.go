@@ -366,6 +366,7 @@ func baselineApplyTestPlan(t *testing.T, repo string) (baseline.PlanDocument, st
 		"--profile", "go-cli-tui",
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
+		"--decision", "language.reader=English",
 		"--decision", "verification.gate=make verify",
 		"--decision", "verification.incremental=make verify-incremental",
 		"--decision", "branch.prefix=ma/",

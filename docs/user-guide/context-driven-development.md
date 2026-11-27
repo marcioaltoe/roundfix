@@ -379,6 +379,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Decision | Suggested value |
 | --- | --- |
 | Generated language | `English` |
+| Reader Language | `English`; answer with the language the product's users read |
 | Verification gate | `make verify` |
 | Incremental Verification | `make verify-incremental` |
 | Identifier strategy | `{"kind":"uuid-v7"}` |
@@ -717,6 +718,10 @@ repository owner's answers:
     },
     {
       "id": "language.generated",
+      "value": "English"
+    },
+    {
+      "id": "language.reader",
       "value": "English"
     },
     {

@@ -64,6 +64,7 @@ func newBaselineRepositoryProfileFixture(t *testing.T, copySkills bool) string {
 	args := []string{"baseline", "plan", "--repo", root, "--profile", baselineRepositoryProfileTestID,
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
+		"--decision", "language.reader=English",
 		"--decision", "verification.gate=make verify",
 		"--decision", "verification.incremental=make verify-incremental",
 		"--decision", "branch.prefix=ma/",
